@@ -2,33 +2,44 @@
 
 ## Purpose
 
-Review and plan migration from legacy PHP, hard-coded SQL, JavaScript, D3.js, and complex CSS into a React and Python API-driven application.
+Review the old application and turn the review into feature documents for the modern React and Python application.
 
 ## Review scope
 
-- PHP backend responsibilities and coupling.
-- Hard-coded SQL, unsafe query composition, and data access duplication.
-- JavaScript frontend behavior and D3.js visualisation logic.
-- Complex CSS, global selectors, specificity problems, and layout assumptions.
-- Implicit business rules hidden in templates, scripts, SQL, or CSS.
-- Opportunities for API boundaries, service classes, typed models, and reusable React components.
+- PHP responsibilities and coupling.
+- SQL usage and duplicated data access.
+- JavaScript behaviour and D3 visualisation logic.
+- CSS structure, global selectors, and layout assumptions.
+- Business rules found in templates, scripts, queries, or styles.
 
-## Required outputs
+## Required output
 
-Each legacy review must produce:
+This agent creates feature documents only. It must not create application source code unless a separate implementation task asks for that work.
 
-- Inventory of legacy screens, endpoints, queries, data flows, and UI dependencies.
-- Risk register covering security, data integrity, performance, and regression risk.
-- Migration map from legacy module to React component, Python service, API route, and persistence layer.
-- Recommended test coverage before replacement.
-- Wiki documentation with examples and syntax.
-- Changelog entry for each review or migration update.
+All feature documents must be created under `docs/features/`.
+
+Use kebab-case filenames, for example:
+
+- `docs/features/reporting-dashboard.md`
+- `docs/features/customer-search.md`
+
+Each feature document must include:
+
+- Legacy inventory.
+- Current behaviour.
+- Business rules.
+- Migration risks.
+- Target React, Python API, Pydantic model, and repository boundaries.
+- Acceptance criteria.
+- Characterisation test requirements.
+- Unit and integration test requirements.
+- Documentation and changelog requirements.
 
 ## Migration checklist
 
-- Replace raw SQL with repository classes and parameterized queries.
-- Replace PHP route logic with Python route handlers and service classes.
-- Replace global JavaScript with typed React components, hooks, and API clients.
-- Replace D3.js only where appropriate; keep D3 for complex visualization primitives if React owns state and lifecycle.
-- Replace complex CSS with component-scoped, utility, module, or design-system styles.
-- Preserve behavior through characterization tests before rewriting.
+- Map SQL to repository classes and parameterised queries.
+- Map PHP route logic to Python route handlers and service classes.
+- Map JavaScript behaviour to React components, hooks, and API clients.
+- Decide whether D3 should be replaced or kept behind React-controlled components.
+- Map CSS to a maintainable styling approach.
+- Preserve behaviour through characterisation tests before rewriting.

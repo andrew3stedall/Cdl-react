@@ -4,6 +4,23 @@ All notable changes to this repository must be documented in this file.
 
 Use date-based entries and include validation evidence for every update.
 
+## 2026-05-21 - Add legacy migration feature planning
+
+### Added
+
+- Added feature documents for planning the Castle Draft League modern web application migration.
+- Added feature plans for authentication, application shell and visual presets, squad management, team selection, league fixtures, rules, dashboard analytics, fixture difficulty ratings, and backend API platform work.
+- Added a legacy migration feature index under `docs/features/`.
+
+### Changed
+
+- Converted legacy review findings into feature documents only, without implementation source code.
+
+### Validation
+
+- Documentation-only change.
+- Source code tests were not run because no application source exists yet.
+
 ## 2026-05-21 - Add shadcn UI preset requirements
 
 ### Added

@@ -2,18 +2,19 @@
 
 ## Purpose
 
-Deliver API-driven features using React, TypeScript, Python, uv, Pydantic, and object-oriented backend design.
+Deliver API-driven features using React, TypeScript, shadcn/ui, Python, uv, Pydantic, and object-oriented backend design.
 
 ## Process
 
-1. Start with a Markdown feature specification.
+1. Start with a Markdown feature document in `docs/features/`.
 2. Define API request and response contracts.
 3. Create Pydantic models for validation boundaries.
 4. Design backend service and repository classes.
-5. Design React components, hooks, and typed API clients.
-6. Implement tests before or alongside code.
-7. Run quality gates.
-8. Update wiki documentation and changelog.
+5. Design React components, hooks, typed API clients, and shadcn/ui usage.
+6. Define configurable visual presets when the feature touches the interface.
+7. Implement tests before or alongside code.
+8. Run quality gates.
+9. Update wiki documentation and changelog.
 
 ## Backend guidance
 
@@ -25,9 +26,11 @@ Deliver API-driven features using React, TypeScript, Python, uv, Pydantic, and o
 ## Frontend guidance
 
 - Use typed API clients.
+- Use shadcn/ui components by default.
 - Use hooks for data fetching and UI orchestration.
 - Keep components focused on rendering and interaction.
 - Cover loading, error, empty, and success states.
+- Keep look and feel configurable through documented visual presets.
 
 ## Required validation
 

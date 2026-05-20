@@ -10,13 +10,14 @@ This repository is for a modern React web application with a Python API backend.
 - Data and validation models: Pydantic.
 - Quality: unit tests, integration tests, linting, formatting, Ruff, and build checks.
 - Documentation: wiki-style Markdown for every change.
+- Feature documents: all feature documents must be created under `docs/features/`.
 - Changelog: update `CHANGELOG.md` for every change.
 
 ## Delivery rules
 
 Every development task must include:
 
-1. A Markdown feature specification.
+1. A Markdown feature document under `docs/features/`.
 2. Implementation notes for frontend, backend, API, and data boundaries.
 3. Unit tests.
 4. Integration tests.

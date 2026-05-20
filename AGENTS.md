@@ -5,6 +5,8 @@ This repository is for a modern React web application with a Python API backend.
 ## Stack
 
 - Frontend: React and TypeScript.
+- UI system: shadcn/ui is the default component and styling foundation.
+- Theme presets: users must be able to choose from multiple configurable visual presets for application look and feel.
 - Backend: Python with object-oriented services.
 - Dependency manager: `uv`.
 - Data and validation models: Pydantic.
@@ -19,17 +21,19 @@ Every development task must include:
 
 1. A Markdown feature document under `docs/features/`.
 2. Implementation notes for frontend, backend, API, and data boundaries.
-3. Unit tests.
-4. Integration tests.
-5. Lint, format, Ruff, and build validation.
-6. Wiki documentation with examples and syntax.
-7. A changelog entry.
+3. UI notes for shadcn/ui usage and theme presets when the task touches the interface.
+4. Unit tests.
+5. Integration tests.
+6. Lint, format, Ruff, and build validation.
+7. Wiki documentation with examples and syntax.
+8. A changelog entry.
 
 ## Architecture preferences
 
 - Prefer object-oriented programming for backend domain logic, services, repositories, adapters, and migration utilities.
 - Keep React components focused on view behavior.
-- Keep business rules in typed hooks, service classes, or backend classes.
+- Use shadcn/ui components by default before custom UI components.
+- Keep visual styling configurable through documented presets rather than hard-coded one-off styles.
 - Do not put raw SQL in route handlers or UI code.
 - Use parameterized queries, repositories, query builders, or ORM models.
 - Document API contracts before implementation.

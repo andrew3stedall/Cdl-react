@@ -4,6 +4,26 @@ All notable changes to this repository must be documented in this file.
 
 Use date-based entries and include validation evidence for every update.
 
+## 2026-05-21 - Add feature development lifecycle workflow
+
+### Added
+
+- Added a feature-document-driven development lifecycle where all work starts from `docs/features/active/`.
+- Added completed feature document folders for major and minor releases.
+- Added release documentation guidance under `docs/releases/`.
+- Added parallel feature development guidance for multiple agents working at the same time.
+- Added release documentation skill and parallel feature development skill.
+
+### Changed
+
+- Updated repository operating instructions so implemented feature documents move to `docs/features/completed/{major|minor}/vX.Y.Z/`.
+- Updated fullstack development guidance to require cross-feature testing and release documentation updates.
+
+### Validation
+
+- Documentation-only change.
+- Source code tests were not run because no application source exists yet.
+
 ## 2026-05-21 - Add legacy migration feature planning
 
 ### Added

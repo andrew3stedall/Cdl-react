@@ -4,6 +4,24 @@ All notable changes to this repository must be documented in this file.
 
 Use date-based entries and include validation evidence for every update.
 
+## 2026-05-21 - Add shadcn UI preset requirements
+
+### Added
+
+- Added shadcn/ui as the default UI component and styling foundation.
+- Added a UI style agent for shadcn/ui and configurable visual presets.
+- Added UI Requirements to feature documents for component choices, theme presets, defaults, user configuration, accessibility, and tests.
+
+### Changed
+
+- Updated fullstack development guidance to include shadcn/ui and visual preset requirements.
+- Updated repository instructions so interface work documents shadcn/ui usage and visual preset behaviour.
+
+### Validation
+
+- Documentation-only change.
+- Source code tests were not run because no application source exists yet.
+
 ## 2026-05-21 - Standardise feature document location
 
 ### Changed

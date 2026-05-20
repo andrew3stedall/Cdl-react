@@ -26,8 +26,20 @@ Each feature document should include:
 - Target Architecture
 - API Requirements
 - React Requirements
+- UI Requirements
 - Data Access Requirements
 - Acceptance Criteria
 - Test Requirements
 - Documentation Requirements
 - Changelog Requirements
+
+## UI requirements
+
+Interface-related feature documents must specify:
+
+- shadcn/ui component choices.
+- Theme preset requirements.
+- Default visual preset.
+- User configuration behaviour.
+- Accessibility expectations.
+- Test requirements for theme and preset behaviour.

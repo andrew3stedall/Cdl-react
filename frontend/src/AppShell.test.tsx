@@ -6,6 +6,8 @@ import { App } from './App';
 import type { SessionState, UserPreferences } from './contracts';
 import type { PreferenceClient } from './preferences-api';
 
+(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+
 class MemoryPreferenceClient implements PreferenceClient {
   preferences: UserPreferences = { themePreset: 'classic' };
 
@@ -55,9 +57,11 @@ describe('AppShell integration', () => {
 
     await act(async () => {
       menuButton.click();
+      await Promise.resolve();
     });
 
-    expect(container.querySelector('#mobile-navigation')?.hasAttribute('hidden')).toBe(false);
+    expect(menuButton.getAttribute('aria-expanded')).toBe('true');
+    expect(container.textContent).toContain('Close');
 
     const leagueButton = Array.from(container.querySelectorAll('button')).find(
       (button) => button.textContent === 'League',
@@ -65,6 +69,7 @@ describe('AppShell integration', () => {
 
     await act(async () => {
       leagueButton.click();
+      await Promise.resolve();
     });
 
     expect(container.querySelector('[aria-current="page"]')?.textContent).toContain('League');

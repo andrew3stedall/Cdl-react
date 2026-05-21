@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-05-21 - Add backend API platform foundation
+
+### Added
+
+- Added Python API foundation using FastAPI, uv, Pydantic, service boundaries, and repository boundaries.
+- Added shared API, session, theme, team, player, fixture, gameweek, and rule reference contract models.
+- Added React and TypeScript frontend foundation with theme preset contracts.
+- Added CI workflow for backend and frontend validation.
+- Added v0.1.0 release documentation skeleton.
+
+### Validation
+
+- Added backend contract and app tests.
+- Added frontend theme preset tests.
+- CI is configured to run Ruff, pytest, lint, test, and build checks.
+
 ## 2026-05-21 - Move planning features to active
 
 ### Changed

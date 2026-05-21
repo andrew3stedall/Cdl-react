@@ -13,6 +13,12 @@ from cdl_api.contracts.domain import (
     PlayerSummary,
     TeamSummary,
 )
+from cdl_api.contracts.rules_models import (
+    RuleCategory,
+    RuleSection,
+    RulesIndexResponse,
+    RuleVersion,
+)
 from cdl_api.contracts.session import SessionState, SessionUser
 from cdl_api.contracts.theme import ThemePreset, UserPreferences
 
@@ -25,7 +31,11 @@ __all__ = [
     "LoginResponse",
     "LogoutResponse",
     "PlayerSummary",
+    "RuleCategory",
     "RuleReference",
+    "RuleSection",
+    "RulesIndexResponse",
+    "RuleVersion",
     "SessionState",
     "SessionUser",
     "TeamSummary",

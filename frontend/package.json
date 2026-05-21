@@ -1,0 +1,33 @@
+{
+  "name": "cdl-react-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "typecheck": "tsc -b"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "latest",
+    "vite": "latest",
+    "typescript": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "lucide-react": "latest",
+    "class-variance-authority": "latest",
+    "clsx": "latest",
+    "tailwind-merge": "latest"
+  },
+  "devDependencies": {
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "eslint": "latest",
+    "@eslint/js": "latest",
+    "typescript-eslint": "latest",
+    "vitest": "latest",
+    "jsdom": "latest"
+  }
+}

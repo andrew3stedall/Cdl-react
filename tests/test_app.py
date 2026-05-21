@@ -20,3 +20,17 @@ def test_theme_contract_endpoint() -> None:
     assert response.status_code == 200
     presets = response.json()
     assert presets[0]["name"] == "classic"
+
+
+def test_user_preferences_endpoint_round_trip() -> None:
+    client = TestClient(create_app())
+
+    initial_response = client.get("/api/me/preferences")
+    update_response = client.put("/api/me/preferences", json={"theme_preset": "compact"})
+    final_response = client.get("/api/me/preferences")
+
+    assert initial_response.status_code == 200
+    assert initial_response.json() == {"theme_preset": "classic"}
+    assert update_response.status_code == 200
+    assert update_response.json() == {"theme_preset": "compact"}
+    assert final_response.json() == {"theme_preset": "compact"}

@@ -1,5 +1,6 @@
 """Shared contract exports."""
 
+from cdl_api.contracts.auth import LoginRequest, LoginResponse, LogoutResponse
 from cdl_api.contracts.common import (
     ApiErrorResponse,
     ErrorCode,
@@ -20,6 +21,9 @@ __all__ = [
     "ErrorCode",
     "FixtureSummary",
     "GameweekSummary",
+    "LoginRequest",
+    "LoginResponse",
+    "LogoutResponse",
     "PlayerSummary",
     "RuleReference",
     "SessionState",

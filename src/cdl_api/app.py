@@ -3,6 +3,7 @@
 from fastapi import FastAPI
 
 from cdl_api.routers.auth import router as auth_router
+from cdl_api.routers.preferences import router as preferences_router
 from cdl_api.routers.rules import router as rules_router
 from cdl_api.settings import get_settings
 
@@ -11,6 +12,7 @@ def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(title=settings.app_name)
     app.include_router(auth_router, prefix=settings.api_prefix)
+    app.include_router(preferences_router, prefix=settings.api_prefix)
     app.include_router(rules_router, prefix=settings.api_prefix)
 
     @app.get("/health")

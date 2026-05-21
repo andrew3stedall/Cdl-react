@@ -17,11 +17,34 @@ export interface SessionState {
   expiresAt: string | null;
 }
 
+export interface ThemePresetTokens {
+  colors: {
+    background: string;
+    foreground: string;
+    surface: string;
+    surfaceForeground: string;
+    primary: string;
+    primaryForeground: string;
+    muted: string;
+    mutedForeground: string;
+    border: string;
+    accent: string;
+  };
+  density: 'comfortable' | 'compact';
+  radius: string;
+  typographyScale: 'standard' | 'condensed';
+  chartPaletteHooks: string[];
+}
+
 export interface ThemePreset {
-  name: string;
+  name: 'classic' | 'dark' | 'compact';
   label: string;
   isDefault: boolean;
-  tokens: Record<string, unknown>;
+  tokens: ThemePresetTokens;
+}
+
+export interface UserPreferences {
+  themePreset: ThemePreset['name'];
 }
 
 export interface TeamSummary {

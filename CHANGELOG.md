@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-05-22 - Implement application shell navigation and presets
+
+### Added
+
+- Added a responsive React application shell with desktop sidebar navigation, mobile drawer navigation, shared reload action, scouting access, and global sign-out affordance.
+- Added route-aware navigation configuration for Squad Management, Team Selection, League, Rules, Dashboard, FDR, and Scouting.
+- Added tokenized `classic`, `dark`, and `compact` visual presets with colour, density, radius, typography, and chart palette hooks.
+- Added user preference API support for `GET /api/me/preferences` and `PUT /api/me/preferences` with repository and service boundaries.
+- Added wiki documentation for shell layout, navigation syntax, visual preset syntax, preference API usage, and cross-feature behaviour.
+
+### Validation
+
+- Added frontend unit tests for navigation configuration.
+- Added frontend integration tests for authenticated shell rendering, mobile drawer behaviour, route changes, preset persistence, and unauthenticated shell blocking.
+- Added backend integration tests for preference API round trip.
+- Added backend service tests for preference defaults, persistence, and unsupported preset fallback.
+- Feature document remains under `docs/features/active/` until CI validation passes.
+
 ## 2026-05-22 - Add rules knowledge base
 
 ### Added

@@ -43,3 +43,39 @@ export interface FixtureSummary {
   awayTeam: TeamSummary;
   status: string;
 }
+
+export type RuleCategory =
+  | 'draft'
+  | 'squads'
+  | 'transfers'
+  | 'trades'
+  | 'matchday'
+  | 'chips'
+  | 'league'
+  | 'playoffs'
+  | 'commissioner';
+
+export interface RuleVersion {
+  version: string;
+  effectiveDate: string;
+  status: string;
+  source: string;
+}
+
+export interface RuleSection {
+  id: string;
+  title: string;
+  category: RuleCategory;
+  summary: string;
+  body: string[];
+  tags: string[];
+  anchors: string[];
+  relatedRuleIds: string[];
+  version: RuleVersion;
+}
+
+export interface RulesIndexResponse {
+  version: RuleVersion;
+  categories: RuleCategory[];
+  sections: RuleSection[];
+}

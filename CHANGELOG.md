@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-05-22 - Add rules knowledge base
+
+### Added
+
+- Added structured rules contracts, service, and API routes.
+- Added searchable rule categories, stable rule identifiers, anchors, and version metadata.
+- Added frontend rules page, search helpers, deep-link helpers, and route redirect behaviour.
+- Added backend contract, service, and API tests.
+- Added frontend search, deep-link, and shell/session behaviour tests.
+- Added rules knowledge base wiki documentation.
+
+### Validation
+
+- Added unit tests for rule contracts and search helpers.
+- Added integration tests for rules API list, category filter, search, and detail endpoints.
+- Added cross-feature tests for rules route behaviour with authenticated and unauthenticated sessions.
+
 ## 2026-05-21 - Add authentication and session management
 
 ### Added

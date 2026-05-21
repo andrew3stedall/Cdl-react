@@ -36,7 +36,10 @@ def get_rule(rule_id: str) -> RuleSection | JSONResponse:
 
     error = ApiErrorResponse(
         code=ErrorCode.NOT_FOUND,
-        message="Rule section not found.",
+        message="Rule section missing.",
         details={"rule_id": rule_id},
     )
-    return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content=error.model_dump(mode="json"))
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND,
+        content=error.model_dump(mode="json"),
+    )

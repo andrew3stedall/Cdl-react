@@ -13,9 +13,7 @@ def build_service() -> AuthenticationService:
 
 def test_login_creates_authenticated_session() -> None:
     service = build_service()
-    result = service.login(
-        LoginRequest(email="manager@example.com", password="demo-login-secret")
-    )
+    result = service.login(LoginRequest(email="manager@example.com", password="demo-login-secret"))
 
     assert result is not None
     session_id, session = result
@@ -34,9 +32,7 @@ def test_login_rejects_invalid_credentials() -> None:
 
 def test_logout_invalidates_session() -> None:
     service = build_service()
-    result = service.login(
-        LoginRequest(email="manager@example.com", password="demo-login-secret")
-    )
+    result = service.login(LoginRequest(email="manager@example.com", password="demo-login-secret"))
     assert result is not None
     session_id, _ = result
 

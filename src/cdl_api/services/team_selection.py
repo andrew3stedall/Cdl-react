@@ -2,7 +2,6 @@
 
 from cdl_api.contracts.common import ValidationIssue
 from cdl_api.contracts.team_selection import (
-    ChipState,
     ChipStatus,
     ChipUpdateRequest,
     FixtureSummaryPanel,

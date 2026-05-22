@@ -1,7 +1,12 @@
 """In-memory league data repository for the modern API foundation."""
 
 from cdl_api.contracts.domain import GameweekSummary, TeamSummary
-from cdl_api.contracts.league_models import FixtureOutcome, FixtureScore, FixtureStatus, LeagueFixture
+from cdl_api.contracts.league_models import (
+    FixtureOutcome,
+    FixtureScore,
+    FixtureStatus,
+    LeagueFixture,
+)
 
 
 class LeagueRepository:

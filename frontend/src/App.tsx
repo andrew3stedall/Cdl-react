@@ -8,6 +8,7 @@ import type { LeagueClient } from './league-api';
 import type { PreferenceClient } from './preferences-api';
 import { RulesPage } from './RulesPage';
 import { SquadManagementPage } from './SquadManagementPage';
+import { TeamSelectionPage } from './TeamSelectionPage';
 import { getDefaultThemePreset } from './theme-presets';
 import { ThemePresetProvider } from './theme-preset-provider';
 
@@ -39,6 +40,28 @@ const featuredRules: RuleSection[] = [
     tags: ['trades', 'commissioner'],
     anchors: ['trade-window'],
     relatedRuleIds: ['commissioner-decisions'],
+    version: rulesVersion,
+  },
+  {
+    id: 'lineup-validation',
+    title: 'Lineup Validation',
+    category: 'squads',
+    summary: 'Lineups must satisfy starter, bench, reserve, and captaincy rules.',
+    body: ['Team selection validation links to this stable rule identifier.'],
+    tags: ['team-selection', 'validation'],
+    anchors: ['lineup-validation'],
+    relatedRuleIds: ['chip-usage', 'captaincy'],
+    version: rulesVersion,
+  },
+  {
+    id: 'chip-usage',
+    title: 'Chip Usage',
+    category: 'squads',
+    summary: 'Only one unused chip can be active at a time.',
+    body: ['Used chips cannot be reactivated.'],
+    tags: ['chips', 'team-selection'],
+    anchors: ['chip-usage'],
+    relatedRuleIds: ['lineup-validation'],
     version: rulesVersion,
   },
 ];
@@ -101,6 +124,10 @@ export function App({
 
   if (currentPath.startsWith('/squad-management')) {
     routeContent = <SquadManagementPage preset={preset} />;
+  }
+
+  if (currentPath.startsWith('/team-selection')) {
+    routeContent = <TeamSelectionPage preset={preset} />;
   }
 
   return (

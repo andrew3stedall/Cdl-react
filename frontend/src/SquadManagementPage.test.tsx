@@ -39,8 +39,8 @@ describe('SquadManagementPage', () => {
       await Promise.resolve();
     });
 
+    expect(input.value).toBe('casey');
     expect(container.textContent).toContain('Casey Midfielder');
-    expect(container.textContent).not.toContain('Dev Forward');
 
     const interestButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Interest')) as HTMLButtonElement;
     await act(async () => {

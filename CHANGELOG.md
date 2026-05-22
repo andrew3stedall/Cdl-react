@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-05-23 - Implement fixture difficulty ratings
+
+### Added
+
+- Added FDR contracts for attack/defence views, team rows, fixture cells, filters, rating bands, and accessible rating scale tokens.
+- Added in-memory FDR repository and `FixtureDifficultyService` for attack and defence retrieval, team/gameweek filtering, average rating calculation, and rating scale exposure.
+- Added API routes for `GET /api/fdr`, `GET /api/fdr/attack`, `GET /api/fdr/defence`, and `GET /api/fdr/scales`.
+- Added `/fdr` React route inside the shared shell with team and gameweek filters, attack and defence dense tables, sticky team columns, responsive horizontal scrolling, and rating legend.
+- Added wiki documentation for FDR calculation ownership, API syntax, rating scale examples, and theme preset integration.
+
+### Validation
+
+- Added backend service tests for combined responses, team/gameweek filters, sorted average ratings, and accessible scale tokens.
+- Added backend API integration tests for combined FDR, attack/defence filters, and rating scale endpoints.
+- Added frontend tests for FDR rendering, filter re-query behaviour, token-driven rating classes, and shell/session route behaviour.
+- Feature document remains under `docs/features/active/` until CI validation passes.
+
 ## 2026-05-23 - Implement analytics dashboard
 
 ### Added

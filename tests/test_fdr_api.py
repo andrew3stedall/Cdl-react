@@ -29,9 +29,15 @@ def test_attack_and_defence_fdr_endpoints_support_filters() -> None:
 
     assert attack_response.status_code == 200
     assert defence_response.status_code == 200
-    assert attack_response.json()["rows"][0]["team"]["id"] == "arsenal"
-    assert [fixture["gameweek"]["number"] for fixture in attack_response.json()["rows"][0]["fixtures"]] == [13, 14]
-    assert defence_response.json()["rows"][0]["team"]["id"] == "man-city"
+    attack_body = attack_response.json()
+    defence_body = defence_response.json()
+    gameweek_numbers = [
+        fixture["gameweek"]["number"]
+        for fixture in attack_body["rows"][0]["fixtures"]
+    ]
+    assert attack_body["rows"][0]["team"]["id"] == "arsenal"
+    assert gameweek_numbers == [13, 14]
+    assert defence_body["rows"][0]["team"]["id"] == "man-city"
 
 
 def test_fdr_scales_endpoint_returns_accessible_theme_tokens() -> None:

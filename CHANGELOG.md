@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-05-23 - Implement analytics dashboard
+
+### Added
+
+- Added analytics dashboard contracts for dashboard config, metrics, dimensions, filters, widget definitions, widget query requests, chart series, table rows, and drill-down responses.
+- Added in-memory dashboard repository and service boundaries for metric catalog validation, widget configuration, filtered aggregations, and drill-down rows.
+- Added API routes for `GET /api/dashboard/config`, `POST /api/dashboard/widgets/{widget_id}/query`, `POST /api/dashboard/widgets/{widget_id}/drilldown`, `GET /api/dashboard/filters`, `GET /api/dashboard/metrics`, and `GET /api/dashboard/dimensions`.
+- Added `/dashboard` React route inside the shared shell with global filters, responsive widget grid, accessible chart bars, fallback tables, and drill-down dialog.
+- Added wiki documentation for dashboard configuration syntax, catalog allowlists, query examples, and UI behaviour.
+
+### Validation
+
+- Added backend service tests for catalog/config exposure, filtered widget queries, filter validation, and drill-down context.
+- Added backend API integration tests for config/catalog endpoints, widget query validation, drill-down rows, and missing-widget errors.
+- Added frontend tests for dashboard rendering, filter re-query behaviour, drill-down flows, and shell/session route behaviour.
+- Feature document remains under `docs/features/active/` until CI validation passes.
+
 ## 2026-05-22 - Maintain legacy migration feature index
 
 ### Added

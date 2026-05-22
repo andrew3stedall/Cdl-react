@@ -1,0 +1,103 @@
+.analytics-dashboard {
+  display: grid;
+  gap: 1rem;
+}
+
+.dashboard-filters {
+  align-items: end;
+  background: var(--cdl-accent);
+  border: 1px solid var(--cdl-border);
+  border-radius: var(--cdl-radius);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.dashboard-widget-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.dashboard-widget-card {
+  display: grid;
+  gap: 1rem;
+}
+
+.dashboard-chart {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.dashboard-chart-bar {
+  align-items: center;
+  background: linear-gradient(
+    to right,
+    var(--cdl-primary) var(--bar-size),
+    var(--cdl-accent) var(--bar-size)
+  );
+  border: 1px solid var(--cdl-border);
+  border-radius: var(--cdl-radius);
+  color: var(--cdl-foreground);
+  cursor: pointer;
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: 1fr auto;
+  min-height: 2.5rem;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+}
+
+.dashboard-widget-card table,
+.dashboard-drilldown table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.dashboard-widget-card th,
+.dashboard-widget-card td,
+.dashboard-drilldown th,
+.dashboard-drilldown td {
+  border-bottom: 1px solid var(--cdl-border);
+  padding: 0.55rem 0.4rem;
+  text-align: left;
+}
+
+.dashboard-widget-card th,
+.dashboard-drilldown th {
+  color: #64748b;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.dashboard-drilldown {
+  background: var(--cdl-surface);
+  border: 1px solid var(--cdl-border);
+  border-radius: var(--cdl-radius);
+  box-shadow: 0 1rem 2rem rgb(15 23 42 / 18%);
+  display: grid;
+  gap: 1rem;
+  inset: auto 1.25rem 1.25rem auto;
+  max-width: min(34rem, calc(100vw - 2rem));
+  padding: 1rem;
+  position: fixed;
+  z-index: 20;
+}
+
+.dashboard-drilldown header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+@media (max-width: 900px) {
+  .dashboard-widget-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-drilldown {
+    inset: auto 1rem 1rem;
+  }
+}

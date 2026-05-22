@@ -1,0 +1,143 @@
+.fdr-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.fdr-filters {
+  align-items: end;
+  background: var(--cdl-accent);
+  border: 1px solid var(--cdl-border);
+  border-radius: var(--cdl-radius);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.fdr-legend,
+.fdr-table-card {
+  display: grid;
+  gap: 1rem;
+}
+
+.fdr-legend-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.fdr-rating,
+.fdr-cell {
+  border: 1px solid var(--cdl-border);
+  border-radius: calc(var(--cdl-radius) * 0.75);
+  display: inline-flex;
+  font-weight: 800;
+  gap: 0.35rem;
+  justify-content: center;
+  min-width: 4rem;
+  padding: 0.3rem 0.5rem;
+}
+
+.fdr-table-scroll {
+  overflow-x: auto;
+}
+
+.fdr-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 44rem;
+  width: 100%;
+}
+
+.fdr-table th,
+.fdr-table td {
+  border-bottom: 1px solid var(--cdl-border);
+  padding: 0.45rem;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.fdr-table thead th {
+  background: var(--cdl-surface);
+  color: #64748b;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.fdr-team-column {
+  background: var(--cdl-surface);
+  left: 0;
+  position: sticky;
+  text-align: left !important;
+  z-index: 1;
+}
+
+.fdr-cell {
+  align-items: center;
+  flex-direction: column;
+  line-height: 1.1;
+  min-height: 3.25rem;
+  width: 100%;
+}
+
+.fdr-cell small {
+  font-size: 0.75rem;
+}
+
+.fdr-empty-cell {
+  color: #64748b;
+}
+
+.fdr-rating-1 {
+  background: var(--fdr-1-background, #dcfce7);
+  color: var(--fdr-1-foreground, #14532d);
+}
+
+.fdr-rating-2 {
+  background: var(--fdr-2-background, #bbf7d0);
+  color: var(--fdr-2-foreground, #166534);
+}
+
+.fdr-rating-3 {
+  background: var(--fdr-3-background, #fef3c7);
+  color: var(--fdr-3-foreground, #78350f);
+}
+
+.fdr-rating-4 {
+  background: var(--fdr-4-background, #fed7aa);
+  color: var(--fdr-4-foreground, #7c2d12);
+}
+
+.fdr-rating-5 {
+  background: var(--fdr-5-background, #fecaca);
+  color: var(--fdr-5-foreground, #7f1d1d);
+}
+
+[data-theme-preset='dark'] {
+  --fdr-1-background: #14532d;
+  --fdr-1-foreground: #dcfce7;
+  --fdr-2-background: #166534;
+  --fdr-2-foreground: #bbf7d0;
+  --fdr-3-background: #78350f;
+  --fdr-3-foreground: #fef3c7;
+  --fdr-4-background: #7c2d12;
+  --fdr-4-foreground: #fed7aa;
+  --fdr-5-background: #7f1d1d;
+  --fdr-5-foreground: #fecaca;
+}
+
+[data-theme-preset='compact'] .fdr-table th,
+[data-theme-preset='compact'] .fdr-table td {
+  padding: 0.3rem;
+}
+
+@media (max-width: 900px) {
+  .fdr-table {
+    min-width: 36rem;
+  }
+
+  .fdr-cell {
+    min-height: 2.8rem;
+  }
+}

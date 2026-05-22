@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 
 import { HttpLeagueClient, type LeagueClient, type LeagueFixture, type LeagueSnapshot } from './league-api';
 
+const defaultLeagueClient = new HttpLeagueClient();
+
 interface LeaguePageProps {
   leagueClient?: LeagueClient;
 }
 
-export function LeaguePage({ leagueClient = new HttpLeagueClient() }: LeaguePageProps) {
+export function LeaguePage({ leagueClient = defaultLeagueClient }: LeaguePageProps) {
   const [snapshot, setSnapshot] = useState<LeagueSnapshot | null>(null);
   const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
 

@@ -35,11 +35,15 @@ class FixtureDifficultyService:
         active_filters = filters or FixtureDifficultyFilters()
         fixtures_by_team = self._repository.list_fixtures(view)
         teams = self._repository.list_teams()
-        selected_team_ids = {active_filters.team_id} if active_filters.team_id else {team.id for team in teams}
+        selected_team_ids = (
+            {active_filters.team_id}
+            if active_filters.team_id
+            else {team.id for team in teams}
+        )
         available_gameweeks = [
             gameweek
             for gameweek in self._repository.list_gameweeks()
-            if active_filters.gameweek_start <= gameweek.number <= active_filters.gameweek_end
+            if self._within_gameweek_range(gameweek.number, active_filters)
         ]
         rows: list[FixtureDifficultyRow] = []
 
@@ -49,7 +53,7 @@ class FixtureDifficultyService:
             fixtures = [
                 fixture
                 for fixture in fixtures_by_team[team.id]
-                if active_filters.gameweek_start <= fixture.gameweek.number <= active_filters.gameweek_end
+                if self._within_gameweek_range(fixture.gameweek.number, active_filters)
             ]
             if not fixtures:
                 continue
@@ -77,3 +81,10 @@ class FixtureDifficultyService:
 
     def get_scales(self) -> list[FixtureDifficultyScaleStep]:
         return self._repository.list_scales()
+
+    def _within_gameweek_range(
+        self,
+        gameweek_number: int,
+        filters: FixtureDifficultyFilters,
+    ) -> bool:
+        return filters.gameweek_start <= gameweek_number <= filters.gameweek_end

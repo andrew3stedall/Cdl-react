@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-05-22 - Implement league fixtures and table
+
+### Added
+
+- Added league fixture, table, knockout, and head-to-head backend contracts.
+- Added in-memory league repository data for current fixtures, next fixtures, playoff context, and started fixture details.
+- Added `FixtureService`, `LeagueTableService`, `KnockoutService`, and `HeadToHeadService` boundaries.
+- Added API routes for current fixtures, next fixtures, all fixtures, fixture detail, table, knockout, and head-to-head data under `/api/league`.
+- Added a React league route surface inside the authenticated application shell.
+
+### Validation
+
+- Added backend service tests for fixture separation, fixture details, table calculations, knockout context, and head-to-head context.
+- Added backend API tests for league fixture, table, knockout, and head-to-head endpoints.
+- Added frontend shell tests for authenticated league route rendering.
+- Feature document remains under `docs/features/active/` until CI validation passes.
+
 ## 2026-05-22 - Implement application shell navigation and presets
 
 ### Added

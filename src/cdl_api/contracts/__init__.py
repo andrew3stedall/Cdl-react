@@ -13,6 +13,16 @@ from cdl_api.contracts.domain import (
     PlayerSummary,
     TeamSummary,
 )
+from cdl_api.contracts.league_models import (
+    FixtureDetailResponse,
+    FixtureScore,
+    FixtureStatus,
+    HeadToHeadResponse,
+    KnockoutResponse,
+    LeagueFixture,
+    LeagueFixturesResponse,
+    LeagueTableResponse,
+)
 from cdl_api.contracts.rules_models import (
     RuleCategory,
     RuleSection,
@@ -25,8 +35,16 @@ from cdl_api.contracts.theme import ThemePreset, UserPreferences
 __all__ = [
     "ApiErrorResponse",
     "ErrorCode",
+    "FixtureDetailResponse",
+    "FixtureScore",
+    "FixtureStatus",
     "FixtureSummary",
     "GameweekSummary",
+    "HeadToHeadResponse",
+    "KnockoutResponse",
+    "LeagueFixture",
+    "LeagueFixturesResponse",
+    "LeagueTableResponse",
     "LoginRequest",
     "LoginResponse",
     "LogoutResponse",

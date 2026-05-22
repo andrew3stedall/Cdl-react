@@ -8,8 +8,18 @@ def valid_payload() -> dict[str, object]:
         "players": [
             {"player_id": "player-1", "slot": "starter", "slot_order": 1},
             {"player_id": "player-2", "slot": "starter", "slot_order": 2},
-            {"player_id": "player-3", "slot": "starter", "slot_order": 3, "is_captain": True},
-            {"player_id": "player-4", "slot": "bench", "slot_order": 1, "is_vice_captain": True},
+            {
+                "player_id": "player-3",
+                "slot": "starter",
+                "slot_order": 3,
+                "is_captain": True,
+            },
+            {
+                "player_id": "player-4",
+                "slot": "bench",
+                "slot_order": 1,
+                "is_vice_captain": True,
+            },
             {"player_id": "player-5", "slot": "reserve", "slot_order": 1},
         ]
     }
@@ -47,7 +57,8 @@ def test_team_selection_lineup_validation_endpoint() -> None:
     assert response.status_code == 422
     payload = response.json()
     assert payload["code"] == "validation_error"
-    assert "lineup-validation" in {issue["rule_reference"] for issue in payload["issues"]}
+    rule_references = {issue["rule_reference"] for issue in payload["issues"]}
+    assert "lineup-validation" in rule_references
 
 
 def test_chip_activation_and_validation_endpoint() -> None:
@@ -56,7 +67,8 @@ def test_chip_activation_and_validation_endpoint() -> None:
     response = client.put("/api/team-selection/chips/wildcard", json={"active": True})
 
     assert response.status_code == 200
-    assert next(chip for chip in response.json()["chips"] if chip["id"] == "wildcard")["status"] == "active"
+    wildcard = next(chip for chip in response.json()["chips"] if chip["id"] == "wildcard")
+    assert wildcard["status"] == "active"
 
     invalid_response = client.put("/api/team-selection/chips/bench-boost", json={"active": True})
 

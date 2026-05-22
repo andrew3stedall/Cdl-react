@@ -2,11 +2,13 @@
 
 from cdl_api.contracts.common import ValidationIssue
 from cdl_api.contracts.team_selection import (
+    ChipState,
     ChipStatus,
     ChipUpdateRequest,
     FixtureSummaryPanel,
     LineupSlot,
     LineupUpdateRequest,
+    TeamSelectionPlayer,
     TeamSelectionResponse,
 )
 from cdl_api.repositories.team_selection import InMemoryTeamSelectionRepository
@@ -73,23 +75,39 @@ class TeamSelectionService:
             )
         if len(bench) != 1:
             issues.append(
-                ValidationIssue(field="players", message="Exactly one bench player is required.", rule_reference=LINEUP_RULE)
+                ValidationIssue(
+                    field="players",
+                    message="Exactly one bench player is required.",
+                    rule_reference=LINEUP_RULE,
+                )
             )
         if len(reserves) != 1:
             issues.append(
-                ValidationIssue(field="players", message="Exactly one reserve player is required.", rule_reference=LINEUP_RULE)
+                ValidationIssue(
+                    field="players",
+                    message="Exactly one reserve player is required.",
+                    rule_reference=LINEUP_RULE,
+                )
             )
         if sum(1 for player in request.players if player.is_captain) != 1:
             issues.append(
-                ValidationIssue(field="captain", message="Exactly one captain is required.", rule_reference="captaincy")
+                ValidationIssue(
+                    field="captain",
+                    message="Exactly one captain is required.",
+                    rule_reference="captaincy",
+                )
             )
         if sum(1 for player in request.players if player.is_vice_captain) != 1:
             issues.append(
-                ValidationIssue(field="vice_captain", message="Exactly one vice captain is required.", rule_reference="captaincy")
+                ValidationIssue(
+                    field="vice_captain",
+                    message="Exactly one vice captain is required.",
+                    rule_reference="captaincy",
+                )
             )
         return issues
 
-    def validate_players(self, players) -> list[ValidationIssue]:
+    def validate_players(self, players: list[TeamSelectionPlayer]) -> list[ValidationIssue]:
         starters = [player for player in players if player.slot == LineupSlot.STARTER]
         if len(starters) == 3:
             return []
@@ -112,22 +130,33 @@ class ChipService:
         if chip is None:
             raise TeamSelectionValidationError(
                 "Unknown chip.",
-                [ValidationIssue(field="chip_id", message="Chip could not be found.", rule_reference=CHIP_RULE)],
+                [self._chip_issue("Chip could not be found.")],
             )
         if chip.status == ChipStatus.USED:
             raise TeamSelectionValidationError(
                 "Chip has already been used.",
-                [ValidationIssue(field="chip_id", message="Used chips cannot be activated.", rule_reference=CHIP_RULE)],
+                [self._chip_issue("Used chips cannot be activated.")],
             )
-        active_chips = [candidate for candidate in chips if candidate.status == ChipStatus.ACTIVE and candidate.id != chip_id]
+        active_chips = [
+            candidate
+            for candidate in chips
+            if candidate.status == ChipStatus.ACTIVE and candidate.id != chip_id
+        ]
         if request.active and active_chips:
             raise TeamSelectionValidationError(
                 "Only one chip can be active at a time.",
-                [ValidationIssue(field="chip_id", message="Deactivate the active chip first.", rule_reference=CHIP_RULE)],
+                [self._chip_issue("Deactivate the active chip first.")],
             )
         chip.status = ChipStatus.ACTIVE if request.active else ChipStatus.AVAILABLE
         self._repository.save_chips(chips)
         return TeamSelectionService(self._repository).get_team_selection()
+
+    def _chip_issue(self, message: str) -> ValidationIssue:
+        return ValidationIssue(
+            field="chip_id",
+            message=message,
+            rule_reference=CHIP_RULE,
+        )
 
 
 class FixtureSummaryService:

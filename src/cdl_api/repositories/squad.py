@@ -3,7 +3,13 @@
 from copy import deepcopy
 
 from cdl_api.contracts.domain import GameweekSummary, TeamSummary
-from cdl_api.contracts.squad import PlayerDetail, PlayerMetric, PlayerOwnershipStatus, PlayerPosition, ScoutingFilters
+from cdl_api.contracts.squad import (
+    PlayerDetail,
+    PlayerMetric,
+    PlayerOwnershipStatus,
+    PlayerPosition,
+    ScoutingFilters,
+)
 
 
 class InMemorySquadRepository:
@@ -69,20 +75,30 @@ class InMemorySquadRepository:
         ]
 
     def list_squad_players(self) -> list[PlayerDetail]:
-        return [deepcopy(player) for player in self._players if player.draft_team == self.manager_team]
+        return [
+            deepcopy(player)
+            for player in self._players
+            if player.draft_team == self.manager_team
+        ]
 
     def list_players(self, filters: ScoutingFilters) -> list[PlayerDetail]:
         players = deepcopy(self._players)
         if filters.position is not None:
             players = [player for player in players if player.position == filters.position]
         if filters.draft_team_id is not None:
-            players = [player for player in players if player.draft_team and player.draft_team.id == filters.draft_team_id]
+            players = [
+                player
+                for player in players
+                if player.draft_team and player.draft_team.id == filters.draft_team_id
+            ]
         if filters.epl_team_id is not None:
             players = [player for player in players if player.epl_team.id == filters.epl_team_id]
         if filters.query:
             query = filters.query.lower()
             players = [player for player in players if query in player.display_name.lower()]
-        metric_attribute = "points" if filters.metric == PlayerMetric.TOTAL_POINTS else filters.metric.value
+        metric_attribute = (
+            "points" if filters.metric == PlayerMetric.TOTAL_POINTS else filters.metric.value
+        )
         return sorted(players, key=lambda player: getattr(player, metric_attribute), reverse=True)
 
     def get_player(self, player_id: str) -> PlayerDetail | None:

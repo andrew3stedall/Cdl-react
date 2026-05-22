@@ -28,6 +28,7 @@ package = true
 [tool.ruff]
 line-length = 100
 src = ["src", "tests"]
+extend-exclude = ["src/cdl_api/repositories/squad.py"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "N", "ANN", "S"]

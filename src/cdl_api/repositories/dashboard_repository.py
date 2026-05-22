@@ -202,7 +202,10 @@ class DashboardRepository:
 
     def list_table_columns(self, widget: DashboardWidgetDefinition) -> list[DashboardTableColumn]:
         return [
-            DashboardTableColumn(id=widget.dimension_id, label=widget.title.replace(" table", "")),
+            DashboardTableColumn(
+                id=widget.dimension_id,
+                label=widget.title.replace(" table", ""),
+            ),
             DashboardTableColumn(
                 id=widget.metric_id,
                 label=widget.metric_id.replace("_", " ").title(),
@@ -227,6 +230,9 @@ class DashboardRepository:
         widget: DashboardWidgetDefinition,
         point_key: str,
     ) -> list[DashboardTableRow]:
+        fallback_rows = [
+            {"player": "Sample Player", "team": "Sample Team", "points": 6},
+        ]
         detail_rows = {
             "castle": [
                 {"player": "Casey Midfielder", "team": "Castle FC", "points": 14},
@@ -244,5 +250,5 @@ class DashboardRepository:
                 {"player": "Riley Forward", "team": "Drafton", "points": 12},
                 {"player": "Jordan Striker", "team": "North Keep", "points": 10},
             ],
-        }.get(point_key, [{"player": "Sample Player", "team": "Sample Team", "points": 6}])
+        }.get(point_key, fallback_rows)
         return [DashboardTableRow(cells=row) for row in detail_rows]

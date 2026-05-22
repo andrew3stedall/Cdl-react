@@ -7,6 +7,7 @@ from cdl_api.routers.league import router as league_router
 from cdl_api.routers.preferences import router as preferences_router
 from cdl_api.routers.rules import router as rules_router
 from cdl_api.routers.squad import router as squad_router
+from cdl_api.routers.team_selection import router as team_selection_router
 from cdl_api.settings import get_settings
 
 
@@ -18,6 +19,7 @@ def create_app() -> FastAPI:
     app.include_router(rules_router, prefix=settings.api_prefix)
     app.include_router(league_router, prefix=settings.api_prefix)
     app.include_router(squad_router, prefix=settings.api_prefix)
+    app.include_router(team_selection_router, prefix=settings.api_prefix)
 
     @app.get("/health")
     def health() -> dict[str, str]:

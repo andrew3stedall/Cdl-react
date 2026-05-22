@@ -86,12 +86,14 @@ class SquadManagementService:
         return list(self._trades.values())
 
     def create_trade(self, request: TradeCreateRequest) -> TradeProposal:
-        sent_players = [
-            self._require_player(player_id) for player_id in request.offered_player_ids
-        ]
-        wanted_players = [
-            self._require_player(player_id) for player_id in request.requested_player_ids
-        ]
+        sent_players = []
+        for player_id in request.offered_player_ids:
+            sent_players.append(self._require_player(player_id))
+
+        wanted_players = []
+        for player_id in request.requested_player_ids:
+            wanted_players.append(self._require_player(player_id))
+
         for player in sent_players:
             if player.draft_team != self._repository.manager_team:
                 issue = ValidationIssue(
@@ -100,24 +102,25 @@ class SquadManagementService:
                     rule_reference="trade-window",
                 )
                 raise SquadValidationError("Invalid trade asset.", [issue])
-        assets = [
-            *[
+
+        assets: list[TradeAsset] = []
+        for player in sent_players:
+            assets.append(
                 TradeAsset(
                     player=player,
                     from_team=self._repository.manager_team,
                     to_team=self._repository.rival_team,
                 )
-                for player in sent_players
-            ],
-            *[
+            )
+        for player in wanted_players:
+            assets.append(
                 TradeAsset(
                     player=player,
                     from_team=self._repository.rival_team,
                     to_team=self._repository.manager_team,
                 )
-                for player in wanted_players
-            ],
-        ]
+            )
+
         trade = TradeProposal(
             id=f"trade-{uuid4().hex[:8]}",
             status=TradeStatus.PROPOSED,

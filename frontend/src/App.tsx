@@ -7,6 +7,7 @@ import { LeaguePage } from './LeaguePage';
 import type { LeagueClient } from './league-api';
 import type { PreferenceClient } from './preferences-api';
 import { RulesPage } from './RulesPage';
+import { SquadManagementPage } from './SquadManagementPage';
 import { getDefaultThemePreset } from './theme-presets';
 import { ThemePresetProvider } from './theme-preset-provider';
 
@@ -92,6 +93,16 @@ export function App({
     );
   }
 
+  let routeContent = <RulesPage categories={['squads', 'trades']} sections={featuredRules} preset={preset} />;
+
+  if (currentPath.startsWith('/league')) {
+    routeContent = <LeaguePage leagueClient={leagueClient} />;
+  }
+
+  if (currentPath.startsWith('/squad-management')) {
+    routeContent = <SquadManagementPage preset={preset} />;
+  }
+
   return (
     <ThemePresetProvider preferenceClient={preferenceClient}>
       <AppShell
@@ -110,15 +121,7 @@ export function App({
         session={session}
       >
         <p className="eyebrow">Data refreshes: {refreshCount}</p>
-        {currentPath.startsWith('/league') ? (
-          <LeaguePage leagueClient={leagueClient} />
-        ) : (
-          <RulesPage
-            categories={['squads', 'trades']}
-            sections={featuredRules}
-            preset={preset}
-          />
-        )}
+        {routeContent}
       </AppShell>
     </ThemePresetProvider>
   );

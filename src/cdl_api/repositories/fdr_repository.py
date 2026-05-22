@@ -27,47 +27,25 @@ class FixtureDifficultyRepository:
         ]
 
     def list_scales(self) -> list[FixtureDifficultyScaleStep]:
+        scale_rows = [
+            (1, FixtureDifficultyBand.VERY_EASY, "Very easy", 7.8),
+            (2, FixtureDifficultyBand.EASY, "Easy", 6.9),
+            (3, FixtureDifficultyBand.MEDIUM, "Medium", 5.4),
+            (4, FixtureDifficultyBand.HARD, "Hard", 6.1),
+            (5, FixtureDifficultyBand.VERY_HARD, "Very hard", 7.2),
+        ]
         return [
-            FixtureDifficultyScaleStep(
-                rating=1,
-                band=FixtureDifficultyBand.VERY_EASY,
-                label="Very easy",
-                foreground_token="fdr-1-foreground",
-                background_token="fdr-1-background",
-                contrast_ratio=7.8,
-            ),
-            FixtureDifficultyScaleStep(
-                rating=2,
-                band=FixtureDifficultyBand.EASY,
-                label="Easy",
-                foreground_token="fdr-2-foreground",
-                background_token="fdr-2-background",
-                contrast_ratio=6.9,
-            ),
-            FixtureDifficultyScaleStep(
-                rating=3,
-                band=FixtureDifficultyBand.MEDIUM,
-                label="Medium",
-                foreground_token="fdr-3-foreground",
-                background_token="fdr-3-background",
-                contrast_ratio=5.4,
-            ),
-            FixtureDifficultyScaleStep(
-                rating=4,
-                band=FixtureDifficultyBand.HARD,
-                label="Hard",
-                foreground_token="fdr-4-foreground",
-                background_token="fdr-4-background",
-                contrast_ratio=6.1,
-            ),
-            FixtureDifficultyScaleStep(
-                rating=5,
-                band=FixtureDifficultyBand.VERY_HARD,
-                label="Very hard",
-                foreground_token="fdr-5-foreground",
-                background_token="fdr-5-background",
-                contrast_ratio=7.2,
-            ),
+            FixtureDifficultyScaleStep.model_validate(
+                {
+                    "rating": rating,
+                    "band": band,
+                    "label": label,
+                    "foreground_token": f"fdr-{rating}-foreground",
+                    "background_token": f"fdr-{rating}-background",
+                    "contrast_ratio": contrast_ratio,
+                }
+            )
+            for rating, band, label, contrast_ratio in scale_rows
         ]
 
     def list_fixtures(

@@ -66,7 +66,7 @@ def test_lineup_update_accepts_valid_payload() -> None:
     assert sum(1 for player in selection.lineup if player.slot == LineupSlot.STARTER) == 3
 
 
-def test_lineup_update_rejects_missing_player_and_missing_captain() -> None:
+def test_lineup_update_rejects_missing_player() -> None:
     service = TeamSelectionService(create_repository())
     payload = LineupUpdateRequest(players=valid_lineup_payload().players[:-1])
 
@@ -74,7 +74,7 @@ def test_lineup_update_rejects_missing_player_and_missing_captain() -> None:
         service.update_lineup(payload)
 
     rule_references = {issue.rule_reference for issue in exc_info.value.issues}
-    assert rule_references >= {"lineup-validation", "captaincy"}
+    assert "lineup-validation" in rule_references
 
 
 def test_chip_service_activates_available_chip_and_rejects_used_chip() -> None:

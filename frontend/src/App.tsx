@@ -4,6 +4,7 @@ import { canAccessProtectedRoute } from './auth';
 import { AppShell } from './AppShell';
 import type { RuleSection, SessionState } from './contracts';
 import { LeaguePage } from './LeaguePage';
+import type { LeagueClient } from './league-api';
 import type { PreferenceClient } from './preferences-api';
 import { RulesPage } from './RulesPage';
 import { getDefaultThemePreset } from './theme-presets';
@@ -54,12 +55,14 @@ const defaultSession: SessionState = {
 
 interface AppProps {
   initialPath?: string;
+  leagueClient?: LeagueClient;
   preferenceClient?: PreferenceClient;
   session?: SessionState;
 }
 
 export function App({
   initialPath = window.location.pathname,
+  leagueClient,
   preferenceClient,
   session = defaultSession,
 }: AppProps) {
@@ -108,7 +111,7 @@ export function App({
       >
         <p className="eyebrow">Data refreshes: {refreshCount}</p>
         {currentPath.startsWith('/league') ? (
-          <LeaguePage />
+          <LeaguePage leagueClient={leagueClient} />
         ) : (
           <RulesPage
             categories={['squads', 'trades']}

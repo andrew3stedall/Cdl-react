@@ -1,141 +1,40 @@
-interface Team {
-  id: string;
-  name: string;
-  shortName: string;
+import { useEffect, useState } from 'react';
+
+import { HttpLeagueClient, type LeagueClient, type LeagueFixture, type LeagueSnapshot } from './league-api';
+
+interface LeaguePageProps {
+  leagueClient?: LeagueClient;
 }
 
-interface Fixture {
-  id: string;
-  round: string;
-  home: Team;
-  away: Team;
-  status: 'pending' | 'started' | 'complete';
-  score: string;
-  current?: boolean;
-  next?: boolean;
-  detailAvailable?: boolean;
-}
+export function LeaguePage({ leagueClient = new HttpLeagueClient() }: LeaguePageProps) {
+  const [snapshot, setSnapshot] = useState<LeagueSnapshot | null>(null);
+  const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
 
-interface TableRow {
-  position: number;
-  team: Team;
-  played: number;
-  wins: number;
-  draws: number;
-  losses: number;
-  pointsFor: number;
-  pointsAgainst: number;
-  pointsDifference: number;
-  leaguePoints: number;
-}
+  useEffect(() => {
+    let isActive = true;
 
-const teams = {
-  castle: { id: 'castle', name: 'Castle United', shortName: 'CAS' },
-  drafton: { id: 'drafton', name: 'Drafton Rovers', shortName: 'DRA' },
-  keepers: { id: 'keepers', name: 'Keeper City', shortName: 'KPR' },
-  wildcards: { id: 'wildcards', name: 'Wildcard Athletic', shortName: 'WCA' },
-};
+    async function loadLeagueData() {
+      setStatus('loading');
+      try {
+        const leagueSnapshot = await leagueClient.getLeagueSnapshot();
+        if (isActive) {
+          setSnapshot(leagueSnapshot);
+          setStatus('loaded');
+        }
+      } catch {
+        if (isActive) {
+          setStatus('error');
+        }
+      }
+    }
 
-const fixtures: Fixture[] = [
-  {
-    id: 'fixture-1201',
-    round: 'Gameweek 12',
-    home: teams.castle,
-    away: teams.drafton,
-    status: 'started',
-    score: '58 - 52',
-    current: true,
-    detailAvailable: true,
-  },
-  {
-    id: 'fixture-1202',
-    round: 'Gameweek 12',
-    home: teams.keepers,
-    away: teams.wildcards,
-    status: 'pending',
-    score: 'Pending',
-    current: true,
-  },
-  {
-    id: 'fixture-1301',
-    round: 'Gameweek 13',
-    home: teams.drafton,
-    away: teams.keepers,
-    status: 'pending',
-    score: 'Pending',
-    next: true,
-  },
-  {
-    id: 'fixture-1302',
-    round: 'Gameweek 13',
-    home: teams.wildcards,
-    away: teams.castle,
-    status: 'pending',
-    score: 'Pending',
-    next: true,
-  },
-  {
-    id: 'fixture-sf-01',
-    round: 'Semi Final',
-    home: teams.castle,
-    away: teams.keepers,
-    status: 'pending',
-    score: 'Pending',
-  },
-];
+    void loadLeagueData();
 
-const tableRows: TableRow[] = [
-  {
-    position: 1,
-    team: teams.castle,
-    played: 1,
-    wins: 1,
-    draws: 0,
-    losses: 0,
-    pointsFor: 58,
-    pointsAgainst: 52,
-    pointsDifference: 6,
-    leaguePoints: 3,
-  },
-  {
-    position: 2,
-    team: teams.keepers,
-    played: 0,
-    wins: 0,
-    draws: 0,
-    losses: 0,
-    pointsFor: 0,
-    pointsAgainst: 0,
-    pointsDifference: 0,
-    leaguePoints: 0,
-  },
-  {
-    position: 3,
-    team: teams.wildcards,
-    played: 0,
-    wins: 0,
-    draws: 0,
-    losses: 0,
-    pointsFor: 0,
-    pointsAgainst: 0,
-    pointsDifference: 0,
-    leaguePoints: 0,
-  },
-  {
-    position: 4,
-    team: teams.drafton,
-    played: 1,
-    wins: 0,
-    draws: 0,
-    losses: 1,
-    pointsFor: 52,
-    pointsAgainst: 58,
-    pointsDifference: -6,
-    leaguePoints: 0,
-  },
-];
+    return () => {
+      isActive = false;
+    };
+  }, [leagueClient]);
 
-export function LeaguePage() {
   return (
     <main aria-labelledby="league-title" className="feature-screen">
       <header>
@@ -144,14 +43,28 @@ export function LeaguePage() {
         <p>Current fixtures, upcoming fixtures, standings, knockout, and head-to-head context.</p>
       </header>
 
+      {status === 'loading' ? <p role="status">Loading league data</p> : null}
+      {status === 'error' ? (
+        <p role="alert">Unable to load league data from the league API.</p>
+      ) : null}
+      {snapshot ? <LeagueContent snapshot={snapshot} /> : null}
+    </main>
+  );
+}
+
+function LeagueContent({ snapshot }: { snapshot: LeagueSnapshot }) {
+  return (
+    <>
       <section aria-label="Current fixtures">
         <h2>Current fixtures</h2>
-        <FixtureTable fixtures={fixtures.filter((fixture) => fixture.current)} />
+        <p>{snapshot.currentFixtures.gameweek?.name ?? 'Current gameweek'}</p>
+        <FixtureTable fixtures={snapshot.currentFixtures.fixtures} />
       </section>
 
       <section aria-label="Upcoming fixtures">
         <h2>Upcoming fixtures</h2>
-        <FixtureTable fixtures={fixtures.filter((fixture) => fixture.next)} />
+        <p>{snapshot.nextFixtures.gameweek?.name ?? 'Next gameweek'}</p>
+        <FixtureTable fixtures={snapshot.nextFixtures.fixtures} />
       </section>
 
       <section aria-label="League standings">
@@ -172,7 +85,7 @@ export function LeaguePage() {
             </tr>
           </thead>
           <tbody>
-            {tableRows.map((row) => (
+            {snapshot.table.rows.map((row) => (
               <tr key={row.team.id}>
                 <td>{row.position}</td>
                 <td>{row.team.name}</td>
@@ -193,9 +106,10 @@ export function LeaguePage() {
       <section aria-label="All fixtures">
         <h2>All fixtures</h2>
         <ul>
-          {fixtures.map((fixture) => (
+          {snapshot.allFixtures.fixtures.map((fixture) => (
             <li key={fixture.id}>
-              {fixture.round}: {fixture.home.shortName} vs {fixture.away.shortName} - {fixture.score}
+              {fixture.roundLabel}: {fixture.homeTeam.shortName ?? fixture.homeTeam.name} vs{' '}
+              {fixture.awayTeam.shortName ?? fixture.awayTeam.name} - {formatScore(fixture)}
               {fixture.detailAvailable ? ' - Detail available' : ''}
             </li>
           ))}
@@ -204,15 +118,36 @@ export function LeaguePage() {
 
       <section aria-label="Knockout and head-to-head">
         <h2>Knockout</h2>
-        <p>Semi Final: Castle United vs Keeper City</p>
+        {snapshot.knockout.matches.length > 0 ? (
+          <ul>
+            {snapshot.knockout.matches.map((match) => (
+              <li key={match.id}>
+                {match.roundLabel}: {match.fixture.homeTeam.name} vs {match.fixture.awayTeam.name}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p>No knockout matches available.</p>
+        )}
         <h2>Head-to-head</h2>
-        <p>Castle United lead Drafton Rovers 1-0-0, 58 points for and 52 against.</p>
+        {snapshot.headToHead.records.length > 0 ? (
+          <ul>
+            {snapshot.headToHead.records.map((record) => (
+              <li key={`${record.team.id}-${record.opponent.id}`}>
+                {record.team.name} vs {record.opponent.name}: {record.wins}-{record.draws}-
+                {record.losses}, {record.pointsFor} points for and {record.pointsAgainst} against.
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p>No head-to-head records available.</p>
+        )}
       </section>
-    </main>
+    </>
   );
 }
 
-function FixtureTable({ fixtures: rows }: { fixtures: Fixture[] }) {
+function FixtureTable({ fixtures }: { fixtures: LeagueFixture[] }) {
   return (
     <table>
       <thead>
@@ -226,12 +161,12 @@ function FixtureTable({ fixtures: rows }: { fixtures: Fixture[] }) {
         </tr>
       </thead>
       <tbody>
-        {rows.map((fixture) => (
+        {fixtures.map((fixture) => (
           <tr key={fixture.id}>
-            <td>{fixture.round}</td>
-            <td>{fixture.home.name}</td>
-            <td>{fixture.away.name}</td>
-            <td>{fixture.score}</td>
+            <td>{fixture.roundLabel}</td>
+            <td>{fixture.homeTeam.name}</td>
+            <td>{fixture.awayTeam.name}</td>
+            <td>{formatScore(fixture)}</td>
             <td>{fixture.status}</td>
             <td>{fixture.detailAvailable ? 'Available' : 'Pending'}</td>
           </tr>
@@ -239,4 +174,12 @@ function FixtureTable({ fixtures: rows }: { fixtures: Fixture[] }) {
       </tbody>
     </table>
   );
+}
+
+function formatScore(fixture: LeagueFixture): string {
+  if (fixture.score.homeScore === null || fixture.score.awayScore === null) {
+    return 'Pending';
+  }
+
+  return `${fixture.score.homeScore} - ${fixture.score.awayScore}`;
 }

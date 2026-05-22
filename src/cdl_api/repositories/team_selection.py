@@ -2,13 +2,6 @@
 
 from copy import deepcopy
 
-type FixtureSummaryTuple = tuple[
-    list[FixtureSummary],
-    list[FixtureSummary],
-    list[TeamSummary],
-    list[TeamSummary],
-]
-
 from cdl_api.contracts.common import RuleReference
 from cdl_api.contracts.domain import FixtureSummary, GameweekSummary, TeamSummary
 from cdl_api.contracts.team_selection import (
@@ -18,6 +11,13 @@ from cdl_api.contracts.team_selection import (
     LineupSlot,
     TeamSelectionPlayer,
 )
+
+type FixtureSummaryTuple = tuple[
+    list[FixtureSummary],
+    list[FixtureSummary],
+    list[TeamSummary],
+    list[TeamSummary],
+]
 
 
 class InMemoryTeamSelectionRepository:

@@ -165,16 +165,34 @@ class DashboardRepository:
                 ("Rival Town", 62, "rival-town"),
                 ("North Keep", 58, "north-keep"),
             ],
-            "position-points": [("MID", 118, "mid"), ("FWD", 92, "fwd"), ("DEF", 74, "def"), ("GKP", 28, "gkp")],
-            "expected-points-trend": [("Gameweek 10", 54.2, "gw-10"), ("Gameweek 11", 59.8, "gw-11"), ("Gameweek 12", 63.4, "gw-12")],
-            "captaincy-table": [("Castle FC", 0.32, "castle"), ("Drafton", 0.28, "drafton"), ("Rival Town", 0.23, "rival-town"), ("North Keep", 0.17, "north-keep")],
+            "position-points": [
+                ("MID", 118, "mid"),
+                ("FWD", 92, "fwd"),
+                ("DEF", 74, "def"),
+                ("GKP", 28, "gkp"),
+            ],
+            "expected-points-trend": [
+                ("Gameweek 10", 54.2, "gw-10"),
+                ("Gameweek 11", 59.8, "gw-11"),
+                ("Gameweek 12", 63.4, "gw-12"),
+            ],
+            "captaincy-table": [
+                ("Castle FC", 0.32, "castle"),
+                ("Drafton", 0.28, "drafton"),
+                ("Rival Town", 0.23, "rival-town"),
+                ("North Keep", 0.17, "north-keep"),
+            ],
         }[widget.id]
 
         selected_team = filters.get("cdl_team")
         selected_position = filters.get("position")
         if selected_team and selected_team != "All teams" and widget.dimension_id == "cdl_team":
             data = [point for point in data if point[0] == selected_team]
-        if selected_position and selected_position != "All positions" and widget.dimension_id == "position":
+        if (
+            selected_position
+            and selected_position != "All positions"
+            and widget.dimension_id == "position"
+        ):
             data = [point for point in data if point[0] == selected_position]
 
         return [
@@ -198,7 +216,9 @@ class DashboardRepository:
         points: list[ChartDataPoint],
     ) -> list[DashboardTableRow]:
         return [
-            DashboardTableRow(cells={widget.dimension_id: point.label, widget.metric_id: point.value})
+            DashboardTableRow(
+                cells={widget.dimension_id: point.label, widget.metric_id: point.value}
+            )
             for point in points
         ]
 

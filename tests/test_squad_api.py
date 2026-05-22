@@ -13,7 +13,8 @@ def test_squad_summary_endpoint_returns_shared_player_contract() -> None:
     assert payload["manager_team"]["id"] == "team-castle"
     assert payload["total_players"] == 2
     assert payload["players"][0]["display_name"]
-    assert payload["players"][0]["epl_team"]["short_name"]
+    assert payload["players"][0]["epl_team"]["id"]
+    assert payload["players"][0]["epl_team"]["name"]
 
 
 def test_scouting_endpoint_filters_by_query_and_metric() -> None:

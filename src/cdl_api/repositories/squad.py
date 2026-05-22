@@ -96,9 +96,10 @@ class InMemorySquadRepository:
         if filters.query:
             query = filters.query.lower()
             players = [player for player in players if query in player.display_name.lower()]
-        metric_attribute = (
-            "points" if filters.metric == PlayerMetric.TOTAL_POINTS else filters.metric.value
-        )
+        if filters.metric == PlayerMetric.TOTAL_POINTS:
+            metric_attribute = "points"
+        else:
+            metric_attribute = filters.metric.value
         return sorted(players, key=lambda player: getattr(player, metric_attribute), reverse=True)
 
     def get_player(self, player_id: str) -> PlayerDetail | None:

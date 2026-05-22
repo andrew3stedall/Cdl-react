@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-05-22 - Implement squad management scouting and transfers
+
+### Added
+
+- Added squad management contracts for player detail, squad summary, scouting filters, interests, and trade proposals.
+- Added in-memory squad repository and service layer for squad totals, scouting, interest validation, and trade proposal workflows.
+- Added API routes for `GET /api/squad/summary`, `GET /api/scouting/players`, `POST /api/interests`, `DELETE /api/interests/{interest_id}`, `GET /api/trades`, `POST /api/trades`, and `PUT /api/trades/{trade_id}`.
+- Added `/squad-management` React route inside the shared shell with summary cards, scouting search, dense tables, interest creation, proposed trade action, and shared player detail dialog.
+- Added squad management wiki documentation.
+
+### Validation
+
+- Added backend service tests for squad totals, scouting filters, interest validation, and trade rules links.
+- Added backend API integration tests for summary, scouting filters, interest create/delete, validation errors, and trade create/update flow.
+- Added frontend tests for squad rendering, scouting filtering, interest creation, trade rule links, and player detail.
+- Feature document remains under `docs/features/active/` until CI validation passes.
+
 ## 2026-05-22 - Implement league fixtures and table
 
 ### Added

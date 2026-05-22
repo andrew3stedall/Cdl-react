@@ -40,7 +40,10 @@ class SquadManagementService:
         self._trades: dict[str, TradeProposal] = {}
 
     def get_summary(self) -> SquadSummaryResponse:
-        players = self._repository.list_squad_players()
+        players = []
+        for player in self._repository.list_squad_players():
+            if player.draft_team == self._repository.manager_team:
+                players.append(player)
         totals = {position: 0 for position in PlayerPosition}
         for player in players:
             if player.position is not None:

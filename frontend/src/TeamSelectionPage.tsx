@@ -4,6 +4,7 @@ import { BadgeCheck, CircleAlert } from 'lucide-react';
 import { Button } from './components/ui/button';
 import { Card } from './components/ui/card';
 import type { ThemePreset } from './contracts';
+import './team-selection.css';
 
 interface TeamSelectionPageProps {
   preset: ThemePreset;

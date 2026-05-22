@@ -93,6 +93,10 @@ def update_trade(trade_id: str, payload: TradeUpdateRequest) -> TradeProposal | 
     if trade is None:
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
-            content={"code": "not_found", "message": "Trade not found.", "details": {"trade_id": trade_id}},
+            content={
+                "code": "not_found",
+                "message": "Trade not found.",
+                "details": {"trade_id": trade_id},
+            },
         )
     return trade

@@ -1,6 +1,12 @@
 import pytest
 
-from cdl_api.contracts.squad import InterestCreateRequest, PlayerPosition, ScoutingFilters, TradeCreateRequest, TradeStatus
+from cdl_api.contracts.squad import (
+    InterestCreateRequest,
+    PlayerPosition,
+    ScoutingFilters,
+    TradeCreateRequest,
+    TradeStatus,
+)
 from cdl_api.repositories.squad import InMemorySquadRepository
 from cdl_api.services.squad import SquadManagementService, SquadValidationError
 
@@ -24,7 +30,9 @@ def test_squad_summary_includes_totals_and_gameweek() -> None:
 def test_scouting_filters_by_position_and_query() -> None:
     service = create_service()
 
-    response = service.scout_players(ScoutingFilters(position=PlayerPosition.MIDFIELDER, query="casey"))
+    response = service.scout_players(
+        ScoutingFilters(position=PlayerPosition.MIDFIELDER, query="casey")
+    )
 
     assert [player.display_name for player in response.players] == ["Casey Midfielder"]
 

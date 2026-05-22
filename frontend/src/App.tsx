@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { canAccessProtectedRoute } from './auth';
 import { AppShell } from './AppShell';
 import type { RuleSection, SessionState } from './contracts';
+import { LeaguePage } from './LeaguePage';
 import type { PreferenceClient } from './preferences-api';
 import { RulesPage } from './RulesPage';
 import { getDefaultThemePreset } from './theme-presets';
@@ -106,11 +107,15 @@ export function App({
         session={session}
       >
         <p className="eyebrow">Data refreshes: {refreshCount}</p>
-        <RulesPage
-          categories={['squads', 'trades']}
-          sections={featuredRules}
-          preset={preset}
-        />
+        {currentPath.startsWith('/league') ? (
+          <LeaguePage />
+        ) : (
+          <RulesPage
+            categories={['squads', 'trades']}
+            sections={featuredRules}
+            preset={preset}
+          />
+        )}
       </AppShell>
     </ThemePresetProvider>
   );

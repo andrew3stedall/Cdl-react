@@ -3,7 +3,7 @@
 from copy import deepcopy
 
 from cdl_api.contracts.domain import GameweekSummary, TeamSummary
-from cdl_api.contracts.squad import PlayerDetail, PlayerOwnershipStatus, PlayerPosition, ScoutingFilters
+from cdl_api.contracts.squad import PlayerDetail, PlayerMetric, PlayerOwnershipStatus, PlayerPosition, ScoutingFilters
 
 
 class InMemorySquadRepository:
@@ -82,7 +82,8 @@ class InMemorySquadRepository:
         if filters.query:
             query = filters.query.lower()
             players = [player for player in players if query in player.display_name.lower()]
-        return sorted(players, key=lambda player: getattr(player, filters.metric.value), reverse=True)
+        metric_attribute = "points" if filters.metric == PlayerMetric.TOTAL_POINTS else filters.metric.value
+        return sorted(players, key=lambda player: getattr(player, metric_attribute), reverse=True)
 
     def get_player(self, player_id: str) -> PlayerDetail | None:
         return deepcopy(next((player for player in self._players if player.id == player_id), None))

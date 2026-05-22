@@ -32,6 +32,16 @@ from cdl_api.contracts.domain import (
     PlayerSummary,
     TeamSummary,
 )
+from cdl_api.contracts.fdr import (
+    FixtureDifficultyBand,
+    FixtureDifficultyCombinedResponse,
+    FixtureDifficultyFixture,
+    FixtureDifficultyFilters,
+    FixtureDifficultyResponse,
+    FixtureDifficultyRow,
+    FixtureDifficultyScaleStep,
+    FixtureDifficultyView,
+)
 from cdl_api.contracts.league_models import (
     FixtureDetailResponse,
     FixtureScore,
@@ -103,6 +113,14 @@ __all__ = [
     "DashboardWidgetDefinition",
     "ErrorCode",
     "FixtureDetailResponse",
+    "FixtureDifficultyBand",
+    "FixtureDifficultyCombinedResponse",
+    "FixtureDifficultyFixture",
+    "FixtureDifficultyFilters",
+    "FixtureDifficultyResponse",
+    "FixtureDifficultyRow",
+    "FixtureDifficultyScaleStep",
+    "FixtureDifficultyView",
     "FixtureScore",
     "FixtureStatus",
     "FixtureSummary",

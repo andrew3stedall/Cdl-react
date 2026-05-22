@@ -2,6 +2,13 @@
 
 from copy import deepcopy
 
+type FixtureSummaryTuple = tuple[
+    list[FixtureSummary],
+    list[FixtureSummary],
+    list[TeamSummary],
+    list[TeamSummary],
+]
+
 from cdl_api.contracts.common import RuleReference
 from cdl_api.contracts.domain import FixtureSummary, GameweekSummary, TeamSummary
 from cdl_api.contracts.team_selection import (
@@ -21,21 +28,102 @@ class InMemoryTeamSelectionRepository:
         city = TeamSummary(id="epl-mci", name="Manchester City", short_name="MCI")
         self.gameweek = GameweekSummary(id="gw-1", name="Gameweek 1", number=1)
         self._players = [
-            TeamSelectionPlayer(id="player-1", display_name="Alex Keeper", position="GKP", team=arsenal, epl_team=arsenal, slot=LineupSlot.STARTER, slot_order=1),
-            TeamSelectionPlayer(id="player-2", display_name="Ben Defender", position="DEF", team=city, epl_team=city, slot=LineupSlot.STARTER, slot_order=2),
-            TeamSelectionPlayer(id="player-3", display_name="Casey Midfielder", position="MID", team=arsenal, epl_team=arsenal, slot=LineupSlot.STARTER, slot_order=3, is_captain=True),
-            TeamSelectionPlayer(id="player-4", display_name="Riley Forward", position="FWD", team=city, epl_team=city, slot=LineupSlot.BENCH, slot_order=1, is_vice_captain=True),
-            TeamSelectionPlayer(id="player-5", display_name="Morgan Reserve", position="MID", team=arsenal, epl_team=arsenal, slot=LineupSlot.RESERVE, slot_order=1),
+            self._player("player-1", "Alex Keeper", "GKP", arsenal, LineupSlot.STARTER, 1),
+            self._player("player-2", "Ben Defender", "DEF", city, LineupSlot.STARTER, 2),
+            self._player(
+                "player-3",
+                "Casey Midfielder",
+                "MID",
+                arsenal,
+                LineupSlot.STARTER,
+                3,
+                is_captain=True,
+            ),
+            self._player(
+                "player-4",
+                "Riley Forward",
+                "FWD",
+                city,
+                LineupSlot.BENCH,
+                1,
+                is_vice_captain=True,
+            ),
+            self._player("player-5", "Morgan Reserve", "MID", arsenal, LineupSlot.RESERVE, 1),
         ]
+        chip_rule = RuleReference(
+            rule_id="chip-usage",
+            label="Chip Usage",
+            href="/rules#chip-usage",
+        )
+        captain_rule = RuleReference(
+            rule_id="captaincy",
+            label="Captaincy",
+            href="/rules#captaincy",
+        )
         self._chips = [
-            ChipState(id="wildcard", name="Wildcard", status=ChipStatus.AVAILABLE, rule_reference=RuleReference(rule_id="chip-usage", label="Chip Usage", href="/rules#chip-usage")),
-            ChipState(id="bench-boost", name="Bench Boost", status=ChipStatus.USED, rule_reference=RuleReference(rule_id="chip-usage", label="Chip Usage", href="/rules#chip-usage")),
-            ChipState(id="triple-captain", name="Triple Captain", status=ChipStatus.AVAILABLE, rule_reference=RuleReference(rule_id="captaincy", label="Captaincy", href="/rules#captaincy")),
+            ChipState(
+                id="wildcard",
+                name="Wildcard",
+                status=ChipStatus.AVAILABLE,
+                rule_reference=chip_rule,
+            ),
+            ChipState(
+                id="bench-boost",
+                name="Bench Boost",
+                status=ChipStatus.USED,
+                rule_reference=chip_rule,
+            ),
+            ChipState(
+                id="triple-captain",
+                name="Triple Captain",
+                status=ChipStatus.AVAILABLE,
+                rule_reference=captain_rule,
+            ),
         ]
-        self._cdl_fixtures = [FixtureSummary(id="fixture-1", gameweek=self.gameweek, home_team=self.manager_team, away_team=rival, status="scheduled")]
-        self._epl_fixtures = [FixtureSummary(id="epl-fixture-1", gameweek=self.gameweek, home_team=arsenal, away_team=city, status="scheduled")]
+        self._cdl_fixtures = [
+            FixtureSummary(
+                id="fixture-1",
+                gameweek=self.gameweek,
+                home_team=self.manager_team,
+                away_team=rival,
+                status="scheduled",
+            )
+        ]
+        self._epl_fixtures = [
+            FixtureSummary(
+                id="epl-fixture-1",
+                gameweek=self.gameweek,
+                home_team=arsenal,
+                away_team=city,
+                status="scheduled",
+            )
+        ]
         self._cdl_table = [self.manager_team, rival]
         self._epl_table = [arsenal, city]
+
+    def _player(
+        self,
+        player_id: str,
+        name: str,
+        position: str,
+        team: TeamSummary,
+        slot: LineupSlot,
+        order: int,
+        *,
+        is_captain: bool = False,
+        is_vice_captain: bool = False,
+    ) -> TeamSelectionPlayer:
+        return TeamSelectionPlayer(
+            id=player_id,
+            display_name=name,
+            position=position,
+            team=team,
+            epl_team=team,
+            slot=slot,
+            slot_order=order,
+            is_captain=is_captain,
+            is_vice_captain=is_vice_captain,
+        )
 
     def get_players(self) -> list[TeamSelectionPlayer]:
         return deepcopy(self._players)
@@ -59,7 +147,7 @@ class InMemoryTeamSelectionRepository:
         self._chips = deepcopy(chips)
         return self.get_chips()
 
-    def fixture_summary(self) -> tuple[list[FixtureSummary], list[FixtureSummary], list[TeamSummary], list[TeamSummary]]:
+    def fixture_summary(self) -> FixtureSummaryTuple:
         return (
             deepcopy(self._cdl_fixtures),
             deepcopy(self._epl_fixtures),

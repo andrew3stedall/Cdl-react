@@ -25,8 +25,18 @@ def valid_lineup_payload() -> LineupUpdateRequest:
         players=[
             LineupPlayerUpdate(player_id="player-1", slot=LineupSlot.STARTER, slot_order=1),
             LineupPlayerUpdate(player_id="player-2", slot=LineupSlot.STARTER, slot_order=2),
-            LineupPlayerUpdate(player_id="player-3", slot=LineupSlot.STARTER, slot_order=3, is_captain=True),
-            LineupPlayerUpdate(player_id="player-4", slot=LineupSlot.BENCH, slot_order=1, is_vice_captain=True),
+            LineupPlayerUpdate(
+                player_id="player-3",
+                slot=LineupSlot.STARTER,
+                slot_order=3,
+                is_captain=True,
+            ),
+            LineupPlayerUpdate(
+                player_id="player-4",
+                slot=LineupSlot.BENCH,
+                slot_order=1,
+                is_vice_captain=True,
+            ),
             LineupPlayerUpdate(player_id="player-5", slot=LineupSlot.RESERVE, slot_order=1),
         ]
     )
@@ -40,7 +50,11 @@ def test_team_selection_load_includes_lineup_chips_and_gameweek() -> None:
     assert selection.manager_team.id == "team-castle"
     assert selection.gameweek.number == 1
     assert len(selection.lineup) == 5
-    assert [chip.id for chip in selection.chips] == ["wildcard", "bench-boost", "triple-captain"]
+    assert [chip.id for chip in selection.chips] == [
+        "wildcard",
+        "bench-boost",
+        "triple-captain",
+    ]
 
 
 def test_lineup_update_accepts_valid_payload() -> None:
@@ -59,7 +73,8 @@ def test_lineup_update_rejects_missing_player_and_missing_captain() -> None:
     with pytest.raises(TeamSelectionValidationError) as exc_info:
         service.update_lineup(payload)
 
-    assert {issue.rule_reference for issue in exc_info.value.issues} >= {"lineup-validation", "captaincy"}
+    rule_references = {issue.rule_reference for issue in exc_info.value.issues}
+    assert rule_references >= {"lineup-validation", "captaincy"}
 
 
 def test_chip_service_activates_available_chip_and_rejects_used_chip() -> None:
@@ -67,8 +82,9 @@ def test_chip_service_activates_available_chip_and_rejects_used_chip() -> None:
     chip_service = ChipService(repository)
 
     selection = chip_service.update_chip("wildcard", ChipUpdateRequest(active=True))
+    wildcard = next(chip for chip in selection.chips if chip.id == "wildcard")
 
-    assert next(chip for chip in selection.chips if chip.id == "wildcard").status == ChipStatus.ACTIVE
+    assert wildcard.status == ChipStatus.ACTIVE
 
     with pytest.raises(TeamSelectionValidationError) as exc_info:
         chip_service.update_chip("bench-boost", ChipUpdateRequest(active=True))

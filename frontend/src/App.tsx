@@ -2,7 +2,9 @@ import { useState } from 'react';
 
 import { canAccessProtectedRoute } from './auth';
 import { AppShell } from './AppShell';
+import { AnalyticsDashboardPage } from './AnalyticsDashboardPage';
 import type { RuleSection, SessionState } from './contracts';
+import type { DashboardClient } from './dashboard-api';
 import { LeaguePage } from './LeaguePage';
 import type { LeagueClient } from './league-api';
 import type { PreferenceClient } from './preferences-api';
@@ -78,6 +80,7 @@ const defaultSession: SessionState = {
 };
 
 interface AppProps {
+  dashboardClient?: DashboardClient;
   initialPath?: string;
   leagueClient?: LeagueClient;
   preferenceClient?: PreferenceClient;
@@ -85,6 +88,7 @@ interface AppProps {
 }
 
 export function App({
+  dashboardClient,
   initialPath = window.location.pathname,
   leagueClient,
   preferenceClient,
@@ -120,6 +124,10 @@ export function App({
 
   if (currentPath.startsWith('/league')) {
     routeContent = <LeaguePage leagueClient={leagueClient} />;
+  }
+
+  if (currentPath.startsWith('/dashboard')) {
+    routeContent = <AnalyticsDashboardPage dashboardClient={dashboardClient} />;
   }
 
   if (currentPath.startsWith('/squad-management')) {

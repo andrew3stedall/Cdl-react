@@ -6,7 +6,10 @@ import { App } from './App';
 import type { SessionState, UserPreferences } from './contracts';
 import type { PreferenceClient } from './preferences-api';
 
-(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+const testGlobal = globalThis as typeof globalThis & {
+  IS_REACT_ACT_ENVIRONMENT: boolean;
+};
+testGlobal.IS_REACT_ACT_ENVIRONMENT = true;
 
 class MemoryPreferenceClient implements PreferenceClient {
   preferences: UserPreferences = { themePreset: 'classic' };
@@ -31,7 +34,9 @@ function renderApp(
   const root = createRoot(container);
 
   act(() => {
-    root.render(<App initialPath={initialPath} preferenceClient={preferenceClient} session={session} />);
+    root.render(
+      <App initialPath={initialPath} preferenceClient={preferenceClient} session={session} />,
+    );
   });
 
   return { container, preferenceClient, root };
@@ -49,6 +54,18 @@ describe('AppShell integration', () => {
     expect(container.textContent).toContain('Rules Knowledge Base');
     expect(container.textContent).toContain('Sign out');
     expect(container.textContent).toContain('Scouting');
+  });
+
+  test('renders league content through the shared shell', async () => {
+    const { container } = renderApp(undefined, '/league');
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(container.querySelector('[aria-current="page"]')?.textContent).toContain('League');
+    expect(container.textContent).toContain('League Fixtures and Table');
+    expect(container.textContent).toContain('League standings');
   });
 
   test('opens mobile navigation drawer and updates active route', async () => {
@@ -73,6 +90,7 @@ describe('AppShell integration', () => {
     });
 
     expect(container.querySelector('[aria-current="page"]')?.textContent).toContain('League');
+    expect(container.textContent).toContain('League Fixtures and Table');
   });
 
   test('persists visual preset selections', async () => {

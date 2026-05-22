@@ -1,5 +1,22 @@
 # Changelog
 
+## 2026-05-22 - Implement team selection and chip management
+
+### Added
+
+- Added team selection contracts for lineup slots, selectable players, chip states, lineup update requests, chip update requests, fixture summary panels, and validation responses.
+- Added in-memory team selection repository and services for lineup validation, chip lifecycle validation, and fixture/table summaries.
+- Added API routes for `GET /api/team-selection`, `PUT /api/team-selection/lineup`, `PUT /api/team-selection/chips/{chip_id}`, and `GET /api/team-selection/fixtures-summary`.
+- Added `/team-selection` React route inside the shared shell with chip selector cards, starter layout, bench/reserve panels, accessible player movement controls, validation messages, and fixture/table summary cards.
+- Added wiki documentation for lineup validation, chip lifecycle, API syntax, and examples.
+
+### Validation
+
+- Added backend service tests for selection load, valid lineup updates, invalid lineup validation, chip activation, used-chip validation, second-active-chip validation, and fixture summaries.
+- Added backend API integration tests for selection load, lineup update, lineup validation errors, chip activation/validation, and fixture summary context.
+- Added frontend tests for team-selection rendering, chip toggles, invalid lineup feedback, and shell/session route behaviour.
+- Feature document remains under `docs/features/active/` until CI validation passes.
+
 ## 2026-05-22 - Implement squad management scouting and transfers
 
 ### Added
@@ -88,7 +105,3 @@
 ### Added
 
 - Added Python API foundation, shared contracts, React foundation, CI, and release skeleton.
-
-### Validation
-
-- Added backend and frontend foundation tests.

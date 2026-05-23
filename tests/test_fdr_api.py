@@ -32,8 +32,7 @@ def test_attack_and_defence_fdr_endpoints_support_filters() -> None:
     attack_body = attack_response.json()
     defence_body = defence_response.json()
     gameweek_numbers = [
-        fixture["gameweek"]["number"]
-        for fixture in attack_body["rows"][0]["fixtures"]
+        fixture["gameweek"]["number"] for fixture in attack_body["rows"][0]["fixtures"]
     ]
     assert attack_body["rows"][0]["team"]["id"] == "arsenal"
     assert gameweek_numbers == [13, 14]

@@ -5,6 +5,8 @@ import { AppShell } from './AppShell';
 import { AnalyticsDashboardPage } from './AnalyticsDashboardPage';
 import type { RuleSection, SessionState } from './contracts';
 import type { DashboardClient } from './dashboard-api';
+import { FixtureDifficultyPage } from './FixtureDifficultyPage';
+import type { FdrClient } from './fdr-api';
 import { LeaguePage } from './LeaguePage';
 import type { LeagueClient } from './league-api';
 import type { PreferenceClient } from './preferences-api';
@@ -81,6 +83,7 @@ const defaultSession: SessionState = {
 
 interface AppProps {
   dashboardClient?: DashboardClient;
+  fdrClient?: FdrClient;
   initialPath?: string;
   leagueClient?: LeagueClient;
   preferenceClient?: PreferenceClient;
@@ -89,6 +92,7 @@ interface AppProps {
 
 export function App({
   dashboardClient,
+  fdrClient,
   initialPath = window.location.pathname,
   leagueClient,
   preferenceClient,
@@ -128,6 +132,10 @@ export function App({
 
   if (currentPath.startsWith('/dashboard')) {
     routeContent = <AnalyticsDashboardPage dashboardClient={dashboardClient} />;
+  }
+
+  if (currentPath.startsWith('/fdr')) {
+    routeContent = <FixtureDifficultyPage fdrClient={fdrClient} />;
   }
 
   if (currentPath.startsWith('/squad-management')) {

@@ -55,8 +55,8 @@ from cdl_api.contracts.league_models import (
 from cdl_api.contracts.rules_models import (
     RuleCategory,
     RuleSection,
-    RulesIndexResponse,
     RuleVersion,
+    RulesIndexResponse,
 )
 from cdl_api.contracts.session import SessionState, SessionUser
 from cdl_api.contracts.squad import (
@@ -73,9 +73,9 @@ from cdl_api.contracts.squad import (
     TradeAsset,
     TradeCreateRequest,
     TradeProposal,
-    TradesResponse,
     TradeStatus,
     TradeUpdateRequest,
+    TradesResponse,
 )
 from cdl_api.contracts.team_selection import (
     ChipState,
@@ -148,8 +148,8 @@ __all__ = [
     "RuleCategory",
     "RuleReference",
     "RuleSection",
-    "RulesIndexResponse",
     "RuleVersion",
+    "RulesIndexResponse",
     "ScoutingFilters",
     "ScoutingPlayersResponse",
     "SessionState",
@@ -163,9 +163,9 @@ __all__ = [
     "TradeAsset",
     "TradeCreateRequest",
     "TradeProposal",
-    "TradesResponse",
     "TradeStatus",
     "TradeUpdateRequest",
+    "TradesResponse",
     "UserPreferences",
     "ValidationErrorResponse",
     "WidgetQueryRequest",

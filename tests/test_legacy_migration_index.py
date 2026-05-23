@@ -70,13 +70,17 @@ def test_missing_feature_candidates_are_tracked_with_decision_rules() -> None:
 def test_migration_risks_are_visible_for_affected_workflows() -> None:
     content = read_index()
 
+    sample_backed_risk = (
+        "Sample-backed dashboard and FDR repositories may diverge from production "
+        "legacy calculations."
+    )
     for risk in [
         "Legacy PHP endpoints may return undocumented shapes.",
         "D3 dashboard/FDR visualisations may encode business logic in JavaScript.",
         "Static rule copy may conflict with runtime validation.",
         "Browser-local state may affect legacy UI flows.",
         "Database views may combine business rules and presentation logic.",
-        "Sample-backed dashboard and FDR repositories may diverge from production legacy calculations.",
+        sample_backed_risk,
     ]:
         assert risk in content
 

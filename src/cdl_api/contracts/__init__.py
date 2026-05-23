@@ -1,5 +1,7 @@
 """Shared contract exports."""
 
+# ruff: noqa: I001
+
 from cdl_api.contracts.auth import LoginRequest, LoginResponse, LogoutResponse
 from cdl_api.contracts.common import (
     ApiErrorResponse,

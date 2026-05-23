@@ -23,8 +23,8 @@ This feature is intentionally planning-focused. It does not move implementation 
 | Team selection and chips | `myTeam.html`, lineup controls, bench/reserve state, chip controls | `docs/features/active/team-selection-and-chip-management.md` | `/team-selection`, `/api/team-selection`, lineup and chip endpoints | Implemented foundation | Persistent lineup/chip storage and full legacy rule parity still pending. |
 | League fixtures and table | `fixtures.html`, fixture tables, result/detail widgets | `docs/features/active/league-fixtures-and-table.md` | `/league`, `/api/league/*` | Implemented foundation | Legacy fixture/result storage and complete season edge cases still pending. |
 | Rules knowledge base | `rules.html`, rule copy, static anchors | `docs/features/active/rules-knowledge-base.md` | `/rules`, `/api/rules/*` | Implemented foundation | Rule admin editing and full historic rule versioning still pending. |
-| Analytics dashboard | `dashboard.html`, D3 charts, dashboard JavaScript, SQL-backed responses | `docs/features/active/analytics-dashboard.md` | Not implemented yet | Active planning | D3 response shape and chart metric definitions require re-review. |
-| Fixture difficulty ratings | `FDR.html`, FDR grid, colour scale scripts, difficulty data responses | `docs/features/active/fixture-difficulty-ratings.md` | Not implemented yet | Active planning | Difficulty algorithm, colour bands, and fixture horizon require re-review. |
+| Analytics dashboard | `dashboard.html`, D3 charts, dashboard JavaScript, SQL-backed responses | `docs/features/active/analytics-dashboard.md` | `/dashboard`, `/api/dashboard/config`, widget query/drilldown endpoints, filter and catalog endpoints | Implemented foundation | Sample-backed dashboard definitions and legacy aggregate query migration remain pending. |
+| Fixture difficulty ratings | `FDR.html`, FDR grid, colour scale scripts, difficulty data responses | `docs/features/active/fixture-difficulty-ratings.md` | `/fdr`, `/api/fdr`, `/api/fdr/attack`, `/api/fdr/defence`, `/api/fdr/scales` | Implemented foundation | Sample-backed FDR ratings remain pending migration to legacy calculations or stable views. |
 | Backend API and data platform | PHP endpoints, SQL-backed responses, shared database views | `docs/features/active/backend-api-data-platform.md` | FastAPI service/repository foundations | Partially implemented | Persistent repositories and legacy schema migration remain pending. |
 
 ## Reviewed Legacy Entry Points
@@ -51,9 +51,15 @@ Reviewed legacy entry points currently tracked by this index:
 | `docs/features/active/team-selection-and-chip-management.md` | Starters, bench, reserves, captaincy, chip lifecycle, fixture/table summaries, server validation. | Backend service/API tests, frontend lineup/chip tests, invalid lineup tests, shell/session tests. |
 | `docs/features/active/league-fixtures-and-table.md` | Current/next fixtures, fixture detail, standings, knockout context, head-to-head context. | Backend service/API tests, route rendering tests, fixture status edge-case tests. |
 | `docs/features/active/rules-knowledge-base.md` | Static rules copy, stable anchors, categories, search, cross-feature rule references. | Contract tests, API tests, search tests, deep-link tests, authenticated/unauthenticated route tests. |
-| `docs/features/active/analytics-dashboard.md` | Dashboard chart metrics, D3 rendering, metric filters, historical comparisons, data response shapes. | Chart transform unit tests, API integration tests, accessibility tests, visual regression-ready DOM tests. |
-| `docs/features/active/fixture-difficulty-ratings.md` | FDR grid, difficulty scoring, colour bands, fixture horizon, filtering, team/opponent context. | Difficulty calculation tests, API tests, colour-band tests, responsive grid tests, empty-state tests. |
+| `docs/features/active/analytics-dashboard.md` | Dashboard chart metrics, D3 rendering, metric filters, historical comparisons, widget query and drilldown response shapes. | Service tests, API integration tests, frontend dashboard interaction tests, accessibility tests, visual regression-ready DOM tests. |
+| `docs/features/active/fixture-difficulty-ratings.md` | FDR grid, attack/defence difficulty scoring, colour bands, fixture horizon, filtering, team/opponent context. | Difficulty service tests, API tests, colour-band tests, responsive grid tests, empty-state tests. |
 | `docs/features/active/backend-api-data-platform.md` | PHP endpoints, repository boundaries, shared contracts, persistence, legacy SQL/view migration. | Contract tests, repository tests, API integration tests, data migration fixtures, backward-compatible response tests. |
+
+## Latest Re-Review Updates
+
+- Dashboard legacy behaviours are now mapped to implemented `/dashboard` UI and `/api/dashboard/*` contracts, while SQL-backed metric persistence remains a backend data-platform gap.
+- FDR legacy behaviours are now mapped to implemented `/fdr` UI and `/api/fdr*` contracts, while production calculation ownership and stable database views remain migration gaps.
+- No newly reviewed legacy module currently requires a new active feature document beyond the existing missing-feature candidates below.
 
 ## Missing Feature Document Assessment
 
@@ -83,6 +89,7 @@ No missing feature document is currently identified for the major reviewed legac
 | Static rule copy may conflict with runtime validation. | Rules Knowledge Base, Squad, Team Selection, League | Cross-link validation errors to stable rule IDs and add tests for rule references. |
 | Browser-local state may affect legacy UI flows. | Shell, Squad, Team Selection, Dashboard, FDR | Identify local/session storage keys and model persistence intentionally. |
 | Database views may combine business rules and presentation logic. | Backend API data platform plus all data-consuming features | Add repository fixtures and migration notes before persistent storage work. |
+| Sample-backed dashboard and FDR repositories may diverge from production legacy calculations. | Analytics Dashboard, Fixture Difficulty Ratings, Backend API data platform | Capture legacy fixtures, query examples, and calculation notes before persistent storage replacement. |
 
 ## Acceptance Criteria
 
@@ -97,6 +104,7 @@ No missing feature document is currently identified for the major reviewed legac
 
 - Add automated documentation tests that verify the index contains the reviewed legacy entry points.
 - Add automated documentation tests that verify every major active feature document path is listed in the coverage matrix.
+- Add automated documentation tests that verify dashboard and FDR are no longer marked as unimplemented in this index.
 - Add automated documentation tests that verify unmapped discovery candidates and migration risks are tracked.
 - Continue running standard backend and frontend CI because documentation index changes can still affect release and project checks.
 

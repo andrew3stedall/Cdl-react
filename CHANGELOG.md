@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-05-23 - Refresh legacy migration feature index
+
+### Changed
+
+- Updated the legacy migration feature index to mark Analytics Dashboard and Fixture Difficulty Ratings as implemented foundations instead of unimplemented planning gaps.
+- Added latest re-review notes for Dashboard and FDR route/API coverage while retaining sample-backed data and calculation migration gaps.
+- Added a migration risk covering divergence between sample-backed Dashboard/FDR repositories and production legacy calculations.
+- Refreshed the legacy migration index wiki to match current route/API coverage.
+
+### Validation
+
+- Extended documentation tests to verify Dashboard and FDR are no longer marked as unimplemented in the active migration index.
+- Extended documentation tests to verify the wiki reflects the current Dashboard/FDR migration status.
+- Kept `docs/features/active/legacy-migration-feature-index.md` active until legacy migration coverage is complete.
+
 ## 2026-05-23 - Implement fixture difficulty ratings
 
 ### Added
@@ -118,13 +133,3 @@
 - Added backend integration tests for preference API round trip.
 - Added backend service tests for preference defaults, persistence, and unsupported preset fallback.
 - Feature document remains under `docs/features/active/` until CI validation passes.
-
-## 2026-05-22 - Add rules knowledge base
-
-### Added
-
-- Added structured rules contracts, service, and API routes.
-- Added searchable rule categories, stable rule identifiers, anchors, and version metadata.
-- Added frontend rules page, search helpers, deep-link helpers, and route redirect behaviour.
-- Added backend contract, service, and API tests.
-- Added frontend search, deep-link, and shell/session behaviour tests.

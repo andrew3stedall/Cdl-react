@@ -1,10 +1,15 @@
 from pathlib import Path
 
 INDEX_PATH = Path("docs/features/active/legacy-migration-feature-index.md")
+WIKI_PATH = Path("docs/wiki/legacy-migration-feature-index.md")
 
 
 def read_index() -> str:
     return INDEX_PATH.read_text(encoding="utf-8")
+
+
+def read_wiki() -> str:
+    return WIKI_PATH.read_text(encoding="utf-8")
 
 
 def test_reviewed_legacy_entry_points_are_tracked() -> None:
@@ -40,6 +45,15 @@ def test_all_major_active_feature_documents_are_mapped() -> None:
         assert f"docs/features/active/{feature_document}" in content
 
 
+def test_dashboard_and_fdr_are_mapped_to_implemented_foundations() -> None:
+    content = read_index()
+
+    assert "Not implemented yet" not in content
+    assert "`/dashboard`, `/api/dashboard/config`" in content
+    assert "`/fdr`, `/api/fdr`, `/api/fdr/attack`" in content
+    assert "Sample-backed dashboard and FDR repositories" in content
+
+
 def test_missing_feature_candidates_are_tracked_with_decision_rules() -> None:
     content = read_index()
 
@@ -62,8 +76,17 @@ def test_migration_risks_are_visible_for_affected_workflows() -> None:
         "Static rule copy may conflict with runtime validation.",
         "Browser-local state may affect legacy UI flows.",
         "Database views may combine business rules and presentation logic.",
+        "Sample-backed dashboard and FDR repositories may diverge from production legacy calculations.",
     ]:
         assert risk in content
+
+
+def test_wiki_matches_current_dashboard_and_fdr_status() -> None:
+    content = read_wiki()
+
+    assert "Dashboard and FDR are no longer tracked as unimplemented planning gaps" in content
+    assert "Implemented foundation" in content
+    assert "Sample-backed dashboard and FDR repositories" in content
 
 
 def test_feature_document_remains_active_until_coverage_is_complete() -> None:

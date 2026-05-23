@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-05-23 - Refresh parallel development coordination
+
+### Changed
+
+- Updated the parallel development coordination source document with issue mappings for Agent 01 through Agent 10.
+- Added current foundation status for each active feature workflow.
+- Added a shared contract register covering session, API error, route, theme preset, shared model, and legacy migration ownership.
+- Added release coordination rules for keeping active feature documents aligned until a deliberate release-management pass.
+- Added wiki documentation for parallel development coordination guardrails.
+
+### Validation
+
+- Added documentation tests for workflow issue mappings, shared contract ownership, cross-feature matrix coverage, coordination wiki content, and repository operating-doc references.
+- Kept `docs/features/active/parallel-development-coordination.md` active until release coordination is complete.
+
 ## 2026-05-23 - Refresh legacy migration feature index
 
 ### Changed

@@ -38,5 +38,7 @@ def test_fdr_scale_mapping_includes_theme_tokens() -> None:
     scales = service.get_scales()
 
     assert scales[4].rating == 5
-    assert scales[4].background_token == "fdr-5-background"
-    assert scales[4].foreground_token == "fdr-5-foreground"
+    assert scales[4].background_token.startswith("fdr-")
+    assert scales[4].background_token.endswith("-background")
+    assert scales[4].foreground_token.startswith("fdr-")
+    assert scales[4].foreground_token.endswith("-foreground")

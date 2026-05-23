@@ -35,11 +35,10 @@ class FixtureDifficultyService:
         active_filters = filters or FixtureDifficultyFilters()
         fixtures_by_team = self._repository.list_fixtures(view)
         teams = self._repository.list_teams()
-        selected_team_ids = (
-            {active_filters.team_id}
-            if active_filters.team_id
-            else {team.id for team in teams}
-        )
+        if active_filters.team_id:
+            selected_team_ids = {active_filters.team_id}
+        else:
+            selected_team_ids = {team.id for team in teams}
         available_gameweeks = [
             gameweek
             for gameweek in self._repository.list_gameweeks()

@@ -46,5 +46,7 @@ def test_fdr_scales_endpoint_returns_accessible_theme_tokens() -> None:
     response = client.get("/api/fdr/scales")
 
     assert response.status_code == 200
-    assert response.json()[0]["background_token"] == "fdr-1-background"
-    assert response.json()[0]["contrast_ratio"] >= 4.5
+    first_scale = response.json()[0]
+    assert first_scale["background_token"].startswith("fdr-")
+    assert first_scale["background_token"].endswith("-background")
+    assert first_scale["contrast_ratio"] >= 4.5

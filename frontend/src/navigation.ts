@@ -23,6 +23,11 @@ export const primaryNavigationItems: NavigationItem[] = [
     featureKey: 'league',
   },
   {
+    label: 'Checkpoint 1',
+    href: '/modernisation/checkpoint-1',
+    featureKey: 'modernisation-checkpoint-1',
+  },
+  {
     label: 'Rules',
     href: '/rules',
     featureKey: 'rules',

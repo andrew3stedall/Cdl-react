@@ -9,6 +9,7 @@ import { FixtureDifficultyPage } from './FixtureDifficultyPage';
 import type { FdrClient } from './fdr-api';
 import { LeaguePage } from './LeaguePage';
 import type { LeagueClient } from './league-api';
+import { ModernisationCheckpointPage } from './ModernisationCheckpointPage';
 import type { PreferenceClient } from './preferences-api';
 import { RulesPage } from './RulesPage';
 import { SquadManagementPage } from './SquadManagementPage';
@@ -128,6 +129,10 @@ export function App({
 
   if (currentPath.startsWith('/league')) {
     routeContent = <LeaguePage leagueClient={leagueClient} />;
+  }
+
+  if (currentPath.startsWith('/modernisation/checkpoint-1')) {
+    routeContent = <ModernisationCheckpointPage />;
   }
 
   if (currentPath.startsWith('/dashboard')) {

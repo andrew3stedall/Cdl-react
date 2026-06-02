@@ -2,6 +2,22 @@ from fastapi.testclient import TestClient
 
 from cdl_api.app import create_app
 
+VALID_343_STARTERS = [
+    "fpl-101",
+    "fpl-102",
+    "fpl-107",
+    "fpl-108",
+    "fpl-103",
+    "fpl-105",
+    "fpl-109",
+    "fpl-110",
+    "fpl-104",
+    "fpl-106",
+    "fpl-111",
+]
+BENCH = ["fpl-112", "fpl-113", "fpl-114"]
+RESERVES = ["fpl-115", "fpl-116"]
+
 
 def test_checkpoint_two_lists_expected_features() -> None:
     client = TestClient(create_app())
@@ -20,46 +36,57 @@ def test_lineup_validation_locking_and_auto_adjustment_contracts() -> None:
     invalid_response = client.put(
         "/api/modernisation/lineups/season-team-drafton/gw-3",
         json={
-            "starters": ["fpl-101", "fpl-102", "fpl-103", "fpl-104"],
-            "bench": ["fpl-105"],
-            "reserves": ["fpl-106"],
-            "captain_id": "fpl-105",
+            "starters": VALID_343_STARTERS,
+            "bench": BENCH,
+            "reserves": RESERVES,
+            "captain_id": "fpl-112",
             "vice_captain_id": "fpl-103",
         },
     )
     valid_response = client.put(
         "/api/modernisation/lineups/season-team-drafton/gw-3",
         json={
-            "starters": ["fpl-101", "fpl-102", "fpl-103", "fpl-104"],
-            "bench": ["fpl-105"],
-            "reserves": ["fpl-106"],
+            "starters": VALID_343_STARTERS,
+            "bench": BENCH,
+            "reserves": RESERVES,
             "captain_id": "fpl-104",
             "vice_captain_id": "fpl-103",
         },
     )
-    lock_response = client.post("/api/modernisation/lineups/season-team-drafton/gw-3/lock")
-    locked_edit = client.put(
-        "/api/modernisation/lineups/season-team-drafton/gw-3",
+    auto_setup = client.put(
+        "/api/modernisation/lineups/season-team-drafton/gw-4",
         json={
-            "starters": ["fpl-101", "fpl-103", "fpl-104", "fpl-105"],
-            "bench": ["fpl-102"],
-            "reserves": ["fpl-106"],
+            "starters": VALID_343_STARTERS,
+            "bench": BENCH,
+            "reserves": RESERVES,
             "captain_id": "fpl-104",
             "vice_captain_id": "fpl-103",
         },
     )
     auto_adjusted = client.post(
-        "/api/modernisation/lineups/season-team-castle/gw-2/auto-adjust"
+        "/api/modernisation/lineups/season-team-drafton/gw-4/auto-adjust"
+    )
+    lock_response = client.post("/api/modernisation/lineups/season-team-drafton/gw-3/lock")
+    locked_edit = client.put(
+        "/api/modernisation/lineups/season-team-drafton/gw-3",
+        json={
+            "starters": VALID_343_STARTERS,
+            "bench": BENCH,
+            "reserves": RESERVES,
+            "captain_id": "fpl-104",
+            "vice_captain_id": "fpl-103",
+        },
     )
 
     assert invalid_response.status_code == 200
     assert invalid_response.json()["validation"][0]["field"] == "captain_id"
     assert valid_response.status_code == 200
+    assert auto_setup.status_code == 200
+    assert auto_adjusted.status_code == 200
+    assert auto_adjusted.json()["submitted_as_is"] is True
     assert lock_response.status_code == 200
     assert lock_response.json()["lineup"]["status"] == "locked"
     assert locked_edit.status_code == 409
-    assert auto_adjusted.status_code == 200
-    assert auto_adjusted.json()["submitted_as_is"] is True
 
 
 def test_substitution_and_chip_contracts() -> None:

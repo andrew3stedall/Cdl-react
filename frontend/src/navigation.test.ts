@@ -3,12 +3,13 @@ import { describe, expect, test } from 'vitest';
 import { getNavigationItemByPath, isRouteActive, primaryNavigationItems } from './navigation';
 
 describe('navigation configuration', () => {
-  test('contains all legacy core modules plus modernisation checkpoint and scouting', () => {
+  test('contains all legacy core modules plus modernisation checkpoints and scouting', () => {
     expect(primaryNavigationItems.map((item) => item.label)).toEqual([
       'Squad Management',
       'Team Selection',
       'League',
       'Checkpoint 1',
+      'Checkpoint 2',
       'Rules',
       'Dashboard',
       'FDR',
@@ -25,5 +26,6 @@ describe('navigation configuration', () => {
   test('resolves navigation item by path', () => {
     expect(getNavigationItemByPath('/fdr/team-1')?.label).toBe('FDR');
     expect(getNavigationItemByPath('/modernisation/checkpoint-1')?.label).toBe('Checkpoint 1');
+    expect(getNavigationItemByPath('/modernisation/checkpoint-2')?.label).toBe('Checkpoint 2');
   });
 });

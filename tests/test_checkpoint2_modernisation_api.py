@@ -37,9 +37,6 @@ def test_lineup_validation_locking_and_auto_adjustment_contracts() -> None:
             "vice_captain_id": "fpl-103",
         },
     )
-    auto_adjusted = client.post(
-        "/api/modernisation/lineups/season-team-drafton/gw-3/auto-adjust"
-    )
     lock_response = client.post("/api/modernisation/lineups/season-team-drafton/gw-3/lock")
     locked_edit = client.put(
         "/api/modernisation/lineups/season-team-drafton/gw-3",
@@ -51,15 +48,18 @@ def test_lineup_validation_locking_and_auto_adjustment_contracts() -> None:
             "vice_captain_id": "fpl-103",
         },
     )
+    auto_adjusted = client.post(
+        "/api/modernisation/lineups/season-team-castle/gw-2/auto-adjust"
+    )
 
     assert invalid_response.status_code == 200
     assert invalid_response.json()["validation"][0]["field"] == "captain_id"
     assert valid_response.status_code == 200
-    assert auto_adjusted.status_code == 200
-    assert auto_adjusted.json()["submitted_as_is"] is True
     assert lock_response.status_code == 200
     assert lock_response.json()["lineup"]["status"] == "locked"
     assert locked_edit.status_code == 409
+    assert auto_adjusted.status_code == 200
+    assert auto_adjusted.json()["submitted_as_is"] is True
 
 
 def test_substitution_and_chip_contracts() -> None:

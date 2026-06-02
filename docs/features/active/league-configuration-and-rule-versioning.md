@@ -6,7 +6,7 @@ Define UI-editable league configuration with versioned rule snapshots so histori
 
 ## Status
 
-Proposed / accepted discovery.
+Checkpoint 1 complete.
 
 ## Business Rules
 

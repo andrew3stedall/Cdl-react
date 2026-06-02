@@ -6,7 +6,7 @@ Define the difference between player control, temporary rights, and active squad
 
 ## Status
 
-Proposed / accepted discovery.
+Checkpoint 1 complete.
 
 ## Business Rules
 

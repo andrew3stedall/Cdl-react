@@ -18,7 +18,7 @@ def test_lineup_validation_locking_and_auto_adjustment_contracts() -> None:
     client = TestClient(create_app())
 
     invalid_response = client.put(
-        "/api/modernisation/lineups/season-team-castle/gw-2",
+        "/api/modernisation/lineups/season-team-drafton/gw-3",
         json={
             "starters": ["fpl-101", "fpl-102", "fpl-103", "fpl-104"],
             "bench": ["fpl-105"],
@@ -28,7 +28,7 @@ def test_lineup_validation_locking_and_auto_adjustment_contracts() -> None:
         },
     )
     valid_response = client.put(
-        "/api/modernisation/lineups/season-team-castle/gw-2",
+        "/api/modernisation/lineups/season-team-drafton/gw-3",
         json={
             "starters": ["fpl-101", "fpl-102", "fpl-103", "fpl-104"],
             "bench": ["fpl-105"],
@@ -38,11 +38,11 @@ def test_lineup_validation_locking_and_auto_adjustment_contracts() -> None:
         },
     )
     auto_adjusted = client.post(
-        "/api/modernisation/lineups/season-team-castle/gw-2/auto-adjust"
+        "/api/modernisation/lineups/season-team-drafton/gw-3/auto-adjust"
     )
-    lock_response = client.post("/api/modernisation/lineups/season-team-castle/gw-2/lock")
+    lock_response = client.post("/api/modernisation/lineups/season-team-drafton/gw-3/lock")
     locked_edit = client.put(
-        "/api/modernisation/lineups/season-team-castle/gw-2",
+        "/api/modernisation/lineups/season-team-drafton/gw-3",
         json={
             "starters": ["fpl-101", "fpl-103", "fpl-104", "fpl-105"],
             "bench": ["fpl-102"],

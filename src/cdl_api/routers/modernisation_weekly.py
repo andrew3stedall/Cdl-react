@@ -27,23 +27,45 @@ GAMEWEEK = {
     "next_editable_gameweek_id": "gw-2",
 }
 RULE_VERSION_ID = "rule-version-2026-active"
-VALID_FORMATIONS = {"2-1-1", "1-2-1", "1-1-2"}
+VALID_FORMATIONS = {"3-4-3", "3-5-2", "4-3-3", "4-4-2", "4-5-1", "5-4-1"}
 PLAYERS = {
     "fpl-101": {"id": "fpl-101", "display_name": "Alex Keeper", "position": "GKP"},
     "fpl-102": {"id": "fpl-102", "display_name": "Ben Defender", "position": "DEF"},
     "fpl-103": {"id": "fpl-103", "display_name": "Casey Midfielder", "position": "MID"},
     "fpl-104": {"id": "fpl-104", "display_name": "Riley Forward", "position": "FWD"},
-    "fpl-105": {"id": "fpl-105", "display_name": "Morgan Bench", "position": "MID"},
-    "fpl-106": {"id": "fpl-106", "display_name": "Taylor Reserve", "position": "FWD"},
+    "fpl-105": {"id": "fpl-105", "display_name": "Morgan Midfielder", "position": "MID"},
+    "fpl-106": {"id": "fpl-106", "display_name": "Taylor Forward", "position": "FWD"},
+    "fpl-107": {"id": "fpl-107", "display_name": "Drew Defender", "position": "DEF"},
+    "fpl-108": {"id": "fpl-108", "display_name": "Harper Defender", "position": "DEF"},
+    "fpl-109": {"id": "fpl-109", "display_name": "Jordan Midfielder", "position": "MID"},
+    "fpl-110": {"id": "fpl-110", "display_name": "Quinn Midfielder", "position": "MID"},
+    "fpl-111": {"id": "fpl-111", "display_name": "Sam Forward", "position": "FWD"},
+    "fpl-112": {"id": "fpl-112", "display_name": "Blake Defender", "position": "DEF"},
+    "fpl-113": {"id": "fpl-113", "display_name": "Robin Midfielder", "position": "MID"},
+    "fpl-114": {"id": "fpl-114", "display_name": "Avery Forward", "position": "FWD"},
+    "fpl-115": {"id": "fpl-115", "display_name": "Sky Midfielder", "position": "MID"},
+    "fpl-116": {"id": "fpl-116", "display_name": "Reese Forward", "position": "FWD"},
 }
 LINEUPS: dict[str, dict[str, Any]] = {
     "season-team-castle:gw-2": {
         "season_team_id": "season-team-castle",
         "gameweek_id": "gw-2",
         "status": "editable",
-        "starters": ["fpl-101", "fpl-102", "fpl-103", "fpl-104"],
-        "bench": ["fpl-105"],
-        "reserves": ["fpl-106"],
+        "starters": [
+            "fpl-101",
+            "fpl-102",
+            "fpl-107",
+            "fpl-108",
+            "fpl-103",
+            "fpl-105",
+            "fpl-109",
+            "fpl-110",
+            "fpl-104",
+            "fpl-106",
+            "fpl-111",
+        ],
+        "bench": ["fpl-112", "fpl-113", "fpl-114"],
+        "reserves": ["fpl-115", "fpl-116"],
         "captain_id": "fpl-104",
         "vice_captain_id": "fpl-103",
         "active_chip": None,
@@ -57,6 +79,16 @@ PLAYER_SCORES = {
     "fpl-104": {"minutes": 72, "points": 8},
     "fpl-105": {"minutes": 85, "points": 5},
     "fpl-106": {"minutes": 90, "points": 6},
+    "fpl-107": {"minutes": 90, "points": 4},
+    "fpl-108": {"minutes": 90, "points": 3},
+    "fpl-109": {"minutes": 80, "points": 6},
+    "fpl-110": {"minutes": 65, "points": 3},
+    "fpl-111": {"minutes": 75, "points": 5},
+    "fpl-112": {"minutes": 90, "points": 5},
+    "fpl-113": {"minutes": 30, "points": 2},
+    "fpl-114": {"minutes": 15, "points": 1},
+    "fpl-115": {"minutes": 90, "points": 6},
+    "fpl-116": {"minutes": 90, "points": 6},
 }
 SUBSTITUTIONS: list[dict[str, Any]] = []
 CHIP_OWNERSHIP = [

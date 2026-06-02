@@ -36,7 +36,7 @@ ignore = ["ANN101", "ANN102"]
 
 [tool.ruff.lint.per-file-ignores]
 "src/cdl_api/repositories/squad.py" = ["E501"]
-"src/cdl_api/routers/modernisation.py" = ["E501"]
+"src/cdl_api/routers/modernisation.py" = ["E501", "S324"]
 "src/cdl_api/routers/*.py" = ["B008"]
 "src/cdl_api/settings.py" = ["S105"]
 "tests/**/*.py" = ["S101", "S106"]

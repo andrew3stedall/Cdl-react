@@ -6,7 +6,7 @@ Define the core CDL identity model: reusable leagues, seasons within leagues, pe
 
 ## Status
 
-Proposed / accepted discovery.
+Checkpoint 1 complete.
 
 ## Business Rules
 

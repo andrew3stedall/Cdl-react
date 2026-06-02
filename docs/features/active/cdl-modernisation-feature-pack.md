@@ -1,61 +1,66 @@
 # CDL Modernisation Feature Pack
 
-Status: Discovery accepted; ready for feature-level elaboration.
+Status: Checkpoint 1 implementation contracts merged in PR #50.
 
 ## Purpose
 
 This index groups the agreed CDL redesign work into implementable feature documents. The intent is to support development without reverting to a like-for-like migration of the legacy PHP application.
 
+## Checkpoint history
+
+- Checkpoint 1 completed in PR #50: league/season setup, rule versioning, permissions/approvals/audit, FPL cache freshness, live draft contracts, and squad rights/availability contracts.
+- CI for PR #50 passed backend lint/format/pytest and frontend lint/test/build before merge.
+
 ## Foundation
 
-- `league-season-team-model.md`
-- `league-configuration-and-rule-versioning.md`
-- `permissions-approvals-and-admin-audit.md`
+- [x] `league-season-team-model.md` (#27)
+- [x] `league-configuration-and-rule-versioning.md` (#28)
+- [x] `permissions-approvals-and-admin-audit.md` (#29)
 
 ## Squad movement
 
-- `squad-rights-and-assignments.md`
-- `transfers-loans-and-negotiations.md`
-- `live-draft-room.md`
-- `free-agency-draws.md`
+- [x] `squad-rights-and-assignments.md` (#30)
+- [ ] `transfers-loans-and-negotiations.md` (#31)
+- [x] `live-draft-room.md` (#32)
+- [ ] `free-agency-draws.md` (#33)
 
 ## Weekly gameplay
 
-- `team-selection-and-lineup-locking.md`
-- `substitution-engine.md`
-- `chips-and-scoring-modifiers.md`
+- [x] `fpl-data-access-and-cache.md` (#34)
+- [ ] `team-selection-and-lineup-locking.md` (#35)
+- [ ] `substitution-engine.md` (#36)
+- [ ] `chips-and-scoring-modifiers.md` (#37)
 
 ## Scoring and competition
 
-- `fpl-data-access-and-cache.md`
-- `fixture-scoring-snapshots-and-finalisation.md`
-- `league-table-and-table-movement.md`
-- `knockout-brackets-and-tiebreakers.md`
-- `gameweek-centre-and-fixture-detail.md`
+- [ ] `fixture-scoring-snapshots-and-finalisation.md` (#39)
+- [ ] `league-table-and-table-movement.md` (#40)
+- [ ] `knockout-brackets-and-tiebreakers.md` (#41)
+- [ ] `gameweek-centre-and-fixture-detail.md` (#42)
 
 ## Player experience
 
-- `player-pool-availability-and-scouting.md`
-- `player-detail-history-and-comparison.md`
-- `squad-analysis-and-slot-visualisation.md`
+- [ ] `player-pool-availability-and-scouting.md` (#43)
+- [ ] `player-detail-history-and-comparison.md` (#44)
+- [ ] `squad-analysis-and-slot-visualisation.md` (#45)
 
 ## Notifications and operations
 
-- `notifications-activity-and-deadline-service.md`
+- [ ] `notifications-activity-and-deadline-service.md` (#46)
 
 ## Migration and delivery
 
-- `legacy-data-migration-and-backfill.md`
-- `domain-test-strategy-and-parity-tests.md`
-- `implementation-sequencing-roadmap.md`
+- [ ] `legacy-data-migration-and-backfill.md` (#47)
+- [ ] `domain-test-strategy-and-parity-tests.md` (#48)
+- [ ] `implementation-sequencing-roadmap.md` (#49)
 
 ## Implementation principle
 
 Build by dependency order rather than page order:
 
-1. Domain foundation.
-2. Squad and allocation foundation.
-3. Weekly lineup and scoring loop.
+1. Domain foundation. Completed in checkpoint 1.
+2. Squad and allocation foundation. Partially completed in checkpoint 1; transfers/loans and free-agency draws remain.
+3. Weekly lineup and scoring loop. Next checkpoint: #35, #36, #37, #39, and #40.
 4. Competition views.
 5. Player/scouting and notification workflows.
 6. Migration and historical hardening.

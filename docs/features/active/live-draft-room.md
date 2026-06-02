@@ -6,7 +6,7 @@ Define the live sequential draft workflow, draft order modes, pick clock, presel
 
 ## Status
 
-Proposed / accepted discovery.
+Checkpoint 1 complete.
 
 ## Business Rules
 

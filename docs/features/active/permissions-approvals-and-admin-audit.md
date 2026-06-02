@@ -6,7 +6,7 @@ Define league roles, approval routing, commissioner/vice commissioner responsibi
 
 ## Status
 
-Proposed / accepted discovery.
+Checkpoint 1 complete.
 
 ## Business Rules
 

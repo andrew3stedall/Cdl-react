@@ -1,6 +1,6 @@
 # CDL Modernisation Feature Pack
 
-Status: Checkpoint 1 implementation contracts merged in PR #50.
+Status: Checkpoint 2 implementation contracts are in progress on `checkpoint-2-weekly-gameplay`.
 
 ## Purpose
 
@@ -10,6 +10,7 @@ This index groups the agreed CDL redesign work into implementable feature docume
 
 - Checkpoint 1 completed in PR #50: league/season setup, rule versioning, permissions/approvals/audit, FPL cache freshness, live draft contracts, and squad rights/availability contracts.
 - CI for PR #50 passed backend lint/format/pytest and frontend lint/test/build before merge.
+- Checkpoint 2 covers team selection, substitutions, chips, fixture scoring snapshots, and league table movement in issues #35, #36, #37, #39, and #40.
 
 ## Foundation
 
@@ -27,14 +28,14 @@ This index groups the agreed CDL redesign work into implementable feature docume
 ## Weekly gameplay
 
 - [x] `fpl-data-access-and-cache.md` (#34)
-- [ ] `team-selection-and-lineup-locking.md` (#35)
-- [ ] `substitution-engine.md` (#36)
-- [ ] `chips-and-scoring-modifiers.md` (#37)
+- [x] `team-selection-and-lineup-locking.md` (#35)
+- [x] `substitution-engine.md` (#36)
+- [x] `chips-and-scoring-modifiers.md` (#37)
 
 ## Scoring and competition
 
-- [ ] `fixture-scoring-snapshots-and-finalisation.md` (#39)
-- [ ] `league-table-and-table-movement.md` (#40)
+- [x] `fixture-scoring-snapshots-and-finalisation.md` (#39)
+- [x] `league-table-and-table-movement.md` (#40)
 - [ ] `knockout-brackets-and-tiebreakers.md` (#41)
 - [ ] `gameweek-centre-and-fixture-detail.md` (#42)
 
@@ -60,7 +61,7 @@ Build by dependency order rather than page order:
 
 1. Domain foundation. Completed in checkpoint 1.
 2. Squad and allocation foundation. Partially completed in checkpoint 1; transfers/loans and free-agency draws remain.
-3. Weekly lineup and scoring loop. Next checkpoint: #35, #36, #37, #39, and #40.
+3. Weekly lineup and scoring loop. Implemented in checkpoint 2 branch.
 4. Competition views.
 5. Player/scouting and notification workflows.
 6. Migration and historical hardening.

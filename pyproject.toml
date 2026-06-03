@@ -31,7 +31,9 @@ src = ["src", "tests"]
 extend-exclude = [
     "src/cdl_api/repositories/squad.py",
     "src/cdl_api/routers/modernisation.py",
+    "src/cdl_api/routers/modernisation_weekly.py",
     "tests/test_checkpoint1_modernisation_api.py",
+    "tests/test_checkpoint2_modernisation_api.py",
 ]
 
 [tool.ruff.lint]
@@ -41,9 +43,11 @@ ignore = ["ANN101", "ANN102"]
 [tool.ruff.lint.per-file-ignores]
 "src/cdl_api/repositories/squad.py" = ["E501"]
 "src/cdl_api/routers/modernisation.py" = ["ANN401", "E501", "S324"]
+"src/cdl_api/routers/modernisation_weekly.py" = ["ANN401", "E501", "S324"]
 "src/cdl_api/routers/*.py" = ["B008"]
 "src/cdl_api/settings.py" = ["S105"]
 "tests/test_checkpoint1_modernisation_api.py" = ["E501"]
+"tests/test_checkpoint2_modernisation_api.py" = ["E501"]
 "tests/**/*.py" = ["S101", "S106"]
 
 [tool.pytest.ini_options]

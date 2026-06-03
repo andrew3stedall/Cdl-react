@@ -10,6 +10,7 @@ describe('navigation configuration', () => {
       'League',
       'Checkpoint 1',
       'Checkpoint 2',
+      'Checkpoint 3',
       'Rules',
       'Dashboard',
       'FDR',
@@ -27,5 +28,6 @@ describe('navigation configuration', () => {
     expect(getNavigationItemByPath('/fdr/team-1')?.label).toBe('FDR');
     expect(getNavigationItemByPath('/modernisation/checkpoint-1')?.label).toBe('Checkpoint 1');
     expect(getNavigationItemByPath('/modernisation/checkpoint-2')?.label).toBe('Checkpoint 2');
+    expect(getNavigationItemByPath('/modernisation/checkpoint-3')?.label).toBe('Checkpoint 3');
   });
 });

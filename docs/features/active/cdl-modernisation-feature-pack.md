@@ -1,6 +1,6 @@
 # CDL Modernisation Feature Pack
 
-Status: Checkpoint 2 implementation contracts merged in PR #51.
+Status: Checkpoint 3 implementation contracts are in progress on `checkpoint-3-squad-movement`.
 
 ## Purpose
 
@@ -12,6 +12,7 @@ This index groups the agreed CDL redesign work into implementable feature docume
 - CI for PR #50 passed backend lint/format/pytest and frontend lint/test/build before merge.
 - Checkpoint 2 completed in PR #51: team selection, substitutions, chips, fixture scoring snapshots, and league table movement contracts.
 - CI for PR #51 passed backend lint/format/pytest and frontend lint/test/build before merge.
+- Checkpoint 3 covers free agency draws, transfers/loans, notifications, activity, and deadlines in issues #33, #31, and #46.
 
 ## Foundation
 
@@ -22,9 +23,9 @@ This index groups the agreed CDL redesign work into implementable feature docume
 ## Squad movement
 
 - [x] `squad-rights-and-assignments.md` (#30)
-- [ ] `transfers-loans-and-negotiations.md` (#31)
+- [x] `transfers-loans-and-negotiations.md` (#31)
 - [x] `live-draft-room.md` (#32)
-- [ ] `free-agency-draws.md` (#33)
+- [x] `free-agency-draws.md` (#33)
 
 ## Weekly gameplay
 
@@ -48,7 +49,7 @@ This index groups the agreed CDL redesign work into implementable feature docume
 
 ## Notifications and operations
 
-- [ ] `notifications-activity-and-deadline-service.md` (#46)
+- [x] `notifications-activity-and-deadline-service.md` (#46)
 
 ## Migration and delivery
 
@@ -63,6 +64,7 @@ Build by dependency order rather than page order:
 1. Domain foundation. Completed in checkpoint 1.
 2. Squad and allocation foundation. Partially completed in checkpoint 1; transfers/loans and free-agency draws remain.
 3. Weekly lineup and scoring loop. Completed in checkpoint 2.
-4. Competition views.
-5. Player/scouting and notification workflows.
-6. Migration and historical hardening.
+4. Squad movement and notification loop. Implemented in checkpoint 3 branch.
+5. Competition views.
+6. Player/scouting workflows.
+7. Migration and historical hardening.

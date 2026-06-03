@@ -6,7 +6,7 @@ Define configured free agency draw windows, private preferences, automatic draw 
 
 ## Status
 
-Proposed / accepted discovery.
+Checkpoint 3 implementation contracts are in progress on `checkpoint-3-squad-movement`.
 
 ## Business Rules
 

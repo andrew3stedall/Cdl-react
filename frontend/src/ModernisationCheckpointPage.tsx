@@ -77,6 +77,24 @@ const checkpointTwoFeatures: CheckpointFeature[] = [
   },
 ];
 
+const checkpointThreeFeatures: CheckpointFeature[] = [
+  {
+    issue: 33,
+    title: 'Free agency draw processing, private preferences, and expiring rights',
+    api: '/api/modernisation/free-agency/draws/draw-gw-3',
+  },
+  {
+    issue: 31,
+    title: 'Transfer and loan negotiations with approval-gated squad effects',
+    api: '/api/modernisation/negotiations',
+  },
+  {
+    issue: 46,
+    title: 'Notifications, activity visibility, reminders, and watchlist alerts',
+    api: '/api/modernisation/notifications',
+  },
+];
+
 const checkpointContent: Record<number, CheckpointContent> = {
   1: {
     checkpoint: 1,
@@ -95,6 +113,15 @@ const checkpointContent: Record<number, CheckpointContent> = {
     combinedContract: '/api/modernisation/checkpoint-2',
     status: 'Weekly gameplay contract layer',
     features: checkpointTwoFeatures,
+  },
+  3: {
+    checkpoint: 3,
+    eyebrow: 'Checkpoint 3',
+    title: 'Squad movement contracts',
+    summary: 'Contracts for free agency draws, transfers, loans, notifications, activity, and deadline reminders.',
+    combinedContract: '/api/modernisation/checkpoint-3',
+    status: 'Squad movement contract layer',
+    features: checkpointThreeFeatures,
   },
 };
 

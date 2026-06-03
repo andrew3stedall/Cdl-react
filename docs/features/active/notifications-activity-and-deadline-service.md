@@ -6,7 +6,7 @@ Define notifications, activity feeds, audit separation, deadline reminders, watc
 
 ## Status
 
-Proposed / accepted discovery.
+Checkpoint 3 implementation contracts are in progress on `checkpoint-3-squad-movement`.
 
 ## Business Rules
 

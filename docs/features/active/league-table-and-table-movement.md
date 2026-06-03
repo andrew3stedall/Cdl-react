@@ -6,7 +6,7 @@ Define live/provisional/official table snapshots, table movement, colour states,
 
 ## Status
 
-Proposed / accepted discovery.
+Checkpoint 2 complete.
 
 ## Business Rules
 

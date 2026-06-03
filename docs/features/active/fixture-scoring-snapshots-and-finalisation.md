@@ -6,7 +6,7 @@ Define live/provisional/final fixture scoring, player-level score storage, sourc
 
 ## Status
 
-Proposed / accepted discovery.
+Checkpoint 2 complete.
 
 ## Business Rules
 

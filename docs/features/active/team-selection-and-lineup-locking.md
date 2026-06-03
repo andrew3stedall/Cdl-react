@@ -6,7 +6,7 @@ Define weekly team selection, lineup rollover, auto-adjustment, validation, capt
 
 ## Status
 
-Proposed / accepted discovery.
+Checkpoint 2 complete.
 
 ## Business Rules
 

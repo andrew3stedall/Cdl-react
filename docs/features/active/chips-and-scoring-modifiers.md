@@ -6,7 +6,7 @@ Define chip ownership, activation, locking, scoring effects, and explainable chi
 
 ## Status
 
-Proposed / accepted discovery.
+Checkpoint 2 complete.
 
 ## Business Rules
 

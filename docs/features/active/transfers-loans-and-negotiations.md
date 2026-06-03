@@ -6,7 +6,7 @@ Define in-app trade/loan negotiation, offer counters, party agreement, commissio
 
 ## Status
 
-Proposed / accepted discovery.
+Checkpoint 3 implementation contracts are in progress on `checkpoint-3-squad-movement`.
 
 ## Business Rules
 

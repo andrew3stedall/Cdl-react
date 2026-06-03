@@ -6,7 +6,7 @@ Define ordinary bench substitution rules, valid formation constraints, and expla
 
 ## Status
 
-Proposed / accepted discovery.
+Checkpoint 2 complete.
 
 ## Business Rules
 

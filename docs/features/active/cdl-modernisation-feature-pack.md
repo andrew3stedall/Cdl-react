@@ -1,6 +1,6 @@
 # CDL Modernisation Feature Pack
 
-Status: Checkpoint 3 implementation contracts are in progress on `checkpoint-3-squad-movement`.
+Status: Checkpoint 3 implementation contracts merged in PR #52.
 
 ## Purpose
 
@@ -12,7 +12,8 @@ This index groups the agreed CDL redesign work into implementable feature docume
 - CI for PR #50 passed backend lint/format/pytest and frontend lint/test/build before merge.
 - Checkpoint 2 completed in PR #51: team selection, substitutions, chips, fixture scoring snapshots, and league table movement contracts.
 - CI for PR #51 passed backend lint/format/pytest and frontend lint/test/build before merge.
-- Checkpoint 3 covers free agency draws, transfers/loans, notifications, activity, and deadlines in issues #33, #31, and #46.
+- Checkpoint 3 completed in PR #52: free agency draws, transfers/loans, notifications, activity, and deadlines.
+- CI for PR #52 passed backend lint/format/pytest and frontend lint/test/build before merge.
 
 ## Foundation
 
@@ -62,9 +63,8 @@ This index groups the agreed CDL redesign work into implementable feature docume
 Build by dependency order rather than page order:
 
 1. Domain foundation. Completed in checkpoint 1.
-2. Squad and allocation foundation. Partially completed in checkpoint 1; transfers/loans and free-agency draws remain.
+2. Squad and allocation foundation. Completed in checkpoint 3.
 3. Weekly lineup and scoring loop. Completed in checkpoint 2.
-4. Squad movement and notification loop. Implemented in checkpoint 3 branch.
-5. Competition views.
-6. Player/scouting workflows.
-7. Migration and historical hardening.
+4. Competition views.
+5. Player/scouting workflows.
+6. Migration and historical hardening.

@@ -1,6 +1,6 @@
 # CDL Modernisation Feature Pack
 
-Status: Checkpoint 4 implementation contracts are in progress on `checkpoint-4-competition-experience`.
+Status: Checkpoint 4 implementation contracts merged in PR #53.
 
 ## Purpose
 
@@ -14,7 +14,8 @@ This index groups the agreed CDL redesign work into implementable feature docume
 - CI for PR #51 passed backend lint/format/pytest and frontend lint/test/build before merge.
 - Checkpoint 3 completed in PR #52: free agency draws, transfers/loans, notifications, activity, and deadlines.
 - CI for PR #52 passed backend lint/format/pytest and frontend lint/test/build before merge.
-- Checkpoint 4 covers Gameweek Centre, knockout brackets, player pool/scouting, player detail/comparison, and squad analysis in issues #42, #41, #43, #44, and #45.
+- Checkpoint 4 completed in PR #53: Gameweek Centre, knockout brackets, player pool/scouting, player detail/comparison, and squad analysis.
+- CI for PR #53 passed backend lint/format/pytest and frontend lint/test/build before merge.
 
 ## Foundation
 
@@ -66,5 +67,5 @@ Build by dependency order rather than page order:
 1. Domain foundation. Completed in checkpoint 1.
 2. Squad and allocation foundation. Completed in checkpoint 3.
 3. Weekly lineup and scoring loop. Completed in checkpoint 2.
-4. Competition views and player experience. Implemented in checkpoint 4 branch.
+4. Competition views and player experience. Completed in checkpoint 4.
 5. Migration and historical hardening.

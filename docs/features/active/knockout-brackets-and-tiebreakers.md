@@ -6,7 +6,7 @@ Define knockout brackets, legs, aggregate scoring, playoff structure, and most-g
 
 ## Status
 
-Checkpoint 4 implementation contracts are in progress on `checkpoint-4-competition-experience`.
+Checkpoint 4 complete.
 
 ## Business Rules
 

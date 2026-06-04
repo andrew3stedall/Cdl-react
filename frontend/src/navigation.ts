@@ -38,6 +38,11 @@ export const primaryNavigationItems: NavigationItem[] = [
     featureKey: 'modernisation-checkpoint-3',
   },
   {
+    label: 'Checkpoint 4',
+    href: '/modernisation/checkpoint-4',
+    featureKey: 'modernisation-checkpoint-4',
+  },
+  {
     label: 'Rules',
     href: '/rules',
     featureKey: 'rules',

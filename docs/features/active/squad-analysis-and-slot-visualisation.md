@@ -6,7 +6,7 @@ Define the squad page as a visual slot-based analysis view showing filled/empty 
 
 ## Status
 
-Proposed / accepted discovery.
+Checkpoint 4 implementation contracts are in progress on `checkpoint-4-competition-experience`.
 
 ## Business Rules
 

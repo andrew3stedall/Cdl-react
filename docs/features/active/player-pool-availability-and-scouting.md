@@ -6,7 +6,7 @@ Define a unified player pool used across draft, free agency, trades, squad manag
 
 ## Status
 
-Proposed / accepted discovery.
+Checkpoint 4 implementation contracts are in progress on `checkpoint-4-competition-experience`.
 
 ## Business Rules
 

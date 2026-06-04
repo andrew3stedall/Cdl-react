@@ -95,6 +95,34 @@ const checkpointThreeFeatures: CheckpointFeature[] = [
   },
 ];
 
+const checkpointFourFeatures: CheckpointFeature[] = [
+  {
+    issue: 42,
+    title: 'Gameweek Centre, fixture detail, score explanations, and table toggles',
+    api: '/api/modernisation/gameweek-centre/gw-4',
+  },
+  {
+    issue: 41,
+    title: 'Knockout brackets, two-leg aggregate, tiebreakers, and progression',
+    api: '/api/modernisation/knockout/cup-2026/bracket',
+  },
+  {
+    issue: 43,
+    title: 'Player pool availability, reasons, scouting, and private watchlists',
+    api: '/api/modernisation/players',
+  },
+  {
+    issue: 44,
+    title: 'Player detail, FPL history, CDL history, and comparison metrics',
+    api: '/api/modernisation/players/fpl-201',
+  },
+  {
+    issue: 45,
+    title: 'Squad analysis, slot visualisation, temporary rights, and risk indicators',
+    api: '/api/modernisation/squad-analysis/season-team-castle',
+  },
+];
+
 const checkpointContent: Record<number, CheckpointContent> = {
   1: {
     checkpoint: 1,
@@ -122,6 +150,15 @@ const checkpointContent: Record<number, CheckpointContent> = {
     combinedContract: '/api/modernisation/checkpoint-3',
     status: 'Squad movement contract layer',
     features: checkpointThreeFeatures,
+  },
+  4: {
+    checkpoint: 4,
+    eyebrow: 'Checkpoint 4',
+    title: 'Competition and player experience contracts',
+    summary: 'Contracts for Gameweek Centre, knockouts, player pool, player detail, comparison, and squad analysis.',
+    combinedContract: '/api/modernisation/checkpoint-4',
+    status: 'Competition experience contract layer',
+    features: checkpointFourFeatures,
   },
 };
 

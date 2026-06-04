@@ -6,7 +6,7 @@ Define the main competition hub for current gameweek, fixture detail breakdowns,
 
 ## Status
 
-Checkpoint 4 implementation contracts are in progress on `checkpoint-4-competition-experience`.
+Checkpoint 4 complete.
 
 ## Business Rules
 

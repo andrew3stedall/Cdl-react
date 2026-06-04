@@ -217,6 +217,17 @@ def player_pool(include_blocked: bool = True, include_injured: bool = True) -> d
     return {"players": players, "availability_reasons_visible": True}
 
 
+@router.get("/players/compare", response_model=None)
+def compare_players(player_ids: str) -> dict[str, Any]:
+    ids = [player_id.strip() for player_id in player_ids.split(",") if player_id.strip()]
+    comparisons = [PLAYERS[player_id] for player_id in ids if player_id in PLAYERS]
+    return {
+        "players": comparisons,
+        "metrics": ["points", "minutes", "form", "cost", "status", "availability"],
+        "fixtures_included": True,
+    }
+
+
 @router.get("/players/{fpl_player_id}", response_model=None)
 def player_detail(fpl_player_id: str) -> dict[str, Any] | JSONResponse:
     player = PLAYERS.get(fpl_player_id)
@@ -228,17 +239,6 @@ def player_detail(fpl_player_id: str) -> dict[str, Any] | JSONResponse:
         "cdl_history": CDL_HISTORY.get(fpl_player_id, []),
         "histories_separated": True,
         "actions": ["watch", "compare", "add_free_agency_preference"],
-    }
-
-
-@router.get("/players/compare", response_model=None)
-def compare_players(player_ids: str) -> dict[str, Any]:
-    ids = [player_id.strip() for player_id in player_ids.split(",") if player_id.strip()]
-    comparisons = [PLAYERS[player_id] for player_id in ids if player_id in PLAYERS]
-    return {
-        "players": comparisons,
-        "metrics": ["points", "minutes", "form", "cost", "status", "availability"],
-        "fixtures_included": True,
     }
 
 

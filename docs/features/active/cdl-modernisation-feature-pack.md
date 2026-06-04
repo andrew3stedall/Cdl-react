@@ -1,6 +1,6 @@
 # CDL Modernisation Feature Pack
 
-Status: Checkpoint 3 implementation contracts merged in PR #52.
+Status: Checkpoint 4 implementation contracts are in progress on `checkpoint-4-competition-experience`.
 
 ## Purpose
 
@@ -14,6 +14,7 @@ This index groups the agreed CDL redesign work into implementable feature docume
 - CI for PR #51 passed backend lint/format/pytest and frontend lint/test/build before merge.
 - Checkpoint 3 completed in PR #52: free agency draws, transfers/loans, notifications, activity, and deadlines.
 - CI for PR #52 passed backend lint/format/pytest and frontend lint/test/build before merge.
+- Checkpoint 4 covers Gameweek Centre, knockout brackets, player pool/scouting, player detail/comparison, and squad analysis in issues #42, #41, #43, #44, and #45.
 
 ## Foundation
 
@@ -39,14 +40,14 @@ This index groups the agreed CDL redesign work into implementable feature docume
 
 - [x] `fixture-scoring-snapshots-and-finalisation.md` (#39)
 - [x] `league-table-and-table-movement.md` (#40)
-- [ ] `knockout-brackets-and-tiebreakers.md` (#41)
-- [ ] `gameweek-centre-and-fixture-detail.md` (#42)
+- [x] `knockout-brackets-and-tiebreakers.md` (#41)
+- [x] `gameweek-centre-and-fixture-detail.md` (#42)
 
 ## Player experience
 
-- [ ] `player-pool-availability-and-scouting.md` (#43)
-- [ ] `player-detail-history-and-comparison.md` (#44)
-- [ ] `squad-analysis-and-slot-visualisation.md` (#45)
+- [x] `player-pool-availability-and-scouting.md` (#43)
+- [x] `player-detail-history-and-comparison.md` (#44)
+- [x] `squad-analysis-and-slot-visualisation.md` (#45)
 
 ## Notifications and operations
 
@@ -65,6 +66,5 @@ Build by dependency order rather than page order:
 1. Domain foundation. Completed in checkpoint 1.
 2. Squad and allocation foundation. Completed in checkpoint 3.
 3. Weekly lineup and scoring loop. Completed in checkpoint 2.
-4. Competition views.
-5. Player/scouting workflows.
-6. Migration and historical hardening.
+4. Competition views and player experience. Implemented in checkpoint 4 branch.
+5. Migration and historical hardening.

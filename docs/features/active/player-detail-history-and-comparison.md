@@ -6,7 +6,7 @@ Define player detail pages, FPL gameweek history, CDL ownership history, and pla
 
 ## Status
 
-Proposed / accepted discovery.
+Checkpoint 4 complete.
 
 ## Business Rules
 

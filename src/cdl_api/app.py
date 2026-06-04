@@ -8,6 +8,7 @@ from cdl_api.routers.fdr import router as fdr_router
 from cdl_api.routers.league import router as league_router
 from cdl_api.routers.modernisation import router as modernisation_router
 from cdl_api.routers.modernisation_competition_experience import router as competition_router
+from cdl_api.routers.modernisation_history import router as history_router
 from cdl_api.routers.modernisation_squad_movement import router as movement_router
 from cdl_api.routers.modernisation_weekly import router as modernisation_weekly_router
 from cdl_api.routers.preferences import router as preferences_router
@@ -30,6 +31,7 @@ def create_app() -> FastAPI:
     app.include_router(modernisation_weekly_router, prefix=settings.api_prefix)
     app.include_router(movement_router, prefix=settings.api_prefix)
     app.include_router(competition_router, prefix=settings.api_prefix)
+    app.include_router(history_router, prefix=settings.api_prefix)
     app.include_router(squad_router, prefix=settings.api_prefix)
     app.include_router(team_selection_router, prefix=settings.api_prefix)
 

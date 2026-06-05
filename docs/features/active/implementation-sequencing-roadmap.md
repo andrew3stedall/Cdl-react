@@ -6,7 +6,7 @@ Define practical build checkpoints for the redesigned CDL application.
 
 ## Status
 
-Proposed / accepted discovery.
+Checkpoint 5 implementation contracts are in progress on `checkpoint-5-history-documentation`.
 
 ## Principle
 

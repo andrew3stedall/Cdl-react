@@ -6,7 +6,7 @@ Define scenario-driven testing, service tests, permission tests, time-based test
 
 ## Status
 
-Checkpoint 5 implementation contracts are in progress on `checkpoint-5-history-documentation`.
+Checkpoint 5 complete.
 
 ## Test Categories
 

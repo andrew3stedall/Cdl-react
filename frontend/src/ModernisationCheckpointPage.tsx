@@ -123,6 +123,24 @@ const checkpointFourFeatures: CheckpointFeature[] = [
   },
 ];
 
+const checkpointFiveFeatures: CheckpointFeature[] = [
+  {
+    issue: 47,
+    title: 'Legacy data migration dry-runs, backfill review, and archive reference views',
+    api: '/api/modernisation/migration/dry-run',
+  },
+  {
+    issue: 48,
+    title: 'Domain test strategy, parity matrix, fixed clocks, and explicit legacy gaps',
+    api: '/api/modernisation/parity-matrix',
+  },
+  {
+    issue: 49,
+    title: 'Implementation sequencing roadmap, dependency order, and incomplete-state guards',
+    api: '/api/modernisation/roadmap',
+  },
+];
+
 const checkpointContent: Record<number, CheckpointContent> = {
   1: {
     checkpoint: 1,
@@ -159,6 +177,15 @@ const checkpointContent: Record<number, CheckpointContent> = {
     combinedContract: '/api/modernisation/checkpoint-4',
     status: 'Competition experience contract layer',
     features: checkpointFourFeatures,
+  },
+  5: {
+    checkpoint: 5,
+    eyebrow: 'Checkpoint 5',
+    title: 'History and documentation contracts',
+    summary: 'Contracts for legacy migration, parity coverage, explicit gaps, and checkpoint sequencing readiness.',
+    combinedContract: '/api/modernisation/checkpoint-5',
+    status: 'History and documentation contract layer',
+    features: checkpointFiveFeatures,
   },
 };
 

@@ -6,7 +6,7 @@ Define how historical CDL data should be carried forward into the redesigned app
 
 ## Status
 
-Proposed / accepted discovery.
+Checkpoint 5 implementation contracts are in progress on `checkpoint-5-history-documentation`.
 
 ## Business Rules
 

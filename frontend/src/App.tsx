@@ -147,6 +147,10 @@ export function App({
     routeContent = <ModernisationCheckpointPage checkpoint={4} />;
   }
 
+  if (currentPath.startsWith('/modernisation/checkpoint-5')) {
+    routeContent = <ModernisationCheckpointPage checkpoint={5} />;
+  }
+
   if (currentPath.startsWith('/dashboard')) {
     routeContent = <AnalyticsDashboardPage dashboardClient={dashboardClient} />;
   }

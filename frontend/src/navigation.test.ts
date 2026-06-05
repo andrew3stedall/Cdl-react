@@ -12,6 +12,7 @@ describe('navigation configuration', () => {
       'Checkpoint 2',
       'Checkpoint 3',
       'Checkpoint 4',
+      'Checkpoint 5',
       'Rules',
       'Dashboard',
       'FDR',
@@ -31,5 +32,6 @@ describe('navigation configuration', () => {
     expect(getNavigationItemByPath('/modernisation/checkpoint-2')?.label).toBe('Checkpoint 2');
     expect(getNavigationItemByPath('/modernisation/checkpoint-3')?.label).toBe('Checkpoint 3');
     expect(getNavigationItemByPath('/modernisation/checkpoint-4')?.label).toBe('Checkpoint 4');
+    expect(getNavigationItemByPath('/modernisation/checkpoint-5')?.label).toBe('Checkpoint 5');
   });
 });

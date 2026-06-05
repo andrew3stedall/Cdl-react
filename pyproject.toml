@@ -32,12 +32,14 @@ extend-exclude = [
     "src/cdl_api/repositories/squad.py",
     "src/cdl_api/routers/modernisation.py",
     "src/cdl_api/routers/modernisation_competition_experience.py",
+    "src/cdl_api/routers/modernisation_history.py",
     "src/cdl_api/routers/modernisation_squad_movement.py",
     "src/cdl_api/routers/modernisation_weekly.py",
     "tests/test_checkpoint1_modernisation_api.py",
     "tests/test_checkpoint2_modernisation_api.py",
     "tests/test_checkpoint3_modernisation_api.py",
     "tests/test_checkpoint4_modernisation_api.py",
+    "tests/test_checkpoint5_modernisation_api.py",
 ]
 
 [tool.ruff.lint]
@@ -48,6 +50,7 @@ ignore = ["ANN101", "ANN102"]
 "src/cdl_api/repositories/squad.py" = ["E501"]
 "src/cdl_api/routers/modernisation.py" = ["ANN401", "E501", "S324"]
 "src/cdl_api/routers/modernisation_competition_experience.py" = ["ANN401", "E501", "S324"]
+"src/cdl_api/routers/modernisation_history.py" = ["ANN401", "E501", "S324"]
 "src/cdl_api/routers/modernisation_squad_movement.py" = ["ANN401", "E501", "S324"]
 "src/cdl_api/routers/modernisation_weekly.py" = ["ANN401", "E501", "S324"]
 "src/cdl_api/routers/*.py" = ["B008"]
@@ -56,6 +59,7 @@ ignore = ["ANN101", "ANN102"]
 "tests/test_checkpoint2_modernisation_api.py" = ["E501"]
 "tests/test_checkpoint3_modernisation_api.py" = ["E501"]
 "tests/test_checkpoint4_modernisation_api.py" = ["E501"]
+"tests/test_checkpoint5_modernisation_api.py" = ["E501"]
 "tests/**/*.py" = ["S101", "S106"]
 
 [tool.pytest.ini_options]

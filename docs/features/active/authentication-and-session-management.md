@@ -4,6 +4,10 @@
 
 Replace the legacy login and session checks with a modern, API-driven authentication flow for the Castle Draft League application.
 
+## Status
+
+Implemented foundation. Production user/session persistence and full legacy-session parity remain pending.
+
 ## Legacy Inventory
 
 - `index.php` renders a Castle Draft login page with email and password fields.

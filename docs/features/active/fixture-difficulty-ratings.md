@@ -4,6 +4,10 @@
 
 Plan the modern replacement for the legacy FDR screen, including attack and defence fixture difficulty views, filters, colour scales, and responsive tables.
 
+## Status
+
+Implemented foundation. Persistent FDR data source, rating-calculation parity, and full responsive table coverage remain pending.
+
 ## Legacy Inventory
 
 - `FDR.html` renders the Fixture Difficulty Ratings page with filters and widgets containers.

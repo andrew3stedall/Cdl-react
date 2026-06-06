@@ -4,6 +4,10 @@
 
 Plan the modern replacement for the legacy League screen, including Castle Draft League fixtures, next fixtures, standings, knockout data, head-to-head views, and fixture detail interactions.
 
+## Status
+
+Implemented foundation. Persistent fixture/result storage, full table parity, and complete season edge cases remain pending.
+
 ## Legacy Inventory
 
 - `fixtures.html` renders League navigation, CDL table, gameweek fixtures, next fixtures, and all fixtures.

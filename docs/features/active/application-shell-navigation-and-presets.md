@@ -4,6 +4,10 @@
 
 Replace repeated legacy static headers, off-canvas panels, reload links, and global CSS-driven layout with a modern React application shell using shadcn/ui and configurable visual presets.
 
+## Status
+
+Implemented foundation. Persisted user preferences and full legacy responsive regression coverage remain pending.
+
 ## Legacy Inventory
 
 - Legacy pages repeat `headerMain` navigation with links for Squad Management, Team Selection, League, Rules, Dashboard, FDR, Scouting, Sign Out, and Reload.

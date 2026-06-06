@@ -6,6 +6,10 @@ Maintain the authoritative migration index that maps legacy Castle Draft League 
 
 This feature is intentionally planning-focused. It does not move implementation feature documents to completed; it keeps the migration map current while the legacy application is still being re-reviewed.
 
+## Status
+
+Active migration index. Major reviewed legacy screens are mapped to active feature documents; unresolved endpoint, database, dashboard, and FDR re-review work remains pending.
+
 ## Source of Truth
 
 - Issue: #11

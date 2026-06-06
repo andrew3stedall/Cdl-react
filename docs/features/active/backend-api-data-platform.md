@@ -4,6 +4,10 @@
 
 Plan the Python backend platform that replaces PHP endpoints, hard-coded SQL access, and frontend-coupled data shaping with API-driven services, Pydantic models, repository classes, and testable business logic.
 
+## Status
+
+Implemented foundation. Persistent storage wiring, full repository coverage, and legacy endpoint parity remain pending.
+
 ## Legacy Inventory
 
 Sampled frontend modules call PHP endpoints including:

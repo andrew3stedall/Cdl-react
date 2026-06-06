@@ -4,6 +4,10 @@
 
 Plan the modern replacement for the legacy Squad Management screen, including player scouting, squad overview, interests, proposed trades, and transfer workflows.
 
+## Status
+
+Implemented foundation. Persistent squad, interest, scouting, and transfer storage remain pending.
+
 ## Legacy Inventory
 
 - `index.html` is the authenticated Squad Management page.

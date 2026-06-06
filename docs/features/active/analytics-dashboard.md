@@ -4,6 +4,10 @@
 
 Plan the modern replacement for the legacy Dashboard screen, including metric widgets, filters, drill-downs, and chart/table visualisations.
 
+## Status
+
+Implemented foundation. Persistent dashboard configuration, full metric catalogue validation, and legacy widget parity remain pending.
+
 ## Legacy Inventory
 
 - `dashboard.html` renders a Dashboard page with filter and widget containers.

@@ -4,6 +4,10 @@
 
 Plan the modern replacement for the legacy Rules page as a structured, searchable, maintainable knowledge base.
 
+## Status
+
+Implemented foundation. Admin editing, complete rule version history, and enforceable service-rule parity remain pending.
+
 ## Legacy Inventory
 
 - `rules.html` contains league rules as static HTML.

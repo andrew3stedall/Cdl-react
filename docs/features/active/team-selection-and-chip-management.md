@@ -4,6 +4,10 @@
 
 Plan the modern replacement for the legacy Team Selection screen, including lineup selection, chips, bench, reserves, CDL fixtures, EPL fixtures, and tables.
 
+## Status
+
+Implemented foundation. Persistent lineup/chip storage and full legacy rule parity remain pending.
+
 ## Legacy Inventory
 
 - `myTeam.html` renders Team Selection with sections for chips, team pitch, bench, reserves, Castle Draft League fixtures/table, and Premier League fixtures/table.

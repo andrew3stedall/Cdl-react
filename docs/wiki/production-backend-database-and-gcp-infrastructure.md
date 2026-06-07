@@ -4,7 +4,9 @@
 
 This page summarises the issue #58 planning decision record for moving Castle Draft League toward persistent production data and deployable GCP infrastructure.
 
-Source of truth: `docs/features/active/production-backend-database-and-gcp-infrastructure.md`.
+Source of truth: `docs/features/completed/minor/v0.1.0/production-backend-database-and-gcp-infrastructure.md`.
+
+Focused production persistence ADR: `docs/architecture/production-persistence-adr.md`.
 
 ## Decision Snapshot
 
@@ -19,6 +21,17 @@ Source of truth: `docs/features/active/production-backend-database-and-gcp-infra
 | Secrets | Secret Manager |
 | Infrastructure | Declarative IaC, such as Terraform/OpenTofu-style configuration |
 | Environments | Local, preview, staging, production |
+
+## Production Persistence ADR
+
+Issue #60 confirms the first production persistence architecture:
+
+- Cloud SQL for PostgreSQL is the first managed production database service.
+- Alembic is the migration/versioning mechanism.
+- Local and CI workflows must use PostgreSQL so tests exercise production-like constraints.
+- A settings-driven repository factory should switch between existing in-memory repositories and PostgreSQL-backed repositories as domain migrations land.
+- Schema migrations and historical import jobs remain separate.
+- Firestore, AlloyDB, Spanner, BigQuery-first storage, SQLite-only production, and manual SQL changes are deferred alternatives.
 
 ## Architecture Summary
 
@@ -56,20 +69,28 @@ The first production footprint should stay cost-conscious: one small production 
 
 ## Follow-Up Issue Register
 
-Planned follow-up work should be split into small implementation issues:
+Planned follow-up work is split into small implementation issues:
 
-1. Database architecture decision record.
-2. Local and CI PostgreSQL foundation.
-3. Backend database settings and repository factory.
-4. Auth/session/preference persistence.
-5. Core league and FPL cache schema.
-6. Squad, transfers, and trades persistence.
-7. Team-selection and chip persistence.
-8. Fixture, scoring, table, and knockout persistence.
-9. Dashboard and FDR production data.
-10. Legacy import and backfill tooling.
-11. GCP infrastructure bootstrap.
-12. Production deployment and go-live checklist.
+1. #60 Database architecture decision record.
+2. #61 Local and CI PostgreSQL foundation.
+3. #62 Backend database settings and repository factory.
+4. #63 Auth/session/preference persistence.
+5. #64 Core league and FPL cache schema.
+6. #65 Squad, transfers, and trades persistence.
+7. #66 Team-selection and chip persistence.
+8. #67 Fixture, scoring, table, and knockout persistence.
+9. #68 Dashboard and FDR production data.
+10. #69 Legacy import and backfill tooling.
+11. #70 GCP infrastructure bootstrap.
+12. #71 Production deployment and go-live checklist.
+
+Coordinator issue #75 tracks all implementation work. Milestone issues #76, #77, and #78 group the child issues.
+
+## GCP Gate
+
+Milestone issue #78 must not start until Andrew confirms that the manual GCP bootstrap checklist in `docs/runbooks/gcp-bootstrap-setup.md` is complete.
+
+Until that confirmation is posted, do not start #70 or #71.
 
 ## Operational Gates
 
@@ -86,11 +107,12 @@ Before real users are onboarded, the production path must have:
 
 ## Validation
 
-The repository includes documentation tests that verify the selected database, hosting pattern, migration tooling, secrets strategy, environment plan, schema domains, and follow-up issue register remain visible.
+The repository includes documentation tests that verify the selected database, hosting pattern, migration tooling, secrets strategy, environment plan, schema domains, follow-up issue register, ADR path, and GCP gate remain visible.
 
 ## Maintenance Rules
 
-- Keep the active feature document in `docs/features/active/` until the planning issue is accepted and follow-up implementation issues are created or linked.
+- Keep feature documents in `docs/features/active/` until their implementation issue is accepted.
+- Move completed feature documents to `docs/features/completed/` during release finalisation.
 - Update this wiki page when the database service, hosting model, environment strategy, or follow-up sequencing changes.
 - Update affected active feature documents when persistence ownership or schema waves change.
 - Do not treat this planning document as proof that any GCP resource or production database has been provisioned.

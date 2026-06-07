@@ -1,8 +1,6 @@
 from pathlib import Path
 
-FEATURE_PATH = Path(
-    "docs/features/active/production-backend-database-and-gcp-infrastructure.md"
-)
+FEATURE_PATH = Path("docs/features/active/production-backend-database-and-gcp-infrastructure.md")
 WIKI_PATH = Path("docs/wiki/production-backend-database-and-gcp-infrastructure.md")
 
 

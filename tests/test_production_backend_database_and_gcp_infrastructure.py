@@ -1,6 +1,8 @@
 from pathlib import Path
 
-FEATURE_PATH = Path("docs/features/active/production-backend-database-and-gcp-infrastructure.md")
+FEATURE_PATH = Path(
+    "docs/features/active/production-backend-database-and-gcp-infrastructure.md"
+)
 WIKI_PATH = Path("docs/wiki/production-backend-database-and-gcp-infrastructure.md")
 
 
@@ -90,6 +92,9 @@ def test_wiki_summarises_architecture_and_operational_gates() -> None:
         "Local, preview, staging, production",
         "Automated Cloud SQL backups and point-in-time recovery",
         "Cloud Run scaling limits sized against Cloud SQL connection capacity",
-        "Do not treat this planning document as proof that any GCP resource or production database has been provisioned.",
+        (
+            "Do not treat this planning document as proof that any GCP resource "
+            "or production database has been provisioned."
+        ),
     ]:
         assert phrase in content

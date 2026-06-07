@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-06-07 - Plan production backend database and GCP infrastructure
+
+### Added
+
+- Added a production database and GCP infrastructure planning feature document for issue #58.
+- Selected Cloud SQL for PostgreSQL, Alembic migrations, Cloud Run backend hosting, static React hosting, Secret Manager, declarative infrastructure, and local/preview/staging/production environments.
+- Mapped production schema domains to current active feature documents and persistence implementation waves.
+- Added a draft follow-up issue register for database foundation, repository persistence, legacy import/backfill, GCP bootstrap, and production go-live readiness.
+- Added wiki documentation summarising the production infrastructure decisions and operational gates.
+
+### Validation
+
+- Added documentation tests that verify the selected platform decisions, environment strategy, schema domains, follow-up issue register, and wiki operational gates remain visible.
+- Kept `docs/features/active/production-backend-database-and-gcp-infrastructure.md` active until the planning issue is accepted and follow-up implementation issues are created or linked.
+
 ## 2026-05-23 - Refresh parallel development coordination
 
 ### Changed

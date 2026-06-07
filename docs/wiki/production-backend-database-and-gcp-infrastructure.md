@@ -2,9 +2,11 @@
 
 ## Purpose
 
-This page summarises the issue #58 planning decision record for moving Castle Draft League toward persistent production data and deployable GCP infrastructure.
+This page summarises the completed issue #58 planning record for moving Castle Draft League toward persistent production data and deployable GCP infrastructure.
 
-Source of truth: `docs/features/active/production-backend-database-and-gcp-infrastructure.md`.
+Source of truth: `docs/features/completed/minor/v0.1.0/production-backend-database-and-gcp-infrastructure.md`.
+
+Planning implementation remains open in the follow-up issue register; this page does not indicate that production infrastructure has been provisioned.
 
 ## Decision Snapshot
 
@@ -43,7 +45,7 @@ The first production footprint should stay cost-conscious: one small production 
 | Wave 4 | Lineups, captaincy, vice captaincy, bench/reserve order, chips, fixture lock state |
 | Wave 5 | CDL fixtures, EPL fixtures, results, scoring snapshots, league tables, knockouts, rules versions |
 | Wave 6 | Dashboard definitions, metric catalog, aggregate snapshots, FDR ratings, production calculation inputs |
-| Cross-cutting | Audit events, admin actions, legacy ID mappings, import batches, archived source payloads, review items |
+| Cross-cutting | Audit events, admin actions, source ID mappings, import batches, archived source payloads, review items |
 
 ## Environment Strategy
 
@@ -56,20 +58,20 @@ The first production footprint should stay cost-conscious: one small production 
 
 ## Follow-Up Issue Register
 
-Planned follow-up work should be split into small implementation issues:
+Implementation work is split into small issues:
 
-1. Database architecture decision record.
-2. Local and CI PostgreSQL foundation.
-3. Backend database settings and repository factory.
-4. Auth/session/preference persistence.
-5. Core league and FPL cache schema.
-6. Squad, transfers, and trades persistence.
-7. Team-selection and chip persistence.
-8. Fixture, scoring, table, and knockout persistence.
-9. Dashboard and FDR production data.
-10. Legacy import and backfill tooling.
-11. GCP infrastructure bootstrap.
-12. Production deployment and go-live checklist.
+1. #60 - Database architecture decision record.
+2. #61 - Local and CI PostgreSQL foundation.
+3. #62 - Backend database settings and repository factory.
+4. #63 - Auth/session/preference persistence.
+5. #64 - Core league and FPL cache schema.
+6. #65 - Squad, transfers, and trades persistence.
+7. #66 - Team-selection and chip persistence.
+8. #67 - Fixture, scoring, table, and knockout persistence.
+9. #68 - Dashboard and FDR production data.
+10. #69 - Data import tooling for historical CDL data.
+11. #70 - GCP infrastructure bootstrap for staging.
+12. #71 - Production deployment and go-live checklist.
 
 ## Operational Gates
 
@@ -86,11 +88,11 @@ Before real users are onboarded, the production path must have:
 
 ## Validation
 
-The repository includes documentation tests that verify the selected database, hosting pattern, migration tooling, secrets strategy, environment plan, schema domains, and follow-up issue register remain visible.
+The repository includes documentation tests that verify the selected database, hosting pattern, migration tooling, secrets strategy, environment plan, schema domains, completed planning feature, and follow-up issue register remain visible.
 
 ## Maintenance Rules
 
-- Keep the active feature document in `docs/features/active/` until the planning issue is accepted and follow-up implementation issues are created or linked.
+- Keep implementation progress tracked through issues #60 through #71.
 - Update this wiki page when the database service, hosting model, environment strategy, or follow-up sequencing changes.
 - Update affected active feature documents when persistence ownership or schema waves change.
 - Do not treat this planning document as proof that any GCP resource or production database has been provisioned.

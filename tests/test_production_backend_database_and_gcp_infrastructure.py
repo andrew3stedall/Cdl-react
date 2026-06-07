@@ -1,6 +1,9 @@
 from pathlib import Path
 
-FEATURE_PATH = Path("docs/features/active/production-backend-database-and-gcp-infrastructure.md")
+FEATURE_PATH = (
+    Path("docs/features/completed/minor/v0.1.0")
+    / "production-backend-database-and-gcp-infrastructure.md"
+)
 WIKI_PATH = Path("docs/wiki/production-backend-database-and-gcp-infrastructure.md")
 
 
@@ -32,7 +35,7 @@ def test_environment_strategy_is_documented() -> None:
     for environment in ["Local", "Preview", "Staging", "Production"]:
         assert f"| {environment} |" in content
 
-    assert "separate connection strings and service accounts" in content
+    assert "least-privilege IAM" in content
     assert "staging restore drill" in content
 
 
@@ -40,17 +43,13 @@ def test_schema_domains_are_mapped_to_persistence_waves() -> None:
     content = read_feature()
 
     for domain in [
-        "Identity and auth",
-        "Preferences",
-        "League structure",
-        "FPL reference cache",
-        "Squad rights",
-        "Transfers and trades",
-        "Team selection",
-        "Fixtures and scoring",
-        "Rules and policy",
-        "Dashboard and FDR",
-        "Legacy migration",
+        "Users",
+        "Leagues",
+        "Squad ownership",
+        "Lineups",
+        "CDL fixtures",
+        "Dashboard definitions",
+        "source ID mappings",
     ]:
         assert domain in content
 
@@ -61,23 +60,23 @@ def test_schema_domains_are_mapped_to_persistence_waves() -> None:
 def test_follow_up_issue_register_is_visible() -> None:
     content = read_feature()
 
-    for draft_issue in [
-        "Database architecture decision record",
-        "Local and CI PostgreSQL foundation",
-        "Backend database settings and repository factory",
-        "Auth/session/preference persistence",
-        "Core league and FPL cache schema",
-        "Squad, transfers, and trades persistence",
-        "Team-selection and chip persistence",
-        "Fixture, scoring, table, and knockout persistence",
-        "Dashboard and FDR production data",
-        "Legacy import and backfill tooling",
-        "GCP infrastructure bootstrap",
-        "Production deployment and go-live checklist",
+    for issue_reference in [
+        "#60",
+        "#61",
+        "#62",
+        "#63",
+        "#64",
+        "#65",
+        "#66",
+        "#67",
+        "#68",
+        "#69",
+        "#70",
+        "#71",
     ]:
-        assert draft_issue in content
+        assert issue_reference in content
 
-    assert "Acceptance gate" in content
+    assert "Remaining Implementation Work" in content
 
 
 def test_wiki_summarises_architecture_and_operational_gates() -> None:
@@ -96,3 +95,12 @@ def test_wiki_summarises_architecture_and_operational_gates() -> None:
         ),
     ]:
         assert phrase in content
+
+
+def test_completed_planning_feature_links_release_and_pr() -> None:
+    content = read_feature()
+
+    assert "Planning issue: #58" in content
+    assert "Merged PR: #59" in content
+    assert "docs/releases/v0.1.0.md" in content
+    assert "Production database and GCP implementation is not complete" in content

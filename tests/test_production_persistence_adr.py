@@ -1,8 +1,7 @@
 from pathlib import Path
 
 FEATURE_PATH = Path(
-    "docs/features/active/"
-    "database-architecture-decision-record-for-production-persistence.md"
+    "docs/features/active/database-architecture-decision-record-for-production-persistence.md"
 )
 ADR_PATH = Path("docs/architecture/production-persistence-adr.md")
 WIKI_PATH = Path("docs/wiki/production-backend-database-and-gcp-infrastructure.md")

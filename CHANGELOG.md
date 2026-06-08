@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-06-07 - Add production persistence ADR
+
+### Added
+
+- Added the issue #60 production persistence architecture decision record.
+- Confirmed Cloud SQL for PostgreSQL, Alembic-managed migrations, local/CI PostgreSQL, and a settings-driven repository factory as the first production persistence path.
+- Documented deferred database alternatives and the dependency handoff to #61 and #62.
+- Updated the production database/GCP wiki with the ADR path and the #78 GCP bootstrap gate.
+
+### Validation
+
+- Added documentation tests for the issue #60 feature document, production persistence ADR, deferred alternatives, wiki ADR link, and GCP gate.
+
 ## 2026-06-07 - Plan production backend database and GCP infrastructure
 
 ### Added
@@ -77,7 +90,6 @@
 - Added backend service tests for catalog/config exposure, filtered widget queries, filter validation, and drill-down context.
 - Added backend API integration tests for config/catalog endpoints, widget query validation, drill-down rows, and missing-widget errors.
 - Added frontend tests for dashboard rendering, filter re-query behaviour, drill-down flows, and shell/session route behaviour.
-- Feature document remains under `docs/features/active/` until CI validation passes.
 
 ## 2026-05-22 - Maintain legacy migration feature index
 
@@ -110,7 +122,6 @@
 - Added backend service tests for selection load, valid lineup updates, invalid lineup validation, chip activation, used-chip validation, second-active-chip validation, and fixture summaries.
 - Added backend API integration tests for selection load, lineup update, lineup validation errors, chip activation/validation, and fixture summary context.
 - Added frontend tests for team-selection rendering, chip toggles, invalid lineup feedback, and shell/session route behaviour.
-- Feature document remains under `docs/features/active/` until CI validation passes.
 
 ## 2026-05-22 - Implement squad management scouting and transfers
 
@@ -127,7 +138,6 @@
 - Added backend service tests for squad totals, scouting filters, interest validation, and trade rules links.
 - Added backend API integration tests for summary, scouting filters, interest create/delete, validation errors, and trade create/update flow.
 - Added frontend tests for squad rendering, scouting filtering, interest creation, trade rule links, and player detail.
-- Feature document remains under `docs/features/active/` until CI validation passes.
 
 ## 2026-05-22 - Implement league fixtures and table
 
@@ -144,7 +154,6 @@
 - Added backend service tests for fixture separation, fixture details, table calculations, knockout context, and head-to-head context.
 - Added backend API tests for league fixture, table, knockout, and head-to-head endpoints.
 - Added frontend shell tests for authenticated league route rendering.
-- Feature document remains under `docs/features/active/` until CI validation passes.
 
 ## 2026-05-22 - Implement application shell navigation and presets
 

@@ -25,7 +25,7 @@ def test_issue_60_feature_documents_database_decisions() -> None:
     for phrase in [
         "Cloud SQL for PostgreSQL",
         "Alembic-managed schema migrations",
-        "settings-driven repository factory",
+        "Settings-driven repository factory",
         "Local",
         "CI",
         "Staging",

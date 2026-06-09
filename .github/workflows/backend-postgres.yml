@@ -1,0 +1,32 @@
+name: Backend PostgreSQL
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  postgres-smoke:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: cdl
+          POSTGRES_USER: cdl
+          POSTGRES_HOST_AUTH_METHOD: trust
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cdl -d cdl"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      CDL_DATABASE_URL: postgresql+psycopg://cdl@localhost:5432/cdl
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - run: uv sync
+      - run: uv run alembic upgrade head

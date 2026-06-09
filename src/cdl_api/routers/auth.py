@@ -6,17 +6,20 @@ from fastapi.responses import JSONResponse
 from cdl_api.contracts.auth import LoginRequest, LoginResponse, LogoutResponse
 from cdl_api.contracts.common import ApiErrorResponse, ErrorCode
 from cdl_api.contracts.session import SessionState
-from cdl_api.repositories.auth import InMemorySessionRepository, InMemoryUserRepository
+from cdl_api.repositories.factory import build_repositories
 from cdl_api.services.auth import AuthenticationService
 from cdl_api.settings import Settings, get_settings
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-_users = InMemoryUserRepository()
-_sessions = InMemorySessionRepository()
 
 
 def get_auth_service(settings: Settings = Depends(get_settings)) -> AuthenticationService:
-    return AuthenticationService(_users, _sessions, settings.development_login_secret)
+    repositories = build_repositories(settings)
+    return AuthenticationService(
+        repositories.users,
+        repositories.sessions,
+        settings.development_login_secret,
+    )
 
 
 def _session_id_from_request(request: Request, settings: Settings) -> str | None:

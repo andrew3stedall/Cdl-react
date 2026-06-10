@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-06-10 - Add backend database settings and repository factory
+
+### Added
+
+- Added issue #62 backend database settings for repository mode, database URL, pool size, max overflow, and environment naming.
+- Added a repository factory and `RepositoryBundle` to centralise backend repository construction.
+- Routed auth service construction through the repository factory while preserving current in-memory API behaviour.
+- Added wiki documentation for repository modes, environment variables, and the #63 handoff.
+
+### Validation
+
+- Added tests for database settings, memory repository construction, guarded PostgreSQL mode, and documentation handoff coverage.
+
 ## 2026-06-07 - Add production persistence ADR
 
 ### Added

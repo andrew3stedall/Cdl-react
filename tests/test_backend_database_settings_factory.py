@@ -2,8 +2,11 @@ from pathlib import Path
 
 import pytest
 
+from cdl_api.database import build_session_factory
 from cdl_api.repositories.auth import InMemorySessionRepository, InMemoryUserRepository
 from cdl_api.repositories.factory import UnsupportedRepositoryModeError, build_repositories
+from cdl_api.repositories.postgres_auth import PostgreSQLSessionRepository, PostgreSQLUserRepository
+from cdl_api.repositories.postgres_preferences import PostgreSQLUserPreferenceRepository
 from cdl_api.settings import Settings
 
 FEATURE_PATH = Path("docs/features/active") / "backend-database-settings-and-repository-factory.md"
@@ -33,13 +36,31 @@ def test_memory_repository_mode_builds_current_repositories() -> None:
     assert isinstance(repositories.sessions, InMemorySessionRepository)
 
 
-def test_postgres_repository_mode_fails_until_repositories_exist() -> None:
+def test_postgres_repository_mode_builds_database_repositories(monkeypatch: pytest.MonkeyPatch) -> None:
     settings = Settings(
         repository_mode="postgres",
         database_url="postgresql+psycopg://example/db",
     )
+    session_factory = build_session_factory(settings)
 
-    with pytest.raises(UnsupportedRepositoryModeError, match="PostgreSQL repository mode"):
+    monkeypatch.setattr(
+        "cdl_api.repositories.factory.build_session_factory",
+        lambda _: session_factory,
+    )
+    monkeypatch.setattr(PostgreSQLUserRepository, "seed_demo_user", lambda _: None)
+
+    repositories = build_repositories(settings)
+
+    assert isinstance(repositories.users, PostgreSQLUserRepository)
+    assert isinstance(repositories.sessions, PostgreSQLSessionRepository)
+    assert isinstance(repositories.preferences, PostgreSQLUserPreferenceRepository)
+
+
+def test_unsupported_repository_mode_fails_clearly() -> None:
+    settings = Settings(repository_mode="memory")
+    object.__setattr__(settings, "repository_mode", "unknown")
+
+    with pytest.raises(UnsupportedRepositoryModeError, match="Unsupported repository mode"):
         build_repositories(settings)
 
 

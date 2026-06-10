@@ -1,8 +1,16 @@
+from pathlib import Path
+
 import pytest
 
 from cdl_api.repositories.auth import InMemorySessionRepository, InMemoryUserRepository
 from cdl_api.repositories.factory import UnsupportedRepositoryModeError, build_repositories
 from cdl_api.settings import Settings
+
+FEATURE_PATH = (
+    Path("docs/features/active")
+    / "backend-database-settings-and-repository-factory.md"
+)
+WIKI_PATH = Path("docs/wiki/backend-database-settings-and-repository-factory.md")
 
 
 def test_settings_expose_database_and_repository_controls() -> None:
@@ -39,15 +47,8 @@ def test_postgres_repository_mode_fails_until_repositories_exist() -> None:
 
 
 def test_feature_and_wiki_document_factory_handoff() -> None:
-    feature = (
-        "docs/features/active/backend-database-settings-and-repository-factory.md"
-    )
-    wiki = "docs/wiki/backend-database-settings-and-repository-factory.md"
-
-    from pathlib import Path
-
-    feature_content = Path(feature).read_text(encoding="utf-8")
-    wiki_content = Path(wiki).read_text(encoding="utf-8")
+    feature_content = FEATURE_PATH.read_text(encoding="utf-8")
+    wiki_content = WIKI_PATH.read_text(encoding="utf-8")
 
     for phrase in [
         "Active implementation feature for issue #62",

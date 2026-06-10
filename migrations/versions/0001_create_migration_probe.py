@@ -1,4 +1,4 @@
-"""create migration probe table
+"""create auth and preference tables
 
 Revision ID: 0001_create_migration_probe
 Revises:
@@ -18,6 +18,23 @@ depends_on: str | Sequence[str] | None = None
 
 def upgrade() -> None:
     op.create_table(
+        "users",
+        sa.Column("id", sa.String(length=64), primary_key=True),
+        sa.Column("email", sa.String(length=255), nullable=False, unique=True),
+        sa.Column("display_name", sa.String(length=255), nullable=False),
+        sa.Column("roles", sa.JSON(), nullable=False, server_default="[]"),
+    )
+    op.create_table(
+        "sessions",
+        sa.Column("id", sa.String(length=64), primary_key=True),
+        sa.Column("user_id", sa.String(length=64), sa.ForeignKey("users.id"), nullable=False),
+    )
+    op.create_table(
+        "user_preferences",
+        sa.Column("user_id", sa.String(length=64), sa.ForeignKey("users.id"), primary_key=True),
+        sa.Column("theme_preset", sa.String(length=64), nullable=False),
+    )
+    op.create_table(
         "migration_probe",
         sa.Column("id", sa.Integer(), primary_key=True),
         sa.Column("created_by_revision", sa.String(length=64), nullable=False),
@@ -26,3 +43,6 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     op.drop_table("migration_probe")
+    op.drop_table("user_preferences")
+    op.drop_table("sessions")
+    op.drop_table("users")

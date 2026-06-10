@@ -6,10 +6,7 @@ from cdl_api.repositories.auth import InMemorySessionRepository, InMemoryUserRep
 from cdl_api.repositories.factory import UnsupportedRepositoryModeError, build_repositories
 from cdl_api.settings import Settings
 
-FEATURE_PATH = (
-    Path("docs/features/active")
-    / "backend-database-settings-and-repository-factory.md"
-)
+FEATURE_PATH = Path("docs/features/active") / "backend-database-settings-and-repository-factory.md"
 WIKI_PATH = Path("docs/wiki/backend-database-settings-and-repository-factory.md")
 
 

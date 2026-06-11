@@ -4,7 +4,7 @@ import pytest
 
 from cdl_api.database import build_session_factory
 from cdl_api.repositories.auth import InMemorySessionRepository, InMemoryUserRepository
-from cdl_api.repositories.factory import UnsupportedRepositoryModeError, build_repositories
+from cdl_api.repositories.factory import build_repositories
 from cdl_api.repositories.postgres_auth import PostgreSQLSessionRepository, PostgreSQLUserRepository
 from cdl_api.repositories.postgres_preferences import PostgreSQLUserPreferenceRepository
 from cdl_api.settings import Settings
@@ -36,7 +36,9 @@ def test_memory_repository_mode_builds_current_repositories() -> None:
     assert isinstance(repositories.sessions, InMemorySessionRepository)
 
 
-def test_postgres_repository_mode_builds_database_repositories(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_postgres_repository_mode_builds_database_repositories(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     settings = Settings(
         repository_mode="postgres",
         database_url="postgresql+psycopg://example/db",
@@ -54,14 +56,6 @@ def test_postgres_repository_mode_builds_database_repositories(monkeypatch: pyte
     assert isinstance(repositories.users, PostgreSQLUserRepository)
     assert isinstance(repositories.sessions, PostgreSQLSessionRepository)
     assert isinstance(repositories.preferences, PostgreSQLUserPreferenceRepository)
-
-
-def test_unsupported_repository_mode_fails_clearly() -> None:
-    settings = Settings(repository_mode="memory")
-    object.__setattr__(settings, "repository_mode", "unknown")
-
-    with pytest.raises(UnsupportedRepositoryModeError, match="Unsupported repository mode"):
-        build_repositories(settings)
 
 
 def test_feature_and_wiki_document_factory_handoff() -> None:

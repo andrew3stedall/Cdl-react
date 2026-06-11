@@ -2,7 +2,7 @@
 
 from collections.abc import Callable
 
-from sqlalchemy import Column, MetaData, String, Table, insert, select
+from sqlalchemy import Column, MetaData, String, Table, select
 from sqlalchemy.dialects.postgresql import insert as postgres_insert
 from sqlalchemy.orm import Session
 

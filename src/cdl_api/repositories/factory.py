@@ -1,7 +1,6 @@
 """Repository construction helpers."""
 
 from dataclasses import dataclass
-from typing import Any
 
 from cdl_api.database import build_session_factory
 from cdl_api.repositories.auth import InMemorySessionRepository, InMemoryUserRepository
@@ -17,9 +16,9 @@ class UnsupportedRepositoryModeError(ValueError):
 
 @dataclass(frozen=True)
 class RepositoryBundle:
-    users: Any
-    sessions: Any
-    preferences: Any
+    users: object
+    sessions: object
+    preferences: object
 
 
 _memory_bundle = RepositoryBundle(

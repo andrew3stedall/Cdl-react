@@ -34,14 +34,18 @@ class PostgreSQLUserRepository:
 
     def get_by_email(self, email: str) -> UserRecord | None:
         with self._session_factory() as session:
-            row = session.execute(
-                select(
-                    users_table.c.id,
-                    users_table.c.email,
-                    users_table.c.display_name,
-                    users_table.c.roles,
-                ).where(users_table.c.email == email.lower())
-            ).mappings().first()
+            row = (
+                session.execute(
+                    select(
+                        users_table.c.id,
+                        users_table.c.email,
+                        users_table.c.display_name,
+                        users_table.c.roles,
+                    ).where(users_table.c.email == email.lower())
+                )
+                .mappings()
+                .first()
+            )
 
         if row is None:
             return None
@@ -88,17 +92,21 @@ class PostgreSQLSessionRepository:
             return None
 
         with self._session_factory() as session:
-            row = session.execute(
-                select(
-                    sessions_table.c.id,
-                    users_table.c.id.label("user_id"),
-                    users_table.c.email,
-                    users_table.c.display_name,
-                    users_table.c.roles,
+            row = (
+                session.execute(
+                    select(
+                        sessions_table.c.id,
+                        users_table.c.id.label("user_id"),
+                        users_table.c.email,
+                        users_table.c.display_name,
+                        users_table.c.roles,
+                    )
+                    .join(users_table, sessions_table.c.user_id == users_table.c.id)
+                    .where(sessions_table.c.id == session_id)
                 )
-                .join(users_table, sessions_table.c.user_id == users_table.c.id)
-                .where(sessions_table.c.id == session_id)
-            ).mappings().first()
+                .mappings()
+                .first()
+            )
 
         if row is None:
             return None

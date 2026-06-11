@@ -1,5 +1,19 @@
 # Changelog
 
+## 2026-06-10 - Persist auth sessions and user preferences
+
+### Added
+
+- Added issue #63 PostgreSQL persistence for users, sessions, and user preferences.
+- Added an append-only `0002_auth_preferences` migration after the #61 baseline migration.
+- Added PostgreSQL-backed auth/session and preference repositories.
+- Wired `postgres` repository mode through the repository factory while preserving default `memory` mode.
+- Added wiki documentation for auth/session/preference tables, repository modes, and the #64 handoff.
+
+### Validation
+
+- Added tests for PostgreSQL identity/session repositories and documentation coverage for the migration, factory handoff, and GCP gate.
+
 ## 2026-06-10 - Add backend database settings and repository factory
 
 ### Added

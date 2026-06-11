@@ -27,11 +27,21 @@ def upgrade() -> None:
     op.create_table(
         "sessions",
         sa.Column("id", sa.String(length=64), primary_key=True),
-        sa.Column("user_id", sa.String(length=64), sa.ForeignKey("users.id"), nullable=False),
+        sa.Column(
+            "user_id",
+            sa.String(length=64),
+            sa.ForeignKey("users.id"),
+            nullable=False,
+        ),
     )
     op.create_table(
         "user_preferences",
-        sa.Column("user_id", sa.String(length=64), sa.ForeignKey("users.id"), primary_key=True),
+        sa.Column(
+            "user_id",
+            sa.String(length=64),
+            sa.ForeignKey("users.id"),
+            primary_key=True,
+        ),
         sa.Column("theme_preset", sa.String(length=64), nullable=False),
     )
 

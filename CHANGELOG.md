@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-06-11 - Add core league and FPL cache schema
+
+### Added
+
+- Added issue #64 PostgreSQL schema for leagues, seasons, draft teams, managers, memberships, permissions, EPL teams, FPL positions, FPL players, values, availability, and cache freshness.
+- Added append-only `0003_core_league_fpl_cache` migration after the #63 auth/session/preference migration.
+- Added PostgreSQL metadata for the core league and FPL cache table set.
+- Added wiki documentation for the #64 schema and handoff.
+
+### Validation
+
+- Added tests for the expected table set and migration dependency on `0002_auth_preferences`.
+
 ## 2026-06-10 - Persist auth sessions and user preferences
 
 ### Added

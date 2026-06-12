@@ -26,7 +26,12 @@ def upgrade() -> None:
     op.create_table(
         "seasons",
         sa.Column("id", sa.String(length=64), primary_key=True),
-        sa.Column("league_id", sa.String(length=64), sa.ForeignKey("leagues.id"), nullable=False),
+        sa.Column(
+            "league_id",
+            sa.String(length=64),
+            sa.ForeignKey("leagues.id"),
+            nullable=False,
+        ),
         sa.Column("name", sa.String(length=64), nullable=False),
         sa.Column("start_gameweek", sa.Integer(), nullable=False),
         sa.Column("end_gameweek", sa.Integer(), nullable=False),
@@ -40,21 +45,41 @@ def upgrade() -> None:
     op.create_table(
         "draft_teams",
         sa.Column("id", sa.String(length=64), primary_key=True),
-        sa.Column("league_id", sa.String(length=64), sa.ForeignKey("leagues.id"), nullable=False),
+        sa.Column(
+            "league_id",
+            sa.String(length=64),
+            sa.ForeignKey("leagues.id"),
+            nullable=False,
+        ),
         sa.Column("manager_id", sa.String(length=64), sa.ForeignKey("managers.id"), nullable=True),
         sa.Column("name", sa.String(length=255), nullable=False),
     )
     op.create_table(
         "league_memberships",
         sa.Column("id", sa.String(length=64), primary_key=True),
-        sa.Column("league_id", sa.String(length=64), sa.ForeignKey("leagues.id"), nullable=False),
-        sa.Column("manager_id", sa.String(length=64), sa.ForeignKey("managers.id"), nullable=False),
+        sa.Column(
+            "league_id",
+            sa.String(length=64),
+            sa.ForeignKey("leagues.id"),
+            nullable=False,
+        ),
+        sa.Column(
+            "manager_id",
+            sa.String(length=64),
+            sa.ForeignKey("managers.id"),
+            nullable=False,
+        ),
         sa.Column("role", sa.String(length=64), nullable=False),
     )
     op.create_table(
         "league_permissions",
         sa.Column("id", sa.String(length=64), primary_key=True),
-        sa.Column("membership_id", sa.String(length=64), sa.ForeignKey("league_memberships.id"), nullable=False),
+        sa.Column(
+            "membership_id",
+            sa.String(length=64),
+            sa.ForeignKey("league_memberships.id"),
+            nullable=False,
+        ),
         sa.Column("permission", sa.String(length=128), nullable=False),
     )
     op.create_table(
@@ -75,20 +100,35 @@ def upgrade() -> None:
         sa.Column("first_name", sa.String(length=255), nullable=False),
         sa.Column("second_name", sa.String(length=255), nullable=False),
         sa.Column("web_name", sa.String(length=255), nullable=False),
-        sa.Column("position_id", sa.String(length=16), sa.ForeignKey("fpl_positions.id"), nullable=False),
+        sa.Column(
+            "position_id",
+            sa.String(length=16),
+            sa.ForeignKey("fpl_positions.id"),
+            nullable=False,
+        ),
         sa.Column("team_id", sa.String(length=64), sa.ForeignKey("epl_teams.id"), nullable=False),
     )
     op.create_table(
         "fpl_player_values",
         sa.Column("id", sa.String(length=64), primary_key=True),
-        sa.Column("player_id", sa.String(length=64), sa.ForeignKey("fpl_players.id"), nullable=False),
+        sa.Column(
+            "player_id",
+            sa.String(length=64),
+            sa.ForeignKey("fpl_players.id"),
+            nullable=False,
+        ),
         sa.Column("gameweek", sa.Integer(), nullable=False),
         sa.Column("value", sa.Integer(), nullable=False),
     )
     op.create_table(
         "fpl_player_availability",
         sa.Column("id", sa.String(length=64), primary_key=True),
-        sa.Column("player_id", sa.String(length=64), sa.ForeignKey("fpl_players.id"), nullable=False),
+        sa.Column(
+            "player_id",
+            sa.String(length=64),
+            sa.ForeignKey("fpl_players.id"),
+            nullable=False,
+        ),
         sa.Column("status", sa.String(length=16), nullable=False),
         sa.Column("news", sa.String(length=512), nullable=False, server_default=""),
     )

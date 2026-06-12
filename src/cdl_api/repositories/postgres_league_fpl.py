@@ -16,7 +16,12 @@ seasons_table = Table(
     "seasons",
     metadata,
     Column("id", String(64), primary_key=True),
-    Column("league_id", String(64), ForeignKey("leagues.id"), nullable=False),
+    Column(
+        "league_id",
+        String(64),
+        ForeignKey("leagues.id"),
+        nullable=False,
+    ),
     Column("name", String(64), nullable=False),
     Column("start_gameweek", Integer(), nullable=False),
     Column("end_gameweek", Integer(), nullable=False),
@@ -34,7 +39,12 @@ draft_teams_table = Table(
     "draft_teams",
     metadata,
     Column("id", String(64), primary_key=True),
-    Column("league_id", String(64), ForeignKey("leagues.id"), nullable=False),
+    Column(
+        "league_id",
+        String(64),
+        ForeignKey("leagues.id"),
+        nullable=False,
+    ),
     Column("manager_id", String(64), ForeignKey("managers.id"), nullable=True),
     Column("name", String(255), nullable=False),
 )
@@ -43,8 +53,18 @@ league_memberships_table = Table(
     "league_memberships",
     metadata,
     Column("id", String(64), primary_key=True),
-    Column("league_id", String(64), ForeignKey("leagues.id"), nullable=False),
-    Column("manager_id", String(64), ForeignKey("managers.id"), nullable=False),
+    Column(
+        "league_id",
+        String(64),
+        ForeignKey("leagues.id"),
+        nullable=False,
+    ),
+    Column(
+        "manager_id",
+        String(64),
+        ForeignKey("managers.id"),
+        nullable=False,
+    ),
     Column("role", String(64), nullable=False),
 )
 
@@ -52,7 +72,12 @@ league_permissions_table = Table(
     "league_permissions",
     metadata,
     Column("id", String(64), primary_key=True),
-    Column("membership_id", String(64), ForeignKey("league_memberships.id"), nullable=False),
+    Column(
+        "membership_id",
+        String(64),
+        ForeignKey("league_memberships.id"),
+        nullable=False,
+    ),
     Column("permission", String(128), nullable=False),
 )
 
@@ -79,7 +104,12 @@ fpl_players_table = Table(
     Column("first_name", String(255), nullable=False),
     Column("second_name", String(255), nullable=False),
     Column("web_name", String(255), nullable=False),
-    Column("position_id", String(16), ForeignKey("fpl_positions.id"), nullable=False),
+    Column(
+        "position_id",
+        String(16),
+        ForeignKey("fpl_positions.id"),
+        nullable=False,
+    ),
     Column("team_id", String(64), ForeignKey("epl_teams.id"), nullable=False),
 )
 
@@ -87,7 +117,12 @@ fpl_player_values_table = Table(
     "fpl_player_values",
     metadata,
     Column("id", String(64), primary_key=True),
-    Column("player_id", String(64), ForeignKey("fpl_players.id"), nullable=False),
+    Column(
+        "player_id",
+        String(64),
+        ForeignKey("fpl_players.id"),
+        nullable=False,
+    ),
     Column("gameweek", Integer(), nullable=False),
     Column("value", Integer(), nullable=False),
 )
@@ -96,7 +131,12 @@ fpl_player_availability_table = Table(
     "fpl_player_availability",
     metadata,
     Column("id", String(64), primary_key=True),
-    Column("player_id", String(64), ForeignKey("fpl_players.id"), nullable=False),
+    Column(
+        "player_id",
+        String(64),
+        ForeignKey("fpl_players.id"),
+        nullable=False,
+    ),
     Column("status", String(16), nullable=False),
     Column("news", String(512), nullable=False),
 )

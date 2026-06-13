@@ -29,7 +29,12 @@ def upgrade() -> None:
         sa.Column("season_id", ID, sa.ForeignKey("seasons.id"), nullable=False),
         sa.Column("draft_team_id", ID, sa.ForeignKey("draft_teams.id"), nullable=False),
         sa.Column("slot_key", SHORT_TEXT, nullable=False),
-        sa.Column("position_id", sa.String(length=16), sa.ForeignKey("fpl_positions.id"), nullable=True),
+        sa.Column(
+            "position_id",
+            sa.String(length=16),
+            sa.ForeignKey("fpl_positions.id"),
+            nullable=True,
+        ),
         sa.Column("sort_order", sa.Integer(), nullable=False),
         sa.Column("is_required", sa.Boolean(), nullable=False, server_default=sa.true()),
     )

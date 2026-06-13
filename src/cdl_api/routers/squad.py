@@ -1,6 +1,6 @@
 """Squad management API routes."""
 
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import JSONResponse
 
 from cdl_api.contracts.common import ErrorCode, ValidationErrorResponse
@@ -18,11 +18,16 @@ from cdl_api.contracts.squad import (
     TradesResponse,
     TradeUpdateRequest,
 )
-from cdl_api.repositories.squad import InMemorySquadRepository
+from cdl_api.repositories.factory import build_repositories
 from cdl_api.services.squad import SquadManagementService, SquadValidationError
+from cdl_api.settings import Settings, get_settings
 
 router = APIRouter(tags=["squad-management"])
-_service = SquadManagementService(InMemorySquadRepository())
+
+
+def get_squad_service(settings: Settings = Depends(get_settings)) -> SquadManagementService:
+    repositories = build_repositories(settings)
+    return SquadManagementService(repositories.squad)
 
 
 def validation_error_response(exc: SquadValidationError) -> JSONResponse:
@@ -37,8 +42,10 @@ def validation_error_response(exc: SquadValidationError) -> JSONResponse:
 
 
 @router.get("/squad/summary", response_model=SquadSummaryResponse)
-def squad_summary() -> SquadSummaryResponse:
-    return _service.get_summary()
+def squad_summary(
+    service: SquadManagementService = Depends(get_squad_service),
+) -> SquadSummaryResponse:
+    return service.get_summary()
 
 
 @router.get("/scouting/players", response_model=ScoutingPlayersResponse)
@@ -48,8 +55,9 @@ def scouting_players(
     epl_team_id: str | None = None,
     query: str | None = Query(default=None, alias="q"),
     metric: PlayerMetric = PlayerMetric.TOTAL_POINTS,
+    service: SquadManagementService = Depends(get_squad_service),
 ) -> ScoutingPlayersResponse:
-    return _service.scout_players(
+    return service.scout_players(
         ScoutingFilters(
             position=position,
             draft_team_id=draft_team_id,
@@ -61,35 +69,50 @@ def scouting_players(
 
 
 @router.post("/interests", response_model=InterestResponse)
-def create_interest(payload: InterestCreateRequest) -> InterestResponse | JSONResponse:
+def create_interest(
+    payload: InterestCreateRequest,
+    service: SquadManagementService = Depends(get_squad_service),
+) -> InterestResponse | JSONResponse:
     try:
-        return _service.create_interest(payload)
+        return service.create_interest(payload)
     except SquadValidationError as exc:
         return validation_error_response(exc)
 
 
 @router.delete("/interests/{interest_id}", response_model=InterestDeleteResponse)
-def delete_interest(interest_id: str) -> InterestDeleteResponse:
-    _service.delete_interest(interest_id)
+def delete_interest(
+    interest_id: str,
+    service: SquadManagementService = Depends(get_squad_service),
+) -> InterestDeleteResponse:
+    service.delete_interest(interest_id)
     return InterestDeleteResponse(deleted_interest_id=interest_id)
 
 
 @router.get("/trades", response_model=TradesResponse)
-def list_trades() -> TradesResponse:
-    return TradesResponse(trades=_service.list_trades())
+def list_trades(
+    service: SquadManagementService = Depends(get_squad_service),
+) -> TradesResponse:
+    return TradesResponse(trades=service.list_trades())
 
 
 @router.post("/trades", response_model=TradeProposal)
-def create_trade(payload: TradeCreateRequest) -> TradeProposal | JSONResponse:
+def create_trade(
+    payload: TradeCreateRequest,
+    service: SquadManagementService = Depends(get_squad_service),
+) -> TradeProposal | JSONResponse:
     try:
-        return _service.create_trade(payload)
+        return service.create_trade(payload)
     except SquadValidationError as exc:
         return validation_error_response(exc)
 
 
 @router.put("/trades/{trade_id}", response_model=TradeProposal)
-def update_trade(trade_id: str, payload: TradeUpdateRequest) -> TradeProposal | JSONResponse:
-    trade = _service.update_trade(trade_id, payload.status)
+def update_trade(
+    trade_id: str,
+    payload: TradeUpdateRequest,
+    service: SquadManagementService = Depends(get_squad_service),
+) -> TradeProposal | JSONResponse:
+    trade = service.update_trade(trade_id, payload.status)
     if trade is None:
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,

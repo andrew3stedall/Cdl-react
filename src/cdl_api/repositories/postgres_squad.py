@@ -1,6 +1,17 @@
 """PostgreSQL table metadata for squad, transfer, and trade persistence."""
 
-from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, JSON, MetaData, String, Table, text
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    MetaData,
+    String,
+    Table,
+    text,
+)
 
 metadata = MetaData()
 

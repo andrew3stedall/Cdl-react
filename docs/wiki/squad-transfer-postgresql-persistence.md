@@ -1,6 +1,6 @@
 # Squad transfer PostgreSQL persistence
 
-This page records the issue #65 schema foundation for replacing sample-backed squad, transfer, and trade state with PostgreSQL-backed persistence.
+This page records the issue #65 implementation for replacing sample-backed squad, transfer, and trade state with PostgreSQL-backed persistence.
 
 ## Dependency position
 
@@ -12,6 +12,12 @@ This page records the issue #65 schema foundation for replacing sample-backed sq
 ## Migration
 
 `0004_squad_transfer_persistence` follows `0003_core_league_fpl_cache` and creates the squad domain tables that need the core league and FPL references.
+
+## Runtime wiring
+
+Squad management now resolves its repository through the shared repository factory. Memory mode keeps the existing in-memory repository for local/demo behaviour, while PostgreSQL mode builds `PostgreSQLSquadRepository` for squad interest and trade write paths.
+
+The service layer delegates interest and trade persistence to the selected repository, preserving current API response shapes for `/api/squad/summary`, `/api/scouting/players`, `/api/interests`, and `/api/trades`.
 
 ## Table coverage
 
@@ -25,18 +31,16 @@ The schema foundation covers these groups:
 - Trades: `trade_proposals`, `trade_assets`, `trade_approvals`
 - Validation and traceability: `squad_rejection_reasons`, `squad_audit_events`
 
-## Repository metadata
-
-`cdl_api.repositories.postgres_squad` exposes `SQUAD_PERSISTENCE_TABLES` so tests and future repository implementations can share the same table inventory.
-
-The first pass deliberately stops at schema and metadata. The next #65 pass should add PostgreSQL repositories that preserve the current `/api/squad/summary`, `/api/scouting/players`, `/api/interests`, and `/api/trades` response shapes while replacing in-memory state.
-
 ## Validation
 
-`tests/test_squad_persistence_schema.py` checks:
+Tests cover:
 
-- the expected table inventory,
-- key columns required by the issue #65 acceptance criteria,
-- the migration dependency on `0003_core_league_fpl_cache`, and
-- creation coverage for every table.
+- the expected squad persistence table set,
+- migration dependency on `0003_core_league_fpl_cache`,
+- repository factory construction for memory and PostgreSQL squad repositories,
+- PostgreSQL-backed interest and trade API write paths, and
+- validation failures for owned-player interests, invalid trade assets, unknown players, and missing trade updates.
 
+## Handoff to #69
+
+Historical import tooling should populate the core league/FPL tables from #64 and the squad persistence tables from #65 before enabling production data replacement work.

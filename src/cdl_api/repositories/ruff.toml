@@ -1,0 +1,6 @@
+extend = "../../../pyproject.toml"
+line-length = 100
+
+[lint.per-file-ignores]
+"squad.py" = ["E501"]
+"postgres_squad.py" = ["E501"]

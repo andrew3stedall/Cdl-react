@@ -17,7 +17,7 @@ from cdl_api.contracts.squad import (
     TradeProposal,
     TradeStatus,
 )
-from cdl_api.repositories.squad import InMemorySquadRepository
+from cdl_api.repositories.squad import SquadRepository
 
 SQUAD_SIZE_RULE = "squad-size"
 TRADE_WINDOW_RULE = RuleReference(
@@ -34,10 +34,8 @@ class SquadValidationError(ValueError):
 
 
 class SquadManagementService:
-    def __init__(self, repository: InMemorySquadRepository) -> None:
+    def __init__(self, repository: SquadRepository) -> None:
         self._repository = repository
-        self._interests: dict[str, InterestResponse] = {}
-        self._trades: dict[str, TradeProposal] = {}
 
     def get_summary(self) -> SquadSummaryResponse:
         players = []
@@ -79,14 +77,13 @@ class SquadManagementService:
             gameweek=self._repository.gameweek,
             note=request.note,
         )
-        self._interests[interest.id] = interest
-        return interest
+        return self._repository.save_interest(interest)
 
     def delete_interest(self, interest_id: str) -> bool:
-        return self._interests.pop(interest_id, None) is not None
+        return self._repository.delete_interest(interest_id)
 
     def list_trades(self) -> list[TradeProposal]:
-        return list(self._trades.values())
+        return self._repository.list_trades()
 
     def create_trade(self, request: TradeCreateRequest) -> TradeProposal:
         sent_players = []
@@ -133,15 +130,10 @@ class SquadManagementService:
             assets=assets,
             rule_references=[TRADE_WINDOW_RULE],
         )
-        self._trades[trade.id] = trade
-        return trade
+        return self._repository.save_trade(trade)
 
     def update_trade(self, trade_id: str, status: TradeStatus) -> TradeProposal | None:
-        trade = self._trades.get(trade_id)
-        if trade is None:
-            return None
-        trade.status = status
-        return trade
+        return self._repository.update_trade_status(trade_id, status)
 
     def _require_player(self, player_id: str) -> PlayerDetail:
         player = self._repository.get_player(player_id)

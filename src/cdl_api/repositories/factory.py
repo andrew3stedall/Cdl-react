@@ -6,7 +6,9 @@ from cdl_api.database import build_session_factory
 from cdl_api.repositories.auth import InMemorySessionRepository, InMemoryUserRepository
 from cdl_api.repositories.postgres_auth import PostgreSQLSessionRepository, PostgreSQLUserRepository
 from cdl_api.repositories.postgres_preferences import PostgreSQLUserPreferenceRepository
+from cdl_api.repositories.postgres_squad_repository import PostgreSQLSquadRepository
 from cdl_api.repositories.preferences import InMemoryUserPreferenceRepository
+from cdl_api.repositories.squad import InMemorySquadRepository
 from cdl_api.settings import Settings
 
 
@@ -19,12 +21,14 @@ class RepositoryBundle:
     users: object
     sessions: object
     preferences: object
+    squad: object
 
 
 _memory_bundle = RepositoryBundle(
     users=InMemoryUserRepository(),
     sessions=InMemorySessionRepository(),
     preferences=InMemoryUserPreferenceRepository(),
+    squad=InMemorySquadRepository(),
 )
 
 
@@ -36,10 +40,13 @@ def build_repositories(settings: Settings) -> RepositoryBundle:
         session_factory = build_session_factory(settings)
         users = PostgreSQLUserRepository(session_factory)
         users.seed_demo_user()
+        squad = PostgreSQLSquadRepository(session_factory)
+        squad.seed_demo_data()
         return RepositoryBundle(
             users=users,
             sessions=PostgreSQLSessionRepository(session_factory),
             preferences=PostgreSQLUserPreferenceRepository(session_factory),
+            squad=squad,
         )
 
     msg = f"Unsupported repository mode: {settings.repository_mode}"

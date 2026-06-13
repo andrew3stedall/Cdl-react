@@ -1,2 +1,5 @@
 extend = "../pyproject.toml"
-line-length = 120
+line-length = 100
+
+[lint.per-file-ignores]
+"versions/*.py" = ["E501"]

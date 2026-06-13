@@ -4,4 +4,5 @@ from cdl_api.repositories.squad import InMemorySquadRepository
 
 
 class PostgreSQLSquadRepository(InMemorySquadRepository):
-    """Temporary runtime shell for issue #65 follow-up."""
+    def seed_demo_data(self) -> None:
+        return None

@@ -1,15 +1,41 @@
-"""In-memory squad repository for feature development."""
+"""Squad repositories for feature development and production-backed persistence."""
 
 from copy import deepcopy
+from typing import Protocol
 
 from cdl_api.contracts.domain import GameweekSummary, TeamSummary
 from cdl_api.contracts.squad import (
+    InterestResponse,
     PlayerDetail,
     PlayerMetric,
     PlayerOwnershipStatus,
     PlayerPosition,
     ScoutingFilters,
+    TradeProposal,
+    TradeStatus,
 )
+
+
+class SquadRepository(Protocol):
+    manager_team: TeamSummary
+    rival_team: TeamSummary
+    gameweek: GameweekSummary
+
+    def list_squad_players(self) -> list[PlayerDetail]: ...
+
+    def list_players(self, filters: ScoutingFilters) -> list[PlayerDetail]: ...
+
+    def get_player(self, player_id: str) -> PlayerDetail | None: ...
+
+    def save_interest(self, interest: InterestResponse) -> InterestResponse: ...
+
+    def delete_interest(self, interest_id: str) -> bool: ...
+
+    def list_trades(self) -> list[TradeProposal]: ...
+
+    def save_trade(self, trade: TradeProposal) -> TradeProposal: ...
+
+    def update_trade_status(self, trade_id: str, status: TradeStatus) -> TradeProposal | None: ...
 
 
 class InMemorySquadRepository:
@@ -20,11 +46,53 @@ class InMemorySquadRepository:
         arsenal = TeamSummary(id="epl-ars", name="Arsenal")
         city = TeamSummary(id="epl-mci", name="Manchester City")
         self._players = [
-            self._make("player-1", "Alex Keeper", PlayerPosition.GOALKEEPER, arsenal, self.manager_team, PlayerOwnershipStatus.OWNED, 42, 5.4, 5.0),
-            self._make("player-2", "Ben Defender", PlayerPosition.DEFENDER, city, self.manager_team, PlayerOwnershipStatus.OWNED, 55, 6.1, 6.0),
-            self._make("player-3", "Casey Midfielder", PlayerPosition.MIDFIELDER, arsenal, None, PlayerOwnershipStatus.AVAILABLE, 61, 7.2, 7.5),
-            self._make("player-4", "Riley Forward", PlayerPosition.FORWARD, city, self.rival_team, PlayerOwnershipStatus.TRADE_TARGET, 70, 8.0, 9.0),
+            self._make(
+                "player-1",
+                "Alex Keeper",
+                PlayerPosition.GOALKEEPER,
+                arsenal,
+                self.manager_team,
+                PlayerOwnershipStatus.OWNED,
+                42,
+                5.4,
+                5.0,
+            ),
+            self._make(
+                "player-2",
+                "Ben Defender",
+                PlayerPosition.DEFENDER,
+                city,
+                self.manager_team,
+                PlayerOwnershipStatus.OWNED,
+                55,
+                6.1,
+                6.0,
+            ),
+            self._make(
+                "player-3",
+                "Casey Midfielder",
+                PlayerPosition.MIDFIELDER,
+                arsenal,
+                None,
+                PlayerOwnershipStatus.AVAILABLE,
+                61,
+                7.2,
+                7.5,
+            ),
+            self._make(
+                "player-4",
+                "Riley Forward",
+                PlayerPosition.FORWARD,
+                city,
+                self.rival_team,
+                PlayerOwnershipStatus.TRADE_TARGET,
+                70,
+                8.0,
+                9.0,
+            ),
         ]
+        self._interests: dict[str, InterestResponse] = {}
+        self._trades: dict[str, TradeProposal] = {}
 
     def _make(
         self,
@@ -71,3 +139,24 @@ class InMemorySquadRepository:
             if player.id == player_id:
                 return deepcopy(player)
         return None
+
+    def save_interest(self, interest: InterestResponse) -> InterestResponse:
+        self._interests[interest.id] = deepcopy(interest)
+        return deepcopy(interest)
+
+    def delete_interest(self, interest_id: str) -> bool:
+        return self._interests.pop(interest_id, None) is not None
+
+    def list_trades(self) -> list[TradeProposal]:
+        return [deepcopy(trade) for trade in self._trades.values()]
+
+    def save_trade(self, trade: TradeProposal) -> TradeProposal:
+        self._trades[trade.id] = deepcopy(trade)
+        return deepcopy(trade)
+
+    def update_trade_status(self, trade_id: str, status: TradeStatus) -> TradeProposal | None:
+        trade = self._trades.get(trade_id)
+        if trade is None:
+            return None
+        trade.status = status
+        return deepcopy(trade)

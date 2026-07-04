@@ -43,7 +43,7 @@ dashboard_aggregate_snapshots_table = Table(
     Column("dimension_id", String(64), nullable=False),
     Column("dimension_value", String(255), nullable=False),
     Column("gameweek", Integer(), nullable=False),
-    Column("value", Numeric(12, 4), nullable=False),
+    Column("metric_value", Numeric(12, 4), nullable=False),
     Column("calculated_at", DateTime(timezone=True), nullable=False),
 )
 
@@ -55,7 +55,7 @@ fdr_ratings_table = Table(
     Column("team_id", String(64), ForeignKey("epl_teams.id"), nullable=False),
     Column("opponent_team_id", String(64), ForeignKey("epl_teams.id"), nullable=False),
     Column("gameweek", Integer(), nullable=False),
-    Column("view", String(64), nullable=False),
+    Column("rating_view", String(64), nullable=False),
     Column("venue", String(64), nullable=False),
     Column("rating", Integer(), nullable=False),
     Column("band", String(64), nullable=False),

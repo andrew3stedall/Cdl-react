@@ -5,7 +5,9 @@ from fastapi.testclient import TestClient
 from sqlalchemy.sql.dml import Delete, Insert
 
 from cdl_api.app import create_app
-from cdl_api.repositories.postgres_team_selection import PostgreSQLTeamSelectionRepository
+from cdl_api.repositories.postgres_team_selection import (
+    PostgreSQLTeamSelectionRepository,
+)
 from cdl_api.routers.team_selection import get_team_selection_repository
 
 
@@ -84,7 +86,10 @@ def test_postgres_team_selection_lineup_update_persists_slot_state() -> None:
 
     assert response.status_code == 200
     assert "team_selection_lineup_slots" in _statement_table_names(session, Delete)
-    assert _statement_table_names(session, Insert).count("team_selection_lineup_slots") == 5
+    assert (
+        _statement_table_names(session, Insert).count("team_selection_lineup_slots")
+        == 5
+    )
 
 
 def test_postgres_team_selection_invalid_lineup_does_not_persist() -> None:
@@ -117,7 +122,9 @@ def test_postgres_team_selection_invalid_chip_update_is_rejected() -> None:
     session = _CapturingSession()
     client = _client_with_postgres_repo(session)
 
-    response = client.put("/api/team-selection/chips/bench-boost", json={"active": True})
+    response = client.put(
+        "/api/team-selection/chips/bench-boost", json={"active": True}
+    )
 
     assert response.status_code == 422
     assert response.json()["issues"][0]["rule_reference"] == "chip-usage"

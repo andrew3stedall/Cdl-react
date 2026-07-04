@@ -1,6 +1,17 @@
 """PostgreSQL table metadata for fixtures, scoring, standings, and knockouts."""
 
-from sqlalchemy import JSON, Boolean, Column, DateTime, ForeignKey, Integer, MetaData, String, Table, text
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    MetaData,
+    String,
+    Table,
+    text,
+)
 
 metadata = MetaData()
 

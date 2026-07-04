@@ -31,25 +31,19 @@ def get_team_selection_repository(
 
 
 def get_team_selection_service(
-    repository: InMemoryTeamSelectionRepository = Depends(
-        get_team_selection_repository
-    ),
+    repository: InMemoryTeamSelectionRepository = Depends(get_team_selection_repository),
 ) -> TeamSelectionService:
     return TeamSelectionService(repository)
 
 
 def get_chip_service(
-    repository: InMemoryTeamSelectionRepository = Depends(
-        get_team_selection_repository
-    ),
+    repository: InMemoryTeamSelectionRepository = Depends(get_team_selection_repository),
 ) -> ChipService:
     return ChipService(repository)
 
 
 def get_fixture_summary_service(
-    repository: InMemoryTeamSelectionRepository = Depends(
-        get_team_selection_repository
-    ),
+    repository: InMemoryTeamSelectionRepository = Depends(get_team_selection_repository),
 ) -> FixtureSummaryService:
     return FixtureSummaryService(repository)
 

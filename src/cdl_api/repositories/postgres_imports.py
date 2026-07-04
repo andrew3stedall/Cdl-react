@@ -1,6 +1,16 @@
 """PostgreSQL table metadata for historical CDL import tooling."""
 
-from sqlalchemy import JSON, Column, DateTime, ForeignKey, Integer, MetaData, String, Table, text
+from sqlalchemy import (
+    JSON,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    MetaData,
+    String,
+    Table,
+    text,
+)
 
 metadata = MetaData()
 

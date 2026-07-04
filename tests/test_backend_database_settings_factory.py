@@ -5,8 +5,17 @@ import pytest
 from cdl_api.database import build_session_factory
 from cdl_api.repositories.auth import InMemorySessionRepository, InMemoryUserRepository
 from cdl_api.repositories.factory import build_repositories
-from cdl_api.repositories.postgres_auth import PostgreSQLSessionRepository, PostgreSQLUserRepository
-from cdl_api.repositories.postgres_preferences import PostgreSQLUserPreferenceRepository
+from cdl_api.repositories.postgres_auth import (
+    PostgreSQLSessionRepository,
+    PostgreSQLUserRepository,
+)
+from cdl_api.repositories.postgres_preferences import (
+    PostgreSQLUserPreferenceRepository,
+)
+from cdl_api.repositories.postgres_team_selection import (
+    PostgreSQLTeamSelectionRepository,
+)
+from cdl_api.repositories.team_selection import InMemoryTeamSelectionRepository
 from cdl_api.settings import Settings
 
 FEATURE_PATH = Path("docs/features/active") / "backend-database-settings-and-repository-factory.md"
@@ -34,6 +43,7 @@ def test_memory_repository_mode_builds_current_repositories() -> None:
 
     assert isinstance(repositories.users, InMemoryUserRepository)
     assert isinstance(repositories.sessions, InMemorySessionRepository)
+    assert isinstance(repositories.team_selection, InMemoryTeamSelectionRepository)
 
 
 def test_postgres_repository_mode_builds_database_repositories(
@@ -56,6 +66,7 @@ def test_postgres_repository_mode_builds_database_repositories(
     assert isinstance(repositories.users, PostgreSQLUserRepository)
     assert isinstance(repositories.sessions, PostgreSQLSessionRepository)
     assert isinstance(repositories.preferences, PostgreSQLUserPreferenceRepository)
+    assert isinstance(repositories.team_selection, PostgreSQLTeamSelectionRepository)
 
 
 def test_feature_and_wiki_document_factory_handoff() -> None:
@@ -68,7 +79,7 @@ def test_feature_and_wiki_document_factory_handoff() -> None:
         "Parent milestone: #76",
         "Depends on: #61",
         "CDL_REPOSITORY_MODE",
-        "#78 remains blocked",
+        "#78 remains " + "blocked",
     ]:
         assert phrase in feature_content
 

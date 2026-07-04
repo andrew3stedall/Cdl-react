@@ -146,18 +146,14 @@ class PostgreSQLTeamSelectionRepository(InMemoryTeamSelectionRepository):
                 chip.status = ChipStatus(str(row["status"]))
         return list(chips_by_id.values())
 
-    def save_lineup(
-        self, updates: list[LineupPlayerUpdate]
-    ) -> list[TeamSelectionPlayer]:
+    def save_lineup(self, updates: list[LineupPlayerUpdate]) -> list[TeamSelectionPlayer]:
         now = datetime.now(UTC)
         with self._session_factory() as session:
             session.execute(
                 _remove_existing(team_selection_lineup_slots_table).where(
                     team_selection_lineup_slots_table.c.season_id == DEMO_SEASON_ID,
-                    team_selection_lineup_slots_table.c.draft_team_id
-                    == self.manager_team.id,
-                    team_selection_lineup_slots_table.c.gameweek
-                    == self.gameweek.number,
+                    team_selection_lineup_slots_table.c.draft_team_id == self.manager_team.id,
+                    team_selection_lineup_slots_table.c.gameweek == self.gameweek.number,
                 )
             )
             for update in updates:
@@ -249,10 +245,8 @@ class PostgreSQLTeamSelectionRepository(InMemoryTeamSelectionRepository):
                 )
                 .where(
                     team_selection_lineup_slots_table.c.season_id == DEMO_SEASON_ID,
-                    team_selection_lineup_slots_table.c.draft_team_id
-                    == self.manager_team.id,
-                    team_selection_lineup_slots_table.c.gameweek
-                    == self.gameweek.number,
+                    team_selection_lineup_slots_table.c.draft_team_id == self.manager_team.id,
+                    team_selection_lineup_slots_table.c.gameweek == self.gameweek.number,
                 )
                 .order_by(
                     team_selection_lineup_slots_table.c.slot,

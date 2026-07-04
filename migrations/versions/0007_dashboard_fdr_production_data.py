@@ -25,7 +25,7 @@ def upgrade() -> None:
         "dashboard_definitions",
         sa.Column("id", ID, primary_key=True),
         sa.Column("title", TEXT, nullable=False),
-        sa.Column("definition_json", sa.JSON(), nullable=False, server_default=sa.text("'{}'")),
+        sa.Column("definition_json", sa.JSON(), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
     )
     op.create_table(
@@ -39,8 +39,8 @@ def upgrade() -> None:
     op.create_table(
         "dashboard_aggregate_snapshots",
         sa.Column("id", ID, primary_key=True),
-        sa.Column("dashboard_id", ID, sa.ForeignKey("dashboard_definitions.id"), nullable=False),
-        sa.Column("metric_id", ID, sa.ForeignKey("dashboard_metric_catalog.id"), nullable=False),
+        sa.Column("dashboard_id", ID, nullable=False),
+        sa.Column("metric_id", ID, nullable=False),
         sa.Column("dimension_id", SHORT_TEXT, nullable=False),
         sa.Column("dimension_value", TEXT, nullable=False),
         sa.Column("gameweek", sa.Integer(), nullable=False),
@@ -50,9 +50,9 @@ def upgrade() -> None:
     op.create_table(
         "fdr_ratings",
         sa.Column("id", ID, primary_key=True),
-        sa.Column("season_id", ID, sa.ForeignKey("seasons.id"), nullable=False),
-        sa.Column("team_id", ID, sa.ForeignKey("epl_teams.id"), nullable=False),
-        sa.Column("opponent_team_id", ID, sa.ForeignKey("epl_teams.id"), nullable=False),
+        sa.Column("season_id", ID, nullable=False),
+        sa.Column("team_id", ID, nullable=False),
+        sa.Column("opponent_team_id", ID, nullable=False),
         sa.Column("gameweek", sa.Integer(), nullable=False),
         sa.Column("view", SHORT_TEXT, nullable=False),
         sa.Column("venue", SHORT_TEXT, nullable=False),
@@ -63,9 +63,9 @@ def upgrade() -> None:
     op.create_table(
         "fdr_calculation_inputs",
         sa.Column("id", ID, primary_key=True),
-        sa.Column("season_id", ID, sa.ForeignKey("seasons.id"), nullable=False),
+        sa.Column("season_id", ID, nullable=False),
         sa.Column("source", SHORT_TEXT, nullable=False),
-        sa.Column("input_json", sa.JSON(), nullable=False, server_default=sa.text("'{}'")),
+        sa.Column("input_json", sa.JSON(), nullable=False),
         sa.Column("captured_at", sa.DateTime(timezone=True), nullable=False),
     )
 

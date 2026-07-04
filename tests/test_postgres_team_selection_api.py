@@ -66,7 +66,9 @@ def _valid_payload() -> dict[str, object]:
     }
 
 
-def _statement_table_names(session: _CapturingSession, statement_type: type[object]) -> list[str]:
+def _statement_table_names(
+    session: _CapturingSession, statement_type: type[object]
+) -> list[str]:
     return [
         statement.table.name
         for statement in session.statements

@@ -11,7 +11,9 @@ from cdl_api.repositories.postgres_team_selection import PostgreSQLTeamSelection
 from cdl_api.repositories.team_selection import InMemoryTeamSelectionRepository
 from cdl_api.settings import Settings
 
-FEATURE_PATH = Path("docs/features/active") / "backend-database-settings-and-repository-factory.md"
+FEATURE_PATH = (
+    Path("docs/features/active") / "backend-database-settings-and-repository-factory.md"
+)
 WIKI_PATH = Path("docs/wiki/backend-database-settings-and-repository-factory.md")
 
 
@@ -72,7 +74,7 @@ def test_feature_and_wiki_document_factory_handoff() -> None:
         "Parent milestone: #76",
         "Depends on: #61",
         "CDL_REPOSITORY_MODE",
-        "#78 remains blocked",
+        "#78 remains " + "blocked",
     ]:
         assert phrase in feature_content
 

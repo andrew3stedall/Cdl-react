@@ -1,0 +1,47 @@
+name: App Screenshots
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  screenshots:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm install
+      - name: Build frontend
+        working-directory: frontend
+        run: npm run build
+      - name: Install Playwright browser
+        run: npx -y -p playwright playwright install --with-deps chromium
+      - name: Start frontend preview
+        working-directory: frontend
+        run: |
+          npm run dev -- --host 127.0.0.1 > ../vite-preview.log 2>&1 &
+          echo $! > ../vite-preview.pid
+      - name: Wait for frontend
+        run: |
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:5173 >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          cat vite-preview.log
+          exit 1
+      - name: Capture screenshots
+        run: npx -y -p playwright node scripts/capture-app-screenshots.mjs
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-screenshots
+          path: artifacts/app-screenshots
+          if-no-files-found: error

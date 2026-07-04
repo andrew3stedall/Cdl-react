@@ -44,7 +44,7 @@ def upgrade() -> None:
         sa.Column("dimension_id", SHORT_TEXT, nullable=False),
         sa.Column("dimension_value", TEXT, nullable=False),
         sa.Column("gameweek", sa.Integer(), nullable=False),
-        sa.Column("value", sa.Numeric(12, 4), nullable=False),
+        sa.Column("metric_value", sa.Numeric(12, 4), nullable=False),
         sa.Column("calculated_at", sa.DateTime(timezone=True), nullable=False),
     )
     op.create_table(
@@ -54,7 +54,7 @@ def upgrade() -> None:
         sa.Column("team_id", ID, nullable=False),
         sa.Column("opponent_team_id", ID, nullable=False),
         sa.Column("gameweek", sa.Integer(), nullable=False),
-        sa.Column("view", SHORT_TEXT, nullable=False),
+        sa.Column("rating_view", SHORT_TEXT, nullable=False),
         sa.Column("venue", SHORT_TEXT, nullable=False),
         sa.Column("rating", sa.Integer(), nullable=False),
         sa.Column("band", SHORT_TEXT, nullable=False),

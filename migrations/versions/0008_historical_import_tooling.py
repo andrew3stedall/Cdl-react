@@ -34,7 +34,7 @@ def upgrade() -> None:
     op.create_table(
         "import_source_mappings",
         sa.Column("id", ID, primary_key=True),
-        sa.Column("batch_id", ID, sa.ForeignKey("import_batches.id"), nullable=False),
+        sa.Column("batch_id", ID, nullable=False),
         sa.Column("source_system", SHORT_TEXT, nullable=False),
         sa.Column("source_type", SHORT_TEXT, nullable=False),
         sa.Column("source_id", TEXT, nullable=False),
@@ -45,17 +45,17 @@ def upgrade() -> None:
     op.create_table(
         "import_source_payloads",
         sa.Column("id", ID, primary_key=True),
-        sa.Column("batch_id", ID, sa.ForeignKey("import_batches.id"), nullable=False),
+        sa.Column("batch_id", ID, nullable=False),
         sa.Column("source_system", SHORT_TEXT, nullable=False),
         sa.Column("source_type", SHORT_TEXT, nullable=False),
         sa.Column("source_id", TEXT, nullable=False),
-        sa.Column("payload_json", sa.JSON(), nullable=False, server_default=sa.text("'{}'")),
+        sa.Column("payload_json", sa.JSON(), nullable=False),
         sa.Column("archived_at", sa.DateTime(timezone=True), nullable=False),
     )
     op.create_table(
         "import_review_items",
         sa.Column("id", ID, primary_key=True),
-        sa.Column("batch_id", ID, sa.ForeignKey("import_batches.id"), nullable=False),
+        sa.Column("batch_id", ID, nullable=False),
         sa.Column("subject_type", SHORT_TEXT, nullable=False),
         sa.Column("subject_id", ID, nullable=False),
         sa.Column("reason", NOTE_TEXT, nullable=False),
@@ -66,8 +66,8 @@ def upgrade() -> None:
     op.create_table(
         "import_conflicts",
         sa.Column("id", ID, primary_key=True),
-        sa.Column("batch_id", ID, sa.ForeignKey("import_batches.id"), nullable=False),
-        sa.Column("mapping_id", ID, sa.ForeignKey("import_source_mappings.id"), nullable=True),
+        sa.Column("batch_id", ID, nullable=False),
+        sa.Column("mapping_id", ID, nullable=True),
         sa.Column("conflict_type", SHORT_TEXT, nullable=False),
         sa.Column("message", NOTE_TEXT, nullable=False),
         sa.Column("status", SHORT_TEXT, nullable=False),

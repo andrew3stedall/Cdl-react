@@ -18,9 +18,7 @@ from cdl_api.repositories.postgres_team_selection import (
 from cdl_api.repositories.team_selection import InMemoryTeamSelectionRepository
 from cdl_api.settings import Settings
 
-FEATURE_PATH = (
-    Path("docs/features/active") / "backend-database-settings-and-repository-factory.md"
-)
+FEATURE_PATH = Path("docs/features/active") / "backend-database-settings-and-repository-factory.md"
 WIKI_PATH = Path("docs/wiki/backend-database-settings-and-repository-factory.md")
 
 

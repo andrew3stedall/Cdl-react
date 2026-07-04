@@ -10,7 +10,9 @@ from cdl_api.repositories.postgres_auth import (
 )
 from cdl_api.repositories.postgres_preferences import PostgreSQLUserPreferenceRepository
 from cdl_api.repositories.postgres_squad_repository import PostgreSQLSquadRepository
-from cdl_api.repositories.postgres_team_selection import PostgreSQLTeamSelectionRepository
+from cdl_api.repositories.postgres_team_selection import (
+    PostgreSQLTeamSelectionRepository,
+)
 from cdl_api.repositories.preferences import InMemoryUserPreferenceRepository
 from cdl_api.repositories.squad import InMemorySquadRepository
 from cdl_api.repositories.team_selection import InMemoryTeamSelectionRepository

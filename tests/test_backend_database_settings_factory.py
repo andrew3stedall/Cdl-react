@@ -9,8 +9,12 @@ from cdl_api.repositories.postgres_auth import (
     PostgreSQLSessionRepository,
     PostgreSQLUserRepository,
 )
-from cdl_api.repositories.postgres_preferences import PostgreSQLUserPreferenceRepository
-from cdl_api.repositories.postgres_team_selection import PostgreSQLTeamSelectionRepository
+from cdl_api.repositories.postgres_preferences import (
+    PostgreSQLUserPreferenceRepository,
+)
+from cdl_api.repositories.postgres_team_selection import (
+    PostgreSQLTeamSelectionRepository,
+)
 from cdl_api.repositories.team_selection import InMemoryTeamSelectionRepository
 from cdl_api.settings import Settings
 

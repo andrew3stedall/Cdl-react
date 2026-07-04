@@ -192,9 +192,9 @@ class PostgreSQLTeamSelectionRepository(InMemoryTeamSelectionRepository):
                         draft_team_id=self.manager_team.id,
                         chip_id=chip.id,
                         status=chip.status.value,
-                        active_gameweek=self.gameweek.number
-                        if chip.status == ChipStatus.ACTIVE
-                        else None,
+                        active_gameweek=(
+                            self.gameweek.number if chip.status == ChipStatus.ACTIVE else None
+                        ),
                         used_gameweek=(
                             self.gameweek.number if chip.status == ChipStatus.USED else None
                         ),

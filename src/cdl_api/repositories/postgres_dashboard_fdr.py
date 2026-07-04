@@ -1,6 +1,17 @@
 """PostgreSQL table metadata for dashboard and fixture difficulty production data."""
 
-from sqlalchemy import JSON, Column, DateTime, ForeignKey, Integer, MetaData, Numeric, String, Table, text
+from sqlalchemy import (
+    JSON,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    MetaData,
+    Numeric,
+    String,
+    Table,
+    text,
+)
 
 metadata = MetaData()
 

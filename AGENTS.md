@@ -121,7 +121,7 @@ docs/features/active/feature-name.md
 
 Do not move active feature documents to completed folders ad hoc. Completed movement should be coordinated in a release-management pass when shared contracts, release notes, changelog, and validation evidence are aligned.
 
-## Parallel Agent Coordination
+## Parallel agent coordination
 
 Multiple agents may work in parallel when each agent owns a separate feature document. Parallel work must follow these rules:
 
@@ -140,7 +140,7 @@ When the user asks to implement a milestone, treat that as approval to complete 
 2. Confirm the ordered issue list from GitHub issues and docs.
 3. Create or use a milestone branch.
 4. Implement the issue set in milestone order.
-5. Keep unrelated work out.
+5. Keep unrelated changes out.
 6. Add or update tests where practical.
 7. Record tests that could not be run.
 8. Update docs and changelog.

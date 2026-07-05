@@ -1,0 +1,67 @@
+name: GCP Deploy Staging
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: gcp-deploy-staging
+  cancel-in-progress: false
+
+env:
+  REGION: australia-southeast1
+  ARTIFACT_REPOSITORY: cdl-react-backend
+  IMAGE_NAME: cdl-react-api
+  SERVICE_NAME: cdl-react-staging-api
+
+jobs:
+  deploy:
+    name: Build and deploy staging API
+    runs-on: ubuntu-latest
+    environment: staging
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ vars.GCP_STAGING_PROJECT_ID }}
+          workload_identity_provider: ${{ vars.GCP_STAGING_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_STAGING_DEPLOY_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
+        with:
+          version: ">= 416.0.0"
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+
+      - name: Build backend image
+        run: |
+          IMAGE_URI="${REGION}-docker.pkg.dev/${{ vars.GCP_STAGING_PROJECT_ID }}/${ARTIFACT_REPOSITORY}/${IMAGE_NAME}:${GITHUB_SHA}"
+          docker build -t "${IMAGE_URI}" .
+          echo "IMAGE_URI=${IMAGE_URI}" >> "$GITHUB_ENV"
+
+      - name: Push backend image
+        run: docker push "${IMAGE_URI}"
+
+      - name: Deploy Cloud Run service
+        id: deploy
+        uses: google-github-actions/deploy-cloudrun@v3
+        with:
+          project_id: ${{ vars.GCP_STAGING_PROJECT_ID }}
+          region: ${{ env.REGION }}
+          service: ${{ env.SERVICE_NAME }}
+          image: ${{ env.IMAGE_URI }}
+          env_vars: |-
+            CDL_ENVIRONMENT=staging
+            CDL_REPOSITORY_MODE=memory
+
+      - name: Smoke check health endpoint
+        run: curl --fail --show-error --silent "${{ steps.deploy.outputs.url }}/health"

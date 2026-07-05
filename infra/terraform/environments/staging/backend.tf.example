@@ -1,0 +1,9 @@
+# Copy this file to backend.tf after the GCS state bucket exists.
+# The bucket should be created during manual bootstrap or a separate state-bootstrap step.
+
+terraform {
+  backend "gcs" {
+    bucket = "cdl-react-staging-terraform-state"
+    prefix = "gcp/staging"
+  }
+}

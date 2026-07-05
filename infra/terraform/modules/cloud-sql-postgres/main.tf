@@ -17,8 +17,10 @@ resource "google_sql_database_instance" "this" {
       point_in_time_recovery_enabled = var.point_in_time_recovery
     }
 
+    # Keep public IP enabled for the initial scaffold so Terraform does not require
+    # a VPC/private-service-access dependency. No authorized networks are declared.
     ip_configuration {
-      ipv4_enabled = false
+      ipv4_enabled = true
     }
 
     insights_config {

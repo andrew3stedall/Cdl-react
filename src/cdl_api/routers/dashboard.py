@@ -1,6 +1,8 @@
 """Analytics dashboard API routes."""
 
-from fastapi import APIRouter, status
+from typing import Protocol
+
+from fastapi import APIRouter, Depends, status
 from fastapi.responses import JSONResponse
 
 from cdl_api.contracts.common import ApiErrorResponse, ErrorCode
@@ -14,17 +16,35 @@ from cdl_api.contracts.dashboard import (
     WidgetQueryRequest,
     WidgetQueryResponse,
 )
+from cdl_api.database import build_session_factory
+from cdl_api.repositories.dashboard_repository import DashboardRepository
+from cdl_api.repositories.postgres_dashboard_metrics import (
+    PostgreSQLDashboardMetricRepository,
+)
 from cdl_api.services.dashboard_service import (
     DashboardService,
     MetricCatalogService,
     WidgetQueryService,
 )
+from cdl_api.settings import Settings, get_settings
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
 _dashboard_service = DashboardService()
 _catalog_service = MetricCatalogService()
 _query_service = WidgetQueryService()
+
+
+class DashboardMetricRepository(Protocol):
+    def list_metrics(self) -> list[DashboardMetric]: ...
+
+
+def get_dashboard_metric_repository(
+    settings: Settings = Depends(get_settings),
+) -> DashboardMetricRepository:
+    if settings.repository_mode == "postgres":
+        return PostgreSQLDashboardMetricRepository(build_session_factory(settings))
+    return DashboardRepository()
 
 
 @router.get("/config", response_model=DashboardConfigResponse)
@@ -38,8 +58,10 @@ def dashboard_filters() -> list[DashboardFilter]:
 
 
 @router.get("/metrics", response_model=list[DashboardMetric])
-def dashboard_metrics() -> list[DashboardMetric]:
-    return _catalog_service.list_metrics()
+def dashboard_metrics(
+    repository: DashboardMetricRepository = Depends(get_dashboard_metric_repository),
+) -> list[DashboardMetric]:
+    return repository.list_metrics()
 
 
 @router.get("/dimensions", response_model=list[DashboardDimension])

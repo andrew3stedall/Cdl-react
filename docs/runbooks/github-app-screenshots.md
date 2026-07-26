@@ -15,7 +15,9 @@ The workflow also runs on pull requests so layout regressions are caught before 
 
 ## Browser interaction check
 
-Before capturing images, the workflow exercises one primary team-selection journey in Chromium at the mobile viewport:
+Before capturing images, the workflow exercises two primary journeys in Chromium at the mobile viewport.
+
+### Team selection
 
 1. Open `/team-selection` and confirm the initial loaded status.
 2. Move Alex Keeper from the starting lineup to the bench.
@@ -23,7 +25,15 @@ Before capturing images, the workflow exercises one primary team-selection journ
 4. Restore Alex Keeper to the starting lineup.
 5. Save again and confirm the validated-success feedback.
 
-This verifies that rendered controls, React state transitions, validation feedback, and accessible labels work together in a real browser. It remains a deterministic frontend check; it does not yet prove API persistence.
+### Squad management
+
+1. Open `/squad-management` and confirm the squad-loaded status.
+2. Search for Casey Midfielder and add the player to interests.
+3. Confirm the interest list and open the player's detail dialog.
+4. Verify the player summary, then close the dialog.
+5. Propose a sample trade and confirm its Trade Window rules link.
+
+These journeys verify that rendered controls, React state transitions, validation feedback, dialogs, links, and accessible labels work together in a real browser. They remain deterministic frontend checks; they do not yet prove API persistence.
 
 ## Captured routes
 

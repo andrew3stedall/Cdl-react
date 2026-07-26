@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { type FormEvent, useEffect, useState } from 'react';
 
 import {
   canAccessProtectedRoute,
@@ -101,6 +101,10 @@ export function App({
   const [currentPath, setCurrentPath] = useState(initialPath);
   const [activeSession, setActiveSession] = useState<SessionState | null>(session ?? null);
   const [isMobileNavigationOpen, setMobileNavigationOpen] = useState(false);
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginPending, setLoginPending] = useState(false);
   const [refreshCount, setRefreshCount] = useState(0);
   const preset = getDefaultThemePreset();
 
@@ -155,6 +159,30 @@ export function App({
     }
   };
 
+  const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setLoginError(null);
+    setLoginPending(true);
+
+    try {
+      const result = await sessionClient.login({
+        email: loginEmail.trim(),
+        password: loginPassword,
+      });
+      if (!result.ok) {
+        setLoginError(result.error.message);
+        return;
+      }
+
+      setLoginPassword('');
+      setActiveSession(result.data.session);
+    } catch {
+      setLoginError('Sign in is temporarily unavailable. Try again.');
+    } finally {
+      setLoginPending(false);
+    }
+  };
+
   const handleSignOut = async () => {
     setActiveSession(null);
     if (session !== undefined) {
@@ -194,14 +222,54 @@ export function App({
     return (
       <main className="session-boundary" aria-label="Protected route session state">
         <h1>Castle Draft League</h1>
-        <div className="login-required" role="status">
+        <p className="login-required">
           Sign in to access the Castle Draft League application shell.
-        </div>
-        {session === undefined ? (
-          <button onClick={() => void refreshActiveSession()} type="button">
-            Retry session
-          </button>
-        ) : null}
+        </p>
+        <form className="login-form" onSubmit={(event) => void handleLogin(event)}>
+          <label className="login-field">
+            <span>Email address</span>
+            <input
+              autoComplete="email"
+              inputMode="email"
+              name="email"
+              onChange={(event) => setLoginEmail(event.target.value)}
+              required
+              type="email"
+              value={loginEmail}
+            />
+          </label>
+          <label className="login-field">
+            <span>Password</span>
+            <input
+              autoComplete="current-password"
+              name="password"
+              onChange={(event) => setLoginPassword(event.target.value)}
+              required
+              type="password"
+              value={loginPassword}
+            />
+          </label>
+          {loginError ? (
+            <p className="login-error" role="alert">
+              {loginError}
+            </p>
+          ) : null}
+          <div className="login-actions">
+            <button className="ui-button ui-button-primary" disabled={loginPending} type="submit">
+              {loginPending ? 'Signing in…' : 'Sign in'}
+            </button>
+            {session === undefined ? (
+              <button
+                className="ui-button ui-button-secondary"
+                disabled={loginPending}
+                onClick={() => void refreshActiveSession()}
+                type="button"
+              >
+                Retry session
+              </button>
+            ) : null}
+          </div>
+        </form>
       </main>
     );
   }

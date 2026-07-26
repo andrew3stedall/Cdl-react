@@ -59,7 +59,7 @@ async function testSquadManagement(page) {
   const interests = page.locator('section[aria-label="Interests and proposed trades"]');
   await interests.getByText('Casey Midfielder', { exact: true }).waitFor();
 
-  await page.getByRole('button', { name: 'Casey Midfielder', exact: true }).click();
+  await page.getByRole('cell', { name: 'Casey Midfielder', exact: true }).click();
   const playerDialog = page.getByRole('dialog', { name: 'Player detail' });
   await playerDialog.getByRole('heading', { name: 'Casey Midfielder' }).waitFor();
   await playerDialog.getByText('Points: 61 · Value: £7.5m', { exact: true }).waitFor();

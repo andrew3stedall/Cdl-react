@@ -36,13 +36,14 @@ The normal runtime resolves `/api/auth/session`; it no longer assumes a demo man
 
 ### Team selection
 
-1. Open `/team-selection` against the unlocked API fixture and confirm the loaded status.
-2. Move Alex Keeper from the starting lineup to the bench.
-3. Attempt to save and confirm the invalid-lineup feedback.
-4. Restore Alex Keeper to the starting lineup.
-5. Save through `PUT /api/team-selection/lineup` and confirm the API-backed success feedback.
-6. Repeat at mobile and desktop widths with the API returning a fixture lock.
-7. Confirm the lock reason renders in a labelled view-only notice and every lineup, chip, and save control is disabled.
+1. Open `/team-selection` against the unlocked API fixtures and confirm both `/api/team-selection` and `/api/team-selection/fixtures-summary` are requested.
+2. Confirm the CDL and EPL fixtures and table names render from the summary response.
+3. Move Alex Keeper from the starting lineup to the bench.
+4. Attempt to save and confirm the invalid-lineup feedback.
+5. Restore Alex Keeper to the starting lineup.
+6. Save through `PUT /api/team-selection/lineup` and confirm the API-backed success feedback.
+7. Repeat at mobile and desktop widths with the API returning a fixture lock.
+8. Confirm the lock reason renders in a labelled view-only notice and every lineup, chip, and save control is disabled.
 
 ### Squad management
 

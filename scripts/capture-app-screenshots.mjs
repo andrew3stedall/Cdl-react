@@ -21,14 +21,14 @@ const routes = [
 ];
 
 const screenshotSession = {
-  isAuthenticated: true,
+  is_authenticated: true,
   user: {
     id: 'screenshot-manager',
     email: 'manager@example.com',
-    displayName: 'Screenshot Manager',
+    display_name: 'Screenshot Manager',
     roles: ['manager'],
   },
-  expiresAt: null,
+  expires_at: '2099-01-01T00:00:00Z',
 };
 
 const screenshotTeamSelection = {

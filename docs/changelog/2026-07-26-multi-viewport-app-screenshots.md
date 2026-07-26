@@ -14,6 +14,7 @@ Expanded the repository-safe application screenshot workflow from a single mobil
 - Keyboard-focusable horizontal-scroll regions for league tables on narrow screens.
 - Compact two-line player rows for team selection on mobile and tablet layouts.
 - Chromium interaction coverage for invalid and restored-valid team-selection saves.
+- Chromium interaction coverage for squad search, interests, player detail, and trade proposal rules.
 
 ## Validation finding
 
@@ -24,6 +25,8 @@ The subsequent artifact review found that team-selection player rows stacked all
 ## Browser interaction evidence
 
 The same repository-safe workflow now moves a starter to the bench, confirms invalid-lineup feedback, restores the starter, saves again, and confirms successful validation through the rendered controls in Chromium.
+
+It also searches for a squad target, adds the player to interests, verifies the player-detail dialog, creates a sample trade proposal, and checks the Trade Window rules link.
 
 ## Scope
 

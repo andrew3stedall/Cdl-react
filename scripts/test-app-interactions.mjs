@@ -3,6 +3,23 @@ import { chromium } from 'playwright';
 const baseUrl = process.env.APP_PREVIEW_URL ?? 'http://127.0.0.1:5173';
 
 
+const authenticatedSession = {
+  isAuthenticated: true,
+  user: {
+    id: 'browser-manager',
+    email: 'manager@example.com',
+    displayName: 'Browser Manager',
+    roles: ['manager'],
+  },
+  expiresAt: null,
+};
+
+const unauthenticatedSession = {
+  isAuthenticated: false,
+  user: null,
+  expiresAt: null,
+};
+
 const teams = [
   { id: 'team-castle', name: 'Castle FC', short_name: 'CAS' },
   { id: 'team-river', name: 'River Rangers', short_name: 'RIV' },
@@ -107,10 +124,16 @@ function fdrView(view, selectedTeamId) {
   };
 }
 
-async function mockApi(page) {
+async function mockApi(page, { authenticated = true } = {}) {
   await page.route('**/api/**', async (route) => {
     const url = new URL(route.request().url());
     const path = url.pathname;
+
+    if (path === '/api/auth/session') {
+      return route.fulfill({
+        json: authenticated ? authenticatedSession : unauthenticatedSession,
+      });
+    }
 
     if (path === '/api/health' || path === '/health') {
       return route.fulfill({ json: { status: 'ok' } });
@@ -369,6 +392,26 @@ async function testShellAndLeagueNavigation(page, viewportName) {
   await page.getByRole('heading', { name: 'League Fixtures and Table' }).waitFor();
 }
 
+async function testUnauthenticatedSessionBoundary(browser, viewport) {
+  const context = await browser.newContext({ viewport });
+  const page = await context.newPage();
+  await mockApi(page, { authenticated: false });
+
+  await page.goto(baseUrl + '/team-selection', { waitUntil: 'networkidle' });
+  await expectStatus(page, 'Sign in to access');
+  await expectPath(page, '/team-selection');
+
+  if (await page.getByRole('button', { name: 'Save lineup' }).count()) {
+    throw new Error('Expected protected team-selection controls to stay hidden without a session');
+  }
+
+  if (await page.getByRole('button', { name: 'Menu', exact: true }).count()) {
+    throw new Error('Expected the authenticated application shell to stay hidden without a session');
+  }
+
+  await context.close();
+}
+
 async function run() {
   const browser = await chromium.launch();
   const viewports = [
@@ -377,6 +420,8 @@ async function run() {
   ];
 
   for (const viewport of viewports) {
+    await testUnauthenticatedSessionBoundary(browser, viewport);
+
     const context = await browser.newContext({ viewport });
     const page = await context.newPage();
     await mockApi(page);

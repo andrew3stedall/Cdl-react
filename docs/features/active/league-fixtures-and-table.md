@@ -6,9 +6,9 @@ Plan the modern replacement for the legacy League screen, including Castle Draft
 
 ## Status
 
-PostgreSQL fixture/result/scoring reads and persisted league-table snapshots are
-implemented for the primary league API. Knockout records, head-to-head records,
-full parity, and complete season edge cases remain pending.
+PostgreSQL fixture/result/scoring reads, persisted league-table snapshots, and
+knockout records are implemented for the primary league API. Head-to-head
+records, full parity, and complete season edge cases remain pending.
 
 ## Legacy Inventory
 
@@ -75,6 +75,8 @@ Users view current and upcoming CDL fixtures, league table, all fixtures, knocko
   repository.
 - PostgreSQL standings must come from `league_table_snapshots`; a missing
   snapshot is an explicit release-path error, not a fixture-calculation fallback.
+- PostgreSQL knockout context must come from `knockout_matches`; missing rows or
+  broken fixture links are explicit release-path errors.
 
 ## Acceptance Criteria
 
@@ -92,6 +94,7 @@ Users view current and upcoming CDL fixtures, league table, all fixtures, knocko
 - A clean migrated PostgreSQL test for started and pending fixture behaviour.
 - A clean migrated PostgreSQL test proving the standings response identifies its
   persisted snapshot source.
+- A clean migrated PostgreSQL test proving knockout rounds and fixture linkage.
 
 ## Documentation Requirements
 

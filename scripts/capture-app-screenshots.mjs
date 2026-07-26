@@ -77,6 +77,28 @@ const fixture = {
   },
 };
 
+const screenshotTeamSelectionFixtureSummary = {
+  cdl_fixtures: [{
+    id: fixture.id,
+    gameweek,
+    home_team: teams[0],
+    away_team: teams[1],
+    status: fixture.status,
+  }],
+  epl_fixtures: [{
+    id: 'epl-screenshot-fixture',
+    gameweek,
+    home_team: { id: 'epl-ars', name: 'Arsenal', short_name: 'ARS' },
+    away_team: { id: 'epl-mci', name: 'Manchester City', short_name: 'MCI' },
+    status: 'scheduled',
+  }],
+  cdl_table: teams,
+  epl_table: [
+    { id: 'epl-ars', name: 'Arsenal', short_name: 'ARS' },
+    { id: 'epl-mci', name: 'Manchester City', short_name: 'MCI' },
+  ],
+};
+
 const dashboardConfig = {
   id: 'manager-dashboard',
   title: 'Manager Analytics Dashboard',
@@ -168,6 +190,10 @@ async function mockApi(page) {
 
     if (path === '/api/team-selection') {
       return route.fulfill({ json: screenshotTeamSelection });
+    }
+
+    if (path === '/api/team-selection/fixtures-summary') {
+      return route.fulfill({ json: screenshotTeamSelectionFixtureSummary });
     }
 
     if (path === '/api/health' || path === '/health') {

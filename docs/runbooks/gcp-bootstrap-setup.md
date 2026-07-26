@@ -1,3 +1,10 @@
+> [!IMPORTANT]
+> The account, billing account, and both projects already exist. Do not follow the
+> manual API, service-account, budget, or Workload Identity steps below. Use
+> `docs/runbooks/gcp-terraform-bootstrap.md` so those remaining resources are
+> managed by Terraform. The manual commands remain here only as historical and
+> recovery reference.
+
 # GCP Bootstrap Setup Runbook
 
 This runbook captures the manual Google Cloud bootstrap work needed before issue #70 provisions staging infrastructure.

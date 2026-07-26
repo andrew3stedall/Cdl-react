@@ -18,8 +18,8 @@ jobs:
       - name: Build frontend
         working-directory: frontend
         run: npm run build
-      - name: Install Playwright package
-        run: npm install --no-save playwright
+      - name: Install browser test packages
+        run: npm install --no-save playwright axe-core
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
       - name: Start frontend preview

@@ -12,6 +12,10 @@ def test_screenshot_runbook_explains_github_artifacts() -> None:
     assert "app-screenshots" in content
     assert "does not require GCP" in content
     assert "/team-selection" in content
+    assert "mobile" in content
+    assert "tablet" in content
+    assert "desktop" in content
+    assert "horizontal overflow" in content
 
 
 def test_screenshot_workflow_uploads_artifact_without_deploying() -> None:
@@ -30,3 +34,8 @@ def test_screenshot_script_captures_core_routes() -> None:
 
     assert "chromium.launch" in content
     assert "page.screenshot" in content
+    assert "mobile" in content
+    assert "tablet" in content
+    assert "desktop" in content
+    assert "document.documentElement.scrollWidth" in content
+    assert "page.locator('main')" in content

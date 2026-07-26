@@ -7,6 +7,7 @@ This runbook explains how to connect GitHub Actions to the CDL React staging GCP
 Use this with:
 
 - `docs/runbooks/gcp-bootstrap-setup.md`
+- `docs/runbooks/gcp-staging-observability.md`
 - `infra/terraform/environments/staging/`
 - `.github/workflows/gcp-wif-verify.yml`
 - `.github/workflows/gcp-terraform-staging.yml`
@@ -175,6 +176,18 @@ Recovery settings are explicit:
 - Terraform ignores only automatic `disk_size` growth so it cannot attempt to shrink a live instance.
 
 These settings still require saved-plan and cost review before apply. A successful restore drill remains required before staging is considered proven.
+
+## Logging and alerting baseline
+
+The unapplied staging design includes a bounded observability baseline:
+
+- sustained Cloud SQL CPU above 80% for five minutes;
+- Cloud SQL `ERROR`-or-higher log matches;
+- Cloud Run `ERROR`-or-higher log matches only when the optional service is enabled.
+
+Notification destinations are references to pre-existing Cloud Monitoring channels and default to none. Terraform does not create recipient addresses or duplicate log sinks. Use `docs/runbooks/gcp-staging-observability.md` for alert filters, operator response, notification ownership, and the controlled post-apply proof procedure.
+
+`terraform validate` proves provider schema only. After an approved apply, each policy still requires a controlled test event and recorded incident evidence before monitoring is considered operationally proven.
 
 ## Current limitations
 

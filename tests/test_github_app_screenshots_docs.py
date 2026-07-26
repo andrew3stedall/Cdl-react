@@ -101,3 +101,14 @@ def test_interaction_script_exercises_dashboard_and_fdr_at_two_widths() -> None:
     assert "desktop" in content
     assert "width: 390" in content
     assert "width: 1440" in content
+
+
+def test_interaction_script_exercises_shell_navigation_and_history() -> None:
+    content = INTERACTION_SCRIPT.read_text(encoding="utf-8")
+
+    assert "/rules" in content
+    assert "Navigation" in content
+    assert "aria-expanded" in content
+    assert "aria-current" in content
+    assert "page.goBack()" in content
+    assert "expectPath(page, '/league')" in content

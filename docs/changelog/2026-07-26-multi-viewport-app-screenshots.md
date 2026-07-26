@@ -17,6 +17,7 @@ Expanded the repository-safe application screenshot workflow from a single mobil
 - Chromium interaction coverage for squad search, interests, player detail, and trade proposal rules.
 - Axe-core gates for serious and critical WCAG 2.0/2.1 A/AA violations across every captured route and viewport.
 - Keyboard focus checks that require the first Tab target to be visible, named, and matched by `:focus-visible`.
+- Mobile and desktop Chromium journeys for dashboard filtering/drill-down and FDR team filtering.
 
 ## Validation finding
 
@@ -35,6 +36,8 @@ The desktop scan then found insufficient contrast for the active navigation item
 The same repository-safe workflow now moves a starter to the bench, confirms invalid-lineup feedback, restores the starter, saves again, and confirms successful validation through the rendered controls in Chromium.
 
 It also searches for a squad target, adds the player to interests, verifies the player-detail dialog, creates a sample trade proposal, and checks the Trade Window rules link.
+
+Dashboard coverage now changes the team filter, verifies refreshed chart data, opens the drill-down, checks its player row, and closes it. FDR coverage sends a team-filter query and verifies the filtered row and fixture at both mobile and desktop widths.
 
 ## Scope
 

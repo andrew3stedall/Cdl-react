@@ -71,10 +71,11 @@ function LeagueContent({ snapshot }: { snapshot: LeagueSnapshot }) {
 
       <section aria-label="League standings">
         <h2>League standings</h2>
-        <table>
-          <thead>
-            <tr>
-              <th>Pos</th>
+        <div className="responsive-table" role="region" aria-label="League standings table" tabIndex={0}>
+          <table>
+            <thead>
+              <tr>
+                <th>Pos</th>
               <th>Team</th>
               <th>P</th>
               <th>W</th>
@@ -101,8 +102,9 @@ function LeagueContent({ snapshot }: { snapshot: LeagueSnapshot }) {
                 <td>{row.leaguePoints}</td>
               </tr>
             ))}
-          </tbody>
-        </table>
+            </tbody>
+          </table>
+        </div>
       </section>
 
       <section aria-label="All fixtures">
@@ -151,30 +153,32 @@ function LeagueContent({ snapshot }: { snapshot: LeagueSnapshot }) {
 
 function FixtureTable({ fixtures }: { fixtures: LeagueFixture[] }) {
   return (
-    <table>
-      <thead>
-        <tr>
-          <th>Round</th>
-          <th>Home</th>
-          <th>Away</th>
-          <th>Score</th>
-          <th>Status</th>
-          <th>Detail</th>
-        </tr>
-      </thead>
-      <tbody>
-        {fixtures.map((fixture) => (
-          <tr key={fixture.id}>
-            <td>{fixture.roundLabel}</td>
-            <td>{fixture.homeTeam.name}</td>
-            <td>{fixture.awayTeam.name}</td>
-            <td>{formatScore(fixture)}</td>
-            <td>{fixture.status}</td>
-            <td>{fixture.detailAvailable ? 'Available' : 'Pending'}</td>
+    <div className="responsive-table" role="region" aria-label="Fixture table" tabIndex={0}>
+      <table>
+        <thead>
+          <tr>
+            <th>Round</th>
+            <th>Home</th>
+            <th>Away</th>
+            <th>Score</th>
+            <th>Status</th>
+            <th>Detail</th>
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {fixtures.map((fixture) => (
+            <tr key={fixture.id}>
+              <td>{fixture.roundLabel}</td>
+              <td>{fixture.homeTeam.name}</td>
+              <td>{fixture.awayTeam.name}</td>
+              <td>{formatScore(fixture)}</td>
+              <td>{fixture.status}</td>
+              <td>{fixture.detailAvailable ? 'Available' : 'Pending'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 

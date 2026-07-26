@@ -25,6 +25,7 @@ Expanded the repository-safe application screenshot workflow from a single mobil
 - Mobile and desktop browser coverage proving locked lineup, chip, and save controls cannot be used.
 - API-backed CDL/EPL fixture and table summaries replacing React placeholder copy.
 - Stateful mobile and desktop browser journeys proving saved lineup and chip state are restored after reload.
+- Explicit backend snake-case session mapping plus expiry revalidation, recovery, and sign-out handling.
 
 ## Validation finding
 
@@ -48,13 +49,15 @@ The fixture-summary trace then found that the API already exposed CDL/EPL fixtur
 
 The persistence journey now uses a stateful API test double to save a valid starter/bench swap and activate a chip, reload the browser, and prove the next GET response restores both changes at mobile and desktop widths. This verifies the full frontend request/reload contract without claiming live database persistence.
 
+The live-session contract audit then found that FastAPI returns `is_authenticated`, `display_name`, and `expires_at`, while React previously cast that payload directly to camelCase. A real authenticated response would therefore fail the protected-route check. The auth client now maps the backend contract explicitly, rejects expired timestamps, revalidates on Reload, offers Retry session recovery, and executes Sign out through the logout endpoint. Mobile and desktop Chromium journeys prove expiry withdrawal, recovery, and sign-out.
+
 ## Browser interaction evidence
 
 The same repository-safe workflow now moves a starter to the bench, confirms invalid-lineup feedback, restores the starter, saves through the mocked API contract, and confirms successful validation through the rendered controls in Chromium. Separate mobile and desktop journeys return a fixture lock and verify the reason, view-only notice, and disabled lineup, chip, and save controls.
 
 It also searches for a squad target, adds the player to interests, verifies the player-detail dialog, creates a sample trade proposal, and checks the Trade Window rules link.
 
-Session-boundary coverage now proves that an unauthenticated response keeps the shell and protected team-selection controls hidden at mobile and desktop widths. The remaining authenticated journeys prove successful session bootstrap.
+Session-boundary coverage now proves that an unauthenticated or expired response keeps the shell and protected team-selection controls hidden at mobile and desktop widths. It also proves successful bootstrap from the backend-shaped payload, recovery after session restoration, and logout-driven withdrawal.
 
 Application-shell coverage now opens and closes the mobile navigation sheet, navigates between Rules, League, and Dashboard, verifies active-route and URL state, and confirms browser Back restores the rendered League page at mobile and desktop widths.
 

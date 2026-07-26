@@ -8,6 +8,8 @@ LEAGUE_PAGE = Path("frontend/src/LeaguePage.tsx")
 STYLES = Path("frontend/src/styles.css")
 APP = Path("frontend/src/App.tsx")
 MAIN = Path("frontend/src/main.tsx")
+TEAM_SELECTION_API = Path("frontend/src/team-selection-api.ts")
+TEAM_SELECTION_PAGE = Path("frontend/src/TeamSelectionPage.tsx")
 
 
 def test_screenshot_runbook_explains_github_artifacts() -> None:
@@ -133,3 +135,18 @@ def test_browser_journey_exercises_protected_session_boundary() -> None:
     assert "Checking your session" in app
     assert "VITE_STATIC_PREVIEW" in main
     assert "session: staticPreviewSession" in main
+
+
+def test_team_selection_consumes_api_lock_state() -> None:
+    interactions = INTERACTION_SCRIPT.read_text(encoding="utf-8")
+    api_client = TEAM_SELECTION_API.read_text(encoding="utf-8")
+    page = TEAM_SELECTION_PAGE.read_text(encoding="utf-8")
+
+    assert "/api/team-selection" in interactions
+    assert "teamSelectionLocked" in interactions
+    assert "View-only lineup" in interactions
+    assert "toBeDisabled()" in interactions
+    assert "fixtureLock" in api_client
+    assert "HttpTeamSelectionClient" in api_client
+    assert "fixtureLock.locked" in page
+    assert "Save team selection" in page

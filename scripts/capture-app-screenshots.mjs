@@ -31,6 +31,25 @@ const screenshotSession = {
   expiresAt: null,
 };
 
+const screenshotTeamSelection = {
+  manager_team: { id: 'team-castle', name: 'Castle FC', short_name: 'CFC' },
+  gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1 },
+  lineup: [
+    { id: 'player-1', display_name: 'Alex Keeper', position: 'GKP', epl_team: { id: 'epl-ars', name: 'Arsenal', short_name: 'ARS' }, slot: 'starter', slot_order: 1, is_captain: false, is_vice_captain: false },
+    { id: 'player-2', display_name: 'Ben Defender', position: 'DEF', epl_team: { id: 'epl-mci', name: 'Manchester City', short_name: 'MCI' }, slot: 'starter', slot_order: 2, is_captain: false, is_vice_captain: false },
+    { id: 'player-3', display_name: 'Casey Midfielder', position: 'MID', epl_team: { id: 'epl-ars', name: 'Arsenal', short_name: 'ARS' }, slot: 'starter', slot_order: 3, is_captain: true, is_vice_captain: false },
+    { id: 'player-4', display_name: 'Riley Forward', position: 'FWD', epl_team: { id: 'epl-mci', name: 'Manchester City', short_name: 'MCI' }, slot: 'bench', slot_order: 1, is_captain: false, is_vice_captain: true },
+    { id: 'player-5', display_name: 'Morgan Reserve', position: 'MID', epl_team: { id: 'epl-ars', name: 'Arsenal', short_name: 'ARS' }, slot: 'reserve', slot_order: 1, is_captain: false, is_vice_captain: false },
+  ],
+  chips: [
+    { id: 'wildcard', name: 'Wildcard', status: 'available' },
+    { id: 'bench-boost', name: 'Bench Boost', status: 'used' },
+    { id: 'triple-captain', name: 'Triple Captain', status: 'available' },
+  ],
+  validation_messages: [],
+  fixture_lock: { locked: false, fixture_id: null, fixture_type: null, lock_scope: null, locked_at: null, reason: null },
+};
+
 const teams = [
   { id: 'team-castle', name: 'Castle FC', short_name: 'CAS' },
   { id: 'team-river', name: 'River Rangers', short_name: 'RIV' },
@@ -145,6 +164,10 @@ async function mockApi(page) {
 
     if (path === '/api/auth/session') {
       return route.fulfill({ json: screenshotSession });
+    }
+
+    if (path === '/api/team-selection') {
+      return route.fulfill({ json: screenshotTeamSelection });
     }
 
     if (path === '/api/health' || path === '/health') {

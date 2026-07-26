@@ -147,6 +147,20 @@ roles/serviceusage.serviceUsageAdmin if Terraform manages project API enablement
 
 Avoid Owner and Editor roles.
 
+## Cloud SQL connectivity and identity boundary
+
+The unapplied staging design grants only `roles/cloudsql.client` to the runtime and migration service accounts. That role permits connector access; it does not grant Cloud SQL administration or database-level privileges.
+
+When the optional Cloud Run API is eventually enabled, the Cloud SQL connection is mounted at:
+
+```text
+/cloudsql/<project>:<region>:<instance>
+```
+
+The migration identity can read only the `cdl-database-url` secret container. It cannot read the session-cookie or development-login secret containers. Secret payloads remain absent from Terraform and must be created through the separately controlled credential workflow.
+
+`roles/cloudsql.instanceUser` is intentionally not granted because this design currently expects a rotated database credential rather than IAM database authentication. Cloud Run remains disabled and in memory repository mode, so this change does not deploy or connect an application.
+
 ## Cloud SQL recovery baseline
 
 The unapplied staging design uses a zonal `db-f1-micro` PostgreSQL instance with 10 GiB of SSD storage. Automatic storage growth is enabled but capped at 20 GiB to limit surprise cost.

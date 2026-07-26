@@ -54,10 +54,13 @@ resource "google_service_account" "migration" {
 module "artifact_registry" {
   source = "../../modules/artifact-registry"
 
-  project_id    = var.project_id
-  region        = var.region
-  repository_id = local.artifact_repository_id
-  description   = "Backend container images for CDL React staging."
+  project_id                  = var.project_id
+  region                      = var.region
+  repository_id               = local.artifact_repository_id
+  description                 = "Backend container images for CDL React staging."
+  immutable_tags              = true
+  cleanup_policy_dry_run      = true
+  cleanup_untagged_older_than = "1209600s"
 
   depends_on = [google_project_service.required]
 }
@@ -65,17 +68,22 @@ module "artifact_registry" {
 module "cloud_sql" {
   source = "../../modules/cloud-sql-postgres"
 
-  project_id             = var.project_id
-  region                 = var.region
-  instance_name          = local.database_instance_name
-  database_name          = local.database_name
-  database_version       = var.database_version
-  database_tier          = var.database_tier
-  disk_size_gb           = var.database_disk_size_gb
-  deletion_protection    = var.deletion_protection
-  availability_type      = "ZONAL"
-  backup_enabled         = true
-  point_in_time_recovery = true
+  project_id                     = var.project_id
+  region                         = var.region
+  instance_name                  = local.database_instance_name
+  database_name                  = local.database_name
+  database_version               = var.database_version
+  database_tier                  = var.database_tier
+  disk_size_gb                   = var.database_disk_size_gb
+  disk_autoresize_limit_gb       = var.database_disk_autoresize_limit_gb
+  deletion_protection            = var.deletion_protection
+  availability_type              = "ZONAL"
+  backup_enabled                 = true
+  backup_location                = var.region
+  backup_start_time              = var.database_backup_start_time
+  point_in_time_recovery         = true
+  transaction_log_retention_days = var.database_transaction_log_retention_days
+  retained_backups               = var.database_retained_backups
 
   depends_on = [google_project_service.required]
 }

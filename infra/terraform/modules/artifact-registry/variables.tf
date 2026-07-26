@@ -18,3 +18,21 @@ variable "description" {
   type        = string
   default     = "Container images."
 }
+
+variable "immutable_tags" {
+  description = "Prevent Docker tags from being moved, overwritten, or deleted."
+  type        = bool
+  default     = true
+}
+
+variable "cleanup_policy_dry_run" {
+  description = "Evaluate cleanup policies without deleting artifacts."
+  type        = bool
+  default     = true
+}
+
+variable "cleanup_untagged_older_than" {
+  description = "Age after which untagged artifacts match the cleanup policy."
+  type        = string
+  default     = "1209600s"
+}

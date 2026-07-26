@@ -62,4 +62,4 @@ git pull --ff-only
 terraform -chdir=infra/terraform/bootstrap init -migrate-state
 ```
 
-The staging environment uses a separate prefix in the same bucket.
+The committed `environments/staging/backend.tf` uses the same protected bucket with the distinct `environments/staging` prefix. Pull-request validation initializes with `-backend=false`; authenticated plans on trusted `main` initialize the remote backend and read shared staging state.

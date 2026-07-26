@@ -111,12 +111,21 @@ resource "google_secret_manager_secret_iam_member" "runtime_secret_access" {
 }
 
 resource "google_secret_manager_secret_iam_member" "migration_secret_access" {
-  for_each = module.runtime_secrets.secret_names
-
   project   = var.project_id
-  secret_id = each.value
+  secret_id = module.runtime_secrets.secret_names["cdl-database-url"]
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.migration.email}"
+}
+
+resource "google_project_iam_member" "cloud_sql_client" {
+  for_each = {
+    runtime   = google_service_account.runtime.email
+    migration = google_service_account.migration.email
+  }
+
+  project = var.project_id
+  role    = "roles/cloudsql.client"
+  member  = "serviceAccount:${each.value}"
 }
 
 module "cloud_run_api" {
@@ -128,6 +137,7 @@ module "cloud_run_api" {
   service_name                  = local.api_service_name
   image                         = var.backend_image
   runtime_service_account_email = google_service_account.runtime.email
+  cloud_sql_connection_name     = module.cloud_sql.connection_name
   environment                   = var.environment
   repository_mode               = "memory"
   allow_public_invoker          = var.allow_public_invoker
@@ -137,5 +147,7 @@ module "cloud_run_api" {
   depends_on = [
     google_project_service.required,
     module.artifact_registry,
+    module.cloud_sql,
+    google_project_iam_member.cloud_sql_client,
   ]
 }

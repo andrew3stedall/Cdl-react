@@ -163,6 +163,8 @@ describe('FixtureDifficultyPage', () => {
     expect(container.textContent).toContain('Rating scale');
     expect(container.textContent).toContain('MCI (H)');
     expect(container.textContent).toContain('Very hard');
+    expect(container.querySelectorAll('.fdr-table-scroll[role="region"][tabindex="0"]')).toHaveLength(2);
+    expect(container.querySelector('.fdr-table-scroll')?.getAttribute('aria-label')).toBe('Attack FDR table');
   });
 
   test('requeries FDR when team filter changes', async () => {

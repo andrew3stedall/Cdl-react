@@ -230,9 +230,6 @@ class DashboardRepository:
         widget: DashboardWidgetDefinition,
         point_key: str,
     ) -> list[DashboardTableRow]:
-        fallback_rows = [
-            {"player": "Sample Player", "team": "Sample Team", "points": 6},
-        ]
         detail_rows = {
             "castle": [
                 {"player": "Casey Midfielder", "team": "Castle FC", "points": 14},
@@ -250,5 +247,5 @@ class DashboardRepository:
                 {"player": "Riley Forward", "team": "Drafton", "points": 12},
                 {"player": "Jordan Striker", "team": "North Keep", "points": 10},
             ],
-        }.get(point_key, fallback_rows)
+        }.get(point_key, [])
         return [DashboardTableRow(cells=row) for row in detail_rows]

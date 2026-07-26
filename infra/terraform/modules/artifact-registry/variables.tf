@@ -19,6 +19,12 @@ variable "description" {
   default     = "Container images."
 }
 
+variable "labels" {
+  description = "Labels used for ownership and cost attribution."
+  type        = map(string)
+  default     = {}
+}
+
 variable "immutable_tags" {
   description = "Prevent Docker tags from being moved, overwritten, or deleted."
   type        = bool

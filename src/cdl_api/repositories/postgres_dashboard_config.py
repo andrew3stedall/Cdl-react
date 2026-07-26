@@ -19,12 +19,16 @@ class PostgreSQLDashboardConfigRepository:
 
     def get_config(self) -> DashboardConfigResponse | None:
         with self._session_factory() as session:
-            row = session.execute(
-                select(
-                    dashboard_definitions_table.c.id,
-                    dashboard_definitions_table.c.payload_json,
-                ).order_by(dashboard_definitions_table.c.id)
-            ).mappings().first()
+            row = (
+                session.execute(
+                    select(
+                        dashboard_definitions_table.c.id,
+                        dashboard_definitions_table.c.payload_json,
+                    ).order_by(dashboard_definitions_table.c.id)
+                )
+                .mappings()
+                .first()
+            )
 
         if row is None or not isinstance(row["payload_json"], Mapping):
             return None

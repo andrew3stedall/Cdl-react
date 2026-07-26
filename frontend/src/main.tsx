@@ -8,6 +8,7 @@ import {
   staticPreviewFdrClient,
   staticPreviewLeagueClient,
   staticPreviewPreferenceClient,
+  staticPreviewTeamSelectionClient,
 } from './static-preview-clients';
 import './styles.css';
 
@@ -40,6 +41,7 @@ const appProps = import.meta.env.VITE_STATIC_PREVIEW
       leagueClient: staticPreviewLeagueClient,
       preferenceClient: staticPreviewPreferenceClient,
       session: staticPreviewSession,
+      teamSelectionClient: staticPreviewTeamSelectionClient,
     }
   : {};
 

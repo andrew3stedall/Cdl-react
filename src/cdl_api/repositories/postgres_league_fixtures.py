@@ -7,6 +7,8 @@ from sqlalchemy.orm import Session
 
 from cdl_api.contracts.league_models import (
     FixtureScore,
+    KnockoutMatch,
+    KnockoutResponse,
     LeagueFixture,
     LeagueTableResponse,
 )
@@ -66,8 +68,10 @@ class PostgreSQLLeagueRepository:
             result_ids = self._existing_ids(session, fixture_results_table)
             snapshot_ids = self._existing_ids(session, fixture_scoring_snapshots_table)
             table_snapshot_ids = self._existing_ids(session, league_table_snapshots_table)
+            knockout_ids = self._existing_ids(session, knockout_matches_table)
 
-            for fixture in LeagueRepository().list_fixtures():
+            fixtures = LeagueRepository().list_fixtures()
+            for fixture in fixtures:
                 fixture_payload = fixture.model_dump(mode="json", exclude={"score"})
                 fixture_payload["synthetic"] = True
                 if fixture.id not in fixture_ids:
@@ -124,6 +128,22 @@ class PostgreSQLLeagueRepository:
                         payload_json=payload,
                     )
                 )
+
+            for fixture in fixtures:
+                if "Final" not in fixture.round_label or fixture.id in knockout_ids:
+                    continue
+                session.execute(
+                    insert(knockout_matches_table).values(
+                        id=fixture.id,
+                        payload_json={
+                            "fixture_id": fixture.id,
+                            "round_label": fixture.round_label,
+                            "rounds": ["Semi Final", "Final"],
+                            "winner": None,
+                            "synthetic": True,
+                        },
+                    )
+                )
             session.commit()
 
     def list_fixtures(self) -> list[LeagueFixture]:
@@ -173,6 +193,41 @@ class PostgreSQLLeagueRepository:
             )
         return LeagueTableResponse.model_validate(payloads[-1])
 
+    def get_knockout_snapshot(self) -> KnockoutResponse:
+        """Return persisted knockout matches without fixture-derived fallback."""
+        with self._session_factory() as session:
+            payloads = self._payloads(session, knockout_matches_table)
+
+        if not payloads:
+            raise MissingKnockoutSnapshotError(
+                "PostgreSQL mode requires persisted knockout matches."
+            )
+
+        fixtures = {fixture.id: fixture for fixture in self.list_fixtures()}
+        matches = []
+        rounds: list[str] = []
+        for payload in payloads:
+            fixture_id = str(payload["fixture_id"])
+            fixture = fixtures.get(fixture_id)
+            if fixture is None:
+                raise MissingKnockoutSnapshotError(
+                    f"Persisted knockout fixture {fixture_id!r} is missing."
+                )
+            for round_label in payload.get("rounds", []):
+                if isinstance(round_label, str) and round_label not in rounds:
+                    rounds.append(round_label)
+            matches.append(
+                KnockoutMatch.model_validate(
+                    {
+                        "id": fixture_id,
+                        "round_label": payload["round_label"],
+                        "fixture": fixture,
+                        "winner": payload.get("winner"),
+                    }
+                )
+            )
+        return KnockoutResponse(rounds=rounds, matches=matches)
+
     @staticmethod
     def _payloads(session: Session, table: Table) -> list[dict[str, object]]:
         result = session.execute(select(table.c.payload_json).order_by(table.c.id))
@@ -198,3 +253,7 @@ class PostgreSQLLeagueRepository:
 
 class MissingLeagueTableSnapshotError(RuntimeError):
     """Raised instead of silently calculating standings in PostgreSQL mode."""
+
+
+class MissingKnockoutSnapshotError(RuntimeError):
+    """Raised instead of deriving knockout matches in PostgreSQL mode."""

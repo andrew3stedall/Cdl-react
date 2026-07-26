@@ -29,6 +29,8 @@ class LeagueReadRepository(Protocol):
 
     def get_table_snapshot(self) -> LeagueTableResponse | None: ...
 
+    def get_knockout_snapshot(self) -> KnockoutResponse | None: ...
+
 
 class FixtureService:
     def __init__(self, repository: LeagueReadRepository | None = None) -> None:
@@ -181,6 +183,10 @@ class KnockoutService:
         self._repository = repository or LeagueRepository()
 
     def get_knockout(self) -> KnockoutResponse:
+        snapshot = self._repository.get_knockout_snapshot()
+        if snapshot is not None:
+            return snapshot
+
         matches = [
             KnockoutMatch(id=fixture.id, round_label=fixture.round_label, fixture=fixture)
             for fixture in self._repository.list_fixtures()

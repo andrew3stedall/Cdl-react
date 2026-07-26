@@ -149,6 +149,8 @@ Avoid Owner and Editor roles.
 
 ## Current limitations
 
+- Artifact Registry tags are immutable. Images must use unique release tags or digests; workflows must not overwrite a floating tag.
+- The untagged-image cleanup policy initially runs in dry-run mode with a 14-day threshold. Activating deletion requires plan review and explicit approval after the observed candidates are checked.
 - Cloud Run deploys in memory mode first.
 - Cloud SQL user/password and `CDL_DATABASE_URL` secret payload are not created by Terraform yet, to avoid storing credentials in Terraform state.
 - Terraform apply is intentionally absent until the committed remote state backend and permissions are confirmed by a successful authenticated plan.

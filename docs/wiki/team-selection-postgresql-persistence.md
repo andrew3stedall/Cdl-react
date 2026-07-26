@@ -17,6 +17,8 @@ Migration `0005_team_selection_persistence` follows `0004_squad_transfer_persist
 
 The repository now reads the latest fixture lock for the active season/gameweek. The primary read response exposes that state, and both lineup and chip mutations stop with `409 conflict` before persistence when a lock exists.
 
+The React team-selection client consumes the same read and mutation contract. A locked response renders a labelled view-only notice with the persisted reason and disables lineup, captain, vice-captain, chip, and save controls. Deterministic mobile and desktop Chromium journeys exercise this boundary; PostgreSQL integration tests remain the persistence proof.
+
 ## Validation
 
 Database-backed API tests cover valid lineup persistence, invalid lineup rejection without writes, chip persistence, invalid chip rejection without writes, fixture-lock persistence, and fixture summary behaviour staying available across the team-selection API. Service-level API tests prove a lock is reported and blocks both mutation paths without changing chip state.

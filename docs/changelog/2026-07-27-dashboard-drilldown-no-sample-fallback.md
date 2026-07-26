@@ -2,19 +2,20 @@
 
 Issue #68 tracks replacement of dashboard and FDR sample-backed runtime data with production-backed calculations or persisted snapshots.
 
-This release-readiness branch removes misleading runtime paths and aligns the dashboard metric repository with the migrated database contract:
+This release-readiness branch removes misleading runtime paths and aligns dashboard runtime reads with migration `0007`:
 
 - Unknown dashboard drill-down keys return an empty row set rather than a fabricated `Sample Player` / `Sample Team` result.
 - `GET /api/dashboard/metrics` reads `dashboard_metric_catalog` when repository mode is PostgreSQL. An empty catalog remains empty instead of falling back to the in-memory allowlist.
-- Dashboard/FDR SQLAlchemy metadata now matches migration `0007`'s `id`, `payload_json`, and `created_at` schema. The earlier typed-column metadata could pass SQLite-only tests while failing against a migrated PostgreSQL database.
+- `GET /api/dashboard/config` reads `dashboard_definitions` in PostgreSQL mode. A missing definition returns an explicit `404 not_found` response instead of silently rendering the in-memory sample dashboard.
+- Dashboard/FDR SQLAlchemy metadata matches migration `0007`'s `id`, `payload_json`, and `created_at` schema.
 
 ## Evidence
 
 - Existing known drill-down keys retain their deterministic rows.
-- A focused API regression verifies an unknown key returns no rows and never exposes the removed sample identity.
-- Deterministic metrics are explicitly labelled synthetic, seed idempotently, and round-trip through the payload table.
-- The PostgreSQL workflow now runs the dashboard metric test after applying all Alembic migrations, proving the repository uses the real migration `0007` schema.
+- Focused API regressions verify unknown drill-down keys and absent persisted configuration do not expose sample data.
+- Deterministic metrics and dashboard configuration are explicitly labelled synthetic, seed idempotently, and round-trip through their payload tables.
+- The PostgreSQL workflow runs dashboard metric and configuration tests after applying all Alembic migrations, proving both repositories use the real migration `0007` schema.
 
 ## Remaining scope
 
-Dashboard config definitions, dimensions, filters, aggregate snapshots, drill-down facts, and FDR ratings remain sample-backed at runtime. The next slice should load the dashboard definition and widget configuration from `dashboard_definitions` in PostgreSQL mode without retaining an in-memory fallback.
+Dashboard dimensions and filters remain in-memory, while widget query/drill-down aggregates and FDR ratings remain sample-backed. The next slice should route dashboard widget lookup through the persisted configuration for query and drill-down requests, without an in-memory fallback.

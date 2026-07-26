@@ -5,6 +5,7 @@ import { describe, expect, test } from 'vitest';
 import { App } from './App';
 import type { SessionState, UserPreferences } from './contracts';
 import type { PreferenceClient } from './preferences-api';
+import type { TeamSelectionClient, TeamSelectionPlayer, TeamSelectionSnapshot } from './team-selection-api';
 
 const testGlobal = globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean };
 testGlobal.IS_REACT_ACT_ENVIRONMENT = true;
@@ -19,6 +20,34 @@ const authenticatedSession: SessionState = {
   },
   expiresAt: null,
 };
+
+const teamSelectionSnapshot: TeamSelectionSnapshot = {
+  managerTeam: { id: 'team-castle', name: 'Castle FC' },
+  gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1 },
+  players: [
+    { id: 'player-1', name: 'Alex Keeper', position: 'GKP', team: 'ARS', slot: 'starter', slotOrder: 1, captain: false, viceCaptain: false },
+    { id: 'player-2', name: 'Ben Defender', position: 'DEF', team: 'MCI', slot: 'starter', slotOrder: 2, captain: false, viceCaptain: false },
+    { id: 'player-3', name: 'Casey Midfielder', position: 'MID', team: 'ARS', slot: 'starter', slotOrder: 3, captain: true, viceCaptain: false },
+    { id: 'player-4', name: 'Riley Forward', position: 'FWD', team: 'MCI', slot: 'bench', slotOrder: 1, captain: false, viceCaptain: true },
+    { id: 'player-5', name: 'Morgan Reserve', position: 'MID', team: 'ARS', slot: 'reserve', slotOrder: 1, captain: false, viceCaptain: false },
+  ],
+  chips: [],
+  fixtureLock: { locked: false, fixtureId: null, fixtureType: null, lockScope: null, lockedAt: null, reason: null },
+};
+
+class MemoryTeamSelectionClient implements TeamSelectionClient {
+  async getTeamSelection(): Promise<TeamSelectionSnapshot> {
+    return teamSelectionSnapshot;
+  }
+
+  async saveLineup(_players: TeamSelectionPlayer[]): Promise<TeamSelectionSnapshot> {
+    return teamSelectionSnapshot;
+  }
+
+  async updateChip(_chipId: string, _active: boolean): Promise<TeamSelectionSnapshot> {
+    return teamSelectionSnapshot;
+  }
+}
 
 class MemoryPreferenceClient implements PreferenceClient {
   preferences: UserPreferences = { themePreset: 'classic' };
@@ -43,6 +72,7 @@ function renderApp(initialPath: string, session?: SessionState) {
         initialPath={initialPath}
         preferenceClient={new MemoryPreferenceClient()}
         session={session}
+        teamSelectionClient={new MemoryTeamSelectionClient()}
       />,
     );
   });
@@ -54,6 +84,7 @@ describe('team selection shell integration', () => {
     const { container } = renderApp('/team-selection', authenticatedSession);
 
     await act(async () => {
+      await Promise.resolve();
       await Promise.resolve();
     });
 

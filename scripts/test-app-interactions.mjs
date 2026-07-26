@@ -447,11 +447,19 @@ async function testLockedTeamSelection(browser, viewport) {
   await expectStatus(page, 'Lineup locked. FPL deadline passed.');
   await page.getByRole('region', { name: 'Lineup lock' }).getByText('View-only lineup').waitFor();
 
-  const allSelectsDisabled = await page.locator('main select').evaluateAll((controls) =>
+  const allSelectsDisabled = await page.locator('select[aria-label^="Move "]').evaluateAll((controls) =>
     controls.length > 0 && controls.every((control) => control.disabled),
   );
   if (!allSelectsDisabled) {
     throw new Error('Expected every lineup movement control to be disabled after fixture lock');
+  }
+
+  const allChipActionsDisabled = await page
+    .getByRole('region', { name: 'Chip selector' })
+    .getByRole('button')
+    .evaluateAll((controls) => controls.length > 0 && controls.every((control) => control.disabled));
+  if (!allChipActionsDisabled) {
+    throw new Error('Expected every chip action to be disabled after fixture lock');
   }
 
   if (!(await page.getByRole('button', { name: 'Save lineup' }).isDisabled())) {

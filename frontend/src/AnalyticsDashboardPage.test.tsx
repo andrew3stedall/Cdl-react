@@ -146,6 +146,8 @@ describe('AnalyticsDashboardPage', () => {
     expect(container.textContent).toContain('Points by CDL team');
     expect(container.textContent).toContain('Castle FC');
     expect(container.textContent).toContain('74');
+    expect(container.querySelector('.dashboard-chart')?.getAttribute('role')).toBe('group');
+    expect(container.querySelector('.dashboard-chart')?.getAttribute('aria-label')).toBe('Points by CDL team chart');
   });
 
   test('requeries widgets when a global filter changes', async () => {

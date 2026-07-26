@@ -5,7 +5,7 @@ import { describe, expect, test } from 'vitest';
 import { App } from './App';
 import type { SessionState, UserPreferences } from './contracts';
 import type { PreferenceClient } from './preferences-api';
-import type { TeamSelectionClient, TeamSelectionPlayer, TeamSelectionSnapshot } from './team-selection-api';
+import type { TeamSelectionClient, TeamSelectionSnapshot } from './team-selection-api';
 
 const testGlobal = globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean };
 testGlobal.IS_REACT_ACT_ENVIRONMENT = true;
@@ -40,11 +40,11 @@ class MemoryTeamSelectionClient implements TeamSelectionClient {
     return teamSelectionSnapshot;
   }
 
-  async saveLineup(_players: TeamSelectionPlayer[]): Promise<TeamSelectionSnapshot> {
+  async saveLineup(): Promise<TeamSelectionSnapshot> {
     return teamSelectionSnapshot;
   }
 
-  async updateChip(_chipId: string, _active: boolean): Promise<TeamSelectionSnapshot> {
+  async updateChip(): Promise<TeamSelectionSnapshot> {
     return teamSelectionSnapshot;
   }
 }

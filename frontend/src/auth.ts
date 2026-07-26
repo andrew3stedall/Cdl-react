@@ -15,6 +15,7 @@ export interface LogoutResponse {
 
 export interface SessionClient {
   getSession(): Promise<SessionState>;
+  login(request: LoginRequest): Promise<AuthResult<LoginResponse>>;
   logout(): Promise<LogoutResponse>;
 }
 
@@ -103,6 +104,7 @@ export async function logout(): Promise<LogoutResponse> {
 
 export const defaultSessionClient: SessionClient = {
   getSession,
+  login,
   logout,
 };
 

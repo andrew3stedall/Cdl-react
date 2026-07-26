@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { canAccessProtectedRoute } from './auth';
 import { AppShell } from './AppShell';
@@ -103,6 +103,18 @@ export function App({
   const [isMobileNavigationOpen, setMobileNavigationOpen] = useState(false);
   const [refreshCount, setRefreshCount] = useState(0);
   const preset = getDefaultThemePreset();
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setCurrentPath(window.location.pathname);
+      setMobileNavigationOpen(false);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
 
   const handleNavigate = (href: string) => {
     try {

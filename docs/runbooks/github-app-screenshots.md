@@ -15,7 +15,7 @@ The workflow also runs on pull requests so layout regressions are caught before 
 
 ## Browser interaction check
 
-Before capturing images, the workflow exercises two primary journeys in Chromium at the mobile viewport.
+Before capturing images, the workflow exercises four primary journeys in Chromium. Team selection and squad management run at the mobile viewport; dashboard and FDR run at both mobile and desktop widths.
 
 ### Team selection
 
@@ -33,7 +33,21 @@ Before capturing images, the workflow exercises two primary journeys in Chromium
 4. Verify the player summary, then close the dialog.
 5. Propose a sample trade and confirm its Trade Window rules link.
 
-These journeys verify that rendered controls, React state transitions, validation feedback, dialogs, links, and accessible labels work together in a real browser. They remain deterministic frontend checks; they do not yet prove API persistence.
+### Dashboard
+
+1. Open `/dashboard` and wait for deterministic widget data.
+2. Change the Team filter to Castle FC and verify the refreshed chart value.
+3. Open the chart-point drill-down and verify its player row.
+4. Close the drill-down and confirm it is removed.
+
+### Fixture difficulty ratings
+
+1. Open `/fdr` and wait for the attack and defence views.
+2. Change the Team filter to River Rangers.
+3. Verify the browser sends the selected team in the API query.
+4. Confirm both the filtered row and opponent fixture render.
+
+These journeys verify that rendered controls, React state transitions, request contracts, validation feedback, dialogs, links, and accessible labels work together in a real browser. They remain deterministic frontend checks; they do not yet prove API persistence.
 
 ## Captured routes
 

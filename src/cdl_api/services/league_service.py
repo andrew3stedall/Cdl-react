@@ -31,6 +31,8 @@ class LeagueReadRepository(Protocol):
 
     def get_knockout_snapshot(self) -> KnockoutResponse | None: ...
 
+    def get_head_to_head_snapshot(self) -> HeadToHeadResponse | None: ...
+
 
 class FixtureService:
     def __init__(self, repository: LeagueReadRepository | None = None) -> None:
@@ -156,6 +158,10 @@ class HeadToHeadService:
         self._repository = repository or LeagueRepository()
 
     def get_records(self) -> HeadToHeadResponse:
+        snapshot = self._repository.get_head_to_head_snapshot()
+        if snapshot is not None:
+            return snapshot
+
         records = []
         for fixture in self._repository.list_fixtures():
             if fixture.score.outcome == FixtureOutcome.PENDING:

@@ -8,10 +8,12 @@ from sqlalchemy.orm import Session, sessionmaker
 from cdl_api.app import create_app
 from cdl_api.repositories.postgres_league_fixtures import (
     LEAGUE_FIXTURE_PERSISTENCE_TABLES,
+    MissingLeagueTableSnapshotError,
     PostgreSQLLeagueRepository,
     cdl_fixtures_table,
     fixture_results_table,
     fixture_scoring_snapshots_table,
+    league_table_snapshots_table,
     metadata,
 )
 from cdl_api.routers.league import get_league_repository
@@ -48,6 +50,20 @@ def test_sqlite_repository_round_trip_uses_persisted_results_and_scoring() -> No
     assert pending.status == "pending"
     assert pending.score.outcome == "pending"
 
+    table = repository.get_table_snapshot()
+    assert table.source == "postgresql-synthetic-snapshot"
+    assert table.rows[0].team.id == "castle"
+
+    with session_factory() as session:
+        session.execute(_delete_statement(league_table_snapshots_table))
+        session.commit()
+
+    with pytest.raises(
+        MissingLeagueTableSnapshotError,
+        match="requires a persisted league table snapshot",
+    ):
+        repository.get_table_snapshot()
+
 
 @pytest.mark.skipif(
     not os.getenv("CDL_DATABASE_URL", "").startswith("postgresql"),
@@ -80,6 +96,7 @@ def test_clean_postgres_league_api_reads_persisted_fixture_state() -> None:
     assert detail_response.json()["fixture"]["score"]["home_score"] == 58
     assert pending_detail_response.status_code == 404
     assert table_response.status_code == 200
+    assert table_response.json()["source"] == "postgresql-synthetic-snapshot"
     assert table_response.json()["rows"][0]["team"]["id"] == "castle"
 
     with session_factory() as session:
@@ -87,6 +104,8 @@ def test_clean_postgres_league_api_reads_persisted_fixture_state() -> None:
             cdl_fixtures_table,
             fixture_results_table,
             fixture_scoring_snapshots_table,
+            league_table_snapshots_table,
         ):
             count = session.execute(select(func.count()).select_from(table)).scalar_one()
-            assert count == 5
+            expected = 1 if table is league_table_snapshots_table else 5
+            assert count == expected

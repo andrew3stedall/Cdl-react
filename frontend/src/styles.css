@@ -220,6 +220,22 @@ select {
   display: none;
 }
 
+.responsive-table {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+}
+
+.responsive-table:focus-visible {
+  border-radius: 0.25rem;
+  outline: 2px solid var(--cdl-primary);
+  outline-offset: 2px;
+}
+
+.responsive-table table {
+  min-width: max-content;
+}
+
 [data-theme-preset='compact'] .app-shell,
 [data-theme-preset='compact'] .shell-main,
 [data-theme-preset='compact'] .app-sidebar {

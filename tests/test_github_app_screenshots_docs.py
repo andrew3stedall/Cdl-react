@@ -3,6 +3,7 @@ from pathlib import Path
 RUNBOOK = Path("docs/runbooks/github-app-screenshots.md")
 WORKFLOW = Path(".github/workflows/app-screenshots.yml")
 SCRIPT = Path("scripts/capture-app-screenshots.mjs")
+INTERACTION_SCRIPT = Path("scripts/test-app-interactions.mjs")
 LEAGUE_PAGE = Path("frontend/src/LeaguePage.tsx")
 STYLES = Path("frontend/src/styles.css")
 
@@ -24,6 +25,8 @@ def test_screenshot_workflow_uploads_artifact_without_deploying() -> None:
     content = WORKFLOW.read_text(encoding="utf-8")
 
     assert "actions/upload-artifact" in content
+    assert "Test primary interactions" in content
+    assert "node scripts/test-app-interactions.mjs" in content
     assert "Capture screenshots" in content
     assert "deployment" not in content.lower()
 
@@ -53,3 +56,14 @@ def test_league_tables_are_contained_on_narrow_screens() -> None:
     assert ".responsive-table" in styles
     assert "overflow-x: auto" in styles
     assert ".responsive-table:focus-visible" in styles
+
+
+def test_interaction_script_exercises_team_selection_validation() -> None:
+    content = INTERACTION_SCRIPT.read_text(encoding="utf-8")
+
+    assert "/team-selection" in content
+    assert "Move Alex Keeper" in content
+    assert "Invalid lineup." in content
+    assert "Lineup saved and validated." in content
+    assert "selectOption('bench')" in content
+    assert "selectOption('starter')" in content

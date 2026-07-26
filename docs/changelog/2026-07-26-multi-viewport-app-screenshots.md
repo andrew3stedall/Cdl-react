@@ -15,6 +15,8 @@ Expanded the repository-safe application screenshot workflow from a single mobil
 - Compact two-line player rows for team selection on mobile and tablet layouts.
 - Chromium interaction coverage for invalid and restored-valid team-selection saves.
 - Chromium interaction coverage for squad search, interests, player detail, and trade proposal rules.
+- Axe-core gates for serious and critical WCAG 2.0/2.1 A/AA violations across every captured route and viewport.
+- Keyboard focus checks that require the first Tab target to be visible, named, and matched by `:focus-visible`.
 
 ## Validation finding
 

@@ -12,6 +12,17 @@ const testGlobal = globalThis as typeof globalThis & {
 };
 testGlobal.IS_REACT_ACT_ENVIRONMENT = true;
 
+const authenticatedSession: SessionState = {
+  isAuthenticated: true,
+  user: {
+    id: 'test-manager',
+    email: 'manager@example.com',
+    displayName: 'Test Manager',
+    roles: ['manager'],
+  },
+  expiresAt: null,
+};
+
 class MemoryPreferenceClient implements PreferenceClient {
   preferences: UserPreferences = { themePreset: 'classic' };
 
@@ -93,7 +104,7 @@ class MemoryLeagueClient implements LeagueClient {
 function renderApp({
   preferenceClient = new MemoryPreferenceClient(),
   initialPath = '/dashboard',
-  session,
+  session = authenticatedSession,
   leagueClient = new MemoryLeagueClient(),
 }: {
   preferenceClient?: PreferenceClient;
@@ -168,6 +179,22 @@ describe('AppShell integration', () => {
       await Promise.resolve();
     });
 
+    expect(container.querySelector('[aria-current="page"]')?.textContent).toContain('League');
+    expect(container.textContent).toContain('League Fixtures and Table');
+    expect(container.textContent).toContain('Castle United');
+  });
+
+  test('updates rendered route when browser history changes', async () => {
+    window.history.replaceState({}, '', '/rules');
+    const { container } = renderApp({ initialPath: '/rules' });
+
+    await act(async () => {
+      window.history.pushState({}, '', '/league');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+      await Promise.resolve();
+    });
+
+    expect(window.location.pathname).toBe('/league');
     expect(container.querySelector('[aria-current="page"]')?.textContent).toContain('League');
     expect(container.textContent).toContain('League Fixtures and Table');
     expect(container.textContent).toContain('Castle United');

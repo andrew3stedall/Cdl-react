@@ -143,7 +143,7 @@ function FdrTable({ title, response }: { title: string; response: FdrViewRespons
         <p className="eyebrow">{response.view}</p>
         <h2>{title}</h2>
       </header>
-      <div className="fdr-table-scroll">
+      <div aria-label={`${title} table`} className="fdr-table-scroll" role="region" tabIndex={0}>
         <table className="fdr-table">
           <thead>
             <tr>

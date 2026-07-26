@@ -18,6 +18,7 @@ interface AppShellProps {
   onNavigate: (href: string) => void;
   onOpenMobileNavigation: () => void;
   onRefresh: () => void;
+  onSignOut: () => void;
   session: SessionState;
 }
 
@@ -29,6 +30,7 @@ export function AppShell({
   onNavigate,
   onOpenMobileNavigation,
   onRefresh,
+  onSignOut,
   session,
 }: AppShellProps) {
   const { preset, saveStatus, setPresetName } = useThemePreset();
@@ -91,7 +93,7 @@ export function AppShell({
               Scouting
             </a>
             <PresetSelector preset={preset} saveStatus={saveStatus} setPresetName={setPresetName} />
-            <Button type="button" variant="ghost">
+            <Button onClick={onSignOut} type="button" variant="ghost">
               <LogOut aria-hidden="true" size={16} />
               Sign out
             </Button>

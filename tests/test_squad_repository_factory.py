@@ -3,6 +3,7 @@ import pytest
 from cdl_api.database import build_session_factory
 from cdl_api.repositories.factory import build_repositories
 from cdl_api.repositories.postgres_auth import PostgreSQLUserRepository
+from cdl_api.repositories.postgres_league_fixtures import PostgreSQLLeagueRepository
 from cdl_api.repositories.postgres_squad_repository import PostgreSQLSquadRepository
 from cdl_api.repositories.squad import InMemorySquadRepository
 from cdl_api.settings import Settings
@@ -29,6 +30,7 @@ def test_postgres_repository_bundle_includes_squad_repository(
     )
     monkeypatch.setattr(PostgreSQLUserRepository, "seed_demo_user", lambda _: None)
     monkeypatch.setattr(PostgreSQLSquadRepository, "seed_demo_data", lambda _: None)
+    monkeypatch.setattr(PostgreSQLLeagueRepository, "seed_synthetic_data", lambda _: None)
 
     repositories = build_repositories(settings)
 

@@ -204,6 +204,40 @@ class PostgreSQLTeamSelectionRepository(InMemoryTeamSelectionRepository):
             session.commit()
         return super().save_chips(chips)
 
+    def get_fixture_lock(self) -> dict[str, object] | None:
+        with self._session_factory() as session:
+            result = session.execute(
+                select(
+                    team_selection_fixture_locks_table.c.id,
+                    team_selection_fixture_locks_table.c.fixture_id,
+                    team_selection_fixture_locks_table.c.fixture_type,
+                    team_selection_fixture_locks_table.c.lock_scope,
+                    team_selection_fixture_locks_table.c.locked_at,
+                    team_selection_fixture_locks_table.c.reason,
+                )
+                .where(
+                    team_selection_fixture_locks_table.c.season_id == DEMO_SEASON_ID,
+                    team_selection_fixture_locks_table.c.gameweek == self.gameweek.number,
+                )
+                .order_by(team_selection_fixture_locks_table.c.locked_at.desc())
+                .limit(1)
+            )
+            rows = _mapping_rows(result)
+            if not rows:
+                return None
+            row = rows[0]
+            locked_at = row["locked_at"]
+            return {
+                "id": str(row["id"]),
+                "fixture_id": str(row["fixture_id"]),
+                "fixture_type": str(row["fixture_type"]),
+                "lock_scope": str(row["lock_scope"]),
+                "locked_at": (
+                    locked_at.isoformat() if isinstance(locked_at, datetime) else str(locked_at)
+                ),
+                "reason": str(row["reason"]),
+            }
+
     def save_fixture_lock(
         self,
         *,

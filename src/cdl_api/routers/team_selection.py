@@ -3,7 +3,7 @@
 from fastapi import APIRouter, Depends, status
 from fastapi.responses import JSONResponse
 
-from cdl_api.contracts.common import ErrorCode, ValidationErrorResponse
+from cdl_api.contracts.common import ApiErrorResponse, ErrorCode, ValidationErrorResponse
 from cdl_api.contracts.team_selection import (
     ChipUpdateRequest,
     FixtureSummaryPanel,
@@ -15,6 +15,7 @@ from cdl_api.repositories.team_selection import InMemoryTeamSelectionRepository
 from cdl_api.services.team_selection import (
     ChipService,
     FixtureSummaryService,
+    TeamSelectionLockedError,
     TeamSelectionService,
     TeamSelectionValidationError,
 )
@@ -59,6 +60,23 @@ def validation_response(exc: TeamSelectionValidationError) -> JSONResponse:
     )
 
 
+def lock_response(exc: TeamSelectionLockedError) -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_409_CONFLICT,
+        content=ApiErrorResponse(
+            code=ErrorCode.CONFLICT,
+            message=str(exc),
+            details={
+                "rule_reference": "lineup-locking",
+                "fixture_id": exc.lock["fixture_id"],
+                "lock_scope": exc.lock["lock_scope"],
+                "locked_at": exc.lock["locked_at"],
+                "reason": exc.lock["reason"],
+            },
+        ).model_dump(mode="json"),
+    )
+
+
 @router.get("/team-selection", response_model=TeamSelectionResponse)
 def get_team_selection(
     service: TeamSelectionService = Depends(get_team_selection_service),
@@ -73,6 +91,8 @@ def update_lineup(
 ) -> TeamSelectionResponse | JSONResponse:
     try:
         return service.update_lineup(payload)
+    except TeamSelectionLockedError as exc:
+        return lock_response(exc)
     except TeamSelectionValidationError as exc:
         return validation_response(exc)
 
@@ -85,6 +105,8 @@ def update_chip(
 ) -> TeamSelectionResponse | JSONResponse:
     try:
         return service.update_chip(chip_id, payload)
+    except TeamSelectionLockedError as exc:
+        return lock_response(exc)
     except TeamSelectionValidationError as exc:
         return validation_response(exc)
 

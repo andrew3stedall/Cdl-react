@@ -23,6 +23,7 @@ body {
 }
 
 button,
+input,
 select {
   font: inherit;
 }
@@ -92,6 +93,12 @@ select {
   border-color: var(--cdl-border);
   background: var(--cdl-accent);
   outline: none;
+}
+
+.nav-item:hover small,
+.nav-item:focus-visible small,
+.nav-item.active small {
+  color: #475569;
 }
 
 .shell-main {
@@ -180,6 +187,58 @@ select {
   padding: 1rem;
 }
 
+.session-boundary {
+  display: grid;
+  gap: 1rem;
+  margin: clamp(1rem, 8vh, 5rem) auto;
+  max-width: 32rem;
+  width: calc(100% - 2rem);
+}
+
+.session-boundary h1,
+.session-boundary p {
+  margin: 0;
+}
+
+.login-form,
+.login-field {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.login-form {
+  gap: 1rem;
+}
+
+.login-field span {
+  font-weight: 700;
+}
+
+.login-field input {
+  border: 1px solid var(--cdl-border);
+  border-radius: var(--cdl-radius);
+  min-height: 2.75rem;
+  padding: 0.6rem 0.75rem;
+  width: 100%;
+}
+
+.login-field input:focus-visible {
+  border-color: var(--cdl-primary);
+  outline: 2px solid var(--cdl-primary);
+  outline-offset: 2px;
+}
+
+.login-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.login-error {
+  color: #b91c1c;
+  font-weight: 700;
+}
+
 .session-card {
   align-items: center;
   display: flex;
@@ -218,6 +277,22 @@ select {
 
 .mobile-menu-button {
   display: none;
+}
+
+.responsive-table {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+}
+
+.responsive-table:focus-visible {
+  border-radius: 0.25rem;
+  outline: 2px solid var(--cdl-primary);
+  outline-offset: 2px;
+}
+
+.responsive-table table {
+  min-width: max-content;
 }
 
 [data-theme-preset='compact'] .app-shell,

@@ -18,8 +18,8 @@ jobs:
       - name: Build frontend
         working-directory: frontend
         run: npm run build
-      - name: Install Playwright package
-        run: npm install --no-save playwright
+      - name: Install browser test packages
+        run: npm install --no-save playwright axe-core
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
       - name: Start frontend preview
@@ -37,6 +37,8 @@ jobs:
           done
           cat vite-preview.log
           exit 1
+      - name: Test primary interactions
+        run: node scripts/test-app-interactions.mjs
       - name: Capture screenshots
         run: node scripts/capture-app-screenshots.mjs
       - name: Upload screenshots

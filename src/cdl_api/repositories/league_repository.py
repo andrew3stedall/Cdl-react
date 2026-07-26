@@ -5,7 +5,10 @@ from cdl_api.contracts.league_models import (
     FixtureOutcome,
     FixtureScore,
     FixtureStatus,
+    HeadToHeadResponse,
+    KnockoutResponse,
     LeagueFixture,
+    LeagueTableResponse,
 )
 
 
@@ -93,3 +96,15 @@ class LeagueRepository:
 
     def list_next_fixtures(self) -> list[LeagueFixture]:
         return [fixture for fixture in self._fixtures if fixture.is_next]
+
+    def get_table_snapshot(self) -> LeagueTableResponse | None:
+        """Memory mode calculates standings in the service from fixture state."""
+        return None
+
+    def get_knockout_snapshot(self) -> KnockoutResponse | None:
+        """Memory mode derives knockout context in the service from fixtures."""
+        return None
+
+    def get_head_to_head_snapshot(self) -> HeadToHeadResponse | None:
+        """Memory mode derives head-to-head records from fixture results."""
+        return None

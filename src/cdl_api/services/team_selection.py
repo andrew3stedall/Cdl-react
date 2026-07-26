@@ -4,6 +4,7 @@ from cdl_api.contracts.common import ValidationIssue
 from cdl_api.contracts.team_selection import (
     ChipStatus,
     ChipUpdateRequest,
+    FixtureLockState,
     FixtureSummaryPanel,
     LineupSlot,
     LineupUpdateRequest,
@@ -22,6 +23,32 @@ class TeamSelectionValidationError(ValueError):
         self.issues = issues
 
 
+class TeamSelectionLockedError(ValueError):
+    def __init__(self, lock: dict[str, object]) -> None:
+        super().__init__("Team selection is locked for this gameweek.")
+        self.lock = lock
+
+
+def _fixture_lock_state(repository: InMemoryTeamSelectionRepository) -> FixtureLockState:
+    lock = repository.get_fixture_lock()
+    if lock is None:
+        return FixtureLockState()
+    return FixtureLockState(
+        locked=True,
+        fixture_id=str(lock["fixture_id"]),
+        fixture_type=str(lock["fixture_type"]),
+        lock_scope=str(lock["lock_scope"]),
+        locked_at=str(lock["locked_at"]),
+        reason=str(lock["reason"]),
+    )
+
+
+def _ensure_editable(repository: InMemoryTeamSelectionRepository) -> None:
+    lock = repository.get_fixture_lock()
+    if lock is not None:
+        raise TeamSelectionLockedError(lock)
+
+
 class TeamSelectionService:
     def __init__(self, repository: InMemoryTeamSelectionRepository) -> None:
         self._repository = repository
@@ -34,9 +61,11 @@ class TeamSelectionService:
             lineup=players,
             chips=self._repository.get_chips(),
             validation_messages=self.validate_players(players),
+            fixture_lock=_fixture_lock_state(self._repository),
         )
 
     def update_lineup(self, request: LineupUpdateRequest) -> TeamSelectionResponse:
+        _ensure_editable(self._repository)
         issues = self.validate_updates(request)
         if issues:
             raise TeamSelectionValidationError("Invalid team selection lineup.", issues)
@@ -47,6 +76,7 @@ class TeamSelectionService:
             lineup=players,
             chips=self._repository.get_chips(),
             validation_messages=[],
+            fixture_lock=_fixture_lock_state(self._repository),
         )
 
     def validate_updates(self, request: LineupUpdateRequest) -> list[ValidationIssue]:
@@ -124,6 +154,7 @@ class ChipService:
         self._repository = repository
 
     def update_chip(self, chip_id: str, request: ChipUpdateRequest) -> TeamSelectionResponse:
+        _ensure_editable(self._repository)
         chips = self._repository.get_chips()
         chip = next((candidate for candidate in chips if candidate.id == chip_id), None)
         if chip is None:

@@ -201,7 +201,7 @@ function AccessibleChart({
   );
 
   return (
-    <div aria-label={`${query.title} chart`} className="dashboard-chart" role="img">
+    <div aria-label={`${query.title} chart`} className="dashboard-chart" role="group">
       {query.series.flatMap((series) =>
         series.points.map((point) => (
           <button

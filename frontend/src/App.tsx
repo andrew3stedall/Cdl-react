@@ -1,6 +1,11 @@
-import { useState } from 'react';
+import { type FormEvent, useEffect, useState } from 'react';
 
-import { canAccessProtectedRoute } from './auth';
+import {
+  canAccessProtectedRoute,
+  defaultSessionClient,
+  getUnauthenticatedSession,
+  type SessionClient,
+} from './auth';
 import { AppShell } from './AppShell';
 import { AnalyticsDashboardPage } from './AnalyticsDashboardPage';
 import type { RuleSection, SessionState } from './contracts';
@@ -14,6 +19,7 @@ import type { PreferenceClient } from './preferences-api';
 import { RulesPage } from './RulesPage';
 import { SquadManagementPage } from './SquadManagementPage';
 import { TeamSelectionPage } from './TeamSelectionPage';
+import type { TeamSelectionClient } from './team-selection-api';
 import { getDefaultThemePreset } from './theme-presets';
 import { ThemePresetProvider } from './theme-preset-provider';
 
@@ -71,17 +77,6 @@ const featuredRules: RuleSection[] = [
   },
 ];
 
-const defaultSession: SessionState = {
-  isAuthenticated: true,
-  user: {
-    id: 'demo-manager',
-    email: 'manager@example.com',
-    displayName: 'CDL Manager',
-    roles: ['manager'],
-  },
-  expiresAt: null,
-};
-
 interface AppProps {
   dashboardClient?: DashboardClient;
   fdrClient?: FdrClient;
@@ -89,6 +84,8 @@ interface AppProps {
   leagueClient?: LeagueClient;
   preferenceClient?: PreferenceClient;
   session?: SessionState;
+  sessionClient?: SessionClient;
+  teamSelectionClient?: TeamSelectionClient;
 }
 
 export function App({
@@ -97,12 +94,108 @@ export function App({
   initialPath = window.location.pathname,
   leagueClient,
   preferenceClient,
-  session = defaultSession,
+  session,
+  sessionClient = defaultSessionClient,
+  teamSelectionClient,
 }: AppProps) {
   const [currentPath, setCurrentPath] = useState(initialPath);
+  const [activeSession, setActiveSession] = useState<SessionState | null>(session ?? null);
   const [isMobileNavigationOpen, setMobileNavigationOpen] = useState(false);
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginPending, setLoginPending] = useState(false);
   const [refreshCount, setRefreshCount] = useState(0);
   const preset = getDefaultThemePreset();
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (session !== undefined) {
+      setActiveSession(session);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setActiveSession(null);
+    void sessionClient.getSession()
+      .then((resolvedSession) => {
+        if (!cancelled) {
+          setActiveSession(resolvedSession);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setActiveSession(getUnauthenticatedSession());
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [session, sessionClient]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setCurrentPath(window.location.pathname);
+      setMobileNavigationOpen(false);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
+
+
+  const refreshActiveSession = async () => {
+    if (session !== undefined) return;
+    setActiveSession(null);
+    try {
+      setActiveSession(await sessionClient.getSession());
+    } catch {
+      setActiveSession(getUnauthenticatedSession());
+    }
+  };
+
+  const handleLogin = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setLoginError(null);
+    setLoginPending(true);
+
+    try {
+      const result = await sessionClient.login({
+        email: loginEmail.trim(),
+        password: loginPassword,
+      });
+      if (!result.ok) {
+        setLoginError(result.error.message);
+        return;
+      }
+
+      setLoginPassword('');
+      setActiveSession(result.data.session);
+    } catch {
+      setLoginError('Sign in is temporarily unavailable. Try again.');
+    } finally {
+      setLoginPending(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    setActiveSession(null);
+    if (session !== undefined) {
+      setActiveSession(getUnauthenticatedSession());
+      return;
+    }
+    try {
+      const response = await sessionClient.logout();
+      setActiveSession(response.session);
+    } catch {
+      setActiveSession(getUnauthenticatedSession());
+    }
+  };
 
   const handleNavigate = (href: string) => {
     try {
@@ -114,13 +207,69 @@ export function App({
     setCurrentPath(href);
   };
 
-  if (!canAccessProtectedRoute(session)) {
+  if (activeSession === null) {
     return (
       <main className="session-boundary" aria-label="Protected route session state">
         <h1>Castle Draft League</h1>
         <div className="login-required" role="status">
-          Sign in to access the Castle Draft League application shell.
+          Checking your session…
         </div>
+      </main>
+    );
+  }
+
+  if (!canAccessProtectedRoute(activeSession)) {
+    return (
+      <main className="session-boundary" aria-label="Protected route session state">
+        <h1>Castle Draft League</h1>
+        <p className="login-required" role="status">
+          Sign in to access the Castle Draft League application shell.
+        </p>
+        <form className="login-form" onSubmit={(event) => void handleLogin(event)}>
+          <label className="login-field">
+            <span>Email address</span>
+            <input
+              autoComplete="email"
+              inputMode="email"
+              name="email"
+              onChange={(event) => setLoginEmail(event.target.value)}
+              required
+              type="email"
+              value={loginEmail}
+            />
+          </label>
+          <label className="login-field">
+            <span>Password</span>
+            <input
+              autoComplete="current-password"
+              name="password"
+              onChange={(event) => setLoginPassword(event.target.value)}
+              required
+              type="password"
+              value={loginPassword}
+            />
+          </label>
+          {loginError ? (
+            <p className="login-error" role="alert">
+              {loginError}
+            </p>
+          ) : null}
+          <div className="login-actions">
+            <button className="ui-button ui-button-primary" disabled={loginPending} type="submit">
+              {loginPending ? 'Signing in…' : 'Sign in'}
+            </button>
+            {session === undefined ? (
+              <button
+                className="ui-button ui-button-secondary"
+                disabled={loginPending}
+                onClick={() => void refreshActiveSession()}
+                type="button"
+              >
+                Retry session
+              </button>
+            ) : null}
+          </div>
+        </form>
       </main>
     );
   }
@@ -164,7 +313,7 @@ export function App({
   }
 
   if (currentPath.startsWith('/team-selection')) {
-    routeContent = <TeamSelectionPage preset={preset} />;
+    routeContent = <TeamSelectionPage preset={preset} teamSelectionClient={teamSelectionClient} />;
   }
 
   return (
@@ -181,8 +330,10 @@ export function App({
         }}
         onRefresh={() => {
           setRefreshCount((count) => count + 1);
+          void refreshActiveSession();
         }}
-        session={session}
+        onSignOut={() => void handleSignOut()}
+        session={activeSession}
       >
         <p className="eyebrow">Data refreshes: {refreshCount}</p>
         {routeContent}

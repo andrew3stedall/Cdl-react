@@ -4,10 +4,12 @@ from dataclasses import dataclass
 
 from cdl_api.database import build_session_factory
 from cdl_api.repositories.auth import InMemorySessionRepository, InMemoryUserRepository
+from cdl_api.repositories.league_repository import LeagueRepository
 from cdl_api.repositories.postgres_auth import (
     PostgreSQLSessionRepository,
     PostgreSQLUserRepository,
 )
+from cdl_api.repositories.postgres_league_fixtures import PostgreSQLLeagueRepository
 from cdl_api.repositories.postgres_preferences import PostgreSQLUserPreferenceRepository
 from cdl_api.repositories.postgres_squad_repository import PostgreSQLSquadRepository
 from cdl_api.repositories.postgres_team_selection import (
@@ -30,6 +32,7 @@ class RepositoryBundle:
     preferences: object
     squad: object
     team_selection: object
+    league: object
 
 
 _memory_bundle = RepositoryBundle(
@@ -38,6 +41,7 @@ _memory_bundle = RepositoryBundle(
     preferences=InMemoryUserPreferenceRepository(),
     squad=InMemorySquadRepository(),
     team_selection=InMemoryTeamSelectionRepository(),
+    league=LeagueRepository(),
 )
 
 
@@ -51,12 +55,15 @@ def build_repositories(settings: Settings) -> RepositoryBundle:
         users.seed_demo_user()
         squad = PostgreSQLSquadRepository(session_factory)
         squad.seed_demo_data()
+        league = PostgreSQLLeagueRepository(session_factory)
+        league.seed_synthetic_data()
         return RepositoryBundle(
             users=users,
             sessions=PostgreSQLSessionRepository(session_factory),
             preferences=PostgreSQLUserPreferenceRepository(session_factory),
             squad=squad,
             team_selection=PostgreSQLTeamSelectionRepository(session_factory),
+            league=league,
         )
 
     msg = f"Unsupported repository mode: {settings.repository_mode}"

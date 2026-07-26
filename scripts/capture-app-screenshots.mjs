@@ -1,8 +1,15 @@
 import { mkdir } from 'node:fs/promises';
+import axe from 'axe-core';
 import { chromium } from 'playwright';
 
 const baseUrl = process.env.APP_PREVIEW_URL ?? 'http://127.0.0.1:5173';
 const outputDir = process.env.SCREENSHOT_DIR ?? 'artifacts/app-screenshots';
+
+const viewports = [
+  { name: 'mobile', width: 390, height: 844, deviceScaleFactor: 2 },
+  { name: 'tablet', width: 768, height: 1024, deviceScaleFactor: 1 },
+  { name: 'desktop', width: 1440, height: 900, deviceScaleFactor: 1 },
+];
 
 const routes = [
   ['home-rules', '/'],
@@ -12,6 +19,36 @@ const routes = [
   ['squad-management', '/squad-management'],
   ['team-selection', '/team-selection'],
 ];
+
+const screenshotSession = {
+  is_authenticated: true,
+  user: {
+    id: 'screenshot-manager',
+    email: 'manager@example.com',
+    display_name: 'Screenshot Manager',
+    roles: ['manager'],
+  },
+  expires_at: '2099-01-01T00:00:00Z',
+};
+
+const screenshotTeamSelection = {
+  manager_team: { id: 'team-castle', name: 'Castle FC', short_name: 'CFC' },
+  gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1 },
+  lineup: [
+    { id: 'player-1', display_name: 'Alex Keeper', position: 'GKP', epl_team: { id: 'epl-ars', name: 'Arsenal', short_name: 'ARS' }, slot: 'starter', slot_order: 1, is_captain: false, is_vice_captain: false },
+    { id: 'player-2', display_name: 'Ben Defender', position: 'DEF', epl_team: { id: 'epl-mci', name: 'Manchester City', short_name: 'MCI' }, slot: 'starter', slot_order: 2, is_captain: false, is_vice_captain: false },
+    { id: 'player-3', display_name: 'Casey Midfielder', position: 'MID', epl_team: { id: 'epl-ars', name: 'Arsenal', short_name: 'ARS' }, slot: 'starter', slot_order: 3, is_captain: true, is_vice_captain: false },
+    { id: 'player-4', display_name: 'Riley Forward', position: 'FWD', epl_team: { id: 'epl-mci', name: 'Manchester City', short_name: 'MCI' }, slot: 'bench', slot_order: 1, is_captain: false, is_vice_captain: true },
+    { id: 'player-5', display_name: 'Morgan Reserve', position: 'MID', epl_team: { id: 'epl-ars', name: 'Arsenal', short_name: 'ARS' }, slot: 'reserve', slot_order: 1, is_captain: false, is_vice_captain: false },
+  ],
+  chips: [
+    { id: 'wildcard', name: 'Wildcard', status: 'available' },
+    { id: 'bench-boost', name: 'Bench Boost', status: 'used' },
+    { id: 'triple-captain', name: 'Triple Captain', status: 'available' },
+  ],
+  validation_messages: [],
+  fixture_lock: { locked: false, fixture_id: null, fixture_type: null, lock_scope: null, locked_at: null, reason: null },
+};
 
 const teams = [
   { id: 'team-castle', name: 'Castle FC', short_name: 'CAS' },
@@ -38,6 +75,28 @@ const fixture = {
     chips_played: { 'team-castle': ['wildcard'] },
     outcome: 'home_win',
   },
+};
+
+const screenshotTeamSelectionFixtureSummary = {
+  cdl_fixtures: [{
+    id: fixture.id,
+    gameweek,
+    home_team: teams[0],
+    away_team: teams[1],
+    status: fixture.status,
+  }],
+  epl_fixtures: [{
+    id: 'epl-screenshot-fixture',
+    gameweek,
+    home_team: { id: 'epl-ars', name: 'Arsenal', short_name: 'ARS' },
+    away_team: { id: 'epl-mci', name: 'Manchester City', short_name: 'MCI' },
+    status: 'scheduled',
+  }],
+  cdl_table: teams,
+  epl_table: [
+    { id: 'epl-ars', name: 'Arsenal', short_name: 'ARS' },
+    { id: 'epl-mci', name: 'Manchester City', short_name: 'MCI' },
+  ],
 };
 
 const dashboardConfig = {
@@ -125,6 +184,18 @@ async function mockApi(page) {
     const url = new URL(route.request().url());
     const path = url.pathname;
 
+    if (path === '/api/auth/session') {
+      return route.fulfill({ json: screenshotSession });
+    }
+
+    if (path === '/api/team-selection') {
+      return route.fulfill({ json: screenshotTeamSelection });
+    }
+
+    if (path === '/api/team-selection/fixtures-summary') {
+      return route.fulfill({ json: screenshotTeamSelectionFixtureSummary });
+    }
+
     if (path === '/api/health' || path === '/health') {
       return route.fulfill({ json: { status: 'ok' } });
     }
@@ -177,15 +248,104 @@ async function mockApi(page) {
   });
 }
 
+async function assertAccessibilityAndKeyboard(page, routeName, viewportName) {
+  await page.addScriptTag({ content: axe.source });
+  const results = await page.evaluate(async () => window.axe.run(document, {
+    runOnly: {
+      type: 'tag',
+      values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'],
+    },
+  }));
+
+  const blockingViolations = results.violations.filter(
+    (violation) => violation.impact === 'critical' || violation.impact === 'serious',
+  );
+
+  if (blockingViolations.length > 0) {
+    const summary = blockingViolations
+      .map((violation) => {
+        const targets = violation.nodes.flatMap((node) => node.target).join(', ');
+        return `${violation.id} (${violation.impact}): ${targets}`;
+      })
+      .join('; ');
+
+    throw new Error(`${routeName} at ${viewportName} has blocking accessibility violations: ${summary}`);
+  }
+
+  await page.keyboard.press('Tab');
+  const keyboardFocus = await page.evaluate(() => {
+    const element = document.activeElement;
+    const rect = element?.getBoundingClientRect();
+
+    return {
+      focusVisible: Boolean(element?.matches(':focus-visible')),
+      height: rect?.height ?? 0,
+      name: element?.getAttribute('aria-label') ?? element?.textContent?.trim() ?? '',
+      tagName: element?.tagName ?? '',
+      width: rect?.width ?? 0,
+    };
+  });
+
+  if (
+    keyboardFocus.tagName === 'BODY'
+    || keyboardFocus.name.length === 0
+    || keyboardFocus.width <= 0
+    || keyboardFocus.height <= 0
+    || !keyboardFocus.focusVisible
+  ) {
+    throw new Error(
+      `${routeName} at ${viewportName} did not expose a visible, named keyboard focus target: `
+        + JSON.stringify(keyboardFocus),
+    );
+  }
+
+  await page.evaluate(() => document.activeElement?.blur());
+}
+
+async function assertLayoutSafety(page, routeName, viewportName) {
+  await page.evaluate(() => document.fonts.ready);
+
+  const mainCount = await page.locator('main').count();
+  if (mainCount === 0) {
+    throw new Error(`${routeName} at ${viewportName} has no main landmark`);
+  }
+
+  const overflow = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+
+  if (overflow.scrollWidth > overflow.clientWidth + 1) {
+    throw new Error(
+      `${routeName} at ${viewportName} overflows horizontally: ` +
+        `${overflow.scrollWidth}px content in ${overflow.clientWidth}px viewport`,
+    );
+  }
+}
+
 async function capture() {
   await mkdir(outputDir, { recursive: true });
   const browser = await chromium.launch();
-  const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
-  await mockApi(page);
 
-  for (const [name, route] of routes) {
-    await page.goto(`${baseUrl}${route}`, { waitUntil: 'networkidle' });
-    await page.screenshot({ path: `${outputDir}/${name}.png`, fullPage: true });
+  for (const viewport of viewports) {
+    const viewportDir = `${outputDir}/${viewport.name}`;
+    await mkdir(viewportDir, { recursive: true });
+
+    const context = await browser.newContext({
+      viewport: { width: viewport.width, height: viewport.height },
+      deviceScaleFactor: viewport.deviceScaleFactor,
+    });
+    const page = await context.newPage();
+    await mockApi(page);
+
+    for (const [name, route] of routes) {
+      await page.goto(`${baseUrl}${route}`, { waitUntil: 'networkidle' });
+      await assertAccessibilityAndKeyboard(page, name, viewport.name);
+      await assertLayoutSafety(page, name, viewport.name);
+      await page.screenshot({ path: `${viewportDir}/${name}.png`, fullPage: true });
+    }
+
+    await context.close();
   }
 
   await browser.close();

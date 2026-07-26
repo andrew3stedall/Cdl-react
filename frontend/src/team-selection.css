@@ -97,7 +97,51 @@
     grid-template-columns: 1fr;
   }
 
-  .team-selection-row {
-    grid-template-columns: 1fr;
+  .team-selection-head {
+    clip-path: inset(50%);
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    padding: 0;
+    position: absolute;
+    white-space: nowrap;
+    width: 1px;
+  }
+
+  .team-selection-row:not(.team-selection-head) {
+    grid-template-areas:
+      "player player move"
+      "position team move";
+    grid-template-columns: minmax(0, 1fr) auto minmax(6.5rem, auto);
+  }
+
+  .team-selection-player {
+    font-weight: 650;
+    grid-area: player;
+    min-width: 0;
+  }
+
+  .team-selection-position {
+    grid-area: position;
+  }
+
+  .team-selection-team {
+    grid-area: team;
+  }
+
+  .team-selection-position,
+  .team-selection-team {
+    color: #64748b;
+    font-size: 0.8rem;
+    font-weight: 700;
+  }
+
+  .team-selection-move {
+    grid-area: move;
+  }
+
+  .team-selection-move select {
+    max-width: 100%;
+    width: 100%;
   }
 }

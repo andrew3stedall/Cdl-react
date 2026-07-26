@@ -7,6 +7,7 @@ import type {
 import type { FdrClient, FdrCombinedResponse, FdrFilters } from './fdr-api';
 import type { LeagueClient, LeagueFixture, LeagueSnapshot, LeagueTeam } from './league-api';
 import { LocalStoragePreferenceClient } from './preferences-api';
+import type { TeamSelectionClient, TeamSelectionFixtureSummary, TeamSelectionPlayer, TeamSelectionSnapshot } from './team-selection-api';
 
 const teams: LeagueTeam[] = [
   { id: 'castle-fc', name: 'Castle FC', shortName: 'CAS' },
@@ -272,3 +273,64 @@ export const staticPreviewFdrClient: FdrClient = {
 };
 
 export const staticPreviewPreferenceClient = new LocalStoragePreferenceClient();
+
+
+const staticTeamSelectionSnapshot: TeamSelectionSnapshot = {
+  managerTeam: { id: 'castle-fc', name: 'Castle FC', shortName: 'CAS' },
+  gameweek: currentGameweek,
+  players: [
+    { id: 'player-1', name: 'Alex Keeper', position: 'GKP', team: 'ARS', slot: 'starter', slotOrder: 1, captain: false, viceCaptain: false },
+    { id: 'player-2', name: 'Ben Defender', position: 'DEF', team: 'MCI', slot: 'starter', slotOrder: 2, captain: false, viceCaptain: false },
+    { id: 'player-3', name: 'Casey Midfielder', position: 'MID', team: 'ARS', slot: 'starter', slotOrder: 3, captain: true, viceCaptain: false },
+    { id: 'player-4', name: 'Riley Forward', position: 'FWD', team: 'MCI', slot: 'bench', slotOrder: 1, captain: false, viceCaptain: true },
+    { id: 'player-5', name: 'Morgan Reserve', position: 'MID', team: 'ARS', slot: 'reserve', slotOrder: 1, captain: false, viceCaptain: false },
+  ],
+  chips: [
+    { id: 'wildcard', name: 'Wildcard', status: 'available' },
+    { id: 'bench-boost', name: 'Bench Boost', status: 'used' },
+    { id: 'triple-captain', name: 'Triple Captain', status: 'available' },
+  ],
+  fixtureLock: { locked: false, fixtureId: null, fixtureType: null, lockScope: null, lockedAt: null, reason: null },
+};
+
+const staticTeamSelectionFixtureSummary: TeamSelectionFixtureSummary = {
+  cdlFixtures: [{
+    id: currentFixture.id,
+    gameweek: currentFixture.gameweek,
+    homeTeam: currentFixture.homeTeam,
+    awayTeam: currentFixture.awayTeam,
+    status: currentFixture.status,
+  }],
+  eplFixtures: [{
+    id: 'epl-preview-fixture',
+    gameweek: currentGameweek,
+    homeTeam: { id: 'epl-ars', name: 'Arsenal', shortName: 'ARS' },
+    awayTeam: { id: 'epl-mci', name: 'Manchester City', shortName: 'MCI' },
+    status: 'scheduled',
+  }],
+  cdlTable: teams,
+  eplTable: [
+    { id: 'epl-ars', name: 'Arsenal', shortName: 'ARS' },
+    { id: 'epl-mci', name: 'Manchester City', shortName: 'MCI' },
+  ],
+};
+
+export const staticPreviewTeamSelectionClient: TeamSelectionClient = {
+  async getTeamSelection() {
+    return structuredClone(staticTeamSelectionSnapshot);
+  },
+  async getFixtureSummary() {
+    return structuredClone(staticTeamSelectionFixtureSummary);
+  },
+  async saveLineup(players: TeamSelectionPlayer[]) {
+    return { ...structuredClone(staticTeamSelectionSnapshot), players: structuredClone(players) };
+  },
+  async updateChip(chipId: string, active: boolean) {
+    return {
+      ...structuredClone(staticTeamSelectionSnapshot),
+      chips: staticTeamSelectionSnapshot.chips.map((chip) =>
+        chip.id === chipId ? { ...chip, status: active ? 'active' : 'available' } : chip,
+      ),
+    };
+  },
+};

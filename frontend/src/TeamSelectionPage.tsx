@@ -1,65 +1,96 @@
-import { useState } from 'react';
-import { BadgeCheck, CircleAlert } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { BadgeCheck, CircleAlert, LockKeyhole } from 'lucide-react';
 
 import { Button } from './components/ui/button';
 import { Card } from './components/ui/card';
 import type { ThemePreset } from './contracts';
+import {
+  HttpTeamSelectionClient,
+  TeamSelectionApiError,
+  type TeamSelectionClient,
+  type TeamSelectionFixture,
+  type TeamSelectionFixtureSummary,
+  type TeamSelectionPlayer,
+  type TeamSelectionSlot,
+  type TeamSelectionSnapshot,
+} from './team-selection-api';
 import './team-selection.css';
+
+const defaultTeamSelectionClient = new HttpTeamSelectionClient();
 
 interface TeamSelectionPageProps {
   preset: ThemePreset;
+  teamSelectionClient?: TeamSelectionClient;
 }
 
-type Slot = 'starter' | 'bench' | 'reserve';
-type ChipStatus = 'available' | 'active' | 'used';
+export function TeamSelectionPage({
+  preset,
+  teamSelectionClient = defaultTeamSelectionClient,
+}: TeamSelectionPageProps) {
+  const [snapshot, setSnapshot] = useState<TeamSelectionSnapshot | null>(null);
+  const [fixtureSummary, setFixtureSummary] = useState<TeamSelectionFixtureSummary | null>(null);
+  const [loadState, setLoadState] = useState<'loading' | 'loaded' | 'error'>('loading');
+  const [message, setMessage] = useState('Loading team selection.');
 
-interface PlayerRow {
-  id: string;
-  name: string;
-  position: string;
-  team: string;
-  slot: Slot;
-  captain?: boolean;
-  viceCaptain?: boolean;
-}
+  useEffect(() => {
+    let isActive = true;
 
-interface ChipRow {
-  id: string;
-  name: string;
-  status: ChipStatus;
-}
+    async function loadTeamSelection() {
+      setLoadState('loading');
+      try {
+        const [loaded, loadedFixtureSummary] = await Promise.all([
+          teamSelectionClient.getTeamSelection(),
+          teamSelectionClient.getFixtureSummary(),
+        ]);
+        if (isActive) {
+          setSnapshot(loaded);
+          setFixtureSummary(loadedFixtureSummary);
+          setMessage(
+            loaded.fixtureLock.locked
+              ? `Lineup locked. ${loaded.fixtureLock.reason ?? 'The gameweek deadline has passed.'}`
+              : 'Team selection loaded.',
+          );
+          setLoadState('loaded');
+        }
+      } catch {
+        if (isActive) {
+          setLoadState('error');
+        }
+      }
+    }
 
-const initialPlayers: PlayerRow[] = [
-  { id: 'player-1', name: 'Alex Keeper', position: 'GKP', team: 'ARS', slot: 'starter' },
-  { id: 'player-2', name: 'Ben Defender', position: 'DEF', team: 'MCI', slot: 'starter' },
-  { id: 'player-3', name: 'Casey Midfielder', position: 'MID', team: 'ARS', slot: 'starter', captain: true },
-  { id: 'player-4', name: 'Riley Forward', position: 'FWD', team: 'MCI', slot: 'bench', viceCaptain: true },
-  { id: 'player-5', name: 'Morgan Reserve', position: 'MID', team: 'ARS', slot: 'reserve' },
-];
+    void loadTeamSelection();
+    return () => {
+      isActive = false;
+    };
+  }, [teamSelectionClient]);
 
-const initialChips: ChipRow[] = [
-  { id: 'wildcard', name: 'Wildcard', status: 'available' },
-  { id: 'bench-boost', name: 'Bench Boost', status: 'used' },
-  { id: 'triple-captain', name: 'Triple Captain', status: 'available' },
-];
-
-export function TeamSelectionPage({ preset }: TeamSelectionPageProps) {
-  const [players, setPlayers] = useState(initialPlayers);
-  const [chips, setChips] = useState(initialChips);
-  const [message, setMessage] = useState('Team selection loaded.');
-
+  const players = snapshot?.players ?? [];
+  const chips = snapshot?.chips ?? [];
+  const locked = snapshot?.fixtureLock.locked ?? false;
   const starters = players.filter((player) => player.slot === 'starter');
   const bench = players.filter((player) => player.slot === 'bench');
   const reserves = players.filter((player) => player.slot === 'reserve');
   const activeChip = chips.find((chip) => chip.status === 'active');
   const valid = starters.length === 3 && bench.length === 1 && reserves.length === 1;
 
-  const movePlayer = (playerId: string, slot: Slot) => {
-    setPlayers((current) => current.map((player) => (player.id === playerId ? { ...player, slot } : player)));
+  const movePlayer = (playerId: string, slot: TeamSelectionSlot) => {
+    if (locked) return;
+    setSnapshot((current) =>
+      current
+        ? {
+            ...current,
+            players: current.players.map((player) =>
+              player.id === playerId ? { ...player, slot } : player,
+            ),
+          }
+        : current,
+    );
     setMessage(`Player moved to ${slot}. Save lineup to validate server-side.`);
   };
 
-  const toggleChip = (chipId: string) => {
+  const toggleChip = async (chipId: string) => {
+    if (!snapshot || locked) return;
     const chip = chips.find((candidate) => candidate.id === chipId);
     if (!chip) return;
     if (chip.status === 'used') {
@@ -70,21 +101,30 @@ export function TeamSelectionPage({ preset }: TeamSelectionPageProps) {
       setMessage('Only one chip can be active at a time. See /rules#chip-usage.');
       return;
     }
-    setChips((current) =>
-      current.map((candidate) => {
-        if (candidate.id !== chipId) return candidate;
-        return { ...candidate, status: candidate.status === 'active' ? 'available' : 'active' };
-      }),
-    );
-    setMessage(`${chip.name} chip state updated.`);
+
+    try {
+      const updated = await teamSelectionClient.updateChip(chip.id, chip.status !== 'active');
+      setSnapshot(updated);
+      setMessage(`${chip.name} chip state updated.`);
+    } catch (error) {
+      setMessage(apiErrorMessage(error, 'Unable to update the chip.'));
+    }
   };
 
-  const saveLineup = () => {
+  const saveLineup = async () => {
+    if (!snapshot || locked) return;
     if (!valid) {
       setMessage('Invalid lineup. Review /rules#lineup-validation.');
       return;
     }
-    setMessage('Lineup saved and validated.');
+
+    try {
+      const updated = await teamSelectionClient.saveLineup(players);
+      setSnapshot(updated);
+      setMessage('Lineup saved and validated.');
+    } catch (error) {
+      setMessage(apiErrorMessage(error, 'Unable to save the lineup.'));
+    }
   };
 
   return (
@@ -95,79 +135,147 @@ export function TeamSelectionPage({ preset }: TeamSelectionPageProps) {
         <p>Manage starters, bench, reserves, and chip state for the current gameweek.</p>
       </header>
 
-      <p role="status" className="team-selection-status">
-        {valid ? <BadgeCheck aria-hidden="true" size={16} /> : <CircleAlert aria-hidden="true" size={16} />}
-        {message}
-      </p>
+      {loadState === 'loading' ? <p role="status">Loading team selection.</p> : null}
+      {loadState === 'error' ? <p role="alert">Unable to load team selection from the API.</p> : null}
 
-      <section aria-label="Chip selector" className="team-selection-grid">
-        {chips.map((chip) => (
-          <Card className="team-selection-card" key={chip.id}>
-            <h2>{chip.name}</h2>
-            <p className={`chip-status ${chip.status}`}>{chip.status}</p>
-            <Button onClick={() => toggleChip(chip.id)} type="button" variant={chip.status === 'active' ? 'secondary' : 'ghost'}>
-              {chip.status === 'active' ? 'Deactivate' : 'Activate'}
-            </Button>
-            <a href="/rules#chip-usage">Chip rules</a>
-          </Card>
-        ))}
-      </section>
+      {snapshot ? (
+        <>
+          <p role="status" className="team-selection-status">
+            {locked ? (
+              <LockKeyhole aria-hidden="true" size={16} />
+            ) : valid ? (
+              <BadgeCheck aria-hidden="true" size={16} />
+            ) : (
+              <CircleAlert aria-hidden="true" size={16} />
+            )}
+            {message}
+          </p>
 
-      <section aria-label="Team pitch" className="team-selection-layout">
-        <Card className="team-selection-card pitch-panel">
-          <h2>Starters</h2>
-          <PlayerTable players={starters} onMove={movePlayer} />
-          <Button onClick={saveLineup} type="button">Save lineup</Button>
-        </Card>
-        <Card className="team-selection-card">
-          <h2>Bench</h2>
-          <PlayerTable players={bench} onMove={movePlayer} />
-          <h2>Reserves</h2>
-          <PlayerTable players={reserves} onMove={movePlayer} />
-        </Card>
-      </section>
+          {locked ? (
+            <section aria-label="Lineup lock" className="team-selection-card lineup-lock-notice">
+              <h2>View-only lineup</h2>
+              <p>{snapshot.fixtureLock.reason ?? 'The gameweek deadline has passed.'}</p>
+              <p>{snapshot.gameweek.name} can no longer be changed.</p>
+              <a href="/rules#lineup-locking">Lineup locking rules</a>
+            </section>
+          ) : null}
 
-      <section aria-label="Fixture and table summaries" className="team-selection-grid">
-        <Card className="team-selection-card">
-          <h2>CDL Fixture</h2>
-          <p>Castle FC vs Rival Town</p>
-          <p>CDL table: Castle FC, Rival Town</p>
-        </Card>
-        <Card className="team-selection-card">
-          <h2>EPL Fixture</h2>
-          <p>Arsenal vs Manchester City</p>
-          <p>EPL table: Arsenal, Manchester City</p>
-        </Card>
-      </section>
+          <section aria-label="Chip selector" className="team-selection-grid">
+            {chips.map((chip) => (
+              <Card className="team-selection-card" key={chip.id}>
+                <h2>{chip.name}</h2>
+                <p className={`chip-status ${chip.status}`}>{chip.status}</p>
+                <Button
+                  disabled={locked}
+                  onClick={() => void toggleChip(chip.id)}
+                  type="button"
+                  variant={chip.status === 'active' ? 'secondary' : 'ghost'}
+                >
+                  {chip.status === 'active' ? 'Deactivate' : 'Activate'}
+                </Button>
+                <a href="/rules#chip-usage">Chip rules</a>
+              </Card>
+            ))}
+          </section>
+
+          <section aria-label="Team pitch" className="team-selection-layout">
+            <Card className="team-selection-card pitch-panel">
+              <h2>Starters</h2>
+              <PlayerTable disabled={locked} players={starters} onMove={movePlayer} />
+              <Button disabled={locked} onClick={() => void saveLineup()} type="button">Save lineup</Button>
+            </Card>
+            <Card className="team-selection-card">
+              <h2>Bench</h2>
+              <PlayerTable disabled={locked} players={bench} onMove={movePlayer} />
+              <h2>Reserves</h2>
+              <PlayerTable disabled={locked} players={reserves} onMove={movePlayer} />
+            </Card>
+          </section>
+
+          {fixtureSummary ? (
+            <section aria-label="Fixture and table summaries" className="team-selection-grid">
+              <FixtureSummaryCard
+                fixtures={fixtureSummary.cdlFixtures}
+                heading="CDL Fixtures"
+                table={fixtureSummary.cdlTable}
+              />
+              <FixtureSummaryCard
+                fixtures={fixtureSummary.eplFixtures}
+                heading="EPL Fixtures"
+                table={fixtureSummary.eplTable}
+              />
+            </section>
+          ) : null}
+        </>
+      ) : null}
     </main>
   );
 }
 
-interface PlayerTableProps {
-  players: PlayerRow[];
-  onMove: (playerId: string, slot: Slot) => void;
+
+interface FixtureSummaryCardProps {
+  fixtures: TeamSelectionFixture[];
+  heading: string;
+  table: TeamSelectionFixtureSummary['cdlTable'];
 }
 
-function PlayerTable({ players, onMove }: PlayerTableProps) {
+function FixtureSummaryCard({ fixtures, heading, table }: FixtureSummaryCardProps) {
+  return (
+    <Card className="team-selection-card">
+      <h2>{heading}</h2>
+      {fixtures.length > 0 ? (
+        fixtures.map((fixture) => (
+          <p key={fixture.id}>
+            {fixture.homeTeam.name} vs {fixture.awayTeam.name}
+          </p>
+        ))
+      ) : (
+        <p>No fixtures scheduled.</p>
+      )}
+      <p>{heading.startsWith('CDL') ? 'CDL' : 'EPL'} table: {table.map((team) => team.name).join(', ')}</p>
+    </Card>
+  );
+}
+
+function apiErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof TeamSelectionApiError && error.code === 'conflict') {
+    const reason = typeof error.details.reason === 'string' ? error.details.reason : error.message;
+    return `Lineup locked. ${reason}`;
+  }
+  return fallback;
+}
+
+interface PlayerTableProps {
+  disabled: boolean;
+  players: TeamSelectionPlayer[];
+  onMove: (playerId: string, slot: TeamSelectionSlot) => void;
+}
+
+function PlayerTable({ disabled, players, onMove }: PlayerTableProps) {
   return (
     <div className="team-selection-table" role="table">
       <div className="team-selection-row team-selection-head" role="row">
-        <span role="columnheader">Player</span>
-        <span role="columnheader">Pos</span>
-        <span role="columnheader">Team</span>
-        <span role="columnheader">Move</span>
+        <span className="team-selection-player" role="columnheader">Player</span>
+        <span className="team-selection-position" role="columnheader">Pos</span>
+        <span className="team-selection-team" role="columnheader">Team</span>
+        <span className="team-selection-move" role="columnheader">Move</span>
       </div>
       {players.map((player) => (
         <div className="team-selection-row" key={player.id} role="row">
-          <span role="cell">
+          <span className="team-selection-player" role="cell">
             {player.name}
             {player.captain ? ' (C)' : ''}
             {player.viceCaptain ? ' (VC)' : ''}
           </span>
-          <span role="cell">{player.position}</span>
-          <span role="cell">{player.team}</span>
-          <span role="cell">
-            <select aria-label={`Move ${player.name}`} onChange={(event) => onMove(player.id, event.target.value as Slot)} value={player.slot}>
+          <span className="team-selection-position" role="cell">{player.position}</span>
+          <span className="team-selection-team" role="cell">{player.team}</span>
+          <span className="team-selection-move" role="cell">
+            <select
+              aria-label={`Move ${player.name}`}
+              disabled={disabled}
+              onChange={(event) => onMove(player.id, event.target.value as TeamSelectionSlot)}
+              value={player.slot}
+            >
               <option value="starter">Starter</option>
               <option value="bench">Bench</option>
               <option value="reserve">Reserve</option>

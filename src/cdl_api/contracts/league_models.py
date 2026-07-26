@@ -20,11 +20,19 @@ class FixtureOutcome(StrEnum):
     PENDING = "pending"
 
 
+class EplFixtureContext(FixtureSummary):
+    """Premier League fixture provenance used by a CDL scoring snapshot."""
+
+    kickoff_label: str
+    synthetic: bool = False
+
+
 class FixtureScore(BaseModel):
     home_score: int | None = None
     away_score: int | None = None
     bonus_points: dict[str, int] = Field(default_factory=dict)
     chips_played: dict[str, list[str]] = Field(default_factory=dict)
+    epl_fixtures: list[EplFixtureContext] = Field(default_factory=list)
     outcome: FixtureOutcome = FixtureOutcome.PENDING
 
 

@@ -35,12 +35,22 @@ class ChipState(BaseModel):
     rule_reference: RuleReference | None = None
 
 
+class FixtureLockState(BaseModel):
+    locked: bool = False
+    fixture_id: str | None = None
+    fixture_type: str | None = None
+    lock_scope: str | None = None
+    locked_at: str | None = None
+    reason: str | None = None
+
+
 class TeamSelectionResponse(BaseModel):
     manager_team: TeamSummary
     gameweek: GameweekSummary
     lineup: list[TeamSelectionPlayer]
     chips: list[ChipState]
     validation_messages: list[ValidationIssue] = Field(default_factory=list)
+    fixture_lock: FixtureLockState = Field(default_factory=FixtureLockState)
 
 
 class LineupPlayerUpdate(BaseModel):

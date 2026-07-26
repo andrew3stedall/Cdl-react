@@ -1,6 +1,6 @@
 """League fixture and table API routes."""
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Depends, status
 from fastapi.responses import JSONResponse
 
 from cdl_api.contracts.common import ApiErrorResponse, ErrorCode
@@ -11,34 +11,44 @@ from cdl_api.contracts.league_models import (
     LeagueFixturesResponse,
     LeagueTableResponse,
 )
+from cdl_api.repositories.factory import build_repositories
 from cdl_api.services.league_service import (
     FixtureService,
     HeadToHeadService,
     KnockoutService,
+    LeagueReadRepository,
     LeagueTableService,
 )
+from cdl_api.settings import Settings, get_settings
 
 router = APIRouter(prefix="/league", tags=["league"])
 
-_fixture_service = FixtureService()
-_table_service = LeagueTableService()
-_knockout_service = KnockoutService()
-_head_to_head_service = HeadToHeadService()
+
+def get_league_repository(
+    settings: Settings = Depends(get_settings),
+) -> LeagueReadRepository:
+    return build_repositories(settings).league
 
 
 @router.get("/fixtures/current", response_model=LeagueFixturesResponse)
-def current_fixtures() -> LeagueFixturesResponse:
-    return _fixture_service.list_current()
+def current_fixtures(
+    repository: LeagueReadRepository = Depends(get_league_repository),
+) -> LeagueFixturesResponse:
+    return FixtureService(repository).list_current()
 
 
 @router.get("/fixtures/next", response_model=LeagueFixturesResponse)
-def next_fixtures() -> LeagueFixturesResponse:
-    return _fixture_service.list_next()
+def next_fixtures(
+    repository: LeagueReadRepository = Depends(get_league_repository),
+) -> LeagueFixturesResponse:
+    return FixtureService(repository).list_next()
 
 
 @router.get("/fixtures", response_model=LeagueFixturesResponse)
-def all_fixtures() -> LeagueFixturesResponse:
-    return _fixture_service.list_all()
+def all_fixtures(
+    repository: LeagueReadRepository = Depends(get_league_repository),
+) -> LeagueFixturesResponse:
+    return FixtureService(repository).list_all()
 
 
 @router.get(
@@ -46,8 +56,11 @@ def all_fixtures() -> LeagueFixturesResponse:
     response_model=FixtureDetailResponse,
     responses={status.HTTP_404_NOT_FOUND: {"model": ApiErrorResponse}},
 )
-def fixture_detail(fixture_id: str) -> FixtureDetailResponse | JSONResponse:
-    detail = _fixture_service.get_detail(fixture_id)
+def fixture_detail(
+    fixture_id: str,
+    repository: LeagueReadRepository = Depends(get_league_repository),
+) -> FixtureDetailResponse | JSONResponse:
+    detail = FixtureService(repository).get_detail(fixture_id)
     if detail is not None:
         return detail
 
@@ -63,15 +76,21 @@ def fixture_detail(fixture_id: str) -> FixtureDetailResponse | JSONResponse:
 
 
 @router.get("/table", response_model=LeagueTableResponse)
-def league_table() -> LeagueTableResponse:
-    return _table_service.get_table()
+def league_table(
+    repository: LeagueReadRepository = Depends(get_league_repository),
+) -> LeagueTableResponse:
+    return LeagueTableService(repository).get_table()
 
 
 @router.get("/knockout", response_model=KnockoutResponse)
-def knockout() -> KnockoutResponse:
-    return _knockout_service.get_knockout()
+def knockout(
+    repository: LeagueReadRepository = Depends(get_league_repository),
+) -> KnockoutResponse:
+    return KnockoutService(repository).get_knockout()
 
 
 @router.get("/head-to-head", response_model=HeadToHeadResponse)
-def head_to_head() -> HeadToHeadResponse:
-    return _head_to_head_service.get_records()
+def head_to_head(
+    repository: LeagueReadRepository = Depends(get_league_repository),
+) -> HeadToHeadResponse:
+    return HeadToHeadService(repository).get_records()

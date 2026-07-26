@@ -45,6 +45,7 @@ from cdl_api.contracts.fdr import (
     FixtureDifficultyView,
 )
 from cdl_api.contracts.league_models import (
+    EplFixtureContext,
     FixtureDetailResponse,
     FixtureScore,
     FixtureStatus,
@@ -114,6 +115,7 @@ __all__ = [
     "DashboardTableRow",
     "DashboardWidgetDefinition",
     "ErrorCode",
+    "EplFixtureContext",
     "FixtureDetailResponse",
     "FixtureDifficultyBand",
     "FixtureDifficultyCombinedResponse",

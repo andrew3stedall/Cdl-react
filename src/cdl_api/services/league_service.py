@@ -1,5 +1,7 @@
 """League fixture, table, knockout, and head-to-head services."""
 
+from typing import Protocol
+
 from cdl_api.contracts.league_models import (
     FixtureDetailResponse,
     FixtureEvent,
@@ -16,8 +18,24 @@ from cdl_api.contracts.league_models import (
 from cdl_api.repositories.league_repository import LeagueRepository
 
 
+class LeagueReadRepository(Protocol):
+    def list_fixtures(self) -> list[LeagueFixture]: ...
+
+    def get_fixture(self, fixture_id: str) -> LeagueFixture | None: ...
+
+    def list_current_fixtures(self) -> list[LeagueFixture]: ...
+
+    def list_next_fixtures(self) -> list[LeagueFixture]: ...
+
+    def get_table_snapshot(self) -> LeagueTableResponse | None: ...
+
+    def get_knockout_snapshot(self) -> KnockoutResponse | None: ...
+
+    def get_head_to_head_snapshot(self) -> HeadToHeadResponse | None: ...
+
+
 class FixtureService:
-    def __init__(self, repository: LeagueRepository | None = None) -> None:
+    def __init__(self, repository: LeagueReadRepository | None = None) -> None:
         self._repository = repository or LeagueRepository()
 
     def list_all(self) -> LeagueFixturesResponse:
@@ -61,10 +79,14 @@ class FixtureService:
 
 
 class LeagueTableService:
-    def __init__(self, repository: LeagueRepository | None = None) -> None:
+    def __init__(self, repository: LeagueReadRepository | None = None) -> None:
         self._repository = repository or LeagueRepository()
 
     def get_table(self) -> LeagueTableResponse:
+        snapshot = self._repository.get_table_snapshot()
+        if snapshot is not None:
+            return snapshot
+
         standings: dict[str, LeagueTableRow] = {}
 
         for fixture in self._repository.list_fixtures():
@@ -132,10 +154,14 @@ class LeagueTableService:
 
 
 class HeadToHeadService:
-    def __init__(self, repository: LeagueRepository | None = None) -> None:
+    def __init__(self, repository: LeagueReadRepository | None = None) -> None:
         self._repository = repository or LeagueRepository()
 
     def get_records(self) -> HeadToHeadResponse:
+        snapshot = self._repository.get_head_to_head_snapshot()
+        if snapshot is not None:
+            return snapshot
+
         records = []
         for fixture in self._repository.list_fixtures():
             if fixture.score.outcome == FixtureOutcome.PENDING:
@@ -159,10 +185,14 @@ class HeadToHeadService:
 
 
 class KnockoutService:
-    def __init__(self, repository: LeagueRepository | None = None) -> None:
+    def __init__(self, repository: LeagueReadRepository | None = None) -> None:
         self._repository = repository or LeagueRepository()
 
     def get_knockout(self) -> KnockoutResponse:
+        snapshot = self._repository.get_knockout_snapshot()
+        if snapshot is not None:
+            return snapshot
+
         matches = [
             KnockoutMatch(id=fixture.id, round_label=fixture.round_label, fixture=fixture)
             for fixture in self._repository.list_fixtures()

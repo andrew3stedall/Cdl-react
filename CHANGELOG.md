@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-07-27 - Prove PostgreSQL fixture result parity
+
+### Added
+
+- Expanded deterministic synthetic fixture seeding with completed away-win and draw outcomes.
+- Added a four-case parity matrix for pending, started home-win, completed away-win, and completed draw states.
+
+### Validation
+
+- Verified the matrix through the PostgreSQL repository and the existing league fixtures API.
+- Extended clean-database row-count assertions for seven persisted CDL fixtures, results, and scoring snapshots.
+
 ## 2026-07-27 - Persist EPL fixture scoring context
 
 ### Added

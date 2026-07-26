@@ -25,6 +25,11 @@ The deterministic seed is explicitly marked synthetic in stored payloads and is
 idempotent. It exists to exercise the release path before real historical
 exports are available; it is not evidence of real CDL history.
 
+Its fixture/result parity matrix covers a pending fixture with no score, a
+started home win, a completed away win, and a completed draw. These cases are
+read back through the same PostgreSQL repository and league API contract used
+by the release runtime.
+
 The league table endpoint reads the newest persisted
 `league_table_snapshots` payload in PostgreSQL mode. An absent snapshot raises a
 repository error rather than silently recalculating from fixtures. Memory mode
@@ -51,6 +56,7 @@ table, knockout, and head-to-head contracts, creates a fresh repository
 instance, and verifies:
 
 - current fixture separation;
+- pending, started home-win, completed away-win, and completed draw parity;
 - started fixture detail and persisted score context;
 - pending fixture detail rejection;
 - persisted standings with an explicit snapshot source; and

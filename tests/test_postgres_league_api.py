@@ -24,6 +24,13 @@ from cdl_api.repositories.postgres_league_fixtures import (
 )
 from cdl_api.routers.league import get_league_repository
 
+EXPECTED_FIXTURE_RESULT_MATRIX = {
+    "fixture-1202": ("pending", "pending", None, None),
+    "fixture-1201": ("started", "home_win", 58, 52),
+    "fixture-1101": ("complete", "away_win", 45, 49),
+    "fixture-1102": ("complete", "draw", 55, 55),
+}
+
 
 def _client(repository: PostgreSQLLeagueRepository) -> TestClient:
     app = create_app()
@@ -33,6 +40,25 @@ def _client(repository: PostgreSQLLeagueRepository) -> TestClient:
 
 def _delete_statement(table: object) -> object:
     return getattr(table, "dele" + "te")()
+
+
+def _fixture_result_matrix(fixtures: list[dict[str, object]]) -> dict[str, tuple[object, ...]]:
+    return {
+        str(fixture["id"]): (
+            fixture["status"],
+            fixture["score"]["outcome"],
+            fixture["score"]["home_score"],
+            fixture["score"]["away_score"],
+        )
+        for fixture in fixtures
+    }
+
+
+def _assert_fixture_result_matrix(fixtures: list[dict[str, object]]) -> None:
+    actual = _fixture_result_matrix(fixtures)
+    assert {
+        fixture_id: actual[fixture_id] for fixture_id in EXPECTED_FIXTURE_RESULT_MATRIX
+    } == EXPECTED_FIXTURE_RESULT_MATRIX
 
 
 def test_sqlite_repository_round_trip_uses_persisted_results_and_scoring() -> None:
@@ -60,6 +86,10 @@ def test_sqlite_repository_round_trip_uses_persisted_results_and_scoring() -> No
     assert pending is not None
     assert pending.status == "pending"
     assert pending.score.outcome == "pending"
+
+    _assert_fixture_result_matrix(
+        [fixture.model_dump(mode="json") for fixture in repository.list_fixtures()]
+    )
 
     table = repository.get_table_snapshot()
     assert table.source == "postgresql-synthetic-snapshot"
@@ -136,6 +166,7 @@ def test_clean_postgres_league_api_reads_persisted_fixture_state() -> None:
     client = _client(repository)
 
     current_response = client.get("/api/league/fixtures/current")
+    all_response = client.get("/api/league/fixtures")
     detail_response = client.get("/api/league/fixtures/fixture-1201")
     pending_detail_response = client.get("/api/league/fixtures/fixture-1202")
     table_response = client.get("/api/league/table")
@@ -143,10 +174,12 @@ def test_clean_postgres_league_api_reads_persisted_fixture_state() -> None:
     head_to_head_response = client.get("/api/league/head-to-head")
 
     assert current_response.status_code == 200
+    assert all_response.status_code == 200
     assert {fixture["id"] for fixture in current_response.json()["fixtures"]} == {
         "fixture-1201",
         "fixture-1202",
     }
+    _assert_fixture_result_matrix(all_response.json()["fixtures"])
     assert detail_response.status_code == 200
     assert detail_response.json()["fixture"]["score"]["home_score"] == 58
     assert [
@@ -179,10 +212,10 @@ def test_clean_postgres_league_api_reads_persisted_fixture_state() -> None:
         ):
             count = session.execute(select(func.count()).select_from(table)).scalar_one()
             expected = {
-                cdl_fixtures_table: 5,
+                cdl_fixtures_table: 7,
                 epl_fixtures_table: 2,
-                fixture_results_table: 5,
-                fixture_scoring_snapshots_table: 5,
+                fixture_results_table: 7,
+                fixture_scoring_snapshots_table: 7,
                 league_table_snapshots_table: 1,
                 knockout_matches_table: 1,
                 head_to_head_records_table: 1,

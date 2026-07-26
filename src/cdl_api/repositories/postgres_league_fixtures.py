@@ -5,9 +5,12 @@ from collections.abc import Callable, Iterable, Mapping
 from sqlalchemy import JSON, Column, DateTime, MetaData, String, Table, insert, select
 from sqlalchemy.orm import Session
 
+from cdl_api.contracts.domain import GameweekSummary
 from cdl_api.contracts.league_models import (
     EplFixtureContext,
+    FixtureOutcome,
     FixtureScore,
+    FixtureStatus,
     HeadToHeadRecord,
     HeadToHeadResponse,
     KnockoutMatch,
@@ -75,7 +78,11 @@ class PostgreSQLLeagueRepository:
             knockout_ids = self._existing_ids(session, knockout_matches_table)
             head_to_head_ids = self._existing_ids(session, head_to_head_records_table)
 
-            fixtures = LeagueRepository().list_fixtures()
+            base_fixtures = LeagueRepository().list_fixtures()
+            fixtures = [
+                *base_fixtures,
+                *self._synthetic_result_parity_fixtures(base_fixtures),
+            ]
             epl_fixtures = [
                 EplFixtureContext(
                     id="epl-gw12-ars-che",
@@ -173,7 +180,7 @@ class PostgreSQLLeagueRepository:
                     )
                 )
 
-            for fixture in fixtures:
+            for fixture in base_fixtures:
                 if "Final" not in fixture.round_label or fixture.id in knockout_ids:
                     continue
                 session.execute(
@@ -189,7 +196,7 @@ class PostgreSQLLeagueRepository:
                     )
                 )
 
-            for fixture in fixtures:
+            for fixture in base_fixtures:
                 if fixture.score.outcome == "pending":
                     continue
                 record_id = f"head-to-head-{fixture.id}-{fixture.home_team.id}"
@@ -212,6 +219,50 @@ class PostgreSQLLeagueRepository:
                     )
                 )
             session.commit()
+
+    @staticmethod
+    def _synthetic_result_parity_fixtures(
+        base_fixtures: list[LeagueFixture],
+    ) -> list[LeagueFixture]:
+        """Add explicit completed away-win and draw cases to the seed matrix."""
+        teams = {
+            team.id: team
+            for fixture in base_fixtures
+            for team in (fixture.home_team, fixture.away_team)
+        }
+        gameweek = GameweekSummary(id="gw-11", name="Gameweek 11", number=11)
+        return [
+            LeagueFixture(
+                id="fixture-1101",
+                gameweek=gameweek,
+                home_team=teams["drafton"],
+                away_team=teams["castle"],
+                status=FixtureStatus.COMPLETE,
+                kickoff_label="GW11 synthetic completed",
+                round_label="Regular season",
+                detail_available=True,
+                score=FixtureScore(
+                    home_score=45,
+                    away_score=49,
+                    outcome=FixtureOutcome.AWAY_WIN,
+                ),
+            ),
+            LeagueFixture(
+                id="fixture-1102",
+                gameweek=gameweek,
+                home_team=teams["keepers"],
+                away_team=teams["wildcards"],
+                status=FixtureStatus.COMPLETE,
+                kickoff_label="GW11 synthetic completed",
+                round_label="Regular season",
+                detail_available=True,
+                score=FixtureScore(
+                    home_score=55,
+                    away_score=55,
+                    outcome=FixtureOutcome.DRAW,
+                ),
+            ),
+        ]
 
     def list_fixtures(self) -> list[LeagueFixture]:
         with self._session_factory() as session:

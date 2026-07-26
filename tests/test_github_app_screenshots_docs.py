@@ -62,6 +62,8 @@ def test_league_tables_are_contained_on_narrow_screens() -> None:
     assert ".responsive-table" in styles
     assert "overflow-x: auto" in styles
     assert ".responsive-table:focus-visible" in styles
+    assert ".nav-item.active small" in styles
+    assert "color: #475569" in styles
 
 
 def test_interaction_script_exercises_team_selection_validation() -> None:

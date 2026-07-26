@@ -7,6 +7,18 @@ resource "google_cloud_run_v2_service" "this" {
   template {
     service_account = var.runtime_service_account_email
 
+    dynamic "volumes" {
+      for_each = var.cloud_sql_connection_name == null ? [] : [var.cloud_sql_connection_name]
+
+      content {
+        name = "cloudsql"
+
+        cloud_sql_instance {
+          instances = [volumes.value]
+        }
+      }
+    }
+
     scaling {
       min_instance_count = var.min_instance_count
       max_instance_count = var.max_instance_count
@@ -14,6 +26,15 @@ resource "google_cloud_run_v2_service" "this" {
 
     containers {
       image = var.image
+
+      dynamic "volume_mounts" {
+        for_each = var.cloud_sql_connection_name == null ? [] : [var.cloud_sql_connection_name]
+
+        content {
+          name       = "cloudsql"
+          mount_path = "/cloudsql"
+        }
+      }
 
       ports {
         container_port = 8080

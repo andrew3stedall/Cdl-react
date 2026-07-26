@@ -23,6 +23,13 @@ variable "runtime_service_account_email" {
   type        = string
 }
 
+variable "cloud_sql_connection_name" {
+  description = "Optional Cloud SQL connection name mounted at /cloudsql."
+  type        = string
+  default     = null
+  nullable    = true
+}
+
 variable "environment" {
   description = "Application environment."
   type        = string

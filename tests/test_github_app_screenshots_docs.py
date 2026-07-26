@@ -118,10 +118,13 @@ def test_interaction_script_exercises_shell_navigation_and_history() -> None:
 
 def test_browser_journey_exercises_protected_session_boundary() -> None:
     interactions = INTERACTION_SCRIPT.read_text(encoding="utf-8")
+    screenshots = SCRIPT.read_text(encoding="utf-8")
     app = APP.read_text(encoding="utf-8")
     main = MAIN.read_text(encoding="utf-8")
 
     assert "/api/auth/session" in interactions
+    assert "/api/auth/session" in screenshots
+    assert "screenshotSession" in screenshots
     assert "authenticated: false" in interactions
     assert "Sign in to access" in interactions
     assert "protected team-selection controls to stay hidden" in interactions

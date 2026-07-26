@@ -143,7 +143,7 @@ def test_browser_journey_exercises_protected_session_boundary() -> None:
     assert "display_name" in auth
     assert "mapSession" in auth
     assert "getSession()" in app
-    assert "defaultSession" not in app
+    assert "demo-manager" not in app
     assert "Checking your session" in app
     assert "VITE_STATIC_PREVIEW" in main
     assert "session: staticPreviewSession" in main

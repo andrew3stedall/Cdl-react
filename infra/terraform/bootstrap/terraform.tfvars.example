@@ -1,0 +1,16 @@
+# Copy this file to terraform.tfvars in Cloud Shell.
+# Never commit the populated terraform.tfvars file.
+
+billing_account_id = "000000-000000-000000"
+
+staging_project_id    = "cdl-react-staging-ast"
+production_project_id = "cdl-react-prod-ast"
+region                = "australia-southeast1"
+
+github_repository = "andrew3stedall/Cdl-react"
+github_branch     = "main"
+
+staging_monthly_budget_aud    = 25
+production_monthly_budget_aud = 50
+
+terraform_state_bucket_name = "cdl-react-staging-ast-terraform-state"

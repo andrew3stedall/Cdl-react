@@ -6,6 +6,8 @@ SCRIPT = Path("scripts/capture-app-screenshots.mjs")
 INTERACTION_SCRIPT = Path("scripts/test-app-interactions.mjs")
 LEAGUE_PAGE = Path("frontend/src/LeaguePage.tsx")
 STYLES = Path("frontend/src/styles.css")
+APP = Path("frontend/src/App.tsx")
+MAIN = Path("frontend/src/main.tsx")
 
 
 def test_screenshot_runbook_explains_github_artifacts() -> None:
@@ -112,3 +114,19 @@ def test_interaction_script_exercises_shell_navigation_and_history() -> None:
     assert "aria-current" in content
     assert "page.goBack()" in content
     assert "expectPath(page, '/league')" in content
+
+
+def test_browser_journey_exercises_protected_session_boundary() -> None:
+    interactions = INTERACTION_SCRIPT.read_text(encoding="utf-8")
+    app = APP.read_text(encoding="utf-8")
+    main = MAIN.read_text(encoding="utf-8")
+
+    assert "/api/auth/session" in interactions
+    assert "authenticated: false" in interactions
+    assert "Sign in to access" in interactions
+    assert "protected team-selection controls to stay hidden" in interactions
+    assert "getSession()" in app
+    assert "defaultSession" not in app
+    assert "Checking your session" in app
+    assert "VITE_STATIC_PREVIEW" in main
+    assert "session: staticPreviewSession" in main

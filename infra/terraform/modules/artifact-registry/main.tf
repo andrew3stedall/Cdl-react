@@ -5,7 +5,19 @@ resource "google_artifact_registry_repository" "this" {
   description   = var.description
   format        = "DOCKER"
 
+  cleanup_policy_dry_run = var.cleanup_policy_dry_run
+
+  cleanup_policies {
+    id     = "delete-untagged-after-retention"
+    action = "DELETE"
+
+    condition {
+      tag_state  = "UNTAGGED"
+      older_than = var.cleanup_untagged_older_than
+    }
+  }
+
   docker_config {
-    immutable_tags = false
+    immutable_tags = var.immutable_tags
   }
 }

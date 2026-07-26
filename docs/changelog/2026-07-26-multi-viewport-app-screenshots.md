@@ -21,6 +21,8 @@ Expanded the repository-safe application screenshot workflow from a single mobil
 - Mobile and desktop application-shell navigation coverage, including the mobile sheet, active-route state, URL changes, and browser Back.
 - Mobile and desktop protected-route coverage driven by authenticated and unauthenticated `/api/auth/session` responses.
 - Primary team-selection API fixture-lock reporting and mutation enforcement backed by the PostgreSQL lock table.
+- API-backed React team-selection loading, saves, chip updates, and locked view-only rendering.
+- Mobile and desktop browser coverage proving locked lineup, chip, and save controls cannot be used.
 
 ## Validation finding
 
@@ -38,11 +40,11 @@ The shell navigation journey then found that browser Back changed the URL withou
 
 The session-boundary audit then found that the normal runtime implicitly authenticated a hard-coded demo manager. The app now resolves `/api/auth/session`, shows a loading boundary while that request is pending, and withholds protected routes and navigation when unauthenticated. The demo identity is now explicit and limited to static-preview builds.
 
-The fixture-lock trace found that PostgreSQL stored lock records but the primary team-selection service did not read or enforce them. The API now exposes lock metadata and rejects lineup and chip mutations with a structured `409 conflict` before persistence. React consumption and locked-state browser evidence remain follow-up work.
+The fixture-lock trace found that PostgreSQL stored lock records but the primary team-selection service did not read or enforce them. The API now exposes lock metadata and rejects lineup and chip mutations with a structured `409 conflict` before persistence. The React page now consumes that contract, shows the backend lock reason, and disables every mutation control. Mobile and desktop browser journeys prove the locked view-only boundary.
 
 ## Browser interaction evidence
 
-The same repository-safe workflow now moves a starter to the bench, confirms invalid-lineup feedback, restores the starter, saves again, and confirms successful validation through the rendered controls in Chromium.
+The same repository-safe workflow now moves a starter to the bench, confirms invalid-lineup feedback, restores the starter, saves through the mocked API contract, and confirms successful validation through the rendered controls in Chromium. Separate mobile and desktop journeys return a fixture lock and verify the reason, view-only notice, and disabled lineup, chip, and save controls.
 
 It also searches for a squad target, adds the player to interests, verifies the player-detail dialog, creates a sample trade proposal, and checks the Trade Window rules link.
 

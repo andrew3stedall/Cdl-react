@@ -18,6 +18,7 @@ Expanded the repository-safe application screenshot workflow from a single mobil
 - Axe-core gates for serious and critical WCAG 2.0/2.1 A/AA violations across every captured route and viewport.
 - Keyboard focus checks that require the first Tab target to be visible, named, and matched by `:focus-visible`.
 - Mobile and desktop Chromium journeys for dashboard filtering/drill-down and FDR team filtering.
+- Mobile and desktop application-shell navigation coverage, including the mobile sheet, active-route state, URL changes, and browser Back.
 
 ## Validation finding
 
@@ -31,11 +32,15 @@ The next scan found that the two horizontally scrollable FDR tables could not re
 
 The desktop scan then found insufficient contrast for the active navigation item's secondary text. Interactive navigation states now use a darker secondary colour against the selected background.
 
+The shell navigation journey then found that browser Back changed the URL without changing the rendered route. The app now listens for `popstate`, synchronises the rendered path with browser history, and closes the mobile navigation sheet on history traversal.
+
 ## Browser interaction evidence
 
 The same repository-safe workflow now moves a starter to the bench, confirms invalid-lineup feedback, restores the starter, saves again, and confirms successful validation through the rendered controls in Chromium.
 
 It also searches for a squad target, adds the player to interests, verifies the player-detail dialog, creates a sample trade proposal, and checks the Trade Window rules link.
+
+Application-shell coverage now opens and closes the mobile navigation sheet, navigates between Rules, League, and Dashboard, verifies active-route and URL state, and confirms browser Back restores the rendered League page at mobile and desktop widths.
 
 Dashboard coverage now changes the team filter, verifies refreshed chart data, opens the drill-down, checks its player row, and closes it. FDR coverage sends a team-filter query and verifies the filtered row and fixture at both mobile and desktop widths.
 

@@ -94,6 +94,12 @@ select {
   outline: none;
 }
 
+.nav-item:hover small,
+.nav-item:focus-visible small,
+.nav-item.active small {
+  color: #475569;
+}
+
 .shell-main {
   min-width: 0;
   padding: 1.25rem;

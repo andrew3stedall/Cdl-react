@@ -3,6 +3,7 @@ from pathlib import Path
 MONITORING_TF = Path("infra/terraform/environments/staging/monitoring.tf")
 VARIABLES_TF = Path("infra/terraform/environments/staging/variables.tf")
 RUNBOOK = Path("docs/runbooks/gcp-staging-observability.md")
+DEPLOYMENT_RUNBOOK = Path("docs/runbooks/gcp-github-actions-deployment.md")
 
 
 def test_cloud_sql_monitoring_has_bounded_cpu_and_error_policies() -> None:
@@ -54,5 +55,18 @@ def test_observability_runbook_preserves_live_action_gates() -> None:
         "public invocation remains disabled",
         "issues #70 and #78",
         "terraform validate` proves schema only",
+    ]:
+        assert phrase in content
+
+
+def test_primary_deployment_runbook_links_observability_operations() -> None:
+    content = DEPLOYMENT_RUNBOOK.read_text(encoding="utf-8")
+
+    for phrase in [
+        "docs/runbooks/gcp-staging-observability.md",
+        "## Logging and alerting baseline",
+        "sustained Cloud SQL CPU above 80% for five minutes",
+        "Terraform does not create recipient addresses or duplicate log sinks",
+        "each policy still requires a controlled test event",
     ]:
         assert phrase in content

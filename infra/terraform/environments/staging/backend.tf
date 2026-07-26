@@ -1,5 +1,3 @@
-# Copy this file to backend.tf after the bootstrap state bucket exists.
-
 terraform {
   backend "gcs" {
     bucket = "cdl-react-staging-ast-terraform-state"

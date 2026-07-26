@@ -102,7 +102,7 @@ It does not authenticate to GCP and does not apply infrastructure.
 
 After **GCP WIF Verify** succeeds on `main`, run the `GCP Terraform Staging` workflow manually from the Actions tab.
 
-This performs an authenticated staging plan only. It still does not apply infrastructure.
+This initializes the committed GCS backend, reads the shared staging state at `environments/staging`, and performs an authenticated staging plan only. It still does not apply infrastructure. Pull-request validation continues to use `terraform init -backend=false` because untrusted pull-request refs do not receive cloud credentials.
 
 ## First infrastructure apply
 
@@ -113,7 +113,7 @@ Manual GCP bootstrap checklist complete
 GitHub staging environment variables configured
 GCP WIF Verify succeeds on main
 GCS Terraform state bucket exists
-infra/terraform/environments/staging/backend.tf.example copied to backend.tf
+Committed staging GCS backend initializes successfully with prefix `environments/staging`
 Required least-privilege deploy roles confirmed
 Terraform plan reviewed without unexpected resources
 ```
@@ -151,9 +151,9 @@ Avoid Owner and Editor roles.
 
 - Cloud Run deploys in memory mode first.
 - Cloud SQL user/password and `CDL_DATABASE_URL` secret payload are not created by Terraform yet, to avoid storing credentials in Terraform state.
-- Terraform apply is intentionally absent until remote state and permissions are confirmed.
+- Terraform apply is intentionally absent until the committed remote state backend and permissions are confirmed by a successful authenticated plan.
 - Production is not configured yet.
 
 ## Next implementation step
 
-Once staging bootstrap is complete, finish issue #70 by adding remote state, reviewed Terraform apply, Cloud SQL runtime wiring, migration job execution, and staging rollback notes.
+After keyless authentication and the committed remote backend are verified, continue issue #70 with a reviewed saved plan and cost/security assessment before any chargeable apply, then add Cloud SQL runtime wiring, controlled migrations, deterministic seed loading, and rollback evidence.

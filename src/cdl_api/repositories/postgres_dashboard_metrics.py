@@ -18,9 +18,7 @@ class PostgreSQLDashboardMetricRepository:
     def list_metrics(self) -> list[DashboardMetric]:
         with self._session_factory() as session:
             rows = session.execute(
-                select(dashboard_metric_catalog_table).order_by(
-                    dashboard_metric_catalog_table.c.id
-                )
+                select(dashboard_metric_catalog_table).order_by(dashboard_metric_catalog_table.c.id)
             ).mappings()
             return [DashboardMetric.model_validate(dict(row)) for row in rows]
 

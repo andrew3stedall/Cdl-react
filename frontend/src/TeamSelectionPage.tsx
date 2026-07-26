@@ -152,21 +152,21 @@ function PlayerTable({ players, onMove }: PlayerTableProps) {
   return (
     <div className="team-selection-table" role="table">
       <div className="team-selection-row team-selection-head" role="row">
-        <span role="columnheader">Player</span>
-        <span role="columnheader">Pos</span>
-        <span role="columnheader">Team</span>
-        <span role="columnheader">Move</span>
+        <span className="team-selection-player" role="columnheader">Player</span>
+        <span className="team-selection-position" role="columnheader">Pos</span>
+        <span className="team-selection-team" role="columnheader">Team</span>
+        <span className="team-selection-move" role="columnheader">Move</span>
       </div>
       {players.map((player) => (
         <div className="team-selection-row" key={player.id} role="row">
-          <span role="cell">
+          <span className="team-selection-player" role="cell">
             {player.name}
             {player.captain ? ' (C)' : ''}
             {player.viceCaptain ? ' (VC)' : ''}
           </span>
-          <span role="cell">{player.position}</span>
-          <span role="cell">{player.team}</span>
-          <span role="cell">
+          <span className="team-selection-position" role="cell">{player.position}</span>
+          <span className="team-selection-team" role="cell">{player.team}</span>
+          <span className="team-selection-move" role="cell">
             <select aria-label={`Move ${player.name}`} onChange={(event) => onMove(player.id, event.target.value as Slot)} value={player.slot}>
               <option value="starter">Starter</option>
               <option value="bench">Bench</option>

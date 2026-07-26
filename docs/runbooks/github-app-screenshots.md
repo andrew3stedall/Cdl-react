@@ -36,11 +36,13 @@ The normal runtime resolves `/api/auth/session`; it no longer assumes a demo man
 
 ### Team selection
 
-1. Open `/team-selection` and confirm the initial loaded status.
+1. Open `/team-selection` against the unlocked API fixture and confirm the loaded status.
 2. Move Alex Keeper from the starting lineup to the bench.
 3. Attempt to save and confirm the invalid-lineup feedback.
 4. Restore Alex Keeper to the starting lineup.
-5. Save again and confirm the validated-success feedback.
+5. Save through `PUT /api/team-selection/lineup` and confirm the API-backed success feedback.
+6. Repeat at mobile and desktop widths with the API returning a fixture lock.
+7. Confirm the lock reason renders in a labelled view-only notice and every lineup, chip, and save control is disabled.
 
 ### Squad management
 
@@ -64,7 +66,7 @@ The normal runtime resolves `/api/auth/session`; it no longer assumes a demo man
 3. Verify the browser sends the selected team in the API query.
 4. Confirm both the filtered row and opponent fixture render.
 
-These journeys verify that the session boundary, rendered controls, React state transitions, browser history, request contracts, validation feedback, dialogs, links, and accessible labels work together in a real browser. They remain deterministic frontend checks; they do not yet prove API persistence.
+These journeys verify that the session boundary, rendered controls, React state transitions, browser history, request contracts, validation feedback, dialogs, links, and accessible labels work together in a real browser. They remain deterministic frontend checks; the team-selection journey exercises the browser-to-API contract, but mocked responses do not prove PostgreSQL persistence.
 
 ## Captured routes
 

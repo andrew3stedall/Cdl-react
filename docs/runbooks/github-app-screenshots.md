@@ -13,6 +13,18 @@ The `App Screenshots` workflow provides repeatable visual evidence of the curren
 
 The workflow also runs on pull requests so layout regressions are caught before merge.
 
+## Browser interaction check
+
+Before capturing images, the workflow exercises one primary team-selection journey in Chromium at the mobile viewport:
+
+1. Open `/team-selection` and confirm the initial loaded status.
+2. Move Alex Keeper from the starting lineup to the bench.
+3. Attempt to save and confirm the invalid-lineup feedback.
+4. Restore Alex Keeper to the starting lineup.
+5. Save again and confirm the validated-success feedback.
+
+This verifies that rendered controls, React state transitions, validation feedback, and accessible labels work together in a real browser. It remains a deterministic frontend check; it does not yet prove API persistence.
+
 ## Captured routes
 
 - `/`

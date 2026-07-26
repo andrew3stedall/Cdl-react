@@ -56,8 +56,11 @@ module "artifact_registry" {
 
   project_id    = var.project_id
   region        = var.region
-  repository_id = local.artifact_repository_id
-  description   = "Backend container images for CDL React staging."
+  repository_id              = local.artifact_repository_id
+  description                = "Backend container images for CDL React staging."
+  immutable_tags             = true
+  cleanup_policy_dry_run     = true
+  cleanup_untagged_older_than = "1209600s"
 
   depends_on = [google_project_service.required]
 }

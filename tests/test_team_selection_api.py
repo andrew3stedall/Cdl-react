@@ -1,6 +1,8 @@
 from fastapi.testclient import TestClient
 
 from cdl_api.app import create_app
+from cdl_api.repositories.team_selection import InMemoryTeamSelectionRepository
+from cdl_api.routers.team_selection import get_team_selection_repository
 
 
 def valid_payload() -> dict[str, object]:
@@ -86,3 +88,32 @@ def test_fixture_summary_endpoint_includes_cdl_and_epl_context() -> None:
     assert payload["cdl_fixtures"][0]["home_team"]["id"] == "team-castle"
     assert payload["epl_fixtures"][0]["home_team"]["id"] == "epl-ars"
     assert payload["cdl_table"][0]["id"] == "team-castle"
+
+
+def test_fixture_lock_is_reported_and_blocks_lineup_and_chip_mutations() -> None:
+    app = create_app()
+    repository = InMemoryTeamSelectionRepository()
+    repository.save_fixture_lock(
+        fixture_id="fixture-1",
+        fixture_type="epl",
+        lock_scope="gameweek",
+        reason="FPL deadline passed.",
+    )
+    app.dependency_overrides[get_team_selection_repository] = lambda: repository
+    client = TestClient(app)
+
+    read_response = client.get("/api/team-selection")
+    lineup_response = client.put("/api/team-selection/lineup", json=valid_payload())
+    chip_response = client.put("/api/team-selection/chips/wildcard", json={"active": True})
+
+    assert read_response.status_code == 200
+    assert read_response.json()["fixture_lock"]["locked"] is True
+    assert read_response.json()["fixture_lock"]["reason"] == "FPL deadline passed."
+
+    for response in [lineup_response, chip_response]:
+        assert response.status_code == 409
+        assert response.json()["code"] == "conflict"
+        assert response.json()["details"]["rule_reference"] == "lineup-locking"
+        assert response.json()["details"]["reason"] == "FPL deadline passed."
+
+    assert repository.get_chips()[0].status == "available"

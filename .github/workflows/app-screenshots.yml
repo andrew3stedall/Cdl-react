@@ -37,6 +37,8 @@ jobs:
           done
           cat vite-preview.log
           exit 1
+      - name: Test primary interactions
+        run: node scripts/test-app-interactions.mjs
       - name: Capture screenshots
         run: node scripts/capture-app-screenshots.mjs
       - name: Upload screenshots

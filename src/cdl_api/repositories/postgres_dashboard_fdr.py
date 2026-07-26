@@ -1,76 +1,26 @@
-"""PostgreSQL table metadata for dashboard and fixture difficulty production data."""
+"""PostgreSQL table metadata matching migration 0007 payload storage."""
 
-from sqlalchemy import (
-    JSON,
-    Column,
-    DateTime,
-    ForeignKey,
-    Integer,
-    MetaData,
-    Numeric,
-    String,
-    Table,
-    text,
-)
+from sqlalchemy import JSON, Column, DateTime, MetaData, String, Table
 
 metadata = MetaData()
 
-dashboard_definitions_table = Table(
-    "dashboard_definitions",
-    metadata,
-    Column("id", String(64), primary_key=True),
-    Column("title", String(255), nullable=False),
-    Column("definition_json", JSON(), nullable=False, server_default=text("'{}'")),
-    Column("updated_at", DateTime(timezone=True), nullable=False),
-)
 
-dashboard_metric_catalog_table = Table(
-    "dashboard_metric_catalog",
-    metadata,
-    Column("id", String(64), primary_key=True),
-    Column("label", String(255), nullable=False),
-    Column("aggregation", String(64), nullable=False),
-    Column("format", String(64), nullable=False),
-    Column("description", String(255), nullable=False),
-)
+def _persistence_table(name: str) -> Table:
+    """Match the generic payload schema created by migration 0007."""
+    return Table(
+        name,
+        metadata,
+        Column("id", String(64), primary_key=True),
+        Column("payload_json", JSON(), nullable=False),
+        Column("created_at", DateTime(timezone=True), nullable=True),
+    )
 
-dashboard_aggregate_snapshots_table = Table(
-    "dashboard_aggregate_snapshots",
-    metadata,
-    Column("id", String(64), primary_key=True),
-    Column("dashboard_id", String(64), ForeignKey("dashboard_definitions.id"), nullable=False),
-    Column("metric_id", String(64), ForeignKey("dashboard_metric_catalog.id"), nullable=False),
-    Column("dimension_id", String(64), nullable=False),
-    Column("dimension_value", String(255), nullable=False),
-    Column("gameweek", Integer(), nullable=False),
-    Column("metric_value", Numeric(12, 4), nullable=False),
-    Column("calculated_at", DateTime(timezone=True), nullable=False),
-)
 
-fdr_ratings_table = Table(
-    "fdr_ratings",
-    metadata,
-    Column("id", String(64), primary_key=True),
-    Column("season_id", String(64), ForeignKey("seasons.id"), nullable=False),
-    Column("team_id", String(64), ForeignKey("epl_teams.id"), nullable=False),
-    Column("opponent_team_id", String(64), ForeignKey("epl_teams.id"), nullable=False),
-    Column("gameweek", Integer(), nullable=False),
-    Column("rating_view", String(64), nullable=False),
-    Column("venue", String(64), nullable=False),
-    Column("rating", Integer(), nullable=False),
-    Column("band", String(64), nullable=False),
-    Column("calculated_at", DateTime(timezone=True), nullable=False),
-)
-
-fdr_calculation_inputs_table = Table(
-    "fdr_calculation_inputs",
-    metadata,
-    Column("id", String(64), primary_key=True),
-    Column("season_id", String(64), ForeignKey("seasons.id"), nullable=False),
-    Column("source", String(64), nullable=False),
-    Column("input_json", JSON(), nullable=False, server_default=text("'{}'")),
-    Column("captured_at", DateTime(timezone=True), nullable=False),
-)
+dashboard_definitions_table = _persistence_table("dashboard_definitions")
+dashboard_metric_catalog_table = _persistence_table("dashboard_metric_catalog")
+dashboard_aggregate_snapshots_table = _persistence_table("dashboard_aggregate_snapshots")
+fdr_ratings_table = _persistence_table("fdr_ratings")
+fdr_calculation_inputs_table = _persistence_table("fdr_calculation_inputs")
 
 DASHBOARD_FDR_PERSISTENCE_TABLES = (
     dashboard_definitions_table,

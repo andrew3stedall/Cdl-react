@@ -11,6 +11,11 @@ Expanded the repository-safe application screenshot workflow from a single mobil
 - Automated checks for a `main` landmark and horizontal overflow before each screenshot.
 - Font readiness waiting to reduce inconsistent captures.
 - Documentation contract coverage for the viewport and layout-safety requirements.
+- Keyboard-focusable horizontal-scroll regions for league tables on narrow screens.
+
+## Validation finding
+
+The first multi-viewport run detected a real document-level overflow on `/league` at 390 px. League fixture and standings tables now retain their columns inside labelled, focusable scroll regions instead of widening the document.
 
 ## Scope
 

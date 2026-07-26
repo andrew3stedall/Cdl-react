@@ -1,4 +1,5 @@
 import { mkdir } from 'node:fs/promises';
+import axe from 'axe-core';
 import { chromium } from 'playwright';
 
 const baseUrl = process.env.APP_PREVIEW_URL ?? 'http://127.0.0.1:5173';
@@ -183,6 +184,60 @@ async function mockApi(page) {
   });
 }
 
+async function assertAccessibilityAndKeyboard(page, routeName, viewportName) {
+  await page.addScriptTag({ content: axe.source });
+  const results = await page.evaluate(async () => window.axe.run(document, {
+    runOnly: {
+      type: 'tag',
+      values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'],
+    },
+  }));
+
+  const blockingViolations = results.violations.filter(
+    (violation) => violation.impact === 'critical' || violation.impact === 'serious',
+  );
+
+  if (blockingViolations.length > 0) {
+    const summary = blockingViolations
+      .map((violation) => {
+        const targets = violation.nodes.flatMap((node) => node.target).join(', ');
+        return `${violation.id} (${violation.impact}): ${targets}`;
+      })
+      .join('; ');
+
+    throw new Error(`${routeName} at ${viewportName} has blocking accessibility violations: ${summary}`);
+  }
+
+  await page.keyboard.press('Tab');
+  const keyboardFocus = await page.evaluate(() => {
+    const element = document.activeElement;
+    const rect = element?.getBoundingClientRect();
+
+    return {
+      focusVisible: Boolean(element?.matches(':focus-visible')),
+      height: rect?.height ?? 0,
+      name: element?.getAttribute('aria-label') ?? element?.textContent?.trim() ?? '',
+      tagName: element?.tagName ?? '',
+      width: rect?.width ?? 0,
+    };
+  });
+
+  if (
+    keyboardFocus.tagName === 'BODY'
+    || keyboardFocus.name.length === 0
+    || keyboardFocus.width <= 0
+    || keyboardFocus.height <= 0
+    || !keyboardFocus.focusVisible
+  ) {
+    throw new Error(
+      `${routeName} at ${viewportName} did not expose a visible, named keyboard focus target: `
+        + JSON.stringify(keyboardFocus),
+    );
+  }
+
+  await page.evaluate(() => document.activeElement?.blur());
+}
+
 async function assertLayoutSafety(page, routeName, viewportName) {
   await page.evaluate(() => document.fonts.ready);
 
@@ -221,6 +276,7 @@ async function capture() {
 
     for (const [name, route] of routes) {
       await page.goto(`${baseUrl}${route}`, { waitUntil: 'networkidle' });
+      await assertAccessibilityAndKeyboard(page, name, viewport.name);
       await assertLayoutSafety(page, name, viewport.name);
       await page.screenshot({ path: `${viewportDir}/${name}.png`, fullPage: true });
     }

@@ -20,6 +20,17 @@ const routes = [
   ['team-selection', '/team-selection'],
 ];
 
+const screenshotSession = {
+  isAuthenticated: true,
+  user: {
+    id: 'screenshot-manager',
+    email: 'manager@example.com',
+    displayName: 'Screenshot Manager',
+    roles: ['manager'],
+  },
+  expiresAt: null,
+};
+
 const teams = [
   { id: 'team-castle', name: 'Castle FC', short_name: 'CAS' },
   { id: 'team-river', name: 'River Rangers', short_name: 'RIV' },
@@ -131,6 +142,10 @@ async function mockApi(page) {
   await page.route('**/api/**', async (route) => {
     const url = new URL(route.request().url());
     const path = url.pathname;
+
+    if (path === '/api/auth/session') {
+      return route.fulfill({ json: screenshotSession });
+    }
 
     if (path === '/api/health' || path === '/health') {
       return route.fulfill({ json: { status: 'ok' } });

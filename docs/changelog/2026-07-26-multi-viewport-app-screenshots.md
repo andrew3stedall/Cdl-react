@@ -26,6 +26,8 @@ The subsequent artifact review found that team-selection player rows stacked all
 
 The first axe-core run found that the dashboard chart used `role="img"` while containing drill-down buttons. The chart is now a labelled interactive group, so assistive technology can reach its controls.
 
+The next scan found that the two horizontally scrollable FDR tables could not receive keyboard focus. Both are now labelled regions in the tab order with a visible focus treatment.
+
 ## Browser interaction evidence
 
 The same repository-safe workflow now moves a starter to the bench, confirms invalid-lineup feedback, restores the starter, saves again, and confirms successful validation through the rendered controls in Chromium.

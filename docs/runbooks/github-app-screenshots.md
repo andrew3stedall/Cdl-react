@@ -15,7 +15,7 @@ The workflow also runs on pull requests so layout regressions are caught before 
 
 ## Browser interaction check
 
-Before capturing images, the workflow exercises six primary journeys in Chromium. Team selection and squad management run at the mobile viewport; the protected session boundary, application-shell navigation, dashboard, and FDR run at both mobile and desktop widths.
+Before capturing images, the workflow exercises six primary journeys in Chromium. Team selection, the protected session boundary, application-shell navigation, dashboard, and FDR run at both mobile and desktop widths; squad management runs at mobile width.
 
 ### Protected session boundary
 
@@ -41,9 +41,12 @@ The normal runtime resolves `/api/auth/session`; it no longer assumes a demo man
 3. Move Alex Keeper from the starting lineup to the bench.
 4. Attempt to save and confirm the invalid-lineup feedback.
 5. Restore Alex Keeper to the starting lineup.
-6. Save through `PUT /api/team-selection/lineup` and confirm the API-backed success feedback.
-7. Repeat at mobile and desktop widths with the API returning a fixture lock.
-8. Confirm the lock reason renders in a labelled view-only notice and every lineup, chip, and save control is disabled.
+6. Swap Ben Defender and Riley Forward while preserving a valid lineup, then save through `PUT /api/team-selection/lineup`.
+7. Activate Wildcard through the chip API and confirm success feedback.
+8. Reload the page and verify the saved slots and active chip are restored by the subsequent GET response.
+9. Run this persistence journey at mobile and desktop widths.
+10. Repeat at both widths with the API returning a fixture lock.
+11. Confirm the lock reason renders in a labelled view-only notice and every lineup, chip, and save control is disabled.
 
 ### Squad management
 

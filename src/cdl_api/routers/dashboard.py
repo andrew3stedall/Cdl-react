@@ -18,9 +18,7 @@ from cdl_api.contracts.dashboard import (
 )
 from cdl_api.database import build_session_factory
 from cdl_api.repositories.dashboard_repository import DashboardRepository
-from cdl_api.repositories.postgres_dashboard_metrics import (
-    PostgreSQLDashboardMetricRepository,
-)
+from cdl_api.repositories.postgres_dashboard_metrics import PostgreSQLDashboardMetricRepository
 from cdl_api.services.dashboard_service import (
     DashboardService,
     MetricCatalogService,

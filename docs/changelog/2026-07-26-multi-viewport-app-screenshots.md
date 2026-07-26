@@ -24,6 +24,7 @@ Expanded the repository-safe application screenshot workflow from a single mobil
 - API-backed React team-selection loading, saves, chip updates, and locked view-only rendering.
 - Mobile and desktop browser coverage proving locked lineup, chip, and save controls cannot be used.
 - API-backed CDL/EPL fixture and table summaries replacing React placeholder copy.
+- Stateful mobile and desktop browser journeys proving saved lineup and chip state are restored after reload.
 
 ## Validation finding
 
@@ -44,6 +45,8 @@ The session-boundary audit then found that the normal runtime implicitly authent
 The fixture-lock trace found that PostgreSQL stored lock records but the primary team-selection service did not read or enforce them. The API now exposes lock metadata and rejects lineup and chip mutations with a structured `409 conflict` before persistence. The React page now consumes that contract, shows the backend lock reason, and disables every mutation control. Mobile and desktop browser journeys prove the locked view-only boundary.
 
 The fixture-summary trace then found that the API already exposed CDL/EPL fixture and table context while React still displayed hard-coded names. The page now requests `/api/team-selection/fixtures-summary`, maps its contract, and renders the returned fixtures and tables; browser coverage verifies both the request and distinctive response content.
+
+The persistence journey now uses a stateful API test double to save a valid starter/bench swap and activate a chip, reload the browser, and prove the next GET response restores both changes at mobile and desktop widths. This verifies the full frontend request/reload contract without claiming live database persistence.
 
 ## Browser interaction evidence
 

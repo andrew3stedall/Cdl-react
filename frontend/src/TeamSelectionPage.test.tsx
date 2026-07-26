@@ -5,6 +5,7 @@ import { describe, expect, test } from 'vitest';
 import { TeamSelectionPage } from './TeamSelectionPage';
 import type {
   TeamSelectionClient,
+  TeamSelectionFixtureSummary,
   TeamSelectionPlayer,
   TeamSelectionSnapshot,
 } from './team-selection-api';
@@ -12,6 +13,25 @@ import { getDefaultThemePreset } from './theme-presets';
 
 const testGlobal = globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean };
 testGlobal.IS_REACT_ACT_ENVIRONMENT = true;
+
+const fixtureSummary: TeamSelectionFixtureSummary = {
+  cdlFixtures: [{
+    id: 'cdl-api-fixture',
+    gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1 },
+    homeTeam: { id: 'api-castle', name: 'API Castle' },
+    awayTeam: { id: 'api-rival', name: 'API Rival' },
+    status: 'scheduled',
+  }],
+  eplFixtures: [{
+    id: 'epl-api-fixture',
+    gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1 },
+    homeTeam: { id: 'api-arsenal', name: 'API Arsenal' },
+    awayTeam: { id: 'api-city', name: 'API City' },
+    status: 'scheduled',
+  }],
+  cdlTable: [{ id: 'api-castle', name: 'API Castle' }, { id: 'api-rival', name: 'API Rival' }],
+  eplTable: [{ id: 'api-arsenal', name: 'API Arsenal' }, { id: 'api-city', name: 'API City' }],
+};
 
 function snapshot(locked = false): TeamSelectionSnapshot {
   return {
@@ -49,6 +69,10 @@ class MemoryTeamSelectionClient implements TeamSelectionClient {
 
   async getTeamSelection(): Promise<TeamSelectionSnapshot> {
     return structuredClone(this.current);
+  }
+
+  async getFixtureSummary(): Promise<TeamSelectionFixtureSummary> {
+    return structuredClone(fixtureSummary);
   }
 
   async saveLineup(players: TeamSelectionPlayer[]): Promise<TeamSelectionSnapshot> {
@@ -94,7 +118,9 @@ describe('TeamSelectionPage', () => {
     expect(container.textContent).toContain('Starters');
     expect(container.textContent).toContain('Bench');
     expect(container.textContent).toContain('Reserves');
-    expect(container.textContent).toContain('Castle FC vs Rival Town');
+    expect(container.textContent).toContain('API Castle vs API Rival');
+    expect(container.textContent).toContain('API Arsenal vs API City');
+    expect(container.textContent).toContain('CDL table: API Castle, API Rival');
     expect(container.querySelectorAll('.team-selection-player[role="cell"]')).toHaveLength(5);
   });
 

@@ -222,7 +222,7 @@ export function App({
     return (
       <main className="session-boundary" aria-label="Protected route session state">
         <h1>Castle Draft League</h1>
-        <p className="login-required">
+        <p className="login-required" role="status">
           Sign in to access the Castle Draft League application shell.
         </p>
         <form className="login-form" onSubmit={(event) => void handleLogin(event)}>

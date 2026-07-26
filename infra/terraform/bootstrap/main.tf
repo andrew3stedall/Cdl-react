@@ -89,7 +89,7 @@ resource "google_storage_bucket_iam_member" "staging_deploy_state_access" {
 resource "google_billing_budget" "staging" {
   provider = google.staging
 
-  billing_account = "billingAccounts/${var.billing_account_id}"
+  billing_account = var.billing_account_id
   display_name    = "CDL React Staging Budget"
 
   budget_filter {
@@ -121,7 +121,7 @@ resource "google_billing_budget" "staging" {
 resource "google_billing_budget" "production" {
   provider = google.production
 
-  billing_account = "billingAccounts/${var.billing_account_id}"
+  billing_account = var.billing_account_id
   display_name    = "CDL React Production Budget"
 
   budget_filter {

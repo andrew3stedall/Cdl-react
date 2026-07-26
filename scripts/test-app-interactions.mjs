@@ -48,6 +48,31 @@ function teamSelectionResponse(locked = false) {
   };
 }
 
+const teamSelectionFixtureSummary = {
+  cdl_fixtures: [{
+    id: 'cdl-browser-fixture',
+    gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1 },
+    home_team: { id: 'team-harbour', name: 'Harbour Athletic', short_name: 'HAR' },
+    away_team: { id: 'team-mountain', name: 'Mountain United', short_name: 'MOU' },
+    status: 'scheduled',
+  }],
+  epl_fixtures: [{
+    id: 'epl-browser-fixture',
+    gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1 },
+    home_team: { id: 'epl-ars', name: 'Arsenal', short_name: 'ARS' },
+    away_team: { id: 'epl-mci', name: 'Manchester City', short_name: 'MCI' },
+    status: 'scheduled',
+  }],
+  cdl_table: [
+    { id: 'team-harbour', name: 'Harbour Athletic', short_name: 'HAR' },
+    { id: 'team-mountain', name: 'Mountain United', short_name: 'MOU' },
+  ],
+  epl_table: [
+    { id: 'epl-ars', name: 'Arsenal', short_name: 'ARS' },
+    { id: 'epl-mci', name: 'Manchester City', short_name: 'MCI' },
+  ],
+};
+
 const teams = [
   { id: 'team-castle', name: 'Castle FC', short_name: 'CAS' },
   { id: 'team-river', name: 'River Rangers', short_name: 'RIV' },
@@ -165,6 +190,10 @@ async function mockApi(page, { authenticated = true, teamSelectionLocked = false
 
     if (path === '/api/team-selection') {
       return route.fulfill({ json: teamSelectionResponse(teamSelectionLocked) });
+    }
+
+    if (path === '/api/team-selection/fixtures-summary') {
+      return route.fulfill({ json: teamSelectionFixtureSummary });
     }
 
     if (path === '/api/team-selection/lineup' || path.startsWith('/api/team-selection/chips/')) {
@@ -303,7 +332,13 @@ async function expectStatus(page, expected) {
 }
 
 async function testTeamSelection(page) {
+  const fixtureSummaryRequest = page.waitForRequest((request) =>
+    new URL(request.url()).pathname === '/api/team-selection/fixtures-summary',
+  );
   await page.goto(`${baseUrl}/team-selection`, { waitUntil: 'networkidle' });
+  await fixtureSummaryRequest;
+  await page.getByRole('region', { name: 'Fixture and table summaries' })
+    .getByText('Harbour Athletic vs Mountain United', { exact: true }).waitFor();
   await expectStatus(page, 'Team selection loaded.');
 
   const alexSlot = page.getByLabel('Move Alex Keeper');
@@ -443,7 +478,13 @@ async function testLockedTeamSelection(browser, viewport) {
   const page = await context.newPage();
   await mockApi(page, { teamSelectionLocked: true });
 
+  const fixtureSummaryRequest = page.waitForRequest((request) =>
+    new URL(request.url()).pathname === '/api/team-selection/fixtures-summary',
+  );
   await page.goto(baseUrl + '/team-selection', { waitUntil: 'networkidle' });
+  await fixtureSummaryRequest;
+  await page.getByRole('region', { name: 'Fixture and table summaries' })
+    .getByText('Harbour Athletic vs Mountain United', { exact: true }).waitFor();
   await expectStatus(page, 'Lineup locked. FPL deadline passed.');
   await page.getByRole('region', { name: 'Lineup lock' }).getByText('View-only lineup').waitFor();
 

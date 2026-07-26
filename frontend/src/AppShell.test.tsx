@@ -173,6 +173,22 @@ describe('AppShell integration', () => {
     expect(container.textContent).toContain('Castle United');
   });
 
+  test('updates rendered route when browser history changes', async () => {
+    window.history.replaceState({}, '', '/rules');
+    const { container } = renderApp({ initialPath: '/rules' });
+
+    await act(async () => {
+      window.history.pushState({}, '', '/league');
+      window.dispatchEvent(new PopStateEvent('popstate'));
+      await Promise.resolve();
+    });
+
+    expect(window.location.pathname).toBe('/league');
+    expect(container.querySelector('[aria-current="page"]')?.textContent).toContain('League');
+    expect(container.textContent).toContain('League Fixtures and Table');
+    expect(container.textContent).toContain('Castle United');
+  });
+
   test('persists visual preset selections', async () => {
     const preferenceClient = new MemoryPreferenceClient();
     const { container } = renderApp({ preferenceClient });

@@ -1,6 +1,7 @@
 """In-memory team selection repository for feature development."""
 
 from copy import deepcopy
+from datetime import UTC, datetime
 
 from cdl_api.contracts.common import RuleReference
 from cdl_api.contracts.domain import FixtureSummary, GameweekSummary, TeamSummary
@@ -100,6 +101,7 @@ class InMemoryTeamSelectionRepository:
         ]
         self._cdl_table = [self.manager_team, rival]
         self._epl_table = [arsenal, city]
+        self._fixture_lock: dict[str, object] | None = None
 
     def _player(
         self,
@@ -146,6 +148,28 @@ class InMemoryTeamSelectionRepository:
     def save_chips(self, chips: list[ChipState]) -> list[ChipState]:
         self._chips = deepcopy(chips)
         return self.get_chips()
+
+    def get_fixture_lock(self) -> dict[str, object] | None:
+        return deepcopy(self._fixture_lock)
+
+    def save_fixture_lock(
+        self,
+        *,
+        fixture_id: str,
+        fixture_type: str,
+        lock_scope: str,
+        reason: str,
+    ) -> str:
+        lock_id = f"fixture-lock-{fixture_id}"
+        self._fixture_lock = {
+            "id": lock_id,
+            "fixture_id": fixture_id,
+            "fixture_type": fixture_type,
+            "lock_scope": lock_scope,
+            "locked_at": datetime.now(UTC).isoformat(),
+            "reason": reason,
+        }
+        return lock_id
 
     def fixture_summary(self) -> FixtureSummaryTuple:
         return (

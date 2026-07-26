@@ -147,6 +147,12 @@ def test_browser_journey_exercises_protected_session_boundary() -> None:
     assert "Checking your session" in app
     assert "VITE_STATIC_PREVIEW" in main
     assert "session: staticPreviewSession" in main
+    assert "/api/auth/login" in interactions
+    assert "Email address" in app
+    assert "current-password" in app
+    assert "Invalid email or password." in interactions
+    assert "browser-login-secret" in interactions
+    assert "testLoginJourney(browser, viewport)" in interactions
 
 
 def test_team_selection_consumes_api_lock_state() -> None:

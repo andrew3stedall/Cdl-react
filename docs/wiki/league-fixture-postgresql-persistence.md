@@ -25,14 +25,19 @@ The deterministic seed is explicitly marked synthetic in stored payloads and is
 idempotent. It exists to exercise the release path before real historical
 exports are available; it is not evidence of real CDL history.
 
+The league table endpoint reads the newest persisted
+`league_table_snapshots` payload in PostgreSQL mode. An absent snapshot raises a
+repository error rather than silently recalculating from fixtures. Memory mode
+retains service-calculated standings for local previews.
+
 The PostgreSQL workflow starts from migrated tables, loads the synthetic fixture
-contract, creates a fresh repository instance, and verifies:
+and table contracts, creates a fresh repository instance, and verifies:
 
 - current fixture separation;
 - started fixture detail and persisted score context;
 - pending fixture detail rejection;
-- calculated standings; and
-- rows in all three runtime read tables.
+- persisted standings with an explicit snapshot source; and
+- rows in all four runtime read tables.
 
-League table snapshots, knockout matches, and head-to-head records are migrated
-but are not yet the runtime source. Those are the next #67 increment.
+Knockout matches and head-to-head records are migrated but are not yet the
+runtime source. Those are the next #67 increment.

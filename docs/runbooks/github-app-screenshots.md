@@ -22,9 +22,13 @@ Before capturing images, the workflow exercises six primary journeys in Chromium
 1. Open the protected `/team-selection` route with the session endpoint returning an unauthenticated state.
 2. Confirm the sign-in boundary renders while the authenticated shell remains hidden.
 3. Confirm team-selection controls are not exposed.
-4. Repeat at mobile and desktop widths before running the authenticated journeys.
+4. Start authenticated, expire the deterministic session, and select Reload to revalidate it.
+5. Confirm the shell and protected controls are withdrawn.
+6. Restore the session response, select Retry session, and confirm the shell recovers.
+7. Select Sign out, verify `POST /api/auth/logout`, and confirm the protected UI is withdrawn again.
+8. Repeat at mobile and desktop widths before running the remaining journeys.
 
-The normal runtime resolves `/api/auth/session`; it no longer assumes a demo manager is authenticated. The explicit demo identity is limited to `VITE_STATIC_PREVIEW` builds.
+The normal runtime maps the backend's snake-case `/api/auth/session` contract into React session state; it no longer assumes a demo manager is authenticated. Reload revalidates the session, Retry session provides recovery after reauthentication, and Sign out calls `/api/auth/logout`. The explicit demo identity is limited to `VITE_STATIC_PREVIEW` builds.
 
 ### Application shell and league navigation
 

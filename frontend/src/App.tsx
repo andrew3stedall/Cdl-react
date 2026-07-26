@@ -14,6 +14,7 @@ import type { PreferenceClient } from './preferences-api';
 import { RulesPage } from './RulesPage';
 import { SquadManagementPage } from './SquadManagementPage';
 import { TeamSelectionPage } from './TeamSelectionPage';
+import type { TeamSelectionClient } from './team-selection-api';
 import { getDefaultThemePreset } from './theme-presets';
 import { ThemePresetProvider } from './theme-preset-provider';
 
@@ -78,6 +79,7 @@ interface AppProps {
   leagueClient?: LeagueClient;
   preferenceClient?: PreferenceClient;
   session?: SessionState;
+  teamSelectionClient?: TeamSelectionClient;
 }
 
 export function App({
@@ -87,6 +89,7 @@ export function App({
   leagueClient,
   preferenceClient,
   session,
+  teamSelectionClient,
 }: AppProps) {
   const [currentPath, setCurrentPath] = useState(initialPath);
   const [activeSession, setActiveSession] = useState<SessionState | null>(session ?? null);
@@ -205,7 +208,7 @@ export function App({
   }
 
   if (currentPath.startsWith('/team-selection')) {
-    routeContent = <TeamSelectionPage preset={preset} />;
+    routeContent = <TeamSelectionPage preset={preset} teamSelectionClient={teamSelectionClient} />;
   }
 
   return (

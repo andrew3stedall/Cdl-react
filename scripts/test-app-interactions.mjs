@@ -191,6 +191,26 @@ async function mockApi(page, { authenticated = true, teamSelectionLocked = false
       });
     }
 
+    if (path === '/api/auth/login') {
+      const credentials = route.request().postDataJSON();
+      if (
+        credentials.email !== authenticatedSession.user.email
+        || credentials.password !== 'browser-login-secret'
+      ) {
+        return route.fulfill({
+          status: 401,
+          json: {
+            code: 'unauthenticated',
+            message: 'Invalid email or password.',
+            details: {},
+          },
+        });
+      }
+
+      sessionAuthenticated = true;
+      return route.fulfill({ json: { session: authenticatedSession } });
+    }
+
     if (path === '/api/auth/logout') {
       sessionAuthenticated = false;
       return route.fulfill({ json: { session: unauthenticatedSession } });
@@ -540,6 +560,46 @@ async function testShellAndLeagueNavigation(page, viewportName) {
   await page.getByRole('heading', { name: 'League Fixtures and Table' }).waitFor();
 }
 
+async function testLoginJourney(browser, viewport) {
+  const context = await browser.newContext({ viewport });
+  const page = await context.newPage();
+  await mockApi(page, { authenticated: false });
+
+  await page.goto(baseUrl + '/team-selection', { waitUntil: 'networkidle' });
+  await expectStatus(page, 'Sign in to access');
+
+  const email = page.getByRole('textbox', { name: 'Email address' });
+  const password = page.getByLabel('Password');
+  await email.fill('manager@example.com');
+  await password.fill('wrong-password');
+
+  const invalidRequest = page.waitForRequest((request) =>
+    new URL(request.url()).pathname === '/api/auth/login' && request.method() === 'POST',
+  );
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  const invalidPayload = (await invalidRequest).postDataJSON();
+  if (invalidPayload.email !== 'manager@example.com' || invalidPayload.password !== 'wrong-password') {
+    throw new Error('Expected the login form to submit the entered credentials');
+  }
+  await page.getByRole('alert').getByText('Invalid email or password.', { exact: true }).waitFor();
+
+  await password.fill('browser-login-secret');
+  const validRequest = page.waitForRequest((request) =>
+    new URL(request.url()).pathname === '/api/auth/login' && request.method() === 'POST',
+  );
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await validRequest;
+
+  await expectStatus(page, 'Team selection loaded.');
+  await page.getByRole('region', { name: 'Authenticated session' })
+    .getByText('Signed in as Browser Manager').waitFor();
+  if (await page.getByLabel('Password').count()) {
+    throw new Error('Expected successful login to withdraw the credential form');
+  }
+
+  await context.close();
+}
+
 async function testSessionExpiryAndRecovery(browser, viewport) {
   const context = await browser.newContext({ viewport });
   const page = await context.newPage();
@@ -640,6 +700,7 @@ async function run() {
 
   for (const viewport of viewports) {
     await testUnauthenticatedSessionBoundary(browser, viewport);
+    await testLoginJourney(browser, viewport);
     await testSessionExpiryAndRecovery(browser, viewport);
     await testLockedTeamSelection(browser, viewport);
 

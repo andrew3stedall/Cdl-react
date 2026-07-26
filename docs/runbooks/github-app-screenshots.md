@@ -15,7 +15,18 @@ The workflow also runs on pull requests so layout regressions are caught before 
 
 ## Browser interaction check
 
-Before capturing images, the workflow exercises six primary journeys in Chromium. Team selection, the protected session boundary, application-shell navigation, dashboard, and FDR run at both mobile and desktop widths; squad management runs at mobile width.
+Before capturing images, the workflow exercises seven primary journeys in Chromium. Team selection, the protected session boundary, application-shell navigation, dashboard, and FDR run at both mobile and desktop widths; squad management runs at mobile width.
+
+### Login
+
+1. Open the protected Team Selection route without a session.
+2. Confirm the labelled email and password fields render while protected controls remain hidden.
+3. Submit invalid credentials and confirm the generic error does not reveal whether the email exists.
+4. Submit the deterministic valid credentials through `POST /api/auth/login`.
+5. Confirm the authenticated shell and Team Selection workflow replace the credential form.
+6. Repeat at mobile and desktop widths.
+
+The login journey uses test-only credentials in the browser fixture. It verifies the existing API contract without storing a real credential or requiring GCP.
 
 ### Protected session boundary
 

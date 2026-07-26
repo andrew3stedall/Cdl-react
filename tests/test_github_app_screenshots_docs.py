@@ -10,6 +10,7 @@ APP = Path("frontend/src/App.tsx")
 MAIN = Path("frontend/src/main.tsx")
 TEAM_SELECTION_API = Path("frontend/src/team-selection-api.ts")
 TEAM_SELECTION_PAGE = Path("frontend/src/TeamSelectionPage.tsx")
+AUTH = Path("frontend/src/auth.ts")
 
 
 def test_screenshot_runbook_explains_github_artifacts() -> None:
@@ -127,6 +128,7 @@ def test_browser_journey_exercises_protected_session_boundary() -> None:
     screenshots = SCRIPT.read_text(encoding="utf-8")
     app = APP.read_text(encoding="utf-8")
     main = MAIN.read_text(encoding="utf-8")
+    auth = AUTH.read_text(encoding="utf-8")
 
     assert "/api/auth/session" in interactions
     assert "/api/auth/session" in screenshots
@@ -134,6 +136,12 @@ def test_browser_journey_exercises_protected_session_boundary() -> None:
     assert "authenticated: false" in interactions
     assert "Sign in to access" in interactions
     assert "protected team-selection controls to stay hidden" in interactions
+    assert "expireSession" in interactions
+    assert "Retry session" in interactions
+    assert "/api/auth/logout" in interactions
+    assert "is_authenticated" in auth
+    assert "display_name" in auth
+    assert "mapSession" in auth
     assert "getSession()" in app
     assert "defaultSession" not in app
     assert "Checking your session" in app

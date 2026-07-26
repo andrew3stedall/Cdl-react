@@ -4,9 +4,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from cdl_api.app import create_app
 from cdl_api.repositories.postgres_dashboard_fdr import dashboard_metric_catalog_table
-from cdl_api.repositories.postgres_dashboard_metrics import (
-    PostgreSQLDashboardMetricRepository,
-)
+from cdl_api.repositories.postgres_dashboard_metrics import PostgreSQLDashboardMetricRepository
 from cdl_api.routers.dashboard import get_dashboard_metric_repository
 
 

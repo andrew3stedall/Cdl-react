@@ -12,10 +12,13 @@ Expanded the repository-safe application screenshot workflow from a single mobil
 - Font readiness waiting to reduce inconsistent captures.
 - Documentation contract coverage for the viewport and layout-safety requirements.
 - Keyboard-focusable horizontal-scroll regions for league tables on narrow screens.
+- Compact two-line player rows for team selection on mobile and tablet layouts.
 
 ## Validation finding
 
 The first multi-viewport run detected a real document-level overflow on `/league` at 390 px. League fixture and standings tables now retain their columns inside labelled, focusable scroll regions instead of widening the document.
+
+The subsequent artifact review found that team-selection player rows stacked all four table cells vertically below 900 px, making the mobile page unnecessarily long and difficult to scan. The responsive row now keeps the player and movement control together, with position and team metadata on a compact second line; semantic table roles and column headers remain available to assistive technology.
 
 ## Scope
 

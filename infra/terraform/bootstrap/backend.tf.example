@@ -1,0 +1,9 @@
+# Copy this file to backend.tf only after the first bootstrap apply creates the
+# bucket. Then run `terraform init -migrate-state`.
+
+terraform {
+  backend "gcs" {
+    bucket = "cdl-react-staging-ast-terraform-state"
+    prefix = "bootstrap"
+  }
+}

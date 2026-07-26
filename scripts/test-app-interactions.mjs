@@ -89,7 +89,8 @@ function fdrView(view, selectedTeamId) {
 
 async function mockApi(page) {
   await page.route('**/api/**', async (route) => {
-    const path = new URL(route.request().url()).pathname;
+    const url = new URL(route.request().url());
+    const path = url.pathname;
 
     if (path === '/api/health' || path === '/health') {
       return route.fulfill({ json: { status: 'ok' } });

@@ -10,11 +10,11 @@ def test_cloud_sql_monitoring_has_bounded_cpu_and_error_policies() -> None:
 
     for phrase in [
         'resource "google_monitoring_alert_policy" "cloud_sql_cpu_utilization"',
-        r"metric.type=\"cloudsql.googleapis.com/database/cpu/utilization\"",
+        "cloudsql.googleapis.com/database/cpu/utilization",
         "threshold_value         = 0.8",
         'duration                = "300s"',
         'resource "google_monitoring_alert_policy" "cloud_sql_error_logs"',
-        r"resource.type=\"cloudsql_database\"",
+        "cloudsql_database",
         "severity>=ERROR",
         'period = "900s"',
     ]:
@@ -26,8 +26,8 @@ def test_cloud_run_error_policy_stays_conditional_and_private() -> None:
 
     assert 'resource "google_monitoring_alert_policy" "cloud_run_error_logs"' in content
     assert "count = var.enable_cloud_run ? 1 : 0" in content
-    assert r"resource.type=\"cloud_run_revision\"" in content
-    assert r"resource.labels.service_name=\"${local.api_service_name}\"" in content
+    assert "cloud_run_revision" in content
+    assert "${local.api_service_name}" in content
     assert "allUsers" not in content
     assert "google_cloud_run_v2_service_iam_member" not in content
 

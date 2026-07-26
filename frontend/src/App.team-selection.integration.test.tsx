@@ -5,7 +5,7 @@ import { describe, expect, test } from 'vitest';
 import { App } from './App';
 import type { SessionState, UserPreferences } from './contracts';
 import type { PreferenceClient } from './preferences-api';
-import type { TeamSelectionClient, TeamSelectionSnapshot } from './team-selection-api';
+import type { TeamSelectionClient, TeamSelectionFixtureSummary, TeamSelectionSnapshot } from './team-selection-api';
 
 const testGlobal = globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean };
 testGlobal.IS_REACT_ACT_ENVIRONMENT = true;
@@ -35,9 +35,20 @@ const teamSelectionSnapshot: TeamSelectionSnapshot = {
   fixtureLock: { locked: false, fixtureId: null, fixtureType: null, lockScope: null, lockedAt: null, reason: null },
 };
 
+const fixtureSummary: TeamSelectionFixtureSummary = {
+  cdlFixtures: [],
+  eplFixtures: [],
+  cdlTable: [],
+  eplTable: [],
+};
+
 class MemoryTeamSelectionClient implements TeamSelectionClient {
   async getTeamSelection(): Promise<TeamSelectionSnapshot> {
     return teamSelectionSnapshot;
+  }
+
+  async getFixtureSummary(): Promise<TeamSelectionFixtureSummary> {
+    return fixtureSummary;
   }
 
   async saveLineup(): Promise<TeamSelectionSnapshot> {

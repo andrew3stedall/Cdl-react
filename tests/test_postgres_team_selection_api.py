@@ -131,3 +131,18 @@ def test_postgres_fixture_summary_preserves_cross_feature_context() -> None:
     assert payload["cdl_fixtures"][0]["home_team"]["id"] == "team-castle"
     assert payload["epl_fixtures"][0]["home_team"]["id"] == "epl-ars"
     assert payload["cdl_table"][0]["id"] == "team-castle"
+
+
+def test_postgres_team_selection_fixture_lock_is_persisted() -> None:
+    session = _CapturingSession()
+    repository = PostgreSQLTeamSelectionRepository(lambda: session)
+
+    lock_id = repository.save_fixture_lock(
+        fixture_id="fixture-1",
+        fixture_type="epl",
+        lock_scope="gameweek",
+        reason="FPL deadline passed.",
+    )
+
+    assert lock_id.startswith("fixture-lock-")
+    assert "team_selection_fixture_locks" in _statement_table_names(session, Insert)

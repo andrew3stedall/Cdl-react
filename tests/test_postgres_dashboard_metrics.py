@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.pool import StaticPool
 
 from cdl_api.app import create_app
 from cdl_api.repositories.postgres_dashboard_fdr import dashboard_metric_catalog_table
@@ -15,7 +16,11 @@ def _client(repository: PostgreSQLDashboardMetricRepository) -> TestClient:
 
 
 def test_dashboard_metrics_read_persisted_catalog_without_memory_fallback() -> None:
-    engine = create_engine("sqlite+pysqlite:///:memory:")
+    engine = create_engine(
+        "sqlite+pysqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
     dashboard_metric_catalog_table.create(engine)
     session_factory = sessionmaker(bind=engine, class_=Session)
     repository = PostgreSQLDashboardMetricRepository(session_factory)

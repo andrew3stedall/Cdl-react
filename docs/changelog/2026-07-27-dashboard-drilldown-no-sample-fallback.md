@@ -1,14 +1,19 @@
-# Dashboard drill-down no longer fabricates sample rows
+# Dashboard sample fallbacks reduced
 
 Issue #68 tracks replacement of dashboard and FDR sample-backed runtime data with production-backed calculations or persisted snapshots.
 
-This bounded release-readiness change removes the dashboard repository's silent fallback row for unknown drill-down keys. Unknown keys now return an empty row set rather than a fabricated `Sample Player` / `Sample Team` result.
+This release-readiness branch now removes two misleading runtime paths:
+
+- Unknown dashboard drill-down keys return an empty row set rather than a fabricated `Sample Player` / `Sample Team` result.
+- `GET /api/dashboard/metrics` reads `dashboard_metric_catalog` when repository mode is PostgreSQL. An empty catalog remains empty instead of falling back to the in-memory allowlist.
 
 ## Evidence
 
 - Existing known drill-down keys retain their deterministic rows.
-- A focused API regression test verifies an unknown key returns no rows and never exposes the removed sample identity.
+- A focused API regression verifies an unknown key returns no rows and never exposes the removed sample identity.
+- A repository-backed API test proves an empty PostgreSQL catalog returns no metrics.
+- Deterministic metrics are explicitly labelled synthetic, seed idempotently, and round-trip through the migrated table.
 
 ## Remaining scope
 
-Dashboard definitions, metric catalog entries, aggregate snapshots, drill-down facts, and FDR ratings still need PostgreSQL runtime wiring under #68. The next slice should route dashboard metric catalog reads through `dashboard_metric_catalog` in PostgreSQL mode without retaining an in-memory fallback.
+Dashboard config definitions, dimensions, filters, aggregate snapshots, drill-down facts, and FDR ratings remain sample-backed at runtime. The next slice should load the dashboard definition and widget configuration from `dashboard_definitions` in PostgreSQL mode without retaining an in-memory fallback.

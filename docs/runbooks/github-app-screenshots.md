@@ -15,7 +15,15 @@ The workflow also runs on pull requests so layout regressions are caught before 
 
 ## Browser interaction check
 
-Before capturing images, the workflow exercises four primary journeys in Chromium. Team selection and squad management run at the mobile viewport; dashboard and FDR run at both mobile and desktop widths.
+Before capturing images, the workflow exercises five primary journeys in Chromium. Team selection and squad management run at the mobile viewport; application-shell navigation, dashboard, and FDR run at both mobile and desktop widths.
+
+### Application shell and league navigation
+
+1. Open `/rules` and, on mobile, open the navigation sheet and verify its expanded state.
+2. Navigate to `/league`, wait for deterministic standings data, and verify the active route and URL.
+3. On mobile, confirm the navigation sheet closes after selection and can be reopened.
+4. Navigate to `/dashboard` and verify its route and heading.
+5. Use browser Back and confirm both the URL and rendered League page return.
 
 ### Team selection
 
@@ -47,7 +55,7 @@ Before capturing images, the workflow exercises four primary journeys in Chromiu
 3. Verify the browser sends the selected team in the API query.
 4. Confirm both the filtered row and opponent fixture render.
 
-These journeys verify that rendered controls, React state transitions, request contracts, validation feedback, dialogs, links, and accessible labels work together in a real browser. They remain deterministic frontend checks; they do not yet prove API persistence.
+These journeys verify that rendered controls, React state transitions, browser history, request contracts, validation feedback, dialogs, links, and accessible labels work together in a real browser. They remain deterministic frontend checks; they do not yet prove API persistence.
 
 ## Captured routes
 

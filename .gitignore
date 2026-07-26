@@ -14,6 +14,22 @@ frontend/dist/
 .env.*
 !.env.example
 
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Google GitHub Actions
+gha-creds-*.json
+
 # OS and editors
 .DS_Store
 .vscode/

@@ -1,0 +1,21 @@
+# Copy to terraform.tfvars for local planning only.
+# Do not commit terraform.tfvars with real project-specific values.
+
+project_id = "cdl-react-staging-ast"
+region     = "australia-southeast1"
+
+name_prefix = "cdl-react-staging"
+environment = "staging"
+
+# Keep false until an image has been pushed to Artifact Registry.
+enable_cloud_run = false
+backend_image     = ""
+
+# Keep false until the auth/ingress model is confirmed.
+allow_public_invoker = false
+
+# Staging defaults are intentionally small and cost-conscious.
+database_version      = "POSTGRES_16"
+database_tier         = "db-f1-micro"
+database_disk_size_gb = 10
+deletion_protection   = false

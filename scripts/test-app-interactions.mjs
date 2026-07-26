@@ -230,7 +230,7 @@ async function testDashboard(page) {
   await page.goto(baseUrl + '/dashboard', { waitUntil: 'networkidle' });
   await page.getByRole('heading', { name: 'Manager Analytics Dashboard' }).waitFor();
 
-  await page.getByLabel('Team').selectOption('Castle FC');
+  await page.getByRole('combobox', { name: 'Team', exact: true }).selectOption('Castle FC');
   const chartPoint = page.getByRole('button', { name: /Castle FC.*81/ });
   await chartPoint.waitFor();
   await chartPoint.click();
@@ -250,7 +250,7 @@ async function testFixtureDifficulty(page) {
     const url = new URL(request.url());
     return url.pathname === '/api/fdr' && url.searchParams.get('team_id') === 'team-river';
   });
-  await page.getByLabel('Team').selectOption('team-river');
+  await page.getByRole('combobox', { name: 'Team', exact: true }).selectOption('team-river');
   await filteredRequest;
 
   await page.getByRole('rowheader', { name: 'RIV', exact: true }).first().waitFor();

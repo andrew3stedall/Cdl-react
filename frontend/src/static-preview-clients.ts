@@ -7,7 +7,7 @@ import type {
 import type { FdrClient, FdrCombinedResponse, FdrFilters } from './fdr-api';
 import type { LeagueClient, LeagueFixture, LeagueSnapshot, LeagueTeam } from './league-api';
 import { LocalStoragePreferenceClient } from './preferences-api';
-import type { TeamSelectionClient, TeamSelectionPlayer, TeamSelectionSnapshot } from './team-selection-api';
+import type { TeamSelectionClient, TeamSelectionFixtureSummary, TeamSelectionPlayer, TeamSelectionSnapshot } from './team-selection-api';
 
 const teams: LeagueTeam[] = [
   { id: 'castle-fc', name: 'Castle FC', shortName: 'CAS' },
@@ -293,9 +293,34 @@ const staticTeamSelectionSnapshot: TeamSelectionSnapshot = {
   fixtureLock: { locked: false, fixtureId: null, fixtureType: null, lockScope: null, lockedAt: null, reason: null },
 };
 
+const staticTeamSelectionFixtureSummary: TeamSelectionFixtureSummary = {
+  cdlFixtures: [{
+    id: currentFixture.id,
+    gameweek: currentFixture.gameweek,
+    homeTeam: currentFixture.homeTeam,
+    awayTeam: currentFixture.awayTeam,
+    status: currentFixture.status,
+  }],
+  eplFixtures: [{
+    id: 'epl-preview-fixture',
+    gameweek: currentGameweek,
+    homeTeam: { id: 'epl-ars', name: 'Arsenal', shortName: 'ARS' },
+    awayTeam: { id: 'epl-mci', name: 'Manchester City', shortName: 'MCI' },
+    status: 'scheduled',
+  }],
+  cdlTable: teams,
+  eplTable: [
+    { id: 'epl-ars', name: 'Arsenal', shortName: 'ARS' },
+    { id: 'epl-mci', name: 'Manchester City', shortName: 'MCI' },
+  ],
+};
+
 export const staticPreviewTeamSelectionClient: TeamSelectionClient = {
   async getTeamSelection() {
     return structuredClone(staticTeamSelectionSnapshot);
+  },
+  async getFixtureSummary() {
+    return structuredClone(staticTeamSelectionFixtureSummary);
   },
   async saveLineup(players: TeamSelectionPlayer[]) {
     return { ...structuredClone(staticTeamSelectionSnapshot), players: structuredClone(players) };

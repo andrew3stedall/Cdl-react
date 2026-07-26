@@ -20,6 +20,7 @@ Expanded the repository-safe application screenshot workflow from a single mobil
 - Mobile and desktop Chromium journeys for dashboard filtering/drill-down and FDR team filtering.
 - Mobile and desktop application-shell navigation coverage, including the mobile sheet, active-route state, URL changes, and browser Back.
 - Mobile and desktop protected-route coverage driven by authenticated and unauthenticated `/api/auth/session` responses.
+- Primary team-selection API fixture-lock reporting and mutation enforcement backed by the PostgreSQL lock table.
 
 ## Validation finding
 
@@ -36,6 +37,8 @@ The desktop scan then found insufficient contrast for the active navigation item
 The shell navigation journey then found that browser Back changed the URL without changing the rendered route. The app now listens for `popstate`, synchronises the rendered path with browser history, and closes the mobile navigation sheet on history traversal.
 
 The session-boundary audit then found that the normal runtime implicitly authenticated a hard-coded demo manager. The app now resolves `/api/auth/session`, shows a loading boundary while that request is pending, and withholds protected routes and navigation when unauthenticated. The demo identity is now explicit and limited to static-preview builds.
+
+The fixture-lock trace found that PostgreSQL stored lock records but the primary team-selection service did not read or enforce them. The API now exposes lock metadata and rejects lineup and chip mutations with a structured `409 conflict` before persistence. React consumption and locked-state browser evidence remain follow-up work.
 
 ## Browser interaction evidence
 

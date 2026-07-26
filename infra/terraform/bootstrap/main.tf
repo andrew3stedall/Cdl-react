@@ -15,10 +15,10 @@ module "staging" {
     google = google.staging
   }
 
-  project_id           = var.staging_project_id
-  environment          = "staging"
-  github_repository    = var.github_repository
-  github_branch        = var.github_branch
+  project_id        = var.staging_project_id
+  environment       = "staging"
+  github_repository = var.github_repository
+  github_branch     = var.github_branch
   deploy_project_roles = toset([
     "roles/artifactregistry.writer",
     "roles/run.admin",

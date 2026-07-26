@@ -159,12 +159,10 @@ This is the first and only bootstrap apply that temporarily uses local state.
 
 ## 8. Migrate state to GCS immediately
 
-```bash
-cp infra/terraform/bootstrap/backend.tf.example \
-  infra/terraform/bootstrap/backend.tf
-```
+Pull the committed backend configuration, then migrate the local state:
 
 ```bash
+git pull --ff-only
 terraform -chdir=infra/terraform/bootstrap init -migrate-state
 ```
 

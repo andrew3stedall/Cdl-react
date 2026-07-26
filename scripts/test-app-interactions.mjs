@@ -178,6 +178,8 @@ function fdrView(view, selectedTeamId) {
 }
 
 async function mockApi(page, { authenticated = true, teamSelectionLocked = false } = {}) {
+  let currentTeamSelection = teamSelectionResponse(teamSelectionLocked);
+
   await page.route('**/api/**', async (route) => {
     const url = new URL(route.request().url());
     const path = url.pathname;
@@ -189,7 +191,7 @@ async function mockApi(page, { authenticated = true, teamSelectionLocked = false
     }
 
     if (path === '/api/team-selection') {
-      return route.fulfill({ json: teamSelectionResponse(teamSelectionLocked) });
+      return route.fulfill({ json: currentTeamSelection });
     }
 
     if (path === '/api/team-selection/fixtures-summary') {
@@ -207,7 +209,39 @@ async function mockApi(page, { authenticated = true, teamSelectionLocked = false
           },
         });
       }
-      return route.fulfill({ json: teamSelectionResponse(false) });
+
+      if (path === '/api/team-selection/lineup') {
+        const requestBody = route.request().postDataJSON();
+        currentTeamSelection = {
+          ...currentTeamSelection,
+          lineup: currentTeamSelection.lineup.map((player) => {
+            const update = requestBody.players.find((candidate) => candidate.player_id === player.id);
+            return update
+              ? {
+                  ...player,
+                  slot: update.slot,
+                  slot_order: update.slot_order,
+                  is_captain: update.is_captain,
+                  is_vice_captain: update.is_vice_captain,
+                }
+              : player;
+          }),
+        };
+      } else {
+        const chipId = path.split('/').at(-1);
+        const { active } = route.request().postDataJSON();
+        currentTeamSelection = {
+          ...currentTeamSelection,
+          chips: currentTeamSelection.chips.map((chip) => ({
+            ...chip,
+            status: chip.id === chipId
+              ? (active ? 'active' : 'available')
+              : (active && chip.status === 'active' ? 'available' : chip.status),
+          })),
+        };
+      }
+
+      return route.fulfill({ json: currentTeamSelection });
     }
 
     if (path === '/api/health' || path === '/health') {
@@ -351,8 +385,26 @@ async function testTeamSelection(page) {
   await alexSlot.selectOption('starter');
   await expectStatus(page, 'Player moved to starter.');
 
+  await page.getByLabel('Move Ben Defender').selectOption('bench');
+  await page.getByLabel('Move Riley Forward').selectOption('starter');
   await page.getByRole('button', { name: 'Save lineup' }).click();
   await expectStatus(page, 'Lineup saved and validated.');
+
+  const wildcardCard = page.getByRole('heading', { name: 'Wildcard' }).locator('..');
+  await wildcardCard.getByRole('button', { name: 'Activate' }).click();
+  await expectStatus(page, 'Wildcard chip state updated.');
+
+  await page.reload({ waitUntil: 'networkidle' });
+  await expectStatus(page, 'Team selection loaded.');
+
+  if (await page.getByLabel('Move Ben Defender').inputValue() !== 'bench') {
+    throw new Error('Expected the saved Ben Defender bench slot to survive a reload');
+  }
+  if (await page.getByLabel('Move Riley Forward').inputValue() !== 'starter') {
+    throw new Error('Expected the saved Riley Forward starter slot to survive a reload');
+  }
+  await page.getByRole('heading', { name: 'Wildcard' }).locator('..')
+    .getByRole('button', { name: 'Deactivate' }).waitFor();
 }
 
 async function testSquadManagement(page) {
@@ -545,8 +597,8 @@ async function run() {
     const page = await context.newPage();
     await mockApi(page);
 
+    await testTeamSelection(page);
     if (viewport.name === 'mobile') {
-      await testTeamSelection(page);
       await testSquadManagement(page);
     }
 

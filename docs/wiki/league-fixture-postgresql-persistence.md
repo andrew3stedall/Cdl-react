@@ -36,15 +36,22 @@ broken fixture links raise an explicit repository error instead of deriving the
 bracket from fixture labels. Memory mode retains fixture-derived knockout
 context for local previews.
 
+The head-to-head endpoint reads `head_to_head_records` in PostgreSQL mode.
+Missing rows raise an explicit repository error instead of recalculating
+matchups from fixture results. Memory mode retains fixture-derived matchup
+records for local previews.
+
 The PostgreSQL workflow starts from migrated tables, loads the synthetic fixture
-table, and knockout contracts, creates a fresh repository instance, and verifies:
+table, knockout, and head-to-head contracts, creates a fresh repository
+instance, and verifies:
 
 - current fixture separation;
 - started fixture detail and persisted score context;
 - pending fixture detail rejection;
 - persisted standings with an explicit snapshot source; and
 - persisted knockout rounds and fixture linkage; and
-- rows in all five runtime read tables.
+- persisted head-to-head scores and team identities; and
+- rows in all six runtime read tables.
 
-Head-to-head records are migrated but are not yet the runtime source. That is
-the next #67 increment.
+`epl_fixtures` remains migrated but is not yet part of the synthetic scoring
+context or clean-database runtime proof. That is the next #67 increment.

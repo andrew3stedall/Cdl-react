@@ -294,10 +294,10 @@ async function mockApi(page, { authenticated = true, teamSelectionLocked = false
 
 async function expectStatus(page, expected) {
   const status = page.getByRole('status');
-  await status.waitFor({ state: 'visible' });
-  const message = (await status.textContent()) ?? '';
-
-  if (!message.includes(expected)) {
+  try {
+    await status.filter({ hasText: expected }).waitFor({ state: 'visible' });
+  } catch {
+    const message = (await status.textContent()) ?? '';
     throw new Error(`Expected status to include "${expected}", received "${message.trim()}"`);
   }
 }

@@ -49,7 +49,7 @@ def test_league_tables_are_contained_on_narrow_screens() -> None:
 
     assert league_page.count('className="responsive-table"') == 2
     assert 'role="region"' in league_page
-    assert 'tabIndex={0}' in league_page
+    assert "tabIndex={0}" in league_page
     assert ".responsive-table" in styles
     assert "overflow-x: auto" in styles
     assert ".responsive-table:focus-visible" in styles

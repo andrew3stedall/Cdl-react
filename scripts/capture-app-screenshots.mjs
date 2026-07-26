@@ -4,6 +4,12 @@ import { chromium } from 'playwright';
 const baseUrl = process.env.APP_PREVIEW_URL ?? 'http://127.0.0.1:5173';
 const outputDir = process.env.SCREENSHOT_DIR ?? 'artifacts/app-screenshots';
 
+const viewports = [
+  { name: 'mobile', width: 390, height: 844, deviceScaleFactor: 2 },
+  { name: 'tablet', width: 768, height: 1024, deviceScaleFactor: 1 },
+  { name: 'desktop', width: 1440, height: 900, deviceScaleFactor: 1 },
+];
+
 const routes = [
   ['home-rules', '/'],
   ['league', '/league'],
@@ -177,15 +183,49 @@ async function mockApi(page) {
   });
 }
 
+async function assertLayoutSafety(page, routeName, viewportName) {
+  await page.evaluate(() => document.fonts.ready);
+
+  const mainCount = await page.locator('main').count();
+  if (mainCount === 0) {
+    throw new Error(`${routeName} at ${viewportName} has no main landmark`);
+  }
+
+  const overflow = await page.evaluate(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+
+  if (overflow.scrollWidth > overflow.clientWidth + 1) {
+    throw new Error(
+      `${routeName} at ${viewportName} overflows horizontally: ` +
+        `${overflow.scrollWidth}px content in ${overflow.clientWidth}px viewport`,
+    );
+  }
+}
+
 async function capture() {
   await mkdir(outputDir, { recursive: true });
   const browser = await chromium.launch();
-  const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
-  await mockApi(page);
 
-  for (const [name, route] of routes) {
-    await page.goto(`${baseUrl}${route}`, { waitUntil: 'networkidle' });
-    await page.screenshot({ path: `${outputDir}/${name}.png`, fullPage: true });
+  for (const viewport of viewports) {
+    const viewportDir = `${outputDir}/${viewport.name}`;
+    await mkdir(viewportDir, { recursive: true });
+
+    const context = await browser.newContext({
+      viewport: { width: viewport.width, height: viewport.height },
+      deviceScaleFactor: viewport.deviceScaleFactor,
+    });
+    const page = await context.newPage();
+    await mockApi(page);
+
+    for (const [name, route] of routes) {
+      await page.goto(`${baseUrl}${route}`, { waitUntil: 'networkidle' });
+      await assertLayoutSafety(page, name, viewport.name);
+      await page.screenshot({ path: `${viewportDir}/${name}.png`, fullPage: true });
+    }
+
+    await context.close();
   }
 
   await browser.close();

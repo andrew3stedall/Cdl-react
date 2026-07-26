@@ -67,3 +67,14 @@ def test_interaction_script_exercises_team_selection_validation() -> None:
     assert "Lineup saved and validated." in content
     assert "selectOption('bench')" in content
     assert "selectOption('starter')" in content
+
+
+def test_interaction_script_exercises_squad_management_journey() -> None:
+    content = INTERACTION_SCRIPT.read_text(encoding="utf-8")
+
+    assert "/squad-management" in content
+    assert "Search players" in content
+    assert "Casey Midfielder added to interests." in content
+    assert "Player detail" in content
+    assert "Propose sample trade" in content
+    assert "/rules#trade-window" in content

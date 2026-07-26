@@ -1,5 +1,7 @@
 """League fixture, table, knockout, and head-to-head services."""
 
+from typing import Protocol
+
 from cdl_api.contracts.league_models import (
     FixtureDetailResponse,
     FixtureEvent,
@@ -16,8 +18,18 @@ from cdl_api.contracts.league_models import (
 from cdl_api.repositories.league_repository import LeagueRepository
 
 
+class LeagueReadRepository(Protocol):
+    def list_fixtures(self) -> list[LeagueFixture]: ...
+
+    def get_fixture(self, fixture_id: str) -> LeagueFixture | None: ...
+
+    def list_current_fixtures(self) -> list[LeagueFixture]: ...
+
+    def list_next_fixtures(self) -> list[LeagueFixture]: ...
+
+
 class FixtureService:
-    def __init__(self, repository: LeagueRepository | None = None) -> None:
+    def __init__(self, repository: LeagueReadRepository | None = None) -> None:
         self._repository = repository or LeagueRepository()
 
     def list_all(self) -> LeagueFixturesResponse:
@@ -61,7 +73,7 @@ class FixtureService:
 
 
 class LeagueTableService:
-    def __init__(self, repository: LeagueRepository | None = None) -> None:
+    def __init__(self, repository: LeagueReadRepository | None = None) -> None:
         self._repository = repository or LeagueRepository()
 
     def get_table(self) -> LeagueTableResponse:
@@ -132,7 +144,7 @@ class LeagueTableService:
 
 
 class HeadToHeadService:
-    def __init__(self, repository: LeagueRepository | None = None) -> None:
+    def __init__(self, repository: LeagueReadRepository | None = None) -> None:
         self._repository = repository or LeagueRepository()
 
     def get_records(self) -> HeadToHeadResponse:
@@ -159,7 +171,7 @@ class HeadToHeadService:
 
 
 class KnockoutService:
-    def __init__(self, repository: LeagueRepository | None = None) -> None:
+    def __init__(self, repository: LeagueReadRepository | None = None) -> None:
         self._repository = repository or LeagueRepository()
 
     def get_knockout(self) -> KnockoutResponse:

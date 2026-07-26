@@ -30,14 +30,21 @@ The league table endpoint reads the newest persisted
 repository error rather than silently recalculating from fixtures. Memory mode
 retains service-calculated standings for local previews.
 
+The knockout endpoint reads `knockout_matches` and resolves each persisted
+fixture link through the PostgreSQL fixture repository. Missing knockout rows or
+broken fixture links raise an explicit repository error instead of deriving the
+bracket from fixture labels. Memory mode retains fixture-derived knockout
+context for local previews.
+
 The PostgreSQL workflow starts from migrated tables, loads the synthetic fixture
-and table contracts, creates a fresh repository instance, and verifies:
+table, and knockout contracts, creates a fresh repository instance, and verifies:
 
 - current fixture separation;
 - started fixture detail and persisted score context;
 - pending fixture detail rejection;
 - persisted standings with an explicit snapshot source; and
-- rows in all four runtime read tables.
+- persisted knockout rounds and fixture linkage; and
+- rows in all five runtime read tables.
 
-Knockout matches and head-to-head records are migrated but are not yet the
-runtime source. Those are the next #67 increment.
+Head-to-head records are migrated but are not yet the runtime source. That is
+the next #67 increment.

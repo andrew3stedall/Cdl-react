@@ -6,6 +6,12 @@ locals {
   runtime_service_id     = "cdl-api-runtime"
   migration_service_id   = "cdl-db-migration"
 
+  common_labels = {
+    application = "cdl-react"
+    environment = var.environment
+    managed_by  = "terraform"
+  }
+
   required_services = toset([
     "artifactregistry.googleapis.com",
     "cloudbuild.googleapis.com",
@@ -58,6 +64,7 @@ module "artifact_registry" {
   region                      = var.region
   repository_id               = local.artifact_repository_id
   description                 = "Backend container images for CDL React staging."
+  labels                      = merge(local.common_labels, { component = "artifact-registry" })
   immutable_tags              = true
   cleanup_policy_dry_run      = true
   cleanup_untagged_older_than = "1209600s"
@@ -77,6 +84,7 @@ module "cloud_sql" {
   disk_size_gb                   = var.database_disk_size_gb
   disk_autoresize_limit_gb       = var.database_disk_autoresize_limit_gb
   deletion_protection            = var.deletion_protection
+  labels                         = merge(local.common_labels, { component = "database" })
   availability_type              = "ZONAL"
   backup_enabled                 = true
   backup_location                = var.region
@@ -93,10 +101,7 @@ module "runtime_secrets" {
 
   project_id = var.project_id
   secret_ids = local.secret_ids
-  labels = {
-    app         = "cdl-react"
-    environment = var.environment
-  }
+  labels     = merge(local.common_labels, { component = "secrets" })
 
   depends_on = [google_project_service.required]
 }
@@ -139,6 +144,7 @@ module "cloud_run_api" {
   runtime_service_account_email = google_service_account.runtime.email
   cloud_sql_connection_name     = module.cloud_sql.connection_name
   environment                   = var.environment
+  labels                        = merge(local.common_labels, { component = "api" })
   repository_mode               = "memory"
   allow_public_invoker          = var.allow_public_invoker
   min_instance_count            = 0

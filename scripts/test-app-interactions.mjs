@@ -447,7 +447,7 @@ async function testLockedTeamSelection(browser, viewport) {
   await expectStatus(page, 'Lineup locked. FPL deadline passed.');
   await page.getByRole('region', { name: 'Lineup lock' }).getByText('View-only lineup').waitFor();
 
-  const allSelectsDisabled = await page.locator('select').evaluateAll((controls) =>
+  const allSelectsDisabled = await page.locator('main select').evaluateAll((controls) =>
     controls.length > 0 && controls.every((control) => control.disabled),
   );
   if (!allSelectsDisabled) {

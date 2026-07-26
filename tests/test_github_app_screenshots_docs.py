@@ -86,3 +86,18 @@ def test_interaction_script_exercises_squad_management_journey() -> None:
     assert "Player detail" in content
     assert "Propose sample trade" in content
     assert "/rules#trade-window" in content
+
+
+def test_interaction_script_exercises_dashboard_and_fdr_at_two_widths() -> None:
+    content = INTERACTION_SCRIPT.read_text(encoding="utf-8")
+
+    assert "/dashboard" in content
+    assert "Castle FC drill-down" in content
+    assert "Casey Midfielder" in content
+    assert "/fdr" in content
+    assert "team-river" in content
+    assert "Attack FDR table" in content
+    assert "mobile" in content
+    assert "desktop" in content
+    assert "width: 390" in content
+    assert "width: 1440" in content

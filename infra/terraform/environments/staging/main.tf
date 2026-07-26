@@ -38,7 +38,7 @@ resource "google_project_service" "required" {
 resource "google_service_account" "runtime" {
   account_id   = local.runtime_service_id
   display_name = "CDL API runtime"
-  description  = "Runtime identity for the staging FastAPI service."
+  description                 = "Runtime identity for the staging FastAPI service."
 
   depends_on = [google_project_service.required]
 }
@@ -46,7 +46,7 @@ resource "google_service_account" "runtime" {
 resource "google_service_account" "migration" {
   account_id   = local.migration_service_id
   display_name = "CDL database migration"
-  description  = "Identity reserved for Alembic migration jobs."
+  description                 = "Identity reserved for Alembic migration jobs."
 
   depends_on = [google_project_service.required]
 }
@@ -54,13 +54,13 @@ resource "google_service_account" "migration" {
 module "artifact_registry" {
   source = "../../modules/artifact-registry"
 
-  project_id                      = var.project_id
-  region                          = var.region
-  repository_id                   = local.artifact_repository_id
-  description                     = "Backend container images for CDL React staging."
-  immutable_tags                  = true
-  cleanup_policy_dry_run          = true
-  cleanup_untagged_older_than     = "1209600s"
+  project_id                  = var.project_id
+  region                      = var.region
+  repository_id               = local.artifact_repository_id
+  description                 = "Backend container images for CDL React staging."
+  immutable_tags              = true
+  cleanup_policy_dry_run      = true
+  cleanup_untagged_older_than = "1209600s"
 
   depends_on = [google_project_service.required]
 }
@@ -68,8 +68,8 @@ module "artifact_registry" {
 module "cloud_sql" {
   source = "../../modules/cloud-sql-postgres"
 
-  project_id             = var.project_id
-  region                 = var.region
+  project_id                  = var.project_id
+  region                      = var.region
   instance_name          = local.database_instance_name
   database_name          = local.database_name
   database_version       = var.database_version
@@ -86,7 +86,7 @@ module "cloud_sql" {
 module "runtime_secrets" {
   source = "../../modules/secret-manager"
 
-  project_id = var.project_id
+  project_id                  = var.project_id
   secret_ids = local.secret_ids
   labels = {
     app         = "cdl-react"
@@ -118,8 +118,8 @@ module "cloud_run_api" {
   count  = var.enable_cloud_run ? 1 : 0
   source = "../../modules/cloud-run-api"
 
-  project_id                    = var.project_id
-  region                        = var.region
+  project_id                  = var.project_id
+  region                      = var.region
   service_name                  = local.api_service_name
   image                         = var.backend_image
   runtime_service_account_email = google_service_account.runtime.email

@@ -4,20 +4,20 @@ const baseUrl = process.env.APP_PREVIEW_URL ?? 'http://127.0.0.1:5173';
 
 
 const authenticatedSession = {
-  isAuthenticated: true,
+  is_authenticated: true,
   user: {
     id: 'browser-manager',
     email: 'manager@example.com',
-    displayName: 'Browser Manager',
+    display_name: 'Browser Manager',
     roles: ['manager'],
   },
-  expiresAt: null,
+  expires_at: '2099-01-01T00:00:00Z',
 };
 
 const unauthenticatedSession = {
-  isAuthenticated: false,
+  is_authenticated: false,
   user: null,
-  expiresAt: null,
+  expires_at: null,
 };
 
 function teamSelectionResponse(locked = false) {
@@ -179,6 +179,7 @@ function fdrView(view, selectedTeamId) {
 
 async function mockApi(page, { authenticated = true, teamSelectionLocked = false } = {}) {
   let currentTeamSelection = teamSelectionResponse(teamSelectionLocked);
+  let sessionAuthenticated = authenticated;
 
   await page.route('**/api/**', async (route) => {
     const url = new URL(route.request().url());
@@ -186,8 +187,13 @@ async function mockApi(page, { authenticated = true, teamSelectionLocked = false
 
     if (path === '/api/auth/session') {
       return route.fulfill({
-        json: authenticated ? authenticatedSession : unauthenticatedSession,
+        json: sessionAuthenticated ? authenticatedSession : unauthenticatedSession,
       });
+    }
+
+    if (path === '/api/auth/logout') {
+      sessionAuthenticated = false;
+      return route.fulfill({ json: { session: unauthenticatedSession } });
     }
 
     if (path === '/api/team-selection') {
@@ -353,6 +359,15 @@ async function mockApi(page, { authenticated = true, teamSelectionLocked = false
 
     return route.fulfill({ status: 404, json: { error: `No interaction-test mock for ${path}` } });
   });
+
+  return {
+    expireSession() {
+      sessionAuthenticated = false;
+    },
+    restoreSession() {
+      sessionAuthenticated = true;
+    },
+  };
 }
 
 async function expectStatus(page, expected) {
@@ -525,6 +540,40 @@ async function testShellAndLeagueNavigation(page, viewportName) {
   await page.getByRole('heading', { name: 'League Fixtures and Table' }).waitFor();
 }
 
+async function testSessionExpiryAndRecovery(browser, viewport) {
+  const context = await browser.newContext({ viewport });
+  const page = await context.newPage();
+  const sessionControl = await mockApi(page);
+
+  await page.goto(baseUrl + '/team-selection', { waitUntil: 'networkidle' });
+  await expectStatus(page, 'Team selection loaded.');
+  await page.getByRole('region', { name: 'Authenticated session' })
+    .getByText('Signed in as Browser Manager').waitFor();
+
+  sessionControl.expireSession();
+  await page.getByRole('button', { name: 'Reload', exact: true }).click();
+  await expectStatus(page, 'Sign in to access');
+
+  if (await page.getByRole('button', { name: 'Save lineup' }).count()) {
+    throw new Error('Expected expired session to withdraw protected team-selection controls');
+  }
+
+  sessionControl.restoreSession();
+  await page.getByRole('button', { name: 'Retry session' }).click();
+  await expectStatus(page, 'Team selection loaded.');
+  await page.getByRole('region', { name: 'Authenticated session' })
+    .getByText('Signed in as Browser Manager').waitFor();
+
+  const logoutRequest = page.waitForRequest((request) =>
+    new URL(request.url()).pathname === '/api/auth/logout' && request.method() === 'POST',
+  );
+  await page.getByRole('button', { name: 'Sign out' }).click();
+  await logoutRequest;
+  await expectStatus(page, 'Sign in to access');
+
+  await context.close();
+}
+
 async function testLockedTeamSelection(browser, viewport) {
   const context = await browser.newContext({ viewport });
   const page = await context.newPage();
@@ -591,6 +640,7 @@ async function run() {
 
   for (const viewport of viewports) {
     await testUnauthenticatedSessionBoundary(browser, viewport);
+    await testSessionExpiryAndRecovery(browser, viewport);
     await testLockedTeamSelection(browser, viewport);
 
     const context = await browser.newContext({ viewport });

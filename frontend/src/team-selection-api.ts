@@ -20,6 +20,21 @@ export interface TeamSelectionChip {
   status: TeamSelectionChipStatus;
 }
 
+export interface TeamSelectionFixture {
+  id: string;
+  gameweek: GameweekSummary;
+  homeTeam: TeamSummary;
+  awayTeam: TeamSummary;
+  status: string;
+}
+
+export interface TeamSelectionFixtureSummary {
+  cdlFixtures: TeamSelectionFixture[];
+  eplFixtures: TeamSelectionFixture[];
+  cdlTable: TeamSummary[];
+  eplTable: TeamSummary[];
+}
+
 export interface FixtureLockState {
   locked: boolean;
   fixtureId: string | null;
@@ -39,6 +54,7 @@ export interface TeamSelectionSnapshot {
 
 export interface TeamSelectionClient {
   getTeamSelection(): Promise<TeamSelectionSnapshot>;
+  getFixtureSummary(): Promise<TeamSelectionFixtureSummary>;
   saveLineup(players: TeamSelectionPlayer[]): Promise<TeamSelectionSnapshot>;
   updateChip(chipId: string, active: boolean): Promise<TeamSelectionSnapshot>;
 }
@@ -70,6 +86,21 @@ interface ApiChip {
   id: string;
   name: string;
   status: TeamSelectionChipStatus;
+}
+
+interface ApiFixture {
+  id: string;
+  gameweek: ApiGameweek;
+  home_team: ApiTeam;
+  away_team: ApiTeam;
+  status: string;
+}
+
+interface ApiFixtureSummaryResponse {
+  cdl_fixtures: ApiFixture[];
+  epl_fixtures: ApiFixture[];
+  cdl_table: ApiTeam[];
+  epl_table: ApiTeam[];
 }
 
 interface ApiFixtureLock {
@@ -104,6 +135,12 @@ export class HttpTeamSelectionClient implements TeamSelectionClient {
 
   async getTeamSelection(): Promise<TeamSelectionSnapshot> {
     return mapResponse(await this.request<ApiTeamSelectionResponse>('/team-selection'));
+  }
+
+  async getFixtureSummary(): Promise<TeamSelectionFixtureSummary> {
+    return mapFixtureSummary(
+      await this.request<ApiFixtureSummaryResponse>('/team-selection/fixtures-summary'),
+    );
   }
 
   async saveLineup(players: TeamSelectionPlayer[]): Promise<TeamSelectionSnapshot> {
@@ -151,6 +188,25 @@ export class HttpTeamSelectionClient implements TeamSelectionClient {
 
 function mapTeam(team: ApiTeam): TeamSummary {
   return { id: team.id, name: team.name, shortName: team.short_name ?? undefined };
+}
+
+function mapFixture(fixture: ApiFixture): TeamSelectionFixture {
+  return {
+    id: fixture.id,
+    gameweek: fixture.gameweek,
+    homeTeam: mapTeam(fixture.home_team),
+    awayTeam: mapTeam(fixture.away_team),
+    status: fixture.status,
+  };
+}
+
+function mapFixtureSummary(response: ApiFixtureSummaryResponse): TeamSelectionFixtureSummary {
+  return {
+    cdlFixtures: response.cdl_fixtures.map(mapFixture),
+    eplFixtures: response.epl_fixtures.map(mapFixture),
+    cdlTable: response.cdl_table.map(mapTeam),
+    eplTable: response.epl_table.map(mapTeam),
+  };
 }
 
 function mapResponse(response: ApiTeamSelectionResponse): TeamSelectionSnapshot {

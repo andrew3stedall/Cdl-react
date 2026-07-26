@@ -145,7 +145,7 @@ def test_team_selection_consumes_api_lock_state() -> None:
     assert "/api/team-selection" in interactions
     assert "teamSelectionLocked" in interactions
     assert "View-only lineup" in interactions
-    assert "toBeDisabled()" in interactions
+    assert "controls.every" in interactions
     assert "fixtureLock" in api_client
     assert "HttpTeamSelectionClient" in api_client
     assert "fixtureLock.locked" in page

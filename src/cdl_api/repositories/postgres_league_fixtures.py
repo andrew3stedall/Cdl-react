@@ -7,6 +7,8 @@ from sqlalchemy.orm import Session
 
 from cdl_api.contracts.league_models import (
     FixtureScore,
+    HeadToHeadRecord,
+    HeadToHeadResponse,
     KnockoutMatch,
     KnockoutResponse,
     LeagueFixture,
@@ -69,6 +71,7 @@ class PostgreSQLLeagueRepository:
             snapshot_ids = self._existing_ids(session, fixture_scoring_snapshots_table)
             table_snapshot_ids = self._existing_ids(session, league_table_snapshots_table)
             knockout_ids = self._existing_ids(session, knockout_matches_table)
+            head_to_head_ids = self._existing_ids(session, head_to_head_records_table)
 
             fixtures = LeagueRepository().list_fixtures()
             for fixture in fixtures:
@@ -140,6 +143,29 @@ class PostgreSQLLeagueRepository:
                             "round_label": fixture.round_label,
                             "rounds": ["Semi Final", "Final"],
                             "winner": None,
+                            "synthetic": True,
+                        },
+                    )
+                )
+
+            for fixture in fixtures:
+                if fixture.score.outcome == "pending":
+                    continue
+                record_id = f"head-to-head-{fixture.id}-{fixture.home_team.id}"
+                if record_id in head_to_head_ids:
+                    continue
+                session.execute(
+                    insert(head_to_head_records_table).values(
+                        id=record_id,
+                        payload_json={
+                            "team": fixture.home_team.model_dump(mode="json"),
+                            "opponent": fixture.away_team.model_dump(mode="json"),
+                            "played": 1,
+                            "wins": 1 if fixture.score.outcome == "home_win" else 0,
+                            "draws": 1 if fixture.score.outcome == "draw" else 0,
+                            "losses": 1 if fixture.score.outcome == "away_win" else 0,
+                            "points_for": fixture.score.home_score or 0,
+                            "points_against": fixture.score.away_score or 0,
                             "synthetic": True,
                         },
                     )
@@ -228,6 +254,19 @@ class PostgreSQLLeagueRepository:
             )
         return KnockoutResponse(rounds=rounds, matches=matches)
 
+    def get_head_to_head_snapshot(self) -> HeadToHeadResponse:
+        """Return persisted matchup records without fixture-result fallback."""
+        with self._session_factory() as session:
+            payloads = self._payloads(session, head_to_head_records_table)
+
+        if not payloads:
+            raise MissingHeadToHeadSnapshotError(
+                "PostgreSQL mode requires persisted head-to-head records."
+            )
+        return HeadToHeadResponse(
+            records=[HeadToHeadRecord.model_validate(payload) for payload in payloads]
+        )
+
     @staticmethod
     def _payloads(session: Session, table: Table) -> list[dict[str, object]]:
         result = session.execute(select(table.c.payload_json).order_by(table.c.id))
@@ -257,3 +296,7 @@ class MissingLeagueTableSnapshotError(RuntimeError):
 
 class MissingKnockoutSnapshotError(RuntimeError):
     """Raised instead of deriving knockout matches in PostgreSQL mode."""
+
+
+class MissingHeadToHeadSnapshotError(RuntimeError):
+    """Raised instead of deriving matchup records in PostgreSQL mode."""

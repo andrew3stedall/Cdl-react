@@ -27,6 +27,8 @@ class LeagueReadRepository(Protocol):
 
     def list_next_fixtures(self) -> list[LeagueFixture]: ...
 
+    def get_table_snapshot(self) -> LeagueTableResponse | None: ...
+
 
 class FixtureService:
     def __init__(self, repository: LeagueReadRepository | None = None) -> None:
@@ -77,6 +79,10 @@ class LeagueTableService:
         self._repository = repository or LeagueRepository()
 
     def get_table(self) -> LeagueTableResponse:
+        snapshot = self._repository.get_table_snapshot()
+        if snapshot is not None:
+            return snapshot
+
         standings: dict[str, LeagueTableRow] = {}
 
         for fixture in self._repository.list_fixtures():

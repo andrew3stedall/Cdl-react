@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 
 import { App } from './App';
+import type { SessionState } from './contracts';
 import {
   staticPreviewDashboardClient,
   staticPreviewFdrClient,
@@ -21,12 +22,24 @@ function getInitialPath() {
   return pathname;
 }
 
+const staticPreviewSession: SessionState = {
+  isAuthenticated: true,
+  user: {
+    id: 'demo-manager',
+    email: 'manager@example.com',
+    displayName: 'CDL Manager',
+    roles: ['manager'],
+  },
+  expiresAt: null,
+};
+
 const appProps = import.meta.env.VITE_STATIC_PREVIEW
   ? {
       dashboardClient: staticPreviewDashboardClient,
       fdrClient: staticPreviewFdrClient,
       leagueClient: staticPreviewLeagueClient,
       preferenceClient: staticPreviewPreferenceClient,
+      session: staticPreviewSession,
     }
   : {};
 

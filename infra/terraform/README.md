@@ -1,42 +1,64 @@
 # Terraform Infrastructure
 
-This folder contains the first repository-side GCP infrastructure scaffold for CDL React.
+This folder contains the GCP infrastructure configuration for CDL React.
 
-## Current scope
-
-The scaffold is intentionally staging-first and repository-safe:
-
-- Artifact Registry repository for backend container images.
-- Cloud SQL for PostgreSQL staging database shell.
-- Secret Manager secret containers for runtime configuration.
-- Optional Cloud Run API service definition, disabled by default until a real backend image exists.
-- Runtime and migration service account foundations.
-
-## Safety gate
-
-Do not run `terraform apply` from a local machine or GitHub Actions until the manual checklist in `docs/runbooks/gcp-bootstrap-setup.md` is complete and the required GitHub environment values are configured.
-
-## Layout
+## Apply order
 
 ```text
-infra/terraform/
-  environments/staging/     # first live target
-  modules/artifact-registry/
-  modules/cloud-run-api/
-  modules/cloud-sql-postgres/
-  modules/secret-manager/
+1. bootstrap/
+2. environments/staging/
+3. production configuration only after staging is proven
 ```
 
-## First validation command
+`bootstrap/` manages the shared prerequisites around the two existing projects:
 
-From the repository root:
+- Required Google APIs.
+- AUD 25 staging and AUD 50 production budget alerts.
+- GitHub deploy service accounts.
+- Keyless GitHub Workload Identity Federation restricted to this repository's
+  `main` branch.
+- A private, versioned GCS bucket for Terraform state.
+- Narrow initial staging deploy roles.
+
+It deliberately treats the staging and production projects as existing data.
+Terraform will not create, import, replace, or delete either project.
+
+`environments/staging/` manages application infrastructure:
+
+- Artifact Registry.
+- Cloud SQL for PostgreSQL.
+- Secret Manager containers.
+- Runtime and migration service accounts.
+- Optional Cloud Run API service.
+
+Do not apply the staging environment until the bootstrap plan has been reviewed,
+applied, and migrated to the GCS backend.
+
+## Bootstrap from Cloud Shell
+
+Follow `docs/runbooks/gcp-terraform-bootstrap.md`. The runbook is written for
+phone-accessible Google Cloud Shell and keeps the billing account ID out of Git.
+
+## Validation
 
 ```bash
+terraform -chdir=infra/terraform/bootstrap fmt -check
+terraform -chdir=infra/terraform/bootstrap init -backend=false
+terraform -chdir=infra/terraform/bootstrap validate
+
 terraform -chdir=infra/terraform/environments/staging fmt -recursive -check
 terraform -chdir=infra/terraform/environments/staging init -backend=false
 terraform -chdir=infra/terraform/environments/staging validate
 ```
 
-## State backend
+## State
 
-The staging environment includes `backend.tf.example`. Copy it to `backend.tf` only after a GCS state bucket has been created and access has been granted to the deploy service account.
+The bootstrap starts with local state only long enough to create its protected
+state bucket. Immediately after the first bootstrap apply, copy
+`bootstrap/backend.tf.example` to `bootstrap/backend.tf` and run:
+
+```bash
+terraform -chdir=infra/terraform/bootstrap init -migrate-state
+```
+
+The staging environment uses a separate prefix in the same bucket.

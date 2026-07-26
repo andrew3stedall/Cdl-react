@@ -31,8 +31,5 @@ def test_dashboard_metrics_read_persisted_catalog_without_memory_fallback() -> N
     response = client.get("/api/dashboard/metrics")
 
     assert response.status_code == 200
-    assert [metric["id"] for metric in response.json()] == [
-        "expected_points",
-        "fantasy_points",
-    ]
+    assert [metric["id"] for metric in response.json()] == ["expected_points", "fantasy_points"]
     assert all("Synthetic" in metric["description"] for metric in response.json())

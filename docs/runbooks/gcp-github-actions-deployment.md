@@ -147,6 +147,21 @@ roles/serviceusage.serviceUsageAdmin if Terraform manages project API enablement
 
 Avoid Owner and Editor roles.
 
+## Cloud SQL recovery baseline
+
+The unapplied staging design uses a zonal `db-f1-micro` PostgreSQL instance with 10 GiB of SSD storage. Automatic storage growth is enabled but capped at 20 GiB to limit surprise cost.
+
+Recovery settings are explicit:
+
+- Daily backups begin at 17:00 UTC.
+- Backups stay in `australia-southeast1`.
+- Point-in-time recovery retains seven days of transaction logs.
+- Eight automated backups are retained, leaving one more backup than log-retention days.
+- Deletion protection is enabled in both Terraform and the Cloud SQL API.
+- Terraform ignores only automatic `disk_size` growth so it cannot attempt to shrink a live instance.
+
+These settings still require saved-plan and cost review before apply. A successful restore drill remains required before staging is considered proven.
+
 ## Current limitations
 
 - Artifact Registry tags are immutable. Images must use unique release tags or digests; workflows must not overwrite a floating tag.

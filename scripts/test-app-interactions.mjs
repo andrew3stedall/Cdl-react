@@ -49,6 +49,26 @@ const dashboardConfig = {
   ],
 };
 
+const leagueFixture = {
+  id: 'fixture-12',
+  gameweek: gameweeks[0],
+  home_team: teams[0],
+  away_team: teams[1],
+  status: 'complete',
+  kickoff_label: 'Sat 15:00',
+  round_label: 'League',
+  is_current: true,
+  is_next: false,
+  detail_available: true,
+  score: {
+    home_score: 72,
+    away_score: 64,
+    bonus_points: { 'team-castle': 3 },
+    chips_played: { 'team-castle': ['wildcard'] },
+    outcome: 'home_win',
+  },
+};
+
 const fdrScale = [
   { rating: 1, band: 'very_easy', label: 'Very easy', foreground_token: 'var(--color-success)', background_token: 'var(--color-success-soft)', contrast_ratio: 4.8 },
   { rating: 3, band: 'medium', label: 'Medium', foreground_token: 'var(--color-warning)', background_token: 'var(--color-warning-soft)', contrast_ratio: 4.7 },
@@ -164,6 +184,41 @@ async function mockApi(page) {
       });
     }
 
+    if (path.startsWith('/api/league/fixtures')) {
+      return route.fulfill({ json: { gameweek: gameweeks[0], fixtures: [leagueFixture] } });
+    }
+
+    if (path === '/api/league/table') {
+      return route.fulfill({
+        json: {
+          source: 'interaction fixture',
+          rows: [
+            { position: 1, team: teams[0], played: 1, wins: 1, draws: 0, losses: 0, points_for: 72, points_against: 64, points_difference: 8, league_points: 3 },
+            { position: 2, team: teams[1], played: 1, wins: 0, draws: 0, losses: 1, points_for: 64, points_against: 72, points_difference: -8, league_points: 0 },
+          ],
+        },
+      });
+    }
+
+    if (path === '/api/league/knockout') {
+      return route.fulfill({
+        json: {
+          rounds: ['Semi-final'],
+          matches: [{ id: 'ko-1', round_label: 'Semi-final', fixture: leagueFixture, winner: teams[0] }],
+        },
+      });
+    }
+
+    if (path === '/api/league/head-to-head') {
+      return route.fulfill({
+        json: {
+          records: [
+            { team: teams[0], opponent: teams[1], played: 1, wins: 1, draws: 0, losses: 0, points_for: 72, points_against: 64 },
+          ],
+        },
+      });
+    }
+
     return route.fulfill({ status: 404, json: { error: `No interaction-test mock for ${path}` } });
   });
 }
@@ -258,6 +313,62 @@ async function testFixtureDifficulty(page) {
   await attackTable.getByText('CAS (H)', { exact: true }).waitFor();
 }
 
+async function expectPath(page, expectedPath) {
+  const path = new URL(page.url()).pathname;
+  if (path !== expectedPath) {
+    throw new Error('Expected browser path "' + expectedPath + '", received "' + path + '"');
+  }
+}
+
+async function testShellAndLeagueNavigation(page, viewportName) {
+  await page.goto(baseUrl + '/rules', { waitUntil: 'networkidle' });
+
+  let navigation;
+  if (viewportName === 'mobile') {
+    const menuButton = page.getByRole('button', { name: 'Menu', exact: true });
+    if (await menuButton.getAttribute('aria-expanded') !== 'false') {
+      throw new Error('Expected mobile navigation to start closed');
+    }
+
+    await menuButton.click();
+    navigation = page.getByRole('dialog', { name: 'Navigation' });
+    await navigation.waitFor();
+
+    if (await menuButton.getAttribute('aria-expanded') !== 'true') {
+      throw new Error('Expected mobile navigation to report its open state');
+    }
+  } else {
+    navigation = page.getByRole('complementary', { name: 'Primary navigation' });
+  }
+
+  await navigation.getByRole('button', { name: 'League', exact: true }).click();
+  await page.getByRole('heading', { name: 'League Fixtures and Table' }).waitFor();
+  await page.getByRole('region', { name: 'League standings table' }).getByText('Castle FC', { exact: true }).waitFor();
+  await expectPath(page, '/league');
+
+  if (viewportName === 'mobile') {
+    const menuButton = page.getByRole('button', { name: 'Menu', exact: true });
+    if (await menuButton.getAttribute('aria-expanded') !== 'false') {
+      throw new Error('Expected mobile navigation to close after route selection');
+    }
+    await menuButton.click();
+    navigation = page.getByRole('dialog', { name: 'Navigation' });
+  }
+
+  const leagueNavigation = navigation.getByRole('button', { name: 'League', exact: true });
+  if (await leagueNavigation.getAttribute('aria-current') !== 'page') {
+    throw new Error('Expected League navigation item to expose the active route');
+  }
+
+  await navigation.getByRole('button', { name: 'Dashboard', exact: true }).click();
+  await page.getByRole('heading', { name: 'Manager Analytics Dashboard' }).waitFor();
+  await expectPath(page, '/dashboard');
+
+  await page.goBack();
+  await expectPath(page, '/league');
+  await page.getByRole('heading', { name: 'League Fixtures and Table' }).waitFor();
+}
+
 async function run() {
   const browser = await chromium.launch();
   const viewports = [
@@ -275,6 +386,7 @@ async function run() {
       await testSquadManagement(page);
     }
 
+    await testShellAndLeagueNavigation(page, viewport.name);
     await testDashboard(page);
     await testFixtureDifficulty(page);
 

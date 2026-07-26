@@ -15,17 +15,21 @@ concurrency:
   group: gcp-terraform-staging-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  TF_WORKING_DIR: infra/terraform/environments/staging
-
 jobs:
   validate:
-    name: Terraform fmt and validate
+    name: Validate ${{ matrix.working_directory }}
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        working_directory:
+          - infra/terraform/bootstrap
+          - infra/terraform/environments/staging
 
     defaults:
       run:
-        working-directory: ${{ env.TF_WORKING_DIR }}
+        working-directory: ${{ matrix.working_directory }}
 
     steps:
       - name: Checkout
@@ -54,7 +58,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: ${{ env.TF_WORKING_DIR }}
+        working-directory: infra/terraform/environments/staging
 
     steps:
       - name: Checkout

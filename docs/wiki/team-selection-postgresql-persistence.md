@@ -15,6 +15,8 @@ Migration `0005_team_selection_persistence` follows `0004_squad_transfer_persist
 
 `CDL_REPOSITORY_MODE=postgres` now builds `PostgreSQLTeamSelectionRepository` through `RepositoryBundle.team_selection`. The team-selection router resolves its service dependencies through the repository factory instead of a module-level in-memory repository, so lineup and chip mutations are written through the configured repository mode.
 
+The repository now reads the latest fixture lock for the active season/gameweek. The primary read response exposes that state, and both lineup and chip mutations stop with `409 conflict` before persistence when a lock exists.
+
 ## Validation
 
-Database-backed API tests cover valid lineup persistence, invalid lineup rejection without writes, chip persistence, invalid chip rejection without writes, and fixture summary behaviour staying available across the team-selection API.
+Database-backed API tests cover valid lineup persistence, invalid lineup rejection without writes, chip persistence, invalid chip rejection without writes, fixture-lock persistence, and fixture summary behaviour staying available across the team-selection API. Service-level API tests prove a lock is reported and blocks both mutation paths without changing chip state.

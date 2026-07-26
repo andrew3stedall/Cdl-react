@@ -8,6 +8,7 @@ Use this with:
 
 - `docs/runbooks/gcp-bootstrap-setup.md`
 - `infra/terraform/environments/staging/`
+- `.github/workflows/gcp-wif-verify.yml`
 - `.github/workflows/gcp-terraform-staging.yml`
 - `.github/workflows/gcp-deploy-staging.yml`
 
@@ -46,6 +47,7 @@ GCP_STAGING_PROJECT_ID
 GCP_STAGING_PROJECT_NUMBER
 GCP_STAGING_WORKLOAD_IDENTITY_PROVIDER
 GCP_STAGING_DEPLOY_SERVICE_ACCOUNT
+GCP_TERRAFORM_STATE_BUCKET
 ```
 
 Expected value shapes:
@@ -55,9 +57,34 @@ GCP_STAGING_PROJECT_ID=cdl-react-staging-ast
 GCP_STAGING_PROJECT_NUMBER=123456789012
 GCP_STAGING_WORKLOAD_IDENTITY_PROVIDER=projects/123456789012/locations/global/workloadIdentityPools/github-pool/providers/github-provider
 GCP_STAGING_DEPLOY_SERVICE_ACCOUNT=github-deploy@cdl-react-staging-ast.iam.gserviceaccount.com
+GCP_TERRAFORM_STATE_BUCKET=cdl-react-staging-ast-terraform-state
 ```
 
-The project ID and project number must match the values you recorded from the bootstrap runbook.
+The project ID and project number must match the values from the bootstrap state. Obtain the exact values without exposing credentials:
+
+```bash
+terraform -chdir=infra/terraform/bootstrap output -raw staging_project_number
+terraform -chdir=infra/terraform/bootstrap output -raw staging_workload_identity_provider
+terraform -chdir=infra/terraform/bootstrap output -raw staging_deploy_service_account
+terraform -chdir=infra/terraform/bootstrap output -raw terraform_state_bucket
+```
+
+These values identify resources and are GitHub environment variables, not secrets.
+
+## Verify keyless authentication first
+
+After the five `staging` environment variables are configured and this workflow is merged, manually run **GCP WIF Verify** from the Actions tab using the `main` branch.
+
+The workflow is deliberately read-only. It:
+
+1. Refuses to run from any ref other than `refs/heads/main`, matching the bootstrap trust condition.
+2. Exchanges GitHub's short-lived OIDC token for the `github-deploy` service-account identity.
+3. Confirms the active account, project ID and project number.
+4. Confirms visibility of the required identity, service-usage, storage and token-exchange APIs.
+5. Confirms the protected Terraform state bucket is visible.
+6. Records that no GCP resource was changed.
+
+A successful verification is required before running an authenticated Terraform plan or deployment workflow.
 
 ## First Terraform validation
 
@@ -73,7 +100,7 @@ It does not authenticate to GCP and does not apply infrastructure.
 
 ## First authenticated Terraform plan
 
-After the `staging` GitHub environment variables are configured, run the `GCP Terraform Staging` workflow manually from the Actions tab.
+After **GCP WIF Verify** succeeds on `main`, run the `GCP Terraform Staging` workflow manually from the Actions tab.
 
 This performs an authenticated staging plan only. It still does not apply infrastructure.
 
@@ -84,6 +111,7 @@ This PR intentionally does not add automatic Terraform apply. Add apply only aft
 ```text
 Manual GCP bootstrap checklist complete
 GitHub staging environment variables configured
+GCP WIF Verify succeeds on main
 GCS Terraform state bucket exists
 infra/terraform/environments/staging/backend.tf.example copied to backend.tf
 Required least-privilege deploy roles confirmed

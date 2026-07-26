@@ -1,0 +1,103 @@
+name: GCP WIF Verify
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: gcp-wif-verify
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Verify keyless staging access
+    runs-on: ubuntu-latest
+    environment: staging
+
+    env:
+      PROJECT_ID: ${{ vars.GCP_STAGING_PROJECT_ID }}
+      PROJECT_NUMBER: ${{ vars.GCP_STAGING_PROJECT_NUMBER }}
+      WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_STAGING_WORKLOAD_IDENTITY_PROVIDER }}
+      DEPLOY_SERVICE_ACCOUNT: ${{ vars.GCP_STAGING_DEPLOY_SERVICE_ACCOUNT }}
+      TERRAFORM_STATE_BUCKET: ${{ vars.GCP_TERRAFORM_STATE_BUCKET }}
+
+    steps:
+      - name: Require trusted main ref
+        run: |
+          set -euo pipefail
+          test "${GITHUB_REF}" = "refs/heads/main"
+
+      - name: Validate required environment variables
+        run: |
+          set -euo pipefail
+          test -n "${PROJECT_ID}"
+          test -n "${PROJECT_NUMBER}"
+          test -n "${WORKLOAD_IDENTITY_PROVIDER}"
+          test -n "${DEPLOY_SERVICE_ACCOUNT}"
+          test -n "${TERRAFORM_STATE_BUCKET}"
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.DEPLOY_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
+        with:
+          version: ">= 416.0.0"
+
+      - name: Verify federated identity and project
+        run: |
+          set -euo pipefail
+
+          active_account="$(gcloud auth list \
+            --filter='status:ACTIVE' \
+            --format='value(account)' \
+            --limit=1)"
+          test "${active_account}" = "${DEPLOY_SERVICE_ACCOUNT}"
+
+          actual_project_number="$(gcloud projects describe "${PROJECT_ID}" \
+            --format='value(projectNumber)')"
+          test "${actual_project_number}" = "${PROJECT_NUMBER}"
+
+      - name: Verify required API visibility
+        run: |
+          set -euo pipefail
+
+          for service in \
+            iamcredentials.googleapis.com \
+            serviceusage.googleapis.com \
+            storage.googleapis.com \
+            sts.googleapis.com
+          do
+            enabled_service="$(gcloud services list \
+              --enabled \
+              --project="${PROJECT_ID}" \
+              --filter="config.name=${service}" \
+              --format='value(config.name)')"
+            test "${enabled_service}" = "${service}"
+          done
+
+      - name: Verify Terraform state bucket visibility
+        run: |
+          set -euo pipefail
+          gcloud storage buckets describe "gs://${TERRAFORM_STATE_BUCKET}" \
+            --format='value(name)' >/dev/null
+
+      - name: Record verification summary
+        run: |
+          {
+            echo "## GCP Workload Identity verification"
+            echo
+            echo "- Trusted ref: \`${GITHUB_REF}\`"
+            echo "- Project: \`${PROJECT_ID}\`"
+            echo "- Project number: \`${PROJECT_NUMBER}\`"
+            echo "- Federated account: \`${DEPLOY_SERVICE_ACCOUNT}\`"
+            echo "- State bucket visibility: confirmed"
+            echo "- GCP resources changed: none"
+          } >> "${GITHUB_STEP_SUMMARY}"

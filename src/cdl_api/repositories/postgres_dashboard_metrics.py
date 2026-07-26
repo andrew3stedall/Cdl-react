@@ -44,8 +44,7 @@ class PostgreSQLDashboardMetricRepository:
         )
         with self._session_factory() as session:
             existing_ids = {
-                str(row[0])
-                for row in session.execute(select(dashboard_metric_catalog_table.c.id))
+                str(row[0]) for row in session.execute(select(dashboard_metric_catalog_table.c.id))
             }
             for metric in metrics:
                 if metric.id in existing_ids:

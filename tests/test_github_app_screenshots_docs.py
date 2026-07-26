@@ -25,6 +25,7 @@ def test_screenshot_workflow_uploads_artifact_without_deploying() -> None:
     content = WORKFLOW.read_text(encoding="utf-8")
 
     assert "actions/upload-artifact" in content
+    assert "axe-core" in content
     assert "Test primary interactions" in content
     assert "node scripts/test-app-interactions.mjs" in content
     assert "Capture screenshots" in content
@@ -44,6 +45,11 @@ def test_screenshot_script_captures_core_routes() -> None:
     assert "desktop" in content
     assert "document.documentElement.scrollWidth" in content
     assert "page.locator('main')" in content
+    assert "axe.run" in content
+    assert "critical" in content
+    assert "serious" in content
+    assert "page.keyboard.press('Tab')" in content
+    assert ":focus-visible" in content
 
 
 def test_league_tables_are_contained_on_narrow_screens() -> None:

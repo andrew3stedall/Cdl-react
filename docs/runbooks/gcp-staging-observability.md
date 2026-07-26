@@ -59,6 +59,21 @@ projects/<project-id-or-number>/notificationChannels/<channel-id>
 
 Do not place email addresses, webhook credentials, paging tokens or other recipient secrets in Terraform variables or repository files.
 
+## Cost attribution labels
+
+The staging design applies a shared label set to Artifact Registry, Cloud SQL, Secret Manager and the optional Cloud Run API:
+
+```text
+application=cdl-react
+environment=staging
+managed_by=terraform
+component=<artifact-registry|database|secrets|api>
+```
+
+These labels support filtering and grouping in GCP Billing reports after an approved apply. They do not create a billing export, budget, dashboard or chargeable resource. The existing bootstrap-managed staging budget remains the spending guardrail.
+
+Before approving a saved plan, confirm every chargeable staging resource carries the shared labels and the expected component label. Do not invent a cost centre, client or owner label until its authoritative value and maintenance owner are known.
+
 ## Validation before apply
 
 Pull requests must pass the `GCP Terraform Staging` workflow, which runs:
@@ -69,7 +84,7 @@ terraform init -backend=false
 terraform validate
 ```
 
-After keyless GitHub authentication is proven, a manual authenticated plan must show only the expected monitoring resources alongside the already reviewed staging design.
+After keyless GitHub authentication is proven, a manual authenticated plan must show only the expected monitoring resources and label updates alongside the already reviewed staging design.
 
 Before any apply, confirm:
 
@@ -78,6 +93,7 @@ Before any apply, confirm:
 - Cloud Run remains disabled unless a reviewed image and deployment decision exist;
 - public invocation remains disabled;
 - the plan contains no production resources;
+- chargeable resources carry the expected cost-attribution labels;
 - expected Monitoring and Logging costs are recorded.
 
 ## Post-apply verification
@@ -90,7 +106,8 @@ After an explicitly approved apply:
 4. generate only a controlled staging test event where safe;
 5. verify incident creation and auto-close behaviour;
 6. verify external notifications only after an approved channel is attached;
-7. record the evidence in issues #70 and #78.
+7. confirm Billing reports can group the staging resources by `application`, `environment` and `component` labels;
+8. record the evidence in issues #70 and #78.
 
 Do not generate a destructive database failure or expose the Cloud Run service merely to test alerting.
 
@@ -98,6 +115,6 @@ Do not generate a destructive database failure or expose the Cloud Run service m
 
 - No uptime, readiness, migration-state or database-connectivity alert exists yet.
 - No notification destination is provisioned.
-- No dashboard is provisioned.
+- No dashboard or billing export is provisioned.
 - Cloud Run logging is inactive while the service is disabled.
 - A live resource and controlled event are required to prove filter matching; `terraform validate` proves schema only.

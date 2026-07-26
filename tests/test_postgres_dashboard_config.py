@@ -7,7 +7,9 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from cdl_api.app import create_app
-from cdl_api.repositories.postgres_dashboard_config import PostgreSQLDashboardConfigRepository
+from cdl_api.repositories.postgres_dashboard_config import (
+    PostgreSQLDashboardConfigRepository,
+)
 from cdl_api.repositories.postgres_dashboard_fdr import dashboard_definitions_table
 from cdl_api.routers.dashboard import get_dashboard_config_repository
 

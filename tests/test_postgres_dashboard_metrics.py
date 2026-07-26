@@ -41,11 +41,13 @@ def _assert_catalog_round_trip(
         count = session.execute(
             select(func.count()).select_from(dashboard_metric_catalog_table)
         ).scalar_one()
-        payloads = session.execute(
-            select(dashboard_metric_catalog_table.c.payload_json).order_by(
-                dashboard_metric_catalog_table.c.id
-            )
-        ).scalars()
+        payloads = list(
+            session.execute(
+                select(dashboard_metric_catalog_table.c.payload_json).order_by(
+                    dashboard_metric_catalog_table.c.id
+                )
+            ).scalars()
+        )
 
     assert count == 2
     assert all(payload["id"] in {"expected_points", "fantasy_points"} for payload in payloads)

@@ -28,6 +28,8 @@ The first axe-core run found that the dashboard chart used `role="img"` while co
 
 The next scan found that the two horizontally scrollable FDR tables could not receive keyboard focus. Both are now labelled regions in the tab order with a visible focus treatment.
 
+The desktop scan then found insufficient contrast for the active navigation item's secondary text. Interactive navigation states now use a darker secondary colour against the selected background.
+
 ## Browser interaction evidence
 
 The same repository-safe workflow now moves a starter to the bench, confirms invalid-lineup feedback, restores the starter, saves again, and confirms successful validation through the rendered controls in Chromium.

@@ -79,6 +79,10 @@ def test_interaction_script_exercises_team_selection_validation() -> None:
     assert "Lineup saved and validated." in content
     assert "selectOption('bench')" in content
     assert "selectOption('starter')" in content
+    assert "page.reload" in content
+    assert "Move Ben Defender" in content
+    assert "Move Riley Forward" in content
+    assert "Deactivate" in content
 
 
 def test_interaction_script_exercises_squad_management_journey() -> None:

@@ -115,10 +115,6 @@ resource "google_billing_budget" "staging" {
     threshold_percent = 1.0
   }
 
-  all_updates_rule {
-    disable_default_iam_recipients = false
-  }
-
   depends_on = [module.staging]
 }
 
@@ -149,10 +145,6 @@ resource "google_billing_budget" "production" {
 
   threshold_rules {
     threshold_percent = 1.0
-  }
-
-  all_updates_rule {
-    disable_default_iam_recipients = false
   }
 
   depends_on = [module.production]

@@ -10,6 +10,17 @@ import type { PreferenceClient } from './preferences-api';
 const testGlobal = globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean };
 testGlobal.IS_REACT_ACT_ENVIRONMENT = true;
 
+const authenticatedSession: SessionState = {
+  isAuthenticated: true,
+  user: {
+    id: 'test-manager',
+    email: 'manager@example.com',
+    displayName: 'CDL Manager',
+    roles: ['manager'],
+  },
+  expiresAt: null,
+};
+
 class MemoryPreferenceClient implements PreferenceClient {
   preferences: UserPreferences = { themePreset: 'classic' };
 
@@ -88,7 +99,7 @@ function renderApp(initialPath: string, session?: SessionState) {
 
 describe('FDR shell integration', () => {
   test('routes authenticated managers to FDR inside shared shell', async () => {
-    const { container } = renderApp('/fdr');
+    const { container } = renderApp('/fdr', authenticatedSession);
 
     await act(async () => {
       await Promise.resolve();

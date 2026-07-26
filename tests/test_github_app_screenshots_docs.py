@@ -143,6 +143,9 @@ def test_team_selection_consumes_api_lock_state() -> None:
     page = TEAM_SELECTION_PAGE.read_text(encoding="utf-8")
 
     assert "/api/team-selection" in interactions
+    assert "/api/team-selection/fixtures-summary" in interactions
+    assert "Harbour Athletic vs Mountain United" in interactions
+    assert "Castle FC vs Rival Town" not in page
     assert "teamSelectionLocked" in interactions
     assert "View-only lineup" in interactions
     assert "controls.every" in interactions

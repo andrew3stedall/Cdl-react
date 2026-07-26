@@ -58,7 +58,31 @@ variable "database_disk_size_gb" {
 }
 
 variable "deletion_protection" {
-  description = "Deletion protection for the staging Cloud SQL instance."
+  description = "Enable Terraform and GCP API deletion protection for the staging Cloud SQL instance."
   type        = bool
-  default     = false
+  default     = true
+}
+
+variable "database_disk_autoresize_limit_gb" {
+  description = "Maximum Cloud SQL storage size in GiB after automatic growth."
+  type        = number
+  default     = 20
+}
+
+variable "database_backup_start_time" {
+  description = "UTC start time for the daily Cloud SQL backup window."
+  type        = string
+  default     = "17:00"
+}
+
+variable "database_transaction_log_retention_days" {
+  description = "Days of PostgreSQL transaction logs retained for point-in-time recovery."
+  type        = number
+  default     = 7
+}
+
+variable "database_retained_backups" {
+  description = "Number of automated Cloud SQL backups retained."
+  type        = number
+  default     = 8
 }

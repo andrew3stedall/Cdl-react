@@ -34,7 +34,7 @@ variable "disk_size_gb" {
 }
 
 variable "deletion_protection" {
-  description = "Whether deletion protection is enabled."
+  description = "Enable Terraform and GCP API deletion protection for the instance."
   type        = bool
 }
 
@@ -54,4 +54,33 @@ variable "point_in_time_recovery" {
   description = "Whether point-in-time recovery is enabled."
   type        = bool
   default     = true
+}
+
+variable "disk_autoresize_limit_gb" {
+  description = "Maximum storage size in GiB after automatic growth."
+  type        = number
+  default     = 20
+}
+
+variable "backup_location" {
+  description = "Location used for automated Cloud SQL backups."
+  type        = string
+}
+
+variable "backup_start_time" {
+  description = "UTC start time for the daily backup window in HH:MM format."
+  type        = string
+  default     = "17:00"
+}
+
+variable "transaction_log_retention_days" {
+  description = "Number of transaction-log days retained for point-in-time recovery."
+  type        = number
+  default     = 7
+}
+
+variable "retained_backups" {
+  description = "Number of automated backups retained."
+  type        = number
+  default     = 8
 }

@@ -5,7 +5,11 @@ from collections.abc import Callable, Iterable, Mapping
 from sqlalchemy import JSON, Column, DateTime, MetaData, String, Table, insert, select
 from sqlalchemy.orm import Session
 
-from cdl_api.contracts.league_models import FixtureScore, LeagueFixture
+from cdl_api.contracts.league_models import (
+    FixtureScore,
+    LeagueFixture,
+    LeagueTableResponse,
+)
 from cdl_api.repositories.league_repository import LeagueRepository
 
 metadata = MetaData()
@@ -56,11 +60,12 @@ class PostgreSQLLeagueRepository:
         self._session_factory = session_factory
 
     def seed_synthetic_data(self) -> None:
-        """Idempotently add missing deterministic rows to the three read tables."""
+        """Idempotently add missing deterministic fixture and table rows."""
         with self._session_factory() as session:
             fixture_ids = self._existing_ids(session, cdl_fixtures_table)
             result_ids = self._existing_ids(session, fixture_results_table)
             snapshot_ids = self._existing_ids(session, fixture_scoring_snapshots_table)
+            table_snapshot_ids = self._existing_ids(session, league_table_snapshots_table)
 
             for fixture in LeagueRepository().list_fixtures():
                 fixture_payload = fixture.model_dump(mode="json", exclude={"score"})
@@ -99,6 +104,26 @@ class PostgreSQLLeagueRepository:
                             },
                         )
                     )
+
+            table_snapshot_id = "table-gw-12"
+            if table_snapshot_id not in table_snapshot_ids:
+                from cdl_api.services.league_service import LeagueTableService
+
+                table = LeagueTableService(LeagueRepository()).get_table()
+                payload = table.model_dump(mode="json")
+                payload.update(
+                    {
+                        "gameweek_id": "gw-12",
+                        "source": "postgresql-synthetic-snapshot",
+                        "synthetic": True,
+                    }
+                )
+                session.execute(
+                    insert(league_table_snapshots_table).values(
+                        id=table_snapshot_id,
+                        payload_json=payload,
+                    )
+                )
             session.commit()
 
     def list_fixtures(self) -> list[LeagueFixture]:
@@ -137,6 +162,17 @@ class PostgreSQLLeagueRepository:
     def list_next_fixtures(self) -> list[LeagueFixture]:
         return [fixture for fixture in self.list_fixtures() if fixture.is_next]
 
+    def get_table_snapshot(self) -> LeagueTableResponse:
+        """Return the newest persisted table snapshot without fixture fallback."""
+        with self._session_factory() as session:
+            payloads = self._payloads(session, league_table_snapshots_table)
+
+        if not payloads:
+            raise MissingLeagueTableSnapshotError(
+                "PostgreSQL mode requires a persisted league table snapshot."
+            )
+        return LeagueTableResponse.model_validate(payloads[-1])
+
     @staticmethod
     def _payloads(session: Session, table: Table) -> list[dict[str, object]]:
         result = session.execute(select(table.c.payload_json).order_by(table.c.id))
@@ -158,3 +194,7 @@ class PostgreSQLLeagueRepository:
         table: Table,
     ) -> dict[str, dict[str, object]]:
         return {str(payload["fixture_id"]): payload for payload in cls._payloads(session, table)}
+
+
+class MissingLeagueTableSnapshotError(RuntimeError):
+    """Raised instead of silently calculating standings in PostgreSQL mode."""

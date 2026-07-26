@@ -79,7 +79,7 @@ def test_observability_runbook_preserves_live_action_gates() -> None:
         "no external recipient is notified",
         "Cost attribution labels",
         "support filtering and grouping in GCP Billing reports",
-        "does not create a billing export",
+        "do not create a billing export",
         "Cloud Run remains disabled",
         "public invocation remains disabled",
         "issues #70 and #78",

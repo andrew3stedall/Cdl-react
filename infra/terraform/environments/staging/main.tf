@@ -1,5 +1,6 @@
 locals {
   artifact_repository_id = "cdl-react-backend"
+  frontend_bucket_name   = "${var.project_id}-frontend-assets"
   database_name          = "cdl_react"
   database_instance_name = "${var.name_prefix}-postgres"
   api_service_name       = "${var.name_prefix}-api"
@@ -22,6 +23,7 @@ locals {
     "run.googleapis.com",
     "secretmanager.googleapis.com",
     "sqladmin.googleapis.com",
+    "storage.googleapis.com",
   ])
 
   secret_ids = toset([
@@ -68,6 +70,17 @@ module "artifact_registry" {
   immutable_tags              = true
   cleanup_policy_dry_run      = true
   cleanup_untagged_older_than = "1209600s"
+
+  depends_on = [google_project_service.required]
+}
+
+module "frontend_assets" {
+  source = "../../modules/static-frontend-bucket"
+
+  project_id  = var.project_id
+  bucket_name = local.frontend_bucket_name
+  location    = var.region
+  labels      = merge(local.common_labels, { component = "frontend" })
 
   depends_on = [google_project_service.required]
 }

@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-07-27 - Persist EPL fixture scoring context
+
+### Added
+
+- Linked deterministic `epl_fixtures` rows from persisted CDL scoring snapshots.
+- Exposed typed EPL fixture provenance through the existing league fixture score contract.
+- Added an explicit repository error for broken persisted EPL scoring links.
+
+### Validation
+
+- Added idempotent SQLite coverage for EPL scoring context and broken-link rejection.
+- Extended the clean migrated PostgreSQL API journey to verify synthetic EPL provenance and all seven #67 runtime tables.
+
 ## 2026-06-11 - Add core league and FPL cache schema
 
 ### Added

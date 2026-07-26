@@ -8,11 +8,13 @@ from sqlalchemy.orm import Session, sessionmaker
 from cdl_api.app import create_app
 from cdl_api.repositories.postgres_league_fixtures import (
     LEAGUE_FIXTURE_PERSISTENCE_TABLES,
+    MissingEplFixtureContextError,
     MissingHeadToHeadSnapshotError,
     MissingKnockoutSnapshotError,
     MissingLeagueTableSnapshotError,
     PostgreSQLLeagueRepository,
     cdl_fixtures_table,
+    epl_fixtures_table,
     fixture_results_table,
     fixture_scoring_snapshots_table,
     head_to_head_records_table,
@@ -48,6 +50,11 @@ def test_sqlite_repository_round_trip_uses_persisted_results_and_scoring() -> No
     assert fixture.score.home_score == 58
     assert fixture.score.bonus_points == {"castle": 3, "drafton": 1}
     assert fixture.score.chips_played["castle"] == ["Triple Captain"]
+    assert [item.id for item in fixture.score.epl_fixtures] == [
+        "epl-gw12-ars-che",
+        "epl-gw12-liv-mci",
+    ]
+    assert all(item.synthetic for item in fixture.score.epl_fixtures)
 
     pending = repository.get_fixture("fixture-1202")
     assert pending is not None
@@ -93,6 +100,24 @@ def test_sqlite_repository_round_trip_uses_persisted_results_and_scoring() -> No
         repository.get_head_to_head_snapshot()
 
 
+def test_sqlite_repository_rejects_broken_epl_scoring_context() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    metadata.create_all(engine)
+    session_factory = sessionmaker(bind=engine, class_=Session)
+    repository = PostgreSQLLeagueRepository(session_factory)
+    repository.seed_synthetic_data()
+
+    with session_factory() as session:
+        session.execute(_delete_statement(epl_fixtures_table))
+        session.commit()
+
+    with pytest.raises(
+        MissingEplFixtureContextError,
+        match="Persisted EPL scoring fixture 'epl-gw12-ars-che' is missing",
+    ):
+        repository.get_fixture("fixture-1201")
+
+
 @pytest.mark.skipif(
     not os.getenv("CDL_DATABASE_URL", "").startswith("postgresql"),
     reason="requires the migrated PostgreSQL CI service",
@@ -124,6 +149,13 @@ def test_clean_postgres_league_api_reads_persisted_fixture_state() -> None:
     }
     assert detail_response.status_code == 200
     assert detail_response.json()["fixture"]["score"]["home_score"] == 58
+    assert [
+        fixture["id"] for fixture in detail_response.json()["fixture"]["score"]["epl_fixtures"]
+    ] == ["epl-gw12-ars-che", "epl-gw12-liv-mci"]
+    assert all(
+        fixture["synthetic"]
+        for fixture in detail_response.json()["fixture"]["score"]["epl_fixtures"]
+    )
     assert pending_detail_response.status_code == 404
     assert table_response.status_code == 200
     assert table_response.json()["source"] == "postgresql-synthetic-snapshot"
@@ -138,6 +170,7 @@ def test_clean_postgres_league_api_reads_persisted_fixture_state() -> None:
     with session_factory() as session:
         for table in (
             cdl_fixtures_table,
+            epl_fixtures_table,
             fixture_results_table,
             fixture_scoring_snapshots_table,
             league_table_snapshots_table,
@@ -145,14 +178,13 @@ def test_clean_postgres_league_api_reads_persisted_fixture_state() -> None:
             head_to_head_records_table,
         ):
             count = session.execute(select(func.count()).select_from(table)).scalar_one()
-            expected = (
-                1
-                if table
-                in (
-                    league_table_snapshots_table,
-                    knockout_matches_table,
-                    head_to_head_records_table,
-                )
-                else 5
-            )
+            expected = {
+                cdl_fixtures_table: 5,
+                epl_fixtures_table: 2,
+                fixture_results_table: 5,
+                fixture_scoring_snapshots_table: 5,
+                league_table_snapshots_table: 1,
+                knockout_matches_table: 1,
+                head_to_head_records_table: 1,
+            }[table]
             assert count == expected

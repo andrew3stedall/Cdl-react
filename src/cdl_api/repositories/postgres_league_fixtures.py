@@ -6,6 +6,7 @@ from sqlalchemy import JSON, Column, DateTime, MetaData, String, Table, insert, 
 from sqlalchemy.orm import Session
 
 from cdl_api.contracts.league_models import (
+    EplFixtureContext,
     FixtureScore,
     HeadToHeadRecord,
     HeadToHeadResponse,
@@ -68,12 +69,47 @@ class PostgreSQLLeagueRepository:
         with self._session_factory() as session:
             fixture_ids = self._existing_ids(session, cdl_fixtures_table)
             result_ids = self._existing_ids(session, fixture_results_table)
+            epl_fixture_ids = self._existing_ids(session, epl_fixtures_table)
             snapshot_ids = self._existing_ids(session, fixture_scoring_snapshots_table)
             table_snapshot_ids = self._existing_ids(session, league_table_snapshots_table)
             knockout_ids = self._existing_ids(session, knockout_matches_table)
             head_to_head_ids = self._existing_ids(session, head_to_head_records_table)
 
             fixtures = LeagueRepository().list_fixtures()
+            epl_fixtures = [
+                EplFixtureContext(
+                    id="epl-gw12-ars-che",
+                    gameweek={"id": "epl-gw-12", "name": "Gameweek 12", "number": 12},
+                    home_team={"id": "epl-ars", "name": "Arsenal", "short_name": "ARS"},
+                    away_team={"id": "epl-che", "name": "Chelsea", "short_name": "CHE"},
+                    status="started",
+                    kickoff_label="GW12 synthetic scoring context",
+                    synthetic=True,
+                ),
+                EplFixtureContext(
+                    id="epl-gw12-liv-mci",
+                    gameweek={"id": "epl-gw-12", "name": "Gameweek 12", "number": 12},
+                    home_team={"id": "epl-liv", "name": "Liverpool", "short_name": "LIV"},
+                    away_team={
+                        "id": "epl-mci",
+                        "name": "Manchester City",
+                        "short_name": "MCI",
+                    },
+                    status="started",
+                    kickoff_label="GW12 synthetic scoring context",
+                    synthetic=True,
+                ),
+            ]
+            for epl_fixture in epl_fixtures:
+                if epl_fixture.id in epl_fixture_ids:
+                    continue
+                session.execute(
+                    insert(epl_fixtures_table).values(
+                        id=epl_fixture.id,
+                        payload_json=epl_fixture.model_dump(mode="json"),
+                    )
+                )
+
             for fixture in fixtures:
                 fixture_payload = fixture.model_dump(mode="json", exclude={"score"})
                 fixture_payload["synthetic"] = True
@@ -107,6 +143,11 @@ class PostgreSQLLeagueRepository:
                                 "fixture_id": fixture.id,
                                 "bonus_points": fixture.score.bonus_points,
                                 "chips_played": fixture.score.chips_played,
+                                "epl_fixture_ids": (
+                                    [epl_fixture.id for epl_fixture in epl_fixtures]
+                                    if fixture.id == "fixture-1201"
+                                    else []
+                                ),
                                 "synthetic": True,
                             },
                         )
@@ -180,18 +221,31 @@ class PostgreSQLLeagueRepository:
                 session,
                 fixture_scoring_snapshots_table,
             )
+            epl_fixture_payloads = {
+                str(payload["id"]): payload
+                for payload in self._payloads(session, epl_fixtures_table)
+            }
 
         fixtures = []
         for payload in fixture_payloads:
             fixture_id = str(payload["id"])
             result = result_payloads.get(fixture_id, {})
             snapshot = snapshot_payloads.get(fixture_id, {})
+            linked_epl_fixtures = []
+            for epl_fixture_id in snapshot.get("epl_fixture_ids", []):
+                epl_fixture = epl_fixture_payloads.get(str(epl_fixture_id))
+                if epl_fixture is None:
+                    raise MissingEplFixtureContextError(
+                        f"Persisted EPL scoring fixture {epl_fixture_id!r} is missing."
+                    )
+                linked_epl_fixtures.append(EplFixtureContext.model_validate(epl_fixture))
             score = FixtureScore(
                 home_score=result.get("home_score"),
                 away_score=result.get("away_score"),
                 outcome=result.get("outcome", "pending"),
                 bonus_points=snapshot.get("bonus_points", {}),
                 chips_played=snapshot.get("chips_played", {}),
+                epl_fixtures=linked_epl_fixtures,
             )
             fixtures.append(LeagueFixture.model_validate({**payload, "score": score}))
         return fixtures
@@ -300,3 +354,7 @@ class MissingKnockoutSnapshotError(RuntimeError):
 
 class MissingHeadToHeadSnapshotError(RuntimeError):
     """Raised instead of deriving matchup records in PostgreSQL mode."""
+
+
+class MissingEplFixtureContextError(RuntimeError):
+    """Raised when a scoring snapshot references absent EPL fixture context."""

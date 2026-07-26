@@ -41,6 +41,11 @@ Missing rows raise an explicit repository error instead of recalculating
 matchups from fixture results. Memory mode retains fixture-derived matchup
 records for local previews.
 
+Started fixture scores now resolve their persisted `epl_fixture_ids` from
+`fixture_scoring_snapshots` through `epl_fixtures`. The fixture API returns that
+typed EPL provenance alongside the score. A broken persisted link raises an
+explicit repository error instead of silently dropping scoring context.
+
 The PostgreSQL workflow starts from migrated tables, loads the synthetic fixture
 table, knockout, and head-to-head contracts, creates a fresh repository
 instance, and verifies:
@@ -51,7 +56,8 @@ instance, and verifies:
 - persisted standings with an explicit snapshot source; and
 - persisted knockout rounds and fixture linkage; and
 - persisted head-to-head scores and team identities; and
-- rows in all six runtime read tables.
+- EPL scoring provenance linked to the started CDL fixture; and
+- rows in all seven runtime read tables.
 
-`epl_fixtures` remains migrated but is not yet part of the synthetic scoring
-context or clean-database runtime proof. That is the next #67 increment.
+All EPL rows in this proof are explicitly marked synthetic. They exercise the
+versioned runtime contract without claiming to represent real FPL history.

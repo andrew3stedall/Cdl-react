@@ -6,7 +6,7 @@ Define weekly team selection, lineup rollover, auto-adjustment, validation, capt
 
 ## Status
 
-Checkpoint 2 complete.
+Checkpoint 2 complete. The primary team-selection API now reports persisted fixture-lock state and rejects lineup or chip mutations with a structured `409 conflict` once locked. The current React page does not yet consume this API state.
 
 ## Business Rules
 
@@ -53,6 +53,13 @@ commissioner_corrected
 - Auto-remove unowned players from unlocked lineups.
 - Lock lineups at FPL deadline.
 - Get lineup readiness for managers/commissioner.
+
+### Implemented primary API lock contract
+
+- `GET /api/team-selection` includes `fixture_lock` metadata.
+- `PUT /api/team-selection/lineup` rejects locked gameweeks before validation or persistence.
+- `PUT /api/team-selection/chips/{chip_id}` rejects chip changes while locked.
+- Conflict responses include the lock reason, scope, timestamp, fixture identifier, and `lineup-locking` rule reference.
 
 ## React Requirements
 

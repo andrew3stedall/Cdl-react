@@ -20,6 +20,34 @@ const unauthenticatedSession = {
   expiresAt: null,
 };
 
+function teamSelectionResponse(locked = false) {
+  return {
+    manager_team: { id: 'team-castle', name: 'Castle FC', short_name: 'CFC' },
+    gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1 },
+    lineup: [
+      { id: 'player-1', display_name: 'Alex Keeper', position: 'GKP', team: { id: 'epl-ars', name: 'Arsenal', short_name: 'ARS' }, epl_team: { id: 'epl-ars', name: 'Arsenal', short_name: 'ARS' }, slot: 'starter', slot_order: 1, is_captain: false, is_vice_captain: false },
+      { id: 'player-2', display_name: 'Ben Defender', position: 'DEF', team: { id: 'epl-mci', name: 'Manchester City', short_name: 'MCI' }, epl_team: { id: 'epl-mci', name: 'Manchester City', short_name: 'MCI' }, slot: 'starter', slot_order: 2, is_captain: false, is_vice_captain: false },
+      { id: 'player-3', display_name: 'Casey Midfielder', position: 'MID', team: { id: 'epl-ars', name: 'Arsenal', short_name: 'ARS' }, epl_team: { id: 'epl-ars', name: 'Arsenal', short_name: 'ARS' }, slot: 'starter', slot_order: 3, is_captain: true, is_vice_captain: false },
+      { id: 'player-4', display_name: 'Riley Forward', position: 'FWD', team: { id: 'epl-mci', name: 'Manchester City', short_name: 'MCI' }, epl_team: { id: 'epl-mci', name: 'Manchester City', short_name: 'MCI' }, slot: 'bench', slot_order: 1, is_captain: false, is_vice_captain: true },
+      { id: 'player-5', display_name: 'Morgan Reserve', position: 'MID', team: { id: 'epl-ars', name: 'Arsenal', short_name: 'ARS' }, epl_team: { id: 'epl-ars', name: 'Arsenal', short_name: 'ARS' }, slot: 'reserve', slot_order: 1, is_captain: false, is_vice_captain: false },
+    ],
+    chips: [
+      { id: 'wildcard', name: 'Wildcard', status: 'available', rule_reference: null },
+      { id: 'bench-boost', name: 'Bench Boost', status: 'used', rule_reference: null },
+      { id: 'triple-captain', name: 'Triple Captain', status: 'available', rule_reference: null },
+    ],
+    validation_messages: [],
+    fixture_lock: {
+      locked,
+      fixture_id: locked ? 'fixture-1' : null,
+      fixture_type: locked ? 'epl' : null,
+      lock_scope: locked ? 'gameweek' : null,
+      locked_at: locked ? '2026-07-26T09:00:00Z' : null,
+      reason: locked ? 'FPL deadline passed.' : null,
+    },
+  };
+}
+
 const teams = [
   { id: 'team-castle', name: 'Castle FC', short_name: 'CAS' },
   { id: 'team-river', name: 'River Rangers', short_name: 'RIV' },
@@ -124,7 +152,7 @@ function fdrView(view, selectedTeamId) {
   };
 }
 
-async function mockApi(page, { authenticated = true } = {}) {
+async function mockApi(page, { authenticated = true, teamSelectionLocked = false } = {}) {
   await page.route('**/api/**', async (route) => {
     const url = new URL(route.request().url());
     const path = url.pathname;
@@ -133,6 +161,24 @@ async function mockApi(page, { authenticated = true } = {}) {
       return route.fulfill({
         json: authenticated ? authenticatedSession : unauthenticatedSession,
       });
+    }
+
+    if (path === '/api/team-selection') {
+      return route.fulfill({ json: teamSelectionResponse(teamSelectionLocked) });
+    }
+
+    if (path === '/api/team-selection/lineup' || path.startsWith('/api/team-selection/chips/')) {
+      if (teamSelectionLocked) {
+        return route.fulfill({
+          status: 409,
+          json: {
+            code: 'conflict',
+            message: 'Team selection is locked for this gameweek.',
+            details: { reason: 'FPL deadline passed.', rule_reference: 'lineup-locking' },
+          },
+        });
+      }
+      return route.fulfill({ json: teamSelectionResponse(false) });
     }
 
     if (path === '/api/health' || path === '/health') {
@@ -392,6 +438,29 @@ async function testShellAndLeagueNavigation(page, viewportName) {
   await page.getByRole('heading', { name: 'League Fixtures and Table' }).waitFor();
 }
 
+async function testLockedTeamSelection(browser, viewport) {
+  const context = await browser.newContext({ viewport });
+  const page = await context.newPage();
+  await mockApi(page, { teamSelectionLocked: true });
+
+  await page.goto(baseUrl + '/team-selection', { waitUntil: 'networkidle' });
+  await expectStatus(page, 'Lineup locked. FPL deadline passed.');
+  await page.getByRole('region', { name: 'Lineup lock' }).getByText('View-only lineup').waitFor();
+
+  const allSelectsDisabled = await page.locator('select').evaluateAll((controls) =>
+    controls.length > 0 && controls.every((control) => control.disabled),
+  );
+  if (!allSelectsDisabled) {
+    throw new Error('Expected every lineup movement control to be disabled after fixture lock');
+  }
+
+  if (!(await page.getByRole('button', { name: 'Save lineup' }).isDisabled())) {
+    throw new Error('Expected Save lineup to be disabled after fixture lock');
+  }
+
+  await context.close();
+}
+
 async function testUnauthenticatedSessionBoundary(browser, viewport) {
   const context = await browser.newContext({ viewport });
   const page = await context.newPage();
@@ -421,6 +490,7 @@ async function run() {
 
   for (const viewport of viewports) {
     await testUnauthenticatedSessionBoundary(browser, viewport);
+    await testLockedTeamSelection(browser, viewport);
 
     const context = await browser.newContext({ viewport });
     const page = await context.newPage();

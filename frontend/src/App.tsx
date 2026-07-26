@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import { canAccessProtectedRoute } from './auth';
+import { canAccessProtectedRoute, getSession, getUnauthenticatedSession } from './auth';
 import { AppShell } from './AppShell';
 import { AnalyticsDashboardPage } from './AnalyticsDashboardPage';
 import type { RuleSection, SessionState } from './contracts';
@@ -71,17 +71,6 @@ const featuredRules: RuleSection[] = [
   },
 ];
 
-const defaultSession: SessionState = {
-  isAuthenticated: true,
-  user: {
-    id: 'demo-manager',
-    email: 'manager@example.com',
-    displayName: 'CDL Manager',
-    roles: ['manager'],
-  },
-  expiresAt: null,
-};
-
 interface AppProps {
   dashboardClient?: DashboardClient;
   fdrClient?: FdrClient;
@@ -97,12 +86,41 @@ export function App({
   initialPath = window.location.pathname,
   leagueClient,
   preferenceClient,
-  session = defaultSession,
+  session,
 }: AppProps) {
   const [currentPath, setCurrentPath] = useState(initialPath);
+  const [activeSession, setActiveSession] = useState<SessionState | null>(session ?? null);
   const [isMobileNavigationOpen, setMobileNavigationOpen] = useState(false);
   const [refreshCount, setRefreshCount] = useState(0);
   const preset = getDefaultThemePreset();
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (session !== undefined) {
+      setActiveSession(session);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    setActiveSession(null);
+    void getSession()
+      .then((resolvedSession) => {
+        if (!cancelled) {
+          setActiveSession(resolvedSession);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setActiveSession(getUnauthenticatedSession());
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [session]);
 
   useEffect(() => {
     const handlePopState = () => {
@@ -126,7 +144,18 @@ export function App({
     setCurrentPath(href);
   };
 
-  if (!canAccessProtectedRoute(session)) {
+  if (activeSession === null) {
+    return (
+      <main className="session-boundary" aria-label="Protected route session state">
+        <h1>Castle Draft League</h1>
+        <div className="login-required" role="status">
+          Checking your session…
+        </div>
+      </main>
+    );
+  }
+
+  if (!canAccessProtectedRoute(activeSession)) {
     return (
       <main className="session-boundary" aria-label="Protected route session state">
         <h1>Castle Draft League</h1>
@@ -194,7 +223,7 @@ export function App({
         onRefresh={() => {
           setRefreshCount((count) => count + 1);
         }}
-        session={session}
+        session={activeSession}
       >
         <p className="eyebrow">Data refreshes: {refreshCount}</p>
         {routeContent}

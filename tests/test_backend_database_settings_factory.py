@@ -9,6 +9,7 @@ from cdl_api.repositories.postgres_auth import (
     PostgreSQLSessionRepository,
     PostgreSQLUserRepository,
 )
+from cdl_api.repositories.postgres_league_fixtures import PostgreSQLLeagueRepository
 from cdl_api.repositories.postgres_preferences import (
     PostgreSQLUserPreferenceRepository,
 )
@@ -60,6 +61,7 @@ def test_postgres_repository_mode_builds_database_repositories(
         lambda _: session_factory,
     )
     monkeypatch.setattr(PostgreSQLUserRepository, "seed_demo_user", lambda _: None)
+    monkeypatch.setattr(PostgreSQLLeagueRepository, "seed_synthetic_data", lambda _: None)
 
     repositories = build_repositories(settings)
 
@@ -67,6 +69,7 @@ def test_postgres_repository_mode_builds_database_repositories(
     assert isinstance(repositories.sessions, PostgreSQLSessionRepository)
     assert isinstance(repositories.preferences, PostgreSQLUserPreferenceRepository)
     assert isinstance(repositories.team_selection, PostgreSQLTeamSelectionRepository)
+    assert isinstance(repositories.league, PostgreSQLLeagueRepository)
 
 
 def test_feature_and_wiki_document_factory_handoff() -> None:

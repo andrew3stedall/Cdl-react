@@ -1,6 +1,6 @@
 # GitHub App Screenshot Artifacts
 
-The `App Screenshots` workflow lets you see the current app UI from GitHub without deploying staging or production.
+The `App Screenshots` workflow provides repeatable visual evidence of the current application without deploying staging or production.
 
 ## How to run it
 
@@ -11,6 +11,8 @@ The `App Screenshots` workflow lets you see the current app UI from GitHub witho
 5. Open the completed run.
 6. Download the `app-screenshots` artifact.
 
+The workflow also runs on pull requests so layout regressions are caught before merge.
+
 ## Captured routes
 
 - `/`
@@ -20,9 +22,33 @@ The `App Screenshots` workflow lets you see the current app UI from GitHub witho
 - `/squad-management`
 - `/team-selection`
 
-## Scope
+## Viewports
 
-The workflow uses the Vite frontend locally inside GitHub Actions and captures mobile-sized screenshots. API calls are mocked inside the screenshot script so this does not require GCP, Cloud SQL, staging infrastructure, production infrastructure, or secrets.
+Every route is captured at three named breakpoints:
+
+| Name | Viewport | Purpose |
+| --- | --- | --- |
+| `mobile` | 390 × 844 at 2× scale | Common phone layout and touch-oriented navigation |
+| `tablet` | 768 × 1024 | Intermediate responsive behaviour |
+| `desktop` | 1440 × 900 | Primary desktop information hierarchy |
+
+The artifact groups PNG files into `mobile/`, `tablet/`, and `desktop/` directories. This produces 18 screenshots per run.
+
+## Automated layout checks
+
+Before each screenshot is written, the capture script verifies that:
+
+- the route renders a `main` landmark;
+- the document does not have horizontal overflow at the selected viewport; and
+- web fonts have finished loading.
+
+A failed check fails the workflow and identifies the route and viewport. These checks are deliberately narrow: they catch structural responsive regressions but do not replace manual design review, keyboard testing, or semantic accessibility testing.
+
+## Scope and data
+
+The workflow runs the Vite frontend locally inside GitHub Actions. API calls are fulfilled with deterministic representative fixtures inside the screenshot script, so this does not require GCP, Cloud SQL, staging infrastructure, production infrastructure, historical exports, or secrets.
+
+The images prove that routes render consistently against the fixture contract. They do not prove live API integration or PostgreSQL persistence.
 
 ## Output
 

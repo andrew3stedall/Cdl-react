@@ -53,11 +53,12 @@ terraform -chdir=infra/terraform/environments/staging validate
 
 ## State
 
-The bootstrap starts with local state only long enough to create its protected
-state bucket. Immediately after the first bootstrap apply, copy
-`bootstrap/backend.tf.example` to `bootstrap/backend.tf` and run:
+The first bootstrap apply used local state only long enough to create its
+protected state bucket. The committed `bootstrap/backend.tf` now configures the
+GCS backend. After that initial apply, run:
 
 ```bash
+git pull --ff-only
 terraform -chdir=infra/terraform/bootstrap init -migrate-state
 ```
 

@@ -149,4 +149,4 @@ def test_team_selection_consumes_api_lock_state() -> None:
     assert "fixtureLock" in api_client
     assert "HttpTeamSelectionClient" in api_client
     assert "fixtureLock.locked" in page
-    assert "Save team selection" in page
+    assert "Save lineup" in page

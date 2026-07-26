@@ -56,15 +56,17 @@ Every route is captured at three named breakpoints:
 
 The artifact groups PNG files into `mobile/`, `tablet/`, and `desktop/` directories. This produces 18 screenshots per run.
 
-## Automated layout checks
+## Automated layout and accessibility checks
 
 Before each screenshot is written, the capture script verifies that:
 
 - the route renders a `main` landmark;
-- the document does not have horizontal overflow at the selected viewport; and
-- web fonts have finished loading.
+- the document does not have horizontal overflow at the selected viewport;
+- web fonts have finished loading;
+- axe-core reports no WCAG 2.0/2.1 A or AA violations with serious or critical impact; and
+- pressing Tab reaches a visible, named element that matches `:focus-visible`.
 
-A failed check fails the workflow and identifies the route and viewport. These checks are deliberately narrow: they catch structural responsive regressions but do not replace manual design review, keyboard testing, or semantic accessibility testing.
+The checks run for every route at mobile, tablet, and desktop widths. A failure identifies the route, viewport, rule, and affected target where available. This automated gate does not replace manual screen-reader, complete keyboard-journey, contrast judgment, touch-target, or reduced-motion testing.
 
 ## Scope and data
 

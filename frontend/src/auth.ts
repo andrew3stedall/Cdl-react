@@ -13,9 +13,35 @@ export interface LogoutResponse {
   session: SessionState;
 }
 
+export interface SessionClient {
+  getSession(): Promise<SessionState>;
+  logout(): Promise<LogoutResponse>;
+}
+
 export type AuthResult<T> =
   | { ok: true; data: T }
   | { ok: false; error: ApiErrorResponse };
+
+interface ApiSessionUser {
+  id: string;
+  email: string;
+  display_name: string;
+  roles: string[];
+}
+
+interface ApiSessionState {
+  is_authenticated: boolean;
+  user: ApiSessionUser | null;
+  expires_at: string | null;
+}
+
+interface ApiLoginResponse {
+  session: ApiSessionState;
+}
+
+interface ApiLogoutResponse {
+  session: ApiSessionState;
+}
 
 const unauthenticatedSession: SessionState = {
   isAuthenticated: false,
@@ -28,7 +54,9 @@ export function getUnauthenticatedSession(): SessionState {
 }
 
 export function canAccessProtectedRoute(session: SessionState): boolean {
-  return session.isAuthenticated && session.user !== null;
+  if (!session.isAuthenticated || session.user === null) return false;
+  if (session.expiresAt === null) return true;
+  return new Date(session.expiresAt).getTime() > Date.now();
 }
 
 export function getProtectedRouteRedirect(session: SessionState, loginPath = '/login'): string | null {
@@ -48,7 +76,8 @@ export async function login(request: LoginRequest): Promise<AuthResult<LoginResp
     return { ok: false, error: payload as ApiErrorResponse };
   }
 
-  return { ok: true, data: payload as LoginResponse };
+  const loginResponse = payload as ApiLoginResponse;
+  return { ok: true, data: { session: mapSession(loginResponse.session) } };
 }
 
 export async function getSession(): Promise<SessionState> {
@@ -60,7 +89,7 @@ export async function getSession(): Promise<SessionState> {
     return getUnauthenticatedSession();
   }
 
-  return (await response.json()) as SessionState;
+  return mapSession((await response.json()) as ApiSessionState);
 }
 
 export async function logout(): Promise<LogoutResponse> {
@@ -68,6 +97,26 @@ export async function logout(): Promise<LogoutResponse> {
     method: 'POST',
     credentials: 'include',
   });
+  const payload = (await response.json()) as ApiLogoutResponse;
+  return { session: mapSession(payload.session) };
+}
 
-  return (await response.json()) as LogoutResponse;
+export const defaultSessionClient: SessionClient = {
+  getSession,
+  logout,
+};
+
+function mapSession(session: ApiSessionState): SessionState {
+  return {
+    isAuthenticated: session.is_authenticated,
+    user: session.user
+      ? {
+          id: session.user.id,
+          email: session.user.email,
+          displayName: session.user.display_name,
+          roles: session.user.roles,
+        }
+      : null,
+    expiresAt: session.expires_at,
+  };
 }

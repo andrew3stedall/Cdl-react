@@ -36,8 +36,7 @@ _query_service = WidgetQueryService()
 
 
 class DashboardMetricRepository(Protocol):
-    def list_metrics(self) -> list[DashboardMetric]:
-        ...
+    def list_metrics(self) -> list[DashboardMetric]: ...
 
 
 def get_dashboard_metric_repository(

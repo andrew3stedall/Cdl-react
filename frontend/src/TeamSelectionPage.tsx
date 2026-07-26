@@ -8,6 +8,8 @@ import {
   HttpTeamSelectionClient,
   TeamSelectionApiError,
   type TeamSelectionClient,
+  type TeamSelectionFixture,
+  type TeamSelectionFixtureSummary,
   type TeamSelectionPlayer,
   type TeamSelectionSlot,
   type TeamSelectionSnapshot,
@@ -26,6 +28,7 @@ export function TeamSelectionPage({
   teamSelectionClient = defaultTeamSelectionClient,
 }: TeamSelectionPageProps) {
   const [snapshot, setSnapshot] = useState<TeamSelectionSnapshot | null>(null);
+  const [fixtureSummary, setFixtureSummary] = useState<TeamSelectionFixtureSummary | null>(null);
   const [loadState, setLoadState] = useState<'loading' | 'loaded' | 'error'>('loading');
   const [message, setMessage] = useState('Loading team selection.');
 
@@ -35,9 +38,13 @@ export function TeamSelectionPage({
     async function loadTeamSelection() {
       setLoadState('loading');
       try {
-        const loaded = await teamSelectionClient.getTeamSelection();
+        const [loaded, loadedFixtureSummary] = await Promise.all([
+          teamSelectionClient.getTeamSelection(),
+          teamSelectionClient.getFixtureSummary(),
+        ]);
         if (isActive) {
           setSnapshot(loaded);
+          setFixtureSummary(loadedFixtureSummary);
           setMessage(
             loaded.fixtureLock.locked
               ? `Lineup locked. ${loaded.fixtureLock.reason ?? 'The gameweek deadline has passed.'}`
@@ -185,21 +192,48 @@ export function TeamSelectionPage({
             </Card>
           </section>
 
-          <section aria-label="Fixture and table summaries" className="team-selection-grid">
-            <Card className="team-selection-card">
-              <h2>CDL Fixture</h2>
-              <p>Castle FC vs Rival Town</p>
-              <p>CDL table: Castle FC, Rival Town</p>
-            </Card>
-            <Card className="team-selection-card">
-              <h2>EPL Fixture</h2>
-              <p>Arsenal vs Manchester City</p>
-              <p>EPL table: Arsenal, Manchester City</p>
-            </Card>
-          </section>
+          {fixtureSummary ? (
+            <section aria-label="Fixture and table summaries" className="team-selection-grid">
+              <FixtureSummaryCard
+                fixtures={fixtureSummary.cdlFixtures}
+                heading="CDL Fixtures"
+                table={fixtureSummary.cdlTable}
+              />
+              <FixtureSummaryCard
+                fixtures={fixtureSummary.eplFixtures}
+                heading="EPL Fixtures"
+                table={fixtureSummary.eplTable}
+              />
+            </section>
+          ) : null}
         </>
       ) : null}
     </main>
+  );
+}
+
+
+interface FixtureSummaryCardProps {
+  fixtures: TeamSelectionFixture[];
+  heading: string;
+  table: TeamSelectionFixtureSummary['cdlTable'];
+}
+
+function FixtureSummaryCard({ fixtures, heading, table }: FixtureSummaryCardProps) {
+  return (
+    <Card className="team-selection-card">
+      <h2>{heading}</h2>
+      {fixtures.length > 0 ? (
+        fixtures.map((fixture) => (
+          <p key={fixture.id}>
+            {fixture.homeTeam.name} vs {fixture.awayTeam.name}
+          </p>
+        ))
+      ) : (
+        <p>No fixtures scheduled.</p>
+      )}
+      <p>{heading.startsWith('CDL') ? 'CDL' : 'EPL'} table: {table.map((team) => team.name).join(', ')}</p>
+    </Card>
   );
 }
 

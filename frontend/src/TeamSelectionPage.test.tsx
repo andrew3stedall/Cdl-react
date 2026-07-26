@@ -29,6 +29,10 @@ describe('TeamSelectionPage', () => {
     expect(container.textContent).toContain('Bench');
     expect(container.textContent).toContain('Reserves');
     expect(container.textContent).toContain('Castle FC vs Rival Town');
+    expect(container.querySelectorAll('.team-selection-player[role="cell"]')).toHaveLength(5);
+    expect(container.querySelectorAll('.team-selection-position[role="cell"]')).toHaveLength(5);
+    expect(container.querySelectorAll('.team-selection-team[role="cell"]')).toHaveLength(5);
+    expect(container.querySelectorAll('.team-selection-move[role="cell"]')).toHaveLength(5);
   });
 
   test('activates available chip and rejects used chip activation', async () => {

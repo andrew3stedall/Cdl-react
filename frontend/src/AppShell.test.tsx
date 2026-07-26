@@ -12,6 +12,17 @@ const testGlobal = globalThis as typeof globalThis & {
 };
 testGlobal.IS_REACT_ACT_ENVIRONMENT = true;
 
+const authenticatedSession: SessionState = {
+  isAuthenticated: true,
+  user: {
+    id: 'test-manager',
+    email: 'manager@example.com',
+    displayName: 'Test Manager',
+    roles: ['manager'],
+  },
+  expiresAt: null,
+};
+
 class MemoryPreferenceClient implements PreferenceClient {
   preferences: UserPreferences = { themePreset: 'classic' };
 
@@ -93,7 +104,7 @@ class MemoryLeagueClient implements LeagueClient {
 function renderApp({
   preferenceClient = new MemoryPreferenceClient(),
   initialPath = '/dashboard',
-  session,
+  session = authenticatedSession,
   leagueClient = new MemoryLeagueClient(),
 }: {
   preferenceClient?: PreferenceClient;

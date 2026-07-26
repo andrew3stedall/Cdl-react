@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react';
 
-import { canAccessProtectedRoute, getSession, getUnauthenticatedSession } from './auth';
+import {
+  canAccessProtectedRoute,
+  defaultSessionClient,
+  getUnauthenticatedSession,
+  type SessionClient,
+} from './auth';
 import { AppShell } from './AppShell';
 import { AnalyticsDashboardPage } from './AnalyticsDashboardPage';
 import type { RuleSection, SessionState } from './contracts';
@@ -79,6 +84,7 @@ interface AppProps {
   leagueClient?: LeagueClient;
   preferenceClient?: PreferenceClient;
   session?: SessionState;
+  sessionClient?: SessionClient;
   teamSelectionClient?: TeamSelectionClient;
 }
 
@@ -89,6 +95,7 @@ export function App({
   leagueClient,
   preferenceClient,
   session,
+  sessionClient = defaultSessionClient,
   teamSelectionClient,
 }: AppProps) {
   const [currentPath, setCurrentPath] = useState(initialPath);
@@ -108,7 +115,7 @@ export function App({
     }
 
     setActiveSession(null);
-    void getSession()
+    void sessionClient.getSession()
       .then((resolvedSession) => {
         if (!cancelled) {
           setActiveSession(resolvedSession);
@@ -123,7 +130,7 @@ export function App({
     return () => {
       cancelled = true;
     };
-  }, [session]);
+  }, [session, sessionClient]);
 
   useEffect(() => {
     const handlePopState = () => {
@@ -136,6 +143,31 @@ export function App({
       window.removeEventListener('popstate', handlePopState);
     };
   }, []);
+
+
+  const refreshActiveSession = async () => {
+    if (session !== undefined) return;
+    setActiveSession(null);
+    try {
+      setActiveSession(await sessionClient.getSession());
+    } catch {
+      setActiveSession(getUnauthenticatedSession());
+    }
+  };
+
+  const handleSignOut = async () => {
+    setActiveSession(null);
+    if (session !== undefined) {
+      setActiveSession(getUnauthenticatedSession());
+      return;
+    }
+    try {
+      const response = await sessionClient.logout();
+      setActiveSession(response.session);
+    } catch {
+      setActiveSession(getUnauthenticatedSession());
+    }
+  };
 
   const handleNavigate = (href: string) => {
     try {
@@ -165,6 +197,11 @@ export function App({
         <div className="login-required" role="status">
           Sign in to access the Castle Draft League application shell.
         </div>
+        {session === undefined ? (
+          <button onClick={() => void refreshActiveSession()} type="button">
+            Retry session
+          </button>
+        ) : null}
       </main>
     );
   }
@@ -225,7 +262,9 @@ export function App({
         }}
         onRefresh={() => {
           setRefreshCount((count) => count + 1);
+          void refreshActiveSession();
         }}
+        onSignOut={() => void handleSignOut()}
         session={activeSession}
       >
         <p className="eyebrow">Data refreshes: {refreshCount}</p>

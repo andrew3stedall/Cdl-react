@@ -92,9 +92,9 @@ def test_plan_workflow_accepts_only_private_immutable_runtime_inputs() -> None:
     ]:
         assert phrase in content
 
-    assert "allow_public_invoker:" not in content.split("workflow_dispatch:", maxsplit=1)[1].split(
-        "permissions:", maxsplit=1
-    )[0]
+    dispatch_section = content.split("workflow_dispatch:", maxsplit=1)[1]
+    dispatch_inputs = dispatch_section.split("permissions:", maxsplit=1)[0]
+    assert "allow_public_invoker:" not in dispatch_inputs
 
 
 def test_adr_keeps_apply_migrations_and_public_access_separately_gated() -> None:

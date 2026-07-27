@@ -159,6 +159,8 @@ jobs:
           test -s "${RUNNER_TEMP}/staging-plan-summary.md"
           grep -Fq "# Staging Terraform plan review" \
             "${RUNNER_TEMP}/staging-plan-summary.md"
+          grep -Fq "## Detected remote-state drift" \
+            "${RUNNER_TEMP}/staging-plan-summary.md"
           grep -Fq "Binary plan and machine-readable JSON: not retained or uploaded" \
             "${RUNNER_TEMP}/staging-plan-summary.md"
 

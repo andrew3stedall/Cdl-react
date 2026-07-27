@@ -123,8 +123,23 @@ The PostgreSQL repository provides these release-path behaviours:
 - duplicate match keys and conflicting adapter mappings create diagnostics;
 - unsupported knockout export versions fail closed.
 
+## Bounded head-to-head projection
+
+`synthetic-head-to-head-export/v1` normalizes one matchup aggregate into `entity_type=head_to_head_record`. `PostgreSQLHistoricalHeadToHeadImportRepository` projects into `head_to_head_records` only when every mapped fixture and persisted result exists.
+
+- the adapter validates `played = wins + draws + losses` and equal fixture-mapping list lengths;
+- the repository recomputes wins, draws, losses, points for, and points against from persisted results;
+- an aggregate mismatch fails closed rather than trusting source totals;
+- dry-run reports the projection without database writes;
+- missing mappings, fixtures, or results create open review evidence and no matchup row;
+- import evidence and the matchup row commit in one transaction;
+- exact replay is idempotent;
+- existing matchup content is never silently overwritten; conflicting content raises before commit and rolls back import changes;
+- duplicate matchup keys and conflicting adapter mappings create diagnostics;
+- unsupported head-to-head export versions fail closed.
+
 These adapters prove normalization and transactional projection for deterministic synthetic shapes only. They do not establish compatibility with a real export format or authorize automatic replacement of existing domain records.
 
 ## Remaining scope
 
-A real historical export still needs a separately validated parser/adapter, source authenticity and schema evidence, mapping approval, and coverage for head-to-head and other entity projections. Synthetic release-path tests do not establish compatibility with any real export format.
+A real historical export still needs a separately validated parser/adapter, source authenticity and schema evidence, and mapping approval. Synthetic release-path tests do not establish compatibility with any real export format.

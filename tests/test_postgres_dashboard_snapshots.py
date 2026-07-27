@@ -43,11 +43,13 @@ def _assert_snapshot_round_trip(session_factory: sessionmaker[Session]) -> None:
     )
 
     assert empty_response.status_code == 200
-    assert empty_response.json()["series"] == [{
-        "metric_id": "fantasy_points",
-        "label": "Points by CDL team",
-        "points": [],
-    }]
+    assert empty_response.json()["series"] == [
+        {
+            "metric_id": "fantasy_points",
+            "label": "Points by CDL team",
+            "points": [],
+        }
+    ]
     assert empty_response.json()["rows"] == []
     assert empty_response.json()["empty"] is True
     assert "Castle FC" not in empty_response.text

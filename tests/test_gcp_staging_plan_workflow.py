@@ -85,6 +85,7 @@ def test_plan_summary_redacts_values_and_lists_cost_sensitive_changes() -> None:
     assert "Safety gate: **PASS**" in summary
     assert "google_sql_database_instance" in summary
     assert "Cloud SQL compute" in summary
+    assert "reviewed staging design" in summary
     assert "must-not-appear" not in summary
     assert "abc123" in summary
 
@@ -116,8 +117,8 @@ def test_plan_summary_blocks_public_principals() -> None:
     plan = _plan(
         [
             {
-                "address": "google_storage_bucket_iam_member.public",
-                "type": "google_storage_bucket_iam_member",
+                "address": "google_cloud_run_v2_service_iam_member.public",
+                "type": "google_cloud_run_v2_service_iam_member",
                 "change": {
                     "actions": ["create"],
                     "after": {"member": "allUsers"},
@@ -138,6 +139,33 @@ def test_plan_summary_blocks_public_principals() -> None:
     assert "BLOCKED: public IAM principal detected" in summary
 
 
+def test_plan_summary_blocks_unreviewed_resource_types() -> None:
+    plan = _plan(
+        [
+            {
+                "address": "google_compute_instance.unreviewed",
+                "type": "google_compute_instance",
+                "change": {
+                    "actions": ["create"],
+                    "after": {"machine_type": "e2-medium"},
+                },
+            },
+        ]
+    )
+
+    summary, exit_code = summarize_plan(
+        plan,
+        plan_sha256="abc123",
+        plan_exit_code=2,
+        source_sha="deadbeef",
+        run_url="",
+    )
+
+    assert exit_code == 4
+    assert "BLOCKED: unreviewed staging resource type detected" in summary
+    assert "Unreviewed: `google_compute_instance`" in summary
+
+
 def test_runbook_documents_saved_plan_review_boundary() -> None:
     content = RUNBOOK.read_text(encoding="utf-8")
 
@@ -146,6 +174,7 @@ def test_runbook_documents_saved_plan_review_boundary() -> None:
         "binary plan and machine-readable JSON are deleted",
         "destructive delete or replacement",
         "public IAM principal",
+        "unreviewed Terraform resource type",
         "cost-sensitive resource categories",
         "never applies infrastructure",
     ]:

@@ -123,9 +123,7 @@ def test_knockout_adapter_projection_reviews_and_conflict_rollback() -> None:
     duplicate = _document(batch_id="knockout-duplicate")
     duplicate["rows"].append(dict(duplicate["rows"][0]))
     adapted = adapter.adapt(duplicate)
-    assert adapted.review_diagnostics == [
-        "duplicate knockout match key: knockout-final-source-1"
-    ]
+    assert adapted.review_diagnostics == ["duplicate knockout match key: knockout-final-source-1"]
     assert len(adapted.batch.records) == 1
 
     invalid_round = _document(batch_id="knockout-invalid-round")

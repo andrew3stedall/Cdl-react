@@ -1,5 +1,6 @@
 """Fixture difficulty rating contracts."""
 
+from datetime import datetime
 from enum import StrEnum
 
 from pydantic import BaseModel, Field
@@ -65,3 +66,18 @@ class FixtureDifficultyCombinedResponse(BaseModel):
     attack: FixtureDifficultyResponse
     defence: FixtureDifficultyResponse
     scales: list[FixtureDifficultyScaleStep]
+
+
+class FixtureDifficultyCalculationInputAudit(BaseModel):
+    """Versioned metadata linking stored ratings to one calculation input run."""
+
+    id: str
+    season: str
+    contract_version: str
+    algorithm_version: str
+    calculation_run_id: str
+    source: str
+    captured_at: datetime
+    fixture_count: int = Field(ge=0)
+    input_sha256: str = Field(min_length=64, max_length=64)
+    synthetic: bool

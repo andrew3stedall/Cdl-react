@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 
 import pytest
 from sqlalchemy import create_engine, insert, select
@@ -230,7 +231,7 @@ def test_squad_adapter_projection_reviews_and_conflict_rollback() -> None:
                 draft_team_id="draft-team-1",
                 player_id="player-1",
                 roster_slot_id=None,
-                started_at="2025-01-01T00:00:00+00:00",
+                started_at=datetime.fromisoformat("2025-01-01T00:00:00+00:00"),
                 ended_at=None,
             )
         )
@@ -259,17 +260,8 @@ def test_clean_postgres_squad_projection_uses_migrated_tables() -> None:
     engine = create_engine(os.environ["CDL_DATABASE_URL"])
     session_factory = sessionmaker(bind=engine, class_=Session)
     with session_factory() as session:
-        tables = (
-            squad_ownerships_table,
-            *reversed(HISTORICAL_IMPORT_PERSISTENCE_TABLES),
-            fpl_players_table,
-            draft_teams_table,
-            seasons_table,
-            epl_teams_table,
-            fpl_positions_table,
-            leagues_table,
-        )
-        for table in tables:
+        session.execute(squad_ownerships_table.delete())
+        for table in reversed(HISTORICAL_IMPORT_PERSISTENCE_TABLES):
             session.execute(table.delete())
         session.commit()
     _seed_dependencies(session_factory)

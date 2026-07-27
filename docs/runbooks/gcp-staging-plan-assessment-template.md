@@ -26,10 +26,11 @@ Reject evidence assembled from different workflow runs or missing any identity f
 - Update count:
 - Delete count:
 - Replacement count:
+- Remote-state drift detected: yes / no
 - Public access principal detected: yes / no
 - Unreviewed resource type detected: yes / no
 
-A delete, replacement, public access principal, unreviewed resource type, failed check, or missing evidence field blocks progression.
+A delete, replacement, remote-state drift, public access principal, unreviewed resource type, failed check, or missing evidence field blocks progression.
 
 ## Changed resources
 
@@ -38,6 +39,14 @@ A delete, replacement, public access principal, unreviewed resource type, failed
 |  |  |  |  |  |
 
 Every changed address must have an expected reason traceable to reviewed repository configuration.
+
+## Drift assessment
+
+| Drift action | Resource type | Resource address | External cause | Reconciliation evidence |
+| --- | --- | --- | --- | --- |
+|  |  |  |  |  |
+
+Every drifted address must have an explained external cause and reconciliation evidence. Generate a fresh plan after reconciliation; do not progress using an assessment that records unresolved drift.
 
 ## Cost assessment
 
@@ -79,7 +88,7 @@ Do not omit backup, transaction-log, versioned-object, log-ingestion, operation,
 - Artifact Registry cleanup remains dry-run: yes / no
 - Monitoring recipients created by Terraform: yes / no
 
-Any public access, production reference, sensitive value, destructive action, disabled deletion protection, unexpected IAM grant, or unexplained security-sensitive change blocks progression.
+Any public access, production reference, sensitive value, destructive action, unresolved drift, disabled deletion protection, unexpected IAM grant, or unexplained security-sensitive change blocks progression.
 
 ## Operational boundary
 

@@ -68,6 +68,18 @@ class FixtureDifficultyCombinedResponse(BaseModel):
     scales: list[FixtureDifficultyScaleStep]
 
 
+class FixtureDifficultyCalculationFixtureInput(BaseModel):
+    """Versioned fixture input consumed by the deterministic FDR owner."""
+
+    id: str
+    team: TeamSummary
+    opponent: TeamSummary
+    gameweek: int = Field(ge=1, le=38)
+    venue: str = Field(pattern="^[HA]$")
+    attack_difficulty_score: float = Field(ge=1, le=5)
+    defence_difficulty_score: float = Field(ge=1, le=5)
+
+
 class FixtureDifficultyCalculationInputAudit(BaseModel):
     """Versioned metadata linking stored ratings to one calculation input run."""
 
@@ -78,6 +90,17 @@ class FixtureDifficultyCalculationInputAudit(BaseModel):
     calculation_run_id: str
     source: str
     captured_at: datetime
+    calculated_at: datetime
     fixture_count: int = Field(ge=0)
     input_sha256: str = Field(min_length=64, max_length=64)
     synthetic: bool
+
+
+class FixtureDifficultyCalculationRunResult(BaseModel):
+    """Idempotent persistence result for one FDR calculation run."""
+
+    season: str
+    calculation_run_id: str
+    algorithm_version: str
+    created_ratings: int = Field(ge=0)
+    unchanged_ratings: int = Field(ge=0)

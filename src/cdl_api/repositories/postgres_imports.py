@@ -8,6 +8,7 @@ from sqlalchemy import JSON, Column, DateTime, MetaData, String, Table, insert, 
 from sqlalchemy.orm import Session
 
 from cdl_api.contracts.imports import HistoricalImportAudit, HistoricalImportBatch
+from cdl_api.repositories.postgres_league_fixtures import cdl_fixtures_table
 
 metadata = MetaData()
 
@@ -39,7 +40,7 @@ HISTORICAL_IMPORT_PERSISTENCE_TABLES = (
 
 
 class PostgreSQLHistoricalImportRepository:
-    """Validate and persist one versioned import batch without domain writes."""
+    """Persist one versioned import batch and its supported domain projection."""
 
     def __init__(self, session_factory: Callable[[], Session]) -> None:
         self._session_factory = session_factory
@@ -47,9 +48,7 @@ class PostgreSQLHistoricalImportRepository:
     @staticmethod
     def batch_digest(batch: HistoricalImportBatch) -> str:
         canonical = json.dumps(
-            batch.model_dump(mode="json"),
-            sort_keys=True,
-            separators=(",", ":"),
+            batch.model_dump(mode="json"), sort_keys=True, separators=(",", ":")
         ).encode()
         return hashlib.sha256(canonical).hexdigest()
 
@@ -60,12 +59,14 @@ class PostgreSQLHistoricalImportRepository:
             if existing_batch is not None:
                 if existing_batch.get("batch_digest") != digest:
                     raise ValueError("Import batch ID already exists with different content.")
+                projected = sum(record.entity_type == "cdl_fixture" for record in batch.records)
                 return HistoricalImportAudit(
                     batch_id=batch.batch_id,
                     contract_version=batch.contract_version,
                     dry_run=dry_run,
                     batch_digest=digest,
                     unchanged_payloads=len(batch.records),
+                    unchanged_domain_records=projected,
                     repeated_batch=True,
                 )
 
@@ -73,22 +74,27 @@ class PostgreSQLHistoricalImportRepository:
             requested_mappings = {
                 mapping.source_key: mapping.target_id for mapping in batch.mappings
             }
+            effective_mappings = {**stored_mappings, **requested_mappings}
             conflicts = sorted(
                 source_key
                 for source_key, target_id in requested_mappings.items()
                 if source_key in stored_mappings and stored_mappings[source_key] != target_id
             )
 
-            created = 0
-            archived = 0
-            unchanged = 0
+            created = archived = unchanged = projected = unchanged_domain = 0
             review_items: list[str] = []
             payload_changes: list[tuple[str, dict[str, object], dict[str, object] | None]] = []
+            domain_changes: list[tuple[str, dict[str, object]]] = []
 
             for record in batch.records:
                 if record.mapping_key in conflicts:
                     review_items.append(record.source_record_id)
                     continue
+                target_id = effective_mappings.get(record.mapping_key)
+                if target_id is None:
+                    review_items.append(record.source_record_id)
+                    continue
+
                 payload_id = self._payload_id(batch.source_system, record.source_record_id)
                 next_payload: dict[str, object] = {
                     "contract_version": batch.contract_version,
@@ -96,7 +102,7 @@ class PostgreSQLHistoricalImportRepository:
                     "source_system": batch.source_system,
                     "source_record_id": record.source_record_id,
                     "mapping_key": record.mapping_key,
-                    "target_id": requested_mappings.get(record.mapping_key),
+                    "target_id": target_id,
                     "entity_type": record.entity_type,
                     "payload": record.payload,
                     "synthetic": batch.synthetic,
@@ -105,12 +111,30 @@ class PostgreSQLHistoricalImportRepository:
                 current_payload = self._payload(session, import_source_payloads_table, payload_id)
                 if current_payload == next_payload:
                     unchanged += 1
-                    continue
-                if current_payload is None:
-                    created += 1
                 else:
-                    archived += 1
-                payload_changes.append((payload_id, next_payload, current_payload))
+                    created += current_payload is None
+                    archived += current_payload is not None
+                    payload_changes.append((payload_id, next_payload, current_payload))
+
+                if record.entity_type != "cdl_fixture":
+                    continue
+                domain_payload: dict[str, object] = {
+                    **record.payload,
+                    "id": target_id,
+                    "synthetic": batch.synthetic,
+                    "import_batch_id": batch.batch_id,
+                    "source_record_id": record.source_record_id,
+                }
+                current_domain = self._payload(session, cdl_fixtures_table, target_id)
+                if current_domain == domain_payload:
+                    unchanged_domain += 1
+                elif current_domain is not None:
+                    raise ValueError(
+                        f"CDL fixture target {target_id!r} already exists with different content."
+                    )
+                else:
+                    projected += 1
+                    domain_changes.append((target_id, domain_payload))
 
             audit = HistoricalImportAudit(
                 batch_id=batch.batch_id,
@@ -120,6 +144,8 @@ class PostgreSQLHistoricalImportRepository:
                 created_payloads=created,
                 archived_payloads=archived,
                 unchanged_payloads=unchanged,
+                projected_records=projected,
+                unchanged_domain_records=unchanged_domain,
                 mapping_conflicts=conflicts,
                 review_items=sorted(review_items),
             )
@@ -141,6 +167,10 @@ class PostgreSQLHistoricalImportRepository:
             self._persist_mappings(session, batch, stored_mappings, conflicts)
             self._persist_conflicts(session, batch, conflicts, review_items)
             self._persist_payload_changes(session, batch.batch_id, payload_changes)
+            for target_id, payload in domain_changes:
+                session.execute(
+                    insert(cdl_fixtures_table).values(id=target_id, payload_json=payload)
+                )
             session.commit()
             return audit
 
@@ -219,9 +249,9 @@ class PostgreSQLHistoricalImportRepository:
                 )
             )
         for record_id in review_items:
-            review_id = hashlib.sha256(f"{batch.batch_id}:review:{record_id}".encode()).hexdigest()[
-                :64
-            ]
+            review_id = hashlib.sha256(
+                f"{batch.batch_id}:review:{record_id}".encode()
+            ).hexdigest()[:64]
             session.execute(
                 insert(import_review_items_table).values(
                     id=review_id,
@@ -245,8 +275,7 @@ class PostgreSQLHistoricalImportRepository:
             if current_payload is None:
                 session.execute(
                     insert(import_source_payloads_table).values(
-                        id=payload_id,
-                        payload_json=next_payload,
+                        id=payload_id, payload_json=next_payload
                     )
                 )
                 continue
@@ -254,15 +283,14 @@ class PostgreSQLHistoricalImportRepository:
                 json.dumps(current_payload, sort_keys=True).encode()
             ).hexdigest()[:12]
             archive_id = f"archive-{archive_digest}-{payload_id[-43:]}"
-            archived_payload = {
-                **current_payload,
-                "archived": True,
-                "archived_by_batch_id": batch_id,
-            }
             session.execute(
                 insert(import_source_payloads_table).values(
                     id=archive_id,
-                    payload_json=archived_payload,
+                    payload_json={
+                        **current_payload,
+                        "archived": True,
+                        "archived_by_batch_id": batch_id,
+                    },
                 )
             )
             session.execute(

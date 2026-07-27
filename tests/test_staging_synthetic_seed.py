@@ -27,7 +27,7 @@ def _settings(**overrides: object) -> Settings:
     values: dict[str, object] = {
         "environment": "staging",
         "repository_mode": "postgres",
-        "database_url": "postgresql+psycopg://user:password@database/cdl",
+        "database_url": "postgresql+psycopg://user@database/cdl",
     }
     values.update(overrides)
     return Settings(**values)
@@ -63,23 +63,24 @@ def test_seed_loads_each_idempotent_domain_once(monkeypatch: pytest.MonkeyPatch)
     import cdl_api.seed_staging as module
 
     calls: list[str] = []
+
+    def _build_session_factory(_settings: Settings) -> object:
+        return object()
+
+    def _user_repository(_factory: object) -> _Seeder:
+        return _Seeder(calls, "identity")
+
+    def _squad_repository(_factory: object) -> _Seeder:
+        return _Seeder(calls, "squad")
+
+    def _league_repository(_factory: object) -> _Seeder:
+        return _Seeder(calls, "league")
+
     monkeypatch.setenv("CDL_ALLOW_SYNTHETIC_STAGING_SEED", "true")
-    monkeypatch.setattr(module, "build_session_factory", lambda settings: object())
-    monkeypatch.setattr(
-        module,
-        "PostgreSQLUserRepository",
-        lambda factory: _Seeder(calls, "identity"),
-    )
-    monkeypatch.setattr(
-        module,
-        "PostgreSQLSquadRepository",
-        lambda factory: _Seeder(calls, "squad"),
-    )
-    monkeypatch.setattr(
-        module,
-        "PostgreSQLLeagueRepository",
-        lambda factory: _Seeder(calls, "league"),
-    )
+    monkeypatch.setattr(module, "build_session_factory", _build_session_factory)
+    monkeypatch.setattr(module, "PostgreSQLUserRepository", _user_repository)
+    monkeypatch.setattr(module, "PostgreSQLSquadRepository", _squad_repository)
+    monkeypatch.setattr(module, "PostgreSQLLeagueRepository", _league_repository)
 
     result = seed_synthetic_staging_data(_settings())
 

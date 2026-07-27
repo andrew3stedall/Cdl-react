@@ -22,15 +22,9 @@ from cdl_api.contracts.dashboard import (
 )
 from cdl_api.database import build_session_factory
 from cdl_api.repositories.dashboard_repository import DashboardRepository
-from cdl_api.repositories.postgres_dashboard_config import (
-    PostgreSQLDashboardConfigRepository,
-)
-from cdl_api.repositories.postgres_dashboard_metrics import (
-    PostgreSQLDashboardMetricRepository,
-)
-from cdl_api.repositories.postgres_dashboard_snapshots import (
-    PostgreSQLDashboardSnapshotRepository,
-)
+from cdl_api.repositories.postgres_dashboard_config import PostgreSQLDashboardConfigRepository
+from cdl_api.repositories.postgres_dashboard_metrics import PostgreSQLDashboardMetricRepository
+from cdl_api.repositories.postgres_dashboard_snapshots import PostgreSQLDashboardSnapshotRepository
 from cdl_api.services.dashboard_service import (
     DashboardService,
     MetricCatalogService,
@@ -152,12 +146,8 @@ def dashboard_dimensions() -> list[DashboardDimension]:
 def dashboard_widget_query(
     widget_id: str,
     request: WidgetQueryRequest,
-    config_repository: DashboardConfigRepository = Depends(
-        get_dashboard_config_repository
-    ),
-    query_repository: DashboardQueryRepository = Depends(
-        get_dashboard_query_repository
-    ),
+    config_repository: DashboardConfigRepository = Depends(get_dashboard_config_repository),
+    query_repository: DashboardQueryRepository = Depends(get_dashboard_query_repository),
 ) -> WidgetQueryResponse | JSONResponse:
     widget = config_repository.get_widget(widget_id)
     if widget is None:

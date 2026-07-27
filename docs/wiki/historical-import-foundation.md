@@ -26,9 +26,9 @@ The PostgreSQL repository provides these release-path behaviours:
 - conflicting source mappings create conflict and review payloads instead of overwriting mappings;
 - synthetic classification is retained on mappings, payloads, conflicts, reviews, batch audits, and projected rows.
 
-## Bounded domain projection
+## Bounded fixture projection
 
-The only supported domain projection is `entity_type=cdl_fixture`. Its approved mapping target becomes the identifier in the existing `cdl_fixtures` payload table.
+`entity_type=cdl_fixture` projects an approved mapping target into the existing `cdl_fixtures` payload table.
 
 - dry-run reports the fixture projection without writing import or domain rows;
 - the import batch, source payload, mapping, and fixture are committed in one transaction;
@@ -46,8 +46,20 @@ The only supported domain projection is `entity_type=cdl_fixture`. Its approved 
 - adapter output is asserted equal to the direct versioned import contract;
 - parser-to-projection dry-run audits have the same digest and projected-row counts in SQLite and clean migrated PostgreSQL.
 
-This proves normalization and projection parity for a deterministic synthetic shape only. It does not establish compatibility with a real export format or authorize automatic replacement of existing domain records.
+## Bounded result projection
+
+`synthetic-result-export/v1` is a separate test-only result shape. `SyntheticResultExportAdapter` normalizes scores into `entity_type=cdl_result`, and `PostgreSQLHistoricalResultImportRepository` projects them into `fixture_results` only when the mapped fixture already exists.
+
+- dry-run reports the result projection without database writes;
+- import evidence and the result row commit in one transaction;
+- exact replay is idempotent;
+- a missing mapped fixture creates an open `missing_fixture` review item and no result row;
+- an existing result with different content raises before commit, rolling back the batch and source-payload changes;
+- duplicate result keys create adapter review diagnostics and are not projected twice;
+- unsupported result-export versions fail closed.
+
+These adapters prove normalization and transactional projection for deterministic synthetic shapes only. They do not establish compatibility with a real export format or authorize automatic replacement of existing domain records.
 
 ## Remaining scope
 
-A real historical export still needs a separately validated parser/adapter, source authenticity and schema evidence, mapping approval, and coverage for each additional entity projection. Synthetic release-path tests do not establish compatibility with any real export format.
+A real historical export still needs a separately validated parser/adapter, source authenticity and schema evidence, mapping approval, and coverage for scoring snapshots, EPL context, squads, and other entity projections. Synthetic release-path tests do not establish compatibility with any real export format.

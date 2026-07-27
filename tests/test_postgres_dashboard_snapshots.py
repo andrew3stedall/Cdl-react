@@ -52,6 +52,14 @@ def _assert_snapshot_round_trip(session_factory: sessionmaker[Session]) -> None:
     assert empty_response.json()["empty"] is True
     assert "Castle FC" not in empty_response.text
 
+    empty_drilldown = client.post(
+        "/api/dashboard/widgets/team-points/drilldown",
+        json={"point_key": "castle", "filters": []},
+    )
+    assert empty_drilldown.status_code == 200
+    assert empty_drilldown.json()["rows"] == []
+    assert "Casey Midfielder" not in empty_drilldown.text
+
     query_repository.seed_synthetic_data()
     query_repository.seed_synthetic_data()
     response = client.post(
@@ -78,6 +86,14 @@ def _assert_snapshot_round_trip(session_factory: sessionmaker[Session]) -> None:
         "cdl_team": "Castle FC",
         "fantasy_points": 74.0,
     }
+
+    seeded_drilldown = client.post(
+        "/api/dashboard/widgets/team-points/drilldown",
+        json={"point_key": "castle", "filters": []},
+    )
+    assert seeded_drilldown.status_code == 200
+    assert seeded_drilldown.json()["rows"] == []
+    assert "Casey Midfielder" not in seeded_drilldown.text
 
     with session_factory() as session:
         count = session.execute(

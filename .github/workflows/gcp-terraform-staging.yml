@@ -9,13 +9,17 @@ on:
       - "tests/test_gcp_staging_plan_workflow.py"
   workflow_dispatch:
     inputs:
-      enable_cloud_run:
-        description: Include the private single-service Cloud Run runtime in this plan
+      deployment_stage:
+        description: Select the cumulative staging layer to include in this plan
         required: true
-        default: false
-        type: boolean
+        default: foundation
+        type: choice
+        options:
+          - foundation
+          - database-jobs
+          - runtime
       backend_image:
-        description: Immutable Artifact Registry digest URI; required only when Cloud Run is enabled
+        description: Immutable Artifact Registry digest URI for database-jobs or runtime
         required: false
         type: string
 
@@ -74,7 +78,7 @@ jobs:
       WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_STAGING_WORKLOAD_IDENTITY_PROVIDER }}
       DEPLOY_SERVICE_ACCOUNT: ${{ vars.GCP_STAGING_DEPLOY_SERVICE_ACCOUNT }}
       TERRAFORM_STATE_BUCKET: ${{ vars.GCP_TERRAFORM_STATE_BUCKET }}
-      ENABLE_CLOUD_RUN: ${{ inputs.enable_cloud_run }}
+      DEPLOYMENT_STAGE: ${{ inputs.deployment_stage }}
       BACKEND_IMAGE: ${{ inputs.backend_image }}
 
     defaults:
@@ -85,7 +89,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Validate required environment and plan inputs
+      - name: Validate environment and resolve cumulative stage
         shell: bash
         run: |
           set -euo pipefail
@@ -95,16 +99,36 @@ jobs:
           test -n "${DEPLOY_SERVICE_ACCOUNT}"
           test -n "${TERRAFORM_STATE_BUCKET}"
 
-          if [ "${ENABLE_CLOUD_RUN}" = "true" ]; then
+          case "${DEPLOYMENT_STAGE}" in
+            foundation)
+              test -z "${BACKEND_IMAGE}"
+              enable_database_jobs=false
+              enable_cloud_run=false
+              ;;
+            database-jobs)
+              enable_database_jobs=true
+              enable_cloud_run=false
+              ;;
+            runtime)
+              enable_database_jobs=true
+              enable_cloud_run=true
+              ;;
+            *)
+              echo "Unsupported deployment_stage: ${DEPLOYMENT_STAGE}" >&2
+              exit 1
+              ;;
+          esac
+
+          if [ "${DEPLOYMENT_STAGE}" != "foundation" ]; then
             test -n "${BACKEND_IMAGE}"
             if [[ ! "${BACKEND_IMAGE}" =~ @sha256:[0-9a-f]{64}$ ]]; then
               echo "backend_image must be an immutable @sha256 digest URI." >&2
               exit 1
             fi
-          elif [ -n "${BACKEND_IMAGE}" ]; then
-            echo "backend_image must be empty when enable_cloud_run is false." >&2
-            exit 1
           fi
+
+          echo "ENABLE_DATABASE_JOBS=${enable_database_jobs}" >> "${GITHUB_ENV}"
+          echo "ENABLE_CLOUD_RUN=${enable_cloud_run}" >> "${GITHUB_ENV}"
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v3
@@ -133,6 +157,7 @@ jobs:
             -detailed-exitcode \
             -out="${RUNNER_TEMP}/staging.tfplan" \
             -var="project_id=${PROJECT_ID}" \
+            -var="enable_database_jobs=${ENABLE_DATABASE_JOBS}" \
             -var="enable_cloud_run=${ENABLE_CLOUD_RUN}" \
             -var="backend_image=${BACKEND_IMAGE}" \
             -var="allow_public_invoker=false"
@@ -194,7 +219,7 @@ jobs:
         if: always() && steps.evidence.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
-          name: staging-terraform-plan-${{ github.sha }}
+          name: staging-terraform-plan-${{ github.sha }}-${{ inputs.deployment_stage }}
           path: |
             ${{ runner.temp }}/staging-plan.txt
             ${{ runner.temp }}/staging-plan-summary.md

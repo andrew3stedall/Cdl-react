@@ -37,3 +37,13 @@ output "cloud_run_api_url" {
   description = "Cloud Run API URL when enable_cloud_run is true."
   value       = try(module.cloud_run_api[0].service_uri, null)
 }
+
+output "frontend_asset_bucket_name" {
+  description = "Private Cloud Storage bucket name for built frontend assets."
+  value       = module.frontend_assets.name
+}
+
+output "frontend_asset_bucket_url" {
+  description = "Private gs:// URL for controlled frontend asset uploads. This is not a public website URL."
+  value       = module.frontend_assets.url
+}

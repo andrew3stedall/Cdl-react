@@ -14,6 +14,7 @@ resource "google_sql_database_instance" "this" {
     disk_autoresize_limit       = var.disk_autoresize_limit_gb
     disk_size                   = var.disk_size_gb
     disk_type                   = "PD_SSD"
+    user_labels                 = var.labels
 
     backup_configuration {
       enabled                        = var.backup_enabled

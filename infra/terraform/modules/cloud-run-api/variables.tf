@@ -35,6 +35,12 @@ variable "environment" {
   type        = string
 }
 
+variable "labels" {
+  description = "Labels used for ownership and cost attribution."
+  type        = map(string)
+  default     = {}
+}
+
 variable "repository_mode" {
   description = "Application repository mode. Use memory until PostgreSQL repositories and migrations are fully wired."
   type        = string

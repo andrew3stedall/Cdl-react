@@ -86,3 +86,9 @@ variable "database_retained_backups" {
   type        = number
   default     = 8
 }
+
+variable "monitoring_notification_channels" {
+  description = "Existing Cloud Monitoring notification-channel resource names. Keep empty until channel ownership and recipients are approved."
+  type        = set(string)
+  default     = []
+}

@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-07-27 - Add staging observability and cost attribution
+
+### Added
+
+- Added bounded Cloud SQL and conditional Cloud Run alert policies without creating notification recipients.
+- Added shared application, environment, management and component labels to chargeable staging resources.
+- Added an operator runbook covering alert response, cost-label verification and live-action gates.
+
+### Validation
+
+- Added Terraform contract tests for alert safety, notification boundaries and cost-attribution labels.
+- Kept Terraform apply, public access, credentials, billing exports and production changes outside this repository-only step.
+
 ## 2026-07-27 - Prove PostgreSQL fixture result parity
 
 ### Added

@@ -38,6 +38,12 @@ variable "deletion_protection" {
   type        = bool
 }
 
+variable "labels" {
+  description = "Labels used for ownership and cost attribution."
+  type        = map(string)
+  default     = {}
+}
+
 variable "availability_type" {
   description = "Cloud SQL availability type. Use ZONAL for cost-conscious staging."
   type        = string

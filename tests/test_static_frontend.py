@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
 from cdl_api.app import create_app
@@ -18,7 +19,7 @@ def _write_frontend_build(root: Path) -> Path:
 
 
 def test_configured_frontend_build_serves_root_assets_and_spa_routes(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
     dist = _write_frontend_build(tmp_path)
@@ -38,7 +39,7 @@ def test_configured_frontend_build_serves_root_assets_and_spa_routes(
 
 
 def test_frontend_fallback_does_not_mask_unknown_api_routes(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
     dist = _write_frontend_build(tmp_path)
@@ -52,14 +53,10 @@ def test_frontend_fallback_does_not_mask_unknown_api_routes(
 
 
 def test_configured_frontend_build_must_contain_index(
-    monkeypatch,
+    monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
     monkeypatch.setenv("CDL_FRONTEND_DIST_DIR", str(tmp_path / "missing"))
 
-    try:
+    with pytest.raises(RuntimeError, match="index.html"):
         create_app()
-    except RuntimeError as error:
-        assert "index.html" in str(error)
-    else:
-        raise AssertionError("create_app should fail for an incomplete configured frontend build")

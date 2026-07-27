@@ -12,6 +12,20 @@ from pathlib import Path
 type JsonValue = None | bool | int | float | str | list[JsonValue] | dict[str, JsonValue]
 
 PUBLIC_PRINCIPALS = {"allUsers", "allAuthenticatedUsers"}
+APPROVED_STAGING_RESOURCE_TYPES = {
+    "google_artifact_registry_repository",
+    "google_cloud_run_v2_service",
+    "google_cloud_run_v2_service_iam_member",
+    "google_monitoring_alert_policy",
+    "google_project_iam_member",
+    "google_project_service",
+    "google_secret_manager_secret",
+    "google_secret_manager_secret_iam_member",
+    "google_service_account",
+    "google_sql_database",
+    "google_sql_database_instance",
+    "google_storage_bucket",
+}
 COST_SENSITIVE_TYPES = {
     "google_artifact_registry_repository": "Artifact Registry storage and network egress",
     "google_cloud_run_v2_service": (
@@ -117,6 +131,14 @@ def summarize_plan(
     action_counts = Counter(_as_string(item["action"]) for item in changed)
     destructive = [item for item in changed if item["destructive"] is True]
     public = [item for item in changed if item["public"] is True]
+    unexpected_types = sorted(
+        {
+            resource_type
+            for item in changed
+            if (resource_type := _as_string(item["type"]))
+            not in APPROVED_STAGING_RESOURCE_TYPES
+        }
+    )
 
     cost_types = sorted(
         {
@@ -135,6 +157,9 @@ def summarize_plan(
 
     gate_status = "PASS"
     exit_code = 0
+    if unexpected_types:
+        gate_status = "BLOCKED: unreviewed staging resource type detected"
+        exit_code = 4
     if destructive:
         gate_status = "BLOCKED: destructive delete or replacement action detected"
         exit_code = 2
@@ -172,6 +197,12 @@ def summarize_plan(
     ]
     lines.extend(_markdown_table(rows))
 
+    lines.extend(["", "## Resource-type allowlist", ""])
+    if unexpected_types:
+        lines.extend(f"- Unreviewed: `{resource_type}`" for resource_type in unexpected_types)
+    else:
+        lines.append("- All changed resource types are part of the reviewed staging design")
+
     lines.extend(["", "## Cost-sensitive resource categories", ""])
     if cost_types:
         lines.extend(
@@ -194,6 +225,8 @@ def summarize_plan(
             "",
             "This summary intentionally omits resource values. Review the human-readable "
             "plan artifact before approval.",
+            "Any new Terraform resource type must be added to the reviewed staging design and "
+            "allowlist in the same pull request before the plan can pass.",
             "A fresh plan is required for any future apply; this workflow never applies "
             "infrastructure.",
         ]

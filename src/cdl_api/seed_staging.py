@@ -29,10 +29,13 @@ def seed_synthetic_staging_data(settings: Settings | None = None) -> SeedResult:
     if resolved.repository_mode != "postgres":
         raise RuntimeError("Synthetic staging seed requires CDL_REPOSITORY_MODE=postgres.")
     if not resolved.database_url.startswith(("postgresql://", "postgresql+psycopg://")):
-        raise RuntimeError("Synthetic staging seed requires an explicit PostgreSQL CDL_DATABASE_URL.")
+        raise RuntimeError(
+            "Synthetic staging seed requires an explicit PostgreSQL CDL_DATABASE_URL."
+        )
     if os.environ.get(SEED_CONFIRMATION_ENV, "").lower() != SEED_CONFIRMATION_VALUE:
         raise RuntimeError(
-            f"Set {SEED_CONFIRMATION_ENV}={SEED_CONFIRMATION_VALUE} to confirm synthetic staging data."
+            f"Set {SEED_CONFIRMATION_ENV}={SEED_CONFIRMATION_VALUE} to confirm "
+            "synthetic staging data."
         )
 
     session_factory = build_session_factory(resolved)
@@ -49,10 +52,7 @@ def seed_synthetic_staging_data(settings: Settings | None = None) -> SeedResult:
 
 def main() -> None:
     result = seed_synthetic_staging_data()
-    print(
-        "Seeded explicitly synthetic staging domains: "
-        + ", ".join(result.domains)
-    )
+    print("Seeded explicitly synthetic staging domains: " + ", ".join(result.domains))
 
 
 if __name__ == "__main__":

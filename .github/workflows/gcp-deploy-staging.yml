@@ -1,31 +1,49 @@
-name: GCP Deploy Staging
+name: GCP Build Staging Image
 
 on:
   workflow_dispatch:
+    inputs:
+      confirm_foundation_applied:
+        description: Confirm the reviewed staging foundation has been applied
+        required: true
+        type: boolean
 
 permissions:
   contents: read
   id-token: write
 
 concurrency:
-  group: gcp-deploy-staging
+  group: gcp-build-staging-image
   cancel-in-progress: false
 
 env:
   REGION: australia-southeast1
   ARTIFACT_REPOSITORY: cdl-react-backend
-  IMAGE_NAME: cdl-react-api
-  SERVICE_NAME: cdl-react-staging-api
+  IMAGE_NAME: cdl-react-app
 
 jobs:
-  deploy:
-    name: Build and deploy staging API
+  build:
+    name: Build immutable staging application image
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      inputs.confirm_foundation_applied == true
     runs-on: ubuntu-latest
     environment: staging
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Validate required environment variables
+        env:
+          PROJECT_ID: ${{ vars.GCP_STAGING_PROJECT_ID }}
+          WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_STAGING_WORKLOAD_IDENTITY_PROVIDER }}
+          DEPLOY_SERVICE_ACCOUNT: ${{ vars.GCP_STAGING_DEPLOY_SERVICE_ACCOUNT }}
+        run: |
+          set -euo pipefail
+          test -n "${PROJECT_ID}"
+          test -n "${WORKLOAD_IDENTITY_PROVIDER}"
+          test -n "${DEPLOY_SERVICE_ACCOUNT}"
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v3
@@ -42,26 +60,39 @@ jobs:
       - name: Configure Docker for Artifact Registry
         run: gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
 
-      - name: Build backend image
+      - name: Build single-service staging image
+        env:
+          PROJECT_ID: ${{ vars.GCP_STAGING_PROJECT_ID }}
         run: |
-          IMAGE_URI="${REGION}-docker.pkg.dev/${{ vars.GCP_STAGING_PROJECT_ID }}/${ARTIFACT_REPOSITORY}/${IMAGE_NAME}:${GITHUB_SHA}"
-          docker build -t "${IMAGE_URI}" .
-          echo "IMAGE_URI=${IMAGE_URI}" >> "$GITHUB_ENV"
+          set -euo pipefail
+          IMAGE_URI="${REGION}-docker.pkg.dev/${PROJECT_ID}/${ARTIFACT_REPOSITORY}/${IMAGE_NAME}:${GITHUB_SHA}"
+          docker build --pull --tag "${IMAGE_URI}" .
+          echo "IMAGE_URI=${IMAGE_URI}" >> "${GITHUB_ENV}"
 
-      - name: Push backend image
+      - name: Push immutable image
         run: docker push "${IMAGE_URI}"
 
-      - name: Deploy Cloud Run service
-        id: deploy
-        uses: google-github-actions/deploy-cloudrun@v3
-        with:
-          project_id: ${{ vars.GCP_STAGING_PROJECT_ID }}
-          region: ${{ env.REGION }}
-          service: ${{ env.SERVICE_NAME }}
-          image: ${{ env.IMAGE_URI }}
-          env_vars: |-
-            CDL_ENVIRONMENT=staging
-            CDL_REPOSITORY_MODE=memory
+      - name: Resolve pushed image digest
+        env:
+          PROJECT_ID: ${{ vars.GCP_STAGING_PROJECT_ID }}
+        run: |
+          set -euo pipefail
+          DIGEST="$(
+            gcloud artifacts docker images describe "${IMAGE_URI}" \
+              --project "${PROJECT_ID}" \
+              --format='value(image_summary.digest)'
+          )"
+          test -n "${DIGEST}"
+          IMAGE_DIGEST_URI="${REGION}-docker.pkg.dev/${PROJECT_ID}/${ARTIFACT_REPOSITORY}/${IMAGE_NAME}@${DIGEST}"
+          {
+            echo "source_sha=${GITHUB_SHA}"
+            echo "image_digest_uri=${IMAGE_DIGEST_URI}"
+          } > "${RUNNER_TEMP}/staging-image-reference.txt"
 
-      - name: Smoke check health endpoint
-        run: curl --fail --show-error --silent "${{ steps.deploy.outputs.url }}/health"
+      - name: Upload immutable image reference
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-image-reference-${{ github.sha }}
+          path: ${{ runner.temp }}/staging-image-reference.txt
+          if-no-files-found: error
+          retention-days: 7

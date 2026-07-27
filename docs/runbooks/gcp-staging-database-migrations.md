@@ -13,7 +13,7 @@ The relevant resources and workflow are:
 
 ## Packaged commands
 
-The single-service image contains `alembic.ini`, the full migration tree, the React build and the installed `cdl_api` package.
+The immutable backend image digest contains `alembic.ini`, the full migration tree, the React build and the installed `cdl_api` package.
 
 Migration runs:
 
@@ -117,7 +117,7 @@ For synthetic seed loading:
 
 The workflow verifies that the Terraform-managed job uses an immutable `@sha256` image before execution. It does not create, update or replace the job definition.
 
-Migration and seed execution remain separate. A failed seed must not obscure whether schema migration succeeded.
+Migration and seed execution must remain separate. A failed seed must not obscure whether schema migration succeeded.
 
 ## Evidence to record
 
@@ -159,4 +159,4 @@ Do not apply or execute database jobs until:
 - the `database-jobs` plan is separately reviewed and approved;
 - PostgreSQL release paths are complete enough for the intended staging scenarios.
 
-Any chargeable apply, migration or seed execution requires the approval gates tracked by #70 and #78.
+Any chargeable apply, migration or seed execution requires the approval gates tracked by issues #70 and #78.

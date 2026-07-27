@@ -136,9 +136,7 @@ def test_league_table_adapter_projection_reviews_and_conflict_rollback() -> None
     duplicate = _document(batch_id="table-duplicate")
     duplicate["rows"].append(dict(duplicate["rows"][0]))
     adapted = adapter.adapt(duplicate)
-    assert adapted.review_diagnostics == [
-        "duplicate league-table snapshot key: table-source-gw-1"
-    ]
+    assert adapted.review_diagnostics == ["duplicate league-table snapshot key: table-source-gw-1"]
     assert len(adapted.batch.records) == 1
 
     missing_engine = create_engine(

@@ -58,8 +58,20 @@ The PostgreSQL repository provides these release-path behaviours:
 - duplicate result keys create adapter review diagnostics and are not projected twice;
 - unsupported result-export versions fail closed.
 
+## Bounded scoring-snapshot projection
+
+`synthetic-scoring-export/v1` normalizes bonus, chip, and EPL-link metadata into `entity_type=cdl_scoring_snapshot`. `PostgreSQLHistoricalScoringImportRepository` projects into `fixture_scoring_snapshots` only when both the mapped fixture and its result already exist.
+
+- dry-run reports the scoring projection without database writes;
+- import evidence and the snapshot commit in one transaction;
+- exact replay is idempotent;
+- missing fixtures and missing results create explicit open review items and no scoring row;
+- existing scoring content is never silently overwritten; a conflict raises before commit and rolls back import changes;
+- duplicate snapshot keys create adapter review diagnostics;
+- unsupported scoring-export versions fail closed.
+
 These adapters prove normalization and transactional projection for deterministic synthetic shapes only. They do not establish compatibility with a real export format or authorize automatic replacement of existing domain records.
 
 ## Remaining scope
 
-A real historical export still needs a separately validated parser/adapter, source authenticity and schema evidence, mapping approval, and coverage for scoring snapshots, EPL context, squads, and other entity projections. Synthetic release-path tests do not establish compatibility with any real export format.
+A real historical export still needs a separately validated parser/adapter, source authenticity and schema evidence, mapping approval, and coverage for EPL context, squads, table snapshots, knockout, head-to-head, and other entity projections. Synthetic release-path tests do not establish compatibility with any real export format.

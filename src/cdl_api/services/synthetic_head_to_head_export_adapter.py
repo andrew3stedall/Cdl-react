@@ -63,7 +63,12 @@ class SyntheticHeadToHeadExportAdapter:
                 raise ValueError("Head-to-head played must equal wins plus draws plus losses.")
 
             row_mappings = {row.record_key: row.target_record_id}
-            row_mappings.update(dict(zip(row.fixture_source_keys, row.target_fixture_ids, strict=True)))
+            fixture_mappings = zip(
+                row.fixture_source_keys,
+                row.target_fixture_ids,
+                strict=True,
+            )
+            row_mappings.update(dict(fixture_mappings))
             for source_key, target_id in row_mappings.items():
                 existing = mappings.get(source_key)
                 if existing is not None and existing != target_id:

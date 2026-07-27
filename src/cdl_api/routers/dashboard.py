@@ -7,12 +7,15 @@ from fastapi.responses import JSONResponse
 
 from cdl_api.contracts.common import ApiErrorResponse, ErrorCode
 from cdl_api.contracts.dashboard import (
+    ChartDataPoint,
     DashboardConfigResponse,
     DashboardDimension,
     DashboardDrilldownRequest,
     DashboardDrilldownResponse,
     DashboardFilter,
     DashboardMetric,
+    DashboardTableColumn,
+    DashboardTableRow,
     DashboardWidgetDefinition,
     WidgetQueryRequest,
     WidgetQueryResponse,
@@ -21,6 +24,7 @@ from cdl_api.database import build_session_factory
 from cdl_api.repositories.dashboard_repository import DashboardRepository
 from cdl_api.repositories.postgres_dashboard_config import PostgreSQLDashboardConfigRepository
 from cdl_api.repositories.postgres_dashboard_metrics import PostgreSQLDashboardMetricRepository
+from cdl_api.repositories.postgres_dashboard_snapshots import PostgreSQLDashboardSnapshotRepository
 from cdl_api.services.dashboard_service import (
     DashboardService,
     MetricCatalogService,
@@ -45,6 +49,31 @@ class DashboardMetricRepository(Protocol):
     def list_metrics(self) -> list[DashboardMetric]: ...
 
 
+class DashboardQueryRepository(Protocol):
+    def aggregate_widget(
+        self,
+        widget: DashboardWidgetDefinition,
+        filters: dict[str, str],
+    ) -> list[ChartDataPoint]: ...
+
+    def list_table_columns(
+        self,
+        widget: DashboardWidgetDefinition,
+    ) -> list[DashboardTableColumn]: ...
+
+    def list_table_rows(
+        self,
+        widget: DashboardWidgetDefinition,
+        points: list[ChartDataPoint],
+    ) -> list[DashboardTableRow]: ...
+
+    def drilldown_rows(
+        self,
+        widget: DashboardWidgetDefinition,
+        point_key: str,
+    ) -> list[DashboardTableRow]: ...
+
+
 def get_dashboard_config_repository(
     settings: Settings = Depends(get_settings),
 ) -> DashboardConfigRepository:
@@ -58,6 +87,14 @@ def get_dashboard_metric_repository(
 ) -> DashboardMetricRepository:
     if settings.repository_mode == "postgres":
         return PostgreSQLDashboardMetricRepository(build_session_factory(settings))
+    return DashboardRepository()
+
+
+def get_dashboard_query_repository(
+    settings: Settings = Depends(get_settings),
+) -> DashboardQueryRepository:
+    if settings.repository_mode == "postgres":
+        return PostgreSQLDashboardSnapshotRepository(build_session_factory(settings))
     return DashboardRepository()
 
 
@@ -109,13 +146,14 @@ def dashboard_dimensions() -> list[DashboardDimension]:
 def dashboard_widget_query(
     widget_id: str,
     request: WidgetQueryRequest,
-    repository: DashboardConfigRepository = Depends(get_dashboard_config_repository),
+    config_repository: DashboardConfigRepository = Depends(get_dashboard_config_repository),
+    query_repository: DashboardQueryRepository = Depends(get_dashboard_query_repository),
 ) -> WidgetQueryResponse | JSONResponse:
-    widget = repository.get_widget(widget_id)
+    widget = config_repository.get_widget(widget_id)
     if widget is None:
         return _not_found(widget_id)
 
-    return _query_service.query_widget(widget, request)
+    return WidgetQueryService(query_repository).query_widget(widget, request)
 
 
 @router.post(

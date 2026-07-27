@@ -42,11 +42,12 @@ The manual workflow:
 6. renders the saved plan to human-readable text;
 7. reads the machine-readable JSON only inside the runner to create a redacted summary;
 8. verifies every changed resource type belongs to the reviewed staging design;
-9. deletes the binary plan and machine-readable JSON before artifact upload;
-10. verifies that the complete human-readable plan and redacted summary both exist and are
+9. detects and blocks out-of-band resource drift reported separately by Terraform;
+10. deletes the binary plan and machine-readable JSON before artifact upload;
+11. verifies that the complete human-readable plan and redacted summary both exist and are
     non-empty;
-11. uploads only that complete evidence pair for seven days;
-12. never runs `terraform apply`.
+12. uploads only that complete evidence pair for seven days;
+13. never runs `terraform apply`.
 
 Terraform exit code `0` means no changes and exit code `2` means a valid plan with changes.
 Exit code `1` fails the workflow.
@@ -67,6 +68,7 @@ The summary records:
 - SHA-256 of the ephemeral saved plan;
 - create, update, delete and replacement counts;
 - changed resource addresses and resource types without resource values;
+- detected remote-state drift addresses, resource types and actions without resource values;
 - resource-type allowlist status;
 - cost-sensitive resource categories;
 - security-sensitive resource categories;
@@ -77,17 +79,24 @@ retaining executable plan material or JSON that could contain sensitive provider
 a public repository's workflow artifacts.
 
 Artifact publication is fail-closed. The workflow checks that both text files are non-empty
-and that the summary contains the expected review heading and retention boundary. If the
-summary utility crashes or does not produce valid review evidence, incomplete evidence is never uploaded
-and the job fails. A human-readable plan cannot be published by itself.
+and that the summary contains the expected review heading, drift section and retention
+boundary. If the summary utility crashes or does not produce valid review evidence,
+incomplete evidence is never uploaded and the job fails. A human-readable plan cannot be
+published by itself.
 
 ## Automated safety gates
 
 The summary step blocks the run when it detects any of:
 
 - a destructive delete or replacement action;
-- a public IAM principal such as `allUsers` or `allAuthenticatedUsers` in planned values; or
-- an unreviewed Terraform resource type that is not part of the committed staging design.
+- a public IAM principal such as `allUsers` or `allAuthenticatedUsers` in planned values;
+- an unreviewed Terraform resource type that is not part of the committed staging design; or
+- out-of-band resource drift between the latest remote objects and the prior saved state.
+
+The drift gate is intentionally fail-closed. Terraform reports drift separately from planned
+resource changes, including cases where an external change may need explanation before the
+configuration is applied. Every drifted resource must be reconciled or explicitly understood,
+then a fresh plan must be generated before progression.
 
 The resource-type allowlist is intentionally fail-closed. Adding a new Terraform resource
 requires the implementation and allowlist change to be reviewed together before a live plan
@@ -108,6 +117,7 @@ Before requesting approval for any live apply, confirm:
 
 - the source SHA is the intended `main` commit;
 - the plan reads the expected staging backend and project;
+- there is no unexplained remote-state drift;
 - there are no production resources;
 - every changed resource type belongs to the reviewed staging design;
 - Cloud SQL remains zonal and within the reviewed tier, disk-growth, backup and PITR bounds;

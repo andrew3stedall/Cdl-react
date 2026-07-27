@@ -1,5 +1,6 @@
 """PostgreSQL-backed fixture difficulty rating reads."""
 
+import hashlib
 from collections.abc import Callable, Mapping
 
 from sqlalchemy import insert, select
@@ -8,11 +9,15 @@ from sqlalchemy.orm import Session
 from cdl_api.contracts.domain import GameweekSummary, TeamSummary
 from cdl_api.contracts.fdr import (
     FixtureDifficultyBand,
+    FixtureDifficultyCalculationInputAudit,
     FixtureDifficultyFixture,
     FixtureDifficultyScaleStep,
     FixtureDifficultyView,
 )
-from cdl_api.repositories.postgres_dashboard_fdr import fdr_ratings_table
+from cdl_api.repositories.postgres_dashboard_fdr import (
+    fdr_calculation_inputs_table,
+    fdr_ratings_table,
+)
 
 
 class PostgreSQLFixtureDifficultyRepository:
@@ -77,6 +82,31 @@ class PostgreSQLFixtureDifficultyRepository:
             for rating, band, label, contrast_ratio in scale_rows
         ]
 
+    def list_calculation_inputs(
+        self,
+        season: str,
+    ) -> list[FixtureDifficultyCalculationInputAudit]:
+        with self._session_factory() as session:
+            rows = session.execute(
+                select(
+                    fdr_calculation_inputs_table.c.id,
+                    fdr_calculation_inputs_table.c.payload_json,
+                ).order_by(fdr_calculation_inputs_table.c.id)
+            ).mappings()
+            audits: list[FixtureDifficultyCalculationInputAudit] = []
+            for row in rows:
+                payload = row["payload_json"]
+                if not isinstance(payload, Mapping):
+                    raise ValueError("FDR calculation input payload must be a JSON object.")
+                if payload.get("season") != season:
+                    continue
+                audits.append(
+                    FixtureDifficultyCalculationInputAudit.model_validate(
+                        {"id": str(row["id"]), **dict(payload)}
+                    )
+                )
+            return audits
+
     def list_fixtures(
         self,
         view: FixtureDifficultyView,
@@ -116,7 +146,22 @@ class PostgreSQLFixtureDifficultyRepository:
         return fixtures
 
     def seed_synthetic_data(self) -> None:
-        """Idempotently insert deterministic, explicitly synthetic FDR ratings."""
+        """Idempotently insert deterministic, explicitly synthetic FDR evidence."""
+        calculation_run_id = "synthetic-fdr-2025-26-v1"
+        input_id = "synthetic-fdr-input-2025-26-v1"
+        input_payload = {
+            "season": "2025/26",
+            "contract_version": "fdr-input/v1",
+            "algorithm_version": "synthetic-baseline/v1",
+            "calculation_run_id": calculation_run_id,
+            "source": "deterministic-synthetic-fixture",
+            "captured_at": "2026-07-27T00:00:00+00:00",
+            "fixture_count": 2,
+            "input_sha256": hashlib.sha256(
+                b"cdl-react:synthetic-fdr-input:2025-26:v1"
+            ).hexdigest(),
+            "synthetic": True,
+        }
         rows = (
             self._synthetic_rating(
                 rating_id="attack-arsenal-gw12",
@@ -130,6 +175,7 @@ class PostgreSQLFixtureDifficultyRepository:
                 venue="H",
                 rating=4,
                 band="hard",
+                calculation_run_id=calculation_run_id,
             ),
             self._synthetic_rating(
                 rating_id="defence-arsenal-gw12",
@@ -143,6 +189,7 @@ class PostgreSQLFixtureDifficultyRepository:
                 venue="H",
                 rating=3,
                 band="medium",
+                calculation_run_id=calculation_run_id,
             ),
             self._synthetic_rating(
                 rating_id="attack-man-city-gw12",
@@ -156,6 +203,7 @@ class PostgreSQLFixtureDifficultyRepository:
                 venue="A",
                 rating=2,
                 band="easy",
+                calculation_run_id=calculation_run_id,
             ),
             self._synthetic_rating(
                 rating_id="defence-man-city-gw12",
@@ -169,14 +217,26 @@ class PostgreSQLFixtureDifficultyRepository:
                 venue="A",
                 rating=4,
                 band="hard",
+                calculation_run_id=calculation_run_id,
             ),
         )
         with self._session_factory() as session:
-            existing_ids: set[str] = set()
+            existing_input_ids = {
+                str(row[0]) for row in session.execute(select(fdr_calculation_inputs_table.c.id))
+            }
+            if input_id not in existing_input_ids:
+                session.execute(
+                    insert(fdr_calculation_inputs_table).values(
+                        id=input_id,
+                        payload_json=input_payload,
+                    )
+                )
+
+            existing_rating_ids: set[str] = set()
             for row in session.execute(select(fdr_ratings_table.c.id)):
-                existing_ids.add(str(row[0]))
+                existing_rating_ids.add(str(row[0]))
             for rating_id, payload in rows:
-                if rating_id in existing_ids:
+                if rating_id in existing_rating_ids:
                     continue
                 session.execute(
                     insert(fdr_ratings_table).values(id=rating_id, payload_json=payload)
@@ -196,6 +256,7 @@ class PostgreSQLFixtureDifficultyRepository:
         venue: str,
         rating: int,
         band: str,
+        calculation_run_id: str,
     ) -> tuple[str, dict[str, object]]:
         return rating_id, {
             "season": "2025/26",
@@ -210,5 +271,8 @@ class PostgreSQLFixtureDifficultyRepository:
             "venue": venue,
             "rating": rating,
             "band": band,
+            "calculation_run_id": calculation_run_id,
+            "algorithm_version": "synthetic-baseline/v1",
+            "calculated_at": "2026-07-27T00:00:00+00:00",
             "synthetic": True,
         }

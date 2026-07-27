@@ -32,9 +32,7 @@ class PostgreSQLHistoricalSquadImportRepository(PostgreSQLHistoricalImportReposi
         dry_run: bool,
     ) -> HistoricalImportAudit:
         if any(record.entity_type != "squad_membership" for record in batch.records):
-            raise ValueError(
-                "Historical squad projection accepts only squad_membership records."
-            )
+            raise ValueError("Historical squad projection accepts only squad_membership records.")
 
         digest = self.batch_digest(batch)
         with self._session_factory() as session:
@@ -126,16 +124,20 @@ class PostgreSQLHistoricalSquadImportRepository(PostgreSQLHistoricalImportReposi
                     continue
 
                 started_at = datetime.fromisoformat(str(record.payload["started_at"]))
-                current = session.execute(
-                    select(
-                        squad_ownerships_table.c.season_id,
-                        squad_ownerships_table.c.draft_team_id,
-                        squad_ownerships_table.c.player_id,
-                        squad_ownerships_table.c.roster_slot_id,
-                        squad_ownerships_table.c.started_at,
-                        squad_ownerships_table.c.ended_at,
-                    ).where(squad_ownerships_table.c.id == ownership_id)
-                ).mappings().one_or_none()
+                current = (
+                    session.execute(
+                        select(
+                            squad_ownerships_table.c.season_id,
+                            squad_ownerships_table.c.draft_team_id,
+                            squad_ownerships_table.c.player_id,
+                            squad_ownerships_table.c.roster_slot_id,
+                            squad_ownerships_table.c.started_at,
+                            squad_ownerships_table.c.ended_at,
+                        ).where(squad_ownerships_table.c.id == ownership_id)
+                    )
+                    .mappings()
+                    .one_or_none()
+                )
                 expected = {
                     "season_id": season_id,
                     "draft_team_id": team_id,
@@ -245,9 +247,9 @@ class PostgreSQLHistoricalSquadImportRepository(PostgreSQLHistoricalImportReposi
                 )
             )
         for record_id, reason in sorted(review_reasons.items()):
-            review_id = hashlib.sha256(
-                f"{batch.batch_id}:review:{record_id}".encode()
-            ).hexdigest()[:64]
+            review_id = hashlib.sha256(f"{batch.batch_id}:review:{record_id}".encode()).hexdigest()[
+                :64
+            ]
             session.execute(
                 insert(import_review_items_table).values(
                     id=review_id,

@@ -8,16 +8,17 @@ This release-readiness branch removes misleading runtime paths and aligns dashbo
 - `GET /api/dashboard/metrics` reads `dashboard_metric_catalog` when repository mode is PostgreSQL. An empty catalog remains empty instead of falling back to the in-memory allowlist.
 - `GET /api/dashboard/config` reads `dashboard_definitions` in PostgreSQL mode. A missing definition returns an explicit `404 not_found` response instead of silently rendering the in-memory sample dashboard.
 - Dashboard widget query and drill-down routes resolve widget definitions from the persisted dashboard configuration in PostgreSQL mode. Missing configuration or widget IDs return `404` rather than consulting the sample definition.
+- Dashboard widget queries read `dashboard_aggregate_snapshots` in PostgreSQL mode. Missing snapshots produce an explicit empty result instead of sample chart points.
 - Dashboard/FDR SQLAlchemy metadata matches migration `0007`'s `id`, `payload_json`, and `created_at` schema.
 
 ## Evidence
 
-- Existing known drill-down keys retain their deterministic rows.
+- Existing known drill-down keys retain their deterministic rows in memory-mode preview tests.
 - Focused API regressions verify unknown drill-down keys and absent persisted configuration do not expose sample data.
-- Deterministic metrics and dashboard configuration are explicitly labelled synthetic, seed idempotently, and round-trip through their payload tables.
-- The PostgreSQL workflow runs dashboard metric and configuration tests after applying all Alembic migrations, proving both repositories use the real migration `0007` schema.
-- Widget requests fail before synthetic configuration seeding and resolve the persisted `team-points` definition after seeding in both SQLite and migrated PostgreSQL tests.
+- Deterministic metrics, dashboard configuration, and aggregate snapshots are explicitly labelled synthetic, seed idempotently, and round-trip through their payload tables.
+- The PostgreSQL workflow runs dashboard metric, configuration, and aggregate snapshot tests after applying all Alembic migrations, proving the repositories use the real migration `0007` schema.
+- Widget queries are empty before synthetic snapshot seeding and return only the persisted, filter-matched `Castle FC` point after seeding in both SQLite and migrated PostgreSQL tests.
 
 ## Remaining scope
 
-Dashboard dimensions and filters remain in-memory. Widget aggregate and drill-down result data still come from the sample query repository, and FDR ratings remain sample-backed. The next slice should read dashboard aggregate snapshots for widget queries in PostgreSQL mode without a sample-data fallback.
+Dashboard dimensions and filters remain in-memory. Dashboard drill-down facts still come from the sample query repository, and FDR ratings remain sample-backed. The next slice should persist dashboard drill-down facts or explicitly disable drill-down in PostgreSQL mode until a persisted fact contract exists.

@@ -2,6 +2,7 @@ import os
 
 import pytest
 from sqlalchemy import create_engine, insert, select
+from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -87,7 +88,7 @@ def _assert_release_path(session_factory: sessionmaker[Session]) -> None:
     assert payload["synthetic"] is True
 
 
-def _create_tables(engine) -> None:
+def _create_tables(engine: Engine) -> None:
     for table in HISTORICAL_IMPORT_PERSISTENCE_TABLES:
         table.create(engine)
     fixture_scoring_snapshots_table.create(engine)
@@ -108,7 +109,6 @@ def test_epl_context_projection_and_missing_link_reviews() -> None:
     missing_snapshot = SyntheticEplContextExportAdapter().adapt(
         _document(
             batch_id="epl-context-missing-snapshot",
-            target_id="epl-fixture-2",
             snapshot_id="snapshot-missing",
         )
     )
@@ -133,7 +133,6 @@ def test_epl_context_projection_and_missing_link_reviews() -> None:
     missing_link = SyntheticEplContextExportAdapter().adapt(
         _document(
             batch_id="epl-context-missing-link",
-            target_id="epl-fixture-2",
             snapshot_id="snapshot-fixture-2",
         )
     )
@@ -189,8 +188,8 @@ def test_epl_context_adapter_duplicate_version_and_conflict_rollback() -> None:
             PostgreSQLHistoricalEplContextImportRepository(session_factory)
         ).execute(batch, dry_run=False)
     with session_factory() as session:
-        batches = session.execute(select(import_review_items_table.c.id)).all()
-    assert batches == []
+        reviews = session.execute(select(import_review_items_table.c.id)).all()
+    assert reviews == []
 
 
 @pytest.mark.skipif(

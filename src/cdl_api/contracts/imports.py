@@ -34,6 +34,8 @@ class HistoricalImportAudit(BaseModel):
     created_payloads: int = 0
     archived_payloads: int = 0
     unchanged_payloads: int = 0
+    projected_records: int = 0
+    unchanged_domain_records: int = 0
     mapping_conflicts: list[str] = Field(default_factory=list)
     review_items: list[str] = Field(default_factory=list)
     repeated_batch: bool = False

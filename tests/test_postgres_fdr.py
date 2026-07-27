@@ -86,22 +86,30 @@ def _assert_fdr_round_trip(session_factory: sessionmaker[Session]) -> None:
         input_count = session.execute(
             select(func.count()).select_from(fdr_calculation_inputs_table)
         ).scalar_one()
-        rating_payloads = session.execute(
-            select(fdr_ratings_table.c.payload_json).order_by(fdr_ratings_table.c.id)
-        ).scalars().all()
-        input_payloads = session.execute(
-            select(fdr_calculation_inputs_table.c.payload_json).order_by(
-                fdr_calculation_inputs_table.c.id
+        rating_payloads = (
+            session.execute(
+                select(fdr_ratings_table.c.payload_json).order_by(fdr_ratings_table.c.id)
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
+        input_payloads = (
+            session.execute(
+                select(fdr_calculation_inputs_table.c.payload_json).order_by(
+                    fdr_calculation_inputs_table.c.id
+                )
+            )
+            .scalars()
+            .all()
+        )
 
     assert rating_count == 4
     assert input_count == 1
     assert all(payload["synthetic"] is True for payload in rating_payloads)
     assert all(payload["synthetic"] is True for payload in input_payloads)
-    assert {
-        payload["calculation_run_id"] for payload in rating_payloads
-    } == {"synthetic-fdr-2025-26-v1"}
+    assert {payload["calculation_run_id"] for payload in rating_payloads} == {
+        "synthetic-fdr-2025-26-v1"
+    }
 
 
 def test_fdr_reads_persisted_ratings_without_memory_fallback() -> None:

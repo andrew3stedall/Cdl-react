@@ -41,9 +41,10 @@ The manual workflow:
 5. runs `terraform plan` with `-detailed-exitcode` and a saved plan file;
 6. renders the saved plan to human-readable text;
 7. reads the machine-readable JSON only inside the runner to create a redacted summary;
-8. deletes the binary plan and machine-readable JSON before artifact upload;
-9. uploads only the human-readable plan and redacted summary for seven days;
-10. never runs `terraform apply`.
+8. verifies every changed resource type belongs to the reviewed staging design;
+9. deletes the binary plan and machine-readable JSON before artifact upload;
+10. uploads only the human-readable plan and redacted summary for seven days;
+11. never runs `terraform apply`.
 
 Terraform exit code `0` means no changes and exit code `2` means a valid plan with changes.
 Exit code `1` fails the workflow.
@@ -64,6 +65,7 @@ The summary records:
 - SHA-256 of the ephemeral saved plan;
 - create, update, delete and replacement counts;
 - changed resource addresses and resource types without resource values;
+- resource-type allowlist status;
 - cost-sensitive resource categories;
 - security-sensitive resource categories;
 - the automated safety-gate result.
@@ -74,16 +76,22 @@ a public repository's workflow artifacts.
 
 ## Automated safety gates
 
-The summary step blocks the run when it detects either:
+The summary step blocks the run when it detects any of:
 
-- a destructive delete or replacement action; or
-- a public IAM principal such as `allUsers` or `allAuthenticatedUsers` in planned values.
+- a destructive delete or replacement action;
+- a public IAM principal such as `allUsers` or `allAuthenticatedUsers` in planned values; or
+- an unreviewed Terraform resource type that is not part of the committed staging design.
+
+The resource-type allowlist is intentionally fail-closed. Adding a new Terraform resource
+requires the implementation and allowlist change to be reviewed together before a live plan
+can pass. This prevents an unrelated compute, networking, analytics or other GCP resource
+from being introduced silently through a plan that otherwise contains no deletion or public
+principal.
 
 A blocked run still uploads the reviewable text and summary when they were generated, so the
 cause can be inspected. It does not authorize an apply.
 
-These checks are deliberately narrow. They do not replace a human review of the complete
-human-readable plan.
+These checks do not replace a human review of the complete human-readable plan.
 
 ## Human review checklist
 
@@ -92,6 +100,7 @@ Before requesting approval for any live apply, confirm:
 - the source SHA is the intended `main` commit;
 - the plan reads the expected staging backend and project;
 - there are no production resources;
+- every changed resource type belongs to the reviewed staging design;
 - Cloud SQL remains zonal and within the reviewed tier, disk-growth, backup and PITR bounds;
 - Cloud Run remains disabled unless a separately reviewed immutable image and deployment
   decision exist;

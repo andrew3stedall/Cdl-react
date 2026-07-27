@@ -24,11 +24,7 @@ def mount_static_frontend(
 
     assets_dir = frontend_root / "assets"
     if assets_dir.is_dir():
-        app.mount(
-            "/assets",
-            StaticFiles(directory=assets_dir),
-            name="frontend-assets",
-        )
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="frontend-assets")
 
     api_root = api_prefix.strip("/")
 

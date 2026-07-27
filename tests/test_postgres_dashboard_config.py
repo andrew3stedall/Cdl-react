@@ -27,19 +27,37 @@ def _assert_config_round_trip(
     client = _client(repository)
 
     empty_response = client.get("/api/dashboard/config")
+    empty_widget_response = client.post(
+        "/api/dashboard/widgets/team-points/query",
+        json={"filters": []},
+    )
 
     assert empty_response.status_code == 404
     assert empty_response.json()["code"] == "not_found"
     assert empty_response.json()["details"]["resource"] == "dashboard_definitions"
+    assert empty_widget_response.status_code == 404
+    assert empty_widget_response.json()["details"]["widget_id"] == "team-points"
 
     repository.seed_synthetic_data()
     repository.seed_synthetic_data()
     response = client.get("/api/dashboard/config")
+    widget_response = client.post(
+        "/api/dashboard/widgets/team-points/query",
+        json={"filters": [{"filter_id": "cdl_team", "value": "Castle FC"}]},
+    )
+    missing_widget_response = client.post(
+        "/api/dashboard/widgets/not-persisted/query",
+        json={"filters": []},
+    )
 
     assert response.status_code == 200
     assert response.json()["id"] == "manager-analytics"
     assert response.json()["widgets"][0]["id"] == "team-points"
     assert response.json()["metrics"][0]["id"] == "fantasy_points"
+    assert widget_response.status_code == 200
+    assert widget_response.json()["widget_id"] == "team-points"
+    assert widget_response.json()["series"][0]["points"][0]["label"] == "Castle FC"
+    assert missing_widget_response.status_code == 404
 
     with session_factory() as session:
         count = session.execute(

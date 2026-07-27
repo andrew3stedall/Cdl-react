@@ -20,14 +20,24 @@ The PostgreSQL repository provides these release-path behaviours:
 
 - dry-run execution returns a structured audit without writing rows;
 - a committed batch records its canonical SHA-256 digest;
-- an exact repeat is idempotent and reports unchanged payloads;
+- an exact repeat is idempotent and reports unchanged payloads and domain records;
 - reusing a batch ID with different content is rejected;
 - changed source records preserve their prior payload as an archived row;
 - conflicting source mappings create conflict and review payloads instead of overwriting mappings;
-- synthetic classification is retained on mappings, payloads, conflicts, reviews, and batch audits.
+- synthetic classification is retained on mappings, payloads, conflicts, reviews, batch audits, and projected rows.
 
-This boundary does not write league-domain tables. It validates import mechanics and auditability only.
+## Bounded domain projection
+
+The only supported domain projection is `entity_type=cdl_fixture`. Its approved mapping target becomes the identifier in the existing `cdl_fixtures` payload table.
+
+- dry-run reports the fixture projection without writing import or domain rows;
+- the import batch, source payload, mapping, and fixture are committed in one transaction;
+- exact replay is idempotent;
+- a mapping conflict records review evidence but performs no fixture write;
+- a target fixture with different persisted content raises before commit, rolling back the import batch and source-payload changes.
+
+This proves one deterministic synthetic import-to-domain path. It does not establish compatibility with a real export format or authorize automatic replacement of existing domain records.
 
 ## Remaining scope
 
-A real historical export still needs a versioned parser/adapter, source validation, mapping approval, and domain-write transaction evidence. Synthetic release-path tests do not establish compatibility with any real export format.
+A real historical export still needs a versioned parser/adapter, source validation, mapping approval, and evidence for each additional entity projection. Synthetic release-path tests do not establish compatibility with any real export format.

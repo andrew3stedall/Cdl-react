@@ -37,12 +37,17 @@ A successful run uploads one reviewable Markdown artifact for seven days. It rec
 - the exact source commit;
 - the workflow run URL;
 - the trusted `main` ref;
-- the staging project, project number and federated service-account identity;
+- the staging project and project number;
+- the exact Workload Identity provider path;
+- the exact federated service-account identity;
+- the exact Terraform state bucket name;
 - the OIDC-only GitHub token permission boundary;
 - the pass result for each state-bucket protection boundary; and
 - confirmation that the workflow changed no GCP resources.
 
-The artifact contains identifiers and pass results only. The raw bucket metadata and IAM policy are deleted from the runner through an exit trap and are not retained or uploaded. The workflow also fails if the reviewable evidence file is missing or empty.
+The provider path and bucket name are resource identifiers rather than credentials. Recording them prevents evidence from one valid staging identity or state bucket being mistaken for proof of another configuration.
+
+The artifact contains identifiers and pass results only. The raw bucket metadata and IAM policy are deleted from the runner through an exit trap and are not retained or uploaded. The workflow also fails if the reviewable evidence file is missing, empty, or omits either exact identifier.
 
 ## Safety boundary
 
@@ -56,7 +61,8 @@ The IAM check covers explicit bucket-policy bindings. Project-level inherited pe
 
 1. Confirm the five GitHub `staging` environment variables match the applied bootstrap outputs.
 2. Run **GCP WIF Verify** manually from `main`.
-3. Retain the seven-day verification artifact and record its workflow run in issues #70 and #78.
-4. Only then run **GCP Terraform Staging** to create the first authenticated saved plan.
+3. Confirm the artifact records the intended provider path and `gs://` state bucket before accepting it as evidence.
+4. Retain the seven-day verification artifact and record its workflow run in issues #70 and #78.
+5. Only then run **GCP Terraform Staging** to create the first authenticated saved plan.
 
 A failed boundary check requires correcting the GitHub environment value or reconciling live bootstrap drift before retrying. Do not weaken the check to accommodate an unexpected live state.

@@ -20,19 +20,38 @@ from cdl_api.repositories.postgres_league_fixtures import (
 )
 
 
-class PostgreSQLHistoricalScoringImportRepository(PostgreSQLHistoricalImportRepository):
+class PostgreSQLHistoricalScoringImportRepository(
+    PostgreSQLHistoricalImportRepository
+):
     """Persist synthetic scoring imports linked to existing fixtures and results."""
 
-    def run(self, batch: HistoricalImportBatch, *, dry_run: bool) -> HistoricalImportAudit:
-        if any(record.entity_type != "cdl_scoring_snapshot" for record in batch.records):
-            raise ValueError("Historical scoring projection accepts only cdl_scoring_snapshot records.")
+    def run(
+        self,
+        batch: HistoricalImportBatch,
+        *,
+        dry_run: bool,
+    ) -> HistoricalImportAudit:
+        if any(
+            record.entity_type != "cdl_scoring_snapshot"
+            for record in batch.records
+        ):
+            raise ValueError(
+                "Historical scoring projection accepts only "
+                "cdl_scoring_snapshot records."
+            )
 
         digest = self.batch_digest(batch)
         with self._session_factory() as session:
-            existing_batch = self._payload(session, import_batches_table, batch.batch_id)
+            existing_batch = self._payload(
+                session,
+                import_batches_table,
+                batch.batch_id,
+            )
             if existing_batch is not None:
                 if existing_batch.get("batch_digest") != digest:
-                    raise ValueError("Import batch ID already exists with different content.")
+                    raise ValueError(
+                        "Import batch ID already exists with different content."
+                    )
                 return HistoricalImportAudit(
                     batch_id=batch.batch_id,
                     contract_version=batch.contract_version,
@@ -51,14 +70,17 @@ class PostgreSQLHistoricalScoringImportRepository(PostgreSQLHistoricalImportRepo
             conflicts = sorted(
                 source_key
                 for source_key, target_id in requested_mappings.items()
-                if source_key in stored_mappings and stored_mappings[source_key] != target_id
+                if source_key in stored_mappings
+                and stored_mappings[source_key] != target_id
             )
 
             created = archived = unchanged = projected = unchanged_domain = 0
             review_items: list[str] = []
             missing_fixtures: list[str] = []
             missing_results: list[str] = []
-            payload_changes: list[tuple[str, dict[str, object], dict[str, object] | None]] = []
+            payload_changes: list[
+                tuple[str, dict[str, object], dict[str, object] | None]
+            ] = []
             domain_changes: list[tuple[str, dict[str, object]]] = []
 
             for record in batch.records:
@@ -70,7 +92,10 @@ class PostgreSQLHistoricalScoringImportRepository(PostgreSQLHistoricalImportRepo
                     review_items.append(record.source_record_id)
                     continue
 
-                payload_id = self._payload_id(batch.source_system, record.source_record_id)
+                payload_id = self._payload_id(
+                    batch.source_system,
+                    record.source_record_id,
+                )
                 next_payload: dict[str, object] = {
                     "contract_version": batch.contract_version,
                     "batch_id": batch.batch_id,
@@ -83,19 +108,26 @@ class PostgreSQLHistoricalScoringImportRepository(PostgreSQLHistoricalImportRepo
                     "synthetic": batch.synthetic,
                     "archived": False,
                 }
-                current_payload = self._payload(session, import_source_payloads_table, payload_id)
+                current_payload = self._payload(
+                    session,
+                    import_source_payloads_table,
+                    payload_id,
+                )
                 if current_payload == next_payload:
                     unchanged += 1
                 else:
                     created += current_payload is None
                     archived += current_payload is not None
-                    payload_changes.append((payload_id, next_payload, current_payload))
+                    payload_changes.append(
+                        (payload_id, next_payload, current_payload)
+                    )
 
                 if self._payload(session, cdl_fixtures_table, fixture_id) is None:
                     review_items.append(record.source_record_id)
                     missing_fixtures.append(record.source_record_id)
                     continue
-                if self._payload(session, fixture_results_table, f"result-{fixture_id}") is None:
+                result_id = f"result-{fixture_id}"
+                if self._payload(session, fixture_results_table, result_id) is None:
                     review_items.append(record.source_record_id)
                     missing_results.append(record.source_record_id)
                     continue
@@ -117,7 +149,8 @@ class PostgreSQLHistoricalScoringImportRepository(PostgreSQLHistoricalImportRepo
                     unchanged_domain += 1
                 elif current_snapshot is not None:
                     raise ValueError(
-                        f"Fixture scoring target {snapshot_id!r} already exists with different content."
+                        f"Fixture scoring target {snapshot_id!r} already exists "
+                        "with different content."
                     )
                 else:
                     projected += 1
@@ -152,7 +185,11 @@ class PostgreSQLHistoricalScoringImportRepository(PostgreSQLHistoricalImportRepo
                 )
             )
             self._persist_mappings(session, batch, stored_mappings, conflicts)
-            self._persist_payload_changes(session, batch.batch_id, payload_changes)
+            self._persist_payload_changes(
+                session,
+                batch.batch_id,
+                payload_changes,
+            )
             self._persist_scoring_reviews(
                 session,
                 batch,

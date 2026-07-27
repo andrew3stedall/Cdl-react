@@ -239,11 +239,10 @@ class PostgreSQLHistoricalHeadToHeadImportRepository(HistoricalImportRepository)
             fixture = cls._payload(session, cdl_fixtures_table, fixture_id)
             if fixture is None:
                 return "missing_fixture"
-            result = session.execute(
-                select(fixture_results_table.c.payload_json).where(
-                    fixture_id_column == fixture_id
-                )
-            ).scalar_one_or_none()
+            query = select(fixture_results_table.c.payload_json).where(
+                fixture_id_column == fixture_id
+            )
+            result = session.execute(query).scalar_one_or_none()
             if result is None:
                 return "missing_result"
 

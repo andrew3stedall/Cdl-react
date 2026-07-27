@@ -31,6 +31,14 @@ variable "backend_image" {
   description = "Fully qualified immutable frontend-and-API container image deployed when enable_cloud_run is true."
   type        = string
   default     = ""
+
+  validation {
+    condition = (
+      var.backend_image == "" ||
+      can(regex("@sha256:[0-9a-f]{64}$", var.backend_image))
+    )
+    error_message = "backend_image must be empty or an immutable @sha256 digest URI."
+  }
 }
 
 variable "runtime_repository_mode" {

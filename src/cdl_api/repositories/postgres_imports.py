@@ -249,9 +249,9 @@ class PostgreSQLHistoricalImportRepository:
                 )
             )
         for record_id in review_items:
-            review_id = hashlib.sha256(
-                f"{batch.batch_id}:review:{record_id}".encode()
-            ).hexdigest()[:64]
+            review_id = hashlib.sha256(f"{batch.batch_id}:review:{record_id}".encode()).hexdigest()[
+                :64
+            ]
             session.execute(
                 insert(import_review_items_table).values(
                     id=review_id,

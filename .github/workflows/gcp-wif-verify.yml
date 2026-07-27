@@ -4,7 +4,6 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
   id-token: write
 
 concurrency:
@@ -153,6 +152,7 @@ jobs:
             echo "- Project: \`${PROJECT_ID}\`"
             echo "- Project number: \`${PROJECT_NUMBER}\`"
             echo "- Federated account: \`${DEPLOY_SERVICE_ACCOUNT}\`"
+            echo "- GitHub token permissions: OIDC only; repository contents unavailable"
             echo "- State bucket project boundary: confirmed"
             echo "- State bucket region: \`australia-southeast1\`"
             echo "- Uniform bucket-level access: confirmed"
@@ -166,6 +166,7 @@ jobs:
 
           test -s "${evidence_file}"
           grep -Fq "Source commit: \`${GITHUB_SHA}\`" "${evidence_file}"
+          grep -Fq "GitHub token permissions: OIDC only; repository contents unavailable" "${evidence_file}"
           grep -Fq "Raw bucket metadata and IAM policy: deleted and not retained" "${evidence_file}"
           cat "${evidence_file}" >> "${GITHUB_STEP_SUMMARY}"
 

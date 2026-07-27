@@ -5,6 +5,7 @@ STAGING_MAIN = Path("infra/terraform/environments/staging/main.tf")
 STAGING_VARIABLES = Path("infra/terraform/environments/staging/variables.tf")
 CLOUD_RUN_MAIN = Path("infra/terraform/modules/cloud-run-api/main.tf")
 CLOUD_RUN_VARIABLES = Path("infra/terraform/modules/cloud-run-api/variables.tf")
+IMAGE_WORKFLOW = Path(".github/workflows/gcp-deploy-staging.yml")
 ADR = Path("docs/architecture/gcp-single-service-staging.md")
 
 
@@ -54,6 +55,26 @@ def test_runtime_identity_is_limited_to_consumed_secret_containers() -> None:
     assert '"cdl-database-url"' in runtime_secret_block
     assert '"cdl-development-login-secret"' in runtime_secret_block
     assert '"cdl-session-cookie-secret"' not in runtime_secret_block
+
+
+def test_image_workflow_builds_an_immutable_reference_without_deploying() -> None:
+    content = IMAGE_WORKFLOW.read_text(encoding="utf-8")
+
+    for phrase in [
+        "GCP Build Staging Image",
+        "confirm_foundation_applied",
+        "github.ref == 'refs/heads/main'",
+        "docker build --pull",
+        "docker push",
+        "gcloud artifacts docker images describe",
+        "image_digest_uri=",
+        "actions/upload-artifact@v4",
+    ]:
+        assert phrase in content
+
+    assert "deploy-cloudrun" not in content
+    assert "gcloud run deploy" not in content
+    assert "CDL_REPOSITORY_MODE=memory" not in content
 
 
 def test_adr_keeps_apply_migrations_and_public_access_separately_gated() -> None:

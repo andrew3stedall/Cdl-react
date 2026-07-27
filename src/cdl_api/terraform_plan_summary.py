@@ -165,9 +165,7 @@ def summarize_plan(
     ]
 
     if action_counts:
-        lines.extend(
-            f"- `{action}`: {count}" for action, count in sorted(action_counts.items())
-        )
+        lines.extend(f"- `{action}`: {count}" for action, count in sorted(action_counts.items()))
     else:
         lines.append("- No managed resource changes")
 
@@ -216,9 +214,7 @@ def _load_plan(path: Path) -> dict[str, JsonValue]:
 
 
 def _parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description="Create a redacted Terraform plan review summary."
-    )
+    parser = argparse.ArgumentParser(description="Create a redacted Terraform plan review summary.")
     parser.add_argument("--plan-json", type=Path, required=True)
     parser.add_argument("--plan-file", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)

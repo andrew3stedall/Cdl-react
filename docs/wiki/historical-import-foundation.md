@@ -70,8 +70,21 @@ The PostgreSQL repository provides these release-path behaviours:
 - duplicate snapshot keys create adapter review diagnostics;
 - unsupported scoring-export versions fail closed.
 
+## Bounded EPL fixture-context projection
+
+`synthetic-epl-context-export/v1` normalizes one EPL fixture context into `entity_type=epl_fixture_context`. `PostgreSQLHistoricalEplContextImportRepository` projects into `epl_fixtures` only when the named scoring snapshot exists and explicitly references the target EPL fixture ID.
+
+- dry-run reports the EPL context projection without database writes;
+- import evidence and the EPL context commit in one transaction;
+- exact replay is idempotent;
+- missing scoring snapshots create open `missing_scoring_snapshot` review items;
+- scoring snapshots that do not reference the target context create open `missing_scoring_link` review items;
+- existing EPL context content is never silently overwritten; a conflict raises before commit and rolls back import changes;
+- duplicate context keys create adapter review diagnostics;
+- unsupported EPL context-export versions fail closed.
+
 These adapters prove normalization and transactional projection for deterministic synthetic shapes only. They do not establish compatibility with a real export format or authorize automatic replacement of existing domain records.
 
 ## Remaining scope
 
-A real historical export still needs a separately validated parser/adapter, source authenticity and schema evidence, mapping approval, and coverage for EPL context, squads, table snapshots, knockout, head-to-head, and other entity projections. Synthetic release-path tests do not establish compatibility with any real export format.
+A real historical export still needs a separately validated parser/adapter, source authenticity and schema evidence, mapping approval, and coverage for squads, table snapshots, knockout, head-to-head, and other entity projections. Synthetic release-path tests do not establish compatibility with any real export format.

@@ -43,8 +43,10 @@ The manual workflow:
 7. reads the machine-readable JSON only inside the runner to create a redacted summary;
 8. verifies every changed resource type belongs to the reviewed staging design;
 9. deletes the binary plan and machine-readable JSON before artifact upload;
-10. uploads only the human-readable plan and redacted summary for seven days;
-11. never runs `terraform apply`.
+10. verifies that the complete human-readable plan and redacted summary both exist and are
+    non-empty;
+11. uploads only that complete evidence pair for seven days;
+12. never runs `terraform apply`.
 
 Terraform exit code `0` means no changes and exit code `2` means a valid plan with changes.
 Exit code `1` fails the workflow.
@@ -74,6 +76,11 @@ The binary plan and machine-readable JSON are deleted and are never uploaded. Th
 retaining executable plan material or JSON that could contain sensitive provider values in
 a public repository's workflow artifacts.
 
+Artifact publication is fail-closed. The workflow checks that both text files are non-empty
+and that the summary contains the expected review heading and retention boundary. If the
+summary utility crashes or does not produce valid review evidence, incomplete evidence is never uploaded
+and the job fails. A human-readable plan cannot be published by itself.
+
 ## Automated safety gates
 
 The summary step blocks the run when it detects any of:
@@ -88,8 +95,10 @@ can pass. This prevents an unrelated compute, networking, analytics or other GCP
 from being introduced silently through a plan that otherwise contains no deletion or public
 principal.
 
-A blocked run still uploads the reviewable text and summary when they were generated, so the
-cause can be inspected. It does not authorize an apply.
+A blocked run still uploads the complete human-readable plan and redacted summary when both
+were generated and passed the evidence-completeness check, so the cause can be inspected. It
+does not authorize an apply. A summary crash or incomplete evidence pair is treated differently:
+nothing is uploaded and the job fails.
 
 These checks do not replace a human review of the complete human-readable plan.
 

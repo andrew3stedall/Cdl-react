@@ -1,8 +1,12 @@
 """Fixture difficulty ratings service layer."""
 
+from typing import Protocol
+
+from cdl_api.contracts.domain import GameweekSummary, TeamSummary
 from cdl_api.contracts.fdr import (
     FixtureDifficultyCombinedResponse,
     FixtureDifficultyFilters,
+    FixtureDifficultyFixture,
     FixtureDifficultyResponse,
     FixtureDifficultyRow,
     FixtureDifficultyScaleStep,
@@ -11,8 +15,21 @@ from cdl_api.contracts.fdr import (
 from cdl_api.repositories.fdr_repository import FixtureDifficultyRepository
 
 
+class FixtureDifficultyDataRepository(Protocol):
+    def list_teams(self) -> list[TeamSummary]: ...
+
+    def list_gameweeks(self) -> list[GameweekSummary]: ...
+
+    def list_scales(self) -> list[FixtureDifficultyScaleStep]: ...
+
+    def list_fixtures(
+        self,
+        view: FixtureDifficultyView,
+    ) -> dict[str, list[FixtureDifficultyFixture]]: ...
+
+
 class FixtureDifficultyService:
-    def __init__(self, repository: FixtureDifficultyRepository | None = None) -> None:
+    def __init__(self, repository: FixtureDifficultyDataRepository | None = None) -> None:
         self._repository = repository or FixtureDifficultyRepository()
 
     def get_combined(
@@ -51,7 +68,7 @@ class FixtureDifficultyService:
                 continue
             fixtures = [
                 fixture
-                for fixture in fixtures_by_team[team.id]
+                for fixture in fixtures_by_team.get(team.id, [])
                 if self._within_gameweek_range(fixture.gameweek.number, active_filters)
             ]
             if not fixtures:

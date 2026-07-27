@@ -201,9 +201,7 @@ def test_squad_adapter_projection_reviews_and_conflict_rollback() -> None:
     duplicate = _document(batch_id="squad-duplicate")
     duplicate["rows"].append(dict(duplicate["rows"][0]))
     adapted = adapter.adapt(duplicate)
-    assert adapted.review_diagnostics == [
-        "duplicate squad membership key: membership-source-1"
-    ]
+    assert adapted.review_diagnostics == ["duplicate squad membership key: membership-source-1"]
     assert len(adapted.batch.records) == 1
 
     missing = adapter.adapt(
@@ -219,9 +217,7 @@ def test_squad_adapter_projection_reviews_and_conflict_rollback() -> None:
     assert audit.projected_records == 0
     assert audit.review_items == ["membership-source-1"]
     with session_factory() as session:
-        reason = session.execute(
-            select(import_review_items_table.c.payload_json)
-        ).scalar_one()
+        reason = session.execute(select(import_review_items_table.c.payload_json)).scalar_one()
     assert reason["reason"] == "missing_player"
 
     conflict = adapter.adapt(_document(batch_id="squad-conflict")).batch
@@ -240,14 +236,12 @@ def test_squad_adapter_projection_reviews_and_conflict_rollback() -> None:
         )
         session.commit()
     with pytest.raises(ValueError, match="already exists with different content"):
-        HistoricalImportService(
-            PostgreSQLHistoricalSquadImportRepository(session_factory)
-        ).execute(conflict, dry_run=False)
+        HistoricalImportService(PostgreSQLHistoricalSquadImportRepository(session_factory)).execute(
+            conflict, dry_run=False
+        )
     with session_factory() as session:
         existing = session.execute(
-            select(import_batches_table.c.id).where(
-                import_batches_table.c.id == "squad-conflict"
-            )
+            select(import_batches_table.c.id).where(import_batches_table.c.id == "squad-conflict")
         ).all()
     assert existing == []
 

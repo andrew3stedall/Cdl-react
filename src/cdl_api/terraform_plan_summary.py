@@ -77,9 +77,7 @@ def _parse_changes(plan: dict[str, JsonValue]) -> list[dict[str, JsonValue]]:
         change_body = _as_object(change.get("change"))
         actions = [
             action
-            for action in (
-                _as_string(item, "") for item in _as_list(change_body.get("actions"))
-            )
+            for action in (_as_string(item, "") for item in _as_list(change_body.get("actions")))
             if action
         ]
         action = _classify_actions(actions)
@@ -131,9 +129,7 @@ def summarize_plan(
         {
             resource_type
             for item in changed
-            if (resource_type := _as_string(item["type"])).startswith(
-                SECURITY_SENSITIVE_PREFIXES
-            )
+            if (resource_type := _as_string(item["type"])).startswith(SECURITY_SENSITIVE_PREFIXES)
         }
     )
 

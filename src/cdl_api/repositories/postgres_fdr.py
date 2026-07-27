@@ -21,7 +21,7 @@ class PostgreSQLFixtureDifficultyRepository:
     def __init__(self, session_factory: Callable[[], Session]) -> None:
         self._session_factory = session_factory
 
-    def _payloads(self) -> list[dict[str, object]]:
+    def _payloads(self, season: str) -> list[dict[str, object]]:
         with self._session_factory() as session:
             rows = session.execute(
                 select(fdr_ratings_table.c.id, fdr_ratings_table.c.payload_json).order_by(
@@ -33,12 +33,14 @@ class PostgreSQLFixtureDifficultyRepository:
                 payload = row["payload_json"]
                 if not isinstance(payload, Mapping):
                     raise ValueError("FDR rating payload must be a JSON object.")
+                if payload.get("season") != season:
+                    continue
                 payloads.append({"id": str(row["id"]), **dict(payload)})
             return payloads
 
-    def list_teams(self) -> list[TeamSummary]:
+    def list_teams(self, season: str) -> list[TeamSummary]:
         teams: dict[str, TeamSummary] = {}
-        for payload in self._payloads():
+        for payload in self._payloads(season):
             for prefix in ("team", "opponent"):
                 team_id = str(payload[f"{prefix}_id"])
                 teams[team_id] = TeamSummary(
@@ -48,8 +50,8 @@ class PostgreSQLFixtureDifficultyRepository:
                 )
         return sorted(teams.values(), key=lambda team: team.name)
 
-    def list_gameweeks(self) -> list[GameweekSummary]:
-        numbers = sorted({int(payload["gameweek"]) for payload in self._payloads()})
+    def list_gameweeks(self, season: str) -> list[GameweekSummary]:
+        numbers = sorted({int(payload["gameweek"]) for payload in self._payloads(season)})
         return [
             GameweekSummary(id=f"gw-{number}", name=f"Gameweek {number}", number=number)
             for number in numbers
@@ -78,11 +80,12 @@ class PostgreSQLFixtureDifficultyRepository:
     def list_fixtures(
         self,
         view: FixtureDifficultyView,
+        season: str,
     ) -> dict[str, list[FixtureDifficultyFixture]]:
         fixtures: dict[str, list[FixtureDifficultyFixture]] = {
-            team.id: [] for team in self.list_teams()
+            team.id: [] for team in self.list_teams(season)
         }
-        for payload in self._payloads():
+        for payload in self._payloads(season):
             if payload.get("view") != view.value:
                 continue
             team_id = str(payload["team_id"])

@@ -4,6 +4,7 @@ from typing import Protocol
 
 from cdl_api.contracts.domain import GameweekSummary, TeamSummary
 from cdl_api.contracts.fdr import (
+    FixtureDifficultyCalculationInputAudit,
     FixtureDifficultyCombinedResponse,
     FixtureDifficultyFilters,
     FixtureDifficultyFixture,
@@ -21,6 +22,11 @@ class FixtureDifficultyDataRepository(Protocol):
     def list_gameweeks(self, season: str) -> list[GameweekSummary]: ...
 
     def list_scales(self) -> list[FixtureDifficultyScaleStep]: ...
+
+    def list_calculation_inputs(
+        self,
+        season: str,
+    ) -> list[FixtureDifficultyCalculationInputAudit]: ...
 
     def list_fixtures(
         self,
@@ -98,6 +104,12 @@ class FixtureDifficultyService:
 
     def get_scales(self) -> list[FixtureDifficultyScaleStep]:
         return self._repository.list_scales()
+
+    def get_calculation_inputs(
+        self,
+        season: str,
+    ) -> list[FixtureDifficultyCalculationInputAudit]:
+        return self._repository.list_calculation_inputs(season)
 
     def _within_gameweek_range(
         self,

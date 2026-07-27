@@ -95,7 +95,8 @@ def _assert_snapshot_round_trip(session_factory: sessionmaker[Session]) -> None:
     assert all(payload["synthetic"] is True for payload in payloads)
 
 
-def test_dashboard_widget_query_reads_persisted_snapshots_without_memory_fallback() -> None:
+def test_dashboard_widget_query_reads_persisted_snapshots_without_memory_fallback(
+) -> None:
     engine = create_engine(
         "sqlite+pysqlite:///:memory:",
         connect_args={"check_same_thread": False},
@@ -112,7 +113,8 @@ def test_dashboard_widget_query_reads_persisted_snapshots_without_memory_fallbac
     not os.getenv("CDL_DATABASE_URL", "").startswith("postgresql"),
     reason="requires the migrated PostgreSQL CI service",
 )
-def test_clean_postgres_dashboard_widget_query_uses_migration_0007_snapshots() -> None:
+def test_clean_postgres_dashboard_widget_query_uses_migration_0007_snapshots(
+) -> None:
     engine = create_engine(os.environ["CDL_DATABASE_URL"])
     session_factory = sessionmaker(bind=engine, class_=Session)
 

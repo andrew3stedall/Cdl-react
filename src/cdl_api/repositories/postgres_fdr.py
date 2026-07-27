@@ -115,35 +115,61 @@ class PostgreSQLFixtureDifficultyRepository:
     def seed_synthetic_data(self) -> None:
         """Idempotently insert deterministic, explicitly synthetic FDR ratings."""
         rows = (
-            ("attack-arsenal-gw12", "attack", "arsenal", "Arsenal", "ARS", "man-city", "Manchester City", "MCI", 12, "H", 4, "hard"),
-            ("defence-arsenal-gw12", "defence", "arsenal", "Arsenal", "ARS", "man-city", "Manchester City", "MCI", 12, "H", 3, "medium"),
-            ("attack-man-city-gw12", "attack", "man-city", "Manchester City", "MCI", "arsenal", "Arsenal", "ARS", 12, "A", 2, "easy"),
-            ("defence-man-city-gw12", "defence", "man-city", "Manchester City", "MCI", "arsenal", "Arsenal", "ARS", 12, "A", 4, "hard"),
+            self._synthetic_rating(
+                "attack-arsenal-gw12", "attack", "arsenal", "Arsenal", "ARS",
+                "man-city", "Manchester City", "MCI", "H", 4, "hard",
+            ),
+            self._synthetic_rating(
+                "defence-arsenal-gw12", "defence", "arsenal", "Arsenal", "ARS",
+                "man-city", "Manchester City", "MCI", "H", 3, "medium",
+            ),
+            self._synthetic_rating(
+                "attack-man-city-gw12", "attack", "man-city", "Manchester City", "MCI",
+                "arsenal", "Arsenal", "ARS", "A", 2, "easy",
+            ),
+            self._synthetic_rating(
+                "defence-man-city-gw12", "defence", "man-city", "Manchester City", "MCI",
+                "arsenal", "Arsenal", "ARS", "A", 4, "hard",
+            ),
         )
         with self._session_factory() as session:
-            existing_ids = {str(row[0]) for row in session.execute(select(fdr_ratings_table.c.id))}
-            for row in rows:
-                rating_id, view, team_id, team_name, team_short, opponent_id, opponent_name, opponent_short, gameweek, venue, rating, band = row
+            existing_ids: set[str] = set()
+            for row in session.execute(select(fdr_ratings_table.c.id)):
+                existing_ids.add(str(row[0]))
+            for rating_id, payload in rows:
                 if rating_id in existing_ids:
                     continue
                 session.execute(
-                    insert(fdr_ratings_table).values(
-                        id=rating_id,
-                        payload_json={
-                            "season": "2025/26",
-                            "view": view,
-                            "team_id": team_id,
-                            "team_name": team_name,
-                            "team_short_name": team_short,
-                            "opponent_id": opponent_id,
-                            "opponent_name": opponent_name,
-                            "opponent_short_name": opponent_short,
-                            "gameweek": gameweek,
-                            "venue": venue,
-                            "rating": rating,
-                            "band": band,
-                            "synthetic": True,
-                        },
-                    )
+                    insert(fdr_ratings_table).values(id=rating_id, payload_json=payload)
                 )
             session.commit()
+
+    @staticmethod
+    def _synthetic_rating(
+        rating_id: str,
+        view: str,
+        team_id: str,
+        team_name: str,
+        team_short_name: str,
+        opponent_id: str,
+        opponent_name: str,
+        opponent_short_name: str,
+        venue: str,
+        rating: int,
+        band: str,
+    ) -> tuple[str, dict[str, object]]:
+        return rating_id, {
+            "season": "2025/26",
+            "view": view,
+            "team_id": team_id,
+            "team_name": team_name,
+            "team_short_name": team_short_name,
+            "opponent_id": opponent_id,
+            "opponent_name": opponent_name,
+            "opponent_short_name": opponent_short_name,
+            "gameweek": 12,
+            "venue": venue,
+            "rating": rating,
+            "band": band,
+            "synthetic": True,
+        }

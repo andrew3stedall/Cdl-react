@@ -21,4 +21,4 @@ This release-readiness branch removes misleading runtime paths and aligns dashbo
 
 ## Remaining scope
 
-Dashboard dimensions and filters remain in-memory. Dashboard drill-down facts are explicitly empty in PostgreSQL mode because aggregate snapshots do not contain row-level facts. FDR ratings remain sample-backed. The next slice should define and persist dashboard drill-down facts or formally disable drill-down controls in PostgreSQL mode until a fact contract exists.
+Dashboard dimensions and filters remain in-memory. Dashboard drill-down facts still come from the sample query repository, and FDR ratings remain sample-backed. The next slice should route dashboard drill-down through a persisted fact contract in PostgreSQL mode, returning no sample rows when persisted facts are unavailable.

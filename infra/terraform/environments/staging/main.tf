@@ -164,6 +164,9 @@ module "cloud_run_api" {
   environment                   = var.environment
   labels                        = merge(local.common_labels, { component = "application" })
   repository_mode               = var.runtime_repository_mode
+  environment_variables = {
+    CDL_SESSION_COOKIE_SECURE = "true"
+  }
   secret_environment_variables = {
     CDL_DATABASE_URL = {
       secret = module.runtime_secrets.secret_names["cdl-database-url"]

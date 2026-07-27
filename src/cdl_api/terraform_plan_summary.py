@@ -135,8 +135,7 @@ def summarize_plan(
         {
             resource_type
             for item in changed
-            if (resource_type := _as_string(item["type"]))
-            not in APPROVED_STAGING_RESOURCE_TYPES
+            if (resource_type := _as_string(item["type"])) not in APPROVED_STAGING_RESOURCE_TYPES
         }
     )
 

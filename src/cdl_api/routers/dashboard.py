@@ -36,7 +36,6 @@ router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
 _dashboard_service = DashboardService()
 _catalog_service = MetricCatalogService()
-_query_service = WidgetQueryService()
 
 
 class DashboardConfigRepository(Protocol):
@@ -164,13 +163,14 @@ def dashboard_widget_query(
 def dashboard_widget_drilldown(
     widget_id: str,
     request: DashboardDrilldownRequest,
-    repository: DashboardConfigRepository = Depends(get_dashboard_config_repository),
+    config_repository: DashboardConfigRepository = Depends(get_dashboard_config_repository),
+    query_repository: DashboardQueryRepository = Depends(get_dashboard_query_repository),
 ) -> DashboardDrilldownResponse | JSONResponse:
-    widget = repository.get_widget(widget_id)
+    widget = config_repository.get_widget(widget_id)
     if widget is None:
         return _not_found(widget_id)
 
-    return _query_service.drilldown(widget, request)
+    return WidgetQueryService(query_repository, _catalog_service).drilldown(widget, request)
 
 
 def _not_found(widget_id: str) -> JSONResponse:

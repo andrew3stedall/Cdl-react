@@ -7,6 +7,8 @@ import pytest
 
 from cdl_api import migrate
 
+MIGRATION_RUNBOOK = Path("docs/runbooks/gcp-staging-database-migrations.md")
+
 
 def test_migration_entrypoint_requires_explicit_database_url(
     monkeypatch: pytest.MonkeyPatch,
@@ -52,3 +54,18 @@ def test_backend_image_packages_migration_assets() -> None:
     assert "COPY alembic.ini ./" in dockerfile
     assert "COPY migrations ./migrations" in dockerfile
     assert "COPY src ./src" in dockerfile
+
+
+def test_staging_migration_runbook_preserves_controlled_execution_boundary() -> None:
+    content = MIGRATION_RUNBOOK.read_text(encoding="utf-8")
+
+    for phrase in [
+        "python -m cdl_api.migrate",
+        "CDL_DATABASE_URL is mandatory",
+        "dedicated migration service account",
+        "immutable backend image digest",
+        "Migration and seed execution must remain separate",
+        "does not prove Cloud SQL connectivity",
+        "Any live migration or chargeable infrastructure action requires",
+    ]:
+        assert phrase in content

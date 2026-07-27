@@ -1,8 +1,8 @@
 # Historical import persistence foundation
 
-Issue #69 tracks repeatable historical Castle Draft League imports. Real historical exports are not available, so repository evidence must remain synthetic and must not be represented as real import coverage.
+Issue #69 tracks repeatable historical Castle Draft League imports. Real historical exports are not available, so repository evidence remains deterministic and synthetic and is not represented as real import coverage.
 
-Migration `0008_import_tooling` already creates five generic payload tables:
+Migration `0008_import_tooling` creates five generic payload tables:
 
 - `import_batches`;
 - `import_source_mappings`;
@@ -10,6 +10,24 @@ Migration `0008_import_tooling` already creates five generic payload tables:
 - `import_review_items`;
 - `import_conflicts`.
 
-Each table currently has the migration-owned `id`, `payload_json`, and `created_at` columns. Runtime SQLAlchemy metadata must match that schema exactly. An earlier metadata definition modelled typed columns and foreign keys that do not exist in a clean Alembic-migrated database; this branch removes that mismatch and adds clean PostgreSQL evidence.
+Each table uses the migration-owned `id`, `payload_json`, and `created_at` columns. Runtime SQLAlchemy metadata matches that schema exactly.
 
-The payload contract, idempotency rules, source mapping semantics, conflict handling, dry-run audit, and domain writes remain intentionally unimplemented. The next bounded slice should add one versioned deterministic synthetic payload contract and repository/service path that proves repeat execution, archival, mapping conflicts, and structured audit output without requiring real exports.
+## Versioned synthetic contract
+
+`historical-import/v1` defines one batch, its source system, source-to-domain mappings, and source records. `HistoricalImportService` currently accepts only explicitly synthetic contracts. A contract claiming to contain real export data fails closed until separate export-validation evidence exists.
+
+The PostgreSQL repository provides these release-path behaviours:
+
+- dry-run execution returns a structured audit without writing rows;
+- a committed batch records its canonical SHA-256 digest;
+- an exact repeat is idempotent and reports unchanged payloads;
+- reusing a batch ID with different content is rejected;
+- changed source records preserve their prior payload as an archived row;
+- conflicting source mappings create conflict and review payloads instead of overwriting mappings;
+- synthetic classification is retained on mappings, payloads, conflicts, reviews, and batch audits.
+
+This boundary does not write league-domain tables. It validates import mechanics and auditability only.
+
+## Remaining scope
+
+A real historical export still needs a versioned parser/adapter, source validation, mapping approval, and domain-write transaction evidence. Synthetic release-path tests do not establish compatibility with any real export format.

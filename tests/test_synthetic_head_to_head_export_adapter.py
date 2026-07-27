@@ -34,9 +34,20 @@ def _document(*, batch_id: str = "head-to-head-batch-1") -> dict:
             {
                 "record_key": "h2h-source-1",
                 "target_record_id": "h2h-team-a-team-b",
-                "team": {"id": "team-a", "name": "Synthetic A", "short_name": "A"},
-                "opponent": {"id": "team-b", "name": "Synthetic B", "short_name": "B"},
-                "fixture_source_keys": ["fixture-source-1", "fixture-source-2"],
+                "team": {
+                    "id": "team-a",
+                    "name": "Synthetic A",
+                    "short_name": "A",
+                },
+                "opponent": {
+                    "id": "team-b",
+                    "name": "Synthetic B",
+                    "short_name": "B",
+                },
+                "fixture_source_keys": [
+                    "fixture-source-1",
+                    "fixture-source-2",
+                ],
                 "target_fixture_ids": ["fixture-1", "fixture-2"],
                 "played": 2,
                 "wins": 1,
@@ -57,7 +68,11 @@ def _create_tables(engine: Engine) -> None:
     head_to_head_records_table.create(engine)
 
 
-def _seed_dependencies(session_factory: sessionmaker[Session], *, include_second_result: bool = True) -> None:
+def _seed_dependencies(
+    session_factory: sessionmaker[Session],
+    *,
+    include_second_result: bool = True,
+) -> None:
     with session_factory() as session:
         for fixture_id in ("fixture-1", "fixture-2"):
             session.execute(
@@ -73,14 +88,22 @@ def _seed_dependencies(session_factory: sessionmaker[Session], *, include_second
         session.execute(
             insert(fixture_results_table).values(
                 id="result-fixture-1",
-                payload_json={"fixture_id": "fixture-1", "home_score": 55, "away_score": 45},
+                payload_json={
+                    "fixture_id": "fixture-1",
+                    "home_score": 55,
+                    "away_score": 45,
+                },
             )
         )
         if include_second_result:
             session.execute(
                 insert(fixture_results_table).values(
                     id="result-fixture-2",
-                    payload_json={"fixture_id": "fixture-2", "home_score": 50, "away_score": 50},
+                    payload_json={
+                        "fixture_id": "fixture-2",
+                        "home_score": 50,
+                        "away_score": 50,
+                    },
                 )
             )
         session.commit()
@@ -128,7 +151,9 @@ def test_head_to_head_adapter_projection_reviews_and_conflict_rollback() -> None
     duplicate = _document(batch_id="h2h-duplicate")
     duplicate["rows"].append(dict(duplicate["rows"][0]))
     adapted = adapter.adapt(duplicate)
-    assert adapted.review_diagnostics == ["duplicate head-to-head key: h2h-source-1"]
+    assert adapted.review_diagnostics == [
+        "duplicate head-to-head key: h2h-source-1"
+    ]
     assert len(adapted.batch.records) == 1
 
     invalid = _document(batch_id="h2h-invalid")
@@ -151,7 +176,9 @@ def test_head_to_head_adapter_projection_reviews_and_conflict_rollback() -> None
     assert audit.projected_records == 0
     assert audit.review_items == ["h2h-source-1"]
     with missing_factory() as session:
-        reason = session.execute(select(import_review_items_table.c.payload_json)).scalar_one()
+        reason = session.execute(
+            select(import_review_items_table.c.payload_json)
+        ).scalar_one()
     assert reason["reason"] == "missing_result"
 
     conflict = adapter.adapt(_document(batch_id="h2h-conflict")).batch
@@ -170,13 +197,18 @@ def test_head_to_head_adapter_projection_reviews_and_conflict_rollback() -> None
         ).execute(conflict, dry_run=False)
     with session_factory() as session:
         existing = session.execute(
-            select(import_batches_table.c.id).where(import_batches_table.c.id == "h2h-conflict")
+            select(import_batches_table.c.id).where(
+                import_batches_table.c.id == "h2h-conflict"
+            )
         ).all()
     assert existing == []
 
     unsupported = _document()
     unsupported["export_version"] = "synthetic-head-to-head-export/v2"
-    with pytest.raises(ValueError, match="Unsupported synthetic head-to-head export version"):
+    with pytest.raises(
+        ValueError,
+        match="Unsupported synthetic head-to-head export version",
+    ):
         adapter.adapt(unsupported)
 
 

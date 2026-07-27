@@ -30,5 +30,11 @@ jobs:
       - uses: astral-sh/setup-uv@v4
       - run: uv sync
       - run: uv run alembic upgrade head
-      - name: Test PostgreSQL league release path
-        run: uv run pytest tests/test_postgres_league_api.py
+      - name: Test PostgreSQL release paths
+        run: >-
+          uv run pytest
+          tests/test_postgres_league_api.py
+          tests/test_postgres_dashboard_metrics.py
+          tests/test_postgres_dashboard_config.py
+          tests/test_postgres_dashboard_snapshots.py
+          tests/test_postgres_fdr.py

@@ -65,3 +65,16 @@ def test_dashboard_drilldown_and_missing_widget_endpoints() -> None:
     assert drilldown_response.json()["rows"][0]["cells"]["team"] == "Castle FC"
     assert missing_response.status_code == 404
     assert missing_response.json()["code"] == "not_found"
+
+
+def test_dashboard_unknown_drilldown_key_does_not_return_sample_data() -> None:
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/api/dashboard/widgets/team-points/drilldown",
+        json={"point_key": "unknown-team", "filters": []},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["rows"] == []
+    assert "Sample Player" not in response.text

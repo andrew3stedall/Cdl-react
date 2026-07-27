@@ -1,8 +1,13 @@
 """Fixture difficulty ratings service layer."""
 
+from typing import Protocol
+
+from cdl_api.contracts.domain import GameweekSummary, TeamSummary
 from cdl_api.contracts.fdr import (
+    FixtureDifficultyCalculationInputAudit,
     FixtureDifficultyCombinedResponse,
     FixtureDifficultyFilters,
+    FixtureDifficultyFixture,
     FixtureDifficultyResponse,
     FixtureDifficultyRow,
     FixtureDifficultyScaleStep,
@@ -11,8 +16,27 @@ from cdl_api.contracts.fdr import (
 from cdl_api.repositories.fdr_repository import FixtureDifficultyRepository
 
 
+class FixtureDifficultyDataRepository(Protocol):
+    def list_teams(self, season: str) -> list[TeamSummary]: ...
+
+    def list_gameweeks(self, season: str) -> list[GameweekSummary]: ...
+
+    def list_scales(self) -> list[FixtureDifficultyScaleStep]: ...
+
+    def list_calculation_inputs(
+        self,
+        season: str,
+    ) -> list[FixtureDifficultyCalculationInputAudit]: ...
+
+    def list_fixtures(
+        self,
+        view: FixtureDifficultyView,
+        season: str,
+    ) -> dict[str, list[FixtureDifficultyFixture]]: ...
+
+
 class FixtureDifficultyService:
-    def __init__(self, repository: FixtureDifficultyRepository | None = None) -> None:
+    def __init__(self, repository: FixtureDifficultyDataRepository | None = None) -> None:
         self._repository = repository or FixtureDifficultyRepository()
 
     def get_combined(
@@ -33,15 +57,15 @@ class FixtureDifficultyService:
         filters: FixtureDifficultyFilters | None = None,
     ) -> FixtureDifficultyResponse:
         active_filters = filters or FixtureDifficultyFilters()
-        fixtures_by_team = self._repository.list_fixtures(view)
-        teams = self._repository.list_teams()
+        fixtures_by_team = self._repository.list_fixtures(view, active_filters.season)
+        teams = self._repository.list_teams(active_filters.season)
         if active_filters.team_id:
             selected_team_ids = {active_filters.team_id}
         else:
             selected_team_ids = {team.id for team in teams}
         available_gameweeks = [
             gameweek
-            for gameweek in self._repository.list_gameweeks()
+            for gameweek in self._repository.list_gameweeks(active_filters.season)
             if self._within_gameweek_range(gameweek.number, active_filters)
         ]
         rows: list[FixtureDifficultyRow] = []
@@ -51,7 +75,7 @@ class FixtureDifficultyService:
                 continue
             fixtures = [
                 fixture
-                for fixture in fixtures_by_team[team.id]
+                for fixture in fixtures_by_team.get(team.id, [])
                 if self._within_gameweek_range(fixture.gameweek.number, active_filters)
             ]
             if not fixtures:
@@ -80,6 +104,12 @@ class FixtureDifficultyService:
 
     def get_scales(self) -> list[FixtureDifficultyScaleStep]:
         return self._repository.list_scales()
+
+    def get_calculation_inputs(
+        self,
+        season: str,
+    ) -> list[FixtureDifficultyCalculationInputAudit]:
+        return self._repository.list_calculation_inputs(season)
 
     def _within_gameweek_range(
         self,

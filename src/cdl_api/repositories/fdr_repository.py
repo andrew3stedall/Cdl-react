@@ -3,6 +3,7 @@
 from cdl_api.contracts.domain import GameweekSummary, TeamSummary
 from cdl_api.contracts.fdr import (
     FixtureDifficultyBand,
+    FixtureDifficultyCalculationInputAudit,
     FixtureDifficultyFixture,
     FixtureDifficultyScaleStep,
     FixtureDifficultyView,
@@ -12,7 +13,7 @@ from cdl_api.contracts.fdr import (
 class FixtureDifficultyRepository:
     """Repository boundary for FDR source data and scale definitions."""
 
-    def list_teams(self) -> list[TeamSummary]:
+    def list_teams(self, season: str) -> list[TeamSummary]:
         return [
             TeamSummary(id="arsenal", name="Arsenal", short_name="ARS"),
             TeamSummary(id="man-city", name="Manchester City", short_name="MCI"),
@@ -20,7 +21,7 @@ class FixtureDifficultyRepository:
             TeamSummary(id="tottenham", name="Tottenham", short_name="TOT"),
         ]
 
-    def list_gameweeks(self) -> list[GameweekSummary]:
+    def list_gameweeks(self, season: str) -> list[GameweekSummary]:
         return [
             GameweekSummary(id=f"gw-{number}", name=f"Gameweek {number}", number=number)
             for number in range(12, 17)
@@ -48,12 +49,20 @@ class FixtureDifficultyRepository:
             for rating, band, label, contrast_ratio in scale_rows
         ]
 
+    def list_calculation_inputs(
+        self,
+        season: str,
+    ) -> list[FixtureDifficultyCalculationInputAudit]:
+        """Memory preview data has no persisted calculation audit evidence."""
+        return []
+
     def list_fixtures(
         self,
         view: FixtureDifficultyView,
+        season: str,
     ) -> dict[str, list[FixtureDifficultyFixture]]:
-        teams = {team.id: team for team in self.list_teams()}
-        gameweeks = {gameweek.number: gameweek for gameweek in self.list_gameweeks()}
+        teams = {team.id: team for team in self.list_teams(season)}
+        gameweeks = {gameweek.number: gameweek for gameweek in self.list_gameweeks(season)}
         ratings = self._ratings()[view]
         opponents = self._opponents()
 

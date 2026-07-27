@@ -85,7 +85,7 @@ module "frontend_assets" {
   project_id  = var.project_id
   bucket_name = local.frontend_bucket_name
   location    = var.region
-  labels      = merge(local.common_labels, { component = "frontend-assets" })
+  labels      = merge(local.common_labels, { component = "frontend" })
 
   depends_on = [google_project_service.required]
 }
@@ -162,7 +162,7 @@ module "cloud_run_api" {
   runtime_service_account_email = google_service_account.runtime.email
   cloud_sql_connection_name     = module.cloud_sql.connection_name
   environment                   = var.environment
-  labels                        = merge(local.common_labels, { component = "application" })
+  labels                        = merge(local.common_labels, { component = "api" })
   repository_mode               = var.runtime_repository_mode
   environment_variables = {
     CDL_SESSION_COOKIE_SECURE = "true"

@@ -57,12 +57,8 @@ class SyntheticFixtureExportAdapter:
                 review_diagnostics.append(f"duplicate fixture key: {row.fixture_key}")
                 continue
             seen_fixture_keys.add(row.fixture_key)
-            mappings.append(
-                {"source_key": row.fixture_key, "target_id": row.target_fixture_id}
-            )
-            mapping_diagnostics.append(
-                f"{row.fixture_key} -> {row.target_fixture_id}"
-            )
+            mappings.append({"source_key": row.fixture_key, "target_id": row.target_fixture_id})
+            mapping_diagnostics.append(f"{row.fixture_key} -> {row.target_fixture_id}")
             records.append(
                 {
                     "source_record_id": row.fixture_key,

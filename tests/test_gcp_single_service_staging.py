@@ -37,7 +37,7 @@ def test_staging_runtime_is_postgres_ready_but_disabled_by_default() -> None:
     assert "CDL_DEVELOPMENT_LOGIN_SECRET" in main
     assert 'CDL_SESSION_COOKIE_SECURE = "true"' in main
     assert "allow_public_invoker = var.allow_public_invoker" in main
-    assert '@sha256:[0-9a-f]{64}$' in variables
+    assert "@sha256:[0-9a-f]{64}$" in variables
 
 
 def test_cloud_run_module_resolves_secret_versions_without_plaintext_values() -> None:

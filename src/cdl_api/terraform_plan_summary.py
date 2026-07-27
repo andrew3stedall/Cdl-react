@@ -157,9 +157,7 @@ def summarize_plan(
         {
             resource_type
             for item in changed
-            if (resource_type := _as_string(item["type"])).startswith(
-                SECURITY_SENSITIVE_PREFIXES
-            )
+            if (resource_type := _as_string(item["type"])).startswith(SECURITY_SENSITIVE_PREFIXES)
         }
     )
 

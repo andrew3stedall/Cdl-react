@@ -53,9 +53,7 @@ def _assert_release_path(session_factory: sessionmaker[Session]) -> None:
     dry_run = service.execute(adapted.batch, dry_run=True)
     assert dry_run.projected_records == 1
     with session_factory() as session:
-        rows = session.execute(
-            select(fixture_scoring_snapshots_table.c.id)
-        ).all()
+        rows = session.execute(select(fixture_scoring_snapshots_table.c.id)).all()
         assert rows == []
 
     committed = service.execute(adapted.batch, dry_run=False)
@@ -109,15 +107,17 @@ def test_scoring_adapter_projection_and_missing_dependency_reviews() -> None:
     _prepare_dependencies(session_factory)
     _assert_release_path(session_factory)
 
-    missing_repository = PostgreSQLHistoricalScoringImportRepository(
-        session_factory
-    )
-    missing_batch = SyntheticScoringExportAdapter().adapt(
-        _document(
-            batch_id="scoring-batch-missing",
-            target_id="fixture-missing",
+    missing_repository = PostgreSQLHistoricalScoringImportRepository(session_factory)
+    missing_batch = (
+        SyntheticScoringExportAdapter()
+        .adapt(
+            _document(
+                batch_id="scoring-batch-missing",
+                target_id="fixture-missing",
+            )
         )
-    ).batch
+        .batch
+    )
     audit = HistoricalImportService(missing_repository).execute(
         missing_batch,
         dry_run=False,
@@ -131,9 +131,7 @@ def test_scoring_adapter_duplicate_and_version_diagnostics() -> None:
     payload = _document()
     payload["rows"].append(dict(payload["rows"][0]))
     adapted = adapter.adapt(payload)
-    assert adapted.review_diagnostics == [
-        "duplicate scoring snapshot key: snapshot-source-1"
-    ]
+    assert adapted.review_diagnostics == ["duplicate scoring snapshot key: snapshot-source-1"]
     assert len(adapted.batch.records) == 1
 
     payload["export_version"] = "synthetic-scoring-export/v2"

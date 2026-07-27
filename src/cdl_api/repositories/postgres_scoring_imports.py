@@ -20,9 +20,7 @@ from cdl_api.repositories.postgres_league_fixtures import (
 )
 
 
-class PostgreSQLHistoricalScoringImportRepository(
-    PostgreSQLHistoricalImportRepository
-):
+class PostgreSQLHistoricalScoringImportRepository(PostgreSQLHistoricalImportRepository):
     """Persist synthetic scoring imports linked to existing fixtures and results."""
 
     def run(
@@ -31,13 +29,9 @@ class PostgreSQLHistoricalScoringImportRepository(
         *,
         dry_run: bool,
     ) -> HistoricalImportAudit:
-        if any(
-            record.entity_type != "cdl_scoring_snapshot"
-            for record in batch.records
-        ):
+        if any(record.entity_type != "cdl_scoring_snapshot" for record in batch.records):
             raise ValueError(
-                "Historical scoring projection accepts only "
-                "cdl_scoring_snapshot records."
+                "Historical scoring projection accepts only cdl_scoring_snapshot records."
             )
 
         digest = self.batch_digest(batch)
@@ -49,9 +43,7 @@ class PostgreSQLHistoricalScoringImportRepository(
             )
             if existing_batch is not None:
                 if existing_batch.get("batch_digest") != digest:
-                    raise ValueError(
-                        "Import batch ID already exists with different content."
-                    )
+                    raise ValueError("Import batch ID already exists with different content.")
                 return HistoricalImportAudit(
                     batch_id=batch.batch_id,
                     contract_version=batch.contract_version,
@@ -70,17 +62,14 @@ class PostgreSQLHistoricalScoringImportRepository(
             conflicts = sorted(
                 source_key
                 for source_key, target_id in requested_mappings.items()
-                if source_key in stored_mappings
-                and stored_mappings[source_key] != target_id
+                if source_key in stored_mappings and stored_mappings[source_key] != target_id
             )
 
             created = archived = unchanged = projected = unchanged_domain = 0
             review_items: list[str] = []
             missing_fixtures: list[str] = []
             missing_results: list[str] = []
-            payload_changes: list[
-                tuple[str, dict[str, object], dict[str, object] | None]
-            ] = []
+            payload_changes: list[tuple[str, dict[str, object], dict[str, object] | None]] = []
             domain_changes: list[tuple[str, dict[str, object]]] = []
 
             for record in batch.records:
@@ -118,9 +107,7 @@ class PostgreSQLHistoricalScoringImportRepository(
                 else:
                     created += current_payload is None
                     archived += current_payload is not None
-                    payload_changes.append(
-                        (payload_id, next_payload, current_payload)
-                    )
+                    payload_changes.append((payload_id, next_payload, current_payload))
 
                 if self._payload(session, cdl_fixtures_table, fixture_id) is None:
                     review_items.append(record.source_record_id)
@@ -241,9 +228,9 @@ class PostgreSQLHistoricalScoringImportRepository(
                 reason = "missing_fixture"
             elif record_id in missing_result_set:
                 reason = "missing_result"
-            review_id = hashlib.sha256(
-                f"{batch.batch_id}:review:{record_id}".encode()
-            ).hexdigest()[:64]
+            review_id = hashlib.sha256(f"{batch.batch_id}:review:{record_id}".encode()).hexdigest()[
+                :64
+            ]
             session.execute(
                 insert(import_review_items_table).values(
                     id=review_id,

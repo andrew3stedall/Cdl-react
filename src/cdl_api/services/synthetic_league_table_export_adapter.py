@@ -4,7 +4,6 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from cdl_api.contracts.domain import TeamSummary
 from cdl_api.contracts.imports import HistoricalImportBatch
 from cdl_api.contracts.league_models import LeagueTableRow
 

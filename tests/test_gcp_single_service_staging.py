@@ -48,10 +48,8 @@ def test_cloud_run_module_resolves_secret_versions_without_plaintext_values() ->
 
 def test_runtime_identity_is_limited_to_consumed_secret_containers() -> None:
     main = STAGING_MAIN.read_text(encoding="utf-8")
-    runtime_secret_block = (
-        main.split("runtime_secret_ids = toset([", maxsplit=1)[1]
-        .split("])", maxsplit=1)[0]
-    )
+    runtime_secret_section = main.split("runtime_secret_ids = toset([", maxsplit=1)[1]
+    runtime_secret_block = runtime_secret_section.split("])", maxsplit=1)[0]
 
     assert '"cdl-database-url"' in runtime_secret_block
     assert '"cdl-development-login-secret"' in runtime_secret_block

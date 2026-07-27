@@ -1,15 +1,15 @@
 # Historical import persistence foundation
 
-Issue #69 tracks repeatable historical Castle Draft League imports. Real historical exports are not available, so this foundation defines storage and safety boundaries without claiming real-data coverage.
+Issue #69 tracks repeatable historical Castle Draft League imports. Real historical exports are not available, so repository evidence must remain synthetic and must not be represented as real import coverage.
 
-Migration `0008_historical_import` adds:
+Migration `0008_import_tooling` already creates five generic payload tables:
 
-- `historical_import_batches` for versioned source identity, dry-run status and batch audit output;
-- `historical_source_payloads` for immutable archived JSON payloads and SHA-256 identity;
-- `historical_source_mappings` for source-to-target identity mapping;
-- `historical_import_review_items` for manual-review findings;
-- `historical_import_conflicts` for explicit existing-versus-incoming conflict evidence.
+- `import_batches`;
+- `import_source_mappings`;
+- `import_source_payloads`;
+- `import_review_items`;
+- `import_conflicts`.
 
-Unique constraints establish the first idempotency boundaries: one batch per source digest and contract version, one archived source identity per batch, and one source mapping per source and target type. Foreign keys keep payloads, reviews and conflicts attached to their import batch.
+Each table currently has the migration-owned `id`, `payload_json`, and `created_at` columns. Runtime SQLAlchemy metadata must match that schema exactly. An earlier metadata definition modelled typed columns and foreign keys that do not exist in a clean Alembic-migrated database; this branch removes that mismatch and adds clean PostgreSQL evidence.
 
-This slice does not implement a domain importer, dry-run command or real export adapter. The next bounded slice should add a versioned synthetic import contract and service proving repeat runs, payload archival, mapping conflict handling and structured audit output.
+The payload contract, idempotency rules, source mapping semantics, conflict handling, dry-run audit, and domain writes remain intentionally unimplemented. The next bounded slice should add one versioned deterministic synthetic payload contract and repository/service path that proves repeat execution, archival, mapping conflicts, and structured audit output without requiring real exports.

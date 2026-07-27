@@ -26,6 +26,21 @@ def test_login_session_and_logout_flow() -> None:
     assert final_session_response.json()["is_authenticated"] is False
 
 
+def test_staging_can_require_secure_session_cookie(monkeypatch) -> None:
+    monkeypatch.setenv("CDL_SESSION_COOKIE_SECURE", "true")
+    client = TestClient(create_app())
+
+    response = client.post(
+        "/api/auth/login",
+        json={"email": "manager@example.com", "password": "demo-login-secret"},
+    )
+
+    assert response.status_code == 200
+    assert "Secure" in response.headers["set-cookie"]
+    assert "HttpOnly" in response.headers["set-cookie"]
+    assert "SameSite=lax" in response.headers["set-cookie"]
+
+
 def test_login_rejects_invalid_credentials_without_enumerating_user() -> None:
     client = TestClient(create_app())
 

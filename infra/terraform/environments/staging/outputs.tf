@@ -54,6 +54,6 @@ output "frontend_asset_bucket_name" {
 }
 
 output "frontend_asset_bucket_url" {
-  description = "Private gs:// URL for optional asset uploads; not a public website URL."
+  description = "Private gs:// URL for optional asset uploads. This is not a public website URL."
   value       = module.frontend_assets.url
 }

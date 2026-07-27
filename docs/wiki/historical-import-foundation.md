@@ -36,8 +36,18 @@ The only supported domain projection is `entity_type=cdl_fixture`. Its approved 
 - a mapping conflict records review evidence but performs no fixture write;
 - a target fixture with different persisted content raises before commit, rolling back the import batch and source-payload changes.
 
-This proves one deterministic synthetic import-to-domain path. It does not establish compatibility with a real export format or authorize automatic replacement of existing domain records.
+## Synthetic fixture-export adapter
+
+`synthetic-fixture-export/v1` is one concrete, test-only source shape. `SyntheticFixtureExportAdapter` validates its rows and normalizes them into `historical-import/v1` fixture records.
+
+- the adapter emits explicit source-to-target mapping diagnostics;
+- duplicate fixture keys produce review diagnostics and are not projected twice;
+- unsupported export versions fail closed;
+- adapter output is asserted equal to the direct versioned import contract;
+- parser-to-projection dry-run audits have the same digest and projected-row counts in SQLite and clean migrated PostgreSQL.
+
+This proves normalization and projection parity for a deterministic synthetic shape only. It does not establish compatibility with a real export format or authorize automatic replacement of existing domain records.
 
 ## Remaining scope
 
-A real historical export still needs a versioned parser/adapter, source validation, mapping approval, and evidence for each additional entity projection. Synthetic release-path tests do not establish compatibility with any real export format.
+A real historical export still needs a separately validated parser/adapter, source authenticity and schema evidence, mapping approval, and coverage for each additional entity projection. Synthetic release-path tests do not establish compatibility with any real export format.

@@ -5,7 +5,7 @@ from collections.abc import Callable, Mapping
 from sqlalchemy import insert, select
 from sqlalchemy.orm import Session
 
-from cdl_api.contracts.dashboard import DashboardConfigResponse
+from cdl_api.contracts.dashboard import DashboardConfigResponse, DashboardWidgetDefinition
 from cdl_api.repositories.dashboard_repository import DashboardRepository
 from cdl_api.repositories.postgres_dashboard_fdr import dashboard_definitions_table
 from cdl_api.services.dashboard_service import DashboardService
@@ -35,6 +35,13 @@ class PostgreSQLDashboardConfigRepository:
         payload = dict(row["payload_json"])
         payload["id"] = str(row["id"])
         return DashboardConfigResponse.model_validate(payload)
+
+    def get_widget(self, widget_id: str) -> DashboardWidgetDefinition | None:
+        """Resolve a widget only from the persisted dashboard definition."""
+        config = self.get_config()
+        if config is None:
+            return None
+        return next((widget for widget in config.widgets if widget.id == widget_id), None)
 
     def seed_synthetic_data(self) -> None:
         """Idempotently insert one deterministic, explicitly synthetic test config."""

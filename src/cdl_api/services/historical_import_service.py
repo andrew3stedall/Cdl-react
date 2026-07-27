@@ -31,5 +31,7 @@ class HistoricalImportService:
         if batch.contract_version != self.SUPPORTED_CONTRACT_VERSION:
             raise ValueError("Unsupported historical import contract version.")
         if not batch.synthetic:
-            raise ValueError("Real historical imports require separately validated export evidence.")
+            raise ValueError(
+                "Real historical imports require separately validated export evidence."
+            )
         return self._repository.run(batch, dry_run=dry_run)

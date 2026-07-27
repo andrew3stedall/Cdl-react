@@ -5,6 +5,8 @@ on:
     paths:
       - "infra/terraform/**"
       - ".github/workflows/gcp-terraform-staging.yml"
+      - "src/cdl_api/terraform_plan_summary.py"
+      - "tests/test_gcp_staging_plan_workflow.py"
   workflow_dispatch:
 
 permissions:
@@ -56,6 +58,13 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     environment: staging
 
+    env:
+      PROJECT_ID: ${{ vars.GCP_STAGING_PROJECT_ID }}
+      PROJECT_NUMBER: ${{ vars.GCP_STAGING_PROJECT_NUMBER }}
+      WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_STAGING_WORKLOAD_IDENTITY_PROVIDER }}
+      DEPLOY_SERVICE_ACCOUNT: ${{ vars.GCP_STAGING_DEPLOY_SERVICE_ACCOUNT }}
+      TERRAFORM_STATE_BUCKET: ${{ vars.GCP_TERRAFORM_STATE_BUCKET }}
+
     defaults:
       run:
         working-directory: infra/terraform/environments/staging
@@ -64,12 +73,22 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Validate required environment variables
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${PROJECT_ID}"
+          test -n "${PROJECT_NUMBER}"
+          test -n "${WORKLOAD_IDENTITY_PROVIDER}"
+          test -n "${DEPLOY_SERVICE_ACCOUNT}"
+          test -n "${TERRAFORM_STATE_BUCKET}"
+
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v3
         with:
-          project_id: ${{ vars.GCP_STAGING_PROJECT_ID }}
-          workload_identity_provider: ${{ vars.GCP_STAGING_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ vars.GCP_STAGING_DEPLOY_SERVICE_ACCOUNT }}
+          project_id: ${{ env.PROJECT_ID }}
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.DEPLOY_SERVICE_ACCOUNT }}
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v4
@@ -79,9 +98,71 @@ jobs:
       - name: Terraform init with remote backend
         run: terraform init -input=false
 
-      - name: Terraform plan from remote state
+      - name: Create saved staging plan
+        id: plan
+        shell: bash
         run: |
+          set +e
           terraform plan \
             -input=false \
             -no-color \
-            -var="project_id=${{ vars.GCP_STAGING_PROJECT_ID }}"
+            -lock-timeout=5m \
+            -detailed-exitcode \
+            -out="${RUNNER_TEMP}/staging.tfplan" \
+            -var="project_id=${PROJECT_ID}"
+          plan_exit_code=$?
+          set -e
+
+          if [ "${plan_exit_code}" -eq 1 ]; then
+            echo "Terraform plan failed." >&2
+            exit 1
+          fi
+
+          echo "exit_code=${plan_exit_code}" >> "${GITHUB_OUTPUT}"
+
+      - name: Render reviewable plan evidence
+        id: render
+        shell: bash
+        run: |
+          set -euo pipefail
+          terraform show -no-color "${RUNNER_TEMP}/staging.tfplan" \
+            > "${RUNNER_TEMP}/staging-plan.txt"
+          terraform show -json "${RUNNER_TEMP}/staging.tfplan" \
+            > "${RUNNER_TEMP}/staging-plan.json"
+
+      - name: Summarize and gate staging plan
+        id: plan_summary
+        continue-on-error: true
+        shell: bash
+        run: |
+          python "${GITHUB_WORKSPACE}/src/cdl_api/terraform_plan_summary.py" \
+            --plan-json "${RUNNER_TEMP}/staging-plan.json" \
+            --plan-file "${RUNNER_TEMP}/staging.tfplan" \
+            --output "${RUNNER_TEMP}/staging-plan-summary.md" \
+            --plan-exit-code "${{ steps.plan.outputs.exit_code }}"
+
+      - name: Remove machine-readable and executable plan files
+        if: always()
+        shell: bash
+        run: |
+          rm -f \
+            "${RUNNER_TEMP}/staging.tfplan" \
+            "${RUNNER_TEMP}/staging-plan.json"
+
+      - name: Upload reviewable plan evidence
+        if: always() && steps.render.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-terraform-plan-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/staging-plan.txt
+            ${{ runner.temp }}/staging-plan-summary.md
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Enforce staging plan safety gate
+        if: always() && steps.plan_summary.outcome == 'failure'
+        shell: bash
+        run: |
+          echo "The staging plan summary failed or blocked the plan." >&2
+          exit 1

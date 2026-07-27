@@ -20,10 +20,11 @@ from cdl_api.repositories.postgres_league_fixtures import (
     head_to_head_records_table,
 )
 
+HistoricalImportRepository = PostgreSQLHistoricalImportRepository
+PayloadChange = tuple[str, dict[str, object], dict[str, object] | None]
 
-class PostgreSQLHistoricalHeadToHeadImportRepository(
-    PostgreSQLHistoricalImportRepository
-):
+
+class PostgreSQLHistoricalHeadToHeadImportRepository(HistoricalImportRepository):
     """Project matchup aggregates from mapped persisted fixtures and results."""
 
     def run(
@@ -32,14 +33,12 @@ class PostgreSQLHistoricalHeadToHeadImportRepository(
         *,
         dry_run: bool,
     ) -> HistoricalImportAudit:
-        if any(
-            record.entity_type != "head_to_head_record"
-            for record in batch.records
-        ):
-            raise ValueError(
-                "Historical head-to-head projection accepts only "
-                "head_to_head_record records."
-            )
+        invalid_records = any(
+            record.entity_type != "head_to_head_record" for record in batch.records
+        )
+        if invalid_records:
+            prefix = "Historical head-to-head projection accepts only "
+            raise ValueError(f"{prefix}head_to_head_record records.")
 
         digest = self.batch_digest(batch)
         with self._session_factory() as session:
@@ -74,32 +73,29 @@ class PostgreSQLHistoricalHeadToHeadImportRepository(
                 if source_key in stored_mappings
                 and stored_mappings[source_key] != target_id
             )
+            conflict_set = set(conflicts)
 
             created = archived = unchanged = projected = unchanged_domain = 0
             review_items: list[str] = []
             review_reasons: dict[str, str] = {}
-            payload_changes: list[
-                tuple[str, dict[str, object], dict[str, object] | None]
-            ] = []
+            payload_changes: list[PayloadChange] = []
             domain_changes: list[dict[str, object]] = []
 
             for record in batch.records:
-                fixture_keys = [
-                    str(value)
-                    for value in record.payload.get("fixture_source_keys", [])
-                ]
-                if record.mapping_key in conflicts or any(
-                    key in conflicts for key in fixture_keys
-                ):
+                raw_fixture_keys = record.payload.get("fixture_source_keys", [])
+                fixture_keys = [str(value) for value in raw_fixture_keys]
+                record_keys = {record.mapping_key, *fixture_keys}
+                if record_keys & conflict_set:
                     review_items.append(record.source_record_id)
                     review_reasons[record.source_record_id] = "mapping_conflict"
                     continue
 
                 record_id = effective_mappings.get(record.mapping_key)
                 fixture_ids = [effective_mappings.get(key) for key in fixture_keys]
-                if record_id is None or any(
+                missing_mapping = record_id is None or any(
                     value is None for value in fixture_ids
-                ):
+                )
+                if missing_mapping:
                     review_items.append(record.source_record_id)
                     review_reasons[record.source_record_id] = "missing_mapping"
                     continue
@@ -135,12 +131,11 @@ class PostgreSQLHistoricalHeadToHeadImportRepository(
                     )
 
                 team = TeamSummary.model_validate(record.payload.get("team"))
-                opponent = TeamSummary.model_validate(
-                    record.payload.get("opponent")
-                )
+                opponent = TeamSummary.model_validate(record.payload.get("opponent"))
+                resolved_fixture_ids = [str(value) for value in fixture_ids]
                 aggregate = self._aggregate(
                     session,
-                    [str(value) for value in fixture_ids],
+                    resolved_fixture_ids,
                     team.id,
                     opponent.id,
                 )
@@ -149,28 +144,26 @@ class PostgreSQLHistoricalHeadToHeadImportRepository(
                     review_reasons[record.source_record_id] = aggregate
                     continue
 
+                aggregate_keys = (
+                    "played",
+                    "wins",
+                    "draws",
+                    "losses",
+                    "points_for",
+                    "points_against",
+                )
                 expected_aggregate = {
-                    key: int(record.payload.get(key, 0))
-                    for key in (
-                        "played",
-                        "wins",
-                        "draws",
-                        "losses",
-                        "points_for",
-                        "points_against",
-                    )
+                    key: int(record.payload.get(key, 0)) for key in aggregate_keys
                 }
                 if aggregate != expected_aggregate:
-                    raise ValueError(
-                        "Head-to-head aggregate does not match persisted "
-                        "fixture results."
-                    )
+                    message = "Head-to-head aggregate does not match persisted results."
+                    raise ValueError(message)
 
                 expected = {
                     "team": team.model_dump(mode="json"),
                     "opponent": opponent.model_dump(mode="json"),
                     **aggregate,
-                    "fixture_ids": [str(value) for value in fixture_ids],
+                    "fixture_ids": resolved_fixture_ids,
                     "synthetic": batch.synthetic,
                 }
                 current = self._payload(
@@ -181,10 +174,8 @@ class PostgreSQLHistoricalHeadToHeadImportRepository(
                 if current == expected:
                     unchanged_domain += 1
                 elif current is not None:
-                    raise ValueError(
-                        f"Head-to-head target {record_id!r} already exists "
-                        "with different content."
-                    )
+                    prefix = f"Head-to-head target {record_id!r} already exists "
+                    raise ValueError(f"{prefix}with different content.")
                 else:
                     projected += 1
                     domain_changes.append(
@@ -232,9 +223,7 @@ class PostgreSQLHistoricalHeadToHeadImportRepository(
                 review_reasons,
             )
             for values in domain_changes:
-                session.execute(
-                    insert(head_to_head_records_table).values(**values)
-                )
+                session.execute(insert(head_to_head_records_table).values(**values))
             session.commit()
             return audit
 
@@ -254,16 +243,16 @@ class PostgreSQLHistoricalHeadToHeadImportRepository(
             "points_for": 0,
             "points_against": 0,
         }
+        fixture_id_column = fixture_results_table.c.payload_json[
+            "fixture_id"
+        ].as_string()
         for fixture_id in fixture_ids:
             fixture = cls._payload(session, cdl_fixtures_table, fixture_id)
             if fixture is None:
                 return "missing_fixture"
             result = session.execute(
                 select(fixture_results_table.c.payload_json).where(
-                    fixture_results_table.c.payload_json[
-                        "fixture_id"
-                    ].as_string()
-                    == fixture_id
+                    fixture_id_column == fixture_id
                 )
             ).scalar_one_or_none()
             if result is None:
@@ -316,12 +305,12 @@ class PostgreSQLHistoricalHeadToHeadImportRepository(
                 )
             )
         for record_id, reason in sorted(review_reasons.items()):
-            review_id = hashlib.sha256(
+            review_hash = hashlib.sha256(
                 f"{batch.batch_id}:review:{record_id}".encode()
-            ).hexdigest()[:64]
+            ).hexdigest()
             session.execute(
                 insert(import_review_items_table).values(
-                    id=review_id,
+                    id=review_hash[:64],
                     payload_json={
                         "batch_id": batch.batch_id,
                         "source_record_id": record_id,

@@ -22,19 +22,30 @@ variable "environment" {
 }
 
 variable "enable_cloud_run" {
-  description = "Create the Cloud Run API service. Keep false until Artifact Registry has a pushed backend image."
+  description = "Create the single-service Cloud Run application after an immutable image and secret versions exist."
   type        = bool
   default     = false
 }
 
 variable "backend_image" {
-  description = "Fully qualified backend container image to deploy when enable_cloud_run is true."
+  description = "Fully qualified immutable frontend-and-API container image deployed when enable_cloud_run is true."
   type        = string
   default     = ""
 }
 
+variable "runtime_repository_mode" {
+  description = "Repository mode for the staging Cloud Run service."
+  type        = string
+  default     = "postgres"
+
+  validation {
+    condition     = contains(["memory", "postgres"], var.runtime_repository_mode)
+    error_message = "runtime_repository_mode must be memory or postgres."
+  }
+}
+
 variable "allow_public_invoker" {
-  description = "Grant allUsers roles/run.invoker on the staging API. Keep false until the auth and ingress model is confirmed."
+  description = "Grant allUsers roles/run.invoker on staging. Keep false until the access model is approved."
   type        = bool
   default     = false
 }

@@ -16,6 +16,7 @@ from cdl_api.routers.rules import router as rules_router
 from cdl_api.routers.squad import router as squad_router
 from cdl_api.routers.team_selection import router as team_selection_router
 from cdl_api.settings import get_settings
+from cdl_api.static_frontend import mount_static_frontend
 
 
 def create_app() -> FastAPI:
@@ -47,6 +48,11 @@ def create_app() -> FastAPI:
             {"name": "compact", "label": "Compact", "is_default": False},
         ]
 
+    mount_static_frontend(
+        app,
+        dist_dir=settings.frontend_dist_dir,
+        api_prefix=settings.api_prefix,
+    )
     return app
 
 

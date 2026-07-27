@@ -3,10 +3,12 @@ from pathlib import Path
 DOCKERFILE = Path("Dockerfile")
 STAGING_MAIN = Path("infra/terraform/environments/staging/main.tf")
 STAGING_VARIABLES = Path("infra/terraform/environments/staging/variables.tf")
+DATABASE_JOBS = Path("infra/terraform/environments/staging/database_jobs.tf")
 CLOUD_RUN_MAIN = Path("infra/terraform/modules/cloud-run-api/main.tf")
 CLOUD_RUN_VARIABLES = Path("infra/terraform/modules/cloud-run-api/variables.tf")
 PLAN_WORKFLOW = Path(".github/workflows/gcp-terraform-staging.yml")
 IMAGE_WORKFLOW = Path(".github/workflows/gcp-deploy-staging.yml")
+DATABASE_JOB_WORKFLOW = Path(".github/workflows/gcp-run-staging-database-job.yml")
 ADR = Path("docs/architecture/gcp-single-service-staging.md")
 
 
@@ -59,6 +61,27 @@ def test_runtime_identity_is_limited_to_consumed_secret_containers() -> None:
     assert '"cdl-session-cookie-secret"' not in runtime_secret_block
 
 
+def test_database_jobs_are_separate_guarded_terraform_resources() -> None:
+    content = DATABASE_JOBS.read_text(encoding="utf-8")
+
+    for phrase in [
+        'resource "google_cloud_run_v2_job" "database_migration"',
+        'resource "google_cloud_run_v2_job" "synthetic_seed"',
+        "var.enable_database_jobs ? 1 : 0",
+        'args    = ["-m", "cdl_api.migrate"]',
+        'args    = ["-m", "cdl_api.seed_staging"]',
+        'value = "true"',
+        "google_service_account.migration.email",
+        'module.runtime_secrets.secret_names["cdl-database-url"]',
+        "max_retries     = 0",
+        'timeout         = "900s"',
+        "deletion_protection = true",
+    ]:
+        assert phrase in content
+
+    assert "cdl-development-login-secret" not in content
+
+
 def test_image_workflow_builds_an_immutable_reference_without_deploying() -> None:
     content = IMAGE_WORKFLOW.read_text(encoding="utf-8")
 
@@ -79,13 +102,16 @@ def test_image_workflow_builds_an_immutable_reference_without_deploying() -> Non
     assert "CDL_REPOSITORY_MODE=memory" not in content
 
 
-def test_plan_workflow_accepts_only_private_immutable_runtime_inputs() -> None:
+def test_plan_workflow_uses_cumulative_private_stages() -> None:
     content = PLAN_WORKFLOW.read_text(encoding="utf-8")
 
     for phrase in [
-        "enable_cloud_run:",
-        "backend_image:",
+        "deployment_stage:",
+        "foundation",
+        "database-jobs",
+        "runtime",
         "backend_image must be an immutable @sha256 digest URI",
+        '-var="enable_database_jobs=${ENABLE_DATABASE_JOBS}"',
         '-var="enable_cloud_run=${ENABLE_CLOUD_RUN}"',
         '-var="backend_image=${BACKEND_IMAGE}"',
         '-var="allow_public_invoker=false"',
@@ -95,6 +121,25 @@ def test_plan_workflow_accepts_only_private_immutable_runtime_inputs() -> None:
     dispatch_section = content.split("workflow_dispatch:", maxsplit=1)[1]
     dispatch_inputs = dispatch_section.split("permissions:", maxsplit=1)[0]
     assert "allow_public_invoker:" not in dispatch_inputs
+
+
+def test_database_job_execution_is_manual_and_confirmation_gated() -> None:
+    content = DATABASE_JOB_WORKFLOW.read_text(encoding="utf-8")
+
+    for phrase in [
+        "workflow_dispatch:",
+        "confirm_database_jobs_applied",
+        "confirm_synthetic_data",
+        "github.ref == 'refs/heads/main'",
+        "gcloud run jobs describe",
+        "gcloud run jobs execute",
+        "--wait",
+        "@sha256:[0-9a-f]{64}$",
+    ]:
+        assert phrase in content
+
+    assert "schedule:" not in content
+    assert "--execute-now" not in content
 
 
 def test_adr_keeps_apply_migrations_and_public_access_separately_gated() -> None:

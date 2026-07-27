@@ -157,9 +157,7 @@ class PostgreSQLFixtureDifficultyRepository:
             "source": "deterministic-synthetic-fixture",
             "captured_at": "2026-07-27T00:00:00+00:00",
             "fixture_count": 2,
-            "input_sha256": hashlib.sha256(
-                b"cdl-react:synthetic-fdr-input:2025-26:v1"
-            ).hexdigest(),
+            "input_sha256": hashlib.sha256(b"cdl-react:synthetic-fdr-input:2025-26:v1").hexdigest(),
             "synthetic": True,
         }
         rows = (

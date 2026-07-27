@@ -23,11 +23,16 @@ def test_authenticated_plan_saves_and_uploads_only_reviewable_evidence() -> None
         'terraform show -no-color "${RUNNER_TEMP}/staging.tfplan"',
         'terraform show -json "${RUNNER_TEMP}/staging.tfplan"',
         "terraform_plan_summary.py",
+        "Verify reviewable plan evidence completeness",
+        'test -s "${RUNNER_TEMP}/staging-plan.txt"',
+        'test -s "${RUNNER_TEMP}/staging-plan-summary.md"',
         "actions/upload-artifact@v4",
         "retention-days: 7",
         "staging-plan.txt",
         "staging-plan-summary.md",
+        "steps.evidence.outcome == 'success'",
         "steps.plan_summary.outcome == 'failure'",
+        "steps.evidence.outcome == 'failure'",
     ]:
         assert phrase in content
 
@@ -38,6 +43,25 @@ def test_authenticated_plan_saves_and_uploads_only_reviewable_evidence() -> None
     assert ".tfplan" not in artifact_section
     assert "staging-plan.json" not in artifact_section
     assert "terraform apply" not in content
+
+
+def test_plan_evidence_upload_fails_closed_when_summary_is_missing() -> None:
+    content = WORKFLOW.read_text(encoding="utf-8")
+
+    remove_index = content.index("- name: Remove machine-readable and executable plan files")
+    verify_index = content.index("- name: Verify reviewable plan evidence completeness")
+    upload_index = content.index("- name: Upload reviewable plan evidence")
+    enforce_index = content.index("- name: Enforce staging plan safety gate")
+
+    assert remove_index < verify_index < upload_index < enforce_index
+
+    upload_header = content[upload_index : content.index("uses: actions/upload-artifact@v4")]
+    assert "steps.evidence.outcome == 'success'" in upload_header
+
+    verify_section = content[verify_index:upload_index]
+    assert "staging-plan-summary.md" in verify_section
+    assert "# Staging Terraform plan review" in verify_section
+    assert "not retained or uploaded" in verify_section
 
 
 def test_authenticated_plan_requires_complete_keyless_environment() -> None:
@@ -172,6 +196,8 @@ def test_runbook_documents_saved_plan_review_boundary() -> None:
     for phrase in [
         "seven days",
         "binary plan and machine-readable JSON are deleted",
+        "complete human-readable plan and redacted summary",
+        "incomplete evidence is never uploaded",
         "destructive delete or replacement",
         "public IAM principal",
         "unreviewed Terraform resource type",

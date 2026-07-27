@@ -1,0 +1,76 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+import pytest
+
+from cdl_api.seed_staging import seed_synthetic_staging_data
+from cdl_api.settings import Settings
+
+
+@dataclass
+class _Seeder:
+    calls: list[str]
+    domain: str
+
+    def seed_demo_user(self) -> None:
+        self.calls.append(self.domain)
+
+    def seed_demo_data(self) -> None:
+        self.calls.append(self.domain)
+
+    def seed_synthetic_data(self) -> None:
+        self.calls.append(self.domain)
+
+
+def _settings(**overrides: object) -> Settings:
+    values: dict[str, object] = {
+        "environment": "staging",
+        "repository_mode": "postgres",
+        "database_url": "postgresql+psycopg://user:password@database/cdl",
+    }
+    values.update(overrides)
+    return Settings(**values)
+
+
+def test_seed_requires_explicit_confirmation(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("CDL_ALLOW_SYNTHETIC_STAGING_SEED", raising=False)
+
+    with pytest.raises(RuntimeError, match="confirm synthetic staging data"):
+        seed_synthetic_staging_data(_settings())
+
+
+@pytest.mark.parametrize(
+    ("overrides", "message"),
+    [
+        ({"environment": "production"}, "restricted"),
+        ({"repository_mode": "memory"}, "requires CDL_REPOSITORY_MODE=postgres"),
+        ({"database_url": "sqlite:///local.db"}, "requires an explicit PostgreSQL"),
+    ],
+)
+def test_seed_rejects_unsafe_targets(
+    monkeypatch: pytest.MonkeyPatch,
+    overrides: dict[str, object],
+    message: str,
+) -> None:
+    monkeypatch.setenv("CDL_ALLOW_SYNTHETIC_STAGING_SEED", "true")
+
+    with pytest.raises(RuntimeError, match=message):
+        seed_synthetic_staging_data(_settings(**overrides))
+
+
+def test_seed_loads_each_idempotent_domain_once(monkeypatch: pytest.MonkeyPatch) -> None:
+    import cdl_api.seed_staging as module
+
+    calls: list[str] = []
+    monkeypatch.setenv("CDL_ALLOW_SYNTHETIC_STAGING_SEED", "true")
+    monkeypatch.setattr(module, "build_session_factory", lambda settings: object())
+    monkeypatch.setattr(module, "PostgreSQLUserRepository", lambda factory: _Seeder(calls, "identity"))
+    monkeypatch.setattr(module, "PostgreSQLSquadRepository", lambda factory: _Seeder(calls, "squad"))
+    monkeypatch.setattr(module, "PostgreSQLLeagueRepository", lambda factory: _Seeder(calls, "league"))
+
+    result = seed_synthetic_staging_data(_settings())
+
+    assert calls == ["identity", "squad", "league"]
+    assert result.synthetic is True
+    assert result.domains == ("identity", "squad", "league")

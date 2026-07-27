@@ -153,7 +153,7 @@ def dashboard_widget_query(
     if widget is None:
         return _not_found(widget_id)
 
-    return WidgetQueryService(query_repository).query_widget(widget, request)
+    return WidgetQueryService(query_repository, _catalog_service).query_widget(widget, request)
 
 
 @router.post(

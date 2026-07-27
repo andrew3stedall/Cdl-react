@@ -4,7 +4,7 @@
 
 This runbook defines the first staging frontend delivery boundary.
 
-The first review environment serves the React build from the same immutable Cloud Run image as FastAPI. The existing private Cloud Storage bucket remains a Terraform-managed optional asset origin, but it is not the first website endpoint and is not required for the single-service review URL.
+The first review environment serves the React build from the same immutable Cloud Run image as FastAPI. The existing private Cloud Storage bucket remains a Terraform-managed asset origin only, but it is not the first website endpoint and is not required for the single-service review URL.
 
 See:
 
@@ -65,7 +65,7 @@ frontend_asset_bucket_name
 frontend_asset_bucket_url
 ```
 
-These identify a private bucket and `gs://` URL. They contain no credential, signed URL, public hostname or tester-facing application URL.
+These identify a private bucket and `gs://` URL. They contain no credential, signed URL or public hostname. The bucket URL is not a public website endpoint.
 
 The tester-facing URL will come from the Terraform-managed Cloud Run service only after an immutable image, database secrets, migrations, seed data, runtime plan and access model have been separately approved.
 
@@ -96,14 +96,14 @@ frontend lint, tests and build
 backend lint, tests and packaging contracts
 ```
 
-Review the plan and confirm:
+The saved plan and cost summary must confirm:
 
 1. the private bucket retains public access prevention, versioning and deletion safety;
 2. the Cloud Run service remains disabled during the foundation plan;
 3. a later runtime plan uses one immutable frontend-and-API image digest;
 4. `CDL_REPOSITORY_MODE=postgres` is configured for that service;
 5. the frontend and API share one origin;
-6. no public IAM is introduced without a separate access decision;
+6. no public IAM binding is introduced without a separate access decision;
 7. no load balancer, CDN, DNS record or production resource is present;
 8. the old imperative memory-mode deployment path is absent.
 

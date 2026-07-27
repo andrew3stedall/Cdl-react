@@ -29,6 +29,8 @@ Terraform will not create, import, replace, or delete either project.
 - Cloud SQL for PostgreSQL.
 - Secret Manager containers.
 - Runtime and migration service accounts.
+- A private frontend asset bucket.
+- Cloud Logging and Cloud Monitoring alert policies.
 - Optional Cloud Run API service.
 
 Do not apply the staging environment until the bootstrap plan has been reviewed,
@@ -51,6 +53,15 @@ terraform -chdir=infra/terraform/environments/staging init -backend=false
 terraform -chdir=infra/terraform/environments/staging validate
 ```
 
+## Authenticated saved plan
+
+After the five GitHub `staging` environment variables are configured and **GCP WIF Verify**
+succeeds on `main`, manually run **GCP Terraform Staging**. The authenticated job creates an
+ephemeral saved plan, uploads only human-readable and redacted review evidence for seven days,
+and blocks destructive actions or public IAM principals. It never applies infrastructure.
+
+Use `docs/runbooks/gcp-staging-saved-plan.md` for the evidence, cost-review and security gates.
+
 ## State
 
 The first bootstrap apply used local state only long enough to create its
@@ -62,4 +73,6 @@ git pull --ff-only
 terraform -chdir=infra/terraform/bootstrap init -migrate-state
 ```
 
-The committed `environments/staging/backend.tf` uses the same protected bucket with the distinct `environments/staging` prefix. Pull-request validation initializes with `-backend=false`; authenticated plans on trusted `main` initialize the remote backend and read shared staging state.
+The committed `environments/staging/backend.tf` uses the same protected bucket with the distinct
+`environments/staging` prefix. Pull-request validation initializes with `-backend=false`;
+authenticated plans on trusted `main` initialize the remote backend and read shared staging state.

@@ -64,14 +64,10 @@ def _seed_fixture(session_factory: sessionmaker[Session], fixture_id: str) -> No
 
 def _assert_result_projection(session_factory: sessionmaker[Session]) -> None:
     adapter = SyntheticResultExportAdapter()
-    service = HistoricalImportService(
-        PostgreSQLHistoricalResultImportRepository(session_factory)
-    )
+    service = HistoricalImportService(PostgreSQLHistoricalResultImportRepository(session_factory))
     adapted = adapter.adapt(_result_export("synthetic-result-1"))
 
-    assert adapted.mapping_diagnostics == [
-        "legacy-fixture-a -> fixture-historical-1"
-    ]
+    assert adapted.mapping_diagnostics == ["legacy-fixture-a -> fixture-historical-1"]
     assert adapted.review_diagnostics == []
     assert adapted.batch.records[0].entity_type == "cdl_result"
 
@@ -128,17 +124,23 @@ def _assert_result_projection(session_factory: sessionmaker[Session]) -> None:
     with pytest.raises(ValueError, match="already exists with different content"):
         service.execute(conflicting.batch, dry_run=False)
     with session_factory() as session:
-        assert session.execute(
-            select(import_batches_table.c.id).where(
-                import_batches_table.c.id == "synthetic-result-conflict"
-            )
-        ).scalar_one_or_none() is None
-        assert session.execute(
-            select(import_source_payloads_table.c.id).where(
-                import_source_payloads_table.c.payload_json["batch_id"].as_string()
-                == "synthetic-result-conflict"
-            )
-        ).all() == []
+        assert (
+            session.execute(
+                select(import_batches_table.c.id).where(
+                    import_batches_table.c.id == "synthetic-result-conflict"
+                )
+            ).scalar_one_or_none()
+            is None
+        )
+        assert (
+            session.execute(
+                select(import_source_payloads_table.c.id).where(
+                    import_source_payloads_table.c.payload_json["batch_id"].as_string()
+                    == "synthetic-result-conflict"
+                )
+            ).all()
+            == []
+        )
 
     duplicate_payload = _result_export("synthetic-result-duplicate")
     duplicate_payload["rows"] = [
@@ -146,9 +148,7 @@ def _assert_result_projection(session_factory: sessionmaker[Session]) -> None:
         *duplicate_payload["rows"],  # type: ignore[index]
     ]
     duplicate = adapter.adapt(duplicate_payload)
-    assert duplicate.review_diagnostics == [
-        "duplicate result key: legacy-result-a"
-    ]
+    assert duplicate.review_diagnostics == ["duplicate result key: legacy-result-a"]
     assert len(duplicate.batch.records) == 1
 
     with pytest.raises(ValueError, match="Unsupported synthetic result export version"):

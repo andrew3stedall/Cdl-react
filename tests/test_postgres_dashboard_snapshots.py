@@ -83,11 +83,15 @@ def _assert_snapshot_round_trip(session_factory: sessionmaker[Session]) -> None:
         count = session.execute(
             select(func.count()).select_from(dashboard_aggregate_snapshots_table)
         ).scalar_one()
-        payloads = session.execute(
-            select(dashboard_aggregate_snapshots_table.c.payload_json).order_by(
-                dashboard_aggregate_snapshots_table.c.id
+        payloads = (
+            session.execute(
+                select(dashboard_aggregate_snapshots_table.c.payload_json).order_by(
+                    dashboard_aggregate_snapshots_table.c.id
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
 
     assert count == 2
     assert all(payload["synthetic"] is True for payload in payloads)

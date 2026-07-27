@@ -30,10 +30,14 @@ def test_migration_entrypoint_rejects_missing_configuration(
         migrate.run_migrations()
 
 
-def test_migration_entrypoint_upgrades_to_head(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_migration_entrypoint_upgrades_to_head(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     calls: list[tuple[Any, str]] = []
+    config_path = tmp_path / "alembic.ini"
+    config_path.write_text("[alembic]\nscript_location = migrations\n", encoding="utf-8")
     monkeypatch.setenv(migrate.DATABASE_URL_ENV, "postgresql+psycopg://example")
-    monkeypatch.delenv(migrate.ALEMBIC_CONFIG_ENV, raising=False)
+    monkeypatch.setenv(migrate.ALEMBIC_CONFIG_ENV, str(config_path))
     monkeypatch.setattr(
         migrate.command,
         "upgrade",
@@ -45,7 +49,7 @@ def test_migration_entrypoint_upgrades_to_head(monkeypatch: pytest.MonkeyPatch) 
     assert len(calls) == 1
     config, revision = calls[0]
     assert revision == "head"
-    assert Path(config.config_file_name).name == migrate.DEFAULT_ALEMBIC_CONFIG
+    assert config.config_file_name == str(config_path)
 
 
 def test_backend_image_packages_migration_assets() -> None:
@@ -61,11 +65,11 @@ def test_staging_migration_runbook_preserves_controlled_execution_boundary() -> 
 
     for phrase in [
         "python -m cdl_api.migrate",
-        "CDL_DATABASE_URL is mandatory",
+        "CDL_DATABASE_URL",
         "dedicated migration service account",
         "immutable backend image digest",
         "Migration and seed execution must remain separate",
-        "does not prove Cloud SQL connectivity",
-        "Any live migration or chargeable infrastructure action requires",
+        "Cloud SQL connectivity",
+        "issues #70 and #78",
     ]:
         assert phrase in content

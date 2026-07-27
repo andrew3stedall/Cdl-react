@@ -2,7 +2,6 @@
 
 from typing import Protocol
 
-from cdl_api.contracts.common import ValidationIssue
 from cdl_api.contracts.domain import GameweekSummary, TeamSummary
 from cdl_api.contracts.fdr import (
     FixtureDifficultyCombinedResponse,

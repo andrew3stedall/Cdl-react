@@ -49,9 +49,7 @@ class PostgreSQLHistoricalHeadToHeadImportRepository(HistoricalImportRepository)
             )
             if existing_batch is not None:
                 if existing_batch.get("batch_digest") != digest:
-                    raise ValueError(
-                        "Import batch ID already exists with different content."
-                    )
+                    raise ValueError("Import batch ID already exists with different content.")
                 return HistoricalImportAudit(
                     batch_id=batch.batch_id,
                     contract_version=batch.contract_version,
@@ -70,8 +68,7 @@ class PostgreSQLHistoricalHeadToHeadImportRepository(HistoricalImportRepository)
             conflicts = sorted(
                 source_key
                 for source_key, target_id in requested_mappings.items()
-                if source_key in stored_mappings
-                and stored_mappings[source_key] != target_id
+                if source_key in stored_mappings and stored_mappings[source_key] != target_id
             )
             conflict_set = set(conflicts)
 
@@ -92,9 +89,7 @@ class PostgreSQLHistoricalHeadToHeadImportRepository(HistoricalImportRepository)
 
                 record_id = effective_mappings.get(record.mapping_key)
                 fixture_ids = [effective_mappings.get(key) for key in fixture_keys]
-                missing_mapping = record_id is None or any(
-                    value is None for value in fixture_ids
-                )
+                missing_mapping = record_id is None or any(value is None for value in fixture_ids)
                 if missing_mapping:
                     review_items.append(record.source_record_id)
                     review_reasons[record.source_record_id] = "missing_mapping"
@@ -126,9 +121,7 @@ class PostgreSQLHistoricalHeadToHeadImportRepository(HistoricalImportRepository)
                 else:
                     created += current_payload is None
                     archived += current_payload is not None
-                    payload_changes.append(
-                        (payload_id, next_payload, current_payload)
-                    )
+                    payload_changes.append((payload_id, next_payload, current_payload))
 
                 team = TeamSummary.model_validate(record.payload.get("team"))
                 opponent = TeamSummary.model_validate(record.payload.get("opponent"))
@@ -178,9 +171,7 @@ class PostgreSQLHistoricalHeadToHeadImportRepository(HistoricalImportRepository)
                     raise ValueError(f"{prefix}with different content.")
                 else:
                     projected += 1
-                    domain_changes.append(
-                        {"id": str(record_id), "payload_json": expected}
-                    )
+                    domain_changes.append({"id": str(record_id), "payload_json": expected})
 
             audit = HistoricalImportAudit(
                 batch_id=batch.batch_id,
@@ -243,9 +234,7 @@ class PostgreSQLHistoricalHeadToHeadImportRepository(HistoricalImportRepository)
             "points_for": 0,
             "points_against": 0,
         }
-        fixture_id_column = fixture_results_table.c.payload_json[
-            "fixture_id"
-        ].as_string()
+        fixture_id_column = fixture_results_table.c.payload_json["fixture_id"].as_string()
         for fixture_id in fixture_ids:
             fixture = cls._payload(session, cdl_fixtures_table, fixture_id)
             if fixture is None:
@@ -263,9 +252,7 @@ class PostgreSQLHistoricalHeadToHeadImportRepository(HistoricalImportRepository)
             home_id = str(fixture_payload.get("home_team", {}).get("id", ""))
             away_id = str(fixture_payload.get("away_team", {}).get("id", ""))
             if {home_id, away_id} != {team_id, opponent_id}:
-                raise ValueError(
-                    "Head-to-head fixture teams do not match the aggregate teams."
-                )
+                raise ValueError("Head-to-head fixture teams do not match the aggregate teams.")
             home_score = int(result_payload.get("home_score", 0))
             away_score = int(result_payload.get("away_score", 0))
             team_home = home_id == team_id

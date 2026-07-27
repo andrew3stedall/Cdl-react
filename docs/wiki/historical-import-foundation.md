@@ -83,8 +83,21 @@ The PostgreSQL repository provides these release-path behaviours:
 - duplicate context keys create adapter review diagnostics;
 - unsupported EPL context-export versions fail closed.
 
+## Bounded squad-membership projection
+
+`synthetic-squad-export/v1` normalizes one ownership period into `entity_type=squad_membership`. `PostgreSQLHistoricalSquadImportRepository` projects into `squad_ownerships` only when the season, mapped draft team, and mapped FPL player already exist.
+
+- dry-run reports the ownership projection without database writes;
+- membership, team, and player source keys are mapped explicitly;
+- missing mappings, seasons, teams, or players create open review evidence and no ownership row;
+- import evidence and the ownership row commit in one transaction;
+- exact replay is idempotent;
+- existing ownership content is never silently overwritten; conflicting content raises before commit and rolls back import changes;
+- duplicate membership keys and conflicting adapter mappings create diagnostics;
+- unsupported squad-export versions fail closed.
+
 These adapters prove normalization and transactional projection for deterministic synthetic shapes only. They do not establish compatibility with a real export format or authorize automatic replacement of existing domain records.
 
 ## Remaining scope
 
-A real historical export still needs a separately validated parser/adapter, source authenticity and schema evidence, mapping approval, and coverage for squads, table snapshots, knockout, head-to-head, and other entity projections. Synthetic release-path tests do not establish compatibility with any real export format.
+A real historical export still needs a separately validated parser/adapter, source authenticity and schema evidence, mapping approval, and coverage for table snapshots, knockout, head-to-head, and other entity projections. Synthetic release-path tests do not establish compatibility with any real export format.

@@ -21,20 +21,45 @@ variable "environment" {
   default     = "staging"
 }
 
+variable "enable_database_jobs" {
+  description = "Create controlled migration and deterministic synthetic seed jobs."
+  type        = bool
+  default     = false
+}
+
 variable "enable_cloud_run" {
-  description = "Create the Cloud Run API service. Keep false until Artifact Registry has a pushed backend image."
+  description = "Create the single-service Cloud Run application after database jobs are proven."
   type        = bool
   default     = false
 }
 
 variable "backend_image" {
-  description = "Fully qualified backend container image to deploy when enable_cloud_run is true."
+  description = "Fully qualified immutable frontend-and-API container image used by jobs and Cloud Run."
   type        = string
   default     = ""
+
+  validation {
+    condition = (
+      var.backend_image == "" ||
+      can(regex("@sha256:[0-9a-f]{64}$", var.backend_image))
+    )
+    error_message = "backend_image must be empty or an immutable @sha256 digest URI."
+  }
+}
+
+variable "runtime_repository_mode" {
+  description = "Repository mode for the staging Cloud Run service."
+  type        = string
+  default     = "postgres"
+
+  validation {
+    condition     = contains(["memory", "postgres"], var.runtime_repository_mode)
+    error_message = "runtime_repository_mode must be memory or postgres."
+  }
 }
 
 variable "allow_public_invoker" {
-  description = "Grant allUsers roles/run.invoker on the staging API. Keep false until the auth and ingress model is confirmed."
+  description = "Grant allUsers roles/run.invoker on staging. Keep false until the access model is approved."
   type        = bool
   default     = false
 }

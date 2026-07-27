@@ -1,0 +1,106 @@
+name: GCP Run Staging Database Job
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Select the controlled database operation
+        required: true
+        type: choice
+        options:
+          - migrate
+          - synthetic-seed
+      confirm_database_jobs_applied:
+        description: Confirm the reviewed database-jobs Terraform stage has been applied
+        required: true
+        type: boolean
+      confirm_synthetic_data:
+        description: Confirm synthetic data is intended; required for synthetic-seed
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: gcp-staging-database-operation
+  cancel-in-progress: false
+
+jobs:
+  execute:
+    name: Execute controlled staging database operation
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      inputs.confirm_database_jobs_applied == true
+    runs-on: ubuntu-latest
+    environment: staging
+
+    env:
+      REGION: australia-southeast1
+      PROJECT_ID: ${{ vars.GCP_STAGING_PROJECT_ID }}
+      WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_STAGING_WORKLOAD_IDENTITY_PROVIDER }}
+      DEPLOY_SERVICE_ACCOUNT: ${{ vars.GCP_STAGING_DEPLOY_SERVICE_ACCOUNT }}
+
+    steps:
+      - name: Validate operation and environment
+        run: |
+          set -euo pipefail
+          test -n "${PROJECT_ID}"
+          test -n "${WORKLOAD_IDENTITY_PROVIDER}"
+          test -n "${DEPLOY_SERVICE_ACCOUNT}"
+
+          case "${{ inputs.operation }}" in
+            migrate)
+              job_name="cdl-react-staging-db-migrate"
+              ;;
+            synthetic-seed)
+              if [ "${{ inputs.confirm_synthetic_data }}" != "true" ]; then
+                echo "Synthetic seed execution requires explicit synthetic-data confirmation." >&2
+                exit 1
+              fi
+              job_name="cdl-react-staging-synthetic-seed"
+              ;;
+            *)
+              echo "Unsupported database operation." >&2
+              exit 1
+              ;;
+          esac
+
+          echo "JOB_NAME=${job_name}" >> "${GITHUB_ENV}"
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.DEPLOY_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
+        with:
+          version: ">= 416.0.0"
+
+      - name: Verify Terraform-managed job configuration
+        run: |
+          set -euo pipefail
+          image="$(
+            gcloud run jobs describe "${JOB_NAME}" \
+              --project "${PROJECT_ID}" \
+              --region "${REGION}" \
+              --format='value(template.template.containers[0].image)'
+          )"
+          if [[ ! "${image}" =~ @sha256:[0-9a-f]{64}$ ]]; then
+            echo "The configured job does not use an immutable image digest." >&2
+            exit 1
+          fi
+          echo "Executing ${JOB_NAME} from immutable image ${image}."
+
+      - name: Execute and wait for completion
+        run: |
+          set -euo pipefail
+          gcloud run jobs execute "${JOB_NAME}" \
+            --project "${PROJECT_ID}" \
+            --region "${REGION}" \
+            --wait

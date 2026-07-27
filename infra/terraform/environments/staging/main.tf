@@ -31,6 +31,11 @@ locals {
     "cdl-development-login-secret",
     "cdl-session-cookie-secret",
   ])
+
+  runtime_secret_ids = toset([
+    "cdl-database-url",
+    "cdl-development-login-secret",
+  ])
 }
 
 resource "google_project_service" "required" {
@@ -45,8 +50,8 @@ resource "google_project_service" "required" {
 
 resource "google_service_account" "runtime" {
   account_id   = local.runtime_service_id
-  display_name = "CDL API runtime"
-  description  = "Runtime identity for the staging FastAPI service."
+  display_name = "CDL application runtime"
+  description  = "Runtime identity for the staging React and FastAPI Cloud Run service."
 
   depends_on = [google_project_service.required]
 }
@@ -54,7 +59,7 @@ resource "google_service_account" "runtime" {
 resource "google_service_account" "migration" {
   account_id   = local.migration_service_id
   display_name = "CDL database migration"
-  description  = "Identity reserved for Alembic migration jobs."
+  description  = "Identity reserved for Alembic migration and deterministic seed jobs."
 
   depends_on = [google_project_service.required]
 }
@@ -65,7 +70,7 @@ module "artifact_registry" {
   project_id                  = var.project_id
   region                      = var.region
   repository_id               = local.artifact_repository_id
-  description                 = "Backend container images for CDL React staging."
+  description                 = "Immutable frontend and API container images for CDL React staging."
   labels                      = merge(local.common_labels, { component = "artifact-registry" })
   immutable_tags              = true
   cleanup_policy_dry_run      = true
@@ -120,10 +125,10 @@ module "runtime_secrets" {
 }
 
 resource "google_secret_manager_secret_iam_member" "runtime_secret_access" {
-  for_each = module.runtime_secrets.secret_names
+  for_each = local.runtime_secret_ids
 
   project   = var.project_id
-  secret_id = each.value
+  secret_id = module.runtime_secrets.secret_names[each.value]
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.runtime.email}"
 }
@@ -158,15 +163,27 @@ module "cloud_run_api" {
   cloud_sql_connection_name     = module.cloud_sql.connection_name
   environment                   = var.environment
   labels                        = merge(local.common_labels, { component = "api" })
-  repository_mode               = "memory"
-  allow_public_invoker          = var.allow_public_invoker
-  min_instance_count            = 0
-  max_instance_count            = 2
+  repository_mode               = var.runtime_repository_mode
+  environment_variables = {
+    CDL_SESSION_COOKIE_SECURE = "true"
+  }
+  secret_environment_variables = {
+    CDL_DATABASE_URL = {
+      secret = module.runtime_secrets.secret_names["cdl-database-url"]
+    }
+    CDL_DEVELOPMENT_LOGIN_SECRET = {
+      secret = module.runtime_secrets.secret_names["cdl-development-login-secret"]
+    }
+  }
+  allow_public_invoker = var.allow_public_invoker
+  min_instance_count   = 0
+  max_instance_count   = 2
 
   depends_on = [
     google_project_service.required,
     module.artifact_registry,
     module.cloud_sql,
     google_project_iam_member.cloud_sql_client,
+    google_secret_manager_secret_iam_member.runtime_secret_access,
   ]
 }

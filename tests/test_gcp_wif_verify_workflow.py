@@ -45,7 +45,7 @@ def test_wif_verify_fails_closed_on_identity_shape_and_state_bucket_controls() -
     assert "terraform apply" not in content
 
 
-def test_wif_verify_retains_only_reviewable_non_sensitive_evidence() -> None:
+def test_wif_verify_retains_exact_reviewable_non_sensitive_identity_evidence() -> None:
     content = WORKFLOW.read_text(encoding="utf-8")
 
     for phrase in [
@@ -53,6 +53,10 @@ def test_wif_verify_retains_only_reviewable_non_sensitive_evidence() -> None:
         'evidence_file="${RUNNER_TEMP}/gcp-wif-verification.md"',
         'run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"',
         "Source commit:",
+        "Workload Identity provider:",
+        "Terraform state bucket:",
+        'grep -Fq "Workload Identity provider: \\`${WORKLOAD_IDENTITY_PROVIDER}\\`"',
+        'grep -Fq "Terraform state bucket: \\`gs://${TERRAFORM_STATE_BUCKET}\\`"',
         "GitHub token permissions: OIDC only; repository contents unavailable",
         "Raw bucket metadata and IAM policy: deleted and not retained",
         "actions/upload-artifact@v4",
@@ -85,6 +89,8 @@ def test_wif_runbook_documents_state_bucket_security_proof() -> None:
         "seven days",
         "source commit",
         "workflow run",
+        "exact Workload Identity provider path",
+        "exact Terraform state bucket name",
         "raw bucket metadata and IAM policy are deleted",
     ]:
         assert phrase in content

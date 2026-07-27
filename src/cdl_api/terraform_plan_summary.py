@@ -14,6 +14,7 @@ type JsonValue = None | bool | int | float | str | list[JsonValue] | dict[str, J
 PUBLIC_PRINCIPALS = {"allUsers", "allAuthenticatedUsers"}
 APPROVED_STAGING_RESOURCE_TYPES = {
     "google_artifact_registry_repository",
+    "google_cloud_run_v2_job",
     "google_cloud_run_v2_service",
     "google_cloud_run_v2_service_iam_member",
     "google_monitoring_alert_policy",
@@ -28,6 +29,7 @@ APPROVED_STAGING_RESOURCE_TYPES = {
 }
 COST_SENSITIVE_TYPES = {
     "google_artifact_registry_repository": "Artifact Registry storage and network egress",
+    "google_cloud_run_v2_job": "Cloud Run job CPU, memory, executions, and network egress",
     "google_cloud_run_v2_service": (
         "Cloud Run CPU, memory, requests, and network egress when enabled"
     ),
@@ -40,6 +42,7 @@ SECURITY_SENSITIVE_PREFIXES = (
     "google_secret_manager_",
     "google_service_account",
     "google_storage_bucket",
+    "google_cloud_run_v2_job",
     "google_cloud_run_v2_service",
     "google_sql_database_instance",
 )

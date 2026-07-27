@@ -8,6 +8,16 @@ on:
       - "src/cdl_api/terraform_plan_summary.py"
       - "tests/test_gcp_staging_plan_workflow.py"
   workflow_dispatch:
+    inputs:
+      enable_cloud_run:
+        description: Include the private single-service Cloud Run runtime in this plan
+        required: true
+        default: false
+        type: boolean
+      backend_image:
+        description: Immutable Artifact Registry digest URI; required only when Cloud Run is enabled
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -64,6 +74,8 @@ jobs:
       WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_STAGING_WORKLOAD_IDENTITY_PROVIDER }}
       DEPLOY_SERVICE_ACCOUNT: ${{ vars.GCP_STAGING_DEPLOY_SERVICE_ACCOUNT }}
       TERRAFORM_STATE_BUCKET: ${{ vars.GCP_TERRAFORM_STATE_BUCKET }}
+      ENABLE_CLOUD_RUN: ${{ inputs.enable_cloud_run }}
+      BACKEND_IMAGE: ${{ inputs.backend_image }}
 
     defaults:
       run:
@@ -73,7 +85,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Validate required environment variables
+      - name: Validate required environment and plan inputs
         shell: bash
         run: |
           set -euo pipefail
@@ -82,6 +94,17 @@ jobs:
           test -n "${WORKLOAD_IDENTITY_PROVIDER}"
           test -n "${DEPLOY_SERVICE_ACCOUNT}"
           test -n "${TERRAFORM_STATE_BUCKET}"
+
+          if [ "${ENABLE_CLOUD_RUN}" = "true" ]; then
+            test -n "${BACKEND_IMAGE}"
+            if [[ ! "${BACKEND_IMAGE}" =~ @sha256:[0-9a-f]{64}$ ]]; then
+              echo "backend_image must be an immutable @sha256 digest URI." >&2
+              exit 1
+            fi
+          elif [ -n "${BACKEND_IMAGE}" ]; then
+            echo "backend_image must be empty when enable_cloud_run is false." >&2
+            exit 1
+          fi
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v3
@@ -109,7 +132,10 @@ jobs:
             -lock-timeout=5m \
             -detailed-exitcode \
             -out="${RUNNER_TEMP}/staging.tfplan" \
-            -var="project_id=${PROJECT_ID}"
+            -var="project_id=${PROJECT_ID}" \
+            -var="enable_cloud_run=${ENABLE_CLOUD_RUN}" \
+            -var="backend_image=${BACKEND_IMAGE}" \
+            -var="allow_public_invoker=false"
           plan_exit_code=$?
           set -e
 

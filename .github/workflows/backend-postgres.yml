@@ -29,6 +29,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v4
       - run: uv sync
+      - name: Capture Alembic diagnostics
+        run: uv run alembic upgrade head > alembic.txt 2>&1 || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: alembic-diagnostics
+          path: alembic.txt
       - run: uv run alembic upgrade head
       - name: Test PostgreSQL release paths
         run: >-

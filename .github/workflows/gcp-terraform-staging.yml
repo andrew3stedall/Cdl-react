@@ -149,8 +149,21 @@ jobs:
             "${RUNNER_TEMP}/staging.tfplan" \
             "${RUNNER_TEMP}/staging-plan.json"
 
-      - name: Upload reviewable plan evidence
+      - name: Verify reviewable plan evidence completeness
+        id: evidence
         if: always() && steps.render.outcome == 'success'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s "${RUNNER_TEMP}/staging-plan.txt"
+          test -s "${RUNNER_TEMP}/staging-plan-summary.md"
+          grep -Fq "# Staging Terraform plan review" \
+            "${RUNNER_TEMP}/staging-plan-summary.md"
+          grep -Fq "Binary plan and machine-readable JSON: not retained or uploaded" \
+            "${RUNNER_TEMP}/staging-plan-summary.md"
+
+      - name: Upload reviewable plan evidence
+        if: always() && steps.evidence.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
           name: staging-terraform-plan-${{ github.sha }}
@@ -161,8 +174,10 @@ jobs:
           retention-days: 7
 
       - name: Enforce staging plan safety gate
-        if: always() && steps.plan_summary.outcome == 'failure'
+        if: >-
+          always() &&
+          (steps.plan_summary.outcome == 'failure' || steps.evidence.outcome == 'failure')
         shell: bash
         run: |
-          echo "The staging plan summary failed or blocked the plan." >&2
+          echo "The staging plan summary failed, evidence was incomplete, or the plan was blocked." >&2
           exit 1

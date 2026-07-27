@@ -236,19 +236,19 @@ roles/serviceusage.serviceUsageAdmin when Terraform manages project APIs
 
 Runtime and migration identities receive `roles/cloudsql.client`; that permits connector access but not database-level privileges. The migration identity can read only `cdl-database-url`. The runtime identity can read only the database URL and staging login secret it consumes. Avoid Owner and Editor roles.
 
-## Recovery and observability baseline
+## Logging and alerting baseline
 
 The unapplied design uses a zonal `db-f1-micro` PostgreSQL instance with 10 GiB SSD storage, automatic growth capped at 20 GiB, daily backups in `australia-southeast1`, seven days of transaction logs, eight retained automated backups and deletion protection.
 
-The observability baseline includes sustained Cloud SQL CPU and `ERROR`-or-higher Cloud SQL logs, plus Cloud Run error logs when the service exists. Notification channels reference pre-existing destinations and default to none.
+The logging and alerting baseline includes sustained Cloud SQL CPU above 80% for five minutes, Cloud SQL `ERROR`-or-higher logs and Cloud Run error logs when the service exists. Notification channels reference pre-existing destinations and default to none. Terraform does not create recipient addresses or duplicate log sinks.
 
-Provider validation proves schema compatibility only. Backups, restoration, alert delivery, database connectivity and rollback require live evidence after approved applies.
+Provider validation proves schema compatibility only. After an approved apply, each policy still requires a controlled test event before alert delivery is considered proven. Backups, restoration, database connectivity and rollback also require live evidence.
 
 ## Current limitations
 
 - No chargeable Terraform apply has been run for this application environment.
 - No database credential or Secret Manager payload has been created by Terraform.
-- Controlled migration and deterministic seed jobs still require implementation and live proof.
+- Controlled migration and deterministic seed job definitions exist, but live execution and proof remain pending.
 - The first access model remains a product/security decision.
 - Real historical exports remain a separate validation gate.
 - Production is not configured.

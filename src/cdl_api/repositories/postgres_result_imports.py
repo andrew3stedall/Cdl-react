@@ -3,6 +3,7 @@
 import hashlib
 
 from sqlalchemy import insert
+from sqlalchemy.orm import Session
 
 from cdl_api.contracts.imports import HistoricalImportAudit, HistoricalImportBatch
 from cdl_api.repositories.postgres_imports import (
@@ -107,7 +108,8 @@ class PostgreSQLHistoricalResultImportRepository(PostgreSQLHistoricalImportRepos
                     unchanged_domain += 1
                 elif current_result is not None:
                     raise ValueError(
-                        f"Fixture result target {result_id!r} already exists with different content."
+                        f"Fixture result target {result_id!r} already exists "
+                        "with different content."
                     )
                 else:
                     projected += 1
@@ -162,7 +164,7 @@ class PostgreSQLHistoricalResultImportRepository(PostgreSQLHistoricalImportRepos
 
     @staticmethod
     def _persist_result_reviews(
-        session,
+        session: Session,
         batch: HistoricalImportBatch,
         *,
         conflicts: list[str],
@@ -186,9 +188,9 @@ class PostgreSQLHistoricalResultImportRepository(PostgreSQLHistoricalImportRepos
             )
         missing = set(missing_fixtures)
         for record_id in sorted(set(review_items)):
-            review_id = hashlib.sha256(
-                f"{batch.batch_id}:review:{record_id}".encode()
-            ).hexdigest()[:64]
+            review_id = hashlib.sha256(f"{batch.batch_id}:review:{record_id}".encode()).hexdigest()[
+                :64
+            ]
             session.execute(
                 insert(import_review_items_table).values(
                     id=review_id,

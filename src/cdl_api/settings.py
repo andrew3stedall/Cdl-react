@@ -1,5 +1,6 @@
 """Application settings."""
 
+from pathlib import Path
 from typing import Literal
 
 from pydantic import Field
@@ -18,6 +19,7 @@ class Settings(BaseSettings):
     database_pool_size: int = Field(default=5, ge=1)
     database_max_overflow: int = Field(default=5, ge=0)
     repository_mode: RepositoryMode = "memory"
+    frontend_dist_dir: Path | None = None
 
     model_config = SettingsConfigDict(env_prefix="CDL_", env_file=".env")
 

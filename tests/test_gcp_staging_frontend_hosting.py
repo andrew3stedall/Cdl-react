@@ -1,6 +1,7 @@
 from pathlib import Path
 
 STAGING_MAIN_TF = Path("infra/terraform/environments/staging/main.tf")
+STAGING_OUTPUTS_TF = Path("infra/terraform/environments/staging/outputs.tf")
 BUCKET_MODULE_TF = Path("infra/terraform/modules/static-frontend-bucket/main.tf")
 RUNBOOK = Path("docs/runbooks/gcp-staging-frontend-hosting.md")
 
@@ -39,6 +40,22 @@ def test_frontend_bucket_remains_private_and_deletion_safe() -> None:
         assert forbidden not in content
 
 
+def test_frontend_bucket_outputs_support_controlled_uploads_without_public_url() -> None:
+    content = STAGING_OUTPUTS_TF.read_text(encoding="utf-8")
+
+    for phrase in [
+        'output "frontend_asset_bucket_name"',
+        "value       = module.frontend_assets.name",
+        'output "frontend_asset_bucket_url"',
+        "value       = module.frontend_assets.url",
+        "This is not a public website URL",
+    ]:
+        assert phrase in content
+
+    assert "storage.googleapis.com/" not in content
+    assert "https://" not in content
+
+
 def test_frontend_hosting_runbook_preserves_live_action_gates() -> None:
     content = RUNBOOK.read_text(encoding="utf-8")
 
@@ -49,6 +66,9 @@ def test_frontend_hosting_runbook_preserves_live_action_gates() -> None:
         "force_destroy=false",
         "object versioning enabled",
         "no public IAM binding",
+        "frontend_asset_bucket_name",
+        "frontend_asset_bucket_url",
+        "not a public website endpoint",
         "saved plan and cost summary",
         "A private bucket alone does not satisfy the usable-staging acceptance criterion",
         "issues #70 and #78",

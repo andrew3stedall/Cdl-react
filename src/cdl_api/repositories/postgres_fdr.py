@@ -265,9 +265,7 @@ class PostgreSQLFixtureDifficultyRepository:
         input_payload = {
             "season": "2025/26",
             "contract_version": FixtureDifficultyCalculationService.SUPPORTED_CONTRACT_VERSION,
-            "algorithm_version": (
-                FixtureDifficultyCalculationService.SUPPORTED_ALGORITHM_VERSION
-            ),
+            "algorithm_version": (FixtureDifficultyCalculationService.SUPPORTED_ALGORITHM_VERSION),
             "calculation_run_id": calculation_run_id,
             "source": "deterministic-synthetic-fixture",
             "captured_at": calculated_at,

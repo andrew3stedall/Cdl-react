@@ -162,9 +162,7 @@ class PostgreSQLHistoricalImportRepository:
 
     @staticmethod
     def _stored_mappings(session: Session, source_system: str) -> dict[str, str]:
-        rows = session.execute(
-            select(import_source_mappings_table.c.payload_json)
-        ).scalars()
+        rows = session.execute(select(import_source_mappings_table.c.payload_json)).scalars()
         mappings: dict[str, str] = {}
         for value in rows:
             if not isinstance(value, Mapping) or value.get("source_system") != source_system:
@@ -221,9 +219,9 @@ class PostgreSQLHistoricalImportRepository:
                 )
             )
         for record_id in review_items:
-            review_id = hashlib.sha256(
-                f"{batch.batch_id}:review:{record_id}".encode()
-            ).hexdigest()[:64]
+            review_id = hashlib.sha256(f"{batch.batch_id}:review:{record_id}".encode()).hexdigest()[
+                :64
+            ]
             session.execute(
                 insert(import_review_items_table).values(
                     id=review_id,

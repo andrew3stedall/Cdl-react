@@ -2,6 +2,7 @@
 
 from typing import Protocol
 
+from cdl_api.contracts.common import ValidationIssue
 from cdl_api.contracts.domain import GameweekSummary, TeamSummary
 from cdl_api.contracts.fdr import (
     FixtureDifficultyCombinedResponse,
@@ -16,15 +17,16 @@ from cdl_api.repositories.fdr_repository import FixtureDifficultyRepository
 
 
 class FixtureDifficultyDataRepository(Protocol):
-    def list_teams(self) -> list[TeamSummary]: ...
+    def list_teams(self, season: str) -> list[TeamSummary]: ...
 
-    def list_gameweeks(self) -> list[GameweekSummary]: ...
+    def list_gameweeks(self, season: str) -> list[GameweekSummary]: ...
 
     def list_scales(self) -> list[FixtureDifficultyScaleStep]: ...
 
     def list_fixtures(
         self,
         view: FixtureDifficultyView,
+        season: str,
     ) -> dict[str, list[FixtureDifficultyFixture]]: ...
 
 
@@ -50,15 +52,15 @@ class FixtureDifficultyService:
         filters: FixtureDifficultyFilters | None = None,
     ) -> FixtureDifficultyResponse:
         active_filters = filters or FixtureDifficultyFilters()
-        fixtures_by_team = self._repository.list_fixtures(view)
-        teams = self._repository.list_teams()
+        fixtures_by_team = self._repository.list_fixtures(view, active_filters.season)
+        teams = self._repository.list_teams(active_filters.season)
         if active_filters.team_id:
             selected_team_ids = {active_filters.team_id}
         else:
             selected_team_ids = {team.id for team in teams}
         available_gameweeks = [
             gameweek
-            for gameweek in self._repository.list_gameweeks()
+            for gameweek in self._repository.list_gameweeks(active_filters.season)
             if self._within_gameweek_range(gameweek.number, active_filters)
         ]
         rows: list[FixtureDifficultyRow] = []

@@ -43,6 +43,10 @@ class DashboardConfigRepository(Protocol):
 
     def get_widget(self, widget_id: str) -> DashboardWidgetDefinition | None: ...
 
+    def list_filters(self) -> list[DashboardFilter]: ...
+
+    def list_dimensions(self) -> list[DashboardDimension]: ...
+
 
 class DashboardMetricRepository(Protocol):
     def list_metrics(self) -> list[DashboardMetric]: ...
@@ -121,8 +125,10 @@ def dashboard_config(
 
 
 @router.get("/filters", response_model=list[DashboardFilter])
-def dashboard_filters() -> list[DashboardFilter]:
-    return _catalog_service.list_filters()
+def dashboard_filters(
+    repository: DashboardConfigRepository = Depends(get_dashboard_config_repository),
+) -> list[DashboardFilter]:
+    return repository.list_filters()
 
 
 @router.get("/metrics", response_model=list[DashboardMetric])
@@ -133,8 +139,10 @@ def dashboard_metrics(
 
 
 @router.get("/dimensions", response_model=list[DashboardDimension])
-def dashboard_dimensions() -> list[DashboardDimension]:
-    return _catalog_service.list_dimensions()
+def dashboard_dimensions(
+    repository: DashboardConfigRepository = Depends(get_dashboard_config_repository),
+) -> list[DashboardDimension]:
+    return repository.list_dimensions()
 
 
 @router.post(

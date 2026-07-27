@@ -48,13 +48,22 @@ class SyntheticScoringExportAdapter:
 
         for row in document.rows:
             if row.snapshot_key in seen_snapshot_keys:
-                review_diagnostics.append(f"duplicate scoring snapshot key: {row.snapshot_key}")
+                review_diagnostics.append(
+                    f"duplicate scoring snapshot key: {row.snapshot_key}"
+                )
                 continue
             seen_snapshot_keys.add(row.snapshot_key)
             if row.fixture_key not in seen_fixture_keys:
                 seen_fixture_keys.add(row.fixture_key)
-                mappings.append({"source_key": row.fixture_key, "target_id": row.target_fixture_id})
-                mapping_diagnostics.append(f"{row.fixture_key} -> {row.target_fixture_id}")
+                mappings.append(
+                    {
+                        "source_key": row.fixture_key,
+                        "target_id": row.target_fixture_id,
+                    }
+                )
+                mapping_diagnostics.append(
+                    f"{row.fixture_key} -> {row.target_fixture_id}"
+                )
             records.append(
                 {
                     "source_record_id": row.snapshot_key,

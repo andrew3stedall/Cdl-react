@@ -9,16 +9,18 @@ This release-readiness branch removes misleading runtime paths and aligns dashbo
 - `GET /api/dashboard/config` reads `dashboard_definitions` in PostgreSQL mode. A missing definition returns an explicit `404 not_found` response instead of silently rendering the in-memory sample dashboard.
 - Dashboard widget query and drill-down routes resolve widget definitions from the persisted dashboard configuration in PostgreSQL mode. Missing configuration or widget IDs return `404` rather than consulting the sample definition.
 - Dashboard widget queries read `dashboard_aggregate_snapshots` in PostgreSQL mode. Missing snapshots produce an explicit empty result instead of sample chart points.
+- Dashboard drill-down requests use the PostgreSQL query repository in PostgreSQL mode. Aggregate snapshots do not contain fact rows, so drill-down returns an explicit empty result rather than sample players.
 - Dashboard/FDR SQLAlchemy metadata matches migration `0007`'s `id`, `payload_json`, and `created_at` schema.
 
 ## Evidence
 
-- Existing known drill-down keys retain their deterministic rows in memory-mode preview tests.
+- Existing known drill-down keys retain their deterministic rows only in memory-mode preview tests.
 - Focused API regressions verify unknown drill-down keys and absent persisted configuration do not expose sample data.
 - Deterministic metrics, dashboard configuration, and aggregate snapshots are explicitly labelled synthetic, seed idempotently, and round-trip through their payload tables.
-- The PostgreSQL workflow runs dashboard metric, configuration, and aggregate snapshot tests after applying all Alembic migrations, proving the repositories use the real migration `0007` schema.
+- The PostgreSQL workflow runs dashboard metric, configuration, aggregate snapshot, and drill-down boundary tests after applying all Alembic migrations.
 - Widget queries are empty before synthetic snapshot seeding and return only the persisted, filter-matched `Castle FC` point after seeding in both SQLite and migrated PostgreSQL tests.
+- Drill-down remains empty before and after aggregate snapshot seeding, proving sample player rows cannot leak into PostgreSQL mode.
 
 ## Remaining scope
 
-Dashboard dimensions and filters remain in-memory. Dashboard drill-down facts still come from the sample query repository, and FDR ratings remain sample-backed. The next slice should route dashboard drill-down through a persisted fact contract in PostgreSQL mode, returning no sample rows when persisted facts are unavailable.
+Dashboard dimensions and filters remain in-memory. A persisted dashboard fact contract is still required before real drill-down rows can be returned. FDR ratings remain sample-backed. The next slice should route dashboard filters and dimensions through persisted configuration or a dedicated persisted catalog without a memory fallback.

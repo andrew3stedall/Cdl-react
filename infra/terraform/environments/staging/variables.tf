@@ -21,14 +21,20 @@ variable "environment" {
   default     = "staging"
 }
 
+variable "enable_database_jobs" {
+  description = "Create controlled migration and deterministic synthetic seed jobs."
+  type        = bool
+  default     = false
+}
+
 variable "enable_cloud_run" {
-  description = "Create the single-service Cloud Run application after an immutable image and secret versions exist."
+  description = "Create the single-service Cloud Run application after database jobs are proven."
   type        = bool
   default     = false
 }
 
 variable "backend_image" {
-  description = "Fully qualified immutable frontend-and-API container image deployed when enable_cloud_run is true."
+  description = "Fully qualified immutable frontend-and-API container image used by jobs and Cloud Run."
   type        = string
   default     = ""
 

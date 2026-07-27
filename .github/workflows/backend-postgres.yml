@@ -37,3 +37,4 @@ jobs:
           tests/test_postgres_dashboard_metrics.py
           tests/test_postgres_dashboard_config.py
           tests/test_postgres_dashboard_snapshots.py
+          tests/test_postgres_fdr.py

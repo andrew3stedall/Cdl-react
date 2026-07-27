@@ -69,7 +69,7 @@ def test_plan_summary_redacts_values_and_lists_cost_sensitive_changes() -> None:
                         "sensitive_field": "must-not-appear",
                     },
                 },
-            }
+            },
         ]
     )
 
@@ -96,7 +96,7 @@ def test_plan_summary_blocks_destructive_actions() -> None:
                 "address": "google_storage_bucket.frontend",
                 "type": "google_storage_bucket",
                 "change": {"actions": ["delete"], "after": None},
-            }
+            },
         ]
     )
 
@@ -122,7 +122,7 @@ def test_plan_summary_blocks_public_principals() -> None:
                     "actions": ["create"],
                     "after": {"member": "allUsers"},
                 },
-            }
+            },
         ]
     )
 

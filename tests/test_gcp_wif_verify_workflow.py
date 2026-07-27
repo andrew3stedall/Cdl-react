@@ -4,6 +4,18 @@ WORKFLOW = Path(".github/workflows/gcp-wif-verify.yml")
 RUNBOOK = Path("docs/runbooks/gcp-wif-state-boundary.md")
 
 
+def test_wif_verify_uses_only_oidc_token_permission() -> None:
+    content = WORKFLOW.read_text(encoding="utf-8")
+    permissions = content.split("permissions:", maxsplit=1)[1].split("concurrency:", maxsplit=1)[0]
+
+    assert "id-token: write" in permissions
+    assert "contents:" not in permissions
+    assert "actions:" not in permissions
+    assert "packages:" not in permissions
+    assert "pull-requests:" not in permissions
+    assert "GitHub token permissions: OIDC only; repository contents unavailable" in content
+
+
 def test_wif_verify_fails_closed_on_identity_shape_and_state_bucket_controls() -> None:
     content = WORKFLOW.read_text(encoding="utf-8")
 
@@ -41,6 +53,7 @@ def test_wif_verify_retains_only_reviewable_non_sensitive_evidence() -> None:
         'evidence_file="${RUNNER_TEMP}/gcp-wif-verification.md"',
         'run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"',
         "Source commit:",
+        "GitHub token permissions: OIDC only; repository contents unavailable",
         "Raw bucket metadata and IAM policy: deleted and not retained",
         "actions/upload-artifact@v4",
         "gcp-wif-verification-${{ github.sha }}",
@@ -67,6 +80,8 @@ def test_wif_runbook_documents_state_bucket_security_proof() -> None:
         "only explicit `roles/storage.objectAdmin` member",
         "object versioning",
         "read-only",
+        "OIDC token minting",
+        "repository contents",
         "seven days",
         "source commit",
         "workflow run",

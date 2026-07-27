@@ -42,3 +42,4 @@ jobs:
           tests/test_historical_import_service.py
           tests/test_synthetic_fixture_export_adapter.py
           tests/test_synthetic_result_export_adapter.py
+          tests/test_synthetic_scoring_export_adapter.py

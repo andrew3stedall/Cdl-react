@@ -13,6 +13,7 @@ from cdl_api.contracts.dashboard import (
     DashboardDrilldownResponse,
     DashboardFilter,
     DashboardMetric,
+    DashboardWidgetDefinition,
     WidgetQueryRequest,
     WidgetQueryResponse,
 )
@@ -36,6 +37,8 @@ _query_service = WidgetQueryService()
 
 class DashboardConfigRepository(Protocol):
     def get_config(self) -> DashboardConfigResponse | None: ...
+
+    def get_widget(self, widget_id: str) -> DashboardWidgetDefinition | None: ...
 
 
 class DashboardMetricRepository(Protocol):
@@ -106,8 +109,9 @@ def dashboard_dimensions() -> list[DashboardDimension]:
 def dashboard_widget_query(
     widget_id: str,
     request: WidgetQueryRequest,
+    repository: DashboardConfigRepository = Depends(get_dashboard_config_repository),
 ) -> WidgetQueryResponse | JSONResponse:
-    widget = _dashboard_service.get_widget(widget_id)
+    widget = repository.get_widget(widget_id)
     if widget is None:
         return _not_found(widget_id)
 
@@ -122,8 +126,9 @@ def dashboard_widget_query(
 def dashboard_widget_drilldown(
     widget_id: str,
     request: DashboardDrilldownRequest,
+    repository: DashboardConfigRepository = Depends(get_dashboard_config_repository),
 ) -> DashboardDrilldownResponse | JSONResponse:
-    widget = _dashboard_service.get_widget(widget_id)
+    widget = repository.get_widget(widget_id)
     if widget is None:
         return _not_found(widget_id)
 

@@ -151,9 +151,7 @@ def test_head_to_head_adapter_projection_reviews_and_conflict_rollback() -> None
     duplicate = _document(batch_id="h2h-duplicate")
     duplicate["rows"].append(dict(duplicate["rows"][0]))
     adapted = adapter.adapt(duplicate)
-    assert adapted.review_diagnostics == [
-        "duplicate head-to-head key: h2h-source-1"
-    ]
+    assert adapted.review_diagnostics == ["duplicate head-to-head key: h2h-source-1"]
     assert len(adapted.batch.records) == 1
 
     invalid = _document(batch_id="h2h-invalid")
@@ -176,9 +174,8 @@ def test_head_to_head_adapter_projection_reviews_and_conflict_rollback() -> None
     assert audit.projected_records == 0
     assert audit.review_items == ["h2h-source-1"]
     with missing_factory() as session:
-        reason = session.execute(
-            select(import_review_items_table.c.payload_json)
-        ).scalar_one()
+        reason_query = select(import_review_items_table.c.payload_json)
+        reason = session.execute(reason_query).scalar_one()
     assert reason["reason"] == "missing_result"
 
     conflict = adapter.adapt(_document(batch_id="h2h-conflict")).batch
@@ -196,11 +193,10 @@ def test_head_to_head_adapter_projection_reviews_and_conflict_rollback() -> None
             PostgreSQLHistoricalHeadToHeadImportRepository(session_factory)
         ).execute(conflict, dry_run=False)
     with session_factory() as session:
-        existing = session.execute(
-            select(import_batches_table.c.id).where(
-                import_batches_table.c.id == "h2h-conflict"
-            )
-        ).all()
+        batch_query = select(import_batches_table.c.id).where(
+            import_batches_table.c.id == "h2h-conflict"
+        )
+        existing = session.execute(batch_query).all()
     assert existing == []
 
     unsupported = _document()

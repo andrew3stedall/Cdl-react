@@ -45,9 +45,7 @@ def _assert_fdr_round_trip(session_factory: sessionmaker[Session]) -> None:
     assert body["attack"]["rows"][0]["fixtures"][0]["opponent"]["id"] == "man-city"
 
     with session_factory() as session:
-        count = session.execute(
-            select(func.count()).select_from(fdr_ratings_table)
-        ).scalar_one()
+        count = session.execute(select(func.count()).select_from(fdr_ratings_table)).scalar_one()
         payloads = session.execute(
             select(fdr_ratings_table.c.payload_json).order_by(fdr_ratings_table.c.id)
         ).scalars()

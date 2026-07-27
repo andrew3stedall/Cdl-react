@@ -44,6 +44,16 @@ def _assert_fdr_round_trip(session_factory: sessionmaker[Session]) -> None:
     assert body["defence"]["rows"][0]["fixtures"][0]["rating"] == 3
     assert body["attack"]["rows"][0]["fixtures"][0]["opponent"]["id"] == "man-city"
 
+    other_season_response = client.get(
+        "/api/fdr",
+        params={"season": "2026/27", "gameweek_start": 12, "gameweek_end": 12},
+    )
+    assert other_season_response.status_code == 200
+    assert other_season_response.json()["attack"]["rows"] == []
+    assert other_season_response.json()["defence"]["rows"] == []
+    assert other_season_response.json()["attack"]["available_teams"] == []
+    assert "Arsenal" not in other_season_response.text
+
     with session_factory() as session:
         count = session.execute(select(func.count()).select_from(fdr_ratings_table)).scalar_one()
         payloads = session.execute(

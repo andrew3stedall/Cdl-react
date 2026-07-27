@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 
 from cdl_api.app import create_app
@@ -26,7 +27,9 @@ def test_login_session_and_logout_flow() -> None:
     assert final_session_response.json()["is_authenticated"] is False
 
 
-def test_staging_can_require_secure_session_cookie(monkeypatch) -> None:
+def test_staging_can_require_secure_session_cookie(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.setenv("CDL_SESSION_COOKIE_SECURE", "true")
     client = TestClient(create_app())
 

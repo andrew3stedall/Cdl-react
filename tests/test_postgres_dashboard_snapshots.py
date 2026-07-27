@@ -12,9 +12,7 @@ from cdl_api.repositories.postgres_dashboard_fdr import (
     dashboard_aggregate_snapshots_table,
     dashboard_definitions_table,
 )
-from cdl_api.repositories.postgres_dashboard_snapshots import (
-    PostgreSQLDashboardSnapshotRepository,
-)
+from cdl_api.repositories.postgres_dashboard_snapshots import PostgreSQLDashboardSnapshotRepository
 from cdl_api.routers.dashboard import (
     get_dashboard_config_repository,
     get_dashboard_query_repository,

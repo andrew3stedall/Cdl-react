@@ -3,6 +3,7 @@
 from cdl_api.contracts.domain import GameweekSummary, TeamSummary
 from cdl_api.contracts.fdr import (
     FixtureDifficultyBand,
+    FixtureDifficultyCalculationInputAudit,
     FixtureDifficultyFixture,
     FixtureDifficultyScaleStep,
     FixtureDifficultyView,
@@ -47,6 +48,13 @@ class FixtureDifficultyRepository:
             )
             for rating, band, label, contrast_ratio in scale_rows
         ]
+
+    def list_calculation_inputs(
+        self,
+        season: str,
+    ) -> list[FixtureDifficultyCalculationInputAudit]:
+        """Memory preview data has no persisted calculation audit evidence."""
+        return []
 
     def list_fixtures(
         self,

@@ -84,9 +84,11 @@ def _classify_actions(actions: list[str]) -> str:
     return "+".join(actions) if actions else "unknown"
 
 
-def _parse_changes(plan: dict[str, JsonValue]) -> list[dict[str, JsonValue]]:
+def _parse_changes(
+    plan: dict[str, JsonValue], collection: str = "resource_changes"
+) -> list[dict[str, JsonValue]]:
     parsed: list[dict[str, JsonValue]] = []
-    for raw_change in _as_list(plan.get("resource_changes")):
+    for raw_change in _as_list(plan.get(collection)):
         change = _as_object(raw_change)
         change_body = _as_object(change.get("change"))
         actions = [
@@ -128,6 +130,11 @@ def summarize_plan(
 ) -> tuple[str, int]:
     changes = _parse_changes(plan)
     changed = [item for item in changes if item["action"] not in {"no-op", "read"}]
+    drift = [
+        item
+        for item in _parse_changes(plan, "resource_drift")
+        if item["action"] not in {"no-op", "read"}
+    ]
     action_counts = Counter(_as_string(item["action"]) for item in changed)
     destructive = [item for item in changed if item["destructive"] is True]
     public = [item for item in changed if item["public"] is True]
@@ -150,21 +157,26 @@ def summarize_plan(
         {
             resource_type
             for item in changed
-            if (resource_type := _as_string(item["type"])).startswith(SECURITY_SENSITIVE_PREFIXES)
+            if (resource_type := _as_string(item["type"])).startswith(
+                SECURITY_SENSITIVE_PREFIXES
+            )
         }
     )
 
     gate_status = "PASS"
     exit_code = 0
-    if unexpected_types:
-        gate_status = "BLOCKED: unreviewed staging resource type detected"
-        exit_code = 4
-    if destructive:
-        gate_status = "BLOCKED: destructive delete or replacement action detected"
-        exit_code = 2
     if public:
         gate_status = "BLOCKED: public IAM principal detected"
         exit_code = 3
+    elif destructive:
+        gate_status = "BLOCKED: destructive delete or replacement action detected"
+        exit_code = 2
+    elif unexpected_types:
+        gate_status = "BLOCKED: unreviewed staging resource type detected"
+        exit_code = 4
+    elif drift:
+        gate_status = "BLOCKED: out-of-band resource drift detected"
+        exit_code = 5
 
     generated_at = datetime.now(UTC).isoformat(timespec="seconds")
     lines = [
@@ -196,6 +208,16 @@ def summarize_plan(
     ]
     lines.extend(_markdown_table(rows))
 
+    lines.extend(["", "## Detected remote-state drift", ""])
+    drift_rows = [
+        (_as_string(item["action"]), _as_string(item["type"]), _as_string(item["address"]))
+        for item in drift
+    ]
+    if drift_rows:
+        lines.extend(_markdown_table(drift_rows))
+    else:
+        lines.append("- None detected")
+
     lines.extend(["", "## Resource-type allowlist", ""])
     if unexpected_types:
         lines.extend(f"- Unreviewed: `{resource_type}`" for resource_type in unexpected_types)
@@ -224,6 +246,8 @@ def summarize_plan(
             "",
             "This summary intentionally omits resource values. Review the human-readable "
             "plan artifact before approval.",
+            "Any detected remote-state drift must be explained and reconciled before a plan "
+            "can pass.",
             "Any new Terraform resource type must be added to the reviewed staging design and "
             "allowlist in the same pull request before the plan can pass.",
             "A fresh plan is required for any future apply; this workflow never applies "

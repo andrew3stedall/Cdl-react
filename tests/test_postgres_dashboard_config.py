@@ -27,6 +27,8 @@ def _assert_config_round_trip(
     client = _client(repository)
 
     empty_response = client.get("/api/dashboard/config")
+    empty_filters_response = client.get("/api/dashboard/filters")
+    empty_dimensions_response = client.get("/api/dashboard/dimensions")
     empty_widget_response = client.post(
         "/api/dashboard/widgets/team-points/query",
         json={"filters": []},
@@ -35,12 +37,18 @@ def _assert_config_round_trip(
     assert empty_response.status_code == 404
     assert empty_response.json()["code"] == "not_found"
     assert empty_response.json()["details"]["resource"] == "dashboard_definitions"
+    assert empty_filters_response.status_code == 200
+    assert empty_filters_response.json() == []
+    assert empty_dimensions_response.status_code == 200
+    assert empty_dimensions_response.json() == []
     assert empty_widget_response.status_code == 404
     assert empty_widget_response.json()["details"]["widget_id"] == "team-points"
 
     repository.seed_synthetic_data()
     repository.seed_synthetic_data()
     response = client.get("/api/dashboard/config")
+    filters_response = client.get("/api/dashboard/filters")
+    dimensions_response = client.get("/api/dashboard/dimensions")
     widget_response = client.post(
         "/api/dashboard/widgets/team-points/query",
         json={"filters": [{"filter_id": "cdl_team", "value": "Castle FC"}]},
@@ -54,6 +62,12 @@ def _assert_config_round_trip(
     assert response.json()["id"] == "manager-analytics"
     assert response.json()["widgets"][0]["id"] == "team-points"
     assert response.json()["metrics"][0]["id"] == "fantasy_points"
+    assert filters_response.status_code == 200
+    assert filters_response.json() == response.json()["filters"]
+    assert dimensions_response.status_code == 200
+    assert dimensions_response.json() == response.json()["dimensions"]
+    assert filters_response.json()[0]["id"] == "gameweek"
+    assert dimensions_response.json()[0]["id"] == "cdl_team"
     assert widget_response.status_code == 200
     assert widget_response.json()["widget_id"] == "team-points"
     assert widget_response.json()["series"][0]["points"][0]["label"] == "Castle FC"

@@ -46,6 +46,7 @@ def login(
         key=settings.session_cookie_name,
         value=session_id,
         httponly=True,
+        secure=settings.session_cookie_secure,
         samesite="lax",
     )
     return LoginResponse(session=session)
@@ -68,5 +69,9 @@ def logout(
     service: AuthenticationService = Depends(get_auth_service),
 ) -> LogoutResponse:
     session = service.logout(_session_id_from_request(request, settings))
-    response.delete_cookie(settings.session_cookie_name)
+    response.delete_cookie(
+        settings.session_cookie_name,
+        secure=settings.session_cookie_secure,
+        samesite="lax",
+    )
     return LogoutResponse(session=session)

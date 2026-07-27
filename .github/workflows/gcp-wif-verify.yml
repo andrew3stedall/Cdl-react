@@ -151,7 +151,9 @@ jobs:
             echo "- Trusted ref: \`${GITHUB_REF}\`"
             echo "- Project: \`${PROJECT_ID}\`"
             echo "- Project number: \`${PROJECT_NUMBER}\`"
+            echo "- Workload Identity provider: \`${WORKLOAD_IDENTITY_PROVIDER}\`"
             echo "- Federated account: \`${DEPLOY_SERVICE_ACCOUNT}\`"
+            echo "- Terraform state bucket: \`gs://${TERRAFORM_STATE_BUCKET}\`"
             echo "- GitHub token permissions: OIDC only; repository contents unavailable"
             echo "- State bucket project boundary: confirmed"
             echo "- State bucket region: \`australia-southeast1\`"
@@ -166,6 +168,8 @@ jobs:
 
           test -s "${evidence_file}"
           grep -Fq "Source commit: \`${GITHUB_SHA}\`" "${evidence_file}"
+          grep -Fq "Workload Identity provider: \`${WORKLOAD_IDENTITY_PROVIDER}\`" "${evidence_file}"
+          grep -Fq "Terraform state bucket: \`gs://${TERRAFORM_STATE_BUCKET}\`" "${evidence_file}"
           grep -Fq "GitHub token permissions: OIDC only; repository contents unavailable" "${evidence_file}"
           grep -Fq "Raw bucket metadata and IAM policy: deleted and not retained" "${evidence_file}"
           cat "${evidence_file}" >> "${GITHUB_STEP_SUMMARY}"

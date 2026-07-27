@@ -5,6 +5,7 @@ STAGING_MAIN = Path("infra/terraform/environments/staging/main.tf")
 STAGING_VARIABLES = Path("infra/terraform/environments/staging/variables.tf")
 CLOUD_RUN_MAIN = Path("infra/terraform/modules/cloud-run-api/main.tf")
 CLOUD_RUN_VARIABLES = Path("infra/terraform/modules/cloud-run-api/variables.tf")
+PLAN_WORKFLOW = Path(".github/workflows/gcp-terraform-staging.yml")
 IMAGE_WORKFLOW = Path(".github/workflows/gcp-deploy-staging.yml")
 ADR = Path("docs/architecture/gcp-single-service-staging.md")
 
@@ -34,6 +35,7 @@ def test_staging_runtime_is_postgres_ready_but_disabled_by_default() -> None:
     assert "CDL_DEVELOPMENT_LOGIN_SECRET" in main
     assert 'CDL_SESSION_COOKIE_SECURE = "true"' in main
     assert "allow_public_invoker = var.allow_public_invoker" in main
+    assert '@sha256:[0-9a-f]{64}$' in variables
 
 
 def test_cloud_run_module_resolves_secret_versions_without_plaintext_values() -> None:
@@ -75,6 +77,24 @@ def test_image_workflow_builds_an_immutable_reference_without_deploying() -> Non
     assert "deploy-cloudrun" not in content
     assert "gcloud run deploy" not in content
     assert "CDL_REPOSITORY_MODE=memory" not in content
+
+
+def test_plan_workflow_accepts_only_private_immutable_runtime_inputs() -> None:
+    content = PLAN_WORKFLOW.read_text(encoding="utf-8")
+
+    for phrase in [
+        "enable_cloud_run:",
+        "backend_image:",
+        "backend_image must be an immutable @sha256 digest URI",
+        '-var="enable_cloud_run=${ENABLE_CLOUD_RUN}"',
+        '-var="backend_image=${BACKEND_IMAGE}"',
+        '-var="allow_public_invoker=false"',
+    ]:
+        assert phrase in content
+
+    assert "allow_public_invoker:" not in content.split("workflow_dispatch:", maxsplit=1)[1].split(
+        "permissions:", maxsplit=1
+    )[0]
 
 
 def test_adr_keeps_apply_migrations_and_public_access_separately_gated() -> None:

@@ -11,7 +11,9 @@ from cdl_api.contracts.dashboard import (
     DashboardTableRow,
     DashboardWidgetDefinition,
 )
-from cdl_api.repositories.postgres_dashboard_fdr import dashboard_aggregate_snapshots_table
+from cdl_api.repositories.postgres_dashboard_fdr import (
+    dashboard_aggregate_snapshots_table,
+)
 
 
 class PostgreSQLDashboardSnapshotRepository:
@@ -149,7 +151,9 @@ class PostgreSQLDashboardSnapshotRepository:
         with self._session_factory() as session:
             existing_ids = {
                 str(row[0])
-                for row in session.execute(select(dashboard_aggregate_snapshots_table.c.id))
+                for row in session.execute(
+                    select(dashboard_aggregate_snapshots_table.c.id)
+                )
             }
             for snapshot_id, payload in snapshots:
                 if snapshot_id in existing_ids:

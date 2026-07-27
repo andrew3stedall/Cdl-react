@@ -5,7 +5,9 @@ from sqlalchemy import create_engine, insert, select
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from cdl_api.repositories.postgres_imports import HISTORICAL_IMPORT_PERSISTENCE_TABLES
+from cdl_api.repositories.postgres_imports import (
+    HISTORICAL_IMPORT_PERSISTENCE_TABLES,
+)
 from cdl_api.repositories.postgres_league_fixtures import (
     cdl_fixtures_table,
     fixture_results_table,
@@ -15,10 +17,16 @@ from cdl_api.repositories.postgres_scoring_imports import (
     PostgreSQLHistoricalScoringImportRepository,
 )
 from cdl_api.services.historical_import_service import HistoricalImportService
-from cdl_api.services.synthetic_scoring_export_adapter import SyntheticScoringExportAdapter
+from cdl_api.services.synthetic_scoring_export_adapter import (
+    SyntheticScoringExportAdapter,
+)
 
 
-def _document(*, batch_id: str = "scoring-batch-1", target_id: str = "fixture-1") -> dict:
+def _document(
+    *,
+    batch_id: str = "scoring-batch-1",
+    target_id: str = "fixture-1",
+) -> dict:
     return {
         "export_version": "synthetic-scoring-export/v1",
         "batch_id": batch_id,
@@ -45,7 +53,10 @@ def _assert_release_path(session_factory: sessionmaker[Session]) -> None:
     dry_run = service.execute(adapted.batch, dry_run=True)
     assert dry_run.projected_records == 1
     with session_factory() as session:
-        assert session.execute(select(fixture_scoring_snapshots_table.c.id)).all() == []
+        rows = session.execute(
+            select(fixture_scoring_snapshots_table.c.id)
+        ).all()
+        assert rows == []
 
     committed = service.execute(adapted.batch, dry_run=False)
     assert committed.projected_records == 1
@@ -66,7 +77,8 @@ def _prepare_dependencies(session_factory: sessionmaker[Session]) -> None:
     with session_factory() as session:
         session.execute(
             insert(cdl_fixtures_table).values(
-                id="fixture-1", payload_json={"id": "fixture-1", "synthetic": True}
+                id="fixture-1",
+                payload_json={"id": "fixture-1", "synthetic": True},
             )
         )
         session.execute(
@@ -86,17 +98,30 @@ def test_scoring_adapter_projection_and_missing_dependency_reviews() -> None:
     )
     for table in HISTORICAL_IMPORT_PERSISTENCE_TABLES:
         table.create(engine)
-    for table in (cdl_fixtures_table, fixture_results_table, fixture_scoring_snapshots_table):
+    domain_tables = (
+        cdl_fixtures_table,
+        fixture_results_table,
+        fixture_scoring_snapshots_table,
+    )
+    for table in domain_tables:
         table.create(engine)
     session_factory = sessionmaker(bind=engine, class_=Session)
     _prepare_dependencies(session_factory)
     _assert_release_path(session_factory)
 
-    missing_repository = PostgreSQLHistoricalScoringImportRepository(session_factory)
+    missing_repository = PostgreSQLHistoricalScoringImportRepository(
+        session_factory
+    )
     missing_batch = SyntheticScoringExportAdapter().adapt(
-        _document(batch_id="scoring-batch-missing", target_id="fixture-missing")
+        _document(
+            batch_id="scoring-batch-missing",
+            target_id="fixture-missing",
+        )
     ).batch
-    audit = HistoricalImportService(missing_repository).execute(missing_batch, dry_run=False)
+    audit = HistoricalImportService(missing_repository).execute(
+        missing_batch,
+        dry_run=False,
+    )
     assert audit.projected_records == 0
     assert audit.review_items == ["snapshot-source-1"]
 
@@ -112,7 +137,10 @@ def test_scoring_adapter_duplicate_and_version_diagnostics() -> None:
     assert len(adapted.batch.records) == 1
 
     payload["export_version"] = "synthetic-scoring-export/v2"
-    with pytest.raises(ValueError, match="Unsupported synthetic scoring export version"):
+    with pytest.raises(
+        ValueError,
+        match="Unsupported synthetic scoring export version",
+    ):
         adapter.adapt(payload)
 
 
@@ -124,12 +152,13 @@ def test_clean_postgres_scoring_projection_uses_migrated_tables() -> None:
     engine = create_engine(os.environ["CDL_DATABASE_URL"])
     session_factory = sessionmaker(bind=engine, class_=Session)
     with session_factory() as session:
-        for table in (
+        tables = (
             fixture_scoring_snapshots_table,
             fixture_results_table,
             cdl_fixtures_table,
             *reversed(HISTORICAL_IMPORT_PERSISTENCE_TABLES),
-        ):
+        )
+        for table in tables:
             session.execute(table.delete())
         session.commit()
     _prepare_dependencies(session_factory)

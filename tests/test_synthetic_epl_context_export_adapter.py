@@ -141,9 +141,7 @@ def test_epl_context_projection_and_missing_link_reviews() -> None:
     ).execute(missing_link.batch, dry_run=False)
     assert link_audit.projected_records == 0
     with session_factory() as session:
-        reasons = session.execute(
-            select(import_review_items_table.c.payload_json)
-        ).scalars().all()
+        reasons = session.execute(select(import_review_items_table.c.payload_json)).scalars().all()
     assert {payload["reason"] for payload in reasons} == {
         "missing_scoring_link",
         "missing_scoring_snapshot",

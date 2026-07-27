@@ -3,6 +3,7 @@
 from fastapi import APIRouter, Depends, Query
 
 from cdl_api.contracts.fdr import (
+    FixtureDifficultyCalculationInputAudit,
     FixtureDifficultyCombinedResponse,
     FixtureDifficultyFilters,
     FixtureDifficultyResponse,
@@ -87,3 +88,14 @@ def fdr_scales(
     repository: FixtureDifficultyDataRepository = Depends(get_fdr_repository),
 ) -> list[FixtureDifficultyScaleStep]:
     return FixtureDifficultyService(repository).get_scales()
+
+
+@router.get(
+    "/calculation-inputs",
+    response_model=list[FixtureDifficultyCalculationInputAudit],
+)
+def fdr_calculation_inputs(
+    season: str = "2025/26",
+    repository: FixtureDifficultyDataRepository = Depends(get_fdr_repository),
+) -> list[FixtureDifficultyCalculationInputAudit]:
+    return FixtureDifficultyService(repository).get_calculation_inputs(season)

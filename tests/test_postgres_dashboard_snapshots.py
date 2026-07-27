@@ -46,7 +46,7 @@ def _assert_snapshot_round_trip(session_factory: sessionmaker[Session]) -> None:
             "metric_id": "fantasy_points",
             "label": "Points by CDL team",
             "points": [],
-        }
+        },
     ]
     assert empty_response.json()["rows"] == []
     assert empty_response.json()["empty"] is True
@@ -72,7 +72,7 @@ def _assert_snapshot_round_trip(session_factory: sessionmaker[Session]) -> None:
             "value": 74.0,
             "dimension_value": "Castle FC",
             "drilldown_key": "castle",
-        }
+        },
     ]
     assert body["rows"][0]["cells"] == {
         "cdl_team": "Castle FC",

@@ -46,3 +46,4 @@ jobs:
           tests/test_synthetic_epl_context_export_adapter.py
           tests/test_synthetic_squad_export_adapter.py
           tests/test_synthetic_league_table_export_adapter.py
+          tests/test_synthetic_knockout_export_adapter.py

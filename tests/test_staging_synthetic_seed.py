@@ -65,9 +65,21 @@ def test_seed_loads_each_idempotent_domain_once(monkeypatch: pytest.MonkeyPatch)
     calls: list[str] = []
     monkeypatch.setenv("CDL_ALLOW_SYNTHETIC_STAGING_SEED", "true")
     monkeypatch.setattr(module, "build_session_factory", lambda settings: object())
-    monkeypatch.setattr(module, "PostgreSQLUserRepository", lambda factory: _Seeder(calls, "identity"))
-    monkeypatch.setattr(module, "PostgreSQLSquadRepository", lambda factory: _Seeder(calls, "squad"))
-    monkeypatch.setattr(module, "PostgreSQLLeagueRepository", lambda factory: _Seeder(calls, "league"))
+    monkeypatch.setattr(
+        module,
+        "PostgreSQLUserRepository",
+        lambda factory: _Seeder(calls, "identity"),
+    )
+    monkeypatch.setattr(
+        module,
+        "PostgreSQLSquadRepository",
+        lambda factory: _Seeder(calls, "squad"),
+    )
+    monkeypatch.setattr(
+        module,
+        "PostgreSQLLeagueRepository",
+        lambda factory: _Seeder(calls, "league"),
+    )
 
     result = seed_synthetic_staging_data(_settings())
 

@@ -90,9 +90,7 @@ def _assert_adapter_projection_parity(session_factory: sessionmaker[Session]) ->
     result = adapter.adapt(_export_payload("synthetic-adapter-1"))
 
     assert result.batch == _expected_batch("synthetic-adapter-1")
-    assert result.mapping_diagnostics == [
-        "legacy-fixture-a -> fixture-historical-1"
-    ]
+    assert result.mapping_diagnostics == ["legacy-fixture-a -> fixture-historical-1"]
     assert result.review_diagnostics == []
 
     service = HistoricalImportService(PostgreSQLHistoricalImportRepository(session_factory))
@@ -109,9 +107,7 @@ def _assert_adapter_projection_parity(session_factory: sessionmaker[Session]) ->
         *duplicate_payload["rows"],  # type: ignore[index]
     ]
     duplicate = adapter.adapt(duplicate_payload)
-    assert duplicate.review_diagnostics == [
-        "duplicate fixture key: legacy-fixture-a"
-    ]
+    assert duplicate.review_diagnostics == ["duplicate fixture key: legacy-fixture-a"]
     assert len(duplicate.batch.records) == 1
 
     with pytest.raises(ValueError, match="Unsupported synthetic fixture export version"):

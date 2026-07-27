@@ -29,6 +29,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v4
       - run: uv sync
+      - name: Capture Ruff lint output
+        run: uv run ruff check . > ruff-lint.txt 2>&1 || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ruff-lint-output
+          path: ruff-lint.txt
       - run: uv run alembic upgrade head
       - name: Test PostgreSQL release paths
         run: >-

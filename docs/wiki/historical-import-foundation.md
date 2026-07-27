@@ -96,8 +96,21 @@ The PostgreSQL repository provides these release-path behaviours:
 - duplicate membership keys and conflicting adapter mappings create diagnostics;
 - unsupported squad-export versions fail closed.
 
+## Bounded league-table snapshot projection
+
+`synthetic-league-table-export/v1` normalizes one complete table snapshot into `entity_type=league_table_snapshot`. `PostgreSQLHistoricalLeagueTableImportRepository` projects into `league_table_snapshots` only when every explicitly mapped fixture and persisted result exists.
+
+- dry-run reports the table projection without database writes;
+- snapshot and fixture source keys are mapped explicitly;
+- missing mappings, fixtures, or results create open review evidence and no table row;
+- import evidence and the table snapshot commit in one transaction;
+- exact replay is idempotent;
+- existing table content is never silently overwritten; conflicting content raises before commit and rolls back import changes;
+- duplicate snapshot keys and conflicting adapter mappings create diagnostics;
+- unsupported league-table export versions fail closed.
+
 These adapters prove normalization and transactional projection for deterministic synthetic shapes only. They do not establish compatibility with a real export format or authorize automatic replacement of existing domain records.
 
 ## Remaining scope
 
-A real historical export still needs a separately validated parser/adapter, source authenticity and schema evidence, mapping approval, and coverage for table snapshots, knockout, head-to-head, and other entity projections. Synthetic release-path tests do not establish compatibility with any real export format.
+A real historical export still needs a separately validated parser/adapter, source authenticity and schema evidence, mapping approval, and coverage for knockout, head-to-head, and other entity projections. Synthetic release-path tests do not establish compatibility with any real export format.

@@ -24,6 +24,12 @@ A successful run confirms:
 
 Any mismatch fails the workflow before an authenticated Terraform plan can be treated as valid evidence. An extra state writer is treated as bootstrap drift rather than accepted as harmless access.
 
+## GitHub token boundary
+
+The verification job requests only `id-token: write`, which is required for short-lived OIDC token minting. It does not request repository contents, pull-request, package, Actions-management, or write permissions. The workflow does not check out the repository and cannot use its GitHub token to read repository contents.
+
+This keeps the GitHub-side permission boundary separate from the short-lived GCP identity being verified. The retained evidence records that the run used this OIDC-only permission set.
+
 ## Retained evidence
 
 A successful run uploads one reviewable Markdown artifact for seven days. It records:
@@ -32,6 +38,7 @@ A successful run uploads one reviewable Markdown artifact for seven days. It rec
 - the workflow run URL;
 - the trusted `main` ref;
 - the staging project, project number and federated service-account identity;
+- the OIDC-only GitHub token permission boundary;
 - the pass result for each state-bucket protection boundary; and
 - confirmation that the workflow changed no GCP resources.
 

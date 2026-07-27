@@ -29,11 +29,16 @@ from cdl_api.services.synthetic_squad_export_adapter import (
 )
 
 
-def _document(*, batch_id: str = "squad-batch-1", player_id: str = "player-1") -> dict:
+def _document(
+    *,
+    batch_id: str = "squad-batch-1",
+    player_id: str = "player-1",
+    source_system: str = "deterministic-synthetic-squad",
+) -> dict:
     return {
         "export_version": "synthetic-squad-export/v1",
         "batch_id": batch_id,
-        "source_system": "deterministic-synthetic-squad",
+        "source_system": source_system,
         "rows": [
             {
                 "membership_key": "membership-source-1",
@@ -53,13 +58,51 @@ def _create_tables(engine: Engine) -> None:
     for table in HISTORICAL_IMPORT_PERSISTENCE_TABLES:
         table.create(engine)
     statements = (
-        "CREATE TABLE leagues (id VARCHAR(64) PRIMARY KEY, name VARCHAR(255), code VARCHAR(64))",
-        "CREATE TABLE seasons (id VARCHAR(64) PRIMARY KEY, league_id VARCHAR(64), name VARCHAR(64), start_gameweek INTEGER, end_gameweek INTEGER)",
-        "CREATE TABLE draft_teams (id VARCHAR(64) PRIMARY KEY, league_id VARCHAR(64), manager_id VARCHAR(64), name VARCHAR(255))",
-        "CREATE TABLE fpl_positions (id VARCHAR(16) PRIMARY KEY, singular_name VARCHAR(64), plural_name VARCHAR(64))",
-        "CREATE TABLE epl_teams (id VARCHAR(64) PRIMARY KEY, short_name VARCHAR(16), name VARCHAR(255))",
-        "CREATE TABLE fpl_players (id VARCHAR(64) PRIMARY KEY, first_name VARCHAR(255), second_name VARCHAR(255), web_name VARCHAR(255), position_id VARCHAR(16), team_id VARCHAR(64))",
-        "CREATE TABLE squad_ownerships (id VARCHAR(64) PRIMARY KEY, season_id VARCHAR(64), draft_team_id VARCHAR(64), player_id VARCHAR(64), roster_slot_id VARCHAR(64), started_at DATETIME, ended_at DATETIME)",
+        """CREATE TABLE leagues (
+            id VARCHAR(64) PRIMARY KEY,
+            name VARCHAR(255),
+            code VARCHAR(64)
+        )""",
+        """CREATE TABLE seasons (
+            id VARCHAR(64) PRIMARY KEY,
+            league_id VARCHAR(64),
+            name VARCHAR(64),
+            start_gameweek INTEGER,
+            end_gameweek INTEGER
+        )""",
+        """CREATE TABLE draft_teams (
+            id VARCHAR(64) PRIMARY KEY,
+            league_id VARCHAR(64),
+            manager_id VARCHAR(64),
+            name VARCHAR(255)
+        )""",
+        """CREATE TABLE fpl_positions (
+            id VARCHAR(16) PRIMARY KEY,
+            singular_name VARCHAR(64),
+            plural_name VARCHAR(64)
+        )""",
+        """CREATE TABLE epl_teams (
+            id VARCHAR(64) PRIMARY KEY,
+            short_name VARCHAR(16),
+            name VARCHAR(255)
+        )""",
+        """CREATE TABLE fpl_players (
+            id VARCHAR(64) PRIMARY KEY,
+            first_name VARCHAR(255),
+            second_name VARCHAR(255),
+            web_name VARCHAR(255),
+            position_id VARCHAR(16),
+            team_id VARCHAR(64)
+        )""",
+        """CREATE TABLE squad_ownerships (
+            id VARCHAR(64) PRIMARY KEY,
+            season_id VARCHAR(64),
+            draft_team_id VARCHAR(64),
+            player_id VARCHAR(64),
+            roster_slot_id VARCHAR(64),
+            started_at DATETIME,
+            ended_at DATETIME
+        )""",
     )
     with engine.begin() as connection:
         for statement in statements:
@@ -68,7 +111,13 @@ def _create_tables(engine: Engine) -> None:
 
 def _seed_dependencies(session_factory: sessionmaker[Session]) -> None:
     with session_factory() as session:
-        session.execute(insert(leagues_table).values(id="league-1", name="Synthetic", code="SYN"))
+        session.execute(
+            insert(leagues_table).values(
+                id="league-1",
+                name="Synthetic",
+                code="SYN",
+            )
+        )
         session.execute(
             insert(seasons_table).values(
                 id="season-1",
@@ -115,7 +164,8 @@ def _seed_dependencies(session_factory: sessionmaker[Session]) -> None:
 
 def _assert_release_path(session_factory: sessionmaker[Session]) -> None:
     adapter = SyntheticSquadMembershipExportAdapter()
-    service = HistoricalImportService(PostgreSQLHistoricalSquadImportRepository(session_factory))
+    repository = PostgreSQLHistoricalSquadImportRepository(session_factory)
+    service = HistoricalImportService(repository)
     batch = adapter.adapt(_document()).batch
 
     dry_run = service.execute(batch, dry_run=True)
@@ -156,14 +206,22 @@ def test_squad_adapter_projection_reviews_and_conflict_rollback() -> None:
     ]
     assert len(adapted.batch.records) == 1
 
-    missing = adapter.adapt(_document(batch_id="squad-missing", player_id="missing-player"))
+    missing = adapter.adapt(
+        _document(
+            batch_id="squad-missing",
+            player_id="missing-player",
+            source_system="deterministic-synthetic-squad-missing",
+        )
+    )
     audit = HistoricalImportService(
         PostgreSQLHistoricalSquadImportRepository(session_factory)
     ).execute(missing.batch, dry_run=False)
     assert audit.projected_records == 0
     assert audit.review_items == ["membership-source-1"]
     with session_factory() as session:
-        reason = session.execute(select(import_review_items_table.c.payload_json)).scalar_one()
+        reason = session.execute(
+            select(import_review_items_table.c.payload_json)
+        ).scalar_one()
     assert reason["reason"] == "missing_player"
 
     conflict = adapter.adapt(_document(batch_id="squad-conflict")).batch
@@ -186,9 +244,12 @@ def test_squad_adapter_projection_reviews_and_conflict_rollback() -> None:
             PostgreSQLHistoricalSquadImportRepository(session_factory)
         ).execute(conflict, dry_run=False)
     with session_factory() as session:
-        assert session.execute(
-            select(import_batches_table.c.id).where(import_batches_table.c.id == "squad-conflict")
-        ).all() == []
+        existing = session.execute(
+            select(import_batches_table.c.id).where(
+                import_batches_table.c.id == "squad-conflict"
+            )
+        ).all()
+    assert existing == []
 
     unsupported = _document()
     unsupported["export_version"] = "synthetic-squad-export/v2"

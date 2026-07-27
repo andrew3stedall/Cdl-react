@@ -107,9 +107,7 @@ def _assert_fdr_round_trip(session_factory: sessionmaker[Session]) -> None:
         ).scalar_one()
         rating_payloads = (
             session.execute(
-                select(fdr_ratings_table.c.payload_json).order_by(
-                    fdr_ratings_table.c.id
-                )
+                select(fdr_ratings_table.c.payload_json).order_by(fdr_ratings_table.c.id)
             )
             .scalars()
             .all()
@@ -209,9 +207,7 @@ def test_fdr_calculation_recomputes_digest_and_rejects_conflicts() -> None:
             select(fdr_calculation_inputs_table.c.payload_json)
         ).scalar_one()
         invalid_input = {**original_input, "input_sha256": "0" * 64}
-        session.execute(
-            update(fdr_calculation_inputs_table).values(payload_json=invalid_input)
-        )
+        session.execute(update(fdr_calculation_inputs_table).values(payload_json=invalid_input))
         session.commit()
 
     with pytest.raises(ValueError, match="digest"):
@@ -219,12 +215,9 @@ def test_fdr_calculation_recomputes_digest_and_rejects_conflicts() -> None:
 
     with session_factory() as session:
         assert (
-            session.execute(select(func.count()).select_from(fdr_ratings_table)).scalar_one()
-            == 0
+            session.execute(select(func.count()).select_from(fdr_ratings_table)).scalar_one() == 0
         )
-        session.execute(
-            update(fdr_calculation_inputs_table).values(payload_json=original_input)
-        )
+        session.execute(update(fdr_calculation_inputs_table).values(payload_json=original_input))
         session.commit()
 
     result = service.calculate("2025/26", calculation_run_id)
@@ -248,8 +241,7 @@ def test_fdr_calculation_recomputes_digest_and_rejects_conflicts() -> None:
 
     with session_factory() as session:
         assert (
-            session.execute(select(func.count()).select_from(fdr_ratings_table)).scalar_one()
-            == 4
+            session.execute(select(func.count()).select_from(fdr_ratings_table)).scalar_one() == 4
         )
 
 

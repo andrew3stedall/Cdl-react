@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     api_prefix: str = "/api"
     environment: str = "development"
     session_cookie_name: str = "cdl_session"
+    session_cookie_secure: bool = False
     development_login_secret: str = "demo-login-secret"
     database_url: str = ""
     database_pool_size: int = Field(default=5, ge=1)

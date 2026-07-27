@@ -42,9 +42,29 @@ variable "labels" {
 }
 
 variable "repository_mode" {
-  description = "Application repository mode. Use memory until PostgreSQL repositories and migrations are fully wired."
+  description = "Application repository mode."
   type        = string
   default     = "memory"
+
+  validation {
+    condition     = contains(["memory", "postgres"], var.repository_mode)
+    error_message = "repository_mode must be memory or postgres."
+  }
+}
+
+variable "environment_variables" {
+  description = "Additional non-sensitive environment variables passed to the service."
+  type        = map(string)
+  default     = {}
+}
+
+variable "secret_environment_variables" {
+  description = "Environment variables resolved from existing Secret Manager secret versions."
+  type = map(object({
+    secret  = string
+    version = optional(string, "latest")
+  }))
+  default = {}
 }
 
 variable "allow_public_invoker" {

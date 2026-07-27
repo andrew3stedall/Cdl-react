@@ -67,6 +67,12 @@ class DashboardService:
             None,
         )
 
+    def list_filters(self) -> list[DashboardFilter]:
+        return self.get_config().filters
+
+    def list_dimensions(self) -> list[DashboardDimension]:
+        return self.get_config().dimensions
+
 
 class WidgetQueryService:
     def __init__(

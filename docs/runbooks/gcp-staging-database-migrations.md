@@ -2,27 +2,26 @@
 
 ## Purpose
 
-This runbook defines the repository-side migration and deterministic synthetic seed entrypoints that future reviewed staging jobs will execute. It does not create or run a Cloud Run job, initialize credentials, connect to GCP, or change a database.
+This runbook defines the controlled migration and deterministic synthetic seed jobs for the first staging environment. Terraform creates job definitions only; it never executes them automatically.
 
-## Packaged migration command
+The relevant resources and workflow are:
 
-The backend image contains:
+- `infra/terraform/environments/staging/database_jobs.tf`
+- `.github/workflows/gcp-run-staging-database-job.yml`
+- `src/cdl_api/migrate.py`
+- `src/cdl_api/seed_staging.py`
 
-- `alembic.ini`;
-- the complete `migrations/` tree;
-- the installed `cdl_api` package.
+## Packaged commands
 
-Run the controlled migration entrypoint with:
+The single-service image contains `alembic.ini`, the full migration tree, the React build and the installed `cdl_api` package.
+
+Migration runs:
 
 ```bash
 python -m cdl_api.migrate
 ```
 
-The entrypoint upgrades to the current Alembic `head` revision.
-
-## Deterministic synthetic seed command
-
-Run seeding only as a separate command after a successful migration:
+Deterministic synthetic seed loading runs separately:
 
 ```bash
 CDL_ENVIRONMENT=staging \
@@ -31,59 +30,133 @@ CDL_ALLOW_SYNTHETIC_STAGING_SEED=true \
 python -m cdl_api.seed_staging
 ```
 
-`CDL_DATABASE_URL` must be resolved separately from the staging database secret. The seed command refuses production, memory mode, non-PostgreSQL URLs, and executions without the explicit synthetic-data confirmation flag.
+`CDL_DATABASE_URL` is resolved from Secret Manager by each job. The seed command refuses production, memory mode, non-PostgreSQL URLs and executions without the explicit synthetic-data confirmation flag.
 
-The current bounded seed set invokes the existing idempotent identity, squad, and league seeders. It is explicitly synthetic and must not be represented as historical-export evidence. Dashboard/FDR and historical-import seed coverage remain tracked separately through #68 and #69.
+The current bounded seed invokes the idempotent identity, squad and league seeders. It is explicitly synthetic and is not historical-export evidence. Dashboard/FDR and historical-import coverage remain tracked through #68 and #69.
 
-## Required environment
+## Terraform deployment stages
 
-`CDL_DATABASE_URL` is mandatory for both commands. The migration entrypoint deliberately refuses to use the local-development fallback URL in `migrations/env.py`.
+Use **GCP Terraform Staging** with cumulative stages:
 
-A non-default Alembic configuration can be selected with:
+### `foundation`
 
 ```text
-CDL_ALEMBIC_CONFIG=/path/to/alembic.ini
+enable_database_jobs=false
+enable_cloud_run=false
+backend_image=""
 ```
 
-Do not place a database URL, password, signed URL, service-account key, or secret payload in the image, Terraform variables, workflow logs, or repository files.
+This stage creates the database and supporting resources after explicit plan approval.
 
-## Intended staging execution boundary
+### `database-jobs`
 
-Future reviewed Cloud Run jobs or equivalent controlled runners should:
+```text
+enable_database_jobs=true
+enable_cloud_run=false
+backend_image=<immutable @sha256 digest URI>
+```
 
-1. use the immutable backend image digest already approved for deployment;
-2. run migration and seed as separate jobs using the dedicated migration service account;
-3. mount the planned Cloud SQL connection;
-4. resolve `CDL_DATABASE_URL` from the existing `cdl-database-url` Secret Manager container;
-5. execute `python -m cdl_api.migrate` first;
-6. fail the deployment sequence if migration fails;
-7. execute `python -m cdl_api.seed_staging` only with the explicit staging and synthetic-data guards;
-8. record the image digest, starting revision, ending revision, execution identity, seeded domains and results.
+This creates two deletion-protected Cloud Run job definitions:
 
-Migration and seed execution must remain separate. A failed seed must not obscure whether the schema migration itself succeeded.
+```text
+cdl-react-staging-db-migrate
+cdl-react-staging-synthetic-seed
+```
 
-## Validation available before GCP
+Both use the dedicated migration service account, one task, no automatic retry, a bounded timeout, the Cloud SQL volume and the database URL secret. Creating or updating the jobs does not execute them.
+
+### `runtime`
+
+```text
+enable_database_jobs=true
+enable_cloud_run=true
+backend_image=<same approved immutable digest URI>
+```
+
+The cumulative runtime stage retains both database jobs and adds the private web service. Do not plan runtime with database jobs disabled.
+
+## Required environment and identity
+
+Both jobs receive:
+
+```text
+CDL_ENVIRONMENT=staging
+CDL_REPOSITORY_MODE=postgres
+CDL_DATABASE_URL=<Secret Manager reference>
+```
+
+The seed job also receives:
+
+```text
+CDL_ALLOW_SYNTHETIC_STAGING_SEED=true
+```
+
+The migration identity can access only `cdl-database-url` and has `roles/cloudsql.client`. It does not receive the staging login secret. Database-level privileges are controlled by the database credential, not by GCP IAM alone.
+
+Do not place a database URL, password, signed URL, service-account key or secret payload in the image, Terraform variables, workflow inputs, logs or repository files.
+
+## Controlled execution
+
+After the reviewed `database-jobs` plan is applied, manually run **GCP Run Staging Database Job** from `main`.
+
+For migration:
+
+1. select `migrate`;
+2. confirm the database-jobs Terraform stage was applied;
+3. leave synthetic-data confirmation false;
+4. review the configured immutable image digest;
+5. execute and wait for completion.
+
+For synthetic seed loading:
+
+1. first prove migration completed successfully;
+2. select `synthetic-seed`;
+3. confirm the database-jobs Terraform stage was applied;
+4. explicitly confirm synthetic data is intended;
+5. execute and wait for completion.
+
+The workflow verifies that the Terraform-managed job uses an immutable `@sha256` image before execution. It does not create, update or replace the job definition.
+
+Migration and seed execution remain separate. A failed seed must not obscure whether schema migration succeeded.
+
+## Evidence to record
+
+For each execution record:
+
+- source commit and image digest;
+- job name and execution identity;
+- starting and ending Alembic revision for migration;
+- completion status and logs;
+- seeded domains and explicit synthetic label;
+- repeat-run result proving idempotency;
+- any duration, connectivity or permission failure.
+
+## Repository validation
 
 Repository validation proves that:
 
-- the image includes the Alembic configuration and migration tree;
-- migration refuses a missing database URL or Alembic configuration;
+- the image includes Alembic and seed entrypoints;
+- migration refuses a missing database URL or configuration;
 - migration requests an upgrade to `head`;
-- seed execution refuses unsafe targets and requires explicit confirmation;
-- the bounded seed command invokes each existing idempotent domain seeder once;
-- CI still applies all migrations to a clean PostgreSQL database.
+- seed execution refuses unsafe targets and requires confirmation;
+- the bounded seed invokes existing idempotent domain seeders;
+- the Terraform jobs use the dedicated identity, Cloud SQL and Secret Manager;
+- the execution workflow is manual, main-only and confirmation-gated;
+- CI applies all migrations to a clean PostgreSQL database.
 
-This does not prove Cloud SQL connectivity, Secret Manager resolution, IAM, migration duration, rollback, complete release-domain seeding, or live staging state.
+This does not prove live Cloud SQL connectivity, secret resolution, database privileges, execution duration, rollback or staging state.
 
 ## Live-action gate
 
-Do not create or execute staging migration or seed jobs until:
+Do not apply or execute database jobs until:
 
-- PR #104 or its successor is merged;
-- the PostgreSQL release paths tracked by #77 are complete enough for staging;
-- the GitHub `staging` environment and read-only Workload Identity verification succeed;
-- the saved Terraform plan and cost/security impact are reviewed;
-- the database credential has been created outside Terraform state through an approved process;
-- the exact immutable image digest and commands are recorded.
+- the GitHub `staging` environment values are configured;
+- **GCP WIF Verify** succeeds on `main`;
+- the foundation plan, cost and security impact are reviewed and approved;
+- the foundation is applied through shared Terraform state;
+- the database credential and secret version are created outside Terraform state;
+- the immutable image digest is recorded;
+- the `database-jobs` plan is separately reviewed and approved;
+- PostgreSQL release paths are complete enough for the intended staging scenarios.
 
-Any live migration, seed, or chargeable infrastructure action requires the approval gates tracked by issues #70 and #78.
+Any chargeable apply, migration or seed execution requires the approval gates tracked by #70 and #78.

@@ -53,12 +53,8 @@ class SyntheticResultExportAdapter:
             seen_result_keys.add(row.result_key)
             if row.fixture_key not in seen_fixture_keys:
                 seen_fixture_keys.add(row.fixture_key)
-                mappings.append(
-                    {"source_key": row.fixture_key, "target_id": row.target_fixture_id}
-                )
-                mapping_diagnostics.append(
-                    f"{row.fixture_key} -> {row.target_fixture_id}"
-                )
+                mappings.append({"source_key": row.fixture_key, "target_id": row.target_fixture_id})
+                mapping_diagnostics.append(f"{row.fixture_key} -> {row.target_fixture_id}")
             records.append(
                 {
                     "source_record_id": row.result_key,

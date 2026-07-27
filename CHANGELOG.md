@@ -1,5 +1,20 @@
 # Changelog
 
+## 2026-07-27 - Prepare the single-service staging runtime
+
+### Added
+
+- Added a multi-stage container build that packages the React application and FastAPI API in one immutable image.
+- Added FastAPI static asset and SPA fallback handling without masking unknown `/api` routes.
+- Added Terraform support for PostgreSQL repository mode, Secret Manager environment references and secure staging cookies.
+- Narrowed the runtime identity to the database URL and staging login secret containers it consumes.
+- Added an ADR defining the one-URL Cloud Run architecture and its separately gated apply, migration, seed and public-access sequence.
+
+### Validation
+
+- Added focused API, frontend-serving, Dockerfile and Terraform contract tests.
+- Kept Cloud Run disabled by default and made no GCP apply, secret version, database mutation, deployment or public-access change.
+
 ## 2026-07-27 - Add staging observability and cost attribution
 
 ### Added

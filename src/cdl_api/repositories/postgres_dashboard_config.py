@@ -5,7 +5,12 @@ from collections.abc import Callable, Mapping
 from sqlalchemy import insert, select
 from sqlalchemy.orm import Session
 
-from cdl_api.contracts.dashboard import DashboardConfigResponse, DashboardWidgetDefinition
+from cdl_api.contracts.dashboard import (
+    DashboardConfigResponse,
+    DashboardDimension,
+    DashboardFilter,
+    DashboardWidgetDefinition,
+)
 from cdl_api.repositories.dashboard_repository import DashboardRepository
 from cdl_api.repositories.postgres_dashboard_fdr import dashboard_definitions_table
 from cdl_api.services.dashboard_service import DashboardService
@@ -42,6 +47,14 @@ class PostgreSQLDashboardConfigRepository:
         if config is None:
             return None
         return next((widget for widget in config.widgets if widget.id == widget_id), None)
+
+    def list_filters(self) -> list[DashboardFilter]:
+        config = self.get_config()
+        return [] if config is None else config.filters
+
+    def list_dimensions(self) -> list[DashboardDimension]:
+        config = self.get_config()
+        return [] if config is None else config.dimensions
 
     def seed_synthetic_data(self) -> None:
         """Idempotently insert one deterministic, explicitly synthetic test config."""

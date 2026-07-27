@@ -147,12 +147,9 @@ class PostgreSQLDashboardSnapshotRepository:
             ),
         )
         with self._session_factory() as session:
-            existing_ids = {
-                str(row[0])
-                for row in session.execute(
-                    select(dashboard_aggregate_snapshots_table.c.id)
-                )
-            }
+            existing_ids: set[str] = set()
+            for row in session.execute(select(dashboard_aggregate_snapshots_table.c.id)):
+                existing_ids.add(str(row[0]))
             for snapshot_id, payload in snapshots:
                 if snapshot_id in existing_ids:
                     continue

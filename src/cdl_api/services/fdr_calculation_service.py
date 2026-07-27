@@ -65,9 +65,7 @@ class FixtureDifficultyCalculationService:
             raise ValueError("FDR calculation input digest does not match its audit.")
 
         ratings = self._calculate_ratings(fixtures, audit)
-        created_ratings, unchanged_ratings = self._repository.persist_calculated_ratings(
-            ratings
-        )
+        created_ratings, unchanged_ratings = self._repository.persist_calculated_ratings(ratings)
         return FixtureDifficultyCalculationRunResult(
             season=season,
             calculation_run_id=calculation_run_id,

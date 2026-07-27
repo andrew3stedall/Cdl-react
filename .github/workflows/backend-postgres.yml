@@ -36,3 +36,4 @@ jobs:
           tests/test_postgres_league_api.py
           tests/test_postgres_dashboard_metrics.py
           tests/test_postgres_dashboard_config.py
+          tests/test_postgres_dashboard_snapshots.py

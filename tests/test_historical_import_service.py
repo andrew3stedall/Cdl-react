@@ -81,9 +81,7 @@ def _assert_import_round_trip(session_factory: sessionmaker[Session]) -> None:
     assert _count(session_factory, import_review_items_table) == 1
 
     with session_factory() as session:
-        payloads = session.execute(
-            select(import_source_payloads_table.c.payload_json)
-        ).scalars()
+        payloads = session.execute(select(import_source_payloads_table.c.payload_json)).scalars()
         stored_payloads = list(payloads)
     assert sum(payload["archived"] is True for payload in stored_payloads) == 1
     assert sum(payload["archived"] is False for payload in stored_payloads) == 1

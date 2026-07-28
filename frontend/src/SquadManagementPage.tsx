@@ -24,6 +24,12 @@ interface InterestApiResponse {
   player: { id: string; display_name: string };
 }
 
+interface TradeApiResponse {
+  id: string;
+  status: string;
+  assets: Array<{ player: { display_name: string } }>;
+}
+
 const players: PlayerView[] = [
   { id: 'player-1', displayName: 'Alex Keeper', position: 'GKP', team: 'ARS', status: 'owned', points: 42, value: 5 },
   { id: 'player-2', displayName: 'Ben Defender', position: 'DEF', team: 'MCI', status: 'owned', points: 55, value: 6 },
@@ -34,20 +40,28 @@ const players: PlayerView[] = [
 export function SquadManagementPage({ preset }: SquadManagementPageProps) {
   const [query, setQuery] = useState('');
   const [interests, setInterests] = useState<InterestApiResponse[]>([]);
-  const [tradeCreated, setTradeCreated] = useState(false);
+  const [trades, setTrades] = useState<TradeApiResponse[]>([]);
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerView | null>(null);
   const [status, setStatus] = useState('Loading squad data.');
 
   useEffect(() => {
-    void fetch('/api/interests', { credentials: 'include' })
-      .then(async (response) => {
-        if (!response.ok) {
-          throw new Error(response.status === 401 ? 'Sign in to manage squad interests.' : 'Unable to load squad interests.');
+    void Promise.all([
+      fetch('/api/interests', { credentials: 'include' }),
+      fetch('/api/trades', { credentials: 'include' }),
+    ])
+      .then(async ([interestResponse, tradeResponse]) => {
+        if (!interestResponse.ok || !tradeResponse.ok) {
+          const unauthorized = interestResponse.status === 401 || tradeResponse.status === 401;
+          throw new Error(unauthorized ? 'Sign in to manage squad activity.' : 'Unable to load squad activity.');
         }
-        return response.json() as Promise<InterestApiResponse[]>;
+        return Promise.all([
+          interestResponse.json() as Promise<InterestApiResponse[]>,
+          tradeResponse.json() as Promise<{ trades: TradeApiResponse[] }>,
+        ]);
       })
-      .then((persistedInterests) => {
+      .then(([persistedInterests, persistedTrades]) => {
         setInterests(persistedInterests);
+        setTrades(persistedTrades.trades);
         setStatus('Squad data loaded.');
       })
       .catch((error: Error) => setStatus(error.message));
@@ -72,6 +86,27 @@ export function SquadManagementPage({ preset }: SquadManagementPageProps) {
     const interest = (await response.json()) as InterestApiResponse;
     setInterests((current) => [...current, interest]);
     setStatus(`${player.displayName} added to interests.`);
+  }
+
+  async function proposeTrade() {
+    const response = await fetch('/api/trades', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        offered_to_team_id: 'team-rival',
+        offered_player_ids: ['player-1'],
+        requested_player_ids: ['player-4'],
+      }),
+    });
+    if (!response.ok) {
+      const payload = (await response.json()) as { message?: string; detail?: string };
+      setStatus(payload.message ?? payload.detail ?? 'Unable to create trade proposal.');
+      return;
+    }
+    const trade = (await response.json()) as TradeApiResponse;
+    setTrades((current) => [...current, trade]);
+    setStatus('Trade proposal created.');
   }
 
   return (
@@ -141,8 +176,11 @@ export function SquadManagementPage({ preset }: SquadManagementPageProps) {
         </Card>
         <Card>
           <h2>Proposed trades</h2>
-          <Button onClick={() => setTradeCreated(true)} type="button">Propose sample trade</Button>
-          {tradeCreated ? <p>Trade proposal created. Validate against <a href="/rules#trade-window">Trade Window</a>.</p> : <p>No proposed trades.</p>}
+          <Button onClick={() => void proposeTrade()} type="button">Propose sample trade</Button>
+          {trades.length === 0 ? <p>No proposed trades.</p> : null}
+          {trades.map((trade) => (
+            <p key={trade.id}>Trade {trade.status}: {trade.assets.map((asset) => asset.player.display_name).join(' ↔ ')}</p>
+          ))}
         </Card>
       </section>
 

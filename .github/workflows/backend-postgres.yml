@@ -29,12 +29,6 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v4
       - run: uv sync
-      - name: Capture Ruff format diagnostics
-        run: uv run ruff format --diff . > ruff-format.txt 2>&1 || true
-      - uses: actions/upload-artifact@v4
-        with:
-          name: release-inventory-format-diagnostics
-          path: ruff-format.txt
       - run: uv run alembic upgrade head
       - name: Test PostgreSQL release paths
         run: >-

@@ -13,8 +13,20 @@ const authenticatedSession = {
   expires_at: '2099-01-01T00:00:00Z',
 };
 
+function browserTrade() {
+  return {
+    id: 'trade-browser-1',
+    status: 'proposed',
+    assets: [
+      { player: { id: 'player-1', display_name: 'Alex Keeper' } },
+      { player: { id: 'player-4', display_name: 'Dev Forward' } },
+    ],
+  };
+}
+
 async function mockApi(page) {
   const interests = [];
+  const trades = [];
   await page.route('**/api/**', async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
@@ -41,6 +53,20 @@ async function mockApi(page) {
       interests.push(interest);
       return route.fulfill({ json: interest });
     }
+    if (path === '/api/trades' && request.method() === 'GET') {
+      return route.fulfill({ json: { trades } });
+    }
+    if (path === '/api/trades' && request.method() === 'POST') {
+      if (trades.length > 0) {
+        return route.fulfill({
+          status: 422,
+          json: { code: 'validation_error', message: 'Trade proposal already exists.', issues: [] },
+        });
+      }
+      const trade = browserTrade();
+      trades.push(trade);
+      return route.fulfill({ json: trade });
+    }
     if (path === '/api/health' || path === '/health') {
       return route.fulfill({ json: { status: 'ok' } });
     }
@@ -55,7 +81,7 @@ async function expectStatus(page, expected) {
   await page.getByRole('status').getByText(expected, { exact: true }).waitFor();
 }
 
-async function testSquadInterestPersistence(browser, viewport) {
+async function testSquadPersistence(browser, viewport) {
   const context = await browser.newContext({ viewport });
   const page = await context.newPage();
   await mockApi(page);
@@ -67,23 +93,34 @@ async function testSquadInterestPersistence(browser, viewport) {
   await page.getByRole('button', { name: 'Interest', exact: true }).click();
   await expectStatus(page, 'Casey Midfielder added to interests.');
 
-  const interests = page.locator('section[aria-label="Interests and proposed trades"]');
-  await interests.getByText('Casey Midfielder', { exact: true }).waitFor();
+  const activity = page.locator('section[aria-label="Interests and proposed trades"]');
+  await activity.getByText('Casey Midfielder', { exact: true }).waitFor();
+
+  await page.getByRole('button', { name: 'Propose sample trade', exact: true }).click();
+  await expectStatus(page, 'Trade proposal created.');
+  await activity.getByText('Trade proposed: Alex Keeper ↔ Dev Forward', { exact: true }).waitFor();
 
   await page.reload({ waitUntil: 'networkidle' });
   await expectStatus(page, 'Squad data loaded.');
-  await interests.getByText('Casey Midfielder', { exact: true }).waitFor();
+  await activity.getByText('Casey Midfielder', { exact: true }).waitFor();
+  await activity.getByText('Trade proposed: Alex Keeper ↔ Dev Forward', { exact: true }).waitFor();
 
   await page.getByRole('textbox', { name: 'Search players' }).fill('Casey');
   await page.getByRole('button', { name: 'Interest', exact: true }).click();
   await expectStatus(page, 'Interest already exists.');
-  if (await interests.getByText('Casey Midfielder', { exact: true }).count() !== 1) {
+  if (await activity.getByText('Casey Midfielder', { exact: true }).count() !== 1) {
     throw new Error('Expected the rejected duplicate interest to leave persisted server state unchanged');
+  }
+
+  await page.getByRole('button', { name: 'Propose sample trade', exact: true }).click();
+  await expectStatus(page, 'Trade proposal already exists.');
+  if (await activity.getByText('Trade proposed: Alex Keeper ↔ Dev Forward', { exact: true }).count() !== 1) {
+    throw new Error('Expected the rejected duplicate trade to leave persisted server state unchanged');
   }
   await context.close();
 }
 
-async function testUnauthorizedInterestMutation(browser) {
+async function testUnauthorizedMutations(browser) {
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const page = await context.newPage();
   await page.route('**/api/**', async (route) => {
@@ -95,7 +132,13 @@ async function testUnauthorizedInterestMutation(browser) {
     if (path === '/api/interests' && request.method() === 'GET') {
       return route.fulfill({ json: [] });
     }
-    if (path === '/api/interests' && request.method() === 'POST') {
+    if (path === '/api/trades' && request.method() === 'GET') {
+      return route.fulfill({ json: { trades: [] } });
+    }
+    if (
+      (path === '/api/interests' || path === '/api/trades')
+      && request.method() === 'POST'
+    ) {
       return route.fulfill({ status: 401, json: { detail: 'Authentication required.' } });
     }
     return route.fulfill({ json: {} });
@@ -105,15 +148,19 @@ async function testUnauthorizedInterestMutation(browser) {
   await page.getByRole('button', { name: 'Interest', exact: true }).click();
   await expectStatus(page, 'Authentication required.');
   await page.getByText('No interests registered yet.', { exact: true }).waitFor();
+
+  await page.getByRole('button', { name: 'Propose sample trade', exact: true }).click();
+  await expectStatus(page, 'Authentication required.');
+  await page.getByText('No proposed trades.', { exact: true }).waitFor();
   await context.close();
 }
 
 async function run() {
   const browser = await chromium.launch();
   for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 900 }]) {
-    await testSquadInterestPersistence(browser, viewport);
+    await testSquadPersistence(browser, viewport);
   }
-  await testUnauthorizedInterestMutation(browser);
+  await testUnauthorizedMutations(browser);
   await browser.close();
 }
 

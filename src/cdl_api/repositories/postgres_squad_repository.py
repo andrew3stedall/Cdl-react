@@ -11,6 +11,7 @@ from cdl_api.contracts.domain import TeamSummary
 from cdl_api.contracts.squad import (
     InterestResponse,
     PlayerDetail,
+    PlayerOwnershipStatus,
     ScoutingFilters,
     TradeAsset,
     TradeProposal,
@@ -47,7 +48,7 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
             )
         for player in players:
             if player.id in interested_player_ids and player.draft_team is None:
-                player.status = "interested"
+                player.status = PlayerOwnershipStatus.INTERESTED
         return players
 
     def list_interests(self) -> list[InterestResponse]:
@@ -93,7 +94,7 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
         player = self.get_player(row["player_id"])
         if player is None:
             raise ValueError(f"Unknown interest player: {row['player_id']}")
-        player.status = "interested"
+        player.status = PlayerOwnershipStatus.INTERESTED
         gameweek_number = int(row["gameweek"])
         gameweek = self.gameweek.model_copy(
             update={

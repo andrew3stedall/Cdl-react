@@ -27,6 +27,10 @@ class SquadRepository(Protocol):
 
     def get_player(self, player_id: str) -> PlayerDetail | None: ...
 
+    def list_interests(self) -> list[InterestResponse]: ...
+
+    def find_active_interest_by_player(self, player_id: str) -> InterestResponse | None: ...
+
     def save_interest(self, interest: InterestResponse) -> InterestResponse: ...
 
     def delete_interest(self, interest_id: str) -> bool: ...
@@ -138,6 +142,15 @@ class InMemorySquadRepository:
         for player in self._players:
             if player.id == player_id:
                 return deepcopy(player)
+        return None
+
+    def list_interests(self) -> list[InterestResponse]:
+        return [deepcopy(interest) for interest in self._interests.values()]
+
+    def find_active_interest_by_player(self, player_id: str) -> InterestResponse | None:
+        for interest in self._interests.values():
+            if interest.player.id == player_id:
+                return deepcopy(interest)
         return None
 
     def save_interest(self, interest: InterestResponse) -> InterestResponse:

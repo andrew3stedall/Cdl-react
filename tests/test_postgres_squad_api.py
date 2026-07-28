@@ -5,8 +5,9 @@ from fastapi.testclient import TestClient
 from sqlalchemy.sql.dml import Insert, Update
 
 from cdl_api.app import create_app
+from cdl_api.contracts.session import SessionUser
 from cdl_api.repositories.postgres_squad_repository import PostgreSQLSquadRepository
-from cdl_api.routers.squad import get_squad_service
+from cdl_api.routers.squad import get_squad_service, require_manager_session
 from cdl_api.services.squad import SquadManagementService
 
 
@@ -51,11 +52,21 @@ class _CapturingSession:
 def _client_with_postgres_repo(session: _CapturingSession) -> TestClient:
     app = create_app()
     repository = PostgreSQLSquadRepository(lambda: session)
-    app.dependency_overrides[get_squad_service] = lambda: SquadManagementService(repository)
+    service = SquadManagementService(repository)
+    app.dependency_overrides[get_squad_service] = lambda: service
+    app.dependency_overrides[require_manager_session] = lambda: SessionUser(
+        id="manager-1",
+        email="manager@example.com",
+        display_name="Manager",
+        roles=["manager"],
+    )
     return TestClient(app)
 
 
-def _statement_table_names(session: _CapturingSession, statement_type: type[object]) -> list[str]:
+def _statement_table_names(
+    session: _CapturingSession,
+    statement_type: type[object],
+) -> list[str]:
     return [
         statement.table.name
         for statement in session.statements
@@ -67,7 +78,10 @@ def test_interest_api_persists_with_postgres_squad_repository() -> None:
     session = _CapturingSession()
     client = _client_with_postgres_repo(session)
 
-    response = client.post("/api/interests", json={"player_id": "player-3", "note": "Scout"})
+    response = client.post(
+        "/api/interests",
+        json={"player_id": "player-3", "note": "Scout"},
+    )
 
     assert response.status_code == 200
     assert "squad_interests" in _statement_table_names(session, Insert)
@@ -105,7 +119,10 @@ def test_postgres_squad_api_validation_failures_are_preserved() -> None:
             "requested_player_ids": ["player-4"],
         },
     )
-    unknown_player = client.post("/api/interests", json={"player_id": "unknown-player"})
+    unknown_player = client.post(
+        "/api/interests",
+        json={"player_id": "unknown-player"},
+    )
 
     assert owned_interest.status_code == 422
     assert owned_interest.json()["issues"][0]["rule_reference"] == "squad-size"
@@ -119,7 +136,10 @@ def test_missing_trade_update_returns_not_found_with_postgres_squad_repository()
     session = _CapturingSession(rowcount=0)
     client = _client_with_postgres_repo(session)
 
-    response = client.put("/api/trades/missing-trade", json={"status": "accepted"})
+    response = client.put(
+        "/api/trades/missing-trade",
+        json={"status": "accepted"},
+    )
 
     assert response.status_code == 404
     assert response.json()["details"]["trade_id"] == "missing-trade"

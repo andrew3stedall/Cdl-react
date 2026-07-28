@@ -143,4 +143,4 @@ def test_missing_trade_update_returns_not_found_with_postgres_squad_repository()
 
     assert response.status_code == 404
     assert response.json()["details"]["trade_id"] == "missing-trade"
-    assert "trade_proposals" in _statement_table_names(session, Update)
+    assert _statement_table_names(session, Update) == []

@@ -42,11 +42,21 @@ def test_scouting_endpoint_filters_by_query_and_metric() -> None:
     assert names == ["Casey Midfielder"]
 
 
-def test_interest_routes_require_authentication() -> None:
+def test_interest_and_trade_routes_require_authentication() -> None:
     client = TestClient(create_app())
     assert client.get("/api/interests").status_code == 401
-    response = client.post("/api/interests", json={"player_id": "player-3"})
-    assert response.status_code == 401
+    assert client.post("/api/interests", json={"player_id": "player-3"}).status_code == 401
+    assert client.get("/api/trades").status_code == 401
+    trade_response = client.post(
+        "/api/trades",
+        json={
+            "offered_to_team_id": "team-rival",
+            "offered_player_ids": ["player-1"],
+            "requested_player_ids": ["player-4"],
+        },
+    )
+    assert trade_response.status_code == 401
+    assert trade_response.json()["detail"] == "Authentication required."
 
 
 def test_interest_create_reload_duplicate_delete_and_validation_flow() -> None:
@@ -77,8 +87,8 @@ def test_interest_create_reload_duplicate_delete_and_validation_flow() -> None:
     assert invalid_response.json()["issues"][0]["rule_reference"] == "squad-size"
 
 
-def test_trade_create_and_update_flow_links_rules() -> None:
-    client = TestClient(create_app())
+def test_trade_create_reload_update_and_rejected_write_flow() -> None:
+    client = _authenticated_client()
     create_response = client.post(
         "/api/trades",
         json={
@@ -91,6 +101,24 @@ def test_trade_create_and_update_flow_links_rules() -> None:
     trade = create_response.json()
     assert trade["status"] == "proposed"
     assert trade["rule_references"][0]["href"] == "/rules#trade-window"
+
+    listed = client.get("/api/trades")
+    assert [proposal["id"] for proposal in listed.json()["trades"]] == [trade["id"]]
+
+    invalid = client.post(
+        "/api/trades",
+        json={
+            "offered_to_team_id": "team-rival",
+            "offered_player_ids": ["player-3"],
+            "requested_player_ids": ["player-4"],
+        },
+    )
+    assert invalid.status_code == 422
+    assert invalid.json()["message"] == "Invalid trade asset."
+    assert [proposal["id"] for proposal in client.get("/api/trades").json()["trades"]] == [
+        trade["id"]
+    ]
+
     update_response = client.put(
         f"/api/trades/{trade['id']}",
         json={"status": "accepted"},

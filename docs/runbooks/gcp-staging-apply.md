@@ -14,13 +14,15 @@ Before dispatching **GCP Terraform Apply Staging**, all of the following must ex
 
 1. **GCP WIF Verify** succeeded on `main` using the intended `staging` environment.
 2. **GCP Terraform Staging** succeeded for the exact source commit and deployment stage.
-3. Its seven-day artifact contains `staging-plan.txt` and
-   `staging-plan-summary.md`.
-4. The summary safety gate is `PASS`, reports no remote-state drift, and identifies the
+3. Its seven-day artifact contains `staging-plan.txt`, `staging-plan-summary.md` and
+   `staging-plan-manifest.json`.
+4. The manifest binds the reviewed plan text to the exact source commit, workflow run,
+   cumulative stage, backend configuration, image and Terraform inputs.
+5. The summary safety gate is `PASS`, reports no remote-state drift, and identifies the
    reviewed workflow run ID and source commit.
-5. The cost/security assessment in
+6. The cost/security assessment in
    `docs/runbooks/gcp-staging-plan-assessment-template.md` is complete.
-6. Andrew has recorded explicit approval in a repository issue or pull-request comment,
+7. Andrew has recorded explicit approval in a repository issue or pull-request comment,
    covering that exact plan, stage, cost estimate, and security impact.
 
 A green pull-request validation run is not apply approval.
@@ -93,6 +95,17 @@ the API service and rejects an IAM policy containing `allUsers` or
 A successful Terraform command without these live checks does not produce successful apply
 evidence. Temporary IAM JSON is deleted and is never uploaded.
 
+## Exact plan identity manifest
+
+Before GCP authentication, the apply workflow reconstructs the expected non-sensitive
+manifest from its manual inputs and the checked-out backend configuration. It requires an
+exact match with the reviewed artifact, including the plan-text SHA-256, backend bucket and
+prefix, backend configuration hash, project, stage, immutable image, feature flags and
+`allow_public_invoker=false`.
+
+An altered, cross-stage, cross-project, cross-backend or differently parameterised artifact
+fails before Terraform initializes the remote backend or requests a GCP token.
+
 ## Exact-plan reproduction boundary
 
 The reviewed artifact intentionally contains no executable plan. The apply workflow:
@@ -122,6 +135,7 @@ The retained seven-day Markdown evidence records:
 - immutable image identity where applicable;
 - approval reference;
 - SHA-256 of the reviewed human-readable plan;
+- SHA-256 and successful verification of the reviewed identity manifest;
 - exact text comparison result;
 - apply completion; and
 - post-apply no-change result;

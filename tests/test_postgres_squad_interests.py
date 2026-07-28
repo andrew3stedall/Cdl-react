@@ -74,6 +74,20 @@ def _seed_prerequisites(connection: Connection) -> None:
         connection.execute(text(statement))
 
 
+def _clean_prerequisites(connection: Connection) -> None:
+    statements = (
+        "DELETE FROM fpl_players WHERE id IN ('player-1', 'player-3', 'player-4')",
+        "DELETE FROM fpl_positions WHERE id IN ('GKP-TRADE', 'MID-INT', 'FWD-TRADE')",
+        "DELETE FROM epl_teams WHERE id IN ('epl-ars', 'epl-mci')",
+        "DELETE FROM draft_teams WHERE id IN ('team-castle', 'team-rival')",
+        "DELETE FROM managers WHERE id IN ('manager-1', 'manager-rival')",
+        "DELETE FROM seasons WHERE id = 'season-2026'",
+        "DELETE FROM leagues WHERE id = 'league-squad-test'",
+    )
+    for statement in statements:
+        connection.execute(text(statement))
+
+
 def _authenticated_client(
     repository: PostgreSQLSquadRepository,
 ) -> TestClient:
@@ -128,6 +142,7 @@ def test_authenticated_interest_persists_and_rejection_leaves_state_unchanged() 
     finally:
         with engine.begin() as connection:
             connection.execute(text("DELETE FROM squad_interests"))
+            _clean_prerequisites(connection)
 
 
 @pytest.mark.skipif(
@@ -183,3 +198,4 @@ def test_authenticated_trade_persists_and_rejection_leaves_state_unchanged() -> 
         with engine.begin() as connection:
             connection.execute(text("DELETE FROM trade_assets"))
             connection.execute(text("DELETE FROM trade_proposals"))
+            _clean_prerequisites(connection)

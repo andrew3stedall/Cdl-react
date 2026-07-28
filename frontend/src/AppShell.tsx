@@ -25,8 +25,8 @@ interface AppShellProps {
 const leagueNavigationItems: NavigationItem[] = [
   { label: 'League fixtures', href: '/league/fixtures', featureKey: 'league-fixtures' },
   { label: 'League table', href: '/league/table', featureKey: 'league-table' },
-  { label: 'League knockout', href: '/league/knockout', featureKey: 'league-knockout' },
-  { label: 'League head-to-head', href: '/league/head-to-head', featureKey: 'league-head-to-head' },
+  { label: 'Knockout', href: '/league/knockout', featureKey: 'league-knockout' },
+  { label: 'Head-to-head', href: '/league/head-to-head', featureKey: 'league-head-to-head' },
 ];
 
 export function AppShell({

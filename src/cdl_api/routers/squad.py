@@ -122,6 +122,7 @@ def delete_interest(
 
 @router.get("/trades", response_model=TradesResponse)
 def list_trades(
+    _: SessionUser = Depends(require_manager_session),
     service: SquadManagementService = Depends(get_squad_service),
 ) -> TradesResponse:
     return TradesResponse(trades=service.list_trades())
@@ -130,6 +131,7 @@ def list_trades(
 @router.post("/trades", response_model=TradeProposal)
 def create_trade(
     payload: TradeCreateRequest,
+    _: SessionUser = Depends(require_manager_session),
     service: SquadManagementService = Depends(get_squad_service),
 ) -> TradeProposal | JSONResponse:
     try:
@@ -142,6 +144,7 @@ def create_trade(
 def update_trade(
     trade_id: str,
     payload: TradeUpdateRequest,
+    _: SessionUser = Depends(require_manager_session),
     service: SquadManagementService = Depends(get_squad_service),
 ) -> TradeProposal | JSONResponse:
     trade = service.update_trade(trade_id, payload.status)

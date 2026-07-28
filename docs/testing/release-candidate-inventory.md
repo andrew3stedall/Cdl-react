@@ -31,7 +31,7 @@ This inventory describes repository-backed release evidence after PR #108. It is
 | `CI` | Ruff lint, Ruff format, backend tests, frontend lint, frontend tests and frontend build. | Does not prove PostgreSQL or browser behaviour by itself. |
 | `Backend PostgreSQL` | Applies all Alembic migrations to a clean PostgreSQL service and runs focused release paths for league, dashboard, FDR, authenticated squad interests and trades, trade transition authorization/conflicts, and historical import. | Local CI database evidence, not live staging evidence. |
 | `App Screenshots` | Builds the frontend, runs primary browser interactions plus focused authenticated squad interest and trade journeys, responsive/accessibility checks, captures screenshots and uploads artifacts. | Uses deterministic API test doubles for browser state. It proves frontend request/rejection behaviour, while PostgreSQL persistence is proved separately by backend CI; it is not live staging acceptance. |
-| GCP staging workflows | Owned by PR #107 and issues #70/#78. | Excluded from this product inventory iteration. No plan, apply or live verification is claimed here. |
+| GCP staging workflows | Owned by issue #111 with supporting issues #70/#78. | Excluded from this product inventory iteration. No plan, apply or live verification is claimed here. |
 
 ## Reproducible local commands
 
@@ -60,7 +60,7 @@ A candidate can enter product testing when:
 2. No primary route silently falls back from PostgreSQL mode to sample or memory data.
 3. Test data is deterministic and explicitly synthetic.
 4. Known unsupported states return explicit empty, validation, authorization or error responses.
-5. The tester guide identifies the supported workflows and the known limitations above.
+5. Testers use `docs/testing/release-candidate-tester-guide.md`, which identifies supported workflows, deterministic credentials/data, known limitations and evidence boundaries.
 
 ## Exit criteria for repository-safe testing
 
@@ -68,8 +68,7 @@ Repository-safe testing is complete when focused evidence covers authentication,
 
 ## Highest-priority product gaps
 
-1. A concise tester guide tied to deterministic accounts/data, supported workflows, known empty states and the evidence matrix.
-2. Route-specific dashboard loading, error and recovery coverage.
-3. Decide whether counterparty trade transitions need a product UI; add browser evidence only if they are part of the release-candidate workflow.
-4. Confirm whether rules/preferences and modernisation endpoints are genuinely product-facing or should be removed from the release surface.
-5. Real historical-export validation when source files become available.
+1. Route-specific dashboard loading, error and recovery coverage.
+2. Decide whether counterparty trade transitions need a product UI; add browser evidence only if they are part of the release-candidate workflow.
+3. Confirm whether rules/preferences and modernisation endpoints are genuinely product-facing or should be removed from the release surface.
+4. Real historical-export validation when source files become available.

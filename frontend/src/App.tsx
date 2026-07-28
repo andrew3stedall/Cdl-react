@@ -148,14 +148,31 @@ export function App({
     };
   }, []);
 
+  const setBrowserPath = (href: string, replace = false) => {
+    try {
+      if (replace) {
+        window.history.replaceState({}, '', href);
+      } else {
+        window.history.pushState({}, '', href);
+      }
+    } catch {
+      // Browser history can be unavailable in isolated DOM tests.
+    }
+    setCurrentPath(href);
+  };
 
   const refreshActiveSession = async () => {
     if (session !== undefined) return;
     setActiveSession(null);
     try {
-      setActiveSession(await sessionClient.getSession());
+      const resolvedSession = await sessionClient.getSession();
+      setActiveSession(resolvedSession);
+      if (!canAccessProtectedRoute(resolvedSession)) {
+        setBrowserPath('/login', true);
+      }
     } catch {
       setActiveSession(getUnauthenticatedSession());
+      setBrowserPath('/login', true);
     }
   };
 
@@ -176,6 +193,7 @@ export function App({
 
       setLoginPassword('');
       setActiveSession(result.data.session);
+      setBrowserPath('/', true);
     } catch {
       setLoginError('Sign in is temporarily unavailable. Try again.');
     } finally {
@@ -185,6 +203,7 @@ export function App({
 
   const handleSignOut = async () => {
     setActiveSession(null);
+    setBrowserPath('/login', true);
     if (session !== undefined) {
       setActiveSession(getUnauthenticatedSession());
       return;
@@ -198,13 +217,7 @@ export function App({
   };
 
   const handleNavigate = (href: string) => {
-    try {
-      window.history.pushState({}, '', href);
-    } catch {
-      // Browser history can be unavailable in isolated DOM tests.
-    }
-
-    setCurrentPath(href);
+    setBrowserPath(href);
   };
 
   if (activeSession === null) {
@@ -219,6 +232,13 @@ export function App({
   }
 
   if (!canAccessProtectedRoute(activeSession)) {
+    if (window.location.pathname !== '/login') {
+      try {
+        window.history.replaceState({}, '', '/login');
+      } catch {
+        // Browser history can be unavailable in isolated DOM tests.
+      }
+    }
     return (
       <main className="session-boundary" aria-label="Protected route session state">
         <h1>Castle Draft League</h1>

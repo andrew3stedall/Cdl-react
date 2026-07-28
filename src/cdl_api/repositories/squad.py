@@ -39,6 +39,8 @@ class SquadRepository(Protocol):
 
     def save_trade(self, trade: TradeProposal) -> TradeProposal: ...
 
+    def manager_id_for_team(self, team_id: str) -> str | None: ...
+
     def update_trade_status(self, trade_id: str, status: TradeStatus) -> TradeProposal | None: ...
 
 
@@ -166,6 +168,12 @@ class InMemorySquadRepository:
     def save_trade(self, trade: TradeProposal) -> TradeProposal:
         self._trades[trade.id] = deepcopy(trade)
         return deepcopy(trade)
+
+    def manager_id_for_team(self, team_id: str) -> str | None:
+        return {
+            self.manager_team.id: "manager-1",
+            self.rival_team.id: "manager-rival",
+        }.get(team_id)
 
     def update_trade_status(self, trade_id: str, status: TradeStatus) -> TradeProposal | None:
         trade = self._trades.get(trade_id)

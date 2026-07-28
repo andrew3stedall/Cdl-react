@@ -1,0 +1,37 @@
+name: Ruff Format Preview
+
+on:
+  pull_request:
+    paths:
+      - "tests/test_gcp_wif_verify_workflow.py"
+      - ".github/workflows/ruff-format-preview.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  format:
+    name: Capture exact Ruff formatting
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Format focused test
+        run: uv run ruff format tests/test_gcp_wif_verify_workflow.py
+
+      - name: Upload formatted file
+        uses: actions/upload-artifact@v4
+        with:
+          name: formatted-wif-test-${{ github.sha }}
+          path: tests/test_gcp_wif_verify_workflow.py
+          if-no-files-found: error
+          retention-days: 1

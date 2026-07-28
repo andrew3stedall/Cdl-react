@@ -2,11 +2,15 @@ from fastapi.testclient import TestClient
 
 from cdl_api.app import create_app
 from cdl_api.contracts.session import SessionUser
-from cdl_api.routers.squad import require_manager_session
+from cdl_api.repositories.squad import InMemorySquadRepository
+from cdl_api.routers.squad import get_squad_service, require_manager_session
+from cdl_api.services.squad import SquadManagementService
 
 
 def _authenticated_client() -> TestClient:
     app = create_app()
+    service = SquadManagementService(InMemorySquadRepository())
+    app.dependency_overrides[get_squad_service] = lambda: service
     app.dependency_overrides[require_manager_session] = lambda: SessionUser(
         id="manager-1",
         email="manager@example.com",
@@ -29,20 +33,28 @@ def test_squad_summary_endpoint_returns_shared_player_contract() -> None:
 
 def test_scouting_endpoint_filters_by_query_and_metric() -> None:
     client = TestClient(create_app())
-    response = client.get("/api/scouting/players", params={"q": "casey", "metric": "form"})
+    response = client.get(
+        "/api/scouting/players",
+        params={"q": "casey", "metric": "form"},
+    )
     assert response.status_code == 200
-    assert [player["display_name"] for player in response.json()["players"]] == ["Casey Midfielder"]
+    names = [player["display_name"] for player in response.json()["players"]]
+    assert names == ["Casey Midfielder"]
 
 
 def test_interest_routes_require_authentication() -> None:
     client = TestClient(create_app())
     assert client.get("/api/interests").status_code == 401
-    assert client.post("/api/interests", json={"player_id": "player-3"}).status_code == 401
+    response = client.post("/api/interests", json={"player_id": "player-3"})
+    assert response.status_code == 401
 
 
 def test_interest_create_reload_duplicate_delete_and_validation_flow() -> None:
     client = _authenticated_client()
-    create_response = client.post("/api/interests", json={"player_id": "player-3", "note": "Scout"})
+    create_response = client.post(
+        "/api/interests",
+        json={"player_id": "player-3", "note": "Scout"},
+    )
     assert create_response.status_code == 200
     interest_id = create_response.json()["id"]
 
@@ -53,7 +65,8 @@ def test_interest_create_reload_duplicate_delete_and_validation_flow() -> None:
     duplicate = client.post("/api/interests", json={"player_id": "player-3"})
     assert duplicate.status_code == 422
     assert duplicate.json()["message"] == "Interest already exists."
-    assert [interest["id"] for interest in client.get("/api/interests").json()] == [interest_id]
+    remaining = [interest["id"] for interest in client.get("/api/interests").json()]
+    assert remaining == [interest_id]
 
     delete_response = client.delete(f"/api/interests/{interest_id}")
     assert delete_response.status_code == 200
@@ -78,6 +91,9 @@ def test_trade_create_and_update_flow_links_rules() -> None:
     trade = create_response.json()
     assert trade["status"] == "proposed"
     assert trade["rule_references"][0]["href"] == "/rules#trade-window"
-    update_response = client.put(f"/api/trades/{trade['id']}", json={"status": "accepted"})
+    update_response = client.put(
+        f"/api/trades/{trade['id']}",
+        json={"status": "accepted"},
+    )
     assert update_response.status_code == 200
     assert update_response.json()["status"] == "accepted"

@@ -78,7 +78,7 @@ def test_team_selection_release_evidence_is_focused_and_truthful() -> None:
         "Expected the saved Ben Defender bench slot to survive a reload",
         "Expected the saved Riley Forward starter slot to survive a reload",
         "Wildcard chip state updated.",
-        "Expected Save lineup to be disabled after fixture lock",
+        "Team selection is locked for this gameweek.",
         "{ name: 'mobile', width: 390, height: 844 }",
         "{ name: 'desktop', width: 1440, height: 900 }",
     )
@@ -87,7 +87,7 @@ def test_team_selection_release_evidence_is_focused_and_truthful() -> None:
     required_inventory_claims = (
         "invalid-lineup feedback",
         "lineup and wildcard state surviving reload",
-        "disabled lineup/chip controls when locked",
+        "explicit locked-action feedback without a persisted mutation",
         "Live PostgreSQL browser integration and staging identity remain separate gates",
     )
     for claim in required_inventory_claims:

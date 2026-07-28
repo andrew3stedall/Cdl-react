@@ -94,9 +94,7 @@ class SquadManagementService:
         return self._repository.list_trades()
 
     def create_trade(self, request: TradeCreateRequest) -> TradeProposal:
-        sent_players = [
-            self._require_player(player_id) for player_id in request.offered_player_ids
-        ]
+        sent_players = [self._require_player(player_id) for player_id in request.offered_player_ids]
         wanted_players = [
             self._require_player(player_id) for player_id in request.requested_player_ids
         ]
@@ -152,13 +150,9 @@ class SquadManagementService:
                 [ValidationIssue(field="status", message="Trade status has already changed.")],
             )
         if status in {TradeStatus.ACCEPTED, TradeStatus.REJECTED}:
-            required_manager_id = self._repository.manager_id_for_team(
-                trade.offered_to.id
-            )
+            required_manager_id = self._repository.manager_id_for_team(trade.offered_to.id)
         elif status == TradeStatus.CANCELLED:
-            required_manager_id = self._repository.manager_id_for_team(
-                trade.offered_by.id
-            )
+            required_manager_id = self._repository.manager_id_for_team(trade.offered_by.id)
         else:
             raise SquadValidationError(
                 "Invalid trade transition.",

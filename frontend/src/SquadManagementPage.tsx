@@ -19,6 +19,11 @@ interface PlayerView {
   value: number;
 }
 
+interface InterestApiResponse {
+  id: string;
+  player: { id: string; display_name: string };
+}
+
 const players: PlayerView[] = [
   { id: 'player-1', displayName: 'Alex Keeper', position: 'GKP', team: 'ARS', status: 'owned', points: 42, value: 5 },
   { id: 'player-2', displayName: 'Ben Defender', position: 'DEF', team: 'MCI', status: 'owned', points: 55, value: 6 },
@@ -26,41 +31,48 @@ const players: PlayerView[] = [
   { id: 'player-4', displayName: 'Dev Forward', position: 'FWD', team: 'MCI', status: 'trade_target', points: 70, value: 9 },
 ];
 
-const interestStorageKey = 'cdl-squad-interest-ids';
-
-function loadInterestIds(): string[] {
-  try {
-    const stored = window.localStorage.getItem(interestStorageKey);
-    if (!stored) {
-      return [];
-    }
-    const parsed: unknown = JSON.parse(stored);
-    return Array.isArray(parsed)
-      ? parsed.filter((value): value is string => typeof value === 'string' && players.some((player) => player.id === value))
-      : [];
-  } catch {
-    return [];
-  }
-}
-
 export function SquadManagementPage({ preset }: SquadManagementPageProps) {
   const [query, setQuery] = useState('');
-  const [interestIds, setInterestIds] = useState<string[]>(loadInterestIds);
+  const [interests, setInterests] = useState<InterestApiResponse[]>([]);
   const [tradeCreated, setTradeCreated] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerView | null>(null);
   const [status, setStatus] = useState('Loading squad data.');
 
   useEffect(() => {
-    setStatus('Squad data loaded.');
+    void fetch('/api/interests', { credentials: 'include' })
+      .then(async (response) => {
+        if (!response.ok) {
+          throw new Error(response.status === 401 ? 'Sign in to manage squad interests.' : 'Unable to load squad interests.');
+        }
+        return response.json() as Promise<InterestApiResponse[]>;
+      })
+      .then((persistedInterests) => {
+        setInterests(persistedInterests);
+        setStatus('Squad data loaded.');
+      })
+      .catch((error: Error) => setStatus(error.message));
   }, []);
-
-  useEffect(() => {
-    window.localStorage.setItem(interestStorageKey, JSON.stringify(interestIds));
-  }, [interestIds]);
 
   const squadPlayers = players.filter((player) => player.status === 'owned');
   const scoutingPlayers = players.filter((player) => player.displayName.toLowerCase().includes(query.toLowerCase()));
   const squadValue = squadPlayers.reduce((total, player) => total + player.value, 0);
+
+  async function registerInterest(player: PlayerView) {
+    const response = await fetch('/api/interests', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ player_id: player.id }),
+    });
+    if (!response.ok) {
+      const payload = (await response.json()) as { message?: string; detail?: string };
+      setStatus(payload.message ?? payload.detail ?? 'Unable to register interest.');
+      return;
+    }
+    const interest = (await response.json()) as InterestApiResponse;
+    setInterests((current) => [...current, interest]);
+    setStatus(`${player.displayName} added to interests.`);
+  }
 
   return (
     <main aria-labelledby="squad-management-title" className="feature-screen" data-density={preset.tokens.density}>
@@ -73,30 +85,16 @@ export function SquadManagementPage({ preset }: SquadManagementPageProps) {
       <p role="status">{status}</p>
 
       <section aria-label="Squad summary" className="squad-summary-grid">
-        <Card>
-          <h2>Total players</h2>
-          <strong>{squadPlayers.length}</strong>
-        </Card>
-        <Card>
-          <h2>Squad value</h2>
-          <strong>£{squadValue.toFixed(1)}m</strong>
-        </Card>
-        <Card>
-          <h2>Gameweek</h2>
-          <strong>Gameweek 1</strong>
-        </Card>
+        <Card><h2>Total players</h2><strong>{squadPlayers.length}</strong></Card>
+        <Card><h2>Squad value</h2><strong>£{squadValue.toFixed(1)}m</strong></Card>
+        <Card><h2>Gameweek</h2><strong>Gameweek 1</strong></Card>
       </section>
 
       <section aria-label="Scouting filters" className="squad-filter-bar">
         <label>
           <Search aria-hidden="true" size={16} />
           Search players
-          <input
-            aria-label="Search players"
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search players"
-            value={query}
-          />
+          <input aria-label="Search players" onChange={(event) => setQuery(event.target.value)} placeholder="Search players" value={query} />
         </label>
       </section>
 
@@ -104,17 +102,11 @@ export function SquadManagementPage({ preset }: SquadManagementPageProps) {
         <h2>Current squad</h2>
         <div role="table" className="squad-data-table" aria-label="Current squad players">
           <div role="row" className="squad-table-row squad-table-head">
-            <span role="columnheader">Player</span>
-            <span role="columnheader">Pos</span>
-            <span role="columnheader">Team</span>
-            <span role="columnheader">Pts</span>
+            <span role="columnheader">Player</span><span role="columnheader">Pos</span><span role="columnheader">Team</span><span role="columnheader">Pts</span>
           </div>
           {squadPlayers.map((player) => (
             <button className="squad-table-row" key={player.id} onClick={() => setSelectedPlayer(player)} role="row" type="button">
-              <span role="cell">{player.displayName}</span>
-              <span role="cell">{player.position}</span>
-              <span role="cell">{player.team}</span>
-              <span role="cell">{player.points}</span>
+              <span role="cell">{player.displayName}</span><span role="cell">{player.position}</span><span role="cell">{player.team}</span><span role="cell">{player.points}</span>
             </button>
           ))}
         </div>
@@ -124,33 +116,16 @@ export function SquadManagementPage({ preset }: SquadManagementPageProps) {
         <h2>Scouting</h2>
         <div role="table" className="squad-data-table" aria-label="Scouting table">
           <div role="row" className="squad-table-row squad-table-head">
-            <span role="columnheader">Player</span>
-            <span role="columnheader">Status</span>
-            <span role="columnheader">Points</span>
-            <span role="columnheader">Action</span>
+            <span role="columnheader">Player</span><span role="columnheader">Status</span><span role="columnheader">Points</span><span role="columnheader">Action</span>
           </div>
           {scoutingPlayers.map((player) => (
             <div className="squad-table-row" key={player.id} role="row">
-              <button className="squad-link-button" onClick={() => setSelectedPlayer(player)} role="cell" type="button">
-                {player.displayName}
-              </button>
+              <button className="squad-link-button" onClick={() => setSelectedPlayer(player)} role="cell" type="button">{player.displayName}</button>
               <span role="cell" className={`squad-status-badge ${player.status}`}>{player.status}</span>
               <span role="cell">{player.points}</span>
               <span role="cell">
-                <Button
-                  onClick={() => {
-                    if (interestIds.includes(player.id)) {
-                      setStatus(`${player.displayName} is already registered as an interest.`);
-                      return;
-                    }
-                    setInterestIds((ids) => [...ids, player.id]);
-                    setStatus(`${player.displayName} added to interests.`);
-                  }}
-                  type="button"
-                  variant="secondary"
-                >
-                  <Star aria-hidden="true" size={14} />
-                  Interest
+                <Button onClick={() => void registerInterest(player)} type="button" variant="secondary">
+                  <Star aria-hidden="true" size={14} />Interest
                 </Button>
               </span>
             </div>
@@ -161,11 +136,8 @@ export function SquadManagementPage({ preset }: SquadManagementPageProps) {
       <section aria-label="Interests and proposed trades" className="squad-summary-grid">
         <Card>
           <h2>Interests</h2>
-          {interestIds.length === 0 ? <p>No interests registered yet.</p> : null}
-          {interestIds.map((id) => {
-            const player = players.find((item) => item.id === id);
-            return <p key={id}>{player?.displayName}</p>;
-          })}
+          {interests.length === 0 ? <p>No interests registered yet.</p> : null}
+          {interests.map((interest) => <p key={interest.id}>{interest.player.display_name}</p>)}
         </Card>
         <Card>
           <h2>Proposed trades</h2>

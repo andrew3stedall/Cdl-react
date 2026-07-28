@@ -6,7 +6,9 @@ on:
       - "infra/terraform/**"
       - ".github/workflows/gcp-terraform-staging.yml"
       - "src/cdl_api/terraform_plan_summary.py"
+      - "src/cdl_api/terraform_plan_manifest.py"
       - "tests/test_gcp_staging_plan_workflow.py"
+      - "tests/test_terraform_plan_manifest.py"
   workflow_dispatch:
     inputs:
       deployment_stage:
@@ -192,6 +194,24 @@ jobs:
             --output "${RUNNER_TEMP}/staging-plan-summary.md" \
             --plan-exit-code "${{ steps.plan.outputs.exit_code }}"
 
+      - name: Create immutable plan identity manifest
+        id: manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          python "${GITHUB_WORKSPACE}/src/cdl_api/terraform_plan_manifest.py" create \
+            --plan-text "${RUNNER_TEMP}/staging-plan.txt" \
+            --backend-config "${GITHUB_WORKSPACE}/infra/terraform/environments/staging/backend.tf" \
+            --output "${RUNNER_TEMP}/staging-plan-manifest.json" \
+            --source-sha "${GITHUB_SHA}" \
+            --run-id "${GITHUB_RUN_ID}" \
+            --deployment-stage "${DEPLOYMENT_STAGE}" \
+            --project-id "${PROJECT_ID}" \
+            --state-bucket "${TERRAFORM_STATE_BUCKET}" \
+            --backend-image "${BACKEND_IMAGE}" \
+            --enable-database-jobs "${ENABLE_DATABASE_JOBS}" \
+            --enable-cloud-run "${ENABLE_CLOUD_RUN}"
+
       - name: Remove machine-readable and executable plan files
         if: always()
         shell: bash
@@ -208,6 +228,9 @@ jobs:
           set -euo pipefail
           test -s "${RUNNER_TEMP}/staging-plan.txt"
           test -s "${RUNNER_TEMP}/staging-plan-summary.md"
+          test -s "${RUNNER_TEMP}/staging-plan-manifest.json"
+          grep -Fq '"schema_version": "staging-terraform-plan/v1"' \
+            "${RUNNER_TEMP}/staging-plan-manifest.json"
           grep -Fq "# Staging Terraform plan review" \
             "${RUNNER_TEMP}/staging-plan-summary.md"
           grep -Fq "## Detected remote-state drift" \
@@ -223,13 +246,16 @@ jobs:
           path: |
             ${{ runner.temp }}/staging-plan.txt
             ${{ runner.temp }}/staging-plan-summary.md
+            ${{ runner.temp }}/staging-plan-manifest.json
           if-no-files-found: error
           retention-days: 7
 
       - name: Enforce staging plan safety gate
         if: >-
           always() &&
-          (steps.plan_summary.outcome == 'failure' || steps.evidence.outcome == 'failure')
+          (steps.plan_summary.outcome == 'failure' ||
+          steps.manifest.outcome == 'failure' ||
+          steps.evidence.outcome == 'failure')
         shell: bash
         run: |
           echo "The staging plan summary failed, evidence was incomplete, or the plan was blocked." >&2

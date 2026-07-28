@@ -29,5 +29,11 @@ jobs:
           node-version: 22
       - run: npm install
       - run: npm run lint
+      - name: Capture frontend test diagnostics
+        run: npm run test > frontend-test.txt 2>&1 || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frontend-test-diagnostics
+          path: frontend/frontend-test.txt
       - run: npm run test
       - run: npm run build

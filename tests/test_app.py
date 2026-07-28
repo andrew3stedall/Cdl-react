@@ -24,11 +24,17 @@ def test_theme_contract_endpoint() -> None:
 
 def test_user_preferences_endpoint_round_trip() -> None:
     client = TestClient(create_app())
-
+    login_response = client.post(
+        "/api/auth/login",
+        json={"email": "manager@example.com", "password": "demo-login-secret"},
+    )
+    reset_response = client.put("/api/me/preferences", json={"theme_preset": "classic"})
     initial_response = client.get("/api/me/preferences")
     update_response = client.put("/api/me/preferences", json={"theme_preset": "compact"})
     final_response = client.get("/api/me/preferences")
 
+    assert login_response.status_code == 200
+    assert reset_response.status_code == 200
     assert initial_response.status_code == 200
     assert initial_response.json() == {"theme_preset": "classic"}
     assert update_response.status_code == 200

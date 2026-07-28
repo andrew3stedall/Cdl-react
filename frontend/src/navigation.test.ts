@@ -3,21 +3,20 @@ import { describe, expect, test } from 'vitest';
 import { getNavigationItemByPath, isRouteActive, primaryNavigationItems } from './navigation';
 
 describe('navigation configuration', () => {
-  test('contains all legacy core modules plus modernisation checkpoints and scouting', () => {
+  test('contains only product-facing release navigation', () => {
     expect(primaryNavigationItems.map((item) => item.label)).toEqual([
       'Squad Management',
       'Team Selection',
       'League',
-      'Checkpoint 1',
-      'Checkpoint 2',
-      'Checkpoint 3',
-      'Checkpoint 4',
-      'Checkpoint 5',
       'Rules',
       'Dashboard',
       'FDR',
       'Scouting',
     ]);
+  });
+
+  test('does not promote checkpoint scaffolding into product navigation', () => {
+    expect(primaryNavigationItems.some((item) => item.href.startsWith('/modernisation/checkpoint-'))).toBe(false);
   });
 
   test('detects active nested routes', () => {
@@ -26,12 +25,9 @@ describe('navigation configuration', () => {
     expect(isRouteActive('/rules', '/league')).toBe(false);
   });
 
-  test('resolves navigation item by path', () => {
+  test('resolves product navigation items by path', () => {
     expect(getNavigationItemByPath('/fdr/team-1')?.label).toBe('FDR');
-    expect(getNavigationItemByPath('/modernisation/checkpoint-1')?.label).toBe('Checkpoint 1');
-    expect(getNavigationItemByPath('/modernisation/checkpoint-2')?.label).toBe('Checkpoint 2');
-    expect(getNavigationItemByPath('/modernisation/checkpoint-3')?.label).toBe('Checkpoint 3');
-    expect(getNavigationItemByPath('/modernisation/checkpoint-4')?.label).toBe('Checkpoint 4');
-    expect(getNavigationItemByPath('/modernisation/checkpoint-5')?.label).toBe('Checkpoint 5');
+    expect(getNavigationItemByPath('/modernisation/checkpoint-1')).toBeUndefined();
+    expect(getNavigationItemByPath('/modernisation/checkpoint-5')).toBeUndefined();
   });
 });

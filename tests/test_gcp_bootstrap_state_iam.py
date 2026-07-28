@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 BOOTSTRAP = Path("infra/terraform/bootstrap/main.tf")
 RUNBOOK = Path("docs/runbooks/gcp-terraform-state-iam-reader.md")
 

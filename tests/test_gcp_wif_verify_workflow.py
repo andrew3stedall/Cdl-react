@@ -4,7 +4,8 @@ WORKFLOW = Path(".github/workflows/gcp-wif-verify.yml")
 RUNBOOK = Path("docs/runbooks/gcp-wif-state-boundary.md")
 
 
-def test_wif_verify_runs_once_when_its_contract_lands_on_main_and_keeps_manual_retry() -> None:
+def test_wif_verify_runs_once_when_its_contract_lands_on_main_and_keeps_manual_retry(
+) -> None:
     content = WORKFLOW.read_text(encoding="utf-8")
     trigger = content.split("on:", maxsplit=1)[1].split("permissions:", maxsplit=1)[0]
 

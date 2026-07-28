@@ -143,9 +143,7 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
         with self._session_factory() as session:
             trade_ids = list(
                 session.execute(
-                    select(trade_proposals_table.c.id).order_by(
-                        trade_proposals_table.c.created_at
-                    )
+                    select(trade_proposals_table.c.id).order_by(trade_proposals_table.c.created_at)
                 ).scalars()
             )
         trades = [self._get_trade(trade_id) for trade_id in trade_ids]

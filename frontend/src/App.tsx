@@ -288,7 +288,7 @@ export function App({
             />
           </label>
           {loginError ? (
-            <p className="login-error" role="alert">
+            <p className="login-error" role="status">
               {loginError}
             </p>
           ) : null}

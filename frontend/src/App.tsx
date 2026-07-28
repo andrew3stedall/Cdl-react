@@ -206,6 +206,7 @@ export function App({
       }
 
       setLoginPassword('');
+      setMobileNavigationOpen(false);
       setBrowserPath('/', true);
       setActiveSession(result.data.session);
     } catch {

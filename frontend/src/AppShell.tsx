@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { LogOut, Menu, RefreshCw, Search } from 'lucide-react';
 
 import { Button } from './components/ui/button';
@@ -21,6 +21,13 @@ interface AppShellProps {
   onSignOut: () => void;
   session: SessionState;
 }
+
+const leagueNavigationItems: NavigationItem[] = [
+  { label: 'League fixtures', href: '/league/fixtures', featureKey: 'league-fixtures' },
+  { label: 'League table', href: '/league/table', featureKey: 'league-table' },
+  { label: 'League knockout', href: '/league/knockout', featureKey: 'league-knockout' },
+  { label: 'League head-to-head', href: '/league/head-to-head', featureKey: 'league-head-to-head' },
+];
 
 export function AppShell({
   children,
@@ -130,27 +137,35 @@ function NavigationList({
   currentPath: string;
   onNavigate: (item: NavigationItem) => void;
 }) {
+  const navigationLink = (item: NavigationItem, isSubroute = false) => {
+    const isActive = isRouteActive(currentPath, item.href);
+    return (
+      <a
+        aria-current={isActive ? 'page' : undefined}
+        className={`${isActive ? 'nav-item active' : 'nav-item'}${isSubroute ? ' nav-subitem' : ''}`}
+        href={item.href}
+        key={item.href}
+        onClick={(event) => {
+          event.preventDefault();
+          onNavigate(item);
+        }}
+      >
+        <span>{item.label}</span>
+        {item.supportsScouting ? <small>Scouting enabled</small> : null}
+      </a>
+    );
+  };
+
   return (
     <nav aria-label="Primary navigation" className="navigation-list">
-      {primaryNavigationItems.map((item) => {
-        const isActive = isRouteActive(currentPath, item.href);
-
-        return (
-          <a
-            aria-current={isActive ? 'page' : undefined}
-            className={isActive ? 'nav-item active' : 'nav-item'}
-            href={item.href}
-            key={item.href}
-            onClick={(event) => {
-              event.preventDefault();
-              onNavigate(item);
-            }}
-          >
-            <span>{item.label}</span>
-            {item.supportsScouting ? <small>Scouting enabled</small> : null}
-          </a>
-        );
-      })}
+      {primaryNavigationItems.map((item) => (
+        <Fragment key={item.href}>
+          {navigationLink(item)}
+          {item.href === '/league'
+            ? leagueNavigationItems.map((leagueItem) => navigationLink(leagueItem, true))
+            : null}
+        </Fragment>
+      ))}
     </nav>
   );
 }

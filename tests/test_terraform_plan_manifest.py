@@ -3,7 +3,11 @@ from pathlib import Path
 
 import pytest
 
-from cdl_api.terraform_plan_manifest import build_manifest, verify_manifest, write_manifest
+from cdl_api.terraform_plan_manifest import (
+    build_manifest,
+    verify_manifest,
+    write_manifest,
+)
 
 SOURCE_SHA = "a" * 40
 
@@ -39,11 +43,11 @@ def test_manifest_binds_reviewed_plan_backend_and_exact_terraform_inputs(tmp_pat
     assert manifest["source_sha"] == SOURCE_SHA
     assert manifest["plan_workflow_run_id"] == "12345"
     assert manifest["deployment_stage"] == "foundation"
-    assert manifest["backend"] == {
-        "bucket": "cdl-react-staging-ast-terraform-state",
-        "prefix": "environments/staging",
-        "config_sha256": manifest["backend"]["config_sha256"],  # type: ignore[index]
-    }
+    backend = manifest["backend"]
+    assert isinstance(backend, dict)
+    assert backend["bucket"] == "cdl-react-staging-ast-terraform-state"
+    assert backend["prefix"] == "environments/staging"
+    assert len(str(backend["config_sha256"])) == 64
     assert manifest["terraform_inputs"] == {
         "allow_public_invoker": False,
         "backend_image": "",

@@ -136,18 +136,19 @@ function NavigationList({
         const isActive = isRouteActive(currentPath, item.href);
 
         return (
-          <button
+          <a
             aria-current={isActive ? 'page' : undefined}
             className={isActive ? 'nav-item active' : 'nav-item'}
+            href={item.href}
             key={item.href}
-            onClick={() => {
+            onClick={(event) => {
+              event.preventDefault();
               onNavigate(item);
             }}
-            type="button"
           >
             <span>{item.label}</span>
             {item.supportsScouting ? <small>Scouting enabled</small> : null}
-          </button>
+          </a>
         );
       })}
     </nav>

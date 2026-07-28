@@ -15,7 +15,7 @@ The workflow also runs on pull requests so layout regressions are caught before 
 
 ## Browser interaction check
 
-Before capturing images, the workflow exercises seven primary journeys in Chromium. Team selection, the protected session boundary, application-shell navigation, dashboard, and FDR run at both mobile and desktop widths; squad management runs at mobile width.
+Before capturing images, the workflow exercises eight primary journeys in Chromium. Team selection, the protected session boundary, application-shell navigation, dashboard, dashboard recovery, and FDR run at both mobile and desktop widths; squad management runs at mobile width.
 
 ### Login
 
@@ -78,6 +78,16 @@ The normal runtime maps the backend's snake-case `/api/auth/session` contract in
 3. Open the chart-point drill-down and verify its player row.
 4. Close the drill-down and confirm it is removed.
 
+### Dashboard recovery
+
+1. Open `/dashboard` with the first deterministic widget request deliberately held open and confirm `Loading dashboard data` is exposed as a status message.
+2. Release the request and confirm the initial chart renders.
+3. Configure the next widget request to return an explicit synthetic backend failure.
+4. Change the Team filter to River Rangers and confirm the API failure renders as an alert with a `Retry dashboard` control.
+5. Confirm the River Rangers selection remains visible while the dashboard is in the error state.
+6. Retry the dashboard, confirm the request recovers with River Rangers data, and verify the selected filter remains unchanged.
+7. Repeat at mobile and desktop widths.
+
 ### Fixture difficulty ratings
 
 1. Open `/fdr` and wait for the attack and defence views.
@@ -85,7 +95,7 @@ The normal runtime maps the backend's snake-case `/api/auth/session` contract in
 3. Verify the browser sends the selected team in the API query.
 4. Confirm both the filtered row and opponent fixture render.
 
-These journeys verify that the session boundary, rendered controls, React state transitions, browser history, request contracts, validation feedback, dialogs, links, and accessible labels work together in a real browser. They remain deterministic frontend checks; the team-selection journey exercises the browser-to-API contract, but mocked responses do not prove PostgreSQL persistence.
+These journeys verify that the session boundary, rendered controls, React state transitions, browser history, request contracts, loading and failure feedback, retry recovery, dialogs, links, and accessible labels work together in a real browser. They remain deterministic frontend checks; the team-selection and dashboard-recovery journeys exercise browser-to-API contracts, but mocked responses do not prove PostgreSQL persistence.
 
 ## Captured routes
 
@@ -122,9 +132,9 @@ The checks run for every route at mobile, tablet, and desktop widths. A failure 
 
 ## Scope and data
 
-The workflow runs the Vite frontend locally inside GitHub Actions. API calls are fulfilled with deterministic representative fixtures inside the screenshot script, so this does not require GCP, Cloud SQL, staging infrastructure, production infrastructure, historical exports, or secrets.
+The workflow runs the Vite frontend locally inside GitHub Actions. API calls are fulfilled with deterministic representative fixtures inside the browser scripts, so this does not require GCP, Cloud SQL, staging infrastructure, production infrastructure, historical exports, or secrets.
 
-The images prove that routes render consistently against the fixture contract. They do not prove live API integration or PostgreSQL persistence.
+The images and browser journeys prove that routes render and recover consistently against the synthetic fixture contract. They do not prove live API integration or PostgreSQL persistence.
 
 ## Output
 

@@ -1,4 +1,4 @@
-import { type CSSProperties, useEffect, useMemo, useState } from 'react';
+import { type CSSProperties, useEffect, useMemo, useRef, useState } from 'react';
 
 import { Button } from './components/ui/button';
 import { Card } from './components/ui/card';
@@ -28,6 +28,9 @@ export function AnalyticsDashboardPage({
   const [filters, setFilters] = useState<DashboardFilterValue[]>([]);
   const [drilldown, setDrilldown] = useState<DashboardDrilldownResponse | null>(null);
   const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
+  const [reloadRequest, setReloadRequest] = useState(0);
+  const configRef = useRef<DashboardConfig | null>(null);
+  const filtersRef = useRef<DashboardFilterValue[]>([]);
 
   useEffect(() => {
     let isActive = true;
@@ -35,18 +38,25 @@ export function AnalyticsDashboardPage({
     async function loadDashboard() {
       setStatus('loading');
       try {
-        const nextConfig = await dashboardClient.getConfig();
-        if (!isActive) return;
+        let nextConfig = configRef.current;
+        let activeFilters = filtersRef.current;
 
-        const defaultFilters = nextConfig.filters
-          .filter((filter) => filter.defaultValue)
-          .map((filter) => ({ filterId: filter.id, value: filter.defaultValue ?? '' }));
+        if (!nextConfig) {
+          nextConfig = await dashboardClient.getConfig();
+          if (!isActive) return;
 
-        setConfig(nextConfig);
-        setFilters(defaultFilters);
+          activeFilters = nextConfig.filters
+            .filter((filter) => filter.defaultValue)
+            .map((filter) => ({ filterId: filter.id, value: filter.defaultValue ?? '' }));
+
+          configRef.current = nextConfig;
+          filtersRef.current = activeFilters;
+          setConfig(nextConfig);
+          setFilters(activeFilters);
+        }
 
         const responses = await Promise.all(
-          nextConfig.widgets.map((widget) => dashboardClient.queryWidget(widget.id, defaultFilters)),
+          nextConfig.widgets.map((widget) => dashboardClient.queryWidget(widget.id, activeFilters)),
         );
 
         if (isActive) {
@@ -65,7 +75,7 @@ export function AnalyticsDashboardPage({
     return () => {
       isActive = false;
     };
-  }, [dashboardClient]);
+  }, [dashboardClient, reloadRequest]);
 
   const visibleFilters = useMemo(
     () => config?.filters.filter((filter) => filter.scope === 'global') ?? [],
@@ -79,14 +89,21 @@ export function AnalyticsDashboardPage({
     if (!nextFilters.some((filter) => filter.filterId === filterId)) {
       nextFilters.push({ filterId, value });
     }
+    filtersRef.current = nextFilters;
     setFilters(nextFilters);
 
     if (!config) return;
 
-    const responses = await Promise.all(
-      config.widgets.map((widget) => dashboardClient.queryWidget(widget.id, nextFilters)),
-    );
-    setQueries(Object.fromEntries(responses.map((response) => [response.widgetId, response])));
+    setStatus('loading');
+    try {
+      const responses = await Promise.all(
+        config.widgets.map((widget) => dashboardClient.queryWidget(widget.id, nextFilters)),
+      );
+      setQueries(Object.fromEntries(responses.map((response) => [response.widgetId, response])));
+      setStatus('loaded');
+    } catch {
+      setStatus('error');
+    }
   };
 
   const openDrilldown = async (widget: DashboardWidgetDefinition, pointKey: string | null) => {
@@ -104,7 +121,12 @@ export function AnalyticsDashboardPage({
 
       {status === 'loading' ? <p role="status">Loading dashboard data</p> : null}
       {status === 'error' ? (
-        <p role="alert">Unable to load analytics dashboard data from the API.</p>
+        <div role="alert">
+          <p>Unable to load analytics dashboard data from the API.</p>
+          <Button onClick={() => setReloadRequest((request) => request + 1)} type="button">
+            Retry dashboard
+          </Button>
+        </div>
       ) : null}
 
       {config ? (

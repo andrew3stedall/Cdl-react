@@ -41,6 +41,8 @@ jobs:
         run: node scripts/test-app-interactions.mjs
       - name: Test squad mutation persistence
         run: node scripts/test-squad-management-interactions.mjs
+      - name: Test dashboard recovery
+        run: node scripts/test-dashboard-recovery.mjs
       - name: Capture screenshots
         run: node scripts/capture-app-screenshots.mjs
       - name: Upload screenshots

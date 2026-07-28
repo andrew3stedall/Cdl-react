@@ -131,6 +131,9 @@ def test_authenticated_squad_mutation_evidence_is_focused_and_truthful() -> None
         "PostgreSQLSquadRepository",
         "Interest already exists.",
         "Invalid trade asset.",
+        "Trade transition is not authorized.",
+        "Trade is no longer pending.",
+        'assert stored_status == "accepted"',
         "assert count == 1",
         "assert proposal_count == 1",
         "assert asset_count == 2",
@@ -138,11 +141,12 @@ def test_authenticated_squad_mutation_evidence_is_focused_and_truthful() -> None
         assert evidence in postgres_test
 
     required_inventory_claims = (
-        "require an authenticated manager session",
-        "rejects invalid writes before changing stored rows",
+        "require an authenticated manager",
+        "counterparty manager",
+        "stale repeated transitions fail without changing the accepted state",
         "browser uses a deterministic API test double",
         "PostgreSQL persistence is proved separately by backend CI",
-        "counterparty-specific authorization and transition-conflict evidence",
+        "UI does not expose counterparty acceptance/rejection controls",
     )
     for claim in required_inventory_claims:
         assert claim in inventory

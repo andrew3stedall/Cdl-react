@@ -113,7 +113,7 @@ def test_authenticated_squad_interest_evidence_is_focused_and_truthful() -> None
         assert evidence in browser
 
     for evidence in (
-        'Depends(require_manager_session)',
+        "Depends(require_manager_session)",
         '@router.get("/interests"',
         '@router.post("/interests"',
     ):

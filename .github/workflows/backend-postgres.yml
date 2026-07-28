@@ -30,6 +30,15 @@ jobs:
       - uses: astral-sh/setup-uv@v4
       - run: uv sync
       - run: uv run alembic upgrade head
+      - name: Capture focused trade diagnostic
+        run: >-
+          uv run pytest
+          tests/test_postgres_squad_interests.py::test_authenticated_trade_persists_and_rejection_leaves_state_unchanged
+          -vv > postgres-trade-diagnostic.txt 2>&1 || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: postgres-trade-diagnostic
+          path: postgres-trade-diagnostic.txt
       - name: Test PostgreSQL release paths
         run: >-
           uv run pytest

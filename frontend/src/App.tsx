@@ -260,7 +260,7 @@ export function App({
             Dashboard
           </a>
         </nav>
-        <p className="login-required" role="status">
+        <p className="login-required" role={loginError ? undefined : 'status'}>
           Sign in to access the Castle Draft League application shell.
         </p>
         <form className="login-form" onSubmit={(event) => void handleLogin(event)}>

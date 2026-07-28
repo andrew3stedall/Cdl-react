@@ -14,10 +14,32 @@ const authenticatedSession = {
 };
 
 async function mockApi(page) {
+  const interests = [];
   await page.route('**/api/**', async (route) => {
-    const path = new URL(route.request().url()).pathname;
+    const request = route.request();
+    const path = new URL(request.url()).pathname;
     if (path === '/api/auth/session') {
       return route.fulfill({ json: authenticatedSession });
+    }
+    if (path === '/api/interests' && request.method() === 'GET') {
+      return route.fulfill({ json: interests });
+    }
+    if (path === '/api/interests' && request.method() === 'POST') {
+      const body = request.postDataJSON();
+      if (interests.some((interest) => interest.player.id === body.player_id)) {
+        return route.fulfill({
+          status: 422,
+          json: { code: 'validation_error', message: 'Interest already exists.', issues: [] },
+        });
+      }
+      const interest = {
+        id: 'interest-browser-casey',
+        player: { id: 'player-3', display_name: 'Casey Midfielder' },
+        gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1 },
+        note: null,
+      };
+      interests.push(interest);
+      return route.fulfill({ json: interest });
     }
     if (path === '/api/health' || path === '/health') {
       return route.fulfill({ json: { status: 'ok' } });
@@ -37,10 +59,7 @@ async function testSquadInterestPersistence(browser, viewport) {
   const context = await browser.newContext({ viewport });
   const page = await context.newPage();
   await mockApi(page);
-
   await page.goto(`${baseUrl}/squad-management`, { waitUntil: 'networkidle' });
-  await page.evaluate(() => window.localStorage.clear());
-  await page.reload({ waitUntil: 'networkidle' });
   await expectStatus(page, 'Squad data loaded.');
 
   const search = page.getByRole('textbox', { name: 'Search players' });
@@ -57,27 +76,44 @@ async function testSquadInterestPersistence(browser, viewport) {
 
   await page.getByRole('textbox', { name: 'Search players' }).fill('Casey');
   await page.getByRole('button', { name: 'Interest', exact: true }).click();
-  await expectStatus(page, 'Casey Midfielder is already registered as an interest.');
-
-  const persistedEntries = interests.getByText('Casey Midfielder', { exact: true });
-  if (await persistedEntries.count() !== 1) {
-    throw new Error('Expected the invalid duplicate interest mutation to leave one persisted entry');
+  await expectStatus(page, 'Interest already exists.');
+  if (await interests.getByText('Casey Midfielder', { exact: true }).count() !== 1) {
+    throw new Error('Expected the rejected duplicate interest to leave persisted server state unchanged');
   }
+  await context.close();
+}
 
+async function testUnauthorizedInterestMutation(browser) {
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const page = await context.newPage();
+  await page.route('**/api/**', async (route) => {
+    const request = route.request();
+    const path = new URL(request.url()).pathname;
+    if (path === '/api/auth/session') {
+      return route.fulfill({ json: authenticatedSession });
+    }
+    if (path === '/api/interests' && request.method() === 'GET') {
+      return route.fulfill({ json: [] });
+    }
+    if (path === '/api/interests' && request.method() === 'POST') {
+      return route.fulfill({ status: 401, json: { detail: 'Authentication required.' } });
+    }
+    return route.fulfill({ json: {} });
+  });
+  await page.goto(`${baseUrl}/squad-management`, { waitUntil: 'networkidle' });
+  await page.getByRole('textbox', { name: 'Search players' }).fill('Casey');
+  await page.getByRole('button', { name: 'Interest', exact: true }).click();
+  await expectStatus(page, 'Authentication required.');
+  await page.getByText('No interests registered yet.', { exact: true }).waitFor();
   await context.close();
 }
 
 async function run() {
   const browser = await chromium.launch();
-  const viewports = [
-    { width: 390, height: 844 },
-    { width: 1440, height: 900 },
-  ];
-
-  for (const viewport of viewports) {
+  for (const viewport of [{ width: 390, height: 844 }, { width: 1440, height: 900 }]) {
     await testSquadInterestPersistence(browser, viewport);
   }
-
+  await testUnauthorizedInterestMutation(browser);
   await browser.close();
 }
 

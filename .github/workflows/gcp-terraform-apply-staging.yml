@@ -1,0 +1,465 @@
+name: GCP Terraform Apply Staging
+
+on:
+  pull_request:
+    paths:
+      - "infra/terraform/**"
+      - ".github/workflows/gcp-terraform-apply-staging.yml"
+      - "src/cdl_api/terraform_plan_summary.py"
+      - "tests/test_gcp_staging_apply_workflow.py"
+      - "tests/test_gcp_staging_apply_gcloud_setup.py"
+  workflow_dispatch:
+    inputs:
+      reviewed_plan_run_id:
+        description: Workflow run ID containing the reviewed staging plan evidence
+        required: true
+        type: string
+      reviewed_source_sha:
+        description: Exact 40-character main commit reviewed in the plan evidence
+        required: true
+        type: string
+      deployment_stage:
+        description: Cumulative staging layer approved for apply
+        required: true
+        default: foundation
+        type: choice
+        options:
+          - foundation
+          - database-jobs
+          - runtime
+      backend_image:
+        description: Immutable Artifact Registry digest URI for database-jobs or runtime
+        required: false
+        type: string
+      approval_reference:
+        description: Repository issue or PR comment URL recording explicit plan and cost/security approval
+        required: true
+        type: string
+      approval_phrase:
+        description: Enter APPLY STAGING followed by the selected deployment stage
+        required: true
+        type: string
+      confirm_apply:
+        description: Confirm this run may change chargeable staging resources
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  actions: read
+  contents: read
+  id-token: write
+
+concurrency:
+  group: gcp-terraform-apply-staging
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate staging apply contract
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: infra/terraform/environments/staging
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_wrapper: false
+
+      - name: Terraform fmt
+        run: terraform fmt -recursive -check
+
+      - name: Terraform init without backend
+        run: terraform init -backend=false -input=false
+
+      - name: Terraform validate
+        run: terraform validate -no-color
+
+  apply-reviewed-plan:
+    name: Apply exact reviewed staging plan
+    needs: validate
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      github.ref == 'refs/heads/main' &&
+      inputs.confirm_apply == true
+    runs-on: ubuntu-latest
+    environment: staging
+
+    env:
+      PROJECT_ID: ${{ vars.GCP_STAGING_PROJECT_ID }}
+      PROJECT_NUMBER: ${{ vars.GCP_STAGING_PROJECT_NUMBER }}
+      WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_STAGING_WORKLOAD_IDENTITY_PROVIDER }}
+      DEPLOY_SERVICE_ACCOUNT: ${{ vars.GCP_STAGING_DEPLOY_SERVICE_ACCOUNT }}
+      TERRAFORM_STATE_BUCKET: ${{ vars.GCP_TERRAFORM_STATE_BUCKET }}
+      REVIEWED_PLAN_RUN_ID: ${{ inputs.reviewed_plan_run_id }}
+      REVIEWED_SOURCE_SHA: ${{ inputs.reviewed_source_sha }}
+      DEPLOYMENT_STAGE: ${{ inputs.deployment_stage }}
+      BACKEND_IMAGE: ${{ inputs.backend_image }}
+      APPROVAL_REFERENCE: ${{ inputs.approval_reference }}
+      APPROVAL_PHRASE: ${{ inputs.approval_phrase }}
+
+    defaults:
+      run:
+        working-directory: infra/terraform/environments/staging
+
+    steps:
+      - name: Validate reviewed apply request
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          test -n "${PROJECT_ID}"
+          test -n "${PROJECT_NUMBER}"
+          test -n "${WORKLOAD_IDENTITY_PROVIDER}"
+          test -n "${DEPLOY_SERVICE_ACCOUNT}"
+          test -n "${TERRAFORM_STATE_BUCKET}"
+          [[ "${REVIEWED_PLAN_RUN_ID}" =~ ^[0-9]+$ ]]
+          [[ "${REVIEWED_SOURCE_SHA}" =~ ^[0-9a-f]{40}$ ]]
+          test "${GITHUB_SHA}" = "${REVIEWED_SOURCE_SHA}"
+          test "${APPROVAL_PHRASE}" = "APPLY STAGING ${DEPLOYMENT_STAGE}"
+          [[ "${APPROVAL_REFERENCE}" =~ ^https://github\.com/${GITHUB_REPOSITORY}/(issues|pull)/[0-9]+#issuecomment-[0-9]+$ ]]
+
+          test "${WORKLOAD_IDENTITY_PROVIDER}" = \
+            "projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
+          test "${DEPLOY_SERVICE_ACCOUNT}" = \
+            "github-deploy@${PROJECT_ID}.iam.gserviceaccount.com"
+
+          case "${DEPLOYMENT_STAGE}" in
+            foundation)
+              test -z "${BACKEND_IMAGE}"
+              enable_database_jobs=false
+              enable_cloud_run=false
+              backend_image_label="<none>"
+              ;;
+            database-jobs)
+              enable_database_jobs=true
+              enable_cloud_run=false
+              ;;
+            runtime)
+              enable_database_jobs=true
+              enable_cloud_run=true
+              ;;
+            *)
+              echo "Unsupported deployment_stage: ${DEPLOYMENT_STAGE}" >&2
+              exit 1
+              ;;
+          esac
+
+          if [ "${DEPLOYMENT_STAGE}" != "foundation" ]; then
+            test -n "${BACKEND_IMAGE}"
+            if [[ ! "${BACKEND_IMAGE}" =~ ^australia-southeast1-docker\.pkg\.dev/${PROJECT_ID}/cdl-react-backend/cdl-react-app@sha256:[0-9a-f]{64}$ ]]; then
+              echo "backend_image must be the immutable staging application digest URI." >&2
+              exit 1
+            fi
+            backend_image_label="${BACKEND_IMAGE}"
+          fi
+
+          echo "ENABLE_DATABASE_JOBS=${enable_database_jobs}" >> "${GITHUB_ENV}"
+          echo "ENABLE_CLOUD_RUN=${enable_cloud_run}" >> "${GITHUB_ENV}"
+          echo "BACKEND_IMAGE_LABEL=${backend_image_label}" >> "${GITHUB_ENV}"
+
+      - name: Download reviewed plan evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: staging-terraform-plan-${{ inputs.reviewed_source_sha }}-${{ inputs.deployment_stage }}
+          path: ${{ runner.temp }}/reviewed-plan
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ inputs.reviewed_plan_run_id }}
+
+      - name: Verify reviewed plan identity and safety result
+        shell: bash
+        run: |
+          set -euo pipefail
+          reviewed_plan="${RUNNER_TEMP}/reviewed-plan/staging-plan.txt"
+          reviewed_summary="${RUNNER_TEMP}/reviewed-plan/staging-plan-summary.md"
+          test -s "${reviewed_plan}"
+          test -s "${reviewed_summary}"
+
+          python - \
+            "${reviewed_summary}" \
+            "${REVIEWED_SOURCE_SHA}" \
+            "${REVIEWED_PLAN_RUN_ID}" <<'PY'
+          import sys
+          from pathlib import Path
+
+          summary = Path(sys.argv[1]).read_text(encoding="utf-8")
+          source_sha = sys.argv[2]
+          run_id = sys.argv[3]
+
+          assert "Safety gate: **PASS**" in summary
+          assert f"Source commit: `{source_sha}`" in summary
+          assert f"/actions/runs/{run_id}" in summary
+          assert "## Detected remote-state drift\n\n- None detected" in summary
+          assert "Binary plan and machine-readable JSON: not retained or uploaded" in summary
+          PY
+
+      - name: Checkout exact reviewed source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.reviewed_source_sha }}
+          persist-credentials: false
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.DEPLOY_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
+        with:
+          version: ">= 416.0.0"
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_wrapper: false
+
+      - name: Terraform init with remote backend
+        run: terraform init -input=false
+
+      - name: Enforce cumulative stage prerequisites
+        shell: bash
+        run: |
+          set -euo pipefail
+          state_resources="${RUNNER_TEMP}/staging-state-resources.txt"
+          trap 'rm -f "${state_resources}"' EXIT
+          terraform state list > "${state_resources}"
+
+          require_managed_resource() {
+            local address="$1"
+            if ! grep -Fxq -- "${address}" "${state_resources}"; then
+              echo "Required prior-stage resource is absent from Terraform state: ${address}" >&2
+              exit 1
+            fi
+          }
+
+          if [ "${DEPLOYMENT_STAGE}" != "foundation" ]; then
+            require_managed_resource "module.artifact_registry.google_artifact_registry_repository.this"
+            require_managed_resource "module.frontend_assets.google_storage_bucket.this"
+            require_managed_resource "module.cloud_sql.google_sql_database_instance.this"
+            require_managed_resource "google_service_account.runtime"
+            require_managed_resource "google_service_account.migration"
+          fi
+
+          if [ "${DEPLOYMENT_STAGE}" = "runtime" ]; then
+            require_managed_resource "google_cloud_run_v2_job.database_migration[0]"
+            require_managed_resource "google_cloud_run_v2_job.synthetic_seed[0]"
+          fi
+
+      - name: Recreate reviewed staging plan
+        id: recreated_plan
+        shell: bash
+        run: |
+          set +e
+          terraform plan \
+            -input=false \
+            -no-color \
+            -lock-timeout=5m \
+            -detailed-exitcode \
+            -out="${RUNNER_TEMP}/recreated.tfplan" \
+            -var="project_id=${PROJECT_ID}" \
+            -var="enable_database_jobs=${ENABLE_DATABASE_JOBS}" \
+            -var="enable_cloud_run=${ENABLE_CLOUD_RUN}" \
+            -var="backend_image=${BACKEND_IMAGE}" \
+            -var="allow_public_invoker=false"
+          plan_exit_code=$?
+          set -e
+
+          if [ "${plan_exit_code}" -eq 1 ]; then
+            echo "Terraform plan recreation failed." >&2
+            exit 1
+          fi
+
+          echo "exit_code=${plan_exit_code}" >> "${GITHUB_OUTPUT}"
+
+      - name: Render and gate recreated plan
+        shell: bash
+        run: |
+          set -euo pipefail
+          terraform show -no-color "${RUNNER_TEMP}/recreated.tfplan" \
+            > "${RUNNER_TEMP}/recreated-plan.txt"
+          terraform show -json "${RUNNER_TEMP}/recreated.tfplan" \
+            > "${RUNNER_TEMP}/recreated-plan.json"
+
+          python "${GITHUB_WORKSPACE}/src/cdl_api/terraform_plan_summary.py" \
+            --plan-json "${RUNNER_TEMP}/recreated-plan.json" \
+            --plan-file "${RUNNER_TEMP}/recreated.tfplan" \
+            --output "${RUNNER_TEMP}/recreated-plan-summary.md" \
+            --plan-exit-code "${{ steps.recreated_plan.outputs.exit_code }}"
+
+      - name: Require exact reviewed plan text
+        shell: bash
+        run: |
+          set -euo pipefail
+          reviewed_plan="${RUNNER_TEMP}/reviewed-plan/staging-plan.txt"
+          recreated_plan="${RUNNER_TEMP}/recreated-plan.txt"
+          recreated_summary="${RUNNER_TEMP}/recreated-plan-summary.md"
+
+          grep -Fq "Safety gate: **PASS**" "${recreated_summary}"
+          grep -Fq "Source commit: \`${REVIEWED_SOURCE_SHA}\`" "${recreated_summary}"
+
+          if ! cmp -s "${reviewed_plan}" "${recreated_plan}"; then
+            echo "The recreated plan does not exactly match the reviewed human-readable plan." >&2
+            sha256sum "${reviewed_plan}" "${recreated_plan}" >&2
+            exit 1
+          fi
+
+      - name: Apply exact recreated saved plan
+        id: apply
+        shell: bash
+        run: terraform apply -input=false "${RUNNER_TEMP}/recreated.tfplan"
+
+      - name: Verify post-apply no-change state
+        id: post_apply
+        shell: bash
+        run: |
+          set +e
+          terraform plan \
+            -input=false \
+            -no-color \
+            -lock-timeout=5m \
+            -detailed-exitcode \
+            -out="${RUNNER_TEMP}/post-apply.tfplan" \
+            -var="project_id=${PROJECT_ID}" \
+            -var="enable_database_jobs=${ENABLE_DATABASE_JOBS}" \
+            -var="enable_cloud_run=${ENABLE_CLOUD_RUN}" \
+            -var="backend_image=${BACKEND_IMAGE}" \
+            -var="allow_public_invoker=false"
+          post_apply_exit_code=$?
+          set -e
+
+          if [ "${post_apply_exit_code}" -ne 0 ]; then
+            echo "Post-apply Terraform plan was not a clean no-change result." >&2
+            exit 1
+          fi
+
+      - name: Verify applied stage resources and access boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          test "$(gcloud artifacts repositories describe cdl-react-backend \
+            --project="${PROJECT_ID}" \
+            --location=australia-southeast1 \
+            --format='value(name)')" != ""
+
+          test "$(gcloud iam service-accounts describe \
+            "cdl-api-runtime@${PROJECT_ID}.iam.gserviceaccount.com" \
+            --project="${PROJECT_ID}" \
+            --format='value(email)')" = \
+            "cdl-api-runtime@${PROJECT_ID}.iam.gserviceaccount.com"
+
+          test "$(gcloud iam service-accounts describe \
+            "cdl-db-migration@${PROJECT_ID}.iam.gserviceaccount.com" \
+            --project="${PROJECT_ID}" \
+            --format='value(email)')" = \
+            "cdl-db-migration@${PROJECT_ID}.iam.gserviceaccount.com"
+
+          test "$(gcloud storage buckets describe \
+            "gs://${PROJECT_ID}-frontend-assets" \
+            --format='value(name)')" = "${PROJECT_ID}-frontend-assets"
+
+          test "$(gcloud sql instances describe cdl-react-staging-postgres \
+            --project="${PROJECT_ID}" \
+            --format='value(name)')" = "cdl-react-staging-postgres"
+
+          authorized_networks="$(gcloud sql instances describe cdl-react-staging-postgres \
+            --project="${PROJECT_ID}" \
+            --format='value(settings.ipConfiguration.authorizedNetworks[].value)')"
+          test -z "${authorized_networks}"
+
+          if [ "${DEPLOYMENT_STAGE}" != "foundation" ]; then
+            for job in cdl-react-staging-db-migrate cdl-react-staging-synthetic-seed; do
+              test "$(gcloud run jobs describe "${job}" \
+                --project="${PROJECT_ID}" \
+                --region=australia-southeast1 \
+                --format='value(metadata.name)')" = "${job}"
+            done
+          fi
+
+          if [ "${DEPLOYMENT_STAGE}" = "runtime" ]; then
+            test "$(gcloud run services describe cdl-react-staging-api \
+              --project="${PROJECT_ID}" \
+              --region=australia-southeast1 \
+              --format='value(metadata.name)')" = "cdl-react-staging-api"
+
+            runtime_policy="${RUNNER_TEMP}/runtime-service-iam.json"
+            trap 'rm -f "${runtime_policy}"' EXIT
+            gcloud run services get-iam-policy cdl-react-staging-api \
+              --project="${PROJECT_ID}" \
+              --region=australia-southeast1 \
+              --format=json > "${runtime_policy}"
+            python - "${runtime_policy}" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          policy = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          public_members = {"allUsers", "allAuthenticatedUsers"}
+          assert not any(
+              public_members.intersection(binding.get("members") or [])
+              for binding in (policy.get("bindings") or [])
+          )
+          PY
+          fi
+
+      - name: Create reviewable apply evidence
+        id: evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence_file="${RUNNER_TEMP}/staging-terraform-apply.md"
+          reviewed_plan_sha="$(
+            sha256sum "${RUNNER_TEMP}/reviewed-plan/staging-plan.txt" | cut -d' ' -f1
+          )"
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+
+          {
+            echo "# Staging Terraform apply evidence"
+            echo
+            echo "- Source commit: \`${REVIEWED_SOURCE_SHA}\`"
+            echo "- Reviewed plan workflow run: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${REVIEWED_PLAN_RUN_ID}"
+            echo "- Apply workflow run: ${run_url}"
+            echo "- Deployment stage: \`${DEPLOYMENT_STAGE}\`"
+            echo "- Backend image: \`${BACKEND_IMAGE_LABEL}\`"
+            echo "- Approval reference: ${APPROVAL_REFERENCE}"
+            echo "- Reviewed human-readable plan SHA-256: \`${reviewed_plan_sha}\`"
+            echo "- Recreated plan exact-text comparison: passed"
+            echo "- Automated plan safety gate: passed"
+            echo "- Terraform apply: completed"
+            echo "- Post-apply no-change plan: passed"
+            echo "- Live stage resource verification: passed"
+            echo "- Cloud SQL authorized networks: none"
+            echo "- Public invoker requested: false"
+            echo "- Executable and machine-readable plans retained: no"
+          } > "${evidence_file}"
+
+          test -s "${evidence_file}"
+          cat "${evidence_file}" >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Remove executable and machine-readable plan files
+        if: always()
+        shell: bash
+        run: |
+          rm -f \
+            "${RUNNER_TEMP}/recreated.tfplan" \
+            "${RUNNER_TEMP}/recreated-plan.json" \
+            "${RUNNER_TEMP}/post-apply.tfplan"
+
+      - name: Upload reviewable apply evidence
+        if: steps.evidence.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-terraform-apply-${{ inputs.reviewed_source_sha }}-${{ inputs.deployment_stage }}
+          path: ${{ runner.temp }}/staging-terraform-apply.md
+          if-no-files-found: error
+          retention-days: 7

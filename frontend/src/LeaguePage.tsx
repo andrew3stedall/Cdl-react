@@ -11,6 +11,7 @@ interface LeaguePageProps {
 export function LeaguePage({ leagueClient = defaultLeagueClient }: LeaguePageProps) {
   const [snapshot, setSnapshot] = useState<LeagueSnapshot | null>(null);
   const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
+  const heading = leagueRouteHeading(window.location.pathname);
 
   useEffect(() => {
     let isActive = true;
@@ -41,7 +42,7 @@ export function LeaguePage({ leagueClient = defaultLeagueClient }: LeaguePagePro
     <main aria-labelledby="league-title" className="feature-screen">
       <header>
         <p className="eyebrow">Castle Draft League</p>
-        <h1 id="league-title">League fixtures and results</h1>
+        <h1 id="league-title">{heading}</h1>
         <p>Current fixtures, upcoming fixtures, standings, knockout, and head-to-head context.</p>
       </header>
 
@@ -52,6 +53,19 @@ export function LeaguePage({ leagueClient = defaultLeagueClient }: LeaguePagePro
       {snapshot ? <LeagueContent snapshot={snapshot} /> : null}
     </main>
   );
+}
+
+function leagueRouteHeading(pathname: string): string {
+  if (pathname === '/league/table') {
+    return 'League table';
+  }
+  if (pathname === '/league/knockout') {
+    return 'Knockout competition';
+  }
+  if (pathname === '/league/head-to-head') {
+    return 'Head-to-head records';
+  }
+  return 'League fixtures and results';
 }
 
 function LeagueContent({ snapshot }: { snapshot: LeagueSnapshot }) {
@@ -75,31 +89,13 @@ function LeagueContent({ snapshot }: { snapshot: LeagueSnapshot }) {
           <table>
             <thead>
               <tr>
-                <th>Pos</th>
-                <th>Team</th>
-                <th>P</th>
-                <th>W</th>
-                <th>D</th>
-                <th>L</th>
-                <th>PF</th>
-                <th>PA</th>
-                <th>+/-</th>
-                <th>Pts</th>
+                <th>Pos</th><th>Team</th><th>P</th><th>W</th><th>D</th><th>L</th><th>PF</th><th>PA</th><th>+/-</th><th>Pts</th>
               </tr>
             </thead>
             <tbody>
               {snapshot.table.rows.map((row) => (
                 <tr key={row.team.id}>
-                  <td>{row.position}</td>
-                  <td>{row.team.name}</td>
-                  <td>{row.played}</td>
-                  <td>{row.wins}</td>
-                  <td>{row.draws}</td>
-                  <td>{row.losses}</td>
-                  <td>{row.pointsFor}</td>
-                  <td>{row.pointsAgainst}</td>
-                  <td>{row.pointsDifference}</td>
-                  <td>{row.leaguePoints}</td>
+                  <td>{row.position}</td><td>{row.team.name}</td><td>{row.played}</td><td>{row.wins}</td><td>{row.draws}</td><td>{row.losses}</td><td>{row.pointsFor}</td><td>{row.pointsAgainst}</td><td>{row.pointsDifference}</td><td>{row.leaguePoints}</td>
                 </tr>
               ))}
             </tbody>
@@ -125,27 +121,20 @@ function LeagueContent({ snapshot }: { snapshot: LeagueSnapshot }) {
         {snapshot.knockout.matches.length > 0 ? (
           <ul>
             {snapshot.knockout.matches.map((match) => (
-              <li key={match.id}>
-                {match.roundLabel}: {match.fixture.homeTeam.name} vs {match.fixture.awayTeam.name}
-              </li>
+              <li key={match.id}>{match.roundLabel}: {match.fixture.homeTeam.name} vs {match.fixture.awayTeam.name}</li>
             ))}
           </ul>
-        ) : (
-          <p>No knockout matches available.</p>
-        )}
+        ) : <p>No knockout matches available.</p>}
         <h2>Head-to-head</h2>
         {snapshot.headToHead.records.length > 0 ? (
           <ul>
             {snapshot.headToHead.records.map((record) => (
               <li key={`${record.team.id}-${record.opponent.id}`}>
-                {record.team.name} vs {record.opponent.name}: {record.wins}-{record.draws}-
-                {record.losses}, {record.pointsFor} points for and {record.pointsAgainst} against.
+                {record.team.name} vs {record.opponent.name}: {record.wins}-{record.draws}-{record.losses}, {record.pointsFor} points for and {record.pointsAgainst} against.
               </li>
             ))}
           </ul>
-        ) : (
-          <p>No head-to-head records available.</p>
-        )}
+        ) : <p>No head-to-head records available.</p>}
       </section>
     </>
   );
@@ -155,25 +144,11 @@ function FixtureTable({ fixtures }: { fixtures: LeagueFixture[] }) {
   return (
     <div className="responsive-table" role="region" aria-label="Fixture table" tabIndex={0}>
       <table>
-        <thead>
-          <tr>
-            <th>Round</th>
-            <th>Home</th>
-            <th>Away</th>
-            <th>Score</th>
-            <th>Status</th>
-            <th>Detail</th>
-          </tr>
-        </thead>
+        <thead><tr><th>Round</th><th>Home</th><th>Away</th><th>Score</th><th>Status</th><th>Detail</th></tr></thead>
         <tbody>
           {fixtures.map((fixture) => (
             <tr key={fixture.id}>
-              <td>{fixture.roundLabel}</td>
-              <td>{fixture.homeTeam.name}</td>
-              <td>{fixture.awayTeam.name}</td>
-              <td>{formatScore(fixture)}</td>
-              <td>{fixture.status}</td>
-              <td>{fixture.detailAvailable ? 'Available' : 'Pending'}</td>
+              <td>{fixture.roundLabel}</td><td>{fixture.homeTeam.name}</td><td>{fixture.awayTeam.name}</td><td>{formatScore(fixture)}</td><td>{fixture.status}</td><td>{fixture.detailAvailable ? 'Available' : 'Pending'}</td>
             </tr>
           ))}
         </tbody>
@@ -186,6 +161,5 @@ function formatScore(fixture: LeagueFixture): string {
   if (fixture.score.homeScore === null || fixture.score.awayScore === null) {
     return 'Pending';
   }
-
   return `${fixture.score.homeScore} - ${fixture.score.awayScore}`;
 }

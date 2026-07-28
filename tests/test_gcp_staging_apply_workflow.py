@@ -37,6 +37,9 @@ def test_apply_workflow_downloads_exact_reviewed_plan_evidence() -> None:
         "id-token: write",
         "actions/download-artifact@v4",
         "staging-terraform-plan-${{ inputs.reviewed_source_sha }}-${{ inputs.deployment_stage }}",
+        "staging-plan-manifest.json",
+        "Verify exact reviewed plan manifest",
+        "terraform_plan_manifest.py",
         "run-id: ${{ inputs.reviewed_plan_run_id }}",
         "Safety gate: **PASS**",
         'f"Source commit: `{source_sha}`"',
@@ -45,6 +48,29 @@ def test_apply_workflow_downloads_exact_reviewed_plan_evidence() -> None:
         "Binary plan and machine-readable JSON: not retained or uploaded",
         "ref: ${{ inputs.reviewed_source_sha }}",
         "persist-credentials: false",
+    ]:
+        assert phrase in content
+
+
+def test_apply_workflow_verifies_manifest_before_authentication_and_apply() -> None:
+    content = WORKFLOW.read_text(encoding="utf-8")
+
+    checkout_index = content.index("- name: Checkout exact reviewed source")
+    manifest_index = content.index("- name: Verify exact reviewed plan manifest")
+    auth_index = content.index("- name: Authenticate to Google Cloud")
+    apply_index = content.index("- name: Apply exact recreated saved plan")
+
+    assert checkout_index < manifest_index < auth_index < apply_index
+    for phrase in [
+        "--manifest \"\${RUNNER_TEMP}/reviewed-plan/staging-plan-manifest.json\"",
+        "--source-sha \"\${REVIEWED_SOURCE_SHA}\"",
+        "--run-id \"\${REVIEWED_PLAN_RUN_ID}\"",
+        "--deployment-stage \"\${DEPLOYMENT_STAGE}\"",
+        "--project-id \"\${PROJECT_ID}\"",
+        "--state-bucket \"\${TERRAFORM_STATE_BUCKET}\"",
+        "--backend-image \"\${BACKEND_IMAGE}\"",
+        "Reviewed plan manifest SHA-256",
+        "Reviewed plan manifest identity: verified",
     ]:
         assert phrase in content
 

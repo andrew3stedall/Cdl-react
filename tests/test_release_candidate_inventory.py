@@ -4,18 +4,18 @@ APP = Path("src/cdl_api/app.py")
 INVENTORY = Path("docs/testing/release-candidate-inventory.md")
 BROWSER_INTERACTIONS = Path("scripts/test-app-interactions.mjs")
 SQUAD_BROWSER_INTERACTIONS = Path("scripts/test-squad-management-interactions.mjs")
+SQUAD_ROUTER = Path("src/cdl_api/routers/squad.py")
+POSTGRES_SQUAD_TEST = Path("tests/test_postgres_squad_interests.py")
 
 
 def test_inventory_covers_every_mounted_product_router() -> None:
     app = APP.read_text(encoding="utf-8")
     inventory = INVENTORY.read_text(encoding="utf-8")
-
     mounted_routers = {
         line.split("app.include_router(", maxsplit=1)[1].split(",", maxsplit=1)[0]
         for line in app.splitlines()
         if "app.include_router(" in line
     }
-
     documented_boundaries = {
         "auth_router",
         "dashboard_router",
@@ -31,7 +31,6 @@ def test_inventory_covers_every_mounted_product_router() -> None:
         "squad_router",
         "team_selection_router",
     }
-
     assert mounted_routers == documented_boundaries
     for router in documented_boundaries:
         assert f"`{router}`" in inventory
@@ -39,7 +38,6 @@ def test_inventory_covers_every_mounted_product_router() -> None:
 
 def test_inventory_distinguishes_evidence_from_external_gates() -> None:
     inventory = INVENTORY.read_text(encoding="utf-8")
-
     required_phrases = (
         "Proven",
         "Partial",
@@ -56,7 +54,6 @@ def test_inventory_distinguishes_evidence_from_external_gates() -> None:
 
 def test_inventory_records_reproducible_validation_commands() -> None:
     inventory = INVENTORY.read_text(encoding="utf-8")
-
     for command in (
         "uv sync",
         "uv run ruff check .",
@@ -68,7 +65,6 @@ def test_inventory_records_reproducible_validation_commands() -> None:
         "uv run alembic upgrade head",
     ):
         assert command in inventory
-
     for workflow in ("CI", "Backend PostgreSQL", "App Screenshots"):
         assert f"`{workflow}`" in inventory
 
@@ -76,7 +72,6 @@ def test_inventory_records_reproducible_validation_commands() -> None:
 def test_team_selection_release_evidence_is_focused_and_truthful() -> None:
     inventory = INVENTORY.read_text(encoding="utf-8")
     browser = BROWSER_INTERACTIONS.read_text(encoding="utf-8")
-
     required_browser_evidence = (
         "Invalid lineup.",
         "Lineup saved and validated.",
@@ -89,7 +84,6 @@ def test_team_selection_release_evidence_is_focused_and_truthful() -> None:
     )
     for evidence in required_browser_evidence:
         assert evidence in browser
-
     required_inventory_claims = (
         "invalid-lineup feedback",
         "lineup and wildcard state surviving reload",
@@ -100,14 +94,17 @@ def test_team_selection_release_evidence_is_focused_and_truthful() -> None:
         assert claim in inventory
 
 
-def test_squad_preview_mutation_evidence_is_focused_and_truthful() -> None:
+def test_authenticated_squad_interest_evidence_is_focused_and_truthful() -> None:
     inventory = INVENTORY.read_text(encoding="utf-8")
     browser = SQUAD_BROWSER_INTERACTIONS.read_text(encoding="utf-8")
+    router = SQUAD_ROUTER.read_text(encoding="utf-8")
+    postgres_test = POSTGRES_SQUAD_TEST.read_text(encoding="utf-8")
 
     required_browser_evidence = (
         "Casey Midfielder added to interests.",
-        "Casey Midfielder is already registered as an interest.",
-        "Expected the invalid duplicate interest mutation to leave one persisted entry",
+        "Interest already exists.",
+        "Authentication required.",
+        "rejected duplicate interest to leave persisted server state unchanged",
         "page.reload({ waitUntil: 'networkidle' })",
         "{ width: 390, height: 844 }",
         "{ width: 1440, height: 900 }",
@@ -115,11 +112,25 @@ def test_squad_preview_mutation_evidence_is_focused_and_truthful() -> None:
     for evidence in required_browser_evidence:
         assert evidence in browser
 
+    for evidence in (
+        'Depends(require_manager_session)',
+        '@router.get("/interests"',
+        '@router.post("/interests"',
+    ):
+        assert evidence in router
+
+    for evidence in (
+        "PostgreSQLSquadRepository",
+        "Interest already exists.",
+        "assert count == 1",
+    ):
+        assert evidence in postgres_test
+
     required_inventory_claims = (
-        "survives reload",
-        "invalid duplicate leaves persisted preview state unchanged",
-        "preview-only browser contract backed by local storage",
-        "do not treat local-storage evidence as server persistence",
+        "require an authenticated manager session",
+        "duplicate interests are rejected before mutation",
+        "browser uses a deterministic API test double",
+        "PostgreSQL persistence is proved separately by backend CI",
     )
     for claim in required_inventory_claims:
         assert claim in inventory

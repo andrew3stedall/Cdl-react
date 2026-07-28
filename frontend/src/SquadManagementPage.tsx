@@ -26,9 +26,26 @@ const players: PlayerView[] = [
   { id: 'player-4', displayName: 'Dev Forward', position: 'FWD', team: 'MCI', status: 'trade_target', points: 70, value: 9 },
 ];
 
+const interestStorageKey = 'cdl-squad-interest-ids';
+
+function loadInterestIds(): string[] {
+  try {
+    const stored = window.localStorage.getItem(interestStorageKey);
+    if (!stored) {
+      return [];
+    }
+    const parsed: unknown = JSON.parse(stored);
+    return Array.isArray(parsed)
+      ? parsed.filter((value): value is string => typeof value === 'string' && players.some((player) => player.id === value))
+      : [];
+  } catch {
+    return [];
+  }
+}
+
 export function SquadManagementPage({ preset }: SquadManagementPageProps) {
   const [query, setQuery] = useState('');
-  const [interestIds, setInterestIds] = useState<string[]>([]);
+  const [interestIds, setInterestIds] = useState<string[]>(loadInterestIds);
   const [tradeCreated, setTradeCreated] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerView | null>(null);
   const [status, setStatus] = useState('Loading squad data.');
@@ -36,6 +53,10 @@ export function SquadManagementPage({ preset }: SquadManagementPageProps) {
   useEffect(() => {
     setStatus('Squad data loaded.');
   }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem(interestStorageKey, JSON.stringify(interestIds));
+  }, [interestIds]);
 
   const squadPlayers = players.filter((player) => player.status === 'owned');
   const scoutingPlayers = players.filter((player) => player.displayName.toLowerCase().includes(query.toLowerCase()));
@@ -118,6 +139,10 @@ export function SquadManagementPage({ preset }: SquadManagementPageProps) {
               <span role="cell">
                 <Button
                   onClick={() => {
+                    if (interestIds.includes(player.id)) {
+                      setStatus(`${player.displayName} is already registered as an interest.`);
+                      return;
+                    }
                     setInterestIds((ids) => [...ids, player.id]);
                     setStatus(`${player.displayName} added to interests.`);
                   }}

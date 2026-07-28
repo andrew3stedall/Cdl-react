@@ -43,11 +43,13 @@ The manual workflow:
 7. reads the machine-readable JSON only inside the runner to create a redacted summary;
 8. verifies every changed resource type belongs to the reviewed staging design;
 9. detects and blocks out-of-band resource drift reported separately by Terraform;
-10. deletes the binary plan and machine-readable JSON before artifact upload;
-11. verifies that the complete human-readable plan and redacted summary both exist and are
-    non-empty;
-12. uploads only that complete evidence pair for seven days;
-13. never runs `terraform apply`.
+10. creates a canonical non-sensitive identity manifest binding the plan text to the source
+    commit, workflow run, deployment stage, backend, image and exact Terraform inputs;
+11. deletes the binary plan and machine-readable JSON before artifact upload;
+12. verifies that the complete human-readable plan, redacted summary and identity manifest
+    exist and are non-empty;
+13. uploads only that complete evidence set for seven days;
+14. never runs `terraform apply`.
 
 Terraform exit code `0` means no changes and exit code `2` means a valid plan with changes.
 Exit code `1` fails the workflow.
@@ -59,7 +61,14 @@ The short-lived Actions artifact contains:
 ```text
 staging-plan.txt
 staging-plan-summary.md
+staging-plan-manifest.json
 ```
+
+The identity manifest records the exact source commit, workflow run, cumulative stage,
+backend bucket and prefix, backend configuration hash, immutable image identity, public-access
+setting, feature flags, project ID, canonical Terraform-input hash and reviewed plan-text hash.
+It contains resource identifiers and hashes only, not credentials, secret values or executable
+plan data.
 
 The summary records:
 

@@ -1,11 +1,11 @@
 """Authentication API routes."""
 
-from fastapi import APIRouter, Depends, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
 
 from cdl_api.contracts.auth import LoginRequest, LoginResponse, LogoutResponse
 from cdl_api.contracts.common import ApiErrorResponse, ErrorCode
-from cdl_api.contracts.session import SessionState
+from cdl_api.contracts.session import SessionState, SessionUser
 from cdl_api.repositories.factory import build_repositories
 from cdl_api.services.auth import AuthenticationService
 from cdl_api.settings import Settings, get_settings
@@ -24,6 +24,20 @@ def get_auth_service(settings: Settings = Depends(get_settings)) -> Authenticati
 
 def _session_id_from_request(request: Request, settings: Settings) -> str | None:
     return request.cookies.get(settings.session_cookie_name)
+
+
+def require_authenticated_session(
+    request: Request,
+    settings: Settings = Depends(get_settings),
+    service: AuthenticationService = Depends(get_auth_service),
+) -> SessionUser:
+    session = service.get_session(_session_id_from_request(request, settings))
+    if not session.is_authenticated or session.user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required.",
+        )
+    return session.user
 
 
 @router.post("/login", response_model=LoginResponse)

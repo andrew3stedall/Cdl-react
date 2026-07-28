@@ -123,11 +123,25 @@ export function App({
       .then((resolvedSession) => {
         if (!cancelled) {
           setActiveSession(resolvedSession);
+          if (!canAccessProtectedRoute(resolvedSession)) {
+            try {
+              window.history.replaceState({}, '', '/login');
+            } catch {
+              // Browser history can be unavailable in isolated DOM tests.
+            }
+            setCurrentPath('/login');
+          }
         }
       })
       .catch(() => {
         if (!cancelled) {
           setActiveSession(getUnauthenticatedSession());
+          try {
+            window.history.replaceState({}, '', '/login');
+          } catch {
+            // Browser history can be unavailable in isolated DOM tests.
+          }
+          setCurrentPath('/login');
         }
       });
 
@@ -192,8 +206,8 @@ export function App({
       }
 
       setLoginPassword('');
-      setActiveSession(result.data.session);
       setBrowserPath('/', true);
+      setActiveSession(result.data.session);
     } catch {
       setLoginError('Sign in is temporarily unavailable. Try again.');
     } finally {
@@ -232,13 +246,6 @@ export function App({
   }
 
   if (!canAccessProtectedRoute(activeSession)) {
-    if (window.location.pathname !== '/login') {
-      try {
-        window.history.replaceState({}, '', '/login');
-      } catch {
-        // Browser history can be unavailable in isolated DOM tests.
-      }
-    }
     return (
       <main className="session-boundary" aria-label="Protected route session state">
         <h1>Sign in to CDL Manager</h1>
@@ -260,7 +267,7 @@ export function App({
             Dashboard
           </a>
         </nav>
-        <p className="login-required" role={loginError ? undefined : 'status'}>
+        <p className="login-required" role="status">
           Sign in to access the Castle Draft League application shell.
         </p>
         <form className="login-form" onSubmit={(event) => void handleLogin(event)}>

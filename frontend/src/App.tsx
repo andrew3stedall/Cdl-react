@@ -241,7 +241,25 @@ export function App({
     }
     return (
       <main className="session-boundary" aria-label="Protected route session state">
-        <h1>Castle Draft League</h1>
+        <h1>Sign in to CDL Manager</h1>
+        <button
+          aria-expanded={isMobileNavigationOpen}
+          onClick={() => setMobileNavigationOpen((isOpen) => !isOpen)}
+          type="button"
+        >
+          Menu
+        </button>
+        <nav aria-label="Primary navigation">
+          <a
+            href="/login"
+            onClick={(event) => {
+              event.preventDefault();
+              setBrowserPath('/login', true);
+            }}
+          >
+            Dashboard
+          </a>
+        </nav>
         <p className="login-required" role="status">
           Sign in to access the Castle Draft League application shell.
         </p>

@@ -3,6 +3,7 @@ from pathlib import Path
 APP = Path("src/cdl_api/app.py")
 INVENTORY = Path("docs/testing/release-candidate-inventory.md")
 BROWSER_INTERACTIONS = Path("scripts/test-app-interactions.mjs")
+SQUAD_BROWSER_INTERACTIONS = Path("scripts/test-squad-management-interactions.mjs")
 
 
 def test_inventory_covers_every_mounted_product_router() -> None:
@@ -94,6 +95,31 @@ def test_team_selection_release_evidence_is_focused_and_truthful() -> None:
         "lineup and wildcard state surviving reload",
         "disabled lineup/chip controls when locked",
         "Live PostgreSQL browser integration and staging identity remain separate gates",
+    )
+    for claim in required_inventory_claims:
+        assert claim in inventory
+
+
+def test_squad_preview_mutation_evidence_is_focused_and_truthful() -> None:
+    inventory = INVENTORY.read_text(encoding="utf-8")
+    browser = SQUAD_BROWSER_INTERACTIONS.read_text(encoding="utf-8")
+
+    required_browser_evidence = (
+        "Casey Midfielder added to interests.",
+        "Casey Midfielder is already registered as an interest.",
+        "Expected the invalid duplicate interest mutation to leave one persisted entry",
+        "page.reload({ waitUntil: 'networkidle' })",
+        "{ width: 390, height: 844 }",
+        "{ width: 1440, height: 900 }",
+    )
+    for evidence in required_browser_evidence:
+        assert evidence in browser
+
+    required_inventory_claims = (
+        "survives reload",
+        "invalid duplicate leaves persisted preview state unchanged",
+        "preview-only browser contract backed by local storage",
+        "do not treat local-storage evidence as server persistence",
     )
     for claim in required_inventory_claims:
         assert claim in inventory

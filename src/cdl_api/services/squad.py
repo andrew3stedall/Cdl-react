@@ -132,8 +132,41 @@ class SquadManagementService:
         )
         return self._repository.save_trade(trade)
 
-    def update_trade(self, trade_id: str, status: TradeStatus) -> TradeProposal | None:
-        return self._repository.update_trade_status(trade_id, status)
+    def update_trade(
+        self,
+        trade_id: str,
+        status: TradeStatus,
+        actor_manager_id: str,
+    ) -> TradeProposal | None:
+        trade = next((item for item in self._repository.list_trades() if item.id == trade_id), None)
+        if trade is None:
+            return None
+        if trade.status != TradeStatus.PROPOSED:
+            raise SquadValidationError(
+                "Trade is no longer pending.",
+                [ValidationIssue(field="status", message="Trade status has already changed.")],
+            )
+        if status in {TradeStatus.ACCEPTED, TradeStatus.REJECTED}:
+            required_manager_id = self._repository.manager_id_for_team(trade.offered_to.id)
+        elif status == TradeStatus.CANCELLED:
+            required_manager_id = self._repository.manager_id_for_team(trade.offered_by.id)
+        else:
+            raise SquadValidationError(
+                "Invalid trade transition.",
+                [ValidationIssue(field="status", message="Trade must be accepted, rejected, or cancelled.")],
+            )
+        if actor_manager_id != required_manager_id:
+            raise SquadValidationError(
+                "Trade transition is not authorized.",
+                [ValidationIssue(field="status", message="Manager cannot perform this transition.")],
+            )
+        updated = self._repository.update_trade_status(trade_id, status)
+        if updated is not None and updated.status != status:
+            raise SquadValidationError(
+                "Trade is no longer pending.",
+                [ValidationIssue(field="status", message="Trade status changed concurrently.")],
+            )
+        return updated
 
     def _require_player(self, player_id: str) -> PlayerDetail:
         player = self._repository.get_player(player_id)

@@ -39,7 +39,9 @@ def test_authenticated_preferences_persist_and_remain_isolated() -> None:
 
     repository = PostgreSQLUserPreferenceRepository(session_factory)
     app = create_app()
-    app.dependency_overrides[get_preference_service] = lambda: UserPreferenceService(repository)
+    app.dependency_overrides[get_preference_service] = lambda: UserPreferenceService(
+        repository
+    )
     app.dependency_overrides[require_authenticated_session] = lambda: _user(
         "preferences-manager-1"
     )
@@ -58,8 +60,14 @@ def test_authenticated_preferences_persist_and_remain_isolated() -> None:
     ).json() == {"theme_preset": "compact"}
 
     reloaded_repository = PostgreSQLUserPreferenceRepository(session_factory)
-    assert reloaded_repository.get_for_user("preferences-manager-1").theme_preset == "dark"
-    assert reloaded_repository.get_for_user("preferences-manager-2").theme_preset == "compact"
+    assert (
+        reloaded_repository.get_for_user("preferences-manager-1").theme_preset
+        == "dark"
+    )
+    assert (
+        reloaded_repository.get_for_user("preferences-manager-2").theme_preset
+        == "compact"
+    )
 
     with engine.begin() as connection:
         connection.execute(

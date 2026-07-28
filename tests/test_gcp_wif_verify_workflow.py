@@ -4,8 +4,7 @@ WORKFLOW = Path(".github/workflows/gcp-wif-verify.yml")
 RUNBOOK = Path("docs/runbooks/gcp-wif-state-boundary.md")
 
 
-def test_wif_verify_runs_once_when_its_contract_lands_on_main_and_keeps_manual_retry(
-) -> None:
+def test_wif_verify_runs_once_when_its_contract_lands_on_main_and_keeps_manual_retry() -> None:
     content = WORKFLOW.read_text(encoding="utf-8")
     trigger = content.split("on:", maxsplit=1)[1].split("permissions:", maxsplit=1)[0]
 
@@ -25,9 +24,9 @@ def test_wif_verify_runs_once_when_its_contract_lands_on_main_and_keeps_manual_r
 
 def test_wif_verify_reports_missing_variable_names_without_printing_values() -> None:
     content = WORKFLOW.read_text(encoding="utf-8")
-    validation = content.split(
-        "- name: Validate required environment variables", maxsplit=1
-    )[1].split("- name: Authenticate to Google Cloud", maxsplit=1)[0]
+    validation = content.split("- name: Validate required environment variables", maxsplit=1)[
+        1
+    ].split("- name: Authenticate to Google Cloud", maxsplit=1)[0]
 
     for phrase in [
         "require_configured_variable",

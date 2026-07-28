@@ -38,6 +38,7 @@ jobs:
           tests/test_postgres_dashboard_config.py
           tests/test_postgres_dashboard_snapshots.py
           tests/test_postgres_fdr.py
+          tests/test_postgres_squad_interests.py
           tests/test_historical_import_migration.py
           tests/test_historical_import_service.py
           tests/test_synthetic_fixture_export_adapter.py

@@ -94,7 +94,9 @@ class SquadManagementService:
         return self._repository.list_trades()
 
     def create_trade(self, request: TradeCreateRequest) -> TradeProposal:
-        sent_players = [self._require_player(player_id) for player_id in request.offered_player_ids]
+        sent_players = [
+            self._require_player(player_id) for player_id in request.offered_player_ids
+        ]
         wanted_players = [
             self._require_player(player_id) for player_id in request.requested_player_ids
         ]
@@ -138,7 +140,10 @@ class SquadManagementService:
         status: TradeStatus,
         actor_manager_id: str,
     ) -> TradeProposal | None:
-        trade = next((item for item in self._repository.list_trades() if item.id == trade_id), None)
+        trade = next(
+            (item for item in self._repository.list_trades() if item.id == trade_id),
+            None,
+        )
         if trade is None:
             return None
         if trade.status != TradeStatus.PROPOSED:
@@ -147,24 +152,43 @@ class SquadManagementService:
                 [ValidationIssue(field="status", message="Trade status has already changed.")],
             )
         if status in {TradeStatus.ACCEPTED, TradeStatus.REJECTED}:
-            required_manager_id = self._repository.manager_id_for_team(trade.offered_to.id)
+            required_manager_id = self._repository.manager_id_for_team(
+                trade.offered_to.id
+            )
         elif status == TradeStatus.CANCELLED:
-            required_manager_id = self._repository.manager_id_for_team(trade.offered_by.id)
+            required_manager_id = self._repository.manager_id_for_team(
+                trade.offered_by.id
+            )
         else:
             raise SquadValidationError(
                 "Invalid trade transition.",
-                [ValidationIssue(field="status", message="Trade must be accepted, rejected, or cancelled.")],
+                [
+                    ValidationIssue(
+                        field="status",
+                        message="Trade must be accepted, rejected, or cancelled.",
+                    )
+                ],
             )
         if actor_manager_id != required_manager_id:
             raise SquadValidationError(
                 "Trade transition is not authorized.",
-                [ValidationIssue(field="status", message="Manager cannot perform this transition.")],
+                [
+                    ValidationIssue(
+                        field="status",
+                        message="Manager cannot perform this transition.",
+                    )
+                ],
             )
         updated = self._repository.update_trade_status(trade_id, status)
         if updated is not None and updated.status != status:
             raise SquadValidationError(
                 "Trade is no longer pending.",
-                [ValidationIssue(field="status", message="Trade status changed concurrently.")],
+                [
+                    ValidationIssue(
+                        field="status",
+                        message="Trade status changed concurrently.",
+                    )
+                ],
             )
         return updated
 

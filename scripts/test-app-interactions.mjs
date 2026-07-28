@@ -618,9 +618,20 @@ async function testLoginAndLogout(page, api, viewportName) {
 
 async function testLockedTeamSelection(page) {
   await page.goto(baseUrl + '/team-selection', { waitUntil: 'networkidle' });
-  await expectStatus(page, 'Team selection loaded.');
-  await page.getByRole('button', { name: 'Save lineup' }).click();
-  await expectStatus(page, 'Team selection is locked for this gameweek.');
+  await expectStatus(page, 'Lineup locked. FPL deadline passed.');
+
+  const saveLineup = page.getByRole('button', { name: 'Save lineup' });
+  if (!(await saveLineup.isDisabled())) {
+    throw new Error('Expected Save lineup to be disabled after fixture lock');
+  }
+  const wildcardActivate = page.getByRole('heading', { name: 'Wildcard' }).locator('..')
+    .getByRole('button', { name: 'Activate' });
+  if (!(await wildcardActivate.isDisabled())) {
+    throw new Error('Expected chip controls to be disabled after fixture lock');
+  }
+  if (!(await page.getByLabel('Move Alex Keeper').isDisabled())) {
+    throw new Error('Expected lineup controls to be disabled after fixture lock');
+  }
 }
 
 async function runViewport(viewport, viewportName) {

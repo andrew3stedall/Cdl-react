@@ -86,6 +86,28 @@ resource "google_storage_bucket_iam_member" "staging_deploy_state_access" {
   member = "serviceAccount:${module.staging.deploy_service_account_email}"
 }
 
+resource "google_project_iam_custom_role" "terraform_state_iam_viewer" {
+  provider = google.staging
+  project  = var.staging_project_id
+
+  role_id     = "terraformStateIamViewer"
+  title       = "Terraform State IAM Viewer"
+  description = "Allows the GitHub deploy identity to read the Terraform state bucket IAM policy."
+  stage       = "GA"
+
+  permissions = [
+    "storage.buckets.getIamPolicy",
+  ]
+}
+
+resource "google_storage_bucket_iam_member" "staging_deploy_state_iam_viewer" {
+  provider = google.staging
+
+  bucket = google_storage_bucket.terraform_state.name
+  role   = google_project_iam_custom_role.terraform_state_iam_viewer.name
+  member = "serviceAccount:${module.staging.deploy_service_account_email}"
+}
+
 resource "google_billing_budget" "staging" {
   provider = google.staging
 

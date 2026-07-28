@@ -67,13 +67,13 @@ def test_plan_manifest_is_created_before_executable_plan_cleanup() -> None:
 
     assert manifest_index < cleanup_index < evidence_index < upload_index
     for phrase in [
-        "--source-sha \"${GITHUB_SHA}\"",
-        "--run-id \"${GITHUB_RUN_ID}\"",
-        "--deployment-stage \"${DEPLOYMENT_STAGE}\"",
-        "--state-bucket \"${TERRAFORM_STATE_BUCKET}\"",
-        "--backend-image \"${BACKEND_IMAGE}\"",
-        "--enable-database-jobs \"${ENABLE_DATABASE_JOBS}\"",
-        "--enable-cloud-run \"${ENABLE_CLOUD_RUN}\"",
+        '--source-sha "${GITHUB_SHA}"',
+        '--run-id "${GITHUB_RUN_ID}"',
+        '--deployment-stage "${DEPLOYMENT_STAGE}"',
+        '--state-bucket "${TERRAFORM_STATE_BUCKET}"',
+        '--backend-image "${BACKEND_IMAGE}"',
+        '--enable-database-jobs "${ENABLE_DATABASE_JOBS}"',
+        '--enable-cloud-run "${ENABLE_CLOUD_RUN}"',
         "steps.manifest.outcome == 'failure'",
     ]:
         assert phrase in content

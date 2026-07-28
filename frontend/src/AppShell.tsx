@@ -131,7 +131,7 @@ function NavigationList({
   onNavigate: (item: NavigationItem) => void;
 }) {
   return (
-    <nav className="navigation-list">
+    <nav aria-label="Primary navigation" className="navigation-list">
       {primaryNavigationItems.map((item) => {
         const isActive = isRouteActive(currentPath, item.href);
 

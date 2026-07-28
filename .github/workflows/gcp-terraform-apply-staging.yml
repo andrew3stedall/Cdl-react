@@ -7,6 +7,7 @@ on:
       - ".github/workflows/gcp-terraform-apply-staging.yml"
       - "src/cdl_api/terraform_plan_summary.py"
       - "tests/test_gcp_staging_apply_workflow.py"
+      - "tests/test_gcp_staging_apply_gcloud_setup.py"
   workflow_dispatch:
     inputs:
       reviewed_plan_run_id:
@@ -211,6 +212,11 @@ jobs:
           project_id: ${{ env.PROJECT_ID }}
           workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ env.DEPLOY_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
+        with:
+          version: ">= 416.0.0"
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v4

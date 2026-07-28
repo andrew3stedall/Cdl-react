@@ -45,10 +45,7 @@ def test_authenticated_preferences_persist_and_remain_isolated() -> None:
             )
         )
         connection.execute(
-            text(
-                "DELETE FROM users "
-                "WHERE id IN ('preferences-manager-1', 'preferences-manager-2')"
-            )
+            text("DELETE FROM users WHERE id IN ('preferences-manager-1', 'preferences-manager-2')")
         )
         connection.execute(
             insert(users_table),
@@ -97,9 +94,6 @@ def test_authenticated_preferences_persist_and_remain_isolated() -> None:
             )
         )
         connection.execute(
-            text(
-                "DELETE FROM users "
-                "WHERE id IN ('preferences-manager-1', 'preferences-manager-2')"
-            )
+            text("DELETE FROM users WHERE id IN ('preferences-manager-1', 'preferences-manager-2')")
         )
     engine.dispose()

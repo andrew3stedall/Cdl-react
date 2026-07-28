@@ -7,13 +7,13 @@ from cdl_api.routers.squad import get_squad_service, require_manager_session
 from cdl_api.services.squad import SquadManagementService
 
 
-def _authenticated_client() -> TestClient:
+def _authenticated_client(manager_id: str = "manager-1") -> TestClient:
     app = create_app()
     service = SquadManagementService(InMemorySquadRepository())
     app.dependency_overrides[get_squad_service] = lambda: service
     app.dependency_overrides[require_manager_session] = lambda: SessionUser(
-        id="manager-1",
-        email="manager@example.com",
+        id=manager_id,
+        email=f"{manager_id}@example.com",
         display_name="Manager",
         roles=["manager"],
     )
@@ -88,7 +88,18 @@ def test_interest_create_reload_duplicate_delete_and_validation_flow() -> None:
 
 
 def test_trade_create_reload_update_and_rejected_write_flow() -> None:
-    client = _authenticated_client()
+    app = create_app()
+    service = SquadManagementService(InMemorySquadRepository())
+    active_manager = {"id": "manager-1"}
+    app.dependency_overrides[get_squad_service] = lambda: service
+    app.dependency_overrides[require_manager_session] = lambda: SessionUser(
+        id=active_manager["id"],
+        email="manager@example.com",
+        display_name="Manager",
+        roles=["manager"],
+    )
+    client = TestClient(app)
+
     create_response = client.post(
         "/api/trades",
         json={
@@ -115,13 +126,27 @@ def test_trade_create_reload_update_and_rejected_write_flow() -> None:
     )
     assert invalid.status_code == 422
     assert invalid.json()["message"] == "Invalid trade asset."
-    assert [proposal["id"] for proposal in client.get("/api/trades").json()["trades"]] == [
-        trade["id"]
-    ]
 
-    update_response = client.put(
+    unauthorized = client.put(
         f"/api/trades/{trade['id']}",
         json={"status": "accepted"},
     )
-    assert update_response.status_code == 200
-    assert update_response.json()["status"] == "accepted"
+    assert unauthorized.status_code == 422
+    assert unauthorized.json()["message"] == "Trade transition is not authorized."
+    assert client.get("/api/trades").json()["trades"][0]["status"] == "proposed"
+
+    active_manager["id"] = "manager-rival"
+    accepted = client.put(
+        f"/api/trades/{trade['id']}",
+        json={"status": "accepted"},
+    )
+    assert accepted.status_code == 200
+    assert accepted.json()["status"] == "accepted"
+
+    stale = client.put(
+        f"/api/trades/{trade['id']}",
+        json={"status": "rejected"},
+    )
+    assert stale.status_code == 422
+    assert stale.json()["message"] == "Trade is no longer pending."
+    assert client.get("/api/trades").json()["trades"][0]["status"] == "accepted"

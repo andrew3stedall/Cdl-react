@@ -62,15 +62,15 @@ export function AppShell({
       <Sheet id="mobile-navigation" isOpen={isMobileNavigationOpen} labelledBy="mobile-navigation-title">
         <div className="mobile-sheet-header">
           <h2 id="mobile-navigation-title">Navigation</h2>
+          <Button onClick={signOut} type="button" variant="ghost">
+            <LogOut aria-hidden="true" size={16} />
+            Sign out
+          </Button>
           <Button onClick={onCloseMobileNavigation} type="button" variant="ghost">
             Close
           </Button>
         </div>
         <NavigationList currentPath={currentPath} onNavigate={navigate} />
-        <Button onClick={signOut} type="button" variant="ghost">
-          <LogOut aria-hidden="true" size={16} />
-          Sign out
-        </Button>
       </Sheet>
 
       <main className="shell-main">

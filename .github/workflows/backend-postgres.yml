@@ -29,12 +29,6 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v4
       - run: uv sync
-      - name: Capture full backend diagnostics
-        run: uv run pytest > full-pytest.txt 2>&1 || true
-      - uses: actions/upload-artifact@v4
-        with:
-          name: full-backend-test-diagnostics
-          path: full-pytest.txt
       - run: uv run alembic upgrade head
       - name: Test PostgreSQL release paths
         run: >-

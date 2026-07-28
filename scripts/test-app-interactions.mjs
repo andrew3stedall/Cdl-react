@@ -529,6 +529,10 @@ async function testFixtureDifficulty(page) {
 }
 
 async function expectPath(page, expectedPath) {
+  await page.waitForFunction(
+    (path) => window.location.pathname === path,
+    expectedPath,
+  );
   const path = new URL(page.url()).pathname;
   if (path !== expectedPath) {
     throw new Error('Expected browser path "' + expectedPath + '", received "' + path + '"');

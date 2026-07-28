@@ -41,6 +41,7 @@ export function SquadManagementPage({ preset }: SquadManagementPageProps) {
   const [query, setQuery] = useState('');
   const [interests, setInterests] = useState<InterestApiResponse[]>([]);
   const [trades, setTrades] = useState<TradeApiResponse[]>([]);
+  const [tradeCreated, setTradeCreated] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerView | null>(null);
   const [status, setStatus] = useState('Loading squad data.');
 
@@ -104,8 +105,11 @@ export function SquadManagementPage({ preset }: SquadManagementPageProps) {
       setStatus(payload.message ?? payload.detail ?? 'Unable to create trade proposal.');
       return;
     }
-    const trade = (await response.json()) as TradeApiResponse;
-    setTrades((current) => [...current, trade]);
+    const trade = (await response.json()) as Partial<TradeApiResponse>;
+    if (trade.id && trade.status && trade.assets) {
+      setTrades((current) => [...current, trade as TradeApiResponse]);
+    }
+    setTradeCreated(true);
     setStatus('Trade proposal created.');
   }
 
@@ -181,6 +185,7 @@ export function SquadManagementPage({ preset }: SquadManagementPageProps) {
           {trades.map((trade) => (
             <p key={trade.id}>Trade {trade.status}: {trade.assets.map((asset) => asset.player.display_name).join(' ↔ ')}</p>
           ))}
+          {tradeCreated ? <p>Validate against <a href="/rules#trade-window">Trade Window</a>.</p> : null}
         </Card>
       </section>
 

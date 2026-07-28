@@ -11,8 +11,9 @@ testGlobal.IS_REACT_ACT_ENVIRONMENT = true;
 beforeEach(() => {
   vi.stubGlobal(
     'fetch',
-    vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
-      if (init?.method === 'POST') {
+    vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const path = String(input);
+      if (path === '/api/interests' && init?.method === 'POST') {
         return new Response(
           JSON.stringify({
             id: 'interest-player-3',
@@ -20,6 +21,25 @@ beforeEach(() => {
           }),
           { status: 200, headers: { 'Content-Type': 'application/json' } },
         );
+      }
+      if (path === '/api/trades' && init?.method === 'POST') {
+        return new Response(
+          JSON.stringify({
+            id: 'trade-1',
+            status: 'proposed',
+            assets: [
+              { player: { display_name: 'Alex Keeper' } },
+              { player: { display_name: 'Dev Forward' } },
+            ],
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        );
+      }
+      if (path === '/api/trades') {
+        return new Response(JSON.stringify({ trades: [] }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
       }
       return new Response('[]', {
         status: 200,
@@ -80,16 +100,18 @@ describe('SquadManagementPage', () => {
     expect(container.textContent).toContain('Casey Midfielder');
   });
 
-  test('creates proposed trade with rules deep link and opens player detail', async () => {
+  test('creates a persisted trade and opens player detail', async () => {
     const { container } = await renderPage();
     const tradeButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Propose sample trade') as HTMLButtonElement;
 
     await act(async () => {
       tradeButton.click();
       await Promise.resolve();
+      await Promise.resolve();
     });
 
-    expect(container.querySelector('a[href="/rules#trade-window"]')?.textContent).toBe('Trade Window');
+    expect(container.textContent).toContain('Trade proposal created.');
+    expect(container.textContent).toContain('Trade proposed: Alex Keeper ↔ Dev Forward');
 
     const playerButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Casey Midfielder')) as HTMLButtonElement;
     await act(async () => {

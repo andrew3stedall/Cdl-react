@@ -29,12 +29,8 @@ def test_preferences_require_authentication() -> None:
 def test_preferences_use_authenticated_user_identity() -> None:
     repository = InMemoryUserPreferenceRepository()
     app = create_app()
-    app.dependency_overrides[get_preference_service] = lambda: UserPreferenceService(
-        repository
-    )
-    app.dependency_overrides[require_authenticated_session] = lambda: _user(
-        "manager-1"
-    )
+    app.dependency_overrides[get_preference_service] = lambda: UserPreferenceService(repository)
+    app.dependency_overrides[require_authenticated_session] = lambda: _user("manager-1")
     client = TestClient(app)
 
     response = client.put("/api/me/preferences", json={"theme_preset": "dark"})
@@ -43,9 +39,7 @@ def test_preferences_use_authenticated_user_identity() -> None:
     assert response.json() == {"theme_preset": "dark"}
     assert client.get("/api/me/preferences").json() == {"theme_preset": "dark"}
 
-    app.dependency_overrides[require_authenticated_session] = lambda: _user(
-        "manager-2"
-    )
+    app.dependency_overrides[require_authenticated_session] = lambda: _user("manager-2")
     assert client.get("/api/me/preferences").json() == {"theme_preset": "classic"}
 
     response = client.put("/api/me/preferences", json={"theme_preset": "compact"})
@@ -53,7 +47,5 @@ def test_preferences_use_authenticated_user_identity() -> None:
     assert response.status_code == 200
     assert response.json() == {"theme_preset": "compact"}
 
-    app.dependency_overrides[require_authenticated_session] = lambda: _user(
-        "manager-1"
-    )
+    app.dependency_overrides[require_authenticated_session] = lambda: _user("manager-1")
     assert client.get("/api/me/preferences").json() == {"theme_preset": "dark"}

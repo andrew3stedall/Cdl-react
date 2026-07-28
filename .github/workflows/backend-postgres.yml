@@ -30,6 +30,12 @@ jobs:
       - uses: astral-sh/setup-uv@v4
       - run: uv sync
       - run: uv run alembic upgrade head
+      - name: Capture PostgreSQL squad diagnostics
+        run: uv run pytest tests/test_postgres_squad_interests.py -vv > postgres-squad.txt 2>&1 || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: postgres-squad-diagnostics
+          path: postgres-squad.txt
       - name: Test PostgreSQL release paths
         run: >-
           uv run pytest

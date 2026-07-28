@@ -62,13 +62,13 @@ def test_apply_workflow_verifies_manifest_before_authentication_and_apply() -> N
 
     assert checkout_index < manifest_index < auth_index < apply_index
     for phrase in [
-        "--manifest \"${RUNNER_TEMP}/reviewed-plan/staging-plan-manifest.json\"",
-        "--source-sha \"${REVIEWED_SOURCE_SHA}\"",
-        "--run-id \"${REVIEWED_PLAN_RUN_ID}\"",
-        "--deployment-stage \"${DEPLOYMENT_STAGE}\"",
-        "--project-id \"${PROJECT_ID}\"",
-        "--state-bucket \"${TERRAFORM_STATE_BUCKET}\"",
-        "--backend-image \"${BACKEND_IMAGE}\"",
+        '--manifest "${RUNNER_TEMP}/reviewed-plan/staging-plan-manifest.json"',
+        '--source-sha "${REVIEWED_SOURCE_SHA}"',
+        '--run-id "${REVIEWED_PLAN_RUN_ID}"',
+        '--deployment-stage "${DEPLOYMENT_STAGE}"',
+        '--project-id "${PROJECT_ID}"',
+        '--state-bucket "${TERRAFORM_STATE_BUCKET}"',
+        '--backend-image "${BACKEND_IMAGE}"',
         "Reviewed plan manifest SHA-256",
         "Reviewed plan manifest identity: verified",
     ]:

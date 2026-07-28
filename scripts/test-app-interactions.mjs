@@ -181,6 +181,7 @@ async function mockApi(page, { authenticated = true, teamSelectionLocked = false
   let currentTeamSelection = teamSelectionResponse(teamSelectionLocked);
   let sessionAuthenticated = authenticated;
   const interests = [];
+  const trades = [];
 
   await page.route('**/api/**', async (route) => {
     const request = route.request();
@@ -238,6 +239,23 @@ async function mockApi(page, { authenticated = true, teamSelectionLocked = false
       };
       interests.push(interest);
       return route.fulfill({ json: interest });
+    }
+
+    if (path === '/api/trades' && request.method() === 'GET') {
+      return route.fulfill({ json: { trades } });
+    }
+
+    if (path === '/api/trades' && request.method() === 'POST') {
+      const trade = {
+        id: 'trade-primary-1',
+        status: 'proposed',
+        assets: [
+          { player: { id: 'player-1', display_name: 'Alex Keeper' } },
+          { player: { id: 'player-4', display_name: 'Dev Forward' } },
+        ],
+      };
+      trades.push(trade);
+      return route.fulfill({ json: trade });
     }
 
     if (path === '/api/team-selection') {

@@ -26,6 +26,7 @@ from cdl_api.repositories.squad import InMemorySquadRepository
 
 DEMO_SEASON_ID = "season-2026"
 DEMO_MANAGER_ID = "manager-1"
+DEMO_RIVAL_MANAGER_ID = "manager-rival"
 
 
 class PostgreSQLSquadRepository(InMemorySquadRepository):
@@ -178,6 +179,12 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
             session.commit()
         return trade
 
+    def manager_id_for_team(self, team_id: str) -> str | None:
+        return {
+            self.manager_team.id: DEMO_MANAGER_ID,
+            self.rival_team.id: DEMO_RIVAL_MANAGER_ID,
+        }.get(team_id)
+
     def update_trade_status(
         self,
         trade_id: str,
@@ -186,12 +193,15 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
         with self._session_factory() as session:
             result = session.execute(
                 update(trade_proposals_table)
-                .where(trade_proposals_table.c.id == trade_id)
+                .where(
+                    trade_proposals_table.c.id == trade_id,
+                    trade_proposals_table.c.status == TradeStatus.PROPOSED.value,
+                )
                 .values(status=status.value, updated_at=datetime.now(UTC))
             )
             session.commit()
         if result.rowcount == 0:
-            return None
+            return self._get_trade(trade_id)
         return self._get_trade(trade_id)
 
     def _get_trade(self, trade_id: str) -> TradeProposal | None:

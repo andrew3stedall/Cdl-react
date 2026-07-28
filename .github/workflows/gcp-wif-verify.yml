@@ -1,6 +1,11 @@
 name: GCP WIF Verify
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/gcp-wif-verify.yml"
   workflow_dispatch:
 
 permissions:
@@ -32,11 +37,27 @@ jobs:
       - name: Validate required environment variables
         run: |
           set -euo pipefail
-          test -n "${PROJECT_ID}"
-          test -n "${PROJECT_NUMBER}"
-          test -n "${WORKLOAD_IDENTITY_PROVIDER}"
-          test -n "${DEPLOY_SERVICE_ACCOUNT}"
-          test -n "${TERRAFORM_STATE_BUCKET}"
+          missing=0
+
+          require_configured_variable() {
+            local environment_name="$1"
+            local github_variable_name="$2"
+
+            if [ -z "${!environment_name:-}" ]; then
+              echo "::error title=Missing staging environment variable::${github_variable_name} is not configured."
+              missing=1
+            fi
+          }
+
+          require_configured_variable PROJECT_ID GCP_STAGING_PROJECT_ID
+          require_configured_variable PROJECT_NUMBER GCP_STAGING_PROJECT_NUMBER
+          require_configured_variable WORKLOAD_IDENTITY_PROVIDER GCP_STAGING_WORKLOAD_IDENTITY_PROVIDER
+          require_configured_variable DEPLOY_SERVICE_ACCOUNT GCP_STAGING_DEPLOY_SERVICE_ACCOUNT
+          require_configured_variable TERRAFORM_STATE_BUCKET GCP_TERRAFORM_STATE_BUCKET
+
+          if [ "${missing}" -ne 0 ]; then
+            exit 1
+          fi
 
           test "${WORKLOAD_IDENTITY_PROVIDER}" = \
             "projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
@@ -148,6 +169,7 @@ jobs:
             echo
             echo "- Source commit: \`${GITHUB_SHA}\`"
             echo "- Workflow run: ${run_url}"
+            echo "- Trigger: \`${GITHUB_EVENT_NAME}\`"
             echo "- Trusted ref: \`${GITHUB_REF}\`"
             echo "- Project: \`${PROJECT_ID}\`"
             echo "- Project number: \`${PROJECT_NUMBER}\`"
@@ -168,6 +190,7 @@ jobs:
 
           test -s "${evidence_file}"
           grep -Fq "Source commit: \`${GITHUB_SHA}\`" "${evidence_file}"
+          grep -Fq "Trigger: \`${GITHUB_EVENT_NAME}\`" "${evidence_file}"
           grep -Fq "Workload Identity provider: \`${WORKLOAD_IDENTITY_PROVIDER}\`" "${evidence_file}"
           grep -Fq "Terraform state bucket: \`gs://${TERRAFORM_STATE_BUCKET}\`" "${evidence_file}"
           grep -Fq "GitHub token permissions: OIDC only; repository contents unavailable" "${evidence_file}"

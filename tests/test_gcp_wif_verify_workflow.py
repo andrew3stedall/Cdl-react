@@ -4,6 +4,51 @@ WORKFLOW = Path(".github/workflows/gcp-wif-verify.yml")
 RUNBOOK = Path("docs/runbooks/gcp-wif-state-boundary.md")
 
 
+def test_wif_verify_runs_once_when_its_contract_lands_on_main_and_keeps_manual_retry() -> None:
+    content = WORKFLOW.read_text(encoding="utf-8")
+    trigger = content.split("on:", maxsplit=1)[1].split("permissions:", maxsplit=1)[0]
+
+    for phrase in [
+        "push:",
+        "branches:",
+        "- main",
+        "paths:",
+        '- ".github/workflows/gcp-wif-verify.yml"',
+        "workflow_dispatch:",
+    ]:
+        assert phrase in trigger
+
+    assert "pull_request:" not in trigger
+    assert 'test "${GITHUB_REF}" = "refs/heads/main"' in content
+
+
+def test_wif_verify_reports_missing_variable_names_without_printing_values() -> None:
+    content = WORKFLOW.read_text(encoding="utf-8")
+    validation = content.split("- name: Validate required environment variables", maxsplit=1)[
+        1
+    ].split("- name: Authenticate to Google Cloud", maxsplit=1)[0]
+
+    for phrase in [
+        "require_configured_variable",
+        "Missing staging environment variable",
+        "GCP_STAGING_PROJECT_ID",
+        "GCP_STAGING_PROJECT_NUMBER",
+        "GCP_STAGING_WORKLOAD_IDENTITY_PROVIDER",
+        "GCP_STAGING_DEPLOY_SERVICE_ACCOUNT",
+        "GCP_TERRAFORM_STATE_BUCKET",
+    ]:
+        assert phrase in validation
+
+    for secret_value_expansion in [
+        'echo "${PROJECT_ID}"',
+        'echo "${PROJECT_NUMBER}"',
+        'echo "${WORKLOAD_IDENTITY_PROVIDER}"',
+        'echo "${DEPLOY_SERVICE_ACCOUNT}"',
+        'echo "${TERRAFORM_STATE_BUCKET}"',
+    ]:
+        assert secret_value_expansion not in validation
+
+
 def test_wif_verify_uses_only_oidc_token_permission() -> None:
     content = WORKFLOW.read_text(encoding="utf-8")
     permissions = content.split("permissions:", maxsplit=1)[1].split("concurrency:", maxsplit=1)[0]
@@ -53,6 +98,8 @@ def test_wif_verify_retains_exact_reviewable_non_sensitive_identity_evidence() -
         'evidence_file="${RUNNER_TEMP}/gcp-wif-verification.md"',
         'run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"',
         "Source commit:",
+        "Trigger:",
+        'grep -Fq "Trigger: \\`${GITHUB_EVENT_NAME}\\`"',
         "Workload Identity provider:",
         "Terraform state bucket:",
         'grep -Fq "Workload Identity provider: \\`${WORKLOAD_IDENTITY_PROVIDER}\\`"',
@@ -92,5 +139,8 @@ def test_wif_runbook_documents_state_bucket_security_proof() -> None:
         "exact Workload Identity provider path",
         "exact Terraform state bucket name",
         "raw bucket metadata and IAM policy are deleted",
+        "automatically once",
+        "missing variable names",
+        "manual retry",
     ]:
         assert phrase in content

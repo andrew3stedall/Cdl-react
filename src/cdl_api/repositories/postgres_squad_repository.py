@@ -50,6 +50,56 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
                 player.status = "interested"
         return players
 
+    def list_interests(self) -> list[InterestResponse]:
+        with self._session_factory() as session:
+            rows = list(
+                session.execute(
+                    select(
+                        squad_interests_table.c.id,
+                        squad_interests_table.c.player_id,
+                        squad_interests_table.c.gameweek,
+                        squad_interests_table.c.note,
+                    )
+                    .where(
+                        squad_interests_table.c.manager_id == DEMO_MANAGER_ID,
+                        squad_interests_table.c.status == "active",
+                    )
+                    .order_by(squad_interests_table.c.created_at)
+                ).mappings()
+            )
+        return [self._interest_from_row(row) for row in rows]
+
+    def find_active_interest_by_player(self, player_id: str) -> InterestResponse | None:
+        with self._session_factory() as session:
+            row = (
+                session.execute(
+                    select(
+                        squad_interests_table.c.id,
+                        squad_interests_table.c.player_id,
+                        squad_interests_table.c.gameweek,
+                        squad_interests_table.c.note,
+                    ).where(
+                        squad_interests_table.c.manager_id == DEMO_MANAGER_ID,
+                        squad_interests_table.c.player_id == player_id,
+                        squad_interests_table.c.status == "active",
+                    )
+                )
+                .mappings()
+                .first()
+            )
+        return None if row is None else self._interest_from_row(row)
+
+    def _interest_from_row(self, row: object) -> InterestResponse:
+        player = self.get_player(row["player_id"])
+        if player is None:
+            raise ValueError(f"Unknown interest player: {row['player_id']}")
+        player.status = "interested"
+        gameweek_number = int(row["gameweek"])
+        gameweek = self.gameweek.model_copy(
+            update={"id": f"gw-{gameweek_number}", "name": f"Gameweek {gameweek_number}", "number": gameweek_number}
+        )
+        return InterestResponse(id=row["id"], player=player, gameweek=gameweek, note=row["note"] or None)
+
     def save_interest(self, interest: InterestResponse) -> InterestResponse:
         now = datetime.now(UTC)
         with self._session_factory() as session:
@@ -68,7 +118,7 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
                 )
             )
             session.commit()
-        return super().save_interest(interest)
+        return interest
 
     def delete_interest(self, interest_id: str) -> bool:
         with self._session_factory() as session:
@@ -78,7 +128,6 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
                 .values(status="deleted", updated_at=datetime.now(UTC))
             )
             session.commit()
-        super().delete_interest(interest_id)
         return result.rowcount > 0
 
     def list_trades(self) -> list[TradeProposal]:
@@ -168,8 +217,7 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
     def _asset_from_row(self, row: object) -> TradeAsset:
         player = self.get_player(row["player_id"])
         if player is None:
-            msg = f"Unknown trade asset player: {row['player_id']}"
-            raise ValueError(msg)
+            raise ValueError(f"Unknown trade asset player: {row['player_id']}")
         return TradeAsset(
             player=player,
             from_team=self._team_for_id(row["from_team_id"]),

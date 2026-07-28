@@ -2,6 +2,7 @@ from pathlib import Path
 
 APP = Path("src/cdl_api/app.py")
 INVENTORY = Path("docs/testing/release-candidate-inventory.md")
+TESTER_GUIDE = Path("docs/testing/release-candidate-tester-guide.md")
 BROWSER_INTERACTIONS = Path("scripts/test-app-interactions.mjs")
 SQUAD_BROWSER_INTERACTIONS = Path("scripts/test-squad-management-interactions.mjs")
 SQUAD_ROUTER = Path("src/cdl_api/routers/squad.py")
@@ -67,6 +68,27 @@ def test_inventory_records_reproducible_validation_commands() -> None:
         assert command in inventory
     for workflow in ("CI", "Backend PostgreSQL", "App Screenshots"):
         assert f"`{workflow}`" in inventory
+
+
+def test_tester_guide_is_deterministic_and_truthful() -> None:
+    guide = TESTER_GUIDE.read_text(encoding="utf-8")
+    for evidence in (
+        "manager@example.com",
+        "browser-login-secret",
+        "Castle FC",
+        "Casey Midfielder",
+        "Invalid email or password.",
+        "Interest already exists.",
+        "Trade proposal created.",
+        "Invalid lineup.",
+        "Lineup saved and validated.",
+        "deterministic API test doubles",
+        "Live browser-to-PostgreSQL",
+        "Real historical exports are unavailable",
+        "Commit SHA and workflow run",
+        "Do not include secrets",
+    ):
+        assert evidence in guide
 
 
 def test_team_selection_release_evidence_is_focused_and_truthful() -> None:

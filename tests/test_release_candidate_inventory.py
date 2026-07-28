@@ -96,7 +96,7 @@ def test_team_selection_release_evidence_is_focused_and_truthful() -> None:
         assert claim in inventory
 
 
-def test_authenticated_squad_interest_evidence_is_focused_and_truthful() -> None:
+def test_authenticated_squad_mutation_evidence_is_focused_and_truthful() -> None:
     inventory = INVENTORY.read_text(encoding="utf-8")
     browser = SQUAD_BROWSER_INTERACTIONS.read_text(encoding="utf-8")
     router = SQUAD_ROUTER.read_text(encoding="utf-8")
@@ -105,8 +105,11 @@ def test_authenticated_squad_interest_evidence_is_focused_and_truthful() -> None
     required_browser_evidence = (
         "Casey Midfielder added to interests.",
         "Interest already exists.",
+        "Trade proposal created.",
+        "Trade proposal already exists.",
         "Authentication required.",
         "rejected duplicate interest to leave persisted server state unchanged",
+        "rejected duplicate trade to leave persisted server state unchanged",
         "page.reload({ waitUntil: 'networkidle' })",
         "{ width: 390, height: 844 }",
         "{ width: 1440, height: 900 }",
@@ -118,21 +121,28 @@ def test_authenticated_squad_interest_evidence_is_focused_and_truthful() -> None
         "Depends(require_manager_session)",
         '@router.get("/interests"',
         '@router.post("/interests"',
+        '@router.get("/trades"',
+        '@router.post("/trades"',
+        '@router.put("/trades/{trade_id}"',
     ):
         assert evidence in router
 
     for evidence in (
         "PostgreSQLSquadRepository",
         "Interest already exists.",
+        "Invalid trade asset.",
         "assert count == 1",
+        "assert proposal_count == 1",
+        "assert asset_count == 2",
     ):
         assert evidence in postgres_test
 
     required_inventory_claims = (
         "require an authenticated manager session",
-        "duplicate interests are rejected before mutation",
+        "rejects invalid writes before changing stored rows",
         "browser uses a deterministic API test double",
         "PostgreSQL persistence is proved separately by backend CI",
+        "counterparty-specific authorization and transition-conflict evidence",
     )
     for claim in required_inventory_claims:
         assert claim in inventory

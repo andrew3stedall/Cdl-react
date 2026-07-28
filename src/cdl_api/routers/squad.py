@@ -1,9 +1,10 @@
 """Squad management API routes."""
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import JSONResponse
 
 from cdl_api.contracts.common import ErrorCode, ValidationErrorResponse
+from cdl_api.contracts.session import SessionUser
 from cdl_api.contracts.squad import (
     InterestCreateRequest,
     InterestDeleteResponse,
@@ -19,6 +20,8 @@ from cdl_api.contracts.squad import (
     TradeUpdateRequest,
 )
 from cdl_api.repositories.factory import build_repositories
+from cdl_api.routers.auth import get_auth_service
+from cdl_api.services.auth import AuthenticationService
 from cdl_api.services.squad import SquadManagementService, SquadValidationError
 from cdl_api.settings import Settings, get_settings
 
@@ -28,6 +31,19 @@ router = APIRouter(tags=["squad-management"])
 def get_squad_service(settings: Settings = Depends(get_settings)) -> SquadManagementService:
     repositories = build_repositories(settings)
     return SquadManagementService(repositories.squad)
+
+
+def require_manager_session(
+    request: Request,
+    settings: Settings = Depends(get_settings),
+    auth_service: AuthenticationService = Depends(get_auth_service),
+) -> SessionUser:
+    session = auth_service.get_session(request.cookies.get(settings.session_cookie_name))
+    if not session.is_authenticated or session.user is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required.")
+    if "manager" not in session.user.roles:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Manager role required.")
+    return session.user
 
 
 def validation_error_response(exc: SquadValidationError) -> JSONResponse:
@@ -68,9 +84,18 @@ def scouting_players(
     )
 
 
+@router.get("/interests", response_model=list[InterestResponse])
+def list_interests(
+    _: SessionUser = Depends(require_manager_session),
+    service: SquadManagementService = Depends(get_squad_service),
+) -> list[InterestResponse]:
+    return service.list_interests()
+
+
 @router.post("/interests", response_model=InterestResponse)
 def create_interest(
     payload: InterestCreateRequest,
+    _: SessionUser = Depends(require_manager_session),
     service: SquadManagementService = Depends(get_squad_service),
 ) -> InterestResponse | JSONResponse:
     try:
@@ -82,6 +107,7 @@ def create_interest(
 @router.delete("/interests/{interest_id}", response_model=InterestDeleteResponse)
 def delete_interest(
     interest_id: str,
+    _: SessionUser = Depends(require_manager_session),
     service: SquadManagementService = Depends(get_squad_service),
 ) -> InterestDeleteResponse:
     service.delete_interest(interest_id)

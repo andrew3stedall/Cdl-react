@@ -90,12 +90,14 @@ def _clean_prerequisites(connection: Connection) -> None:
 
 def _authenticated_client(
     repository: PostgreSQLSquadRepository,
+    active_manager: dict[str, str] | None = None,
 ) -> TestClient:
+    manager = active_manager or {"id": "manager-1"}
     app = create_app()
     service = SquadManagementService(repository)
     app.dependency_overrides[get_squad_service] = lambda: service
     app.dependency_overrides[require_manager_session] = lambda: SessionUser(
-        id="manager-1",
+        id=manager["id"],
         email="manager@example.com",
         display_name="Manager",
         roles=["manager"],
@@ -158,7 +160,8 @@ def test_authenticated_trade_persists_and_rejection_leaves_state_unchanged() -> 
         _seed_prerequisites(connection)
 
     repository = PostgreSQLSquadRepository(session_factory)
-    client = _authenticated_client(repository)
+    active_manager = {"id": "manager-1"}
+    client = _authenticated_client(repository, active_manager)
 
     try:
         created = client.post(
@@ -185,6 +188,28 @@ def test_authenticated_trade_persists_and_rejection_leaves_state_unchanged() -> 
         assert invalid.status_code == 422
         assert invalid.json()["message"] == "Invalid trade asset."
 
+        unauthorized = client.put(
+            f"/api/trades/{trade_id}",
+            json={"status": "accepted"},
+        )
+        assert unauthorized.status_code == 422
+        assert unauthorized.json()["message"] == "Trade transition is not authorized."
+
+        active_manager["id"] = "manager-rival"
+        accepted = client.put(
+            f"/api/trades/{trade_id}",
+            json={"status": "accepted"},
+        )
+        assert accepted.status_code == 200
+        assert accepted.json()["status"] == "accepted"
+
+        stale = client.put(
+            f"/api/trades/{trade_id}",
+            json={"status": "rejected"},
+        )
+        assert stale.status_code == 422
+        assert stale.json()["message"] == "Trade is no longer pending."
+
         with session_factory() as session:
             proposal_count = session.execute(
                 select(func.count()).select_from(trade_proposals_table)
@@ -192,8 +217,10 @@ def test_authenticated_trade_persists_and_rejection_leaves_state_unchanged() -> 
             asset_count = session.execute(
                 select(func.count()).select_from(trade_assets_table)
             ).scalar_one()
+            stored_status = session.execute(select(trade_proposals_table.c.status)).scalar_one()
         assert proposal_count == 1
         assert asset_count == 2
+        assert stored_status == "accepted"
     finally:
         with engine.begin() as connection:
             connection.execute(text("DELETE FROM trade_assets"))

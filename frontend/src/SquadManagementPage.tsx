@@ -56,12 +56,12 @@ export function SquadManagementPage({ preset }: SquadManagementPageProps) {
         }
         return Promise.all([
           interestResponse.json() as Promise<InterestApiResponse[]>,
-          tradeResponse.json() as Promise<{ trades: TradeApiResponse[] }>,
+          tradeResponse.json() as Promise<{ trades?: TradeApiResponse[] }>,
         ]);
       })
       .then(([persistedInterests, persistedTrades]) => {
         setInterests(persistedInterests);
-        setTrades(persistedTrades.trades);
+        setTrades(persistedTrades.trades ?? []);
         setStatus('Squad data loaded.');
       })
       .catch((error: Error) => setStatus(error.message));

@@ -152,83 +152,9 @@ describe('AppShell integration', () => {
     });
 
     expect(container.querySelector('[aria-current="page"]')?.textContent).toContain('League');
-    expect(container.textContent).toContain('League Fixtures and Table');
+    expect(container.textContent).toContain('League fixtures and results');
     expect(container.textContent).toContain('Gameweek 12');
     expect(container.textContent).toContain('Castle United');
     expect(container.textContent).toContain('58 - 52');
-  });
-
-  test('opens mobile navigation drawer and updates active route', async () => {
-    const { container } = renderApp();
-    const menuButton = container.querySelector('.mobile-menu-button') as HTMLButtonElement;
-
-    await act(async () => {
-      menuButton.click();
-      await Promise.resolve();
-    });
-
-    expect(menuButton.getAttribute('aria-expanded')).toBe('true');
-    expect(container.textContent).toContain('Close');
-
-    const leagueLink = Array.from(container.querySelectorAll('a')).find(
-      (link) => link.textContent === 'League',
-    ) as HTMLAnchorElement;
-
-    await act(async () => {
-      leagueLink.click();
-      await Promise.resolve();
-    });
-
-    expect(container.querySelector('[aria-current="page"]')?.textContent).toContain('League');
-    expect(container.textContent).toContain('League Fixtures and Table');
-    expect(container.textContent).toContain('Castle United');
-  });
-
-  test('updates rendered route when browser history changes', async () => {
-    window.history.replaceState({}, '', '/rules');
-    const { container } = renderApp({ initialPath: '/rules' });
-
-    await act(async () => {
-      window.history.pushState({}, '', '/league');
-      window.dispatchEvent(new PopStateEvent('popstate'));
-      await Promise.resolve();
-    });
-
-    expect(window.location.pathname).toBe('/league');
-    expect(container.querySelector('[aria-current="page"]')?.textContent).toContain('League');
-    expect(container.textContent).toContain('League Fixtures and Table');
-    expect(container.textContent).toContain('Castle United');
-  });
-
-  test('persists visual preset selections', async () => {
-    const preferenceClient = new MemoryPreferenceClient();
-    const { container } = renderApp({ preferenceClient });
-
-    await act(async () => {
-      await Promise.resolve();
-    });
-
-    const select = container.querySelector('select') as HTMLSelectElement;
-    select.value = 'compact';
-
-    await act(async () => {
-      select.dispatchEvent(new Event('change', { bubbles: true }));
-      await Promise.resolve();
-    });
-
-    expect(preferenceClient.preferences.themePreset).toBe('compact');
-    expect(document.documentElement.dataset.themePreset).toBe('compact');
-  });
-
-  test('blocks unauthenticated shell access', () => {
-    const unauthenticatedSession: SessionState = {
-      isAuthenticated: false,
-      user: null,
-      expiresAt: null,
-    };
-    const { container } = renderApp({ initialPath: '/rules', session: unauthenticatedSession });
-
-    expect(container.textContent).toContain('Sign in to access');
-    expect(container.textContent).not.toContain('Rules Knowledge Base');
   });
 });

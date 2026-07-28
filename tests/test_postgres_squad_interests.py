@@ -38,7 +38,7 @@ def _seed_prerequisites(connection: Connection) -> None:
         """,
         """
         INSERT INTO fpl_positions (id, singular_name, plural_name)
-        VALUES ('MID', 'Midfielder', 'Midfielders')
+        VALUES ('MID-INT', 'Interest midfielder', 'Interest midfielders')
         ON CONFLICT (id) DO NOTHING
         """,
         """
@@ -50,7 +50,7 @@ def _seed_prerequisites(connection: Connection) -> None:
         INSERT INTO fpl_players (
             id, first_name, second_name, web_name, position_id, team_id
         )
-        VALUES ('player-3', 'Casey', 'Midfielder', 'Casey', 'MID', 'epl-ars')
+        VALUES ('player-3', 'Casey', 'Midfielder', 'Casey', 'MID-INT', 'epl-ars')
         ON CONFLICT (id) DO NOTHING
         """,
     )

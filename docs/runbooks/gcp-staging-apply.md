@@ -62,6 +62,37 @@ australia-southeast1-docker.pkg.dev/<staging-project>/cdl-react-backend/cdl-reac
 Floating tags are rejected; public access remains disabled through
 `allow_public_invoker=false`.
 
+## Enforced stage order
+
+The workflow refuses to fold an unproven earlier stage into a later apply:
+
+- `foundation` may start from an empty staging application state;
+- `database-jobs` requires the Artifact Registry repository, private frontend bucket,
+  Cloud SQL instance, and runtime and migration identities to already exist in the
+  remote Terraform state; and
+- `runtime` additionally requires both controlled Cloud Run database jobs to already
+  exist in that state.
+
+A missing state address stops the workflow before the reviewed plan is recreated. This
+prevents a `database-jobs` or `runtime` dispatch from silently creating its prerequisites
+in the same apply. State presence is not treated as live proof: Terraform refresh and the
+exact-plan comparison must still pass.
+
+## Live post-apply verification
+
+Before apply evidence is retained, the workflow verifies the resources appropriate to the
+selected cumulative stage directly through authenticated GCP read operations.
+
+Every stage verifies the immutable Artifact Registry repository, runtime and migration
+service accounts, private frontend-assets bucket, and Cloud SQL instance. It also confirms
+that Cloud SQL has no authorized networks. The database-jobs stage additionally verifies
+both migration and synthetic-seed Cloud Run jobs. The runtime stage additionally verifies
+the API service and rejects an IAM policy containing `allUsers` or
+`allAuthenticatedUsers`.
+
+A successful Terraform command without these live checks does not produce successful apply
+evidence. Temporary IAM JSON is deleted and is never uploaded.
+
 ## Exact-plan reproduction boundary
 
 The reviewed artifact intentionally contains no executable plan. The apply workflow:
@@ -93,7 +124,9 @@ The retained seven-day Markdown evidence records:
 - SHA-256 of the reviewed human-readable plan;
 - exact text comparison result;
 - apply completion; and
-- post-apply no-change result.
+- post-apply no-change result;
+- live stage-resource verification; and
+- confirmation that Cloud SQL has no authorized networks.
 
 No executable plan is retained. Binary plans and machine-readable plan JSON are deleted
 from the runner and are never uploaded.

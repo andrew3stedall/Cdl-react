@@ -30,10 +30,7 @@ def test_bootstrap_grants_only_state_bucket_iam_policy_read() -> None:
 
     assert "bucket = google_storage_bucket.terraform_state.name" in binding
     assert "role   = google_project_iam_custom_role.terraform_state_iam_viewer.name" in binding
-    assert (
-        'member = "serviceAccount:${module.staging.deploy_service_account_email}"'
-        in binding
-    )
+    assert 'member = "serviceAccount:${module.staging.deploy_service_account_email}"' in binding
 
 
 def test_existing_state_object_access_remains_separate() -> None:

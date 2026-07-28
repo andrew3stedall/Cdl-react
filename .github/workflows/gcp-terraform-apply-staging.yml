@@ -220,6 +220,35 @@ jobs:
       - name: Terraform init with remote backend
         run: terraform init -input=false
 
+      - name: Enforce cumulative stage prerequisites
+        shell: bash
+        run: |
+          set -euo pipefail
+          state_resources="${RUNNER_TEMP}/staging-state-resources.txt"
+          trap 'rm -f "${state_resources}"' EXIT
+          terraform state list > "${state_resources}"
+
+          require_managed_resource() {
+            local address="$1"
+            if ! grep -Fxq -- "${address}" "${state_resources}"; then
+              echo "Required prior-stage resource is absent from Terraform state: ${address}" >&2
+              exit 1
+            fi
+          }
+
+          if [ "${DEPLOYMENT_STAGE}" != "foundation" ]; then
+            require_managed_resource "module.artifact_registry.google_artifact_registry_repository.this"
+            require_managed_resource "module.frontend_assets.google_storage_bucket.this"
+            require_managed_resource "module.cloud_sql.google_sql_database_instance.this"
+            require_managed_resource "google_service_account.runtime"
+            require_managed_resource "google_service_account.migration"
+          fi
+
+          if [ "${DEPLOYMENT_STAGE}" = "runtime" ]; then
+            require_managed_resource "google_cloud_run_v2_job.database_migration[0]"
+            require_managed_resource "google_cloud_run_v2_job.synthetic_seed[0]"
+          fi
+
       - name: Recreate reviewed staging plan
         id: recreated_plan
         shell: bash
@@ -307,6 +336,76 @@ jobs:
             exit 1
           fi
 
+      - name: Verify applied stage resources and access boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          test "$(gcloud artifacts repositories describe cdl-react-backend \
+            --project="${PROJECT_ID}" \
+            --location=australia-southeast1 \
+            --format='value(name)')" != ""
+
+          test "$(gcloud iam service-accounts describe \
+            "cdl-api-runtime@${PROJECT_ID}.iam.gserviceaccount.com" \
+            --project="${PROJECT_ID}" \
+            --format='value(email)')" = \
+            "cdl-api-runtime@${PROJECT_ID}.iam.gserviceaccount.com"
+
+          test "$(gcloud iam service-accounts describe \
+            "cdl-db-migration@${PROJECT_ID}.iam.gserviceaccount.com" \
+            --project="${PROJECT_ID}" \
+            --format='value(email)')" = \
+            "cdl-db-migration@${PROJECT_ID}.iam.gserviceaccount.com"
+
+          test "$(gcloud storage buckets describe \
+            "gs://${PROJECT_ID}-frontend-assets" \
+            --format='value(name)')" = "${PROJECT_ID}-frontend-assets"
+
+          test "$(gcloud sql instances describe cdl-react-staging-postgres \
+            --project="${PROJECT_ID}" \
+            --format='value(name)')" = "cdl-react-staging-postgres"
+
+          authorized_networks="$(gcloud sql instances describe cdl-react-staging-postgres \
+            --project="${PROJECT_ID}" \
+            --format='value(settings.ipConfiguration.authorizedNetworks[].value)')"
+          test -z "${authorized_networks}"
+
+          if [ "${DEPLOYMENT_STAGE}" != "foundation" ]; then
+            for job in cdl-react-staging-db-migrate cdl-react-staging-synthetic-seed; do
+              test "$(gcloud run jobs describe "${job}" \
+                --project="${PROJECT_ID}" \
+                --region=australia-southeast1 \
+                --format='value(metadata.name)')" = "${job}"
+            done
+          fi
+
+          if [ "${DEPLOYMENT_STAGE}" = "runtime" ]; then
+            test "$(gcloud run services describe cdl-react-staging-api \
+              --project="${PROJECT_ID}" \
+              --region=australia-southeast1 \
+              --format='value(metadata.name)')" = "cdl-react-staging-api"
+
+            runtime_policy="${RUNNER_TEMP}/runtime-service-iam.json"
+            trap 'rm -f "${runtime_policy}"' EXIT
+            gcloud run services get-iam-policy cdl-react-staging-api \
+              --project="${PROJECT_ID}" \
+              --region=australia-southeast1 \
+              --format=json > "${runtime_policy}"
+            python - "${runtime_policy}" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          policy = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          public_members = {"allUsers", "allAuthenticatedUsers"}
+          assert not any(
+              public_members.intersection(binding.get("members") or [])
+              for binding in (policy.get("bindings") or [])
+          )
+          PY
+          fi
+
       - name: Create reviewable apply evidence
         id: evidence
         shell: bash
@@ -332,6 +431,8 @@ jobs:
             echo "- Automated plan safety gate: passed"
             echo "- Terraform apply: completed"
             echo "- Post-apply no-change plan: passed"
+            echo "- Live stage resource verification: passed"
+            echo "- Cloud SQL authorized networks: none"
             echo "- Public invoker requested: false"
             echo "- Executable and machine-readable plans retained: no"
           } > "${evidence_file}"

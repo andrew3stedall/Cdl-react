@@ -40,9 +40,15 @@ def require_manager_session(
 ) -> SessionUser:
     session = auth_service.get_session(request.cookies.get(settings.session_cookie_name))
     if not session.is_authenticated or session.user is None:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required.")
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required.",
+        )
     if "manager" not in session.user.roles:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Manager role required.")
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Manager role required.",
+        )
     return session.user
 
 

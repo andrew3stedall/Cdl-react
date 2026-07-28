@@ -584,6 +584,7 @@ async function testShellAndLeagueNavigation(page, viewportName) {
 }
 
 async function testUnauthenticatedGuard(page, viewportName) {
+  await page.reload({ waitUntil: 'networkidle' });
   await page.goto(baseUrl + '/team-selection', { waitUntil: 'networkidle' });
   await expectPath(page, '/login');
   await page.getByRole('heading', { name: 'Sign in to CDL Manager' }).waitFor();

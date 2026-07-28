@@ -6,6 +6,21 @@ This note defines the additional read-only evidence required from **GCP WIF Veri
 
 The workflow must prove that the configured federation values and Terraform state bucket belong to the intended staging boundary. Visibility alone is insufficient because a readable bucket could be in the wrong project, have weaker protection settings than the applied bootstrap baseline, or contain unexpected IAM bindings.
 
+## Trigger boundary
+
+The workflow runs automatically once when its own workflow file lands on `main`. The push trigger is restricted to:
+
+```text
+branch: main
+path: .github/workflows/gcp-wif-verify.yml
+```
+
+It does not run for pull requests, unrelated pushes, or production refs. A manual `workflow_dispatch` trigger remains available for a manual retry after a configuration correction.
+
+This removes the Actions-tab click from the first read-only proof without turning verification into a recurring deployment workflow. The trusted-ref check still requires `refs/heads/main`, and the job retains only `id-token: write`.
+
+If a required GitHub `staging` environment value is absent, the failed run reports the missing variable names without printing any configured values. This makes the external configuration gap actionable while preserving the credential boundary.
+
 ## Required proof
 
 A successful run confirms:
@@ -36,6 +51,7 @@ A successful run uploads one reviewable Markdown artifact for seven days. It rec
 
 - the exact source commit;
 - the workflow run URL;
+- whether the run used the automatic push trigger or a manual retry;
 - the trusted `main` ref;
 - the staging project and project number;
 - the exact Workload Identity provider path;
@@ -60,9 +76,10 @@ The IAM check covers explicit bucket-policy bindings. Project-level inherited pe
 ## Operator sequence
 
 1. Confirm the five GitHub `staging` environment variables match the applied bootstrap outputs.
-2. Run **GCP WIF Verify** manually from `main`.
-3. Confirm the artifact records the intended provider path and `gs://` state bucket before accepting it as evidence.
-4. Retain the seven-day verification artifact and record its workflow run in issues #70 and #78.
-5. Only then run **GCP Terraform Staging** to create the first authenticated saved plan.
+2. Merge the reviewed workflow change; **GCP WIF Verify** then runs automatically once from `main`.
+3. If the run reports missing variable names or a boundary mismatch, correct only that external configuration or live drift and use the manual retry.
+4. Confirm the successful artifact records the intended provider path and `gs://` state bucket.
+5. Record the seven-day verification artifact and workflow run in issues #70 and #78.
+6. Only then run **GCP Terraform Staging** to create the first authenticated saved plan.
 
 A failed boundary check requires correcting the GitHub environment value or reconciling live bootstrap drift before retrying. Do not weaken the check to accommodate an unexpected live state.

@@ -78,7 +78,9 @@ export async function login(request: LoginRequest): Promise<AuthResult<LoginResp
   }
 
   const loginResponse = payload as ApiLoginResponse;
-  return { ok: true, data: { session: mapSession(loginResponse.session) } };
+  const session = mapSession(loginResponse.session);
+  replaceBrowserPath('/');
+  return { ok: true, data: { session } };
 }
 
 export async function getSession(): Promise<SessionState> {
@@ -87,10 +89,15 @@ export async function getSession(): Promise<SessionState> {
   });
 
   if (!response.ok) {
+    replaceBrowserPath('/login');
     return getUnauthenticatedSession();
   }
 
-  return mapSession((await response.json()) as ApiSessionState);
+  const session = mapSession((await response.json()) as ApiSessionState);
+  if (!canAccessProtectedRoute(session)) {
+    replaceBrowserPath('/login');
+  }
+  return session;
 }
 
 export async function logout(): Promise<LogoutResponse> {
@@ -99,7 +106,9 @@ export async function logout(): Promise<LogoutResponse> {
     credentials: 'include',
   });
   const payload = (await response.json()) as ApiLogoutResponse;
-  return { session: mapSession(payload.session) };
+  const session = mapSession(payload.session);
+  replaceBrowserPath('/login');
+  return { session };
 }
 
 export const defaultSessionClient: SessionClient = {
@@ -107,6 +116,11 @@ export const defaultSessionClient: SessionClient = {
   login,
   logout,
 };
+
+function replaceBrowserPath(path: string): void {
+  if (typeof window === 'undefined' || window.location.pathname === path) return;
+  window.history.replaceState({}, '', path);
+}
 
 function mapSession(session: ApiSessionState): SessionState {
   return {

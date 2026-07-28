@@ -41,7 +41,7 @@ export function LeaguePage({ leagueClient = defaultLeagueClient }: LeaguePagePro
     <main aria-labelledby="league-title" className="feature-screen">
       <header>
         <p className="eyebrow">Castle Draft League</p>
-        <h1 id="league-title">League Fixtures and Table</h1>
+        <h1 id="league-title">League fixtures and results</h1>
         <p>Current fixtures, upcoming fixtures, standings, knockout, and head-to-head context.</p>
       </header>
 
@@ -76,32 +76,32 @@ function LeagueContent({ snapshot }: { snapshot: LeagueSnapshot }) {
             <thead>
               <tr>
                 <th>Pos</th>
-              <th>Team</th>
-              <th>P</th>
-              <th>W</th>
-              <th>D</th>
-              <th>L</th>
-              <th>PF</th>
-              <th>PA</th>
-              <th>+/-</th>
-              <th>Pts</th>
-            </tr>
-          </thead>
-          <tbody>
-            {snapshot.table.rows.map((row) => (
-              <tr key={row.team.id}>
-                <td>{row.position}</td>
-                <td>{row.team.name}</td>
-                <td>{row.played}</td>
-                <td>{row.wins}</td>
-                <td>{row.draws}</td>
-                <td>{row.losses}</td>
-                <td>{row.pointsFor}</td>
-                <td>{row.pointsAgainst}</td>
-                <td>{row.pointsDifference}</td>
-                <td>{row.leaguePoints}</td>
+                <th>Team</th>
+                <th>P</th>
+                <th>W</th>
+                <th>D</th>
+                <th>L</th>
+                <th>PF</th>
+                <th>PA</th>
+                <th>+/-</th>
+                <th>Pts</th>
               </tr>
-            ))}
+            </thead>
+            <tbody>
+              {snapshot.table.rows.map((row) => (
+                <tr key={row.team.id}>
+                  <td>{row.position}</td>
+                  <td>{row.team.name}</td>
+                  <td>{row.played}</td>
+                  <td>{row.wins}</td>
+                  <td>{row.draws}</td>
+                  <td>{row.losses}</td>
+                  <td>{row.pointsFor}</td>
+                  <td>{row.pointsAgainst}</td>
+                  <td>{row.pointsDifference}</td>
+                  <td>{row.leaguePoints}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>

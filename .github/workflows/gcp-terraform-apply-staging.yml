@@ -6,7 +6,9 @@ on:
       - "infra/terraform/**"
       - ".github/workflows/gcp-terraform-apply-staging.yml"
       - "src/cdl_api/terraform_plan_summary.py"
+      - "src/cdl_api/terraform_plan_manifest.py"
       - "tests/test_gcp_staging_apply_workflow.py"
+      - "tests/test_terraform_plan_manifest.py"
       - "tests/test_gcp_staging_apply_gcloud_setup.py"
   workflow_dispatch:
     inputs:
@@ -179,8 +181,10 @@ jobs:
           set -euo pipefail
           reviewed_plan="${RUNNER_TEMP}/reviewed-plan/staging-plan.txt"
           reviewed_summary="${RUNNER_TEMP}/reviewed-plan/staging-plan-summary.md"
+          reviewed_manifest="${RUNNER_TEMP}/reviewed-plan/staging-plan-manifest.json"
           test -s "${reviewed_plan}"
           test -s "${reviewed_summary}"
+          test -s "${reviewed_manifest}"
 
           python - \
             "${reviewed_summary}" \
@@ -205,6 +209,23 @@ jobs:
         with:
           ref: ${{ inputs.reviewed_source_sha }}
           persist-credentials: false
+
+      - name: Verify exact reviewed plan manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          python "${GITHUB_WORKSPACE}/src/cdl_api/terraform_plan_manifest.py" verify \
+            --manifest "${RUNNER_TEMP}/reviewed-plan/staging-plan-manifest.json" \
+            --plan-text "${RUNNER_TEMP}/reviewed-plan/staging-plan.txt" \
+            --backend-config "${GITHUB_WORKSPACE}/infra/terraform/environments/staging/backend.tf" \
+            --source-sha "${REVIEWED_SOURCE_SHA}" \
+            --run-id "${REVIEWED_PLAN_RUN_ID}" \
+            --deployment-stage "${DEPLOYMENT_STAGE}" \
+            --project-id "${PROJECT_ID}" \
+            --state-bucket "${TERRAFORM_STATE_BUCKET}" \
+            --backend-image "${BACKEND_IMAGE}" \
+            --enable-database-jobs "${ENABLE_DATABASE_JOBS}" \
+            --enable-cloud-run "${ENABLE_CLOUD_RUN}"
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v3
@@ -421,6 +442,9 @@ jobs:
           reviewed_plan_sha="$(
             sha256sum "${RUNNER_TEMP}/reviewed-plan/staging-plan.txt" | cut -d' ' -f1
           )"
+          reviewed_manifest_sha="$(
+            sha256sum "${RUNNER_TEMP}/reviewed-plan/staging-plan-manifest.json" | cut -d' ' -f1
+          )"
           run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
 
           {
@@ -433,6 +457,8 @@ jobs:
             echo "- Backend image: \`${BACKEND_IMAGE_LABEL}\`"
             echo "- Approval reference: ${APPROVAL_REFERENCE}"
             echo "- Reviewed human-readable plan SHA-256: \`${reviewed_plan_sha}\`"
+            echo "- Reviewed plan manifest SHA-256: \`${reviewed_manifest_sha}\`"
+            echo "- Reviewed plan manifest identity: verified"
             echo "- Recreated plan exact-text comparison: passed"
             echo "- Automated plan safety gate: passed"
             echo "- Terraform apply: completed"

@@ -38,6 +38,10 @@ def test_authenticated_plan_saves_and_uploads_only_reviewable_evidence() -> None
         "retention-days: 7",
         "staging-plan.txt",
         "staging-plan-summary.md",
+        "staging-plan-manifest.json",
+        "terraform_plan_manifest.py",
+        "Create immutable plan identity manifest",
+        '"schema_version": "staging-terraform-plan/v1"',
         "steps.evidence.outcome == 'success'",
         "steps.plan_summary.outcome == 'failure'",
         "steps.evidence.outcome == 'failure'",
@@ -51,6 +55,28 @@ def test_authenticated_plan_saves_and_uploads_only_reviewable_evidence() -> None
     assert ".tfplan" not in artifact_section
     assert "staging-plan.json" not in artifact_section
     assert "terraform apply" not in content
+
+
+def test_plan_manifest_is_created_before_executable_plan_cleanup() -> None:
+    content = WORKFLOW.read_text(encoding="utf-8")
+
+    manifest_index = content.index("- name: Create immutable plan identity manifest")
+    cleanup_index = content.index("- name: Remove machine-readable and executable plan files")
+    evidence_index = content.index("- name: Verify reviewable plan evidence completeness")
+    upload_index = content.index("- name: Upload reviewable plan evidence")
+
+    assert manifest_index < cleanup_index < evidence_index < upload_index
+    for phrase in [
+        '--source-sha "${GITHUB_SHA}"',
+        '--run-id "${GITHUB_RUN_ID}"',
+        '--deployment-stage "${DEPLOYMENT_STAGE}"',
+        '--state-bucket "${TERRAFORM_STATE_BUCKET}"',
+        '--backend-image "${BACKEND_IMAGE}"',
+        '--enable-database-jobs "${ENABLE_DATABASE_JOBS}"',
+        '--enable-cloud-run "${ENABLE_CLOUD_RUN}"',
+        "steps.manifest.outcome == 'failure'",
+    ]:
+        assert phrase in content
 
 
 def test_plan_evidence_upload_fails_closed_when_summary_is_missing() -> None:

@@ -144,10 +144,13 @@ def create_trade(
 def update_trade(
     trade_id: str,
     payload: TradeUpdateRequest,
-    _: SessionUser = Depends(require_manager_session),
+    user: SessionUser = Depends(require_manager_session),
     service: SquadManagementService = Depends(get_squad_service),
 ) -> TradeProposal | JSONResponse:
-    trade = service.update_trade(trade_id, payload.status)
+    try:
+        trade = service.update_trade(trade_id, payload.status, user.id)
+    except SquadValidationError as exc:
+        return validation_error_response(exc)
     if trade is None:
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,

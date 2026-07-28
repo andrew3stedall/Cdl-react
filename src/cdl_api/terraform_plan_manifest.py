@@ -37,7 +37,10 @@ def build_manifest(
     enable_database_jobs: bool,
     enable_cloud_run: bool,
 ) -> dict[str, Any]:
-    if len(source_sha) != 40 or any(character not in "0123456789abcdef" for character in source_sha):
+    valid_source_sha = len(source_sha) == 40 and all(
+        character in "0123456789abcdef" for character in source_sha
+    )
+    if not valid_source_sha:
         raise ValueError("source_sha must be 40 lowercase hexadecimal characters")
     if not run_id.isdigit():
         raise ValueError("run_id must be numeric")

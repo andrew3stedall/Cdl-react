@@ -97,6 +97,10 @@ export function AppShell({
             aria-label="Shell actions"
             className="shell-actions"
           >
+            <Button onClick={onSignOut} type="button" variant="ghost">
+              <LogOut aria-hidden="true" size={16} />
+              Sign out
+            </Button>
             <Button onClick={onRefresh} type="button" variant="secondary">
               <RefreshCw aria-hidden="true" size={16} />
               Reload
@@ -113,10 +117,6 @@ export function AppShell({
               Scouting
             </a>
             <PresetSelector preset={preset} saveStatus={saveStatus} setPresetName={setPresetName} />
-            <Button onClick={onSignOut} type="button" variant="ghost">
-              <LogOut aria-hidden="true" size={16} />
-              Sign out
-            </Button>
           </div>
         </header>
 

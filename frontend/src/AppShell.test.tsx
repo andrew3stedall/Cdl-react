@@ -170,12 +170,12 @@ describe('AppShell integration', () => {
     expect(menuButton.getAttribute('aria-expanded')).toBe('true');
     expect(container.textContent).toContain('Close');
 
-    const leagueButton = Array.from(container.querySelectorAll('button')).find(
-      (button) => button.textContent === 'League',
-    ) as HTMLButtonElement;
+    const leagueLink = Array.from(container.querySelectorAll('a')).find(
+      (link) => link.textContent === 'League',
+    ) as HTMLAnchorElement;
 
     await act(async () => {
-      leagueButton.click();
+      leagueLink.click();
       await Promise.resolve();
     });
 

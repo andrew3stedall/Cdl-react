@@ -71,9 +71,7 @@ class SquadManagementService:
                 rule_reference=SQUAD_SIZE_RULE,
             )
             raise SquadValidationError("Player already in squad.", [issue])
-        existing_interest = self._repository.find_active_interest_by_player(
-            request.player_id
-        )
+        existing_interest = self._repository.find_active_interest_by_player(request.player_id)
         if existing_interest is not None:
             issue = ValidationIssue(
                 field="player_id",
@@ -96,13 +94,9 @@ class SquadManagementService:
         return self._repository.list_trades()
 
     def create_trade(self, request: TradeCreateRequest) -> TradeProposal:
-        sent_players = [
-            self._require_player(player_id)
-            for player_id in request.offered_player_ids
-        ]
+        sent_players = [self._require_player(player_id) for player_id in request.offered_player_ids]
         wanted_players = [
-            self._require_player(player_id)
-            for player_id in request.requested_player_ids
+            self._require_player(player_id) for player_id in request.requested_player_ids
         ]
         for player in sent_players:
             if player.draft_team != self._repository.manager_team:

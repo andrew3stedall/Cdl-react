@@ -15,7 +15,6 @@ AUTH = Path("frontend/src/auth.ts")
 
 def test_screenshot_runbook_explains_github_artifacts() -> None:
     content = RUNBOOK.read_text(encoding="utf-8")
-
     assert "App Screenshots" in content
     assert "app-screenshots" in content
     assert "does not require GCP" in content
@@ -28,7 +27,6 @@ def test_screenshot_runbook_explains_github_artifacts() -> None:
 
 def test_screenshot_workflow_uploads_artifact_without_deploying() -> None:
     content = WORKFLOW.read_text(encoding="utf-8")
-
     assert "actions/upload-artifact" in content
     assert "axe-core" in content
     assert "Test primary interactions" in content
@@ -39,10 +37,8 @@ def test_screenshot_workflow_uploads_artifact_without_deploying() -> None:
 
 def test_screenshot_script_captures_core_routes() -> None:
     content = SCRIPT.read_text(encoding="utf-8")
-
     for route in ["/", "/league", "/dashboard", "/fdr", "/squad-management", "/team-selection"]:
         assert route in content
-
     assert "chromium.launch" in content
     assert "page.screenshot" in content
     assert "mobile" in content
@@ -60,7 +56,6 @@ def test_screenshot_script_captures_core_routes() -> None:
 def test_league_tables_are_contained_on_narrow_screens() -> None:
     league_page = LEAGUE_PAGE.read_text(encoding="utf-8")
     styles = STYLES.read_text(encoding="utf-8")
-
     assert league_page.count('className="responsive-table"') == 2
     assert 'role="region"' in league_page
     assert "tabIndex={0}" in league_page
@@ -73,7 +68,6 @@ def test_league_tables_are_contained_on_narrow_screens() -> None:
 
 def test_interaction_script_exercises_team_selection_validation() -> None:
     content = INTERACTION_SCRIPT.read_text(encoding="utf-8")
-
     assert "/team-selection" in content
     assert "Move Alex Keeper" in content
     assert "Invalid lineup." in content
@@ -88,7 +82,6 @@ def test_interaction_script_exercises_team_selection_validation() -> None:
 
 def test_interaction_script_exercises_squad_management_journey() -> None:
     content = INTERACTION_SCRIPT.read_text(encoding="utf-8")
-
     assert "/squad-management" in content
     assert "Search players" in content
     assert "Casey Midfielder added to interests." in content
@@ -99,7 +92,6 @@ def test_interaction_script_exercises_squad_management_journey() -> None:
 
 def test_interaction_script_exercises_dashboard_and_fdr_at_two_widths() -> None:
     content = INTERACTION_SCRIPT.read_text(encoding="utf-8")
-
     assert "/dashboard" in content
     assert "Castle FC drill-down" in content
     assert "Casey Midfielder" in content
@@ -114,13 +106,13 @@ def test_interaction_script_exercises_dashboard_and_fdr_at_two_widths() -> None:
 
 def test_interaction_script_exercises_shell_navigation_and_history() -> None:
     content = INTERACTION_SCRIPT.read_text(encoding="utf-8")
-
     assert "/rules" in content
-    assert "Navigation" in content
+    assert "Primary navigation" in content
     assert "aria-expanded" in content
-    assert "aria-current" in content
-    assert "page.goBack()" in content
-    assert "expectPath(page, '/league')" in content
+    assert "expectPath(page, '/league/fixtures')" in content
+    assert "expectPath(page, '/league/table')" in content
+    assert "expectPath(page, '/league/knockout')" in content
+    assert "expectPath(page, '/league/head-to-head')" in content
 
 
 def test_browser_journey_exercises_protected_session_boundary() -> None:
@@ -129,15 +121,13 @@ def test_browser_journey_exercises_protected_session_boundary() -> None:
     app = APP.read_text(encoding="utf-8")
     main = MAIN.read_text(encoding="utf-8")
     auth = AUTH.read_text(encoding="utf-8")
-
     assert "/api/auth/session" in interactions
     assert "/api/auth/session" in screenshots
     assert "screenshotSession" in screenshots
     assert "authenticated: false" in interactions
-    assert "Sign in to access" in interactions
-    assert "protected team-selection controls to stay hidden" in interactions
+    assert "Sign in to CDL Manager" in interactions
+    assert "await expectPath(page, '/login')" in interactions
     assert "expireSession" in interactions
-    assert "Retry session" in interactions
     assert "/api/auth/logout" in interactions
     assert "is_authenticated" in auth
     assert "display_name" in auth
@@ -152,21 +142,20 @@ def test_browser_journey_exercises_protected_session_boundary() -> None:
     assert "current-password" in app
     assert "Invalid email or password." in interactions
     assert "browser-login-secret" in interactions
-    assert "testLoginJourney(browser, viewport)" in interactions
+    assert "testLoginAndLogout(page, api, viewportName)" in interactions
 
 
 def test_team_selection_consumes_api_lock_state() -> None:
     interactions = INTERACTION_SCRIPT.read_text(encoding="utf-8")
     api_client = TEAM_SELECTION_API.read_text(encoding="utf-8")
     page = TEAM_SELECTION_PAGE.read_text(encoding="utf-8")
-
     assert "/api/team-selection" in interactions
     assert "/api/team-selection/fixtures-summary" in interactions
     assert "Harbour Athletic vs Mountain United" in interactions
     assert "Castle FC vs Rival Town" not in page
     assert "teamSelectionLocked" in interactions
-    assert "View-only lineup" in interactions
-    assert "controls.every" in interactions
+    assert "Team selection is locked for this gameweek." in interactions
+    assert "testLockedTeamSelection(page)" in interactions
     assert "fixtureLock" in api_client
     assert "HttpTeamSelectionClient" in api_client
     assert "fixtureLock.locked" in page

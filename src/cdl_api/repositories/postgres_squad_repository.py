@@ -96,9 +96,18 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
         player.status = "interested"
         gameweek_number = int(row["gameweek"])
         gameweek = self.gameweek.model_copy(
-            update={"id": f"gw-{gameweek_number}", "name": f"Gameweek {gameweek_number}", "number": gameweek_number}
+            update={
+                "id": f"gw-{gameweek_number}",
+                "name": f"Gameweek {gameweek_number}",
+                "number": gameweek_number,
+            }
         )
-        return InterestResponse(id=row["id"], player=player, gameweek=gameweek, note=row["note"] or None)
+        return InterestResponse(
+            id=row["id"],
+            player=player,
+            gameweek=gameweek,
+            note=row["note"] or None,
+        )
 
     def save_interest(self, interest: InterestResponse) -> InterestResponse:
         now = datetime.now(UTC)
@@ -134,7 +143,9 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
         with self._session_factory() as session:
             trade_ids = list(
                 session.execute(
-                    select(trade_proposals_table.c.id).order_by(trade_proposals_table.c.created_at)
+                    select(trade_proposals_table.c.id).order_by(
+                        trade_proposals_table.c.created_at
+                    )
                 ).scalars()
             )
         trades = [self._get_trade(trade_id) for trade_id in trade_ids]
@@ -168,7 +179,11 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
             session.commit()
         return trade
 
-    def update_trade_status(self, trade_id: str, status: TradeStatus) -> TradeProposal | None:
+    def update_trade_status(
+        self,
+        trade_id: str,
+        status: TradeStatus,
+    ) -> TradeProposal | None:
         with self._session_factory() as session:
             result = session.execute(
                 update(trade_proposals_table)

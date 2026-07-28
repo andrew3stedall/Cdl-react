@@ -89,6 +89,43 @@ def test_apply_workflow_preserves_cumulative_stage_and_image_boundaries() -> Non
         assert phrase in content
 
 
+def test_apply_workflow_enforces_prior_stages_and_verifies_live_resources() -> None:
+    content = WORKFLOW.read_text(encoding="utf-8")
+
+    prerequisite_index = content.index("- name: Enforce cumulative stage prerequisites")
+    recreate_index = content.index("- name: Recreate reviewed staging plan")
+    apply_index = content.index("- name: Apply exact recreated saved plan")
+    verify_index = content.index("- name: Verify applied stage resources and access boundary")
+    evidence_index = content.index("- name: Create reviewable apply evidence")
+
+    assert prerequisite_index < recreate_index < apply_index < verify_index < evidence_index
+
+    for phrase in [
+        "terraform state list",
+        "Required prior-stage resource is absent from Terraform state",
+        "module.artifact_registry.google_artifact_registry_repository.this",
+        "module.frontend_assets.google_storage_bucket.this",
+        "module.cloud_sql.google_sql_database_instance.this",
+        "google_service_account.runtime",
+        "google_service_account.migration",
+        "google_cloud_run_v2_job.database_migration[0]",
+        "google_cloud_run_v2_job.synthetic_seed[0]",
+        "gcloud artifacts repositories describe cdl-react-backend",
+        "cdl-api-runtime@${PROJECT_ID}.iam.gserviceaccount.com",
+        "cdl-db-migration@${PROJECT_ID}.iam.gserviceaccount.com",
+        "gs://${PROJECT_ID}-frontend-assets",
+        "gcloud sql instances describe cdl-react-staging-postgres",
+        "settings.ipConfiguration.authorizedNetworks[].value",
+        "gcloud run jobs describe",
+        "gcloud run services describe cdl-react-staging-api",
+        "gcloud run services get-iam-policy cdl-react-staging-api",
+        '{"allUsers", "allAuthenticatedUsers"}',
+        "Live stage resource verification: passed",
+        "Cloud SQL authorized networks: none",
+    ]:
+        assert phrase in content
+
+
 def test_apply_workflow_retains_only_reviewable_apply_evidence() -> None:
     content = WORKFLOW.read_text(encoding="utf-8")
 

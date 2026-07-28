@@ -37,12 +37,6 @@ jobs:
           done
           cat vite-preview.log
           exit 1
-      - name: Capture primary interaction diagnostic
-        run: node scripts/test-app-interactions.mjs > primary-browser-diagnostic.txt 2>&1 || true
-      - uses: actions/upload-artifact@v4
-        with:
-          name: primary-browser-diagnostic
-          path: primary-browser-diagnostic.txt
       - name: Test primary interactions
         run: node scripts/test-app-interactions.mjs
       - name: Test squad mutation persistence

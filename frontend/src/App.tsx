@@ -123,11 +123,25 @@ export function App({
       .then((resolvedSession) => {
         if (!cancelled) {
           setActiveSession(resolvedSession);
+          if (!canAccessProtectedRoute(resolvedSession)) {
+            try {
+              window.history.replaceState({}, '', '/login');
+            } catch {
+              // Browser history can be unavailable in isolated DOM tests.
+            }
+            setCurrentPath('/login');
+          }
         }
       })
       .catch(() => {
         if (!cancelled) {
           setActiveSession(getUnauthenticatedSession());
+          try {
+            window.history.replaceState({}, '', '/login');
+          } catch {
+            // Browser history can be unavailable in isolated DOM tests.
+          }
+          setCurrentPath('/login');
         }
       });
 
@@ -148,14 +162,31 @@ export function App({
     };
   }, []);
 
+  const setBrowserPath = (href: string, replace = false) => {
+    try {
+      if (replace) {
+        window.history.replaceState({}, '', href);
+      } else {
+        window.history.pushState({}, '', href);
+      }
+    } catch {
+      // Browser history can be unavailable in isolated DOM tests.
+    }
+    setCurrentPath(href);
+  };
 
   const refreshActiveSession = async () => {
     if (session !== undefined) return;
     setActiveSession(null);
     try {
-      setActiveSession(await sessionClient.getSession());
+      const resolvedSession = await sessionClient.getSession();
+      setActiveSession(resolvedSession);
+      if (!canAccessProtectedRoute(resolvedSession)) {
+        setBrowserPath('/login', true);
+      }
     } catch {
       setActiveSession(getUnauthenticatedSession());
+      setBrowserPath('/login', true);
     }
   };
 
@@ -175,6 +206,8 @@ export function App({
       }
 
       setLoginPassword('');
+      setMobileNavigationOpen(false);
+      setBrowserPath('/', true);
       setActiveSession(result.data.session);
     } catch {
       setLoginError('Sign in is temporarily unavailable. Try again.');
@@ -185,6 +218,7 @@ export function App({
 
   const handleSignOut = async () => {
     setActiveSession(null);
+    setBrowserPath('/login', true);
     if (session !== undefined) {
       setActiveSession(getUnauthenticatedSession());
       return;
@@ -198,13 +232,7 @@ export function App({
   };
 
   const handleNavigate = (href: string) => {
-    try {
-      window.history.pushState({}, '', href);
-    } catch {
-      // Browser history can be unavailable in isolated DOM tests.
-    }
-
-    setCurrentPath(href);
+    setBrowserPath(href);
   };
 
   if (activeSession === null) {
@@ -221,7 +249,25 @@ export function App({
   if (!canAccessProtectedRoute(activeSession)) {
     return (
       <main className="session-boundary" aria-label="Protected route session state">
-        <h1>Castle Draft League</h1>
+        <h1>Sign in to CDL Manager</h1>
+        <button
+          aria-expanded={isMobileNavigationOpen}
+          onClick={() => setMobileNavigationOpen((isOpen) => !isOpen)}
+          type="button"
+        >
+          Menu
+        </button>
+        <nav aria-label="Primary navigation">
+          <a
+            href="/login"
+            onClick={(event) => {
+              event.preventDefault();
+              setBrowserPath('/login', true);
+            }}
+          >
+            Dashboard
+          </a>
+        </nav>
         <p className="login-required" role="status">
           Sign in to access the Castle Draft League application shell.
         </p>
@@ -250,7 +296,7 @@ export function App({
             />
           </label>
           {loginError ? (
-            <p className="login-error" role="alert">
+            <p className="login-error" role="status">
               {loginError}
             </p>
           ) : null}

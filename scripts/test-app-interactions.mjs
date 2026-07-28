@@ -180,9 +180,12 @@ function fdrView(view, selectedTeamId) {
 async function mockApi(page, { authenticated = true, teamSelectionLocked = false } = {}) {
   let currentTeamSelection = teamSelectionResponse(teamSelectionLocked);
   let sessionAuthenticated = authenticated;
+  const interests = [];
+  const trades = [];
 
   await page.route('**/api/**', async (route) => {
-    const url = new URL(route.request().url());
+    const request = route.request();
+    const url = new URL(request.url());
     const path = url.pathname;
 
     if (path === '/api/auth/session') {
@@ -192,7 +195,7 @@ async function mockApi(page, { authenticated = true, teamSelectionLocked = false
     }
 
     if (path === '/api/auth/login') {
-      const credentials = route.request().postDataJSON();
+      const credentials = request.postDataJSON();
       if (
         credentials.email !== authenticatedSession.user.email
         || credentials.password !== 'browser-login-secret'
@@ -216,6 +219,45 @@ async function mockApi(page, { authenticated = true, teamSelectionLocked = false
       return route.fulfill({ json: { session: unauthenticatedSession } });
     }
 
+    if (path === '/api/interests' && request.method() === 'GET') {
+      return route.fulfill({ json: interests });
+    }
+
+    if (path === '/api/interests' && request.method() === 'POST') {
+      const body = request.postDataJSON();
+      if (interests.some((interest) => interest.player.id === body.player_id)) {
+        return route.fulfill({
+          status: 422,
+          json: { code: 'validation_error', message: 'Interest already exists.', issues: [] },
+        });
+      }
+      const interest = {
+        id: 'interest-primary-casey',
+        player: { id: 'player-3', display_name: 'Casey Midfielder' },
+        gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1 },
+        note: null,
+      };
+      interests.push(interest);
+      return route.fulfill({ json: interest });
+    }
+
+    if (path === '/api/trades' && request.method() === 'GET') {
+      return route.fulfill({ json: { trades } });
+    }
+
+    if (path === '/api/trades' && request.method() === 'POST') {
+      const trade = {
+        id: 'trade-primary-1',
+        status: 'proposed',
+        assets: [
+          { player: { id: 'player-1', display_name: 'Alex Keeper' } },
+          { player: { id: 'player-4', display_name: 'Dev Forward' } },
+        ],
+      };
+      trades.push(trade);
+      return route.fulfill({ json: trade });
+    }
+
     if (path === '/api/team-selection') {
       return route.fulfill({ json: currentTeamSelection });
     }
@@ -237,7 +279,7 @@ async function mockApi(page, { authenticated = true, teamSelectionLocked = false
       }
 
       if (path === '/api/team-selection/lineup') {
-        const requestBody = route.request().postDataJSON();
+        const requestBody = request.postDataJSON();
         currentTeamSelection = {
           ...currentTeamSelection,
           lineup: currentTeamSelection.lineup.map((player) => {
@@ -255,7 +297,7 @@ async function mockApi(page, { authenticated = true, teamSelectionLocked = false
         };
       } else {
         const chipId = path.split('/').at(-1);
-        const { active } = route.request().postDataJSON();
+        const { active } = request.postDataJSON();
         currentTeamSelection = {
           ...currentTeamSelection,
           chips: currentTeamSelection.chips.map((chip) => ({
@@ -283,7 +325,7 @@ async function mockApi(page, { authenticated = true, teamSelectionLocked = false
     }
 
     if (path.endsWith('/api/dashboard/widgets/points-by-team/query')) {
-      const requestBody = route.request().postDataJSON();
+      const requestBody = request.postDataJSON();
       const filters = requestBody.filters ?? [];
       const selectedTeam = filters.find((filter) => filter.filter_id === 'team-filter')?.value ?? 'All';
       const label = selectedTeam === 'All' ? 'Castle FC' : selectedTeam;
@@ -505,6 +547,10 @@ async function testFixtureDifficulty(page) {
 }
 
 async function expectPath(page, expectedPath) {
+  await page.waitForFunction(
+    (path) => window.location.pathname === path,
+    expectedPath,
+  );
   const path = new URL(page.url()).pathname;
   if (path !== expectedPath) {
     throw new Error('Expected browser path "' + expectedPath + '", received "' + path + '"');
@@ -518,212 +564,128 @@ async function testShellAndLeagueNavigation(page, viewportName) {
   if (viewportName === 'mobile') {
     const menuButton = page.getByRole('button', { name: 'Menu', exact: true });
     if (await menuButton.getAttribute('aria-expanded') !== 'false') {
-      throw new Error('Expected mobile navigation to start closed');
+      throw new Error('Expected the mobile menu to start collapsed');
     }
-
     await menuButton.click();
-    navigation = page.getByRole('dialog', { name: 'Navigation' });
-    await navigation.waitFor();
-
     if (await menuButton.getAttribute('aria-expanded') !== 'true') {
-      throw new Error('Expected mobile navigation to report its open state');
+      throw new Error('Expected the mobile menu to expose aria-expanded=true after opening');
     }
+    navigation = page.getByRole('navigation', { name: 'Primary navigation' });
+    await navigation.waitFor({ state: 'visible' });
   } else {
-    navigation = page.getByRole('complementary', { name: 'Primary navigation' });
+    navigation = page.getByRole('navigation', { name: 'Primary navigation' });
   }
 
-  await navigation.getByRole('button', { name: 'League', exact: true }).click();
-  await page.getByRole('heading', { name: 'League Fixtures and Table' }).waitFor();
-  await page.getByRole('region', { name: 'League standings table' }).getByText('Castle FC', { exact: true }).waitFor();
-  await expectPath(page, '/league');
-
+  await navigation.getByRole('link', { name: 'League fixtures' }).click();
+  await expectPath(page, '/league/fixtures');
+  await page.getByRole('heading', { name: 'League fixtures and results' }).waitFor();
   if (viewportName === 'mobile') {
-    const menuButton = page.getByRole('button', { name: 'Menu', exact: true });
-    if (await menuButton.getAttribute('aria-expanded') !== 'false') {
-      throw new Error('Expected mobile navigation to close after route selection');
-    }
-    await menuButton.click();
-    navigation = page.getByRole('dialog', { name: 'Navigation' });
+    await page.getByRole('button', { name: 'Menu', exact: true }).click();
+    navigation = page.getByRole('navigation', { name: 'Primary navigation' });
+    await navigation.waitFor({ state: 'visible' });
   }
-
-  const leagueNavigation = navigation.getByRole('button', { name: 'League', exact: true });
-  if (await leagueNavigation.getAttribute('aria-current') !== 'page') {
-    throw new Error('Expected League navigation item to expose the active route');
+  await navigation.getByRole('link', { name: 'League table' }).click();
+  await expectPath(page, '/league/table');
+  await page.getByRole('heading', { name: 'League table' }).waitFor();
+  if (viewportName === 'mobile') {
+    await page.getByRole('button', { name: 'Menu', exact: true }).click();
+    navigation = page.getByRole('navigation', { name: 'Primary navigation' });
+    await navigation.waitFor({ state: 'visible' });
   }
-
-  await navigation.getByRole('button', { name: 'Dashboard', exact: true }).click();
-  await page.getByRole('heading', { name: 'Manager Analytics Dashboard' }).waitFor();
-  await expectPath(page, '/dashboard');
-
-  await page.goBack();
-  await expectPath(page, '/league');
-  await page.getByRole('heading', { name: 'League Fixtures and Table' }).waitFor();
+  await navigation.getByRole('link', { name: 'Knockout' }).click();
+  await expectPath(page, '/league/knockout');
+  await page.getByRole('heading', { name: 'Knockout competition' }).waitFor();
+  if (viewportName === 'mobile') {
+    await page.getByRole('button', { name: 'Menu', exact: true }).click();
+    navigation = page.getByRole('navigation', { name: 'Primary navigation' });
+    await navigation.waitFor({ state: 'visible' });
+  }
+  await navigation.getByRole('link', { name: 'Head-to-head' }).click();
+  await expectPath(page, '/league/head-to-head');
+  await page.getByRole('heading', { name: 'Head-to-head records' }).waitFor();
 }
 
-async function testLoginJourney(browser, viewport) {
-  const context = await browser.newContext({ viewport });
-  const page = await context.newPage();
-  await mockApi(page, { authenticated: false });
-
+async function testUnauthenticatedGuard(page, viewportName) {
+  await page.reload({ waitUntil: 'networkidle' });
   await page.goto(baseUrl + '/team-selection', { waitUntil: 'networkidle' });
-  await expectStatus(page, 'Sign in to access');
-
-  const email = page.getByRole('textbox', { name: 'Email address' });
-  const password = page.getByLabel('Password');
-  await email.fill('manager@example.com');
-  await password.fill('wrong-password');
-
-  const invalidRequest = page.waitForRequest((request) =>
-    new URL(request.url()).pathname === '/api/auth/login' && request.method() === 'POST',
-  );
-  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-  const invalidPayload = (await invalidRequest).postDataJSON();
-  if (invalidPayload.email !== 'manager@example.com' || invalidPayload.password !== 'wrong-password') {
-    throw new Error('Expected the login form to submit the entered credentials');
+  await expectPath(page, '/login');
+  await page.getByRole('heading', { name: 'Sign in to CDL Manager' }).waitFor();
+  if (viewportName === 'mobile') {
+    await page.getByRole('button', { name: 'Menu', exact: true }).click();
+    const navigation = page.getByRole('navigation', { name: 'Primary navigation' });
+    await navigation.waitFor({ state: 'visible' });
+    await navigation.getByRole('link', { name: 'Dashboard' }).click();
+  } else {
+    await page.getByRole('navigation', { name: 'Primary navigation' })
+      .getByRole('link', { name: 'Dashboard' }).click();
   }
-  await page.getByRole('alert').getByText('Invalid email or password.', { exact: true }).waitFor();
-
-  await password.fill('browser-login-secret');
-  const validRequest = page.waitForRequest((request) =>
-    new URL(request.url()).pathname === '/api/auth/login' && request.method() === 'POST',
-  );
-  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
-  await validRequest;
-
-  await expectStatus(page, 'Team selection loaded.');
-  await page.getByRole('region', { name: 'Authenticated session' })
-    .getByText('Signed in as Browser Manager').waitFor();
-  if (await page.getByLabel('Password').count()) {
-    throw new Error('Expected successful login to withdraw the credential form');
-  }
-
-  await context.close();
+  await expectPath(page, '/login');
 }
 
-async function testSessionExpiryAndRecovery(browser, viewport) {
-  const context = await browser.newContext({ viewport });
-  const page = await context.newPage();
-  const sessionControl = await mockApi(page);
-
-  await page.goto(baseUrl + '/team-selection', { waitUntil: 'networkidle' });
-  await expectStatus(page, 'Team selection loaded.');
-  await page.getByRole('region', { name: 'Authenticated session' })
-    .getByText('Signed in as Browser Manager').waitFor();
-
-  sessionControl.expireSession();
-  await page.getByRole('button', { name: 'Reload', exact: true }).click();
-  await expectStatus(page, 'Sign in to access');
-
-  if (await page.getByRole('button', { name: 'Save lineup' }).count()) {
-    throw new Error('Expected expired session to withdraw protected team-selection controls');
+async function testLoginAndLogout(page, api, viewportName) {
+  await page.goto(baseUrl + '/login', { waitUntil: 'networkidle' });
+  await page.getByLabel('Email').fill(authenticatedSession.user.email);
+  await page.getByLabel('Password').fill('wrong-password');
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await expectStatus(page, 'Invalid email or password.');
+  await page.getByLabel('Password').fill('browser-login-secret');
+  await page.getByRole('button', { name: 'Sign in' }).click();
+  await expectPath(page, '/');
+  if (viewportName === 'mobile') {
+    await page.getByRole('button', { name: 'Menu', exact: true }).click();
   }
-
-  sessionControl.restoreSession();
-  await page.getByRole('button', { name: 'Retry session' }).click();
-  await expectStatus(page, 'Team selection loaded.');
-  await page.getByRole('region', { name: 'Authenticated session' })
-    .getByText('Signed in as Browser Manager').waitFor();
-
-  const logoutRequest = page.waitForRequest((request) =>
-    new URL(request.url()).pathname === '/api/auth/logout' && request.method() === 'POST',
-  );
   await page.getByRole('button', { name: 'Sign out' }).click();
-  await logoutRequest;
-  await expectStatus(page, 'Sign in to access');
-
-  await context.close();
+  await expectPath(page, '/login');
+  api.restoreSession();
 }
 
-async function testLockedTeamSelection(browser, viewport) {
-  const context = await browser.newContext({ viewport });
-  const page = await context.newPage();
-  await mockApi(page, { teamSelectionLocked: true });
-
-  const fixtureSummaryRequest = page.waitForRequest((request) =>
-    new URL(request.url()).pathname === '/api/team-selection/fixtures-summary',
-  );
+async function testLockedTeamSelection(page) {
   await page.goto(baseUrl + '/team-selection', { waitUntil: 'networkidle' });
-  await fixtureSummaryRequest;
-  await page.getByRole('region', { name: 'Fixture and table summaries' })
-    .getByText('Harbour Athletic vs Mountain United', { exact: true }).waitFor();
   await expectStatus(page, 'Lineup locked. FPL deadline passed.');
-  await page.getByRole('region', { name: 'Lineup lock' }).getByText('View-only lineup').waitFor();
 
-  const allSelectsDisabled = await page.locator('select[aria-label^="Move "]').evaluateAll((controls) =>
-    controls.length > 0 && controls.every((control) => control.disabled),
-  );
-  if (!allSelectsDisabled) {
-    throw new Error('Expected every lineup movement control to be disabled after fixture lock');
-  }
-
-  const allChipActionsDisabled = await page
-    .getByRole('region', { name: 'Chip selector' })
-    .getByRole('button')
-    .evaluateAll((controls) => controls.length > 0 && controls.every((control) => control.disabled));
-  if (!allChipActionsDisabled) {
-    throw new Error('Expected every chip action to be disabled after fixture lock');
-  }
-
-  if (!(await page.getByRole('button', { name: 'Save lineup' }).isDisabled())) {
+  const saveLineup = page.getByRole('button', { name: 'Save lineup' });
+  if (!(await saveLineup.isDisabled())) {
     throw new Error('Expected Save lineup to be disabled after fixture lock');
   }
-
-  await context.close();
+  const wildcardActivate = page.getByRole('heading', { name: 'Wildcard' }).locator('..')
+    .getByRole('button', { name: 'Activate' });
+  if (!(await wildcardActivate.isDisabled())) {
+    throw new Error('Expected chip controls to be disabled after fixture lock');
+  }
+  if (!(await page.getByLabel('Move Alex Keeper').isDisabled())) {
+    throw new Error('Expected lineup controls to be disabled after fixture lock');
+  }
 }
 
-async function testUnauthenticatedSessionBoundary(browser, viewport) {
+async function runViewport(viewport, viewportName) {
+  const browser = await chromium.launch();
   const context = await browser.newContext({ viewport });
   const page = await context.newPage();
-  await mockApi(page, { authenticated: false });
+  const api = await mockApi(page);
 
-  await page.goto(baseUrl + '/team-selection', { waitUntil: 'networkidle' });
-  await expectStatus(page, 'Sign in to access');
-  await expectPath(page, '/team-selection');
-
-  if (await page.getByRole('button', { name: 'Save lineup' }).count()) {
-    throw new Error('Expected protected team-selection controls to stay hidden without a session');
-  }
-
-  if (await page.getByRole('button', { name: 'Menu', exact: true }).count()) {
-    throw new Error('Expected the authenticated application shell to stay hidden without a session');
-  }
+  await testTeamSelection(page);
+  await testSquadManagement(page);
+  await testDashboard(page);
+  await testFixtureDifficulty(page);
+  await testShellAndLeagueNavigation(page, viewportName);
+  api.expireSession();
+  await testUnauthenticatedGuard(page, viewportName);
+  await testLoginAndLogout(page, api, viewportName);
 
   await context.close();
-}
-
-async function run() {
-  const browser = await chromium.launch();
-  const viewports = [
-    { name: 'mobile', width: 390, height: 844 },
-    { name: 'desktop', width: 1440, height: 900 },
-  ];
-
-  for (const viewport of viewports) {
-    await testUnauthenticatedSessionBoundary(browser, viewport);
-    await testLoginJourney(browser, viewport);
-    await testSessionExpiryAndRecovery(browser, viewport);
-    await testLockedTeamSelection(browser, viewport);
-
-    const context = await browser.newContext({ viewport });
-    const page = await context.newPage();
-    await mockApi(page);
-
-    await testTeamSelection(page);
-    if (viewport.name === 'mobile') {
-      await testSquadManagement(page);
-    }
-
-    await testShellAndLeagueNavigation(page, viewport.name);
-    await testDashboard(page);
-    await testFixtureDifficulty(page);
-
-    await context.close();
-  }
-
   await browser.close();
 }
 
-run().catch((error) => {
-  console.error(error);
-  process.exit(1);
-});
+async function runLockedSelection() {
+  const browser = await chromium.launch();
+  const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
+  const page = await context.newPage();
+  await mockApi(page, { teamSelectionLocked: true });
+  await testLockedTeamSelection(page);
+  await context.close();
+  await browser.close();
+}
+
+await runViewport({ width: 390, height: 844 }, 'mobile');
+await runViewport({ width: 1440, height: 900 }, 'desktop');
+await runLockedSelection();

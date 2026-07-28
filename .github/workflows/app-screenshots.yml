@@ -39,6 +39,8 @@ jobs:
           exit 1
       - name: Test primary interactions
         run: node scripts/test-app-interactions.mjs
+      - name: Test squad mutation persistence
+        run: node scripts/test-squad-management-interactions.mjs
       - name: Capture screenshots
         run: node scripts/capture-app-screenshots.mjs
       - name: Upload screenshots

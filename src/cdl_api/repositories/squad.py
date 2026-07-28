@@ -27,6 +27,10 @@ class SquadRepository(Protocol):
 
     def get_player(self, player_id: str) -> PlayerDetail | None: ...
 
+    def list_interests(self) -> list[InterestResponse]: ...
+
+    def find_active_interest_by_player(self, player_id: str) -> InterestResponse | None: ...
+
     def save_interest(self, interest: InterestResponse) -> InterestResponse: ...
 
     def delete_interest(self, interest_id: str) -> bool: ...
@@ -34,6 +38,8 @@ class SquadRepository(Protocol):
     def list_trades(self) -> list[TradeProposal]: ...
 
     def save_trade(self, trade: TradeProposal) -> TradeProposal: ...
+
+    def manager_id_for_team(self, team_id: str) -> str | None: ...
 
     def update_trade_status(self, trade_id: str, status: TradeStatus) -> TradeProposal | None: ...
 
@@ -140,6 +146,15 @@ class InMemorySquadRepository:
                 return deepcopy(player)
         return None
 
+    def list_interests(self) -> list[InterestResponse]:
+        return [deepcopy(interest) for interest in self._interests.values()]
+
+    def find_active_interest_by_player(self, player_id: str) -> InterestResponse | None:
+        for interest in self._interests.values():
+            if interest.player.id == player_id:
+                return deepcopy(interest)
+        return None
+
     def save_interest(self, interest: InterestResponse) -> InterestResponse:
         self._interests[interest.id] = deepcopy(interest)
         return deepcopy(interest)
@@ -153,6 +168,12 @@ class InMemorySquadRepository:
     def save_trade(self, trade: TradeProposal) -> TradeProposal:
         self._trades[trade.id] = deepcopy(trade)
         return deepcopy(trade)
+
+    def manager_id_for_team(self, team_id: str) -> str | None:
+        return {
+            self.manager_team.id: "manager-1",
+            self.rival_team.id: "manager-rival",
+        }.get(team_id)
 
     def update_trade_status(self, trade_id: str, status: TradeStatus) -> TradeProposal | None:
         trade = self._trades.get(trade_id)

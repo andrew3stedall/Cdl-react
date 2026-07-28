@@ -56,10 +56,11 @@ class SquadManagementService:
         )
 
     def scout_players(self, filters: ScoutingFilters) -> ScoutingPlayersResponse:
-        return ScoutingPlayersResponse(
-            filters=filters,
-            players=self._repository.list_players(filters),
-        )
+        players = self._repository.list_players(filters)
+        return ScoutingPlayersResponse(filters=filters, players=players)
+
+    def list_interests(self) -> list[InterestResponse]:
+        return self._repository.list_interests()
 
     def create_interest(self, request: InterestCreateRequest) -> InterestResponse:
         player = self._require_player(request.player_id)
@@ -70,6 +71,13 @@ class SquadManagementService:
                 rule_reference=SQUAD_SIZE_RULE,
             )
             raise SquadValidationError("Player already in squad.", [issue])
+        existing_interest = self._repository.find_active_interest_by_player(request.player_id)
+        if existing_interest is not None:
+            issue = ValidationIssue(
+                field="player_id",
+                message="Player is already registered as an interest.",
+            )
+            raise SquadValidationError("Interest already exists.", [issue])
         player.status = PlayerOwnershipStatus.INTERESTED
         interest = InterestResponse(
             id=f"interest-{uuid4().hex[:8]}",
@@ -86,14 +94,10 @@ class SquadManagementService:
         return self._repository.list_trades()
 
     def create_trade(self, request: TradeCreateRequest) -> TradeProposal:
-        sent_players = []
-        for player_id in request.offered_player_ids:
-            sent_players.append(self._require_player(player_id))
-
-        wanted_players = []
-        for player_id in request.requested_player_ids:
-            wanted_players.append(self._require_player(player_id))
-
+        sent_players = [self._require_player(player_id) for player_id in request.offered_player_ids]
+        wanted_players = [
+            self._require_player(player_id) for player_id in request.requested_player_ids
+        ]
         for player in sent_players:
             if player.draft_team != self._repository.manager_team:
                 issue = ValidationIssue(
@@ -102,25 +106,21 @@ class SquadManagementService:
                     rule_reference="trade-window",
                 )
                 raise SquadValidationError("Invalid trade asset.", [issue])
-
-        assets: list[TradeAsset] = []
-        for player in sent_players:
-            assets.append(
-                TradeAsset(
-                    player=player,
-                    from_team=self._repository.manager_team,
-                    to_team=self._repository.rival_team,
-                )
+        assets = [
+            TradeAsset(
+                player=player,
+                from_team=self._repository.manager_team,
+                to_team=self._repository.rival_team,
             )
-        for player in wanted_players:
-            assets.append(
-                TradeAsset(
-                    player=player,
-                    from_team=self._repository.rival_team,
-                    to_team=self._repository.manager_team,
-                )
+            for player in sent_players
+        ] + [
+            TradeAsset(
+                player=player,
+                from_team=self._repository.rival_team,
+                to_team=self._repository.manager_team,
             )
-
+            for player in wanted_players
+        ]
         trade = TradeProposal(
             id=f"trade-{uuid4().hex[:8]}",
             status=TradeStatus.PROPOSED,
@@ -132,8 +132,59 @@ class SquadManagementService:
         )
         return self._repository.save_trade(trade)
 
-    def update_trade(self, trade_id: str, status: TradeStatus) -> TradeProposal | None:
-        return self._repository.update_trade_status(trade_id, status)
+    def update_trade(
+        self,
+        trade_id: str,
+        status: TradeStatus,
+        actor_manager_id: str,
+    ) -> TradeProposal | None:
+        trade = next(
+            (item for item in self._repository.list_trades() if item.id == trade_id),
+            None,
+        )
+        if trade is None:
+            return None
+        if trade.status != TradeStatus.PROPOSED:
+            raise SquadValidationError(
+                "Trade is no longer pending.",
+                [ValidationIssue(field="status", message="Trade status has already changed.")],
+            )
+        if status in {TradeStatus.ACCEPTED, TradeStatus.REJECTED}:
+            required_manager_id = self._repository.manager_id_for_team(trade.offered_to.id)
+        elif status == TradeStatus.CANCELLED:
+            required_manager_id = self._repository.manager_id_for_team(trade.offered_by.id)
+        else:
+            raise SquadValidationError(
+                "Invalid trade transition.",
+                [
+                    ValidationIssue(
+                        field="status",
+                        message="Trade must be accepted, rejected, or cancelled.",
+                    )
+                ],
+            )
+        if actor_manager_id != required_manager_id:
+            raise SquadValidationError(
+                "Trade transition is not authorized.",
+                [
+                    ValidationIssue(
+                        field="status",
+                        message="Manager cannot perform this transition.",
+                    )
+                ],
+            )
+        updated = self._repository.update_trade_status(trade_id, status)
+        if updated is not None and updated.status != status:
+            raise SquadValidationError(
+                "Trade is no longer pending.",
+                [
+                    ValidationIssue(
+                        field="status",
+                        message="Trade status changed concurrently.",
+                    )
+                ],
+            )
+        return updated
 
     def _require_player(self, player_id: str) -> PlayerDetail:
         player = self._repository.get_player(player_id)

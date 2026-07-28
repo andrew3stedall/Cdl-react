@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { LogOut, Menu, RefreshCw, Search } from 'lucide-react';
 
 import { Button } from './components/ui/button';
@@ -22,6 +22,13 @@ interface AppShellProps {
   session: SessionState;
 }
 
+const leagueNavigationItems: NavigationItem[] = [
+  { label: 'League fixtures', href: '/league/fixtures', featureKey: 'league-fixtures' },
+  { label: 'League table', href: '/league/table', featureKey: 'league-table' },
+  { label: 'Knockout', href: '/league/knockout', featureKey: 'league-knockout' },
+  { label: 'Head-to-head', href: '/league/head-to-head', featureKey: 'league-head-to-head' },
+];
+
 export function AppShell({
   children,
   currentPath,
@@ -40,6 +47,11 @@ export function AppShell({
     onCloseMobileNavigation();
   };
 
+  const signOut = () => {
+    onCloseMobileNavigation();
+    onSignOut();
+  };
+
   return (
     <div className="app-shell" data-theme-preset={preset.name}>
       <aside className="app-sidebar" aria-label="Primary navigation">
@@ -50,6 +62,10 @@ export function AppShell({
       <Sheet id="mobile-navigation" isOpen={isMobileNavigationOpen} labelledBy="mobile-navigation-title">
         <div className="mobile-sheet-header">
           <h2 id="mobile-navigation-title">Navigation</h2>
+          <Button onClick={signOut} type="button" variant="ghost">
+            <LogOut aria-hidden="true" size={16} />
+            Sign out
+          </Button>
           <Button onClick={onCloseMobileNavigation} type="button" variant="ghost">
             Close
           </Button>
@@ -76,7 +92,15 @@ export function AppShell({
             <h1>Application Shell</h1>
           </div>
 
-          <div className="shell-actions" aria-label="Shell actions">
+          <div
+            aria-hidden={isMobileNavigationOpen || undefined}
+            aria-label="Shell actions"
+            className="shell-actions"
+          >
+            <Button onClick={onSignOut} type="button" variant="ghost">
+              <LogOut aria-hidden="true" size={16} />
+              Sign out
+            </Button>
             <Button onClick={onRefresh} type="button" variant="secondary">
               <RefreshCw aria-hidden="true" size={16} />
               Reload
@@ -93,10 +117,6 @@ export function AppShell({
               Scouting
             </a>
             <PresetSelector preset={preset} saveStatus={saveStatus} setPresetName={setPresetName} />
-            <Button onClick={onSignOut} type="button" variant="ghost">
-              <LogOut aria-hidden="true" size={16} />
-              Sign out
-            </Button>
           </div>
         </header>
 
@@ -130,26 +150,35 @@ function NavigationList({
   currentPath: string;
   onNavigate: (item: NavigationItem) => void;
 }) {
-  return (
-    <nav className="navigation-list">
-      {primaryNavigationItems.map((item) => {
-        const isActive = isRouteActive(currentPath, item.href);
+  const navigationLink = (item: NavigationItem, isSubroute = false) => {
+    const isActive = isRouteActive(currentPath, item.href);
+    return (
+      <a
+        aria-current={isActive ? 'page' : undefined}
+        className={`${isActive ? 'nav-item active' : 'nav-item'}${isSubroute ? ' nav-subitem' : ''}`}
+        href={item.href}
+        key={item.href}
+        onClick={(event) => {
+          event.preventDefault();
+          onNavigate(item);
+        }}
+      >
+        <span>{item.label}</span>
+        {item.supportsScouting ? <small>Scouting enabled</small> : null}
+      </a>
+    );
+  };
 
-        return (
-          <button
-            aria-current={isActive ? 'page' : undefined}
-            className={isActive ? 'nav-item active' : 'nav-item'}
-            key={item.href}
-            onClick={() => {
-              onNavigate(item);
-            }}
-            type="button"
-          >
-            <span>{item.label}</span>
-            {item.supportsScouting ? <small>Scouting enabled</small> : null}
-          </button>
-        );
-      })}
+  return (
+    <nav aria-label="Primary navigation" className="navigation-list">
+      {primaryNavigationItems.map((item) => (
+        <Fragment key={item.href}>
+          {navigationLink(item)}
+          {item.href === '/league'
+            ? leagueNavigationItems.map((leagueItem) => navigationLink(leagueItem, true))
+            : null}
+        </Fragment>
+      ))}
     </nav>
   );
 }

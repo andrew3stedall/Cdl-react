@@ -4,7 +4,6 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
   id-token: write
 
 concurrency:
@@ -38,6 +37,11 @@ jobs:
           test -n "${WORKLOAD_IDENTITY_PROVIDER}"
           test -n "${DEPLOY_SERVICE_ACCOUNT}"
           test -n "${TERRAFORM_STATE_BUCKET}"
+
+          test "${WORKLOAD_IDENTITY_PROVIDER}" = \
+            "projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
+          test "${DEPLOY_SERVICE_ACCOUNT}" = \
+            "github-deploy@${PROJECT_ID}.iam.gserviceaccount.com"
 
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v3
@@ -83,21 +87,97 @@ jobs:
             test "${enabled_service}" = "${service}"
           done
 
-      - name: Verify Terraform state bucket visibility
+      - name: Verify protected Terraform state bucket boundary
         run: |
           set -euo pipefail
-          gcloud storage buckets describe "gs://${TERRAFORM_STATE_BUCKET}" \
-            --format='value(name)' >/dev/null
 
-      - name: Record verification summary
+          bucket_json="${RUNNER_TEMP}/terraform-state-bucket.json"
+          iam_json="${RUNNER_TEMP}/terraform-state-bucket-iam.json"
+          trap 'rm -f "${bucket_json}" "${iam_json}"' EXIT
+
+          gcloud storage buckets describe "gs://${TERRAFORM_STATE_BUCKET}" \
+            --format=json > "${bucket_json}"
+          gcloud storage buckets get-iam-policy "gs://${TERRAFORM_STATE_BUCKET}" \
+            --format=json > "${iam_json}"
+
+          python - "${bucket_json}" "${iam_json}" "${PROJECT_NUMBER}" "${DEPLOY_SERVICE_ACCOUNT}" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          bucket = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          policy = json.loads(Path(sys.argv[2]).read_text(encoding="utf-8"))
+          expected_project_number = sys.argv[3]
+          deploy_member = f"serviceAccount:{sys.argv[4]}"
+
+          actual_project_number = str(bucket.get("projectNumber", ""))
+          location = str(bucket.get("location", "")).upper()
+          iam_configuration = bucket.get("iamConfiguration") or {}
+          uniform_access = iam_configuration.get("uniformBucketLevelAccess") or {}
+          versioning = bucket.get("versioning") or {}
+
+          assert actual_project_number == expected_project_number
+          assert location == "AUSTRALIA-SOUTHEAST1"
+          assert uniform_access.get("enabled") is True
+          assert iam_configuration.get("publicAccessPrevention") == "enforced"
+          assert versioning.get("enabled") is True
+
+          bindings = policy.get("bindings") or []
+          public_members = {"allUsers", "allAuthenticatedUsers"}
+          assert not any(public_members.intersection(binding.get("members") or []) for binding in bindings)
+
+          object_admin_members = {
+              member
+              for binding in bindings
+              if binding.get("role") == "roles/storage.objectAdmin"
+              for member in (binding.get("members") or [])
+          }
+          assert object_admin_members == {deploy_member}
+          PY
+
+      - name: Create reviewable verification evidence
+        id: evidence
+        shell: bash
         run: |
+          set -euo pipefail
+          evidence_file="${RUNNER_TEMP}/gcp-wif-verification.md"
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+
           {
-            echo "## GCP Workload Identity verification"
+            echo "# GCP Workload Identity verification"
             echo
+            echo "- Source commit: \`${GITHUB_SHA}\`"
+            echo "- Workflow run: ${run_url}"
             echo "- Trusted ref: \`${GITHUB_REF}\`"
             echo "- Project: \`${PROJECT_ID}\`"
             echo "- Project number: \`${PROJECT_NUMBER}\`"
+            echo "- Workload Identity provider: \`${WORKLOAD_IDENTITY_PROVIDER}\`"
             echo "- Federated account: \`${DEPLOY_SERVICE_ACCOUNT}\`"
-            echo "- State bucket visibility: confirmed"
+            echo "- Terraform state bucket: \`gs://${TERRAFORM_STATE_BUCKET}\`"
+            echo "- GitHub token permissions: OIDC only; repository contents unavailable"
+            echo "- State bucket project boundary: confirmed"
+            echo "- State bucket region: \`australia-southeast1\`"
+            echo "- Uniform bucket-level access: confirmed"
+            echo "- Public access prevention: enforced"
+            echo "- Public IAM principals: none"
+            echo "- State writer binding: exact deploy service account only"
+            echo "- Object versioning: enabled"
+            echo "- Raw bucket metadata and IAM policy: deleted and not retained"
             echo "- GCP resources changed: none"
-          } >> "${GITHUB_STEP_SUMMARY}"
+          } > "${evidence_file}"
+
+          test -s "${evidence_file}"
+          grep -Fq "Source commit: \`${GITHUB_SHA}\`" "${evidence_file}"
+          grep -Fq "Workload Identity provider: \`${WORKLOAD_IDENTITY_PROVIDER}\`" "${evidence_file}"
+          grep -Fq "Terraform state bucket: \`gs://${TERRAFORM_STATE_BUCKET}\`" "${evidence_file}"
+          grep -Fq "GitHub token permissions: OIDC only; repository contents unavailable" "${evidence_file}"
+          grep -Fq "Raw bucket metadata and IAM policy: deleted and not retained" "${evidence_file}"
+          cat "${evidence_file}" >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Upload reviewable verification evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: gcp-wif-verification-${{ github.sha }}
+          path: ${{ runner.temp }}/gcp-wif-verification.md
+          if-no-files-found: error
+          retention-days: 7

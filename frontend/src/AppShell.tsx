@@ -47,6 +47,11 @@ export function AppShell({
     onCloseMobileNavigation();
   };
 
+  const signOut = () => {
+    onCloseMobileNavigation();
+    onSignOut();
+  };
+
   return (
     <div className="app-shell" data-theme-preset={preset.name}>
       <aside className="app-sidebar" aria-label="Primary navigation">
@@ -62,9 +67,13 @@ export function AppShell({
           </Button>
         </div>
         <NavigationList currentPath={currentPath} onNavigate={navigate} />
+        <Button onClick={signOut} type="button" variant="ghost">
+          <LogOut aria-hidden="true" size={16} />
+          Sign out
+        </Button>
       </Sheet>
 
-      <main className="shell-main">
+      <main aria-hidden={isMobileNavigationOpen || undefined} className="shell-main">
         <header className="shell-header">
           <Button
             aria-controls="mobile-navigation"

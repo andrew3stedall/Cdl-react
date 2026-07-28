@@ -23,31 +23,6 @@ export const primaryNavigationItems: NavigationItem[] = [
     featureKey: 'league',
   },
   {
-    label: 'Checkpoint 1',
-    href: '/modernisation/checkpoint-1',
-    featureKey: 'modernisation-checkpoint-1',
-  },
-  {
-    label: 'Checkpoint 2',
-    href: '/modernisation/checkpoint-2',
-    featureKey: 'modernisation-checkpoint-2',
-  },
-  {
-    label: 'Checkpoint 3',
-    href: '/modernisation/checkpoint-3',
-    featureKey: 'modernisation-checkpoint-3',
-  },
-  {
-    label: 'Checkpoint 4',
-    href: '/modernisation/checkpoint-4',
-    featureKey: 'modernisation-checkpoint-4',
-  },
-  {
-    label: 'Checkpoint 5',
-    href: '/modernisation/checkpoint-5',
-    featureKey: 'modernisation-checkpoint-5',
-  },
-  {
     label: 'Rules',
     href: '/rules',
     featureKey: 'rules',

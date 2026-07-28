@@ -81,24 +81,28 @@ def test_authenticated_interest_persists_and_rejection_leaves_state_unchanged() 
     )
     client = TestClient(app)
 
-    created = client.post(
-        "/api/interests",
-        json={"player_id": "player-3", "note": "Watch"},
-    )
-    assert created.status_code == 200
-    interest_id = created.json()["id"]
-    listed_ids = [row["id"] for row in client.get("/api/interests").json()]
-    assert listed_ids == [interest_id]
+    try:
+        created = client.post(
+            "/api/interests",
+            json={"player_id": "player-3", "note": "Watch"},
+        )
+        assert created.status_code == 200
+        interest_id = created.json()["id"]
+        listed_ids = [row["id"] for row in client.get("/api/interests").json()]
+        assert listed_ids == [interest_id]
 
-    duplicate = client.post("/api/interests", json={"player_id": "player-3"})
-    assert duplicate.status_code == 422
-    assert duplicate.json()["message"] == "Interest already exists."
+        duplicate = client.post("/api/interests", json={"player_id": "player-3"})
+        assert duplicate.status_code == 422
+        assert duplicate.json()["message"] == "Interest already exists."
 
-    with session_factory() as session:
-        count = session.execute(
-            select(func.count()).select_from(squad_interests_table)
-        ).scalar_one()
-        player_query = select(squad_interests_table.c.player_id)
-        stored_player = session.execute(player_query).scalar_one()
-    assert count == 1
-    assert stored_player == "player-3"
+        with session_factory() as session:
+            count = session.execute(
+                select(func.count()).select_from(squad_interests_table)
+            ).scalar_one()
+            player_query = select(squad_interests_table.c.player_id)
+            stored_player = session.execute(player_query).scalar_one()
+        assert count == 1
+        assert stored_player == "player-3"
+    finally:
+        with engine.begin() as connection:
+            connection.execute(text("DELETE FROM squad_interests"))

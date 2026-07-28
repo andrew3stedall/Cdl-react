@@ -73,7 +73,7 @@ export function AppShell({
         </Button>
       </Sheet>
 
-      <main aria-hidden={isMobileNavigationOpen || undefined} className="shell-main">
+      <main className="shell-main">
         <header className="shell-header">
           <Button
             aria-controls="mobile-navigation"
@@ -92,7 +92,11 @@ export function AppShell({
             <h1>Application Shell</h1>
           </div>
 
-          <div className="shell-actions" aria-label="Shell actions">
+          <div
+            aria-hidden={isMobileNavigationOpen || undefined}
+            aria-label="Shell actions"
+            className="shell-actions"
+          >
             <Button onClick={onRefresh} type="button" variant="secondary">
               <RefreshCw aria-hidden="true" size={16} />
               Reload

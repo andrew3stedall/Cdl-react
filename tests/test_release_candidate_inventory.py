@@ -79,8 +79,8 @@ def test_team_selection_release_evidence_is_focused_and_truthful() -> None:
         "Expected the saved Riley Forward starter slot to survive a reload",
         "Wildcard chip state updated.",
         "Team selection is locked for this gameweek.",
-        "{ name: 'mobile', width: 390, height: 844 }",
-        "{ name: 'desktop', width: 1440, height: 900 }",
+        "runViewport({ width: 390, height: 844 }, 'mobile')",
+        "runViewport({ width: 1440, height: 900 }, 'desktop')",
     )
     for evidence in required_browser_evidence:
         assert evidence in browser

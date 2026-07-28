@@ -1,6 +1,6 @@
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
-import { describe, expect, test } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { SquadManagementPage } from './SquadManagementPage';
 import { getDefaultThemePreset } from './theme-presets';
@@ -8,12 +8,39 @@ import { getDefaultThemePreset } from './theme-presets';
 const testGlobal = globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean };
 testGlobal.IS_REACT_ACT_ENVIRONMENT = true;
 
+beforeEach(() => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      if (init?.method === 'POST') {
+        return new Response(
+          JSON.stringify({
+            id: 'interest-player-3',
+            player: { id: 'player-3', display_name: 'Casey Midfielder' },
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        );
+      }
+      return new Response('[]', {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }),
+  );
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  document.body.replaceChildren();
+});
+
 async function renderPage() {
   const container = document.createElement('div');
   document.body.append(container);
   const root = createRoot(container);
   await act(async () => {
     root.render(<SquadManagementPage preset={getDefaultThemePreset()} />);
+    await Promise.resolve();
     await Promise.resolve();
   });
   return { container, root };
@@ -46,9 +73,11 @@ describe('SquadManagementPage', () => {
     await act(async () => {
       interestButton.click();
       await Promise.resolve();
+      await Promise.resolve();
     });
 
     expect(container.textContent).toContain('added to interests');
+    expect(container.textContent).toContain('Casey Midfielder');
   });
 
   test('creates proposed trade with rules deep link and opens player detail', async () => {

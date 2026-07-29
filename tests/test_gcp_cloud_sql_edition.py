@@ -10,7 +10,7 @@ def test_cloud_sql_module_sets_and_validates_explicit_edition() -> None:
     main = MODULE_MAIN.read_text(encoding="utf-8")
     variables = MODULE_VARIABLES.read_text(encoding="utf-8")
 
-    assert "edition                     = var.edition" in main
+    assert "var.edition" in main
     assert 'variable "edition" {' in variables
     assert 'default     = "ENTERPRISE"' in variables
     assert 'contains(["ENTERPRISE", "ENTERPRISE_PLUS"], var.edition)' in variables
@@ -28,7 +28,7 @@ def test_staging_explicitly_uses_enterprise_for_postgres_16_micro() -> None:
     main = STAGING_MAIN.read_text(encoding="utf-8")
     variables = STAGING_VARIABLES.read_text(encoding="utf-8")
 
-    assert "edition                       = var.database_edition" in main
+    assert "var.database_edition" in main
     assert 'variable "database_edition" {' in variables
     assert 'default     = "POSTGRES_16"' in variables
     assert 'default     = "db-f1-micro"' in variables

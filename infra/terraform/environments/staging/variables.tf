@@ -70,6 +70,17 @@ variable "database_version" {
   default     = "POSTGRES_16"
 }
 
+variable "database_edition" {
+  description = "Cloud SQL edition compatible with the selected staging tier."
+  type        = string
+  default     = "ENTERPRISE"
+
+  validation {
+    condition     = contains(["ENTERPRISE", "ENTERPRISE_PLUS"], var.database_edition)
+    error_message = "database_edition must be ENTERPRISE or ENTERPRISE_PLUS."
+  }
+}
+
 variable "database_tier" {
   description = "Cloud SQL staging instance tier."
   type        = string

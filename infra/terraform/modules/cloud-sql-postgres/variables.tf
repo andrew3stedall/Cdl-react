@@ -23,6 +23,17 @@ variable "database_version" {
   type        = string
 }
 
+variable "edition" {
+  description = "Cloud SQL edition. Shared-core and custom tiers require ENTERPRISE."
+  type        = string
+  default     = "ENTERPRISE"
+
+  validation {
+    condition     = contains(["ENTERPRISE", "ENTERPRISE_PLUS"], var.edition)
+    error_message = "edition must be ENTERPRISE or ENTERPRISE_PLUS."
+  }
+}
+
 variable "database_tier" {
   description = "Cloud SQL machine tier."
   type        = string

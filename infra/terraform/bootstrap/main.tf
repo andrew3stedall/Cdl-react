@@ -20,8 +20,16 @@ module "staging" {
   github_repository = var.github_repository
   github_branch     = var.github_branch
   deploy_project_roles = toset([
-    "roles/artifactregistry.writer",
+    "roles/artifactregistry.admin",
+    "roles/cloudsql.admin",
+    "roles/iam.serviceAccountAdmin",
+    "roles/iam.serviceAccountUser",
+    "roles/monitoring.editor",
+    "roles/resourcemanager.projectIamAdmin",
     "roles/run.admin",
+    "roles/secretmanager.admin",
+    "roles/serviceusage.serviceUsageAdmin",
+    "roles/storage.admin",
     "roles/viewer",
   ])
 }

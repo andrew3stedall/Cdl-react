@@ -131,29 +131,54 @@ jobs:
           expected_project_number = sys.argv[3]
           deploy_member = f"serviceAccount:{sys.argv[4]}"
 
+
+          def fail(check: str, expected: object, actual: object) -> None:
+              print(
+                  f"::error title=State bucket boundary mismatch::"
+                  f"{check}: expected {expected!r}; actual {actual!r}"
+              )
+              raise SystemExit(1)
+
+
+          def require_equal(check: str, actual: object, expected: object) -> None:
+              if actual != expected:
+                  fail(check, expected, actual)
+
+
           actual_project_number = str(bucket.get("projectNumber", ""))
           location = str(bucket.get("location", "")).upper()
           iam_configuration = bucket.get("iamConfiguration") or {}
           uniform_access = iam_configuration.get("uniformBucketLevelAccess") or {}
           versioning = bucket.get("versioning") or {}
 
-          assert actual_project_number == expected_project_number
-          assert location == "AUSTRALIA-SOUTHEAST1"
-          assert uniform_access.get("enabled") is True
-          assert iam_configuration.get("publicAccessPrevention") == "enforced"
-          assert versioning.get("enabled") is True
+          require_equal("project number", actual_project_number, expected_project_number)
+          require_equal("location", location, "AUSTRALIA-SOUTHEAST1")
+          require_equal("uniform bucket-level access", uniform_access.get("enabled"), True)
+          require_equal(
+              "public access prevention",
+              iam_configuration.get("publicAccessPrevention"),
+              "enforced",
+          )
+          require_equal("object versioning", versioning.get("enabled"), True)
 
           bindings = policy.get("bindings") or []
           public_members = {"allUsers", "allAuthenticatedUsers"}
-          assert not any(public_members.intersection(binding.get("members") or []) for binding in bindings)
+          actual_public_members = sorted(
+              public_members.intersection(
+                  member
+                  for binding in bindings
+                  for member in (binding.get("members") or [])
+              )
+          )
+          require_equal("public IAM principals", actual_public_members, [])
 
-          object_admin_members = {
+          object_admin_members = sorted(
               member
               for binding in bindings
               if binding.get("role") == "roles/storage.objectAdmin"
               for member in (binding.get("members") or [])
-          }
-          assert object_admin_members == {deploy_member}
+          )
+          require_equal("state writer binding", object_admin_members, [deploy_member])
           PY
 
       - name: Create reviewable verification evidence

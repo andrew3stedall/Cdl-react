@@ -39,6 +39,8 @@ A successful run confirms:
 
 Any mismatch fails the workflow before an authenticated Terraform plan can be treated as valid evidence. An extra state writer is treated as bootstrap drift rather than accepted as harmless access.
 
+Each failed bucket assertion reports a named boundary check with its expected and actual values. The diagnostic output is limited to non-sensitive resource settings and IAM member identifiers; the raw bucket metadata and policy documents are still neither printed nor retained. This makes project-number, region, uniform-access, public-access-prevention, versioning, public-principal and state-writer drift distinguishable without weakening the gate.
+
 ## GitHub token boundary
 
 The verification job requests only `id-token: write`, which is required for short-lived OIDC token minting. It does not request repository contents, pull-request, package, Actions-management, or write permissions. The workflow does not check out the repository and cannot use its GitHub token to read repository contents.
@@ -77,7 +79,7 @@ The IAM check covers explicit bucket-policy bindings. Project-level inherited pe
 
 1. Confirm the five GitHub `staging` environment variables match the applied bootstrap outputs.
 2. Merge the reviewed workflow change; **GCP WIF Verify** then runs automatically once from `main`.
-3. If the run reports missing variable names or a boundary mismatch, correct only that external configuration or live drift and use the manual retry.
+3. If the run reports missing variable names or a named boundary mismatch, correct only that external configuration or live drift and use the manual retry.
 4. Confirm the successful artifact records the intended provider path and `gs://` state bucket.
 5. Record the seven-day verification artifact and workflow run in issues #70 and #78.
 6. Only then run **GCP Terraform Staging** to create the first authenticated saved plan.

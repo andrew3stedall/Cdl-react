@@ -61,29 +61,36 @@ def test_wif_verify_uses_only_oidc_token_permission() -> None:
     assert "GitHub token permissions: OIDC only; repository contents unavailable" in content
 
 
-def test_wif_verify_fails_closed_on_identity_shape_and_state_bucket_controls() -> None:
+def test_wif_verify_fails_closed_with_named_state_bucket_diagnostics() -> None:
     content = WORKFLOW.read_text(encoding="utf-8")
+    verification = content.split(
+        "- name: Verify protected Terraform state bucket boundary", maxsplit=1
+    )[1].split("- name: Create reviewable verification evidence", maxsplit=1)[0]
+
+    assert (
+        '"projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/'
+        'github-pool/providers/github-provider"' in content
+    )
+    assert '"github-deploy@${PROJECT_ID}.iam.gserviceaccount.com"' in content
 
     for phrase in [
-        '"projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/github-pool/providers/github-provider"',
-        '"github-deploy@${PROJECT_ID}.iam.gserviceaccount.com"',
-        "Verify protected Terraform state bucket boundary",
-        'bucket.get("projectNumber", "")',
-        'location == "AUSTRALIA-SOUTHEAST1"',
-        'uniform_access.get("enabled") is True',
-        'publicAccessPrevention") == "enforced"',
-        'versioning.get("enabled") is True',
         "gcloud storage buckets get-iam-policy",
-        '{"allUsers", "allAuthenticatedUsers"}',
+        "State bucket boundary mismatch",
+        'require_equal("project number"',
+        'require_equal("location"',
+        'require_equal("uniform bucket-level access"',
+        '"public access prevention"',
+        'require_equal("object versioning"',
+        'require_equal("public IAM principals"',
+        'require_equal("state writer binding"',
         'binding.get("role") == "roles/storage.objectAdmin"',
-        "assert object_admin_members == {deploy_member}",
+        "raise SystemExit(1)",
         "trap 'rm -f",
-        "Public IAM principals: none",
-        "State writer binding: exact deploy service account only",
-        "GCP resources changed: none",
     ]:
-        assert phrase in content
+        assert phrase in verification
 
+    assert "assert actual_project_number" not in verification
+    assert "assert object_admin_members" not in verification
     assert "gcloud storage buckets update" not in content
     assert "gcloud storage buckets create" not in content
     assert "gcloud storage buckets set-iam-policy" not in content
@@ -141,6 +148,8 @@ def test_wif_runbook_documents_state_bucket_security_proof() -> None:
         "raw bucket metadata and IAM policy are deleted",
         "automatically once",
         "missing variable names",
+        "named boundary check",
+        "expected and actual values",
         "manual retry",
     ]:
         assert phrase in content

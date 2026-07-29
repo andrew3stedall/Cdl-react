@@ -28,6 +28,22 @@ def test_apply_workflow_is_manual_main_only_and_double_confirmed() -> None:
     assert "push:" not in content
 
 
+def test_apply_job_checks_out_before_preflight_shell_steps() -> None:
+    content = WORKFLOW.read_text(encoding="utf-8")
+    apply_job = content.split("\n  apply-reviewed-plan:\n", maxsplit=1)[1]
+
+    checkout_index = apply_job.index("- name: Checkout exact reviewed source")
+    validate_index = apply_job.index("- name: Validate reviewed apply request")
+    evidence_index = apply_job.index("- name: Verify reviewed plan identity and safety result")
+
+    assert checkout_index < validate_index < evidence_index
+
+    cleanup_section = apply_job.split(
+        "- name: Remove executable and machine-readable plan files", maxsplit=1
+    )[1]
+    assert "working-directory: ${{ github.workspace }}" in cleanup_section
+
+
 def test_apply_workflow_downloads_exact_reviewed_plan_evidence() -> None:
     content = WORKFLOW.read_text(encoding="utf-8")
 

@@ -67,9 +67,13 @@ def test_wif_verify_fails_closed_with_named_state_bucket_diagnostics() -> None:
         "- name: Verify protected Terraform state bucket boundary", maxsplit=1
     )[1].split("- name: Create reviewable verification evidence", maxsplit=1)[0]
 
+    assert (
+        '"projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/'
+        'github-pool/providers/github-provider"' in content
+    )
+    assert '"github-deploy@${PROJECT_ID}.iam.gserviceaccount.com"' in content
+
     for phrase in [
-        '"projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/github-pool/providers/github-provider"',
-        '"github-deploy@${PROJECT_ID}.iam.gserviceaccount.com"',
         "gcloud storage buckets get-iam-policy",
         "State bucket boundary mismatch",
         'require_equal("project number"',

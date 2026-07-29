@@ -98,6 +98,7 @@ module "cloud_sql" {
   instance_name                  = local.database_instance_name
   database_name                  = local.database_name
   database_version               = var.database_version
+  edition                       = var.database_edition
   database_tier                  = var.database_tier
   disk_size_gb                   = var.database_disk_size_gb
   disk_autoresize_limit_gb       = var.database_disk_autoresize_limit_gb

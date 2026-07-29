@@ -42,6 +42,14 @@ resource "google_sql_database_instance" "this" {
   }
 
   lifecycle {
+    precondition {
+      condition = (
+        var.edition == "ENTERPRISE" ||
+        !contains(["db-f1-micro", "db-g1-small"], var.database_tier)
+      )
+      error_message = "Shared-core Cloud SQL tiers require the ENTERPRISE edition."
+    }
+
     ignore_changes = [settings[0].disk_size]
   }
 }

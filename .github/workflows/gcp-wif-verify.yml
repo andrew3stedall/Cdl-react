@@ -117,6 +117,7 @@ jobs:
           trap 'rm -f "${bucket_json}" "${iam_json}"' EXIT
 
           gcloud storage buckets describe "gs://${TERRAFORM_STATE_BUCKET}" \
+            --raw \
             --format=json > "${bucket_json}"
           gcloud storage buckets get-iam-policy "gs://${TERRAFORM_STATE_BUCKET}" \
             --format=json > "${iam_json}"

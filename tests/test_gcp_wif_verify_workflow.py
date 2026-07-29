@@ -89,6 +89,11 @@ def test_wif_verify_fails_closed_with_named_state_bucket_diagnostics() -> None:
     ]:
         assert phrase in verification
 
+    bucket_describe = verification.split("gcloud storage buckets describe", maxsplit=1)[1].split(
+        "gcloud storage buckets get-iam-policy", maxsplit=1
+    )[0]
+    assert "--raw" in bucket_describe
+
     assert "assert actual_project_number" not in verification
     assert "assert object_admin_members" not in verification
     assert "gcloud storage buckets update" not in content

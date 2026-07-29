@@ -111,6 +111,12 @@ jobs:
         working-directory: infra/terraform/environments/staging
 
     steps:
+      - name: Checkout exact reviewed source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.reviewed_source_sha }}
+          persist-credentials: false
+
       - name: Validate reviewed apply request
         shell: bash
         run: |
@@ -203,12 +209,6 @@ jobs:
           assert "## Detected remote-state drift\n\n- None detected" in summary
           assert "Binary plan and machine-readable JSON: not retained or uploaded" in summary
           PY
-
-      - name: Checkout exact reviewed source
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.reviewed_source_sha }}
-          persist-credentials: false
 
       - name: Verify exact reviewed plan manifest
         shell: bash
@@ -475,6 +475,7 @@ jobs:
       - name: Remove executable and machine-readable plan files
         if: always()
         shell: bash
+        working-directory: ${{ github.workspace }}
         run: |
           rm -f \
             "${RUNNER_TEMP}/recreated.tfplan" \

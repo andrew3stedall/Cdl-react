@@ -8,6 +8,7 @@ resource "google_sql_database_instance" "this" {
 
   settings {
     tier                        = var.database_tier
+    edition                     = var.edition
     availability_type           = var.availability_type
     deletion_protection_enabled = var.deletion_protection
     disk_autoresize             = true

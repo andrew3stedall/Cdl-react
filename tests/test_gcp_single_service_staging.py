@@ -9,6 +9,9 @@ CLOUD_RUN_VARIABLES = Path("infra/terraform/modules/cloud-run-api/variables.tf")
 PLAN_WORKFLOW = Path(".github/workflows/gcp-terraform-staging.yml")
 IMAGE_WORKFLOW = Path(".github/workflows/gcp-deploy-staging.yml")
 DATABASE_JOB_WORKFLOW = Path(".github/workflows/gcp-run-staging-database-job.yml")
+DATABASE_CREDENTIAL_WORKFLOW = Path(
+    ".github/workflows/gcp-bootstrap-staging-database-credential.yml"
+)
 ADR = Path("docs/architecture/gcp-single-service-staging.md")
 
 
@@ -140,6 +143,41 @@ def test_database_job_execution_is_manual_and_confirmation_gated() -> None:
 
     assert "schedule:" not in content
     assert "--execute-now" not in content
+
+
+def test_database_credential_bootstrap_is_manual_restricted_and_secret_safe() -> None:
+    content = DATABASE_CREDENTIAL_WORKFLOW.read_text(encoding="utf-8")
+    dispatch_section = content.split("workflow_dispatch:", maxsplit=1)[1]
+    dispatch_inputs = dispatch_section.split("permissions:", maxsplit=1)[0]
+
+    for phrase in [
+        "GCP Bootstrap Staging Database Credential",
+        "confirm_foundation_applied",
+        "ROTATE STAGING DATABASE CREDENTIAL",
+        "github.ref == 'refs/heads/main'",
+        'test "${PROJECT_ID}" = "cdl-react-staging-ast"',
+        "google-github-actions/auth@v3",
+        "CLOUD_SQL_PROXY_SHA256",
+        "sha256sum --check",
+        "REVOKE cloudsqlsuperuser FROM cdl_app",
+        "NOSUPERUSER",
+        "NOCREATEDB",
+        "NOCREATEROLE",
+        "NOREPLICATION",
+        "NOBYPASSRLS",
+        "REVOKE ALL ON DATABASE cdl_react FROM PUBLIC",
+        "GRANT CONNECT ON DATABASE cdl_react TO cdl_app",
+        "REVOKE CREATE ON SCHEMA public FROM PUBLIC",
+        "gcloud secrets versions add",
+        "--data-file=-",
+        "rotated and discarded on workflow exit",
+    ]:
+        assert phrase in content
+
+    assert "password:" not in dispatch_inputs
+    assert "database_url:" not in dispatch_inputs
+    assert "actions/upload-artifact" not in content
+    assert "cdl-react-prod" not in content
 
 
 def test_adr_keeps_apply_migrations_and_public_access_separately_gated() -> None:

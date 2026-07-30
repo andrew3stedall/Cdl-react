@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-07-30 - Permit staging log-based alert creation
+
+### Changed
+
+- Granted the staging GitHub deploy identity Logs Configuration Writer so Terraform can create Cloud Logging notification rules for log-based alerts.
+- Kept the permission staging-only; production deploy roles and the explicit Owner/Editor exclusion remain unchanged.
+
+### Validation
+
+- Extended the bootstrap role contract test to require `roles/logging.configWriter` within the staging module.
+- Documented the permission boundary and the log-based alert dependency in the bootstrap runbook.
 ## 2026-07-27 - Prepare the single-service staging runtime
 
 ### Added

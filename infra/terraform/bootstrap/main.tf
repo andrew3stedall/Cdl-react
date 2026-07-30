@@ -24,6 +24,7 @@ module "staging" {
     "roles/cloudsql.admin",
     "roles/iam.serviceAccountAdmin",
     "roles/iam.serviceAccountUser",
+    "roles/logging.configWriter",
     "roles/monitoring.editor",
     "roles/resourcemanager.projectIamAdmin",
     "roles/run.admin",

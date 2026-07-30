@@ -18,6 +18,7 @@ def test_staging_deploy_identity_has_required_domain_roles() -> None:
         "roles/cloudsql.admin",
         "roles/iam.serviceAccountAdmin",
         "roles/iam.serviceAccountUser",
+        "roles/logging.configWriter",
         "roles/monitoring.editor",
         "roles/resourcemanager.projectIamAdmin",
         "roles/run.admin",

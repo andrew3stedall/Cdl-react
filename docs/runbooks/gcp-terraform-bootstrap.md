@@ -31,6 +31,11 @@ Initial staging deployment roles
 
 Budget alerts do not stop or cap spending.
 
+The staging deploy identity includes `roles/logging.configWriter` so Terraform can
+create the Cloud Logging notification rule attached to a log-based alert policy.
+This role is staging-only in the bootstrap configuration; it is not added to the
+production deploy identity.
+
 ## Safety rules
 
 - Never create or download a service-account JSON key.

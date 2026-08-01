@@ -42,7 +42,7 @@ The manual workflow:
 6. renders the saved plan to human-readable text;
 7. reads the machine-readable JSON only inside the runner to create a redacted summary;
 8. verifies every changed resource type belongs to the reviewed staging design;
-9. detects and blocks out-of-band resource drift reported separately by Terraform;
+9. reports out-of-band resource drift and blocks it when Terraform also proposes managed changes;
 10. creates a canonical non-sensitive identity manifest binding the plan text to the source
     commit, workflow run, deployment stage, backend, image and exact Terraform inputs;
 11. deletes the binary plan and machine-readable JSON before artifact upload;
@@ -100,12 +100,13 @@ The summary step blocks the run when it detects any of:
 - a destructive delete or replacement action;
 - a public IAM principal such as `allUsers` or `allAuthenticatedUsers` in planned values;
 - an unreviewed Terraform resource type that is not part of the committed staging design; or
-- out-of-band resource drift between the latest remote objects and the prior saved state.
+- actionable out-of-band resource drift accompanied by managed resource changes.
 
-The drift gate is intentionally fail-closed. Terraform reports drift separately from planned
-resource changes, including cases where an external change may need explanation before the
-configuration is applied. Every drifted resource must be reconciled or explicitly understood,
-then a fresh plan must be generated before progression.
+Terraform reports drift separately from planned resource changes. Drift accompanied by a
+detailed exit code of `2` remains fail-closed because Terraform proposes a managed
+reconciliation and the difference must be understood before progression. Refresh-only drift
+on a detailed exit code of `0` is still listed in the redacted summary, but it does not block
+an otherwise clean no-change plan because Terraform has no managed action to review or apply.
 
 The resource-type allowlist is intentionally fail-closed. Adding a new Terraform resource
 requires the implementation and allowlist change to be reviewed together before a live plan
@@ -126,7 +127,7 @@ Before requesting approval for any live apply, confirm:
 
 - the source SHA is the intended `main` commit;
 - the plan reads the expected staging backend and project;
-- there is no unexplained remote-state drift;
+- there is no unexplained actionable remote-state drift requiring a managed change;
 - there are no production resources;
 - every changed resource type belongs to the reviewed staging design;
 - Cloud SQL remains zonal and within the reviewed tier, disk-growth, backup and PITR bounds;

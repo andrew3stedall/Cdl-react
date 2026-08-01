@@ -1,5 +1,16 @@
 # Changelog
 
+## 2026-08-01 - Distinguish actionable from refresh-only Terraform drift
+
+### Fixed
+
+- Kept actionable remote-state drift fail-closed when Terraform proposes managed
+  resource changes.
+- Allowed provider refresh metadata to remain visible without failing a clean
+  no-change plan when Terraform returns detailed exit code `0`.
+- Added regression coverage reproducing the staging alert-policy failure from
+  apply run `30723444536` and documented the review boundary.
+
 ## 2026-07-30 - Add controlled staging database credential bootstrap
 
 ### Added

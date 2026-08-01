@@ -1,5 +1,31 @@
 # Changelog
 
+## 2026-07-30 - Add controlled staging database credential bootstrap
+
+### Added
+
+- Added a manual, main-only workflow that creates or rotates the restricted
+  `cdl_app` PostgreSQL credential and writes its Unix-socket SQLAlchemy URL
+  directly to Secret Manager.
+- Added a documented rotation procedure with exact confirmation, staging project
+  checks, keyless authentication, Cloud SQL Auth Proxy connectivity, masked
+  generated passwords and no secret artifacts or Terraform-state payloads.
+
+### Security
+
+- Explicitly removes `cloudsqlsuperuser` membership and database/role creation,
+  replication and row-security bypass capabilities from `cdl_app`.
+- Revokes default public database and schema-creation grants while retaining the
+  schema creation access required by the current shared migration/runtime role.
+- Rotates the temporary `postgres` bootstrap password to a new discarded value
+  on every workflow exit path.
+
+### Validation
+
+- Added repository contract coverage for manual gating, the fixed staging
+  boundary, restricted PostgreSQL role flags, direct Secret Manager streaming
+  and absence of secret-bearing workflow inputs or artifacts.
+
 ## 2026-07-30 - Permit staging log-based alert creation
 
 ### Changed

@@ -135,7 +135,20 @@ Required runtime values are:
 
 Do not place either payload in GitHub variables, committed files, Terraform variables, plan evidence or Terraform state.
 
-The database user/password creation and rotation procedure must be documented before a live secret version is created. The database URL should use the created `cdl_react` database and a least-privilege application role.
+Use the manual, `main`-only **GCP Bootstrap Staging Database Credential**
+workflow described in
+`docs/runbooks/gcp-staging-database-migrations.md` to create or rotate the
+database credential. It creates a restricted `cdl_app` PostgreSQL login, writes
+the SQLAlchemy Unix-socket URL directly to a new `cdl-database-url` version and
+rotates away the temporary administrator password. No password or URL is
+accepted as a GitHub input, retained as an artifact, committed, or stored in
+Terraform state.
+
+Because migration and runtime currently share one database URL, `cdl_app` has
+`CONNECT` plus `USAGE` and `CREATE` on the `public` schema of `cdl_react`. It has
+no superuser, database-creation, role-creation, replication, row-security bypass,
+or `cloudsqlsuperuser` membership. A future hardening change should split the
+migration owner credential from a DML-only runtime credential.
 
 ## 5. Run controlled migrations and deterministic seed loading
 
@@ -247,7 +260,8 @@ Provider validation proves schema compatibility only. After an approved apply, e
 ## Current limitations
 
 - No chargeable Terraform apply has been run for this application environment.
-- No database credential or Secret Manager payload has been created by Terraform.
+- Terraform does not create a database credential or Secret Manager payload; the
+  separately gated credential workflow performs that live rotation.
 - Controlled migration and deterministic seed job definitions exist, but live execution and proof remain pending.
 - The first access model remains a product/security decision.
 - Real historical exports remain a separate validation gate.

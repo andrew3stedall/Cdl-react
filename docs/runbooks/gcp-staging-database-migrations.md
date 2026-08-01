@@ -7,6 +7,7 @@ This runbook defines the controlled migration and deterministic synthetic seed j
 The relevant resources and workflow are:
 
 - `infra/terraform/environments/staging/database_jobs.tf`
+- `.github/workflows/gcp-bootstrap-staging-database-credential.yml`
 - `.github/workflows/gcp-run-staging-database-job.yml`
 - `src/cdl_api/migrate.py`
 - `src/cdl_api/seed_staging.py`
@@ -94,6 +95,49 @@ CDL_ALLOW_SYNTHETIC_STAGING_SEED=true
 The migration identity can access only `cdl-database-url` and has `roles/cloudsql.client`. It does not receive the staging login secret. Database-level privileges are controlled by the database credential, not by GCP IAM alone.
 
 Do not place a database URL, password, signed URL, service-account key or secret payload in the image, Terraform variables, workflow inputs, logs or repository files.
+
+## Bootstrap or rotate the staging database credential
+
+After the foundation is applied, manually run **GCP Bootstrap Staging Database
+Credential** from `main`. Confirm the foundation gate and type:
+
+```text
+ROTATE STAGING DATABASE CREDENTIAL
+```
+
+The workflow authenticates with the existing keyless staging deploy identity and
+refuses any project except `cdl-react-staging-ast`. It verifies the expected Cloud
+SQL instance, `cdl_react` database and `cdl-database-url` secret container before
+making a change.
+
+The workflow generates both passwords inside its isolated runner. It briefly
+rotates the default `postgres` password so it can connect through the Cloud SQL
+Auth Proxy, creates or updates `cdl_app` through PostgreSQL, and then rotates the
+administrator password to a new discarded value on every exit path. The
+persistent `cdl_app` role:
+
+- can log in and connect only where explicitly granted;
+- can use and create objects in the `public` schema of `cdl_react`, as required
+  by the current shared migration/runtime credential;
+- cannot create databases or roles;
+- is not a superuser, replication role, row-security bypass role, or member of
+  `cloudsqlsuperuser`.
+
+The workflow revokes the default public database and schema-creation grants,
+writes the SQLAlchemy Unix-socket URL to a new `cdl-database-url` Secret Manager
+version over standard input, and verifies only the version state. Passwords and
+the database URL are masked and are not accepted as workflow inputs, uploaded as
+artifacts, committed, or written into Terraform state.
+
+This is a credential rotation: each successful run invalidates the previous
+`cdl_app` password and creates a new secret version. Do not run it while staging
+database jobs or the staging application are active. Older secret versions should
+be disabled after the new version and database jobs are proven; do not destroy
+them until rollback evidence has been reviewed.
+
+The current shared credential necessarily has schema-creation permission so
+Alembic can migrate. Splitting migration ownership from runtime DML is a future
+hardening step and requires separate Secret Manager and Terraform wiring.
 
 ## Controlled execution
 

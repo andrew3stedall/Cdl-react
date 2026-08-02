@@ -166,7 +166,13 @@ For synthetic seed loading:
 4. explicitly confirm synthetic data is intended;
 5. execute and wait for completion.
 
-The workflow verifies that the Terraform-managed job uses an immutable `@sha256` image before execution. It does not create, update or replace the job definition.
+The workflow reads the image from the Cloud Run v1 job representation returned
+by `gcloud run jobs describe` at
+`spec.template.spec.template.spec.containers[0].image`. It then verifies that
+the value is an immutable `@sha256` digest in the expected staging project's
+`cdl-react-backend/cdl-react-app` repository before execution. An empty value,
+a tag, or a digest from another project or repository fails closed. The
+workflow does not create, update or replace the job definition.
 
 Migration and seed execution must remain separate. A failed seed must not obscure whether schema migration succeeded.
 

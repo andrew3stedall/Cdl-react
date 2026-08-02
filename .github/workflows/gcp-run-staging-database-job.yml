@@ -89,10 +89,11 @@ jobs:
             gcloud run jobs describe "${JOB_NAME}" \
               --project "${PROJECT_ID}" \
               --region "${REGION}" \
-              --format='value(template.template.containers[0].image)'
+              --format='value(spec.template.spec.template.spec.containers[0].image)'
           )"
-          if [[ ! "${image}" =~ @sha256:[0-9a-f]{64}$ ]]; then
-            echo "The configured job does not use an immutable image digest." >&2
+          image_pattern="^${REGION}-docker\\.pkg\\.dev/${PROJECT_ID}/cdl-react-backend/cdl-react-app@sha256:[0-9a-f]{64}$"
+          if [[ ! "${image}" =~ ${image_pattern} ]]; then
+            echo "The configured job does not use the expected immutable staging image." >&2
             exit 1
           fi
           echo "Executing ${JOB_NAME} from immutable image ${image}."

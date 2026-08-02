@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-08-02 - Fix staging database job image verification
+
+### Fixed
+
+- Read the configured container image from the Cloud Run v1 job structure
+  returned by `gcloud run jobs describe` instead of an empty v2-style path.
+- Restricted execution to immutable digests from the expected staging project
+  and `cdl-react-backend/cdl-react-app` repository.
+
+### Validation
+
+- Added regression coverage for the correct nested image field, expected
+  repository boundary and rejection of the previous incorrect field path.
+- Recorded migration workflow run `30738978829` as the fail-closed evidence;
+  the migration was not executed and the staging database was unchanged.
+
 ## 2026-08-02 - Fix Cloud SQL credential role rotation
 
 ### Fixed

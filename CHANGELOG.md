@@ -1,5 +1,27 @@
 # Changelog
 
+## 2026-08-02 - Add phone-browser staging access boundary
+
+### Added
+
+- Added a staging-only global session boundary for all non-authentication API routes and API
+  schema routes while keeping the React login bootstrap and health check reachable.
+- Added an explicit `application-login` runtime access model to the reviewed Terraform plan
+  and apply workflows, including exact manifest, approval phrase, IAM, and live-policy checks.
+
+### Security
+
+- Limited the public-plan exception to `allUsers` with `roles/run.invoker` on the single
+  Terraform-managed staging Cloud Run service; all other public IAM remains fail-closed.
+- Switched the shared staging password check to constant-time comparison and documented that
+  this synthetic-data review control is not a production identity system.
+- Made staging startup fail closed when the known development login secret has not been
+  replaced by the configured Secret Manager value.
+
+### Validation
+
+- Added API boundary, exact public-IAM exception, plan-manifest, and workflow contract tests.
+
 ## 2026-08-02 - Fix staging database job image verification
 
 ### Fixed

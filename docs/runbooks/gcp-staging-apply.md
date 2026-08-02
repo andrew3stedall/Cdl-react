@@ -34,11 +34,12 @@ The workflow requires:
 - `reviewed_plan_run_id`: the numeric **GCP Terraform Staging** workflow run ID;
 - `reviewed_source_sha`: the exact 40-character `main` commit in the reviewed summary;
 - `deployment_stage`: `foundation`, `database-jobs`, or `runtime`;
+- `access_model`: `private` or `application-login`; the latter is valid only for `runtime`;
 - `backend_image`: empty for `foundation`; otherwise the immutable Artifact Registry
   digest URI;
 - `approval_reference`: the repository issue or pull-request comment URL containing the
   explicit approval;
-- `approval_phrase`: exactly `APPLY STAGING <deployment_stage>`; and
+- `approval_phrase`: exactly `APPLY STAGING <deployment_stage> <access_model>`; and
 - `confirm_apply`: explicitly enabled.
 
 The workflow does not run automatically. Pull requests execute Terraform formatting and
@@ -61,8 +62,9 @@ For `database-jobs` and `runtime`, the immutable Artifact Registry digest must m
 australia-southeast1-docker.pkg.dev/<staging-project>/cdl-react-backend/cdl-react-app@sha256:<64 hex>
 ```
 
-Floating tags are rejected; public access remains disabled through
-`allow_public_invoker=false`.
+Floating tags are rejected. `private` resolves to `allow_public_invoker=false`.
+`application-login` resolves to `allow_public_invoker=true` only for `runtime` and requires
+the application session boundary described in the staging access ADR.
 
 ## Enforced stage order
 
@@ -89,8 +91,9 @@ Every stage verifies the immutable Artifact Registry repository, runtime and mig
 service accounts, private frontend-assets bucket, and Cloud SQL instance. It also confirms
 that Cloud SQL has no authorized networks. The database-jobs stage additionally verifies
 both migration and synthetic-seed Cloud Run jobs. The runtime stage additionally verifies
-the API service and rejects an IAM policy containing `allUsers` or
-`allAuthenticatedUsers`.
+the API service and requires its public IAM policy to match the selected access model exactly:
+no public member for `private`, or only `roles/run.invoker` for `allUsers` for
+`application-login`. `allAuthenticatedUsers` is never accepted.
 
 A successful Terraform command without these live checks does not produce successful apply
 evidence. Temporary IAM JSON is deleted and is never uploaded.
@@ -100,8 +103,8 @@ evidence. Temporary IAM JSON is deleted and is never uploaded.
 Before GCP authentication, the apply workflow reconstructs the expected non-sensitive
 manifest from its manual inputs and the checked-out backend configuration. It requires an
 exact match with the reviewed artifact, including the plan-text SHA-256, backend bucket and
-prefix, backend configuration hash, project, stage, immutable image, feature flags and
-`allow_public_invoker=false`.
+prefix, backend configuration hash, project, stage, immutable image, feature flags and the
+resolved `allow_public_invoker` value.
 
 An altered, cross-stage, cross-project, cross-backend or differently parameterised artifact
 fails before Terraform initializes the remote backend or requests a GCP token.
@@ -132,6 +135,7 @@ The retained seven-day Markdown evidence records:
 
 - reviewed and apply workflow runs;
 - source commit and deployment stage;
+- selected access model and resolved public-invoker value;
 - immutable image identity where applicable;
 - approval reference;
 - SHA-256 of the reviewed human-readable plan;
@@ -152,8 +156,8 @@ Do not weaken a gate to make an apply pass.
 - Missing or expired reviewed evidence requires a new authenticated plan.
 - A changed `main` commit requires a new plan and approval.
 - A plan-text mismatch requires reviewing the new plan.
-- Drift, deletion, replacement, public IAM, or unreviewed resource types remain blocked by
-  the existing summary utility.
+- Drift, deletion, replacement, unreviewed resource types, or public IAM outside the exact
+  runtime `application-login` exception remain blocked by the summary utility.
 - A non-zero post-apply plan requires investigation before building images, running
   migrations, or advancing to the next cumulative stage.
 
@@ -168,6 +172,8 @@ Do not weaken a gate to make an apply pass.
 7. Plan and apply `database-jobs`.
 8. Run controlled migrations and deterministic seed loading.
 9. Plan and apply `runtime`.
-10. Prove health, readiness, persistence, monitoring, backup, restore, and rollback.
+10. Build the login-boundary image, then plan and apply `runtime` with `application-login`.
+11. Prove browser login, protected API access, persistence, monitoring, backup, restore,
+    and rollback.
 
 Production remains out of scope.

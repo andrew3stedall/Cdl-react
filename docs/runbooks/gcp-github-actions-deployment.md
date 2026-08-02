@@ -41,7 +41,9 @@ CDL_DATABASE_URL=<Secret Manager reference>
 CDL_DEVELOPMENT_LOGIN_SECRET=<Secret Manager reference>
 ```
 
-Cloud Run remains disabled by default. Public invocation also remains disabled until the staging access and route-authorization boundary is explicitly approved.
+Cloud Run and public invocation remain disabled by default. The explicit runtime
+`application-login` access model enables normal browser invocation only after the global
+staging API session boundary and exact Terraform IAM exception pass review.
 
 ## Required GitHub environment
 
@@ -207,17 +209,21 @@ Review that the plan:
 
 Apply only after a new explicit plan approval. Terraform, not the image workflow, owns the Cloud Run service and its configuration.
 
-## 8. Approve an access boundary before exposing the review URL
+## 8. Apply the application-login access boundary
 
-A private Cloud Run service has a stable HTTPS URL but is not automatically usable as a normal public browser application. Do not set `allow_public_invoker=true` merely to make the URL convenient.
+A private Cloud Run service has a stable HTTPS URL but is not usable as a normal phone-browser
+application. Build an image containing the global staging session middleware, then generate a
+runtime plan with `access_model=application-login`.
 
-Before exposure, document and approve one access model and verify route authorization:
+That reviewed model permits only:
 
-- authenticated Cloud Run invocation for a limited tester group;
-- a reviewed identity-aware proxy or equivalent access layer;
-- public invocation protected by complete application-level authorization, only after every sensitive route is audited.
+- `allUsers` with `roles/run.invoker` on `cdl-react-staging-api`;
+- anonymous access to the React login bootstrap and `/health`;
+- session-authenticated access to every other `/api/*` route and the API schema routes.
 
-The current Terraform plan safety gate intentionally rejects public IAM. Changing that gate requires a separate security decision and review.
+Use approval phrase `APPLY STAGING runtime application-login`. The plan gate rejects every
+other public member, role, address, action, and stage. This shared-password model is restricted
+to synthetic staging data and does not replace production identity.
 
 ## 9. Prove staging
 
@@ -263,6 +269,6 @@ Provider validation proves schema compatibility only. After an approved apply, e
 - Terraform does not create a database credential or Secret Manager payload; the
   separately gated credential workflow performs that live rotation.
 - Controlled migration and deterministic seed job definitions exist, but live execution and proof remain pending.
-- The first access model remains a product/security decision.
+- The staging application-login model is implemented; production identity remains undecided.
 - Real historical exports remain a separate validation gate.
 - Production is not configured.

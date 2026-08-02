@@ -36,6 +36,7 @@ def build_manifest(
     backend_image: str,
     enable_database_jobs: bool,
     enable_cloud_run: bool,
+    allow_public_invoker: bool,
 ) -> dict[str, Any]:
     valid_source_sha = len(source_sha) == 40 and all(
         character in "0123456789abcdef" for character in source_sha
@@ -60,9 +61,11 @@ def build_manifest(
         raise ValueError("foundation must not include a backend image")
     if deployment_stage != "foundation" and "@sha256:" not in backend_image:
         raise ValueError("later stages require an immutable backend image digest")
+    if allow_public_invoker and deployment_stage != "runtime":
+        raise ValueError("public invocation is supported only for the runtime stage")
 
     terraform_inputs = {
-        "allow_public_invoker": False,
+        "allow_public_invoker": allow_public_invoker,
         "backend_image": backend_image,
         "enable_cloud_run": enable_cloud_run,
         "enable_database_jobs": enable_database_jobs,
@@ -118,6 +121,7 @@ def _common_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--backend-image", default="")
     parser.add_argument("--enable-database-jobs", required=True)
     parser.add_argument("--enable-cloud-run", required=True)
+    parser.add_argument("--allow-public-invoker", required=True)
 
 
 def _parse_args() -> argparse.Namespace:
@@ -147,6 +151,7 @@ def main() -> int:
         backend_image=args.backend_image,
         enable_database_jobs=_parse_bool(args.enable_database_jobs),
         enable_cloud_run=_parse_bool(args.enable_cloud_run),
+        allow_public_invoker=_parse_bool(args.allow_public_invoker),
     )
 
     if args.command == "create":

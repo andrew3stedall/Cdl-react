@@ -67,7 +67,9 @@ frontend_asset_bucket_url
 
 These identify a private bucket and `gs://` URL. They contain no credential, signed URL or public hostname. The bucket URL is not a public website endpoint.
 
-The tester-facing URL will come from the Terraform-managed Cloud Run service only after an immutable image, database secrets, migrations, seed data, runtime plan and access model have been separately approved.
+The tester-facing URL comes from the Terraform-managed Cloud Run service. Normal browser
+access requires the reviewed `application-login` runtime model: the React login bootstrap and
+health route are public, while all other API and schema routes require a valid secure session.
 
 ## Cost boundary
 
@@ -114,10 +116,12 @@ The saved plan and cost summary must confirm:
 3. Run controlled migrations and deterministic synthetic seed loading.
 4. Run **GCP Build Staging Image** to build and push the single-service image.
 5. Record its immutable digest URI.
-6. Generate a fresh Terraform plan enabling private Cloud Run with that digest.
-7. Approve and apply the runtime plan.
-8. Select and approve the tester access boundary.
-9. Verify root loading, client routes, API connectivity, authentication and one persisted workflow.
+6. Generate a fresh Terraform runtime plan with that digest and `access_model=application-login`.
+7. Review the exact image update and one `allUsers` Cloud Run Invoker binding.
+8. Approve and apply that runtime plan using
+   `APPLY STAGING runtime application-login`.
+9. Verify root loading, client routes, login/logout, anonymous API rejection and one persisted workflow.
 10. Record rollback and monitoring evidence in issues #70 and #78.
 
-A private bucket alone does not satisfy the usable-staging acceptance criterion. A private Cloud Run service also does not provide convenient browser access until the tester access model is approved and implemented.
+A private bucket alone does not satisfy the usable-staging acceptance criterion. The shared
+staging password is a review-only control for synthetic data, not a production identity model.

@@ -12,6 +12,9 @@ from pathlib import Path
 type JsonValue = None | bool | int | float | str | list[JsonValue] | dict[str, JsonValue]
 
 PUBLIC_PRINCIPALS = {"allUsers", "allAuthenticatedUsers"}
+STAGING_PUBLIC_INVOKER_ADDRESS = (
+    "module.cloud_run_api[0].google_cloud_run_v2_service_iam_member.public_invoker[0]"
+)
 APPROVED_STAGING_RESOURCE_TYPES = {
     "google_artifact_registry_repository",
     "google_cloud_run_v2_job",
@@ -60,14 +63,14 @@ def _as_string(value: JsonValue, default: str = "unknown") -> str:
     return value if isinstance(value, str) else default
 
 
-def _contains_public_principal(value: JsonValue) -> bool:
+def _public_principals(value: JsonValue) -> set[str]:
     if isinstance(value, str):
-        return value in PUBLIC_PRINCIPALS
+        return {value} if value in PUBLIC_PRINCIPALS else set()
     if isinstance(value, list):
-        return any(_contains_public_principal(item) for item in value)
+        return set().union(*(_public_principals(item) for item in value))
     if isinstance(value, dict):
-        return any(_contains_public_principal(item) for item in value.values())
-    return False
+        return set().union(*(_public_principals(item) for item in value.values()))
+    return set()
 
 
 def _classify_actions(actions: list[str]) -> str:
@@ -100,13 +103,18 @@ def _parse_changes(
             if action
         ]
         action = _classify_actions(actions)
+        after = _as_object(change_body.get("after"))
+        public_principals = _public_principals(change_body.get("after"))
         parsed.append(
             {
                 "address": _as_string(change.get("address")),
                 "type": _as_string(change.get("type")),
                 "action": action,
                 "destructive": action in {"delete", "replace"},
-                "public": _contains_public_principal(change_body.get("after")),
+                "public": bool(public_principals),
+                "public_principals": sorted(public_principals),
+                "member": _as_string(after.get("member"), ""),
+                "role": _as_string(after.get("role"), ""),
             }
         )
     return parsed
@@ -130,6 +138,7 @@ def summarize_plan(
     plan_exit_code: int,
     source_sha: str,
     run_url: str,
+    allow_staging_public_invoker: bool = False,
 ) -> tuple[str, int]:
     changes = _parse_changes(plan)
     changed = [item for item in changes if item["action"] not in {"no-op", "read"}]
@@ -141,6 +150,18 @@ def summarize_plan(
     action_counts = Counter(_as_string(item["action"]) for item in changed)
     destructive = [item for item in changed if item["destructive"] is True]
     public = [item for item in changed if item["public"] is True]
+    allowed_public_invoker = [
+        item
+        for item in public
+        if allow_staging_public_invoker
+        and item["address"] == STAGING_PUBLIC_INVOKER_ADDRESS
+        and item["type"] == "google_cloud_run_v2_service_iam_member"
+        and item["action"] == "create"
+        and item["member"] == "allUsers"
+        and item["role"] == "roles/run.invoker"
+        and item["public_principals"] == ["allUsers"]
+    ]
+    blocked_public = [item for item in public if item not in allowed_public_invoker]
     unexpected_types = sorted(
         {
             resource_type
@@ -166,7 +187,7 @@ def summarize_plan(
 
     gate_status = "PASS"
     exit_code = 0
-    if public:
+    if blocked_public:
         gate_status = "BLOCKED: public IAM principal detected"
         exit_code = 3
     elif destructive:
@@ -193,6 +214,12 @@ def summarize_plan(
         f"- Plan format version: `{_as_string(plan.get('format_version'))}`",
         f"- Saved plan SHA-256: `{plan_sha256}`",
         f"- Terraform detailed exit code: `{plan_exit_code}`",
+        "- Public staging invoker: "
+        + (
+            "explicitly allowed for the application-login access model"
+            if allow_staging_public_invoker
+            else "disabled"
+        ),
         "- Binary plan and machine-readable JSON: not retained or uploaded",
         "",
         "## Change counts",
@@ -275,6 +302,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--plan-file", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--plan-exit-code", type=int, required=True)
+    parser.add_argument("--allow-staging-public-invoker", action="store_true")
     return parser.parse_args()
 
 
@@ -294,6 +322,7 @@ def main() -> int:
         plan_exit_code=args.plan_exit_code,
         source_sha=os.environ.get("GITHUB_SHA", "unknown"),
         run_url=run_url,
+        allow_staging_public_invoker=args.allow_staging_public_invoker,
     )
     args.output.write_text(markdown, encoding="utf-8")
     if summary_path := os.environ.get("GITHUB_STEP_SUMMARY"):

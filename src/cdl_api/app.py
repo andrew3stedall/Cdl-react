@@ -2,6 +2,7 @@
 
 from fastapi import FastAPI
 
+from cdl_api.repositories.factory import build_repositories
 from cdl_api.routers.auth import router as auth_router
 from cdl_api.routers.dashboard import router as dashboard_router
 from cdl_api.routers.fdr import router as fdr_router
@@ -15,13 +16,25 @@ from cdl_api.routers.preferences import router as preferences_router
 from cdl_api.routers.rules import router as rules_router
 from cdl_api.routers.squad import router as squad_router
 from cdl_api.routers.team_selection import router as team_selection_router
-from cdl_api.settings import get_settings
+from cdl_api.services.auth import AuthenticationService
+from cdl_api.settings import DEFAULT_DEVELOPMENT_LOGIN_SECRET, get_settings
+from cdl_api.staging_access import build_staging_access_middleware
 from cdl_api.static_frontend import mount_static_frontend
 
 
 def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(title=settings.app_name)
+    if settings.environment == "staging":
+        if settings.development_login_secret == DEFAULT_DEVELOPMENT_LOGIN_SECRET:
+            raise RuntimeError("Staging requires a non-default login secret.")
+        repositories = build_repositories(settings)
+        auth_service = AuthenticationService(
+            repositories.users,
+            repositories.sessions,
+            settings.development_login_secret,
+        )
+        app.middleware("http")(build_staging_access_middleware(settings, auth_service))
     app.include_router(auth_router, prefix=settings.api_prefix)
     app.include_router(dashboard_router, prefix=settings.api_prefix)
     app.include_router(fdr_router, prefix=settings.api_prefix)

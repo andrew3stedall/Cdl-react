@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-08-02 - Add allowlisted Google sign-in for staging
+
+### Added
+
+- Added an official Google Identity Services sign-in path that verifies Google ID tokens on the
+  API and permits only the configured exact email allowlist.
+- Reused the existing PostgreSQL user and session tables so Cloud Run instances share the same
+  secure application session without storing Google access or refresh tokens.
+- Added Terraform-managed Secret Manager containers for the OAuth client ID and email allowlist.
+- Added a reviewed, plan-manifest-bound enable switch so Cloud Run does not reference those
+  secrets until their first versions exist.
+
+### Security
+
+- Bound Google credentials to the exact configured OAuth client audience, required a
+  Google-verified email, and required a same-origin custom request header.
+- Kept the shared staging password only as a temporary fallback and left production identity,
+  IAM and real-data access out of scope.
+
 ## 2026-08-02 - Add phone-browser staging access boundary
 
 ### Added

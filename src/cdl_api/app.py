@@ -28,6 +28,10 @@ def create_app() -> FastAPI:
     if settings.environment == "staging":
         if settings.development_login_secret == DEFAULT_DEVELOPMENT_LOGIN_SECRET:
             raise RuntimeError("Staging requires a non-default login secret.")
+        if bool(settings.google_client_id) != bool(settings.google_allowed_email_set):
+            raise RuntimeError(
+                "Staging Google sign-in requires both a client ID and an email allowlist."
+            )
         repositories = build_repositories(settings)
         auth_service = AuthenticationService(
             repositories.users,

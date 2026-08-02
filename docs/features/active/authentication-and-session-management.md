@@ -6,7 +6,8 @@ Replace the legacy login and session checks with a modern, API-driven authentica
 
 ## Status
 
-Implemented foundation. Production user/session persistence and full legacy-session parity remain pending.
+Implemented foundation with PostgreSQL-backed staging sessions. Allowlisted Google sign-in is
+the staging identity path; full production identity and legacy-session parity remain pending.
 
 ## Legacy Inventory
 
@@ -20,7 +21,7 @@ Users sign in with email and password, access protected static pages after sessi
 
 ## Business Rules
 
-- Login requires an email address and password.
+- Staging supports allowlisted Google sign-in while retaining email/password as a temporary fallback.
 - Protected application screens must verify an active session.
 - Sign out must invalidate the active session.
 
@@ -40,6 +41,8 @@ Users sign in with email and password, access protected static pages after sessi
 ## API Requirements
 
 - `POST /api/auth/login`
+- `GET /api/auth/google/config`
+- `POST /api/auth/google`
 - `GET /api/auth/session`
 - `POST /api/auth/logout`
 - `POST /api/auth/refresh`, if refresh tokens or sliding sessions are used.
@@ -47,6 +50,7 @@ Users sign in with email and password, access protected static pages after sessi
 ## React Requirements
 
 - Login page.
+- Official Google Identity Services sign-in button when configured.
 - Protected route wrapper.
 - Session provider hook.
 - Sign-out action.
@@ -77,6 +81,7 @@ Users sign in with email and password, access protected static pages after sessi
 - API integration tests for login, session, and logout.
 - React tests for form validation and protected-route behaviour.
 - Security tests for invalid credentials and expired sessions.
+- Google token audience, verified-email, allowlist and same-origin request tests.
 
 ## Documentation Requirements
 

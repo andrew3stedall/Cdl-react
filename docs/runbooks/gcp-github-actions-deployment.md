@@ -39,6 +39,8 @@ CDL_REPOSITORY_MODE=postgres
 CDL_SESSION_COOKIE_SECURE=true
 CDL_DATABASE_URL=<Secret Manager reference>
 CDL_DEVELOPMENT_LOGIN_SECRET=<Secret Manager reference>
+CDL_GOOGLE_CLIENT_ID=<Secret Manager reference>
+CDL_GOOGLE_ALLOWED_EMAILS=<Secret Manager reference>
 ```
 
 Cloud Run and public invocation remain disabled by default. The explicit runtime
@@ -119,6 +121,7 @@ The first approved apply must use the shared backend and keep:
 
 ```text
 enable_cloud_run=false
+enable_google_sign_in=false
 allow_public_invoker=false
 ```
 
@@ -134,6 +137,19 @@ Required runtime values are:
 
 - `cdl-database-url`: a SQLAlchemy PostgreSQL URL using the `/cloudsql/<connection-name>` Unix socket;
 - `cdl-development-login-secret`: a staging-only review password until the real identity design replaces it.
+- `cdl-google-client-id`: the Web OAuth client ID used by Google Identity Services;
+- `cdl-google-allowed-emails`: a comma-separated exact email allowlist, initially
+  `andrew3stedall@gmail.com`.
+
+The Google browser credential flow does not use an OAuth client secret. Do not create or store
+one for this integration. Configure the Web OAuth client with the exact authorized JavaScript
+origin `https://cdl-react-staging-api-tkhbn7jfsa-ts.a.run.app` and use a supported full browser,
+not an embedded Android webview.
+
+For the first rollout, apply a reviewed runtime plan with `enable_google_sign_in=false` to
+create the two Google secret containers and runtime access grants without attaching empty
+secrets to Cloud Run. Add their first versions only after that apply succeeds. A second reviewed
+runtime plan may set `enable_google_sign_in=true`.
 
 Do not place either payload in GitHub variables, committed files, Terraform variables, plan evidence or Terraform state.
 

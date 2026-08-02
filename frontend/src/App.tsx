@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useState } from 'react';
+import { type FormEvent, useCallback, useEffect, useState } from 'react';
 
 import {
   canAccessProtectedRoute,
@@ -11,6 +11,7 @@ import { AnalyticsDashboardPage } from './AnalyticsDashboardPage';
 import type { RuleSection, SessionState } from './contracts';
 import type { DashboardClient } from './dashboard-api';
 import { FixtureDifficultyPage } from './FixtureDifficultyPage';
+import { GoogleSignInButton } from './GoogleSignInButton';
 import type { FdrClient } from './fdr-api';
 import { LeaguePage } from './LeaguePage';
 import type { LeagueClient } from './league-api';
@@ -105,6 +106,7 @@ export function App({
   const [loginError, setLoginError] = useState<string | null>(null);
   const [loginPassword, setLoginPassword] = useState('');
   const [loginPending, setLoginPending] = useState(false);
+  const [googleClientId, setGoogleClientId] = useState<string | null>(null);
   const [refreshCount, setRefreshCount] = useState(0);
   const preset = getDefaultThemePreset();
 
@@ -143,6 +145,23 @@ export function App({
           }
           setCurrentPath('/login');
         }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [session, sessionClient]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (session !== undefined) return () => undefined;
+
+    void sessionClient.getGoogleAuthConfig()
+      .then((config) => {
+        if (!cancelled && config.enabled) setGoogleClientId(config.clientId);
+      })
+      .catch(() => {
+        if (!cancelled) setGoogleClientId(null);
       });
 
     return () => {
@@ -216,6 +235,28 @@ export function App({
     }
   };
 
+  const handleGoogleCredential = useCallback(
+    async (credential: string) => {
+      setLoginError(null);
+      setLoginPending(true);
+      try {
+        const result = await sessionClient.loginWithGoogleCredential(credential);
+        if (!result.ok) {
+          setLoginError(result.error.message);
+          return;
+        }
+        setMobileNavigationOpen(false);
+        setBrowserPath('/', true);
+        setActiveSession(result.data.session);
+      } catch {
+        setLoginError('Google sign-in is temporarily unavailable. Try again.');
+      } finally {
+        setLoginPending(false);
+      }
+    },
+    [sessionClient],
+  );
+
   const handleSignOut = async () => {
     setActiveSession(null);
     setBrowserPath('/login', true);
@@ -271,6 +312,15 @@ export function App({
         <p className="login-required" role="status">
           Sign in to access the Castle Draft League application shell.
         </p>
+        {googleClientId ? (
+          <section className="google-login" aria-label="Google sign-in">
+            <GoogleSignInButton
+              clientId={googleClientId}
+              onCredential={handleGoogleCredential}
+            />
+            <p className="login-divider">or use the temporary staging password</p>
+          </section>
+        ) : null}
         <form className="login-form" onSubmit={(event) => void handleLogin(event)}>
           <label className="login-field">
             <span>Email address</span>

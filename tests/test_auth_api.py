@@ -2,6 +2,8 @@ import pytest
 from fastapi.testclient import TestClient
 
 from cdl_api.app import create_app
+from cdl_api.google_identity import GoogleIdentity
+from cdl_api.routers.auth import get_google_identity_verifier
 
 
 def test_login_session_and_logout_flow() -> None:
@@ -63,3 +65,51 @@ def test_anonymous_session_is_not_authenticated() -> None:
     assert response.status_code == 200
     assert response.json()["is_authenticated"] is False
     assert response.json()["user"] is None
+
+
+class StubGoogleIdentityVerifier:
+    def verify(self, credential: str) -> GoogleIdentity | None:
+        if credential != "valid-google-credential":
+            return None
+        return GoogleIdentity(
+            subject="google-subject-1",
+            email="andrew3stedall@gmail.com",
+            display_name="Andrew Stedall",
+        )
+
+
+def test_google_login_creates_application_session(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("CDL_GOOGLE_CLIENT_ID", "staging-client.apps.googleusercontent.com")
+    monkeypatch.setenv("CDL_GOOGLE_ALLOWED_EMAILS", "andrew3stedall@gmail.com")
+    app = create_app()
+    app.dependency_overrides[get_google_identity_verifier] = StubGoogleIdentityVerifier
+    client = TestClient(app)
+
+    config = client.get("/api/auth/google/config")
+    response = client.post(
+        "/api/auth/google",
+        json={"credential": "valid-google-credential"},
+        headers={"X-CDL-Google-Sign-In": "1"},
+    )
+
+    assert config.json() == {
+        "enabled": True,
+        "client_id": "staging-client.apps.googleusercontent.com",
+    }
+    assert response.status_code == 200
+    assert response.json()["session"]["user"]["email"] == "andrew3stedall@gmail.com"
+    assert client.get("/api/auth/session").json()["is_authenticated"] is True
+
+
+def test_google_login_requires_same_origin_header() -> None:
+    app = create_app()
+    app.dependency_overrides[get_google_identity_verifier] = StubGoogleIdentityVerifier
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/auth/google",
+        json={"credential": "valid-google-credential"},
+    )
+
+    assert response.status_code == 403
+    assert response.json()["message"] == "Google sign-in request was rejected."

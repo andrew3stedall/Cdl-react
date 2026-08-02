@@ -31,6 +31,7 @@ def _manifest(tmp_path: Path, **overrides: object) -> dict[str, object]:
         "backend_image": "",
         "enable_database_jobs": False,
         "enable_cloud_run": False,
+        "enable_google_sign_in": False,
         "allow_public_invoker": False,
     }
     arguments.update(overrides)
@@ -54,6 +55,7 @@ def test_manifest_binds_reviewed_plan_backend_and_exact_terraform_inputs(tmp_pat
         "backend_image": "",
         "enable_cloud_run": False,
         "enable_database_jobs": False,
+        "enable_google_sign_in": False,
         "project_id": "cdl-react-staging-ast",
     }
     assert len(str(manifest["terraform_inputs_sha256"])) == 64
@@ -125,3 +127,20 @@ def test_manifest_binds_public_invoker_to_runtime_stage(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="only for the runtime stage"):
         _manifest(tmp_path, allow_public_invoker=True)
+
+
+def test_manifest_binds_google_sign_in_to_public_runtime(tmp_path: Path) -> None:
+    manifest = _manifest(
+        tmp_path,
+        deployment_stage="runtime",
+        enable_database_jobs=True,
+        enable_cloud_run=True,
+        enable_google_sign_in=True,
+        backend_image="image@sha256:" + ("1" * 64),
+        allow_public_invoker=True,
+    )
+
+    assert manifest["terraform_inputs"]["enable_google_sign_in"] is True
+
+    with pytest.raises(ValueError, match="application-login runtime"):
+        _manifest(tmp_path, enable_google_sign_in=True)

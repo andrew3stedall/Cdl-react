@@ -17,6 +17,7 @@ def test_staging_allows_health_frontend_and_auth_bootstrap_routes(
 ) -> None:
     assert staging_client.get("/health").status_code == 200
     assert staging_client.get("/api/auth/session").status_code == 200
+    assert staging_client.get("/api/auth/google/config").status_code == 200
     assert staging_client.post("/api/auth/logout").status_code == 200
     assert staging_client.get("/").status_code == 404
 
@@ -75,4 +76,16 @@ def test_staging_refuses_known_default_login_secret(
     monkeypatch.delenv("CDL_DEVELOPMENT_LOGIN_SECRET", raising=False)
 
     with pytest.raises(RuntimeError, match="non-default login secret"):
+        create_app()
+
+
+def test_staging_rejects_partial_google_configuration(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("CDL_ENVIRONMENT", "staging")
+    monkeypatch.setenv("CDL_DEVELOPMENT_LOGIN_SECRET", "staging-test-secret")
+    monkeypatch.setenv("CDL_GOOGLE_CLIENT_ID", "staging-client.apps.googleusercontent.com")
+    monkeypatch.delenv("CDL_GOOGLE_ALLOWED_EMAILS", raising=False)
+
+    with pytest.raises(RuntimeError, match="both a client ID and an email allowlist"):
         create_app()

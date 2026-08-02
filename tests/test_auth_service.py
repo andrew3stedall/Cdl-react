@@ -1,4 +1,5 @@
 from cdl_api.contracts.auth import LoginRequest
+from cdl_api.google_identity import GoogleIdentity
 from cdl_api.repositories.auth import InMemorySessionRepository, InMemoryUserRepository
 from cdl_api.services.auth import AuthenticationService
 
@@ -41,3 +42,21 @@ def test_logout_invalidates_session() -> None:
 
     assert logged_out.is_authenticated is False
     assert session.is_authenticated is False
+
+
+def test_google_login_creates_allowlisted_identity_session() -> None:
+    service = build_service()
+
+    session_id, session = service.login_google(
+        GoogleIdentity(
+            subject="google-subject-1",
+            email="andrew3stedall@gmail.com",
+            display_name="Andrew Stedall",
+        )
+    )
+
+    assert session_id
+    assert session.user is not None
+    assert session.user.email == "andrew3stedall@gmail.com"
+    assert session.user.roles == ["manager"]
+    assert service.get_session(session_id).is_authenticated is True

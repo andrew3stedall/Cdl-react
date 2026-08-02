@@ -33,6 +33,12 @@ variable "enable_cloud_run" {
   default     = false
 }
 
+variable "enable_google_sign_in" {
+  description = "Attach Google sign-in configuration secrets to Cloud Run after their first versions exist."
+  type        = bool
+  default     = false
+}
+
 variable "backend_image" {
   description = "Fully qualified immutable frontend-and-API container image used by jobs and Cloud Run."
   type        = string

@@ -38,6 +38,10 @@ def test_staging_runtime_is_postgres_ready_but_disabled_by_default() -> None:
     assert "repository_mode               = var.runtime_repository_mode" in main
     assert "CDL_DATABASE_URL" in main
     assert "CDL_DEVELOPMENT_LOGIN_SECRET" in main
+    assert "CDL_GOOGLE_ALLOWED_EMAILS" in main
+    assert "CDL_GOOGLE_CLIENT_ID" in main
+    assert "var.enable_google_sign_in ?" in main
+    assert 'variable "enable_google_sign_in"' in variables
     assert 'CDL_SESSION_COOKIE_SECURE = "true"' in main
     assert "allow_public_invoker = var.allow_public_invoker" in main
     assert "@sha256:[0-9a-f]{64}$" in variables
@@ -61,6 +65,8 @@ def test_runtime_identity_is_limited_to_consumed_secret_containers() -> None:
 
     assert '"cdl-database-url"' in runtime_secret_block
     assert '"cdl-development-login-secret"' in runtime_secret_block
+    assert '"cdl-google-allowed-emails"' in runtime_secret_block
+    assert '"cdl-google-client-id"' in runtime_secret_block
     assert '"cdl-session-cookie-secret"' not in runtime_secret_block
 
 
@@ -116,6 +122,7 @@ def test_plan_workflow_uses_cumulative_stages_and_reviewed_access_model() -> Non
         "backend_image must be an immutable @sha256 digest URI",
         '-var="enable_database_jobs=${ENABLE_DATABASE_JOBS}"',
         '-var="enable_cloud_run=${ENABLE_CLOUD_RUN}"',
+        '-var="enable_google_sign_in=${ENABLE_GOOGLE_SIGN_IN}"',
         '-var="backend_image=${BACKEND_IMAGE}"',
         "access_model:",
         "application-login",

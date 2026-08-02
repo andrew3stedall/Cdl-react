@@ -68,6 +68,9 @@ def test_plan_workflow_requires_explicit_runtime_application_login_access() -> N
         'test "${DEPLOYMENT_STAGE}" = "runtime"',
         "allow_public_invoker=true",
         '-var="allow_public_invoker=${ALLOW_PUBLIC_INVOKER}"',
+        "enable_google_sign_in:",
+        'test "${ACCESS_MODEL}" = "application-login"',
+        '-var="enable_google_sign_in=${ENABLE_GOOGLE_SIGN_IN}"',
         "--allow-staging-public-invoker",
         "${{ inputs.access_model }}",
     ]:
@@ -91,6 +94,7 @@ def test_plan_manifest_is_created_before_executable_plan_cleanup() -> None:
         '--backend-image "${BACKEND_IMAGE}"',
         '--enable-database-jobs "${ENABLE_DATABASE_JOBS}"',
         '--enable-cloud-run "${ENABLE_CLOUD_RUN}"',
+        '--enable-google-sign-in "${ENABLE_GOOGLE_SIGN_IN}"',
         '--allow-public-invoker "${ALLOW_PUBLIC_INVOKER}"',
         "steps.manifest.outcome == 'failure'",
     ]:

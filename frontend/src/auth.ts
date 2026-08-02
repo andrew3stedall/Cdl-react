@@ -13,9 +13,16 @@ export interface LogoutResponse {
   session: SessionState;
 }
 
+export interface GoogleAuthConfig {
+  enabled: boolean;
+  clientId: string | null;
+}
+
 export interface SessionClient {
   getSession(): Promise<SessionState>;
+  getGoogleAuthConfig(): Promise<GoogleAuthConfig>;
   login(request: LoginRequest): Promise<AuthResult<LoginResponse>>;
+  loginWithGoogleCredential(credential: string): Promise<AuthResult<LoginResponse>>;
   logout(): Promise<LogoutResponse>;
 }
 
@@ -42,6 +49,11 @@ interface ApiLoginResponse {
 
 interface ApiLogoutResponse {
   session: ApiSessionState;
+}
+
+interface ApiGoogleAuthConfig {
+  enabled: boolean;
+  client_id: string | null;
 }
 
 const unauthenticatedSession: SessionState = {
@@ -93,6 +105,38 @@ export async function getSession(): Promise<SessionState> {
   return mapSession((await response.json()) as ApiSessionState);
 }
 
+export async function getGoogleAuthConfig(): Promise<GoogleAuthConfig> {
+  const response = await fetch('/api/auth/google/config', {
+    credentials: 'include',
+  });
+  if (!response.ok) return { enabled: false, clientId: null };
+
+  const config = (await response.json()) as ApiGoogleAuthConfig;
+  return { enabled: config.enabled, clientId: config.client_id };
+}
+
+export async function loginWithGoogleCredential(
+  credential: string,
+): Promise<AuthResult<LoginResponse>> {
+  const response = await fetch('/api/auth/google', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-CDL-Google-Sign-In': '1',
+    },
+    body: JSON.stringify({ credential }),
+    credentials: 'include',
+  });
+
+  const payload = await response.json();
+  if (!response.ok) {
+    return { ok: false, error: payload as ApiErrorResponse };
+  }
+
+  const loginResponse = payload as ApiLoginResponse;
+  return { ok: true, data: { session: mapSession(loginResponse.session) } };
+}
+
 export async function logout(): Promise<LogoutResponse> {
   const response = await fetch('/api/auth/logout', {
     method: 'POST',
@@ -103,8 +147,10 @@ export async function logout(): Promise<LogoutResponse> {
 }
 
 export const defaultSessionClient: SessionClient = {
+  getGoogleAuthConfig,
   getSession,
   login,
+  loginWithGoogleCredential,
   logout,
 };
 

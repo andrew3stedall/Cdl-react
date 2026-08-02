@@ -16,6 +16,7 @@ def test_apply_workflow_is_manual_main_only_and_double_confirmed() -> None:
         "approval_reference:",
         "approval_phrase:",
         "confirm_apply:",
+        "enable_google_sign_in:",
         "github.event_name == 'workflow_dispatch'",
         "github.ref == 'refs/heads/main'",
         "inputs.confirm_apply == true",
@@ -88,6 +89,7 @@ def test_apply_workflow_verifies_manifest_before_authentication_and_apply() -> N
         '--state-bucket "${TERRAFORM_STATE_BUCKET}"',
         '--backend-image "${BACKEND_IMAGE}"',
         '--allow-public-invoker "${ALLOW_PUBLIC_INVOKER}"',
+        '--enable-google-sign-in "${ENABLE_GOOGLE_SIGN_IN}"',
         "Reviewed plan manifest SHA-256",
         "Reviewed plan manifest identity: verified",
     ]:
@@ -113,6 +115,7 @@ def test_apply_workflow_recreates_gates_and_compares_the_plan_before_apply() -> 
         'terraform apply -input=false "${RUNNER_TEMP}/recreated.tfplan"',
         "Post-apply Terraform plan was not a clean no-change result.",
         '-var="allow_public_invoker=${ALLOW_PUBLIC_INVOKER}"',
+        '-var="enable_google_sign_in=${ENABLE_GOOGLE_SIGN_IN}"',
         "--allow-staging-public-invoker",
     ]:
         assert phrase in content
@@ -133,6 +136,7 @@ def test_apply_workflow_preserves_cumulative_stage_and_image_boundaries() -> Non
         "backend_image must be the immutable staging application digest URI.",
         "application-login)",
         'test "${DEPLOYMENT_STAGE}" = "runtime"',
+        'test "${ACCESS_MODEL}" = "application-login"',
     ]:
         assert phrase in content
 

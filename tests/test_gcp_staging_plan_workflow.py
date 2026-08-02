@@ -288,6 +288,7 @@ def test_plan_summary_allows_refresh_only_drift_on_a_no_change_plan() -> None:
     assert "No managed resource changes" in summary
     assert "provider_normalized_field" not in summary
 
+
 def test_runbook_documents_saved_plan_review_boundary() -> None:
     content = RUNBOOK.read_text(encoding="utf-8")
 

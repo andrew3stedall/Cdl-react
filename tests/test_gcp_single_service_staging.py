@@ -160,11 +160,13 @@ def test_database_credential_bootstrap_is_manual_restricted_and_secret_safe() ->
         "CLOUD_SQL_PROXY_SHA256",
         "sha256sum --check",
         "REVOKE cloudsqlsuperuser FROM cdl_app",
-        "NOSUPERUSER",
-        "NOCREATEDB",
-        "NOCREATEROLE",
-        "NOREPLICATION",
-        "NOBYPASSRLS",
+        "rolsuper::text",
+        "rolcreatedb::text",
+        "rolcreaterole::text",
+        "rolreplication::text",
+        "rolbypassrls::text",
+        "pg_has_role('cdl_app', 'cloudsqlsuperuser', 'member')::text",
+        'test "${role_boundary}" = "true,false,false,false,false,false,false"',
         "REVOKE ALL ON DATABASE cdl_react FROM PUBLIC",
         "GRANT CONNECT ON DATABASE cdl_react TO cdl_app",
         "REVOKE CREATE ON SCHEMA public FROM PUBLIC",
@@ -178,6 +180,16 @@ def test_database_credential_bootstrap_is_manual_restricted_and_secret_safe() ->
     assert "database_url:" not in dispatch_inputs
     assert "actions/upload-artifact" not in content
     assert "cdl-react-prod" not in content
+
+    alter_role = content.split("ALTER ROLE cdl_app WITH", maxsplit=1)[1].split(";", maxsplit=1)[0]
+    for prohibited_attribute_change in [
+        "NOSUPERUSER",
+        "NOCREATEDB",
+        "NOCREATEROLE",
+        "NOREPLICATION",
+        "NOBYPASSRLS",
+    ]:
+        assert prohibited_attribute_change not in alter_role
 
 
 def test_adr_keeps_apply_migrations_and_public_access_separately_gated() -> None:

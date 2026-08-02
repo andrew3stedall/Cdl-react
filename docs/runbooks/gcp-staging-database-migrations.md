@@ -123,6 +123,13 @@ persistent `cdl_app` role:
 - is not a superuser, replication role, row-security bypass role, or member of
   `cloudsqlsuperuser`.
 
+Cloud SQL does not permit its managed administrator to explicitly change the
+PostgreSQL `SUPERUSER` attribute, even when requesting `NOSUPERUSER`. The
+workflow therefore creates `cdl_app` with PostgreSQL's restricted defaults,
+rotates only its login password, and fails before writing the secret unless a
+catalog query proves every restricted attribute and `cloudsqlsuperuser`
+membership remain false.
+
 The workflow revokes the default public database and schema-creation grants,
 writes the SQLAlchemy Unix-socket URL to a new `cdl-database-url` Secret Manager
 version over standard input, and verifies only the version state. Passwords and

@@ -173,17 +173,17 @@ module "cloud_run_api" {
     CDL_SESSION_COOKIE_SECURE = "true"
   }
   secret_environment_variables = merge({
-    CDL_DATABASE_URL             = {
+    CDL_DATABASE_URL = {
       secret = module.runtime_secrets.secret_names["cdl-database-url"]
     }
     CDL_DEVELOPMENT_LOGIN_SECRET = {
       secret = module.runtime_secrets.secret_names["cdl-development-login-secret"]
     }
-  }, var.enable_google_sign_in ? {
+    }, var.enable_google_sign_in ? {
     CDL_GOOGLE_ALLOWED_EMAILS = {
       secret = module.runtime_secrets.secret_names["cdl-google-allowed-emails"]
     }
-    CDL_GOOGLE_CLIENT_ID      = {
+    CDL_GOOGLE_CLIENT_ID = {
       secret = module.runtime_secrets.secret_names["cdl-google-client-id"]
     }
   } : {})

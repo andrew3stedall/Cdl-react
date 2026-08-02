@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-08-02 - Fix Cloud SQL credential role rotation
+
+### Fixed
+
+- Stopped requesting explicit restricted PostgreSQL attribute changes that the
+  Cloud SQL managed administrator is not permitted to perform.
+- Retained fail-closed catalog verification that `cdl_app` is not a superuser,
+  database or role creator, replication role, row-security bypass role, or
+  member of `cloudsqlsuperuser` before writing a Secret Manager version.
+
+### Validation
+
+- Added regression coverage ensuring the password rotation statement does not
+  attempt prohibited attribute changes while all restricted flags remain
+  explicitly verified.
+- Recorded credential workflow run `30728564359` as the live failure evidence;
+  it proved Cloud SQL connectivity but failed before creating a secret version.
+
 ## 2026-08-01 - Distinguish actionable from refresh-only Terraform drift
 
 ### Fixed

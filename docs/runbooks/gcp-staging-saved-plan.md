@@ -98,7 +98,8 @@ published by itself.
 The summary step blocks the run when it detects any of:
 
 - a destructive delete or replacement action;
-- a public IAM principal such as `allUsers` or `allAuthenticatedUsers` in planned values;
+- a public IAM principal such as `allUsers` or `allAuthenticatedUsers` in planned values,
+  except the exact runtime `application-login` Cloud Run Invoker binding when explicitly selected;
 - an unreviewed Terraform resource type that is not part of the committed staging design; or
 - actionable out-of-band resource drift accompanied by managed resource changes.
 
@@ -107,6 +108,11 @@ detailed exit code of `2` remains fail-closed because Terraform proposes a manag
 reconciliation and the difference must be understood before progression. Refresh-only drift
 on a detailed exit code of `0` is still listed in the redacted summary, but it does not block
 an otherwise clean no-change plan because Terraform has no managed action to review or apply.
+
+The public exception is also fail-closed: only the Terraform-managed staging Cloud Run service
+IAM member, `allUsers`, `roles/run.invoker`, a create action, and the explicit
+`application-login` runtime input may pass. Any different address, member, role, action, or
+stage remains blocked.
 
 The resource-type allowlist is intentionally fail-closed. Adding a new Terraform resource
 requires the implementation and allowlist change to be reviewed together before a live plan
@@ -134,7 +140,8 @@ Before requesting approval for any live apply, confirm:
 - Cloud Run remains disabled unless a separately reviewed immutable image and deployment
   decision exist;
 - the frontend asset bucket remains private with public access prevention;
-- no public IAM member, unexpected role, secret payload or credential appears;
+- no public IAM member appears unless the runtime `application-login` model was selected, in
+  which case the plan contains only the exact `allUsers` Cloud Run Invoker binding;
 - Artifact Registry retention remains dry-run where documented;
 - alerting and notification-channel changes match the approved observability boundary;
 - every cost-sensitive category is reviewed against current GCP pricing;

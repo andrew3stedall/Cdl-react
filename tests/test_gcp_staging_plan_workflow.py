@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from cdl_api.terraform_plan_summary import summarize_plan
 
 WORKFLOW = Path(".github/workflows/gcp-terraform-staging.yml")
@@ -57,6 +59,21 @@ def test_authenticated_plan_saves_and_uploads_only_reviewable_evidence() -> None
     assert "terraform apply" not in content
 
 
+def test_plan_workflow_requires_explicit_runtime_application_login_access() -> None:
+    content = WORKFLOW.read_text(encoding="utf-8")
+
+    for phrase in [
+        "access_model:",
+        "application-login",
+        'test "${DEPLOYMENT_STAGE}" = "runtime"',
+        "allow_public_invoker=true",
+        '-var="allow_public_invoker=${ALLOW_PUBLIC_INVOKER}"',
+        "--allow-staging-public-invoker",
+        "${{ inputs.access_model }}",
+    ]:
+        assert phrase in content
+
+
 def test_plan_manifest_is_created_before_executable_plan_cleanup() -> None:
     content = WORKFLOW.read_text(encoding="utf-8")
 
@@ -74,6 +91,7 @@ def test_plan_manifest_is_created_before_executable_plan_cleanup() -> None:
         '--backend-image "${BACKEND_IMAGE}"',
         '--enable-database-jobs "${ENABLE_DATABASE_JOBS}"',
         '--enable-cloud-run "${ENABLE_CLOUD_RUN}"',
+        '--allow-public-invoker "${ALLOW_PUBLIC_INVOKER}"',
         "steps.manifest.outcome == 'failure'",
     ]:
         assert phrase in content
@@ -194,6 +212,83 @@ def test_plan_summary_blocks_public_principals() -> None:
         plan_exit_code=2,
         source_sha="deadbeef",
         run_url="",
+    )
+
+    assert exit_code == 3
+    assert "BLOCKED: public IAM principal detected" in summary
+
+
+def test_plan_summary_allows_only_exact_reviewed_staging_public_invoker() -> None:
+    plan = _plan(
+        [
+            {
+                "address": (
+                    "module.cloud_run_api[0]."
+                    "google_cloud_run_v2_service_iam_member.public_invoker[0]"
+                ),
+                "type": "google_cloud_run_v2_service_iam_member",
+                "change": {
+                    "actions": ["create"],
+                    "after": {"member": "allUsers", "role": "roles/run.invoker"},
+                },
+            },
+        ]
+    )
+
+    summary, exit_code = summarize_plan(
+        plan,
+        plan_sha256="abc123",
+        plan_exit_code=2,
+        source_sha="deadbeef",
+        run_url="",
+        allow_staging_public_invoker=True,
+    )
+
+    assert exit_code == 0
+    assert "explicitly allowed for the application-login access model" in summary
+
+
+@pytest.mark.parametrize(
+    ("address", "member", "role"),
+    [
+        ("google_cloud_run_v2_service_iam_member.other", "allUsers", "roles/run.invoker"),
+        (
+            "module.cloud_run_api[0].google_cloud_run_v2_service_iam_member.public_invoker[0]",
+            "allAuthenticatedUsers",
+            "roles/run.invoker",
+        ),
+        (
+            "module.cloud_run_api[0].google_cloud_run_v2_service_iam_member.public_invoker[0]",
+            "allUsers",
+            "roles/run.admin",
+        ),
+    ],
+)
+def test_plan_summary_still_blocks_other_public_iam(
+    address: str,
+    member: str,
+    role: str,
+) -> None:
+    plan = _plan(
+        [
+            {
+                "address": address,
+                "type": "google_cloud_run_v2_service_iam_member",
+                "change": {
+                    "actions": ["create"],
+                    "after": {"member": member, "role": role},
+                },
+            }
+        ]
+    )
+
+    summary, exit_code = summarize_plan(
+        plan,
+        plan_sha256="abc123",
+        plan_exit_code=2,
+        source_sha="deadbeef",
+        run_url="",
+        allow_staging_public_invoker=True,
     )
 
     assert exit_code == 3

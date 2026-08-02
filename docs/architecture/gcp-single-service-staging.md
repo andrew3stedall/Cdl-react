@@ -2,7 +2,8 @@
 
 ## Status
 
-Accepted for the first review environment. Live provisioning and public exposure remain separately gated.
+Accepted for the first review environment. Public exposure is permitted only through the
+separately reviewed application-login model in `staging-application-login-adr.md`.
 
 ## Context
 
@@ -49,7 +50,8 @@ Terraform will keep Cloud Run disabled until an immutable image exists and a rev
 
 - No service-account keys.
 - No secret payloads in Terraform state or retained plan evidence.
-- Public invocation remains disabled until the staging access model is explicitly approved.
+- Public invocation defaults to disabled. The staging-only `application-login` model may enable
+  it after the global API session boundary, exact IAM exception, plan, and apply are reviewed.
 - The runtime identity receives access only to secrets consumed by the service.
 - The migration identity remains separate from the runtime identity.
 - Cloud SQL deletion protection, backup and point-in-time recovery remain enabled.

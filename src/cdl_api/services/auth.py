@@ -1,5 +1,7 @@
 """Authentication service layer."""
 
+import secrets
+
 from cdl_api.contracts.auth import LoginRequest
 from cdl_api.contracts.session import SessionState, SessionUser
 from cdl_api.repositories.auth import InMemorySessionRepository, InMemoryUserRepository
@@ -18,7 +20,11 @@ class AuthenticationService:
 
     def login(self, request: LoginRequest) -> tuple[str, SessionState] | None:
         user_record = self._users.get_by_email(request.email)
-        if user_record is None or request.password != self._development_secret:
+        password_matches = secrets.compare_digest(
+            request.password,
+            self._development_secret,
+        )
+        if user_record is None or not password_matches:
             return None
 
         user = SessionUser(

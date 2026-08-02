@@ -105,7 +105,7 @@ def test_image_workflow_builds_an_immutable_reference_without_deploying() -> Non
     assert "CDL_REPOSITORY_MODE=memory" not in content
 
 
-def test_plan_workflow_uses_cumulative_private_stages() -> None:
+def test_plan_workflow_uses_cumulative_stages_and_reviewed_access_model() -> None:
     content = PLAN_WORKFLOW.read_text(encoding="utf-8")
 
     for phrase in [
@@ -117,7 +117,9 @@ def test_plan_workflow_uses_cumulative_private_stages() -> None:
         '-var="enable_database_jobs=${ENABLE_DATABASE_JOBS}"',
         '-var="enable_cloud_run=${ENABLE_CLOUD_RUN}"',
         '-var="backend_image=${BACKEND_IMAGE}"',
-        '-var="allow_public_invoker=false"',
+        "access_model:",
+        "application-login",
+        '-var="allow_public_invoker=${ALLOW_PUBLIC_INVOKER}"',
     ]:
         assert phrase in content
 
@@ -200,7 +202,8 @@ def test_adr_keeps_apply_migrations_and_public_access_separately_gated() -> None
 
     for phrase in [
         "one Cloud Run service",
-        "Live provisioning and public exposure remain separately gated",
+        "Public exposure is permitted only through the",
+        "separately reviewed application-login model",
         "Secret payloads will not be stored in Terraform state",
         "Run Alembic and deterministic synthetic seed jobs",
         "Migration and seed execution must remain controlled jobs",

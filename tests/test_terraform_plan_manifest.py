@@ -31,6 +31,7 @@ def _manifest(tmp_path: Path, **overrides: object) -> dict[str, object]:
         "backend_image": "",
         "enable_database_jobs": False,
         "enable_cloud_run": False,
+        "allow_public_invoker": False,
     }
     arguments.update(overrides)
     return build_manifest(**arguments)  # type: ignore[arg-type]
@@ -108,3 +109,19 @@ def test_manifest_rejects_floating_image_for_later_stage(tmp_path: Path) -> None
             enable_database_jobs=True,
             backend_image="image:latest",
         )
+
+
+def test_manifest_binds_public_invoker_to_runtime_stage(tmp_path: Path) -> None:
+    manifest = _manifest(
+        tmp_path,
+        deployment_stage="runtime",
+        enable_database_jobs=True,
+        enable_cloud_run=True,
+        backend_image="image@sha256:" + ("1" * 64),
+        allow_public_invoker=True,
+    )
+
+    assert manifest["terraform_inputs"]["allow_public_invoker"] is True
+
+    with pytest.raises(ValueError, match="only for the runtime stage"):
+        _manifest(tmp_path, allow_public_invoker=True)

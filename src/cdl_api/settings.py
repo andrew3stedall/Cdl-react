@@ -7,6 +7,7 @@ from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 RepositoryMode = Literal["memory", "postgres"]
+DEFAULT_DEVELOPMENT_LOGIN_SECRET = "demo-login-secret"
 
 
 class Settings(BaseSettings):
@@ -15,7 +16,7 @@ class Settings(BaseSettings):
     environment: str = "development"
     session_cookie_name: str = "cdl_session"
     session_cookie_secure: bool = False
-    development_login_secret: str = "demo-login-secret"
+    development_login_secret: str = DEFAULT_DEVELOPMENT_LOGIN_SECRET
     database_url: str = ""
     database_pool_size: int = Field(default=5, ge=1)
     database_max_overflow: int = Field(default=5, ge=0)

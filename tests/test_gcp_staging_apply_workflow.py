@@ -12,6 +12,7 @@ def test_apply_workflow_is_manual_main_only_and_double_confirmed() -> None:
         "reviewed_plan_run_id:",
         "reviewed_source_sha:",
         "deployment_stage:",
+        "access_model:",
         "approval_reference:",
         "approval_phrase:",
         "confirm_apply:",
@@ -19,7 +20,7 @@ def test_apply_workflow_is_manual_main_only_and_double_confirmed() -> None:
         "github.ref == 'refs/heads/main'",
         "inputs.confirm_apply == true",
         'test "${GITHUB_SHA}" = "${REVIEWED_SOURCE_SHA}"',
-        'test "${APPROVAL_PHRASE}" = "APPLY STAGING ${DEPLOYMENT_STAGE}"',
+        '"APPLY STAGING ${DEPLOYMENT_STAGE} ${ACCESS_MODEL}"',
         "environment: staging",
         "cancel-in-progress: false",
     ]:
@@ -52,7 +53,8 @@ def test_apply_workflow_downloads_exact_reviewed_plan_evidence() -> None:
         "contents: read",
         "id-token: write",
         "actions/download-artifact@v4",
-        "staging-terraform-plan-${{ inputs.reviewed_source_sha }}-${{ inputs.deployment_stage }}",
+        "staging-terraform-plan-${{ inputs.reviewed_source_sha }}-"
+        "${{ inputs.deployment_stage }}-${{ inputs.access_model }}",
         "staging-plan-manifest.json",
         "Verify exact reviewed plan manifest",
         "terraform_plan_manifest.py",
@@ -85,6 +87,7 @@ def test_apply_workflow_verifies_manifest_before_authentication_and_apply() -> N
         '--project-id "${PROJECT_ID}"',
         '--state-bucket "${TERRAFORM_STATE_BUCKET}"',
         '--backend-image "${BACKEND_IMAGE}"',
+        '--allow-public-invoker "${ALLOW_PUBLIC_INVOKER}"',
         "Reviewed plan manifest SHA-256",
         "Reviewed plan manifest identity: verified",
     ]:
@@ -109,7 +112,8 @@ def test_apply_workflow_recreates_gates_and_compares_the_plan_before_apply() -> 
         'cmp -s "${reviewed_plan}" "${recreated_plan}"',
         'terraform apply -input=false "${RUNNER_TEMP}/recreated.tfplan"',
         "Post-apply Terraform plan was not a clean no-change result.",
-        '-var="allow_public_invoker=false"',
+        '-var="allow_public_invoker=${ALLOW_PUBLIC_INVOKER}"',
+        "--allow-staging-public-invoker",
     ]:
         assert phrase in content
 
@@ -127,6 +131,8 @@ def test_apply_workflow_preserves_cumulative_stage_and_image_boundaries() -> Non
         "enable_cloud_run=true",
         "cdl-react-backend/cdl-react-app@sha256:",
         "backend_image must be the immutable staging application digest URI.",
+        "application-login)",
+        'test "${DEPLOYMENT_STAGE}" = "runtime"',
     ]:
         assert phrase in content
 
@@ -162,6 +168,7 @@ def test_apply_workflow_enforces_prior_stages_and_verifies_live_resources() -> N
         "gcloud run services describe cdl-react-staging-api",
         "gcloud run services get-iam-policy cdl-react-staging-api",
         '{"allUsers", "allAuthenticatedUsers"}',
+        '("roles/run.invoker", "allUsers")',
         "Live stage resource verification: passed",
         "Cloud SQL authorized networks: none",
     ]:
@@ -202,7 +209,7 @@ def test_apply_runbook_documents_review_and_execution_boundaries() -> None:
         "database-jobs",
         "runtime",
         "immutable Artifact Registry digest",
-        "public access remains disabled",
+        "application-login",
         "post-apply no-change plan",
         "does not run automatically",
         "No executable plan is retained",

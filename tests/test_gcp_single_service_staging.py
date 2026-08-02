@@ -135,12 +135,15 @@ def test_database_job_execution_is_manual_and_confirmation_gated() -> None:
         "confirm_synthetic_data",
         "github.ref == 'refs/heads/main'",
         "gcloud run jobs describe",
+        "value(spec.template.spec.template.spec.containers[0].image)",
+        "${REGION}-docker\\\\.pkg\\\\.dev/${PROJECT_ID}/cdl-react-backend/cdl-react-app",
         "gcloud run jobs execute",
         "--wait",
         "@sha256:[0-9a-f]{64}$",
     ]:
         assert phrase in content
 
+    assert "value(template.template.containers[0].image)" not in content
     assert "schedule:" not in content
     assert "--execute-now" not in content
 

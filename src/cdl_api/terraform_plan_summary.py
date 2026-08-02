@@ -175,9 +175,11 @@ def summarize_plan(
     elif unexpected_types:
         gate_status = "BLOCKED: unreviewed staging resource type detected"
         exit_code = 4
-    elif drift:
-        gate_status = "BLOCKED: out-of-band resource drift detected"
+    elif drift and plan_exit_code != 0:
+        gate_status = "BLOCKED: actionable out-of-band resource drift detected"
         exit_code = 5
+    elif drift:
+        gate_status = "PASS: refresh-only drift reported; no managed changes"
 
     generated_at = datetime.now(UTC).isoformat(timespec="seconds")
     lines = [
@@ -247,8 +249,9 @@ def summarize_plan(
             "",
             "This summary intentionally omits resource values. Review the human-readable "
             "plan artifact before approval.",
-            "Any detected remote-state drift must be explained and reconciled before a plan "
-            "can pass.",
+            "Remote-state drift is always reported. It blocks progression when Terraform also "
+            "proposes managed resource changes; refresh-only drift with detailed exit code 0 "
+            "remains visible but does not fail an otherwise clean no-change plan.",
             "Any new Terraform resource type must be added to the reviewed staging design and "
             "allowlist in the same pull request before the plan can pass.",
             "A fresh plan is required for any future apply; this workflow never applies "

@@ -255,8 +255,7 @@ def test_plan_summary_blocks_remote_state_drift() -> None:
     assert "BLOCKED: actionable out-of-band resource drift detected" in summary
     assert "module.cloud_sql.google_sql_database_instance.this" in summary
     assert "deletion_protection" not in summary
-    assert "Any detected remote-state drift must be explained" in summary
-
+    assert "Remote-state drift is always reported" in summary
 
 
 def test_plan_summary_allows_refresh_only_drift_on_a_no_change_plan() -> None:

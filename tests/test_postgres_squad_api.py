@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.sql.dml import Insert, Update
 
 from cdl_api.app import create_app
+from cdl_api.contracts.domain import TeamSummary
 from cdl_api.contracts.session import SessionUser
 from cdl_api.repositories.postgres_squad_repository import PostgreSQLSquadRepository
 from cdl_api.routers.squad import get_squad_service, require_manager_session
@@ -52,6 +53,9 @@ class _CapturingSession:
 def _client_with_postgres_repo(session: _CapturingSession) -> TestClient:
     app = create_app()
     repository = PostgreSQLSquadRepository(lambda: session)
+    repository.manager_team = TeamSummary(id="team-castle", name="Castle FC")
+    repository.rival_team = TeamSummary(id="team-rival", name="Rival Town")
+    repository._database_players = lambda: repository._players
     service = SquadManagementService(repository)
     app.dependency_overrides[get_squad_service] = lambda: service
     app.dependency_overrides[require_manager_session] = lambda: SessionUser(

@@ -17,28 +17,112 @@ from cdl_api.contracts.squad import (
     TradeProposal,
     TradeStatus,
 )
+from cdl_api.repositories.postgres_league_fpl import (
+    draft_teams_table,
+    epl_teams_table,
+    fpl_players_table,
+)
 from cdl_api.repositories.postgres_squad import (
     squad_interests_table,
+    squad_ownerships_table,
     trade_assets_table,
     trade_proposals_table,
 )
 from cdl_api.repositories.squad import InMemorySquadRepository
+from cdl_api.staging_draft_seed import (
+    PRIMARY_MANAGER_ID,
+    PRIMARY_TEAM_ID,
+    SEASON_ID,
+    TEAM_IDS,
+    TEAM_NAMES,
+)
 
-DEMO_SEASON_ID = "season-2026"
-DEMO_MANAGER_ID = "manager-1"
-DEMO_RIVAL_MANAGER_ID = "manager-rival"
+DEMO_SEASON_ID = SEASON_ID
+DEMO_MANAGER_ID = PRIMARY_MANAGER_ID
+DEMO_RIVAL_MANAGER_ID = "manager-2"
 
 
 class PostgreSQLSquadRepository(InMemorySquadRepository):
     def __init__(self, session_factory: Callable[[], Session]) -> None:
         super().__init__()
         self._session_factory = session_factory
+        self.manager_team = TeamSummary(id=PRIMARY_TEAM_ID, name=TEAM_NAMES[0])
+        self.rival_team = TeamSummary(id=TEAM_IDS[1], name=TEAM_NAMES[1])
 
     def seed_demo_data(self) -> None:
         """Seed hooks are owned by imports in #69; runtime writes are persisted here."""
 
+    def _database_players(self) -> list[PlayerDetail]:
+        active_ownerships = squad_ownerships_table.alias("active_ownerships")
+        with self._session_factory() as session:
+            rows = list(
+                session.execute(
+                    select(
+                        fpl_players_table.c.id,
+                        fpl_players_table.c.web_name,
+                        fpl_players_table.c.position_id,
+                        epl_teams_table.c.id.label("epl_team_id"),
+                        epl_teams_table.c.name.label("epl_team_name"),
+                        draft_teams_table.c.id.label("draft_team_id"),
+                        draft_teams_table.c.name.label("draft_team_name"),
+                        active_ownerships.c.id.label("ownership_id"),
+                    )
+                    .join(epl_teams_table, fpl_players_table.c.team_id == epl_teams_table.c.id)
+                    .outerjoin(
+                        active_ownerships,
+                        (active_ownerships.c.player_id == fpl_players_table.c.id)
+                        & (active_ownerships.c.season_id == DEMO_SEASON_ID)
+                        & active_ownerships.c.ended_at.is_(None),
+                    )
+                    .outerjoin(
+                        draft_teams_table,
+                        active_ownerships.c.draft_team_id == draft_teams_table.c.id,
+                    )
+                    .order_by(active_ownerships.c.id, fpl_players_table.c.web_name)
+                ).mappings()
+            )
+        return [self._player_from_database_row(row) for row in rows]
+
+    @staticmethod
+    def _player_from_database_row(row: object) -> PlayerDetail:
+        epl_team = TeamSummary(id=row["epl_team_id"], name=row["epl_team_name"])
+        draft_team = (
+            TeamSummary(id=row["draft_team_id"], name=row["draft_team_name"])
+            if row["draft_team_id"] is not None
+            else None
+        )
+        return PlayerDetail(
+            id=row["id"],
+            display_name=row["web_name"],
+            position=row["position_id"],
+            team=epl_team,
+            epl_team=epl_team,
+            draft_team=draft_team,
+            status=(
+                PlayerOwnershipStatus.OWNED
+                if draft_team is not None
+                else PlayerOwnershipStatus.AVAILABLE
+            ),
+        )
+
+    def list_squad_players(self) -> list[PlayerDetail]:
+        return [player for player in self._database_players() if player.draft_team is not None]
+
     def list_players(self, filters: ScoutingFilters) -> list[PlayerDetail]:
-        players = super().list_players(filters)
+        players = self._database_players()
+        if filters.position is not None:
+            players = [player for player in players if player.position == filters.position]
+        if filters.draft_team_id is not None:
+            players = [
+                player
+                for player in players
+                if player.draft_team is not None and player.draft_team.id == filters.draft_team_id
+            ]
+        if filters.epl_team_id is not None:
+            players = [player for player in players if player.epl_team.id == filters.epl_team_id]
+        if filters.query:
+            query = filters.query.casefold()
+            players = [player for player in players if query in player.display_name.casefold()]
         with self._session_factory() as session:
             interested_player_ids = set(
                 session.execute(
@@ -50,7 +134,14 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
         for player in players:
             if player.id in interested_player_ids and player.draft_team is None:
                 player.status = PlayerOwnershipStatus.INTERESTED
-        return players
+        metric = "points" if filters.metric.value == "total_points" else filters.metric.value
+        return sorted(players, key=lambda player: getattr(player, metric), reverse=True)
+
+    def get_player(self, player_id: str) -> PlayerDetail | None:
+        return next(
+            (player for player in self._database_players() if player.id == player_id),
+            None,
+        )
 
     def list_interests(self) -> list[InterestResponse]:
         with self._session_factory() as session:
@@ -180,10 +271,10 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
         return trade
 
     def manager_id_for_team(self, team_id: str) -> str | None:
-        return {
-            self.manager_team.id: DEMO_MANAGER_ID,
-            self.rival_team.id: DEMO_RIVAL_MANAGER_ID,
-        }.get(team_id)
+        with self._session_factory() as session:
+            return session.execute(
+                select(draft_teams_table.c.manager_id).where(draft_teams_table.c.id == team_id)
+            ).scalar_one_or_none()
 
     def update_trade_status(
         self,

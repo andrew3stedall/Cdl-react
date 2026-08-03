@@ -1,11 +1,18 @@
 """Authentication API routes."""
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
 
-from cdl_api.contracts.auth import LoginRequest, LoginResponse, LogoutResponse
+from cdl_api.contracts.auth import (
+    GoogleAuthConfig,
+    GoogleCredentialRequest,
+    LoginRequest,
+    LoginResponse,
+    LogoutResponse,
+)
 from cdl_api.contracts.common import ApiErrorResponse, ErrorCode
 from cdl_api.contracts.session import SessionState, SessionUser
+from cdl_api.google_identity import GoogleIdentityVerifier
 from cdl_api.repositories.factory import build_repositories
 from cdl_api.services.auth import AuthenticationService
 from cdl_api.settings import Settings, get_settings
@@ -22,8 +29,31 @@ def get_auth_service(settings: Settings = Depends(get_settings)) -> Authenticati
     )
 
 
+def get_google_identity_verifier(
+    settings: Settings = Depends(get_settings),
+) -> GoogleIdentityVerifier:
+    return GoogleIdentityVerifier(
+        client_id=settings.google_client_id,
+        allowed_emails=settings.google_allowed_email_set,
+    )
+
+
 def _session_id_from_request(request: Request, settings: Settings) -> str | None:
     return request.cookies.get(settings.session_cookie_name)
+
+
+def _set_session_cookie(
+    response: Response,
+    settings: Settings,
+    session_id: str,
+) -> None:
+    response.set_cookie(
+        key=settings.session_cookie_name,
+        value=session_id,
+        httponly=True,
+        secure=settings.session_cookie_secure,
+        samesite="lax",
+    )
 
 
 def require_authenticated_session(
@@ -56,13 +86,44 @@ def login(
         return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content=error.model_dump())
 
     session_id, session = result
-    response.set_cookie(
-        key=settings.session_cookie_name,
-        value=session_id,
-        httponly=True,
-        secure=settings.session_cookie_secure,
-        samesite="lax",
+    _set_session_cookie(response, settings, session_id)
+    return LoginResponse(session=session)
+
+
+@router.get("/google/config", response_model=GoogleAuthConfig)
+def google_config(settings: Settings = Depends(get_settings)) -> GoogleAuthConfig:
+    return GoogleAuthConfig(
+        enabled=settings.google_sign_in_enabled,
+        client_id=settings.google_client_id if settings.google_sign_in_enabled else None,
     )
+
+
+@router.post("/google", response_model=LoginResponse)
+def google_login(
+    payload: GoogleCredentialRequest,
+    response: Response,
+    google_sign_in_header: str | None = Header(default=None, alias="X-CDL-Google-Sign-In"),
+    settings: Settings = Depends(get_settings),
+    service: AuthenticationService = Depends(get_auth_service),
+    verifier: GoogleIdentityVerifier = Depends(get_google_identity_verifier),
+) -> LoginResponse | JSONResponse:
+    if google_sign_in_header != "1":
+        error = ApiErrorResponse(
+            code=ErrorCode.UNAUTHENTICATED,
+            message="Google sign-in request was rejected.",
+        )
+        return JSONResponse(status_code=status.HTTP_403_FORBIDDEN, content=error.model_dump())
+
+    identity = verifier.verify(payload.credential)
+    if identity is None:
+        error = ApiErrorResponse(
+            code=ErrorCode.UNAUTHENTICATED,
+            message="Google sign-in was not authorized.",
+        )
+        return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content=error.model_dump())
+
+    session_id, session = service.login_google(identity)
+    _set_session_cookie(response, settings, session_id)
     return LoginResponse(session=session)
 
 

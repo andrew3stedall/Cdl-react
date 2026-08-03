@@ -4,6 +4,7 @@ from collections.abc import Callable
 from uuid import uuid4
 
 from sqlalchemy import JSON, Column, MetaData, String, Table, insert, select
+from sqlalchemy.dialects.postgresql import insert as postgresql_insert
 from sqlalchemy.orm import Session
 
 from cdl_api.contracts.session import SessionUser
@@ -74,6 +75,36 @@ class PostgreSQLUserRepository:
                 )
             )
             session.commit()
+
+    def get_or_create_google_user(
+        self,
+        *,
+        subject: str,
+        email: str,
+        display_name: str,
+    ) -> UserRecord:
+        normalized_email = email.lower()
+        existing = self.get_by_email(normalized_email)
+        if existing is not None:
+            return existing
+
+        with self._session_factory() as session:
+            session.execute(
+                postgresql_insert(users_table)
+                .values(
+                    id=f"google:{subject}",
+                    email=normalized_email,
+                    display_name=display_name,
+                    roles=["manager"],
+                )
+                .on_conflict_do_nothing(index_elements=[users_table.c.email])
+            )
+            session.commit()
+
+        created = self.get_by_email(normalized_email)
+        if created is None:
+            raise RuntimeError("Google user could not be created.")
+        return created
 
 
 class PostgreSQLSessionRepository:

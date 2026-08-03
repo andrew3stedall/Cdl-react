@@ -2,10 +2,12 @@ import { expect, test, vi } from 'vitest';
 
 import {
   canAccessProtectedRoute,
+  getGoogleAuthConfig,
   getProtectedRouteRedirect,
   getSession,
   getUnauthenticatedSession,
   login,
+  loginWithGoogleCredential,
 } from './auth';
 import type { SessionState } from './contracts';
 
@@ -132,5 +134,44 @@ test('preserves the generic invalid-credentials response', async () => {
       details: {},
     },
   });
+  vi.unstubAllGlobals();
+});
+
+test('maps enabled Google sign-in configuration', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+    enabled: true,
+    client_id: 'staging-client.apps.googleusercontent.com',
+  }), { status: 200 })));
+
+  await expect(getGoogleAuthConfig()).resolves.toEqual({
+    enabled: true,
+    clientId: 'staging-client.apps.googleusercontent.com',
+  });
+  vi.unstubAllGlobals();
+});
+
+test('posts Google credential with the same-origin sign-in header', async () => {
+  const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+    session: {
+      is_authenticated: true,
+      user: {
+        id: 'google:subject-1',
+        email: 'andrew3stedall@gmail.com',
+        display_name: 'Andrew Stedall',
+        roles: ['manager'],
+      },
+      expires_at: null,
+    },
+  }), { status: 200 }));
+  vi.stubGlobal('fetch', fetchMock);
+
+  const result = await loginWithGoogleCredential('signed-google-id-token');
+
+  expect(fetchMock).toHaveBeenCalledWith('/api/auth/google', expect.objectContaining({
+    method: 'POST',
+    credentials: 'include',
+    headers: expect.objectContaining({ 'X-CDL-Google-Sign-In': '1' }),
+  }));
+  expect(result.ok).toBe(true);
   vi.unstubAllGlobals();
 });

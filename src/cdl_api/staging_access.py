@@ -12,6 +12,8 @@ from cdl_api.settings import Settings
 _PUBLIC_STAGING_PATHS = {
     "/health",
     "/api/auth/login",
+    "/api/auth/google",
+    "/api/auth/google/config",
     "/api/auth/logout",
     "/api/auth/session",
 }

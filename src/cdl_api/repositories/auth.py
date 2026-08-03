@@ -28,6 +28,27 @@ class InMemoryUserRepository:
     def get_by_email(self, email: str) -> UserRecord | None:
         return self._users.get(email.lower())
 
+    def get_or_create_google_user(
+        self,
+        *,
+        subject: str,
+        email: str,
+        display_name: str,
+    ) -> UserRecord:
+        normalized_email = email.lower()
+        existing = self.get_by_email(normalized_email)
+        if existing is not None:
+            return existing
+
+        user = UserRecord(
+            id=f"google:{subject}",
+            email=normalized_email,
+            display_name=display_name,
+            roles=["manager"],
+        )
+        self._users[normalized_email] = user
+        return user
+
 
 class InMemorySessionRepository:
     def __init__(self) -> None:

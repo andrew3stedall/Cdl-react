@@ -41,6 +41,11 @@ on:
         description: Immutable Artifact Registry digest URI for database-jobs or runtime
         required: false
         type: string
+      enable_google_sign_in:
+        description: Attach populated Google sign-in secrets exactly as reviewed
+        required: true
+        default: false
+        type: boolean
       approval_reference:
         description: Repository issue or PR comment URL recording explicit plan and cost/security approval
         required: true
@@ -112,6 +117,7 @@ jobs:
       DEPLOYMENT_STAGE: ${{ inputs.deployment_stage }}
       ACCESS_MODEL: ${{ inputs.access_model }}
       BACKEND_IMAGE: ${{ inputs.backend_image }}
+      ENABLE_GOOGLE_SIGN_IN: ${{ inputs.enable_google_sign_in }}
       APPROVAL_REFERENCE: ${{ inputs.approval_reference }}
       APPROVAL_PHRASE: ${{ inputs.approval_phrase }}
 
@@ -183,6 +189,11 @@ jobs:
               ;;
           esac
 
+          if [ "${ENABLE_GOOGLE_SIGN_IN}" = "true" ]; then
+            test "${DEPLOYMENT_STAGE}" = "runtime"
+            test "${ACCESS_MODEL}" = "application-login"
+          fi
+
           if [ "${DEPLOYMENT_STAGE}" != "foundation" ]; then
             test -n "${BACKEND_IMAGE}"
             if [[ ! "${BACKEND_IMAGE}" =~ ^australia-southeast1-docker\.pkg\.dev/${PROJECT_ID}/cdl-react-backend/cdl-react-app@sha256:[0-9a-f]{64}$ ]]; then
@@ -251,6 +262,7 @@ jobs:
             --backend-image "${BACKEND_IMAGE}" \
             --enable-database-jobs "${ENABLE_DATABASE_JOBS}" \
             --enable-cloud-run "${ENABLE_CLOUD_RUN}" \
+            --enable-google-sign-in "${ENABLE_GOOGLE_SIGN_IN}" \
             --allow-public-invoker "${ALLOW_PUBLIC_INVOKER}"
 
       - name: Authenticate to Google Cloud
@@ -316,6 +328,7 @@ jobs:
             -var="project_id=${PROJECT_ID}" \
             -var="enable_database_jobs=${ENABLE_DATABASE_JOBS}" \
             -var="enable_cloud_run=${ENABLE_CLOUD_RUN}" \
+            -var="enable_google_sign_in=${ENABLE_GOOGLE_SIGN_IN}" \
             -var="backend_image=${BACKEND_IMAGE}" \
             -var="allow_public_invoker=${ALLOW_PUBLIC_INVOKER}"
           plan_exit_code=$?
@@ -384,6 +397,7 @@ jobs:
             -var="project_id=${PROJECT_ID}" \
             -var="enable_database_jobs=${ENABLE_DATABASE_JOBS}" \
             -var="enable_cloud_run=${ENABLE_CLOUD_RUN}" \
+            -var="enable_google_sign_in=${ENABLE_GOOGLE_SIGN_IN}" \
             -var="backend_image=${BACKEND_IMAGE}" \
             -var="allow_public_invoker=${ALLOW_PUBLIC_INVOKER}"
           post_apply_exit_code=$?
@@ -503,6 +517,7 @@ jobs:
             echo "- Live stage resource verification: passed"
             echo "- Cloud SQL authorized networks: none"
             echo "- Public invoker requested: ${ALLOW_PUBLIC_INVOKER}"
+            echo "- Google sign-in enabled: ${ENABLE_GOOGLE_SIGN_IN}"
             echo "- Executable and machine-readable plans retained: no"
           } > "${evidence_file}"
 

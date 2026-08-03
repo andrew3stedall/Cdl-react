@@ -36,6 +36,7 @@ def build_manifest(
     backend_image: str,
     enable_database_jobs: bool,
     enable_cloud_run: bool,
+    enable_google_sign_in: bool,
     allow_public_invoker: bool,
 ) -> dict[str, Any]:
     valid_source_sha = len(source_sha) == 40 and all(
@@ -63,12 +64,17 @@ def build_manifest(
         raise ValueError("later stages require an immutable backend image digest")
     if allow_public_invoker and deployment_stage != "runtime":
         raise ValueError("public invocation is supported only for the runtime stage")
+    if enable_google_sign_in and (deployment_stage != "runtime" or not allow_public_invoker):
+        raise ValueError(
+            "Google sign-in is supported only for the public application-login runtime"
+        )
 
     terraform_inputs = {
         "allow_public_invoker": allow_public_invoker,
         "backend_image": backend_image,
         "enable_cloud_run": enable_cloud_run,
         "enable_database_jobs": enable_database_jobs,
+        "enable_google_sign_in": enable_google_sign_in,
         "project_id": project_id,
     }
     canonical_inputs = json.dumps(
@@ -121,6 +127,7 @@ def _common_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--backend-image", default="")
     parser.add_argument("--enable-database-jobs", required=True)
     parser.add_argument("--enable-cloud-run", required=True)
+    parser.add_argument("--enable-google-sign-in", required=True)
     parser.add_argument("--allow-public-invoker", required=True)
 
 
@@ -151,6 +158,7 @@ def main() -> int:
         backend_image=args.backend_image,
         enable_database_jobs=_parse_bool(args.enable_database_jobs),
         enable_cloud_run=_parse_bool(args.enable_cloud_run),
+        enable_google_sign_in=_parse_bool(args.enable_google_sign_in),
         allow_public_invoker=_parse_bool(args.allow_public_invoker),
     )
 

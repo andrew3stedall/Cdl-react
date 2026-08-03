@@ -29,12 +29,16 @@ locals {
   secret_ids = toset([
     "cdl-database-url",
     "cdl-development-login-secret",
+    "cdl-google-allowed-emails",
+    "cdl-google-client-id",
     "cdl-session-cookie-secret",
   ])
 
   runtime_secret_ids = toset([
     "cdl-database-url",
     "cdl-development-login-secret",
+    "cdl-google-allowed-emails",
+    "cdl-google-client-id",
   ])
 }
 
@@ -168,14 +172,21 @@ module "cloud_run_api" {
   environment_variables = {
     CDL_SESSION_COOKIE_SECURE = "true"
   }
-  secret_environment_variables = {
+  secret_environment_variables = merge({
     CDL_DATABASE_URL = {
       secret = module.runtime_secrets.secret_names["cdl-database-url"]
     }
     CDL_DEVELOPMENT_LOGIN_SECRET = {
       secret = module.runtime_secrets.secret_names["cdl-development-login-secret"]
     }
-  }
+    }, var.enable_google_sign_in ? {
+    CDL_GOOGLE_ALLOWED_EMAILS = {
+      secret = module.runtime_secrets.secret_names["cdl-google-allowed-emails"]
+    }
+    CDL_GOOGLE_CLIENT_ID = {
+      secret = module.runtime_secrets.secret_names["cdl-google-client-id"]
+    }
+  } : {})
   allow_public_invoker = var.allow_public_invoker
   min_instance_count   = 0
   max_instance_count   = 2

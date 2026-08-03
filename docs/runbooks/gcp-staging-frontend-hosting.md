@@ -112,16 +112,23 @@ The saved plan and cost summary must confirm:
 ## Controlled deployment sequence
 
 1. Apply the reviewed foundation with Cloud Run disabled.
-2. Create runtime secret versions outside Terraform state.
+2. Create the database and password secret versions outside Terraform state.
 3. Run controlled migrations and deterministic synthetic seed loading.
-4. Run **GCP Build Staging Image** to build and push the single-service image.
-5. Record its immutable digest URI.
-6. Generate a fresh Terraform runtime plan with that digest and `access_model=application-login`.
-7. Review the exact image update and one `allUsers` Cloud Run Invoker binding.
-8. Approve and apply that runtime plan using
+4. After this change is merged, generate and apply a preparatory runtime plan using the current
+   image, `access_model=application-login` and `enable_google_sign_in=false`. This creates the
+   Google secret containers and access grants without attaching empty secrets to Cloud Run.
+5. Create a Google Web OAuth client for the exact Cloud Run JavaScript origin, then add first
+   `cdl-google-client-id` and `cdl-google-allowed-emails` Secret Manager versions.
+6. Run **GCP Build Staging Image** to build and push the Google-enabled single-service image.
+7. Record its immutable digest URI.
+8. Generate a fresh Terraform runtime plan with that digest,
+   `access_model=application-login` and `enable_google_sign_in=true`.
+9. Review the image update, Google configuration secret attachments and existing public invoker
+   boundary.
+10. Approve and apply that runtime plan using
    `APPLY STAGING runtime application-login`.
-9. Verify root loading, client routes, login/logout, anonymous API rejection and one persisted workflow.
-10. Record rollback and monitoring evidence in issues #70 and #78.
+11. Verify Google login/logout in Chrome, anonymous API rejection and one persisted workflow.
+12. Record rollback and monitoring evidence in issues #70 and #78.
 
 A private bucket alone does not satisfy the usable-staging acceptance criterion. The shared
 staging password is a review-only control for synthetic data, not a production identity model.

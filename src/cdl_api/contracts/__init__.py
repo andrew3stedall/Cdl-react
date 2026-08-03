@@ -2,7 +2,13 @@
 
 # ruff: noqa: I001
 
-from cdl_api.contracts.auth import LoginRequest, LoginResponse, LogoutResponse
+from cdl_api.contracts.auth import (
+    GoogleAuthConfig,
+    GoogleCredentialRequest,
+    LoginRequest,
+    LoginResponse,
+    LogoutResponse,
+)
 from cdl_api.contracts.common import (
     ApiErrorResponse,
     ErrorCode,
@@ -143,6 +149,8 @@ __all__ = [
     "LineupUpdateRequest",
     "LoginRequest",
     "LoginResponse",
+    "GoogleAuthConfig",
+    "GoogleCredentialRequest",
     "LogoutResponse",
     "PlayerDetail",
     "PlayerMetric",

@@ -17,6 +17,8 @@ class Settings(BaseSettings):
     session_cookie_name: str = "cdl_session"
     session_cookie_secure: bool = False
     development_login_secret: str = DEFAULT_DEVELOPMENT_LOGIN_SECRET
+    google_client_id: str = ""
+    google_allowed_emails: str = ""
     database_url: str = ""
     database_pool_size: int = Field(default=5, ge=1)
     database_max_overflow: int = Field(default=5, ge=0)
@@ -24,6 +26,18 @@ class Settings(BaseSettings):
     frontend_dist_dir: Path | None = None
 
     model_config = SettingsConfigDict(env_prefix="CDL_", env_file=".env")
+
+    @property
+    def google_allowed_email_set(self) -> set[str]:
+        return {
+            email.strip().lower()
+            for email in self.google_allowed_emails.split(",")
+            if email.strip()
+        }
+
+    @property
+    def google_sign_in_enabled(self) -> bool:
+        return bool(self.google_client_id and self.google_allowed_email_set)
 
 
 def get_settings() -> Settings:

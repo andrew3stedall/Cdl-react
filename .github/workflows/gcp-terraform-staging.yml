@@ -32,6 +32,11 @@ on:
         description: Immutable Artifact Registry digest URI for database-jobs or runtime
         required: false
         type: string
+      enable_google_sign_in:
+        description: Attach populated Google sign-in secrets to the application-login runtime
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -91,6 +96,7 @@ jobs:
       DEPLOYMENT_STAGE: ${{ inputs.deployment_stage }}
       ACCESS_MODEL: ${{ inputs.access_model }}
       BACKEND_IMAGE: ${{ inputs.backend_image }}
+      ENABLE_GOOGLE_SIGN_IN: ${{ inputs.enable_google_sign_in }}
 
     defaults:
       run:
@@ -144,6 +150,11 @@ jobs:
               ;;
           esac
 
+          if [ "${ENABLE_GOOGLE_SIGN_IN}" = "true" ]; then
+            test "${DEPLOYMENT_STAGE}" = "runtime"
+            test "${ACCESS_MODEL}" = "application-login"
+          fi
+
           if [ "${DEPLOYMENT_STAGE}" != "foundation" ]; then
             test -n "${BACKEND_IMAGE}"
             if [[ ! "${BACKEND_IMAGE}" =~ @sha256:[0-9a-f]{64}$ ]]; then
@@ -185,6 +196,7 @@ jobs:
             -var="project_id=${PROJECT_ID}" \
             -var="enable_database_jobs=${ENABLE_DATABASE_JOBS}" \
             -var="enable_cloud_run=${ENABLE_CLOUD_RUN}" \
+            -var="enable_google_sign_in=${ENABLE_GOOGLE_SIGN_IN}" \
             -var="backend_image=${BACKEND_IMAGE}" \
             -var="allow_public_invoker=${ALLOW_PUBLIC_INVOKER}"
           plan_exit_code=$?
@@ -240,6 +252,7 @@ jobs:
             --backend-image "${BACKEND_IMAGE}" \
             --enable-database-jobs "${ENABLE_DATABASE_JOBS}" \
             --enable-cloud-run "${ENABLE_CLOUD_RUN}" \
+            --enable-google-sign-in "${ENABLE_GOOGLE_SIGN_IN}" \
             --allow-public-invoker "${ALLOW_PUBLIC_INVOKER}"
 
       - name: Remove machine-readable and executable plan files

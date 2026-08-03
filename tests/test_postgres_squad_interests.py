@@ -16,6 +16,7 @@ from cdl_api.repositories.postgres_squad import (
 from cdl_api.repositories.postgres_squad_repository import PostgreSQLSquadRepository
 from cdl_api.routers.squad import get_squad_service, require_manager_session
 from cdl_api.services.squad import SquadManagementService
+from cdl_api.staging_draft_seed import TEAM_IDS
 
 
 def _seed_prerequisites(connection: Connection) -> None:
@@ -27,21 +28,21 @@ def _seed_prerequisites(connection: Connection) -> None:
         """,
         """
         INSERT INTO seasons (id, league_id, name, start_gameweek, end_gameweek)
-        VALUES ('season-2026', 'league-squad-test', '2026', 1, 38)
+        VALUES ('season-cdl-2026-27', 'league-squad-test', '2026', 1, 38)
         ON CONFLICT (id) DO NOTHING
         """,
         """
         INSERT INTO managers (id, display_name)
         VALUES
             ('manager-1', 'Manager'),
-            ('manager-rival', 'Rival Manager')
+            ('manager-2', 'Rival Manager')
         ON CONFLICT (id) DO NOTHING
         """,
         """
         INSERT INTO draft_teams (id, league_id, manager_id, name)
         VALUES
-            ('team-castle', 'league-squad-test', 'manager-1', 'Castle FC'),
-            ('team-rival', 'league-squad-test', 'manager-rival', 'Rival Town')
+            ('team-exeter-gently', 'league-squad-test', 'manager-1', 'Exeter Gently'),
+            ('team-stan-still-sells-tik', 'league-squad-test', 'manager-2', 'Stan Still Sells Tik')
         ON CONFLICT (id) DO NOTHING
         """,
         """
@@ -69,6 +70,21 @@ def _seed_prerequisites(connection: Connection) -> None:
             ('player-4', 'Dev', 'Forward', 'Dev', 'FWD-TRADE', 'epl-mci')
         ON CONFLICT (id) DO NOTHING
         """,
+        """
+        INSERT INTO squad_ownerships (
+            id, season_id, draft_team_id, player_id, roster_slot_id, started_at, ended_at
+        )
+        VALUES
+            (
+                'test-ownership-player-1', 'season-cdl-2026-27',
+                'team-exeter-gently', 'player-1', NULL, NOW(), NULL
+            ),
+            (
+                'test-ownership-player-4', 'season-cdl-2026-27',
+                'team-stan-still-sells-tik', 'player-4', NULL, NOW(), NULL
+            )
+        ON CONFLICT (id) DO NOTHING
+        """,
     )
     for statement in statements:
         connection.execute(text(statement))
@@ -76,12 +92,13 @@ def _seed_prerequisites(connection: Connection) -> None:
 
 def _clean_prerequisites(connection: Connection) -> None:
     statements = (
+        "DELETE FROM squad_ownerships WHERE id LIKE 'test-ownership-%'",
         "DELETE FROM fpl_players WHERE id IN ('player-1', 'player-3', 'player-4')",
         "DELETE FROM fpl_positions WHERE id IN ('GKP-TRADE', 'MID-INT', 'FWD-TRADE')",
         "DELETE FROM epl_teams WHERE id IN ('epl-ars', 'epl-mci')",
-        "DELETE FROM draft_teams WHERE id IN ('team-castle', 'team-rival')",
-        "DELETE FROM managers WHERE id IN ('manager-1', 'manager-rival')",
-        "DELETE FROM seasons WHERE id = 'season-2026'",
+        "DELETE FROM draft_teams WHERE id IN ('team-exeter-gently', 'team-stan-still-sells-tik')",
+        "DELETE FROM managers WHERE id IN ('manager-1', 'manager-2')",
+        "DELETE FROM seasons WHERE id = 'season-cdl-2026-27'",
         "DELETE FROM leagues WHERE id = 'league-squad-test'",
     )
     for statement in statements:
@@ -167,7 +184,7 @@ def test_authenticated_trade_persists_and_rejection_leaves_state_unchanged() -> 
         created = client.post(
             "/api/trades",
             json={
-                "offered_to_team_id": "team-rival",
+                "offered_to_team_id": TEAM_IDS[1],
                 "offered_player_ids": ["player-1"],
                 "requested_player_ids": ["player-4"],
             },
@@ -180,7 +197,7 @@ def test_authenticated_trade_persists_and_rejection_leaves_state_unchanged() -> 
         invalid = client.post(
             "/api/trades",
             json={
-                "offered_to_team_id": "team-rival",
+                "offered_to_team_id": TEAM_IDS[1],
                 "offered_player_ids": ["player-3"],
                 "requested_player_ids": ["player-4"],
             },
@@ -195,7 +212,7 @@ def test_authenticated_trade_persists_and_rejection_leaves_state_unchanged() -> 
         assert unauthorized.status_code == 422
         assert unauthorized.json()["message"] == "Trade transition is not authorized."
 
-        active_manager["id"] = "manager-rival"
+        active_manager["id"] = "manager-2"
         accepted = client.put(
             f"/api/trades/{trade_id}",
             json={"status": "accepted"},

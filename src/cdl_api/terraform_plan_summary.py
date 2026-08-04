@@ -90,6 +90,49 @@ def _classify_actions(actions: list[str]) -> str:
     return "+".join(actions) if actions else "unknown"
 
 
+def _changed_paths(before: JsonValue, after: JsonValue, prefix: str = "") -> set[str]:
+    """Return redacted structural paths whose values differ.
+
+    Singleton lists are compared by index so nested provider metadata can be separated from
+    a managed field. Larger lists remain one conservative path because provider set ordering
+    may not be stable. Values are never retained or rendered.
+    """
+    if before == after:
+        return set()
+
+    if isinstance(before, dict) and isinstance(after, dict):
+        paths: set[str] = set()
+        for key in sorted(set(before) | set(after)):
+            child_prefix = f"{prefix}.{key}" if prefix else key
+            if key not in before or key not in after:
+                paths.add(child_prefix)
+            else:
+                paths.update(_changed_paths(before[key], after[key], child_prefix))
+        return paths or {prefix or "<root>"}
+
+    if isinstance(before, list) and isinstance(after, list):
+        if len(before) != len(after) or len(before) > 1:
+            return {prefix or "<root>"}
+        if not before:
+            return set()
+        child_prefix = f"{prefix}[0]" if prefix else "[0]"
+        return _changed_paths(before[0], after[0], child_prefix) or {prefix or "<root>"}
+
+    return {prefix or "<root>"}
+
+
+def _paths_overlap(left: str, right: str) -> bool:
+    if "<root>" in {left, right}:
+        return True
+    return (
+        left == right
+        or left.startswith(f"{right}.")
+        or left.startswith(f"{right}[")
+        or right.startswith(f"{left}.")
+        or right.startswith(f"{left}[")
+    )
+
+
 def _parse_changes(
     plan: dict[str, JsonValue], collection: str = "resource_changes"
 ) -> list[dict[str, JsonValue]]:
@@ -103,8 +146,10 @@ def _parse_changes(
             if action
         ]
         action = _classify_actions(actions)
-        after = _as_object(change_body.get("after"))
-        public_principals = _public_principals(change_body.get("after"))
+        before_value = change_body.get("before")
+        after_value = change_body.get("after")
+        after = _as_object(after_value)
+        public_principals = _public_principals(after_value)
         parsed.append(
             {
                 "address": _as_string(change.get("address")),
@@ -115,6 +160,7 @@ def _parse_changes(
                 "public_principals": sorted(public_principals),
                 "member": _as_string(after.get("member"), ""),
                 "role": _as_string(after.get("role"), ""),
+                "changed_paths": sorted(_changed_paths(before_value, after_value)),
             }
         )
     return parsed
@@ -129,6 +175,50 @@ def _markdown_table(rows: list[tuple[str, str, str]]) -> list[str]:
         for action, resource_type, address in rows
     )
     return lines
+
+
+def _classify_drift(
+    changed: list[dict[str, JsonValue]],
+    drift: list[dict[str, JsonValue]],
+) -> tuple[list[dict[str, JsonValue]], list[dict[str, JsonValue]]]:
+    """Split drift into managed reconciliation and non-overlapping refresh differences.
+
+    Terraform's ``resource_drift`` includes provider-computed state normalization. That is
+    not actionable when the normal plan does not intend to change the same structural path.
+    A same-resource create/delete/replace or any overlapping update path remains fail-closed.
+    """
+    managed_by_address = {
+        _as_string(item["address"]): item
+        for item in changed
+        if item["action"] not in {"no-op", "read"}
+    }
+    actionable: list[dict[str, JsonValue]] = []
+    refresh_only: list[dict[str, JsonValue]] = []
+
+    for item in drift:
+        managed = managed_by_address.get(_as_string(item["address"]))
+        if managed is None:
+            refresh_only.append(item)
+            continue
+
+        if managed["action"] in {"create", "delete", "replace"}:
+            actionable.append(item)
+            continue
+
+        drift_paths = {path for path in item.get("changed_paths", []) if isinstance(path, str)}
+        managed_paths = {path for path in managed.get("changed_paths", []) if isinstance(path, str)}
+        if not drift_paths or not managed_paths:
+            actionable.append(item)
+            continue
+
+        overlaps = any(
+            _paths_overlap(drift_path, managed_path)
+            for drift_path in drift_paths
+            for managed_path in managed_paths
+        )
+        (actionable if overlaps else refresh_only).append(item)
+
+    return actionable, refresh_only
 
 
 def summarize_plan(
@@ -147,6 +237,12 @@ def summarize_plan(
         for item in _parse_changes(plan, "resource_drift")
         if item["action"] not in {"no-op", "read"}
     ]
+    actionable_drift, refresh_only_drift = _classify_drift(changed, drift)
+    if drift and plan_exit_code != 0 and not changed:
+        # A non-zero detailed exit code without parsed managed changes is inconsistent.
+        # Fail closed rather than treating the entire plan as provider-only refresh noise.
+        actionable_drift = drift
+        refresh_only_drift = []
     action_counts = Counter(_as_string(item["action"]) for item in changed)
     destructive = [item for item in changed if item["destructive"] is True]
     public = [item for item in changed if item["public"] is True]
@@ -196,10 +292,10 @@ def summarize_plan(
     elif unexpected_types:
         gate_status = "BLOCKED: unreviewed staging resource type detected"
         exit_code = 4
-    elif drift and plan_exit_code != 0:
+    elif actionable_drift and plan_exit_code != 0:
         gate_status = "BLOCKED: actionable out-of-band resource drift detected"
         exit_code = 5
-    elif drift:
+    elif drift and plan_exit_code == 0 and not changed:
         gate_status = "PASS: refresh-only drift reported; no managed changes"
 
     generated_at = datetime.now(UTC).isoformat(timespec="seconds")
@@ -239,12 +335,32 @@ def summarize_plan(
     lines.extend(_markdown_table(rows))
 
     lines.extend(["", "## Detected remote-state drift", ""])
-    drift_rows = [
-        (_as_string(item["action"]), _as_string(item["type"]), _as_string(item["address"]))
-        for item in drift
-    ]
-    if drift_rows:
-        lines.extend(_markdown_table(drift_rows))
+    if actionable_drift:
+        lines.append("### Actionable managed reconciliation")
+        lines.append("")
+        actionable_rows = [
+            (_as_string(item["action"]), _as_string(item["type"]), _as_string(item["address"]))
+            for item in actionable_drift
+        ]
+        lines.extend(_markdown_table(actionable_rows))
+    else:
+        # The apply workflow intentionally checks this stable prefix before recreating a plan.
+        lines.append("- None detected requiring managed reconciliation.")
+
+    lines.extend(["", "## Non-overlapping refresh differences", ""])
+    if refresh_only_drift:
+        refresh_rows = [
+            (_as_string(item["action"]), _as_string(item["type"]), _as_string(item["address"]))
+            for item in refresh_only_drift
+        ]
+        lines.extend(_markdown_table(refresh_rows))
+        lines.extend(
+            [
+                "",
+                "These differences do not overlap any field Terraform plans to change. They are "
+                "reported for review but are not applied or reconciled by this plan.",
+            ]
+        )
     else:
         lines.append("- None detected")
 
@@ -276,9 +392,10 @@ def summarize_plan(
             "",
             "This summary intentionally omits resource values. Review the human-readable "
             "plan artifact before approval.",
-            "Remote-state drift is always reported. It blocks progression when Terraform also "
-            "proposes managed resource changes; refresh-only drift with detailed exit code 0 "
-            "remains visible but does not fail an otherwise clean no-change plan.",
+            "Remote-state drift is always reported. It blocks progression only when a drifted "
+            "structural path overlaps a field Terraform plans to reconcile, or when the changed "
+            "paths cannot be classified safely. Provider-computed or other non-overlapping "
+            "refresh differences remain visible without blocking an unrelated managed change.",
             "Any new Terraform resource type must be added to the reviewed staging design and "
             "allowlist in the same pull request before the plan can pass.",
             "A fresh plan is required for any future apply; this workflow never applies "

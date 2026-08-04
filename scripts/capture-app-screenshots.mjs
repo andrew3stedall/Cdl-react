@@ -50,6 +50,21 @@ const screenshotTeamSelection = {
   fixture_lock: { locked: false, fixture_id: null, fixture_type: null, lock_scope: null, locked_at: null, reason: null },
 };
 
+const screenshotSquadSummary = {
+  manager_team: { id: 'team-exeter-gently', name: 'Exeter Gently' },
+  gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1 },
+  players: [
+    { id: 'player-1', display_name: 'Alex Keeper', position: 'GKP', epl_team: { name: 'Arsenal', short_name: 'ARS' }, status: 'owned', points: 48, value: 5.0 },
+  ],
+};
+
+const screenshotScoutingPlayers = {
+  players: [
+    ...screenshotSquadSummary.players,
+    { id: 'player-3', display_name: 'Casey Midfielder', position: 'MID', epl_team: { name: 'Arsenal', short_name: 'ARS' }, status: 'available', points: 61, value: 7.5 },
+  ],
+};
+
 const teams = [
   { id: 'team-castle', name: 'Castle FC', short_name: 'CAS' },
   { id: 'team-river', name: 'River Rangers', short_name: 'RIV' },
@@ -186,6 +201,22 @@ async function mockApi(page) {
 
     if (path === '/api/auth/session') {
       return route.fulfill({ json: screenshotSession });
+    }
+
+    if (path === '/api/squad/summary') {
+      return route.fulfill({ json: screenshotSquadSummary });
+    }
+
+    if (path === '/api/scouting/players') {
+      return route.fulfill({ json: screenshotScoutingPlayers });
+    }
+
+    if (path === '/api/interests') {
+      return route.fulfill({ json: [] });
+    }
+
+    if (path === '/api/trades') {
+      return route.fulfill({ json: { trades: [] } });
     }
 
     if (path === '/api/team-selection') {

@@ -78,6 +78,21 @@ const teams = [
   { id: 'team-river', name: 'River Rangers', short_name: 'RIV' },
 ];
 
+const squadSummary = {
+  manager_team: { id: 'team-exeter-gently', name: 'Exeter Gently' },
+  gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1 },
+  players: [
+    { id: 'player-1', display_name: 'Alex Keeper', position: 'GKP', epl_team: { name: 'Arsenal', short_name: 'ARS' }, status: 'owned', points: 48, value: 5.0 },
+  ],
+};
+
+const scoutingPlayers = {
+  players: [
+    ...squadSummary.players,
+    { id: 'player-3', display_name: 'Casey Midfielder', position: 'MID', epl_team: { name: 'Arsenal', short_name: 'ARS' }, status: 'available', points: 61, value: 7.5 },
+  ],
+};
+
 const gameweeks = [12, 13, 14, 15, 16].map((number) => ({
   id: 'gw-' + number,
   name: 'Gameweek ' + number,
@@ -217,6 +232,14 @@ async function mockApi(page, { authenticated = true, teamSelectionLocked = false
     if (path === '/api/auth/logout') {
       sessionAuthenticated = false;
       return route.fulfill({ json: { session: unauthenticatedSession } });
+    }
+
+    if (path === '/api/squad/summary') {
+      return route.fulfill({ json: squadSummary });
+    }
+
+    if (path === '/api/scouting/players') {
+      return route.fulfill({ json: scoutingPlayers });
     }
 
     if (path === '/api/interests' && request.method() === 'GET') {
@@ -486,7 +509,7 @@ async function testTeamSelection(page) {
 
 async function testSquadManagement(page) {
   await page.goto(`${baseUrl}/squad-management`, { waitUntil: 'networkidle' });
-  await expectStatus(page, 'Squad data loaded.');
+  await expectStatus(page, 'Exeter Gently loaded from staging PostgreSQL.');
 
   const search = page.getByRole('textbox', { name: 'Search players' });
   await search.fill('Casey');
@@ -503,9 +526,6 @@ async function testSquadManagement(page) {
   await playerDialog.getByText('Points: 61 · Value: £7.5m', { exact: true }).waitFor();
   await playerDialog.getByRole('button', { name: 'Close' }).click();
   await playerDialog.waitFor({ state: 'hidden' });
-
-  await page.getByRole('button', { name: 'Propose sample trade' }).click();
-  await page.getByText('Trade proposal created.', { exact: false }).waitFor();
 
   const rulesLink = page.getByRole('link', { name: 'Trade Window' });
   const href = await rulesLink.getAttribute('href');

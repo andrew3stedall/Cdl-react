@@ -531,10 +531,8 @@ async function testSquadManagement(page) {
     throw new Error('The obsolete sample-trade action must not be exposed.');
   }
 
-  const rulesLink = page.getByRole('link', { name: 'Trade Window' });
-  const href = await rulesLink.getAttribute('href');
-  if (href !== '/rules#trade-window') {
-    throw new Error(`Expected Trade Window link to target /rules#trade-window, received "${href}"`);
+  if (await page.locator('a[href="/rules#trade-window"]').count() !== 0) {
+    throw new Error('The obsolete Trade Window shortcut must not be exposed.');
   }
 }
 

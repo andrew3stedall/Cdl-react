@@ -205,12 +205,8 @@ def _classify_drift(
             actionable.append(item)
             continue
 
-        drift_paths = {
-            path for path in item.get("changed_paths", []) if isinstance(path, str)
-        }
-        managed_paths = {
-            path for path in managed.get("changed_paths", []) if isinstance(path, str)
-        }
+        drift_paths = {path for path in item.get("changed_paths", []) if isinstance(path, str)}
+        managed_paths = {path for path in managed.get("changed_paths", []) if isinstance(path, str)}
         if not drift_paths or not managed_paths:
             actionable.append(item)
             continue

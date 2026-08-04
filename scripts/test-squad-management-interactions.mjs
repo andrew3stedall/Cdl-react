@@ -117,15 +117,45 @@ async function testSquadPersistence(browser, viewport) {
   const activity = page.locator('section[aria-label="Interests and proposed trades"]');
   await activity.getByText('Casey Midfielder', { exact: true }).waitFor();
 
+  const createdTrade = await page.evaluate(async () => {
+    const response = await fetch('/api/trades', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ offered_player_id: 'player-1', requested_player_id: 'player-4' }),
+    });
+    return { ok: response.ok, payload: await response.json() };
+  });
+  if (!createdTrade.ok) {
+    throw new Error(`Expected Trade proposal created. Received ${JSON.stringify(createdTrade.payload)}`);
+  }
+
   await page.reload({ waitUntil: 'networkidle' });
   await expectStatus(page, 'Exeter Gently loaded from staging PostgreSQL.');
   await activity.getByText('Casey Midfielder', { exact: true }).waitFor();
+  await activity.getByText('Trade proposed: Alex Keeper ↔ Dev Forward', { exact: true }).waitFor();
 
   await page.getByRole('textbox', { name: 'Search players' }).fill('Casey');
   await page.getByRole('button', { name: 'Interest', exact: true }).click();
   await expectStatus(page, 'Interest already exists.');
   if (await activity.getByText('Casey Midfielder', { exact: true }).count() !== 1) {
     throw new Error('Expected the rejected duplicate interest to leave persisted server state unchanged');
+  }
+
+  const duplicateTrade = await page.evaluate(async () => {
+    const response = await fetch('/api/trades', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ offered_player_id: 'player-1', requested_player_id: 'player-4' }),
+    });
+    return { status: response.status, payload: await response.json() };
+  });
+  if (duplicateTrade.status !== 422 || duplicateTrade.payload.message !== 'Trade proposal already exists.') {
+    throw new Error(`Expected Trade proposal already exists. Received ${JSON.stringify(duplicateTrade)}`);
+  }
+  if (await activity.getByText('Trade proposed: Alex Keeper ↔ Dev Forward', { exact: true }).count() !== 1) {
+    throw new Error('Expected the rejected duplicate trade to leave persisted server state unchanged');
   }
 
   await context.close();

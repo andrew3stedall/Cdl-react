@@ -527,6 +527,10 @@ async function testSquadManagement(page) {
   await playerDialog.getByRole('button', { name: 'Close' }).click();
   await playerDialog.waitFor({ state: 'hidden' });
 
+  if (await page.getByRole('button', { name: 'Propose sample trade' }).count() !== 0) {
+    throw new Error('The obsolete sample-trade action must not be exposed.');
+  }
+
   const rulesLink = page.getByRole('link', { name: 'Trade Window' });
   const href = await rulesLink.getAttribute('href');
   if (href !== '/rules#trade-window') {

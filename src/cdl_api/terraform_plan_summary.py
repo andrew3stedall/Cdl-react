@@ -93,8 +93,9 @@ def _classify_actions(actions: list[str]) -> str:
 def _changed_paths(before: JsonValue, after: JsonValue, prefix: str = "") -> set[str]:
     """Return redacted structural paths whose values differ.
 
-    Ordered lists are compared by index so a provider-updated field beside a managed field
-    does not collapse into the same parent path. Values are never retained or rendered.
+    Singleton lists are compared by index so nested provider metadata can be separated from
+    a managed field. Larger lists remain one conservative path because provider set ordering
+    may not be stable. Values are never retained or rendered.
     """
     if before == after:
         return set()
@@ -110,13 +111,12 @@ def _changed_paths(before: JsonValue, after: JsonValue, prefix: str = "") -> set
         return paths or {prefix or "<root>"}
 
     if isinstance(before, list) and isinstance(after, list):
-        if len(before) != len(after):
+        if len(before) != len(after) or len(before) > 1:
             return {prefix or "<root>"}
-        paths: set[str] = set()
-        for index, (before_item, after_item) in enumerate(zip(before, after, strict=True)):
-            child_prefix = f"{prefix}[{index}]" if prefix else f"[{index}]"
-            paths.update(_changed_paths(before_item, after_item, child_prefix))
-        return paths or {prefix or "<root>"}
+        if not before:
+            return set()
+        child_prefix = f"{prefix}[0]" if prefix else "[0]"
+        return _changed_paths(before[0], after[0], child_prefix) or {prefix or "<root>"}
 
     return {prefix or "<root>"}
 

@@ -24,15 +24,11 @@ def test_disjoint_provider_refresh_drift_does_not_block_image_update() -> None:
                 address,
                 "google_cloud_run_v2_service",
                 {
-                    "template": {
-                        "containers": [{"image": "old", "build_info": "new"}]
-                    },
+                    "template": {"containers": [{"image": "old", "build_info": "new"}]},
                     "update_time": "new",
                 },
                 {
-                    "template": {
-                        "containers": [{"image": "new", "build_info": "new"}]
-                    },
+                    "template": {"containers": [{"image": "new", "build_info": "new"}]},
                     "update_time": "new",
                 },
             )
@@ -42,15 +38,11 @@ def test_disjoint_provider_refresh_drift_does_not_block_image_update() -> None:
                 address,
                 "google_cloud_run_v2_service",
                 {
-                    "template": {
-                        "containers": [{"image": "old", "build_info": "old"}]
-                    },
+                    "template": {"containers": [{"image": "old", "build_info": "old"}]},
                     "update_time": "old",
                 },
                 {
-                    "template": {
-                        "containers": [{"image": "old", "build_info": "new"}]
-                    },
+                    "template": {"containers": [{"image": "old", "build_info": "new"}]},
                     "update_time": "new",
                 },
             ),

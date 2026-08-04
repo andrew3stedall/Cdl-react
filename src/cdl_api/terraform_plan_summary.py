@@ -93,8 +93,8 @@ def _classify_actions(actions: list[str]) -> str:
 def _changed_paths(before: JsonValue, after: JsonValue, prefix: str = "") -> set[str]:
     """Return redacted structural paths whose values differ.
 
-    Lists are treated as a single path because provider set ordering is not stable and
-    individual indexes would create false overlap. Values are never retained or rendered.
+    Ordered lists are compared by index so a provider-updated field beside a managed field
+    does not collapse into the same parent path. Values are never retained or rendered.
     """
     if before == after:
         return set()
@@ -110,7 +110,13 @@ def _changed_paths(before: JsonValue, after: JsonValue, prefix: str = "") -> set
         return paths or {prefix or "<root>"}
 
     if isinstance(before, list) and isinstance(after, list):
-        return {prefix or "<root>"}
+        if len(before) != len(after):
+            return {prefix or "<root>"}
+        paths: set[str] = set()
+        for index, (before_item, after_item) in enumerate(zip(before, after, strict=True)):
+            child_prefix = f"{prefix}[{index}]" if prefix else f"[{index}]"
+            paths.update(_changed_paths(before_item, after_item, child_prefix))
+        return paths or {prefix or "<root>"}
 
     return {prefix or "<root>"}
 
@@ -118,7 +124,13 @@ def _changed_paths(before: JsonValue, after: JsonValue, prefix: str = "") -> set
 def _paths_overlap(left: str, right: str) -> bool:
     if "<root>" in {left, right}:
         return True
-    return left == right or left.startswith(f"{right}.") or right.startswith(f"{left}.")
+    return (
+        left == right
+        or left.startswith(f"{right}.")
+        or left.startswith(f"{right}[")
+        or right.startswith(f"{left}.")
+        or right.startswith(f"{left}[")
+    )
 
 
 def _parse_changes(

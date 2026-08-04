@@ -299,6 +299,8 @@ def summarize_plan(
     elif actionable_drift and plan_exit_code != 0:
         gate_status = "BLOCKED: actionable out-of-band resource drift detected"
         exit_code = 5
+    elif drift and plan_exit_code == 0 and not changed:
+        gate_status = "PASS: refresh-only drift reported; no managed changes"
 
     generated_at = datetime.now(UTC).isoformat(timespec="seconds")
     lines = [

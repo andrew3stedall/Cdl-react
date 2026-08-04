@@ -24,11 +24,15 @@ def test_disjoint_provider_refresh_drift_does_not_block_image_update() -> None:
                 address,
                 "google_cloud_run_v2_service",
                 {
-                    "template": {"containers": [{"image": "old"}]},
+                    "template": {
+                        "containers": [{"image": "old", "build_info": "new"}]
+                    },
                     "update_time": "new",
                 },
                 {
-                    "template": {"containers": [{"image": "new"}]},
+                    "template": {
+                        "containers": [{"image": "new", "build_info": "new"}]
+                    },
                     "update_time": "new",
                 },
             )
@@ -38,11 +42,15 @@ def test_disjoint_provider_refresh_drift_does_not_block_image_update() -> None:
                 address,
                 "google_cloud_run_v2_service",
                 {
-                    "template": {"containers": [{"image": "old"}]},
+                    "template": {
+                        "containers": [{"image": "old", "build_info": "old"}]
+                    },
                     "update_time": "old",
                 },
                 {
-                    "template": {"containers": [{"image": "old"}]},
+                    "template": {
+                        "containers": [{"image": "old", "build_info": "new"}]
+                    },
                     "update_time": "new",
                 },
             ),
@@ -68,6 +76,7 @@ def test_disjoint_provider_refresh_drift_does_not_block_image_update() -> None:
     assert "## Detected remote-state drift\n\n- None detected" in summary
     assert "## Non-overlapping refresh differences" in summary
     assert "update_time" not in summary
+    assert "build_info" not in summary
     assert "server_ca_cert" not in summary
 
 

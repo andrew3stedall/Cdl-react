@@ -6,6 +6,7 @@ from sqlalchemy.sql.dml import Delete, Insert
 
 from cdl_api.app import create_app
 from cdl_api.repositories.postgres_team_selection import PostgreSQLTeamSelectionRepository
+from cdl_api.repositories.team_selection import InMemoryTeamSelectionRepository
 from cdl_api.routers.team_selection import get_team_selection_repository
 
 
@@ -40,6 +41,7 @@ class _CapturingSession:
 def _client_with_postgres_repo(session: _CapturingSession) -> TestClient:
     app = create_app()
     repository = PostgreSQLTeamSelectionRepository(lambda: session)
+    repository.get_players = InMemoryTeamSelectionRepository().get_players
     app.dependency_overrides[get_team_selection_repository] = lambda: repository
     return TestClient(app)
 
@@ -128,9 +130,12 @@ def test_postgres_fixture_summary_preserves_cross_feature_context() -> None:
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload["cdl_fixtures"][0]["home_team"]["id"] == "team-castle"
-    assert payload["epl_fixtures"][0]["home_team"]["id"] == "epl-ars"
-    assert payload["cdl_table"][0]["id"] == "team-castle"
+    assert payload == {
+        "cdl_fixtures": [],
+        "epl_fixtures": [],
+        "cdl_table": [],
+        "epl_table": [],
+    }
 
 
 def test_postgres_team_selection_fixture_lock_is_persisted() -> None:

@@ -12,6 +12,8 @@ from cdl_api.contracts.dashboard import (
     DashboardWidgetDefinition,
 )
 from cdl_api.repositories.postgres_dashboard_fdr import dashboard_aggregate_snapshots_table
+from cdl_api.repositories.postgres_league_fpl import draft_teams_table
+from cdl_api.staging_draft_seed import LEAGUE_ID
 
 
 class PostgreSQLDashboardSnapshotRepository:
@@ -26,6 +28,13 @@ class PostgreSQLDashboardSnapshotRepository:
         filters: dict[str, str],
     ) -> list[ChartDataPoint]:
         with self._session_factory() as session:
+            active_team_names = set(
+                session.execute(
+                    select(draft_teams_table.c.name).where(
+                        draft_teams_table.c.league_id == LEAGUE_ID
+                    )
+                ).scalars()
+            )
             rows = session.execute(
                 select(
                     dashboard_aggregate_snapshots_table.c.id,
@@ -43,6 +52,12 @@ class PostgreSQLDashboardSnapshotRepository:
                 if payload.get("metric_id") != widget.metric_id:
                     continue
                 if payload.get("dimension_id") != widget.dimension_id:
+                    continue
+                if (
+                    widget.dimension_id == "cdl_team"
+                    and active_team_names
+                    and str(payload.get("dimension_value")) not in active_team_names
+                ):
                     continue
                 if not self._matches_filters(payload, widget, filters):
                     continue

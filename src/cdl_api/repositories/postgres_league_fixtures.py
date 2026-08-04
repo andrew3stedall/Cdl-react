@@ -5,7 +5,7 @@ from collections.abc import Callable, Iterable, Mapping
 from sqlalchemy import JSON, Column, DateTime, MetaData, String, Table, insert, select
 from sqlalchemy.orm import Session
 
-from cdl_api.contracts.domain import GameweekSummary
+from cdl_api.contracts.domain import GameweekSummary, TeamSummary
 from cdl_api.contracts.league_models import (
     EplFixtureContext,
     FixtureOutcome,
@@ -17,8 +17,11 @@ from cdl_api.contracts.league_models import (
     KnockoutResponse,
     LeagueFixture,
     LeagueTableResponse,
+    LeagueTableRow,
 )
 from cdl_api.repositories.league_repository import LeagueRepository
+from cdl_api.repositories.postgres_league_fpl import draft_teams_table
+from cdl_api.staging_draft_seed import LEAGUE_ID
 
 metadata = MetaData()
 
@@ -266,6 +269,11 @@ class PostgreSQLLeagueRepository:
 
     def list_fixtures(self) -> list[LeagueFixture]:
         with self._session_factory() as session:
+            active_team_ids = set(
+                session.execute(
+                    select(draft_teams_table.c.id).where(draft_teams_table.c.league_id == LEAGUE_ID)
+                ).scalars()
+            )
             fixture_payloads = self._payloads(session, cdl_fixtures_table)
             result_payloads = self._payloads_by_fixture(session, fixture_results_table)
             snapshot_payloads = self._payloads_by_fixture(
@@ -279,6 +287,15 @@ class PostgreSQLLeagueRepository:
 
         fixtures = []
         for payload in fixture_payloads:
+            home_team = payload.get("home_team", {})
+            away_team = payload.get("away_team", {})
+            if active_team_ids and (
+                not isinstance(home_team, Mapping)
+                or not isinstance(away_team, Mapping)
+                or home_team.get("id") not in active_team_ids
+                or away_team.get("id") not in active_team_ids
+            ):
+                continue
             fixture_id = str(payload["id"])
             result = result_payloads.get(fixture_id, {})
             snapshot = snapshot_payloads.get(fixture_id, {})
@@ -316,7 +333,40 @@ class PostgreSQLLeagueRepository:
     def get_table_snapshot(self) -> LeagueTableResponse:
         """Return the newest persisted table snapshot without fixture fallback."""
         with self._session_factory() as session:
+            active_teams = list(
+                session.execute(
+                    select(draft_teams_table.c.id, draft_teams_table.c.name)
+                    .where(draft_teams_table.c.league_id == LEAGUE_ID)
+                    .order_by(draft_teams_table.c.name)
+                ).mappings()
+            )
             payloads = self._payloads(session, league_table_snapshots_table)
+
+        if active_teams:
+            active_team_ids = {str(team["id"]) for team in active_teams}
+            for payload in reversed(payloads):
+                snapshot = LeagueTableResponse.model_validate(payload)
+                snapshot_team_ids = {row.team.id for row in snapshot.rows}
+                if snapshot_team_ids and snapshot_team_ids <= active_team_ids:
+                    return snapshot
+            return LeagueTableResponse(
+                rows=[
+                    LeagueTableRow(
+                        position=index,
+                        team=TeamSummary(id=str(team["id"]), name=str(team["name"])),
+                        played=0,
+                        wins=0,
+                        draws=0,
+                        losses=0,
+                        points_for=0,
+                        points_against=0,
+                        points_difference=0,
+                        league_points=0,
+                    )
+                    for index, team in enumerate(active_teams, start=1)
+                ],
+                source="postgresql-active-season",
+            )
 
         if not payloads:
             raise MissingLeagueTableSnapshotError(
@@ -329,6 +379,8 @@ class PostgreSQLLeagueRepository:
         with self._session_factory() as session:
             payloads = self._payloads(session, knockout_matches_table)
 
+        if not payloads and self._active_team_ids():
+            return KnockoutResponse(rounds=[], matches=[])
         if not payloads:
             raise MissingKnockoutSnapshotError(
                 "PostgreSQL mode requires persisted knockout matches."
@@ -337,10 +389,13 @@ class PostgreSQLLeagueRepository:
         fixtures = {fixture.id: fixture for fixture in self.list_fixtures()}
         matches = []
         rounds: list[str] = []
+        active_team_ids = self._active_team_ids()
         for payload in payloads:
             fixture_id = str(payload["fixture_id"])
             fixture = fixtures.get(fixture_id)
             if fixture is None:
+                if active_team_ids:
+                    continue
                 raise MissingKnockoutSnapshotError(
                     f"Persisted knockout fixture {fixture_id!r} is missing."
                 )
@@ -357,20 +412,36 @@ class PostgreSQLLeagueRepository:
                     }
                 )
             )
-        return KnockoutResponse(rounds=rounds, matches=matches)
+        return KnockoutResponse(rounds=rounds if matches else [], matches=matches)
 
     def get_head_to_head_snapshot(self) -> HeadToHeadResponse:
         """Return persisted matchup records without fixture-result fallback."""
         with self._session_factory() as session:
             payloads = self._payloads(session, head_to_head_records_table)
 
+        active_team_ids = self._active_team_ids()
+        if not payloads and active_team_ids:
+            return HeadToHeadResponse(records=[])
         if not payloads:
             raise MissingHeadToHeadSnapshotError(
                 "PostgreSQL mode requires persisted head-to-head records."
             )
-        return HeadToHeadResponse(
-            records=[HeadToHeadRecord.model_validate(payload) for payload in payloads]
-        )
+        records = [HeadToHeadRecord.model_validate(payload) for payload in payloads]
+        if active_team_ids:
+            records = [
+                record
+                for record in records
+                if record.team.id in active_team_ids and record.opponent.id in active_team_ids
+            ]
+        return HeadToHeadResponse(records=records)
+
+    def _active_team_ids(self) -> set[str]:
+        with self._session_factory() as session:
+            return set(
+                session.execute(
+                    select(draft_teams_table.c.id).where(draft_teams_table.c.league_id == LEAGUE_ID)
+                ).scalars()
+            )
 
     @staticmethod
     def _payloads(session: Session, table: Table) -> list[dict[str, object]]:

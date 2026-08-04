@@ -26,3 +26,8 @@ Migration `0007_dashboard_fdr_production_data` follows `0006_league_fixture_scor
 The PostgreSQL read repository fails closed: ratings with a missing, wrong-season, or algorithm-mismatched calculation run are not returned. The current deterministic fixture contract is synthetic and test-only; it is not evidence of historical results.
 
 Dashboard calculation ownership remains server-side through persisted definitions and snapshots. Dashboard drill-down returns no rows in PostgreSQL mode until a persisted fact contract is available.
+
+In staging, the dashboard CDL-team dimension and filter options are resolved from the
+`league-cdl-2026-27` draft teams. Aggregate points for unrelated legacy demo teams are filtered
+out, so the dashboard displays an honest empty state until current-season metric snapshots are
+calculated.

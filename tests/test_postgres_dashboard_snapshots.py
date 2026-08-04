@@ -2,7 +2,7 @@ import os
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, func, select
+from sqlalchemy import create_engine, func, select, text
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -121,6 +121,17 @@ def test_dashboard_widget_query_reads_persisted_snapshots_without_memory_fallbac
     )
     dashboard_definitions_table.create(engine)
     dashboard_aggregate_snapshots_table.create(engine)
+    with engine.begin() as connection:
+        connection.execute(
+            text("CREATE TABLE draft_teams (id TEXT PRIMARY KEY, league_id TEXT, name TEXT)")
+        )
+        connection.execute(
+            text(
+                "INSERT INTO draft_teams (id, league_id, name) VALUES "
+                "('castle', 'legacy-test', 'Castle FC'), "
+                "('drafton', 'legacy-test', 'Drafton')"
+            )
+        )
     session_factory = sessionmaker(bind=engine, class_=Session)
 
     _assert_snapshot_round_trip(session_factory)

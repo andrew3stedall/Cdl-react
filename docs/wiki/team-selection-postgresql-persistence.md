@@ -1,6 +1,7 @@
 # Team selection PostgreSQL persistence
 
-Issue #66 persists team-selection state in PostgreSQL while retaining the seeded demo read model used by the current API surface.
+Issue #66 persists team-selection state in PostgreSQL. Staging now reads the active 2026/27
+Exeter Gently roster from `squad_ownerships` instead of retaining the seeded demo read model.
 
 ## Scope
 
@@ -16,6 +17,11 @@ Migration `0005_team_selection_persistence` follows `0004_squad_transfer_persist
 `CDL_REPOSITORY_MODE=postgres` now builds `PostgreSQLTeamSelectionRepository` through `RepositoryBundle.team_selection`. The team-selection router resolves its service dependencies through the repository factory instead of a module-level in-memory repository, so lineup and chip mutations are written through the configured repository mode.
 
 The repository now reads the latest fixture lock for the active season/gameweek. The primary read response exposes that state, and both lineup and chip mutations stop with `409 conflict` before persistence when a lock exists.
+
+For the staged 20-player squad, the initial editable allocation exposes eleven starters, four
+bench players and five reserves. Persisted lineup rows override that initial ordering. The fixture
+summary exposes the eight persisted CDL teams and cached EPL teams, and returns empty fixture lists
+until current-season fixture rows exist.
 
 The React team-selection client consumes the same read and mutation contract. A locked response renders a labelled view-only notice with the persisted reason and disables lineup, captain, vice-captain, chip, and save controls. Deterministic mobile and desktop Chromium journeys exercise this boundary, the `/api/team-selection/fixtures-summary` request/render contract, and save–reload restoration of lineup and chip state through a stateful API test double; PostgreSQL integration tests remain the database persistence proof.
 

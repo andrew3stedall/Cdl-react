@@ -19,6 +19,10 @@ Squad management now resolves its repository through the shared repository facto
 
 The service layer delegates interest and trade persistence to the selected repository, preserving current API response shapes for `/api/squad/summary`, `/api/scouting/players`, `/api/interests`, and `/api/trades`.
 
+The React Squad Management page now consumes `/api/squad/summary` and
+`/api/scouting/players` directly. It no longer renders a hard-coded four-player list or submits
+the obsolete sample trade containing demo player and team IDs.
+
 ## Table coverage
 
 The schema foundation covers these groups:

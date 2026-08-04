@@ -2,7 +2,7 @@ import os
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, func, select
+from sqlalchemy import create_engine, func, select, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from cdl_api.app import create_app
@@ -64,6 +64,10 @@ def _assert_fixture_result_matrix(fixtures: list[dict[str, object]]) -> None:
 def test_sqlite_repository_round_trip_uses_persisted_results_and_scoring() -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:")
     metadata.create_all(engine)
+    with engine.begin() as connection:
+        connection.execute(
+            text("CREATE TABLE draft_teams (id TEXT PRIMARY KEY, league_id TEXT, name TEXT)")
+        )
     session_factory = sessionmaker(bind=engine, class_=Session)
 
     PostgreSQLLeagueRepository(session_factory).seed_synthetic_data()
@@ -133,6 +137,10 @@ def test_sqlite_repository_round_trip_uses_persisted_results_and_scoring() -> No
 def test_sqlite_repository_rejects_broken_epl_scoring_context() -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:")
     metadata.create_all(engine)
+    with engine.begin() as connection:
+        connection.execute(
+            text("CREATE TABLE draft_teams (id TEXT PRIMARY KEY, league_id TEXT, name TEXT)")
+        )
     session_factory = sessionmaker(bind=engine, class_=Session)
     repository = PostgreSQLLeagueRepository(session_factory)
     repository.seed_synthetic_data()
@@ -146,6 +154,64 @@ def test_sqlite_repository_rejects_broken_epl_scoring_context() -> None:
         match="Persisted EPL scoring fixture 'epl-gw12-ars-che' is missing",
     ):
         repository.get_fixture("fixture-1201")
+
+
+def test_active_staging_league_hides_unrelated_synthetic_results() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    metadata.create_all(engine)
+    with engine.begin() as connection:
+        connection.execute(
+            text("CREATE TABLE draft_teams (id TEXT PRIMARY KEY, league_id TEXT, name TEXT)")
+        )
+        connection.execute(
+            text(
+                "INSERT INTO draft_teams (id, league_id, name) VALUES "
+                "('team-exeter-gently', 'league-cdl-2026-27', 'Exeter Gently'), "
+                "('team-class-of-84', 'league-cdl-2026-27', 'Class of 84')"
+            )
+        )
+    repository = PostgreSQLLeagueRepository(sessionmaker(bind=engine, class_=Session))
+    repository.seed_synthetic_data()
+
+    assert repository.list_fixtures() == []
+    table = repository.get_table_snapshot()
+    assert [row.team.name for row in table.rows] == ["Class of 84", "Exeter Gently"]
+    assert all(row.played == 0 for row in table.rows)
+    assert repository.get_knockout_snapshot().matches == []
+    assert repository.get_head_to_head_snapshot().records == []
+
+    with Session(engine) as session:
+        session.execute(
+            league_table_snapshots_table.insert().values(
+                id="table-current-staging",
+                payload_json={
+                    "rows": [
+                        {
+                            "position": 1,
+                            "team": {
+                                "id": "team-exeter-gently",
+                                "name": "Exeter Gently",
+                            },
+                            "played": 1,
+                            "wins": 1,
+                            "draws": 0,
+                            "losses": 0,
+                            "points_for": 58,
+                            "points_against": 52,
+                            "points_difference": 6,
+                            "league_points": 3,
+                        }
+                    ],
+                    "source": "postgresql-current-season",
+                },
+            )
+        )
+        session.commit()
+
+    current_table = repository.get_table_snapshot()
+    assert current_table.source == "postgresql-current-season"
+    assert current_table.rows[0].team.name == "Exeter Gently"
+    assert current_table.rows[0].played == 1
 
 
 @pytest.mark.skipif(

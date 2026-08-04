@@ -5,6 +5,7 @@ from sqlalchemy.pool import StaticPool
 from cdl_api.repositories.postgres_league_fpl import draft_teams_table, fpl_players_table
 from cdl_api.repositories.postgres_squad import squad_ownerships_table
 from cdl_api.repositories.postgres_squad_repository import PostgreSQLSquadRepository
+from cdl_api.repositories.postgres_team_selection import PostgreSQLTeamSelectionRepository
 from cdl_api.staging_draft_seed import (
     PRIMARY_TEAM_ID,
     TEAM_IDS,
@@ -74,6 +75,11 @@ def test_seed_is_idempotent_and_postgres_repository_reads_it() -> None:
             player_id TEXT, gameweek INTEGER, status TEXT, note TEXT,
             created_at DATETIME, updated_at DATETIME
         )""",
+        """CREATE TABLE team_selection_lineup_slots (
+            id TEXT PRIMARY KEY, season_id TEXT, draft_team_id TEXT, player_id TEXT,
+            gameweek INTEGER, slot TEXT, slot_order INTEGER, is_captain BOOLEAN,
+            is_vice_captain BOOLEAN, locked_at DATETIME, updated_at DATETIME
+        )""",
     )
     with engine.begin() as connection:
         for statement in statements:
@@ -115,3 +121,10 @@ def test_seed_is_idempotent_and_postgres_repository_reads_it() -> None:
     ]
     assert len(summary_players) == 20
     assert summary_players[0].display_name == "Haaland"
+
+    team_selection = PostgreSQLTeamSelectionRepository(session_factory).get_players()
+    assert len(team_selection) == 20
+    assert team_selection[0].display_name == "Haaland"
+    assert sum(player.slot == "starter" for player in team_selection) == 11
+    assert sum(player.slot == "bench" for player in team_selection) == 4
+    assert sum(player.slot == "reserve" for player in team_selection) == 5

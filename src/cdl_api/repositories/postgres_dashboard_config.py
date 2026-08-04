@@ -13,7 +13,9 @@ from cdl_api.contracts.dashboard import (
 )
 from cdl_api.repositories.dashboard_repository import DashboardRepository
 from cdl_api.repositories.postgres_dashboard_fdr import dashboard_definitions_table
+from cdl_api.repositories.postgres_league_fpl import draft_teams_table
 from cdl_api.services.dashboard_service import DashboardService
+from cdl_api.staging_draft_seed import LEAGUE_ID
 
 
 class PostgreSQLDashboardConfigRepository:
@@ -39,7 +41,32 @@ class PostgreSQLDashboardConfigRepository:
             return None
         payload = dict(row["payload_json"])
         payload["id"] = str(row["id"])
-        return DashboardConfigResponse.model_validate(payload)
+        config = DashboardConfigResponse.model_validate(payload)
+        with self._session_factory() as session:
+            team_names = list(
+                session.execute(
+                    select(draft_teams_table.c.name)
+                    .where(draft_teams_table.c.league_id == LEAGUE_ID)
+                    .order_by(draft_teams_table.c.name)
+                ).scalars()
+            )
+        if not team_names:
+            return config
+        dimensions = [
+            dimension.model_copy(update={"values": team_names})
+            if dimension.id == "cdl_team"
+            else dimension
+            for dimension in config.dimensions
+        ]
+        filters = [
+            filter_definition.model_copy(
+                update={"options": ["All teams", *team_names], "default_value": "All teams"}
+            )
+            if filter_definition.id == "cdl_team"
+            else filter_definition
+            for filter_definition in config.filters
+        ]
+        return config.model_copy(update={"dimensions": dimensions, "filters": filters})
 
     def get_widget(self, widget_id: str) -> DashboardWidgetDefinition | None:
         """Resolve a widget only from the persisted dashboard definition."""

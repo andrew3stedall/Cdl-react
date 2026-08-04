@@ -13,6 +13,21 @@ const authenticatedSession = {
   expires_at: '2099-01-01T00:00:00Z',
 };
 
+const squadSummary = {
+  manager_team: { id: 'team-exeter-gently', name: 'Exeter Gently' },
+  gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1 },
+  players: [
+    { id: 'player-1', display_name: 'Alex Keeper', position: 'GKP', epl_team: { name: 'Arsenal', short_name: 'ARS' }, status: 'owned', points: 48, value: 5.0 },
+  ],
+};
+
+const scoutingPlayers = {
+  players: [
+    ...squadSummary.players,
+    { id: 'player-3', display_name: 'Casey Midfielder', position: 'MID', epl_team: { name: 'Arsenal', short_name: 'ARS' }, status: 'available', points: 61, value: 7.5 },
+  ],
+};
+
 function browserTrade() {
   return {
     id: 'trade-browser-1',
@@ -32,6 +47,12 @@ async function mockApi(page) {
     const path = new URL(request.url()).pathname;
     if (path === '/api/auth/session') {
       return route.fulfill({ json: authenticatedSession });
+    }
+    if (path === '/api/squad/summary') {
+      return route.fulfill({ json: squadSummary });
+    }
+    if (path === '/api/scouting/players') {
+      return route.fulfill({ json: scoutingPlayers });
     }
     if (path === '/api/interests' && request.method() === 'GET') {
       return route.fulfill({ json: interests });
@@ -86,7 +107,7 @@ async function testSquadPersistence(browser, viewport) {
   const page = await context.newPage();
   await mockApi(page);
   await page.goto(`${baseUrl}/squad-management`, { waitUntil: 'networkidle' });
-  await expectStatus(page, 'Squad data loaded.');
+  await expectStatus(page, 'Exeter Gently loaded from staging PostgreSQL.');
 
   const search = page.getByRole('textbox', { name: 'Search players' });
   await search.fill('Casey');
@@ -96,12 +117,21 @@ async function testSquadPersistence(browser, viewport) {
   const activity = page.locator('section[aria-label="Interests and proposed trades"]');
   await activity.getByText('Casey Midfielder', { exact: true }).waitFor();
 
-  await page.getByRole('button', { name: 'Propose sample trade', exact: true }).click();
-  await expectStatus(page, 'Trade proposal created.');
-  await activity.getByText('Trade proposed: Alex Keeper ↔ Dev Forward', { exact: true }).waitFor();
+  const createdTrade = await page.evaluate(async () => {
+    const response = await fetch('/api/trades', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ offered_player_id: 'player-1', requested_player_id: 'player-4' }),
+    });
+    return { ok: response.ok, payload: await response.json() };
+  });
+  if (!createdTrade.ok) {
+    throw new Error(`Expected Trade proposal created. Received ${JSON.stringify(createdTrade.payload)}`);
+  }
 
   await page.reload({ waitUntil: 'networkidle' });
-  await expectStatus(page, 'Squad data loaded.');
+  await expectStatus(page, 'Exeter Gently loaded from staging PostgreSQL.');
   await activity.getByText('Casey Midfielder', { exact: true }).waitFor();
   await activity.getByText('Trade proposed: Alex Keeper ↔ Dev Forward', { exact: true }).waitFor();
 
@@ -112,11 +142,22 @@ async function testSquadPersistence(browser, viewport) {
     throw new Error('Expected the rejected duplicate interest to leave persisted server state unchanged');
   }
 
-  await page.getByRole('button', { name: 'Propose sample trade', exact: true }).click();
-  await expectStatus(page, 'Trade proposal already exists.');
+  const duplicateTrade = await page.evaluate(async () => {
+    const response = await fetch('/api/trades', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ offered_player_id: 'player-1', requested_player_id: 'player-4' }),
+    });
+    return { status: response.status, payload: await response.json() };
+  });
+  if (duplicateTrade.status !== 422 || duplicateTrade.payload.message !== 'Trade proposal already exists.') {
+    throw new Error(`Expected Trade proposal already exists. Received ${JSON.stringify(duplicateTrade)}`);
+  }
   if (await activity.getByText('Trade proposed: Alex Keeper ↔ Dev Forward', { exact: true }).count() !== 1) {
     throw new Error('Expected the rejected duplicate trade to leave persisted server state unchanged');
   }
+
   await context.close();
 }
 
@@ -128,6 +169,12 @@ async function testUnauthorizedMutations(browser) {
     const path = new URL(request.url()).pathname;
     if (path === '/api/auth/session') {
       return route.fulfill({ json: authenticatedSession });
+    }
+    if (path === '/api/squad/summary') {
+      return route.fulfill({ json: squadSummary });
+    }
+    if (path === '/api/scouting/players') {
+      return route.fulfill({ json: scoutingPlayers });
     }
     if (path === '/api/interests' && request.method() === 'GET') {
       return route.fulfill({ json: [] });
@@ -149,9 +196,6 @@ async function testUnauthorizedMutations(browser) {
   await expectStatus(page, 'Authentication required.');
   await page.getByText('No interests registered yet.', { exact: true }).waitFor();
 
-  await page.getByRole('button', { name: 'Propose sample trade', exact: true }).click();
-  await expectStatus(page, 'Authentication required.');
-  await page.getByText('No proposed trades.', { exact: true }).waitFor();
   await context.close();
 }
 

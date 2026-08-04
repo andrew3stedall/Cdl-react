@@ -18,6 +18,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import Session
 
+from cdl_api.contracts.domain import GameweekSummary, TeamSummary
 from cdl_api.contracts.team_selection import (
     ChipState,
     ChipStatus,
@@ -25,7 +26,17 @@ from cdl_api.contracts.team_selection import (
     LineupSlot,
     TeamSelectionPlayer,
 )
+from cdl_api.repositories.postgres_league_fpl import (
+    draft_teams_table,
+    epl_teams_table,
+    fpl_players_table,
+)
+from cdl_api.repositories.postgres_squad import (
+    squad_ownerships_table,
+    squad_roster_slots_table,
+)
 from cdl_api.repositories.team_selection import InMemoryTeamSelectionRepository
+from cdl_api.staging_draft_seed import PRIMARY_TEAM_ID, SEASON_ID, TEAM_NAMES
 
 metadata = MetaData()
 
@@ -91,7 +102,7 @@ TEAM_SELECTION_PERSISTENCE_TABLES = (
     team_selection_audit_events_table,
 )
 
-DEMO_SEASON_ID = "season-2026"
+DEMO_SEASON_ID = SEASON_ID
 
 
 def _remove_existing(table: Table) -> object:
@@ -115,13 +126,18 @@ class PostgreSQLTeamSelectionRepository(InMemoryTeamSelectionRepository):
     def __init__(self, session_factory: Callable[[], Session]) -> None:
         super().__init__()
         self._session_factory = session_factory
+        self.manager_team = TeamSummary(id=PRIMARY_TEAM_ID, name=TEAM_NAMES[0])
+        self.gameweek = GameweekSummary(id="gw-1", name="Gameweek 1", number=1)
 
     def get_players(self) -> list[TeamSelectionPlayer]:
+        players = self._database_roster()
+        if not players:
+            return []
         rows = self._lineup_rows()
         if not rows:
-            return super().get_players()
+            return players
 
-        players_by_id = {player.id: player for player in super().get_players()}
+        players_by_id = {player.id: player for player in players}
         selected_players = []
         for row in rows:
             player = players_by_id.get(str(row["player_id"]))
@@ -132,6 +148,8 @@ class PostgreSQLTeamSelectionRepository(InMemoryTeamSelectionRepository):
             player.is_captain = bool(row["is_captain"])
             player.is_vice_captain = bool(row["is_vice_captain"])
             selected_players.append(player)
+        selected_ids = {player.id for player in selected_players}
+        selected_players.extend(player for player in players if player.id not in selected_ids)
         return sorted(selected_players, key=self._lineup_sort_key)
 
     def get_chips(self) -> list[ChipState]:
@@ -173,7 +191,7 @@ class PostgreSQLTeamSelectionRepository(InMemoryTeamSelectionRepository):
                     )
                 )
             session.commit()
-        return super().save_lineup(updates)
+        return self.get_players()
 
     def save_chips(self, chips: list[ChipState]) -> list[ChipState]:
         now = datetime.now(UTC)
@@ -237,6 +255,96 @@ class PostgreSQLTeamSelectionRepository(InMemoryTeamSelectionRepository):
                 ),
                 "reason": str(row["reason"]),
             }
+
+    def fixture_summary(
+        self,
+    ) -> tuple[list[object], list[object], list[TeamSummary], list[TeamSummary]]:
+        with self._session_factory() as session:
+            cdl_teams = [
+                TeamSummary(id=str(row["id"]), name=str(row["name"]))
+                for row in session.execute(
+                    select(draft_teams_table.c.id, draft_teams_table.c.name).order_by(
+                        draft_teams_table.c.name
+                    )
+                ).mappings()
+            ]
+            epl_teams = [
+                TeamSummary(
+                    id=str(row["id"]),
+                    name=str(row["name"]),
+                    short_name=str(row["short_name"]),
+                )
+                for row in session.execute(
+                    select(
+                        epl_teams_table.c.id,
+                        epl_teams_table.c.name,
+                        epl_teams_table.c.short_name,
+                    ).order_by(epl_teams_table.c.name)
+                ).mappings()
+            ]
+        return ([], [], cdl_teams, epl_teams)
+
+    def _database_roster(self) -> list[TeamSelectionPlayer]:
+        with self._session_factory() as session:
+            rows = list(
+                session.execute(
+                    select(
+                        fpl_players_table.c.id,
+                        fpl_players_table.c.web_name,
+                        fpl_players_table.c.position_id,
+                        epl_teams_table.c.id.label("epl_team_id"),
+                        epl_teams_table.c.name.label("epl_team_name"),
+                        epl_teams_table.c.short_name.label("epl_team_short_name"),
+                        squad_roster_slots_table.c.sort_order,
+                    )
+                    .join(
+                        squad_ownerships_table,
+                        squad_ownerships_table.c.player_id == fpl_players_table.c.id,
+                    )
+                    .join(epl_teams_table, fpl_players_table.c.team_id == epl_teams_table.c.id)
+                    .join(
+                        squad_roster_slots_table,
+                        squad_ownerships_table.c.roster_slot_id == squad_roster_slots_table.c.id,
+                    )
+                    .where(
+                        squad_ownerships_table.c.season_id == DEMO_SEASON_ID,
+                        squad_ownerships_table.c.draft_team_id == self.manager_team.id,
+                        squad_ownerships_table.c.ended_at.is_(None),
+                    )
+                    .order_by(squad_roster_slots_table.c.sort_order)
+                ).mappings()
+            )
+
+        players: list[TeamSelectionPlayer] = []
+        for index, row in enumerate(rows):
+            if index < 11:
+                slot = LineupSlot.STARTER
+                slot_order = index + 1
+            elif index < 15:
+                slot = LineupSlot.BENCH
+                slot_order = index - 10
+            else:
+                slot = LineupSlot.RESERVE
+                slot_order = index - 14
+            epl_team = TeamSummary(
+                id=str(row["epl_team_id"]),
+                name=str(row["epl_team_name"]),
+                short_name=str(row["epl_team_short_name"]),
+            )
+            players.append(
+                TeamSelectionPlayer(
+                    id=str(row["id"]),
+                    display_name=str(row["web_name"]),
+                    position=str(row["position_id"]),
+                    team=epl_team,
+                    epl_team=epl_team,
+                    slot=slot,
+                    slot_order=slot_order,
+                    is_captain=index == 0,
+                    is_vice_captain=index == 1,
+                )
+            )
+        return players
 
     def save_fixture_lock(
         self,

@@ -82,6 +82,7 @@ class TeamSelectionService:
     def validate_updates(self, request: LineupUpdateRequest) -> list[ValidationIssue]:
         known_player_ids = {player.id for player in self._repository.get_players()}
         requested_ids = {player.player_id for player in request.players}
+        starter_count, bench_count, reserve_count = self._slot_counts(len(known_player_ids))
         issues: list[ValidationIssue] = []
         if requested_ids != known_player_ids:
             issues.append(
@@ -94,27 +95,29 @@ class TeamSelectionService:
         starters = [player for player in request.players if player.slot == LineupSlot.STARTER]
         bench = [player for player in request.players if player.slot == LineupSlot.BENCH]
         reserves = [player for player in request.players if player.slot == LineupSlot.RESERVE]
-        if len(starters) != 3:
+        if len(starters) != starter_count:
             issues.append(
                 ValidationIssue(
                     field="players",
-                    message="Exactly three starters are required in this gameweek fixture.",
+                    message=(
+                        f"Exactly {starter_count} starters are required in this gameweek fixture."
+                    ),
                     rule_reference=LINEUP_RULE,
                 )
             )
-        if len(bench) != 1:
+        if len(bench) != bench_count:
             issues.append(
                 ValidationIssue(
                     field="players",
-                    message="Exactly one bench player is required.",
+                    message=f"Exactly {bench_count} bench players are required.",
                     rule_reference=LINEUP_RULE,
                 )
             )
-        if len(reserves) != 1:
+        if len(reserves) != reserve_count:
             issues.append(
                 ValidationIssue(
                     field="players",
-                    message="Exactly one reserve player is required.",
+                    message=f"Exactly {reserve_count} reserve players are required.",
                     rule_reference=LINEUP_RULE,
                 )
             )
@@ -138,15 +141,20 @@ class TeamSelectionService:
 
     def validate_players(self, players: list[TeamSelectionPlayer]) -> list[ValidationIssue]:
         starters = [player for player in players if player.slot == LineupSlot.STARTER]
-        if len(starters) == 3:
+        starter_count, _, _ = self._slot_counts(len(players))
+        if len(starters) == starter_count:
             return []
         return [
             ValidationIssue(
                 field="players",
-                message="Team selection needs exactly three starters.",
+                message=f"Team selection needs exactly {starter_count} starters.",
                 rule_reference=LINEUP_RULE,
             )
         ]
+
+    @staticmethod
+    def _slot_counts(player_count: int) -> tuple[int, int, int]:
+        return (11, 4, 5) if player_count == 20 else (3, 1, 1)
 
 
 class ChipService:

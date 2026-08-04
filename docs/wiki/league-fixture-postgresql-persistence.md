@@ -25,6 +25,12 @@ The deterministic seed is explicitly marked synthetic in stored payloads and is
 idempotent. It exists to exercise the release path before real historical
 exports are available; it is not evidence of real CDL history.
 
+When the staged `league-cdl-2026-27` teams exist, runtime reads are scoped to those
+team IDs. Unrelated legacy synthetic fixtures and results remain auditable in their
+payload tables but are not presented as current CDL data. Before current-season
+fixtures exist, the API returns empty fixture, knockout and head-to-head collections
+and an eight-team, zero-played table sourced from the persisted active teams.
+
 Its fixture/result parity matrix covers a pending fixture with no score, a
 started home win, a completed away win, and a completed draw. These cases are
 read back through the same PostgreSQL repository and league API contract used

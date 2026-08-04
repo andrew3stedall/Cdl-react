@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-08-04 - Serve the staged snake draft through application APIs
+
+### Fixed
+
+- Replaced the Squad Management page's hard-coded player list with the PostgreSQL-backed squad
+  summary and scouting API responses.
+- Made PostgreSQL team selection read Exeter Gently's 20 active ownerships for the staged
+  2026/27 season instead of the five-player in-memory demo roster.
+- Scoped league and dashboard reads to the eight teams in the staged CDL season, hiding unrelated
+  legacy synthetic fixtures, scores and dashboard points while no current results exist.
+- Removed request-time repository seeding so ordinary API and session requests are read-only and
+  cannot recreate demo data or open avoidable Cloud SQL connections.
+
+### Validation
+
+- Added regression coverage for the 20-player staged team-selection roster, active-team dashboard
+  filters, empty pre-season standings and removal of the obsolete sample trade action.
+
 ## 2026-08-02 - Add allowlisted Google sign-in for staging
 
 ### Added

@@ -52,11 +52,8 @@ def build_repositories(settings: Settings) -> RepositoryBundle:
     if settings.repository_mode == "postgres":
         session_factory = build_session_factory(settings)
         users = PostgreSQLUserRepository(session_factory)
-        users.seed_demo_user()
         squad = PostgreSQLSquadRepository(session_factory)
-        squad.seed_demo_data()
         league = PostgreSQLLeagueRepository(session_factory)
-        league.seed_synthetic_data()
         return RepositoryBundle(
             users=users,
             sessions=PostgreSQLSessionRepository(session_factory),

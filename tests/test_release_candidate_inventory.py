@@ -21,6 +21,7 @@ def test_inventory_covers_every_mounted_product_router() -> None:
         "auth_router",
         "dashboard_router",
         "fdr_router",
+        "fpl_data_router",
         "preferences_router",
         "rules_router",
         "league_router",

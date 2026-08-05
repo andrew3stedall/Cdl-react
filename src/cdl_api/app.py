@@ -6,6 +6,7 @@ from cdl_api.repositories.factory import build_repositories
 from cdl_api.routers.auth import router as auth_router
 from cdl_api.routers.dashboard import router as dashboard_router
 from cdl_api.routers.fdr import router as fdr_router
+from cdl_api.routers.fpl_data import router as fpl_data_router
 from cdl_api.routers.league import router as league_router
 from cdl_api.routers.modernisation import router as modernisation_router
 from cdl_api.routers.modernisation_competition_experience import router as competition_router
@@ -42,6 +43,7 @@ def create_app() -> FastAPI:
     app.include_router(auth_router, prefix=settings.api_prefix)
     app.include_router(dashboard_router, prefix=settings.api_prefix)
     app.include_router(fdr_router, prefix=settings.api_prefix)
+    app.include_router(fpl_data_router, prefix=settings.api_prefix)
     app.include_router(preferences_router, prefix=settings.api_prefix)
     app.include_router(rules_router, prefix=settings.api_prefix)
     app.include_router(league_router, prefix=settings.api_prefix)

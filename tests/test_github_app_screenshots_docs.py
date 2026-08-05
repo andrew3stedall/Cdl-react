@@ -38,7 +38,16 @@ def test_screenshot_workflow_uploads_artifact_without_deploying() -> None:
 
 def test_screenshot_script_captures_core_routes() -> None:
     content = SCRIPT.read_text(encoding="utf-8")
-    for route in ["/", "/login", "/league", "/dashboard", "/fdr", "/squad-management", "/team-selection"]:
+    routes = [
+        "/",
+        "/login",
+        "/league",
+        "/dashboard",
+        "/fdr",
+        "/squad-management",
+        "/team-selection",
+    ]
+    for route in routes:
         assert route in content
     assert "chromium.launch" in content
     assert "page.screenshot" in content

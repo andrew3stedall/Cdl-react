@@ -72,12 +72,13 @@ export function LoginPage({
         </div>
 
         <form className="login-form login-form-redesigned" onSubmit={onSubmit}>
-          <label className="login-field login-field-redesigned">
-            <span>Email address</span>
+          <div className="login-field login-field-redesigned">
+            <label htmlFor="login-email">Email address</label>
             <span className="login-input-shell">
               <Mail aria-hidden="true" size={20} />
               <input
                 autoComplete="email"
+                id="login-email"
                 inputMode="email"
                 name="email"
                 onChange={(event) => onEmailChange(event.target.value)}
@@ -87,14 +88,15 @@ export function LoginPage({
                 value={email}
               />
             </span>
-          </label>
+          </div>
 
-          <label className="login-field login-field-redesigned">
-            <span>Password</span>
+          <div className="login-field login-field-redesigned">
+            <label htmlFor="login-password">Password</label>
             <span className="login-input-shell">
               <LockKeyhole aria-hidden="true" size={20} />
               <input
                 autoComplete="current-password"
+                id="login-password"
                 name="password"
                 onChange={(event) => onPasswordChange(event.target.value)}
                 placeholder="Enter your password"
@@ -111,7 +113,7 @@ export function LoginPage({
                 {showPassword ? <EyeOff aria-hidden="true" size={20} /> : <Eye aria-hidden="true" size={20} />}
               </button>
             </span>
-          </label>
+          </div>
 
           {error ? (
             <p className="login-error login-error-redesigned" role="status">

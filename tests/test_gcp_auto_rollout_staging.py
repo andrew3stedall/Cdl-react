@@ -25,14 +25,14 @@ def test_auto_rollout_is_staging_only_and_failure_closed() -> None:
         '"module.cloud_run_api[0].google_cloud_run_v2_service.this"',
         "terraform apply -input=false",
         "Post-rollout Terraform plan was not a clean no-change result.",
-        "gcloud run jobs execute \"${MIGRATION_JOB}\"",
-        "gcloud run jobs execute \"${FPL_REFRESH_JOB}\"",
+        'gcloud run jobs execute "${MIGRATION_JOB}"',
+        'gcloud run jobs execute "${FPL_REFRESH_JOB}"',
         "Official FPL refresh job: completed with non-empty normalized data",
         "Unauthenticated FPL status boundary: HTTP 401",
     ):
         assert phrase in content
 
-    assert "gcloud run jobs execute \"${SYNTHETIC_SEED_JOB}\"" not in content
+    assert 'gcloud run jobs execute "${SYNTHETIC_SEED_JOB}"' not in content
     assert "cdl-react-prod" not in content
     assert "terraform destroy" not in content
     assert "-auto-approve" not in content
@@ -40,9 +40,7 @@ def test_auto_rollout_is_staging_only_and_failure_closed() -> None:
 
 def test_official_fpl_refresh_job_uses_the_migration_identity_and_database_only() -> None:
     content = DATABASE_JOBS.read_text(encoding="utf-8")
-    section = content.split(
-        'resource "google_cloud_run_v2_job" "fpl_refresh"', maxsplit=1
-    )[1]
+    section = content.split('resource "google_cloud_run_v2_job" "fpl_refresh"', maxsplit=1)[1]
 
     for phrase in (
         'name                = "${var.name_prefix}-fpl-refresh"',

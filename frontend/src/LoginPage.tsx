@@ -77,6 +77,7 @@ export function LoginPage({
             <span className="login-input-shell">
               <Mail aria-hidden="true" size={20} />
               <input
+                aria-label="Email address"
                 autoComplete="email"
                 id="login-email"
                 inputMode="email"
@@ -95,6 +96,7 @@ export function LoginPage({
             <span className="login-input-shell">
               <LockKeyhole aria-hidden="true" size={20} />
               <input
+                aria-label="Password"
                 autoComplete="current-password"
                 id="login-password"
                 name="password"

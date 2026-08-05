@@ -1,6 +1,7 @@
 from pathlib import Path
 
 WORKFLOW = Path(".github/workflows/gcp-auto-rollout-staging.yml")
+DATABASE_JOB_WORKFLOW = Path(".github/workflows/gcp-run-staging-database-job.yml")
 DATABASE_JOBS = Path("infra/terraform/environments/staging/database_jobs.tf")
 OUTPUTS = Path("infra/terraform/environments/staging/outputs.tf")
 
@@ -64,3 +65,12 @@ def test_official_fpl_refresh_job_is_exposed_as_a_terraform_output() -> None:
 
     assert 'output "fpl_refresh_job_name"' in content
     assert "google_cloud_run_v2_job.fpl_refresh[0].name" in content
+
+
+def test_manual_database_job_workflow_can_refresh_official_fpl_data() -> None:
+    content = DATABASE_JOB_WORKFLOW.read_text(encoding="utf-8")
+
+    assert "- fpl-refresh" in content
+    assert "fpl-refresh)" in content
+    assert 'job_name="cdl-react-staging-fpl-refresh"' in content
+    assert "confirm_synthetic_data" in content

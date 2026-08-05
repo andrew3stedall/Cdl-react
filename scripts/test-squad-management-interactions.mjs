@@ -102,6 +102,16 @@ async function expectStatus(page, expected) {
   await page.getByRole('status').getByText(expected, { exact: true }).waitFor();
 }
 
+async function openPlayerPool(page) {
+  await page.getByRole('tab', { name: /Player pool/ }).click();
+  await page.getByRole('textbox', { name: 'Search players' }).waitFor();
+}
+
+async function openActivity(page) {
+  await page.getByRole('tab', { name: /Activity/ }).click();
+  return page.locator('section[aria-label="Interests and proposed trades"]');
+}
+
 async function testSquadPersistence(browser, viewport) {
   const context = await browser.newContext({ viewport });
   const page = await context.newPage();
@@ -109,12 +119,13 @@ async function testSquadPersistence(browser, viewport) {
   await page.goto(`${baseUrl}/squad-management`, { waitUntil: 'networkidle' });
   await expectStatus(page, 'Exeter Gently loaded from staging PostgreSQL.');
 
+  await openPlayerPool(page);
   const search = page.getByRole('textbox', { name: 'Search players' });
   await search.fill('Casey');
-  await page.getByRole('button', { name: 'Interest', exact: true }).click();
+  await page.getByRole('button', { name: 'Add Casey Midfielder to interests' }).click();
   await expectStatus(page, 'Casey Midfielder added to interests.');
 
-  const activity = page.locator('section[aria-label="Interests and proposed trades"]');
+  let activity = await openActivity(page);
   await activity.getByText('Casey Midfielder', { exact: true }).waitFor();
 
   const createdTrade = await page.evaluate(async () => {
@@ -132,12 +143,28 @@ async function testSquadPersistence(browser, viewport) {
 
   await page.reload({ waitUntil: 'networkidle' });
   await expectStatus(page, 'Exeter Gently loaded from staging PostgreSQL.');
+  activity = await openActivity(page);
   await activity.getByText('Casey Midfielder', { exact: true }).waitFor();
   await activity.getByText('Trade proposed: Alex Keeper ↔ Dev Forward', { exact: true }).waitFor();
 
+  await openPlayerPool(page);
   await page.getByRole('textbox', { name: 'Search players' }).fill('Casey');
-  await page.getByRole('button', { name: 'Interest', exact: true }).click();
-  await expectStatus(page, 'Interest already exists.');
+  await page.getByRole('button', { name: 'Casey Midfielder is in interests' }).waitFor();
+
+  const duplicateInterest = await page.evaluate(async () => {
+    const response = await fetch('/api/interests', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ player_id: 'player-3' }),
+    });
+    return { status: response.status, payload: await response.json() };
+  });
+  if (duplicateInterest.status !== 422 || duplicateInterest.payload.message !== 'Interest already exists.') {
+    throw new Error(`Expected Interest already exists. Received ${JSON.stringify(duplicateInterest)}`);
+  }
+
+  activity = await openActivity(page);
   if (await activity.getByText('Casey Midfielder', { exact: true }).count() !== 1) {
     throw new Error('Expected the rejected duplicate interest to leave persisted server state unchanged');
   }
@@ -191,10 +218,12 @@ async function testUnauthorizedMutations(browser) {
     return route.fulfill({ json: {} });
   });
   await page.goto(`${baseUrl}/squad-management`, { waitUntil: 'networkidle' });
+  await openPlayerPool(page);
   await page.getByRole('textbox', { name: 'Search players' }).fill('Casey');
-  await page.getByRole('button', { name: 'Interest', exact: true }).click();
+  await page.getByRole('button', { name: 'Add Casey Midfielder to interests' }).click();
   await expectStatus(page, 'Authentication required.');
-  await page.getByText('No interests registered yet.', { exact: true }).waitFor();
+  const activity = await openActivity(page);
+  await activity.getByText('No interests registered yet.', { exact: true }).waitFor();
 
   await context.close();
 }

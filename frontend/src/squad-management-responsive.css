@@ -1,0 +1,81 @@
+@media (max-width: 700px) {
+  .squad-table {
+    min-width: 100%;
+    table-layout: fixed;
+    width: 100%;
+  }
+
+  .squad-table th,
+  .squad-table td {
+    overflow-wrap: anywhere;
+    padding: 0.65rem 0.45rem;
+  }
+
+  .squad-table th:nth-child(3),
+  .squad-table td:nth-child(3),
+  .squad-table th:nth-child(5),
+  .squad-table td:nth-child(5),
+  .squad-table th:nth-child(6),
+  .squad-table td:nth-child(6) {
+    display: none;
+  }
+
+  .squad-table th:nth-child(1),
+  .squad-table td:nth-child(1) {
+    width: auto;
+  }
+
+  .squad-table th:nth-child(2),
+  .squad-table td:nth-child(2) {
+    width: 4.25rem;
+  }
+
+  .squad-table th:nth-child(4),
+  .squad-table td:nth-child(4) {
+    text-align: center;
+    width: 3.5rem;
+  }
+
+  .squad-table th:nth-child(7),
+  .squad-table td:nth-child(7) {
+    width: 6.4rem;
+  }
+
+  .squad-player-button,
+  .squad-player-button span:nth-child(2) {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .squad-player-button strong,
+  .squad-player-button small {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .squad-row-action .ui-button {
+    font-size: 0.75rem;
+    justify-content: center;
+    min-width: 0;
+    padding-inline: 0.55rem;
+    width: 100%;
+  }
+}
+
+@media (max-width: 430px) {
+  .squad-player-avatar {
+    display: none;
+  }
+
+  .squad-table th:nth-child(2),
+  .squad-table td:nth-child(2) {
+    width: 3.8rem;
+  }
+
+  .squad-table th:nth-child(7),
+  .squad-table td:nth-child(7) {
+    width: 5.9rem;
+  }
+}

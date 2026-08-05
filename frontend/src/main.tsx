@@ -11,6 +11,7 @@ import {
   staticPreviewTeamSelectionClient,
 } from './static-preview-clients';
 import './styles.css';
+import './squad-management-responsive.css';
 
 function getInitialPath() {
   const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, '');

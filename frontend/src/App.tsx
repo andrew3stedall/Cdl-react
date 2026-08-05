@@ -226,7 +226,7 @@ export function App({
 
       setLoginPassword('');
       setMobileNavigationOpen(false);
-      setBrowserPath('/', true);
+      setBrowserPath('/dashboard', true);
       setActiveSession(result.data.session);
     } catch {
       setLoginError('Sign in is temporarily unavailable. Try again.');
@@ -246,7 +246,7 @@ export function App({
           return;
         }
         setMobileNavigationOpen(false);
-        setBrowserPath('/', true);
+        setBrowserPath('/dashboard', true);
         setActiveSession(result.data.session);
       } catch {
         setLoginError('Google sign-in is temporarily unavailable. Try again.');
@@ -370,7 +370,11 @@ export function App({
     );
   }
 
-  let routeContent = <RulesPage categories={['squads', 'trades']} sections={featuredRules} preset={preset} />;
+  let routeContent = <AnalyticsDashboardPage dashboardClient={dashboardClient} />;
+
+  if (currentPath.startsWith('/rules')) {
+    routeContent = <RulesPage categories={['squads', 'trades']} sections={featuredRules} preset={preset} />;
+  }
 
   if (currentPath.startsWith('/league')) {
     routeContent = <LeaguePage leagueClient={leagueClient} />;
@@ -408,6 +412,10 @@ export function App({
     routeContent = <SquadManagementPage preset={preset} />;
   }
 
+  if (currentPath.startsWith('/scouting')) {
+    routeContent = <SquadManagementPage preset={preset} />;
+  }
+
   if (currentPath.startsWith('/team-selection')) {
     routeContent = <TeamSelectionPage preset={preset} teamSelectionClient={teamSelectionClient} />;
   }
@@ -417,6 +425,7 @@ export function App({
       <AppShell
         currentPath={currentPath}
         isMobileNavigationOpen={isMobileNavigationOpen}
+        refreshCount={refreshCount}
         onCloseMobileNavigation={() => {
           setMobileNavigationOpen(false);
         }}
@@ -431,7 +440,6 @@ export function App({
         onSignOut={() => void handleSignOut()}
         session={activeSession}
       >
-        <p className="eyebrow">Data refreshes: {refreshCount}</p>
         {routeContent}
       </AppShell>
     </ThemePresetProvider>

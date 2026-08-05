@@ -95,7 +95,9 @@ function mapPlayer(player: PlayerApiResponse): PlayerView {
 }
 
 export function SquadManagementPage({ preset }: SquadManagementPageProps) {
-  const [activeTab, setActiveTab] = useState<WorkspaceTab>('squad');
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>(() => (
+    window.location.pathname.startsWith('/scouting') ? 'players' : 'squad'
+  ));
   const [query, setQuery] = useState('');
   const [positionFilter, setPositionFilter] = useState<PositionFilter>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');

@@ -586,7 +586,7 @@ async function expectPath(page, expectedPath) {
 async function testShellAndLeagueNavigation(page, viewportName) {
   await page.goto(baseUrl + '/rules', { waitUntil: 'networkidle' });
 
-  let navigation;
+  let primaryNavigation;
   if (viewportName === 'mobile') {
     const menuButton = page.getByRole('button', { name: 'Menu', exact: true });
     if (await menuButton.getAttribute('aria-expanded') !== 'false') {
@@ -596,37 +596,29 @@ async function testShellAndLeagueNavigation(page, viewportName) {
     if (await menuButton.getAttribute('aria-expanded') !== 'true') {
       throw new Error('Expected the mobile menu to expose aria-expanded=true after opening');
     }
-    navigation = page.getByRole('navigation', { name: 'Primary navigation' });
-    await navigation.waitFor({ state: 'visible' });
+    primaryNavigation = page.getByRole('navigation', { name: 'Primary navigation' });
+    await primaryNavigation.waitFor({ state: 'visible' });
   } else {
-    navigation = page.getByRole('navigation', { name: 'Primary navigation' });
+    primaryNavigation = page.getByRole('navigation', { name: 'Primary navigation' });
   }
 
-  await navigation.getByRole('link', { name: 'League fixtures' }).click();
+  await primaryNavigation.getByRole('link', { name: 'League', exact: true }).click();
+  await expectPath(page, '/league');
+
+  const leagueNavigation = page.getByRole('navigation', { name: 'League navigation' });
+  await leagueNavigation.getByRole('link', { name: 'Fixtures', exact: true }).click();
   await expectPath(page, '/league/fixtures');
   await page.getByRole('heading', { name: 'League fixtures and results' }).waitFor();
-  if (viewportName === 'mobile') {
-    await page.getByRole('button', { name: 'Menu', exact: true }).click();
-    navigation = page.getByRole('navigation', { name: 'Primary navigation' });
-    await navigation.waitFor({ state: 'visible' });
-  }
-  await navigation.getByRole('link', { name: 'League table' }).click();
+
+  await leagueNavigation.getByRole('link', { name: 'Table', exact: true }).click();
   await expectPath(page, '/league/table');
   await page.getByRole('heading', { name: 'League table' }).waitFor();
-  if (viewportName === 'mobile') {
-    await page.getByRole('button', { name: 'Menu', exact: true }).click();
-    navigation = page.getByRole('navigation', { name: 'Primary navigation' });
-    await navigation.waitFor({ state: 'visible' });
-  }
-  await navigation.getByRole('link', { name: 'Knockout' }).click();
+
+  await leagueNavigation.getByRole('link', { name: 'Knockout', exact: true }).click();
   await expectPath(page, '/league/knockout');
   await page.getByRole('heading', { name: 'Knockout competition' }).waitFor();
-  if (viewportName === 'mobile') {
-    await page.getByRole('button', { name: 'Menu', exact: true }).click();
-    navigation = page.getByRole('navigation', { name: 'Primary navigation' });
-    await navigation.waitFor({ state: 'visible' });
-  }
-  await navigation.getByRole('link', { name: 'Head-to-head' }).click();
+
+  await leagueNavigation.getByRole('link', { name: 'Head-to-head', exact: true }).click();
   await expectPath(page, '/league/head-to-head');
   await page.getByRole('heading', { name: 'Head-to-head records' }).waitFor();
 }
@@ -656,9 +648,11 @@ async function testLoginAndLogout(page, api, viewportName) {
   await expectStatus(page, 'Invalid email or password.');
   await page.getByLabel('Password').fill('browser-login-secret');
   await page.getByRole('button', { name: 'Sign in' }).click();
-  await expectPath(page, '/');
+  await expectPath(page, '/dashboard');
   if (viewportName === 'mobile') {
     await page.getByRole('button', { name: 'Menu', exact: true }).click();
+  } else {
+    await page.getByLabel('Account menu for Browser Manager').click();
   }
   await page.getByRole('button', { name: 'Sign out' }).click();
   await expectPath(page, '/login');

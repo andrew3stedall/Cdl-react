@@ -121,7 +121,7 @@ function renderApp(initialPath: string, session?: SessionState) {
 }
 
 describe('dashboard shell integration', () => {
-  test('routes authenticated managers to dashboard inside shared shell', async () => {
+  test('routes authenticated managers to overview inside the focused shell', async () => {
     const { container } = renderApp('/dashboard', authenticatedSession);
 
     await act(async () => {
@@ -129,9 +129,9 @@ describe('dashboard shell integration', () => {
       await Promise.resolve();
     });
 
-    expect(container.querySelector('[aria-current="page"]')?.textContent).toContain('Dashboard');
+    expect(container.querySelector('[aria-current="page"]')?.textContent).toContain('Overview');
     expect(container.textContent).toContain('Manager Analytics Dashboard');
-    expect(container.textContent).toContain('Signed in as CDL Manager');
+    expect(container.querySelector('[aria-label="Account menu for CDL Manager"]')).not.toBeNull();
   });
 
   test('blocks unauthenticated dashboard route before rendering dashboard UI', () => {

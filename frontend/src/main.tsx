@@ -11,6 +11,7 @@ import {
   staticPreviewTeamSelectionClient,
 } from './static-preview-clients';
 import './styles.css';
+import './application-shell.css';
 import './squad-management-responsive.css';
 
 function getInitialPath() {

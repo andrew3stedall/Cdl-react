@@ -98,7 +98,7 @@ function renderApp(initialPath: string, session?: SessionState) {
 }
 
 describe('FDR shell integration', () => {
-  test('routes authenticated managers to FDR inside shared shell', async () => {
+  test('routes authenticated managers to fixture difficulty inside squad context', async () => {
     const { container } = renderApp('/fdr', authenticatedSession);
 
     await act(async () => {
@@ -106,9 +106,12 @@ describe('FDR shell integration', () => {
       await Promise.resolve();
     });
 
-    expect(container.querySelector('[aria-current="page"]')?.textContent).toContain('FDR');
+    const activeLabels = Array.from(container.querySelectorAll('[aria-current="page"]'))
+      .map((element) => element.textContent ?? '');
+    expect(activeLabels.some((label) => label.includes('Squad'))).toBe(true);
+    expect(activeLabels.some((label) => label.includes('Fixture difficulty'))).toBe(true);
     expect(container.textContent).toContain('Attack and defence FDR');
-    expect(container.textContent).toContain('Signed in as CDL Manager');
+    expect(container.querySelector('[aria-label="Account menu for CDL Manager"]')).not.toBeNull();
   });
 
   test('blocks unauthenticated FDR route before rendering feature UI', () => {

@@ -29,9 +29,7 @@ def main() -> None:
 
     required_counts = ("teams", "players", "fixtures")
     empty_resources = [
-        resource
-        for resource in required_counts
-        if status.normalized_counts.get(resource, 0) <= 0
+        resource for resource in required_counts if status.normalized_counts.get(resource, 0) <= 0
     ]
     if empty_resources:
         raise RuntimeError(

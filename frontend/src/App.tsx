@@ -11,10 +11,10 @@ import { AnalyticsDashboardPage } from './AnalyticsDashboardPage';
 import type { RuleSection, SessionState } from './contracts';
 import type { DashboardClient } from './dashboard-api';
 import { FixtureDifficultyPage } from './FixtureDifficultyPage';
-import { GoogleSignInButton } from './GoogleSignInButton';
 import type { FdrClient } from './fdr-api';
 import { LeaguePage } from './LeaguePage';
 import type { LeagueClient } from './league-api';
+import { LoginPage } from './LoginPage';
 import { ModernisationCheckpointPage } from './ModernisationCheckpointPage';
 import type { PreferenceClient } from './preferences-api';
 import { RulesPage } from './RulesPage';
@@ -289,84 +289,19 @@ export function App({
 
   if (!canAccessProtectedRoute(activeSession)) {
     return (
-      <main className="session-boundary" aria-label="Protected route session state">
-        <h1>Sign in to CDL Manager</h1>
-        <button
-          aria-expanded={isMobileNavigationOpen}
-          onClick={() => setMobileNavigationOpen((isOpen) => !isOpen)}
-          type="button"
-        >
-          Menu
-        </button>
-        <nav aria-label="Primary navigation">
-          <a
-            href="/login"
-            onClick={(event) => {
-              event.preventDefault();
-              setBrowserPath('/login', true);
-            }}
-          >
-            Dashboard
-          </a>
-        </nav>
-        <p className="login-required" role="status">
-          Sign in to access the Castle Draft League application shell.
-        </p>
-        {googleClientId ? (
-          <section className="google-login" aria-label="Google sign-in">
-            <GoogleSignInButton
-              clientId={googleClientId}
-              onCredential={handleGoogleCredential}
-            />
-            <p className="login-divider">or use the temporary staging password</p>
-          </section>
-        ) : null}
-        <form className="login-form" onSubmit={(event) => void handleLogin(event)}>
-          <label className="login-field">
-            <span>Email address</span>
-            <input
-              autoComplete="email"
-              inputMode="email"
-              name="email"
-              onChange={(event) => setLoginEmail(event.target.value)}
-              required
-              type="email"
-              value={loginEmail}
-            />
-          </label>
-          <label className="login-field">
-            <span>Password</span>
-            <input
-              autoComplete="current-password"
-              name="password"
-              onChange={(event) => setLoginPassword(event.target.value)}
-              required
-              type="password"
-              value={loginPassword}
-            />
-          </label>
-          {loginError ? (
-            <p className="login-error" role="status">
-              {loginError}
-            </p>
-          ) : null}
-          <div className="login-actions">
-            <button className="ui-button ui-button-primary" disabled={loginPending} type="submit">
-              {loginPending ? 'Signing in…' : 'Sign in'}
-            </button>
-            {session === undefined ? (
-              <button
-                className="ui-button ui-button-secondary"
-                disabled={loginPending}
-                onClick={() => void refreshActiveSession()}
-                type="button"
-              >
-                Retry session
-              </button>
-            ) : null}
-          </div>
-        </form>
-      </main>
+      <LoginPage
+        email={loginEmail}
+        error={loginError}
+        googleClientId={googleClientId}
+        onEmailChange={setLoginEmail}
+        onGoogleCredential={handleGoogleCredential}
+        onPasswordChange={setLoginPassword}
+        onRetry={() => void refreshActiveSession()}
+        onSubmit={(event) => void handleLogin(event)}
+        password={loginPassword}
+        pending={loginPending}
+        showRetry={session === undefined}
+      />
     );
   }
 

@@ -13,6 +13,7 @@ import {
 import './styles.css';
 import './application-shell.css';
 import './squad-management-responsive.css';
+import './login-page.css';
 
 function getInitialPath() {
   const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, '');

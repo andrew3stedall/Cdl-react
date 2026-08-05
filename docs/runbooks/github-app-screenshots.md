@@ -20,11 +20,12 @@ Before capturing images, the workflow exercises eight primary journeys in Chromi
 ### Login
 
 1. Open the protected Team Selection route without a session.
-2. Confirm the labelled email and password fields render while protected controls remain hidden.
+2. Confirm the Castle Draft League branding and labelled email and password fields render while authenticated navigation and protected controls remain hidden.
 3. Submit invalid credentials and confirm the generic error does not reveal whether the email exists.
 4. Submit the deterministic valid credentials through `POST /api/auth/login`.
-5. Confirm the authenticated shell and Team Selection workflow replace the credential form.
-6. Repeat at mobile and desktop widths.
+5. Confirm the authenticated shell and Dashboard replace the credential form.
+6. Sign out and confirm the branded login surface returns.
+7. Repeat at mobile and desktop widths.
 
 The login journey uses test-only credentials in the browser fixture. It verifies the existing API contract without storing a real credential or requiring GCP.
 
@@ -99,6 +100,7 @@ These journeys verify that the session boundary, rendered controls, React state 
 
 ## Captured routes
 
+- `/login` in an unauthenticated browser context with deterministic Google Identity Services rendering
 - `/`
 - `/league`
 - `/dashboard`
@@ -116,7 +118,7 @@ Every route is captured at three named breakpoints:
 | `tablet` | 768 × 1024 | Intermediate responsive behaviour |
 | `desktop` | 1440 × 900 | Primary desktop information hierarchy |
 
-The artifact groups PNG files into `mobile/`, `tablet/`, and `desktop/` directories. This produces 18 screenshots per run.
+The artifact groups PNG files into `mobile/`, `tablet/`, and `desktop/` directories. This produces 21 screenshots per run.
 
 ## Automated layout and accessibility checks
 

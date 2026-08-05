@@ -2,90 +2,67 @@
 
 ## Purpose
 
-The application shell replaces repeated legacy headers, mobile panels, reload links, and global layout scripts with one React shell for authenticated Castle Draft League screens.
+The authenticated shell keeps global navigation deliberately small and reveals specialist tools only in the context where they are useful.
 
-## Shell Layout
+## Information architecture
+
+The desktop sidebar and mobile drawer expose four primary destinations:
+
+- **Overview** — dashboard and current gameweek performance.
+- **Squad** — roster management, scouting, and fixture difficulty.
+- **Team** — lineup, bench, captaincy, and chips.
+- **League** — fixtures, standings, knockout, and head-to-head records.
+
+Contextual navigation appears beneath the header after a primary destination is selected:
+
+- Squad: **My squad**, **Scouting**, **Fixture difficulty**.
+- League: **Overview**, **Fixtures**, **Table**, **Knockout**, **Head-to-head**.
+
+Rules are a support utility rather than a permanent primary destination.
+
+## Shell behaviour
 
 `AppShell` provides:
 
-- Desktop sidebar navigation.
-- Mobile drawer navigation using a sheet-style primitive.
-- Shared header actions for reload, scouting, preset selection, and sign out.
-- Authenticated session summary.
-- Shared feature content region for modern modules.
+- A compact sticky desktop sidebar with four primary items.
+- A mobile sheet with primary, current-context, support, appearance, refresh, and sign-out controls.
+- A compact sticky header showing the current section and page rather than the generic “Application Shell” heading.
+- A desktop account menu containing the authenticated identity, visual preset, manual refresh count, and sign-out action.
+- A horizontally scrollable contextual navigation row that does not duplicate every subroute in the global sidebar.
+- A backdrop and explicit close control for mobile navigation.
 
-## Navigation Syntax
+## Navigation configuration
 
-Navigation is configured in `frontend/src/navigation.ts`.
+Navigation is configured in `frontend/src/navigation.ts` through:
 
-```ts
-export const primaryNavigationItems = [
-  {
-    label: 'Dashboard',
-    href: '/dashboard',
-    featureKey: 'dashboard',
-  },
-];
-```
+- `primaryNavigationItems`
+- `contextualNavigationSections`
+- `utilityNavigationItems`
 
-Routes use `isRouteActive(currentPath, item.href)` so nested feature paths inherit the parent active state.
+`getContextNavigation` attaches specialist routes to the correct primary destination. `getActiveContextItem` selects the most specific nested route, preventing the League overview item from remaining active on `/league/table` or another deeper route.
 
-## Visual Preset Syntax
+The root route is treated as the Overview alias and authenticated sign-in redirects to `/dashboard`.
 
-Presets are configured in `frontend/src/theme-presets.ts` and must include:
+## Visual presets
 
-- `name`
-- `label`
-- `isDefault`
-- colour tokens
-- density
-- radius
-- typography scale
-- chart palette hooks
-
-Supported presets:
+Presets remain configured in `frontend/src/theme-presets.ts`:
 
 - `classic`
 - `dark`
 - `compact`
 
-## Preference API
+The preset selector has moved from the global action row into the desktop account menu and mobile account panel. Preferences continue to use `GET /api/me/preferences` and `PUT /api/me/preferences`, with the documented local-storage fallback.
 
-The shell coordinates with the backend preference contract through:
+## Accessibility and responsive behaviour
 
-```http
-GET /api/me/preferences
-PUT /api/me/preferences
-```
+- Primary, contextual, and support navigation use separate labelled landmarks.
+- Active routes expose `aria-current="page"`.
+- The mobile menu exposes `aria-expanded` and an associated sheet ID.
+- Navigation links and account actions retain minimum touch-target sizing.
+- Contextual navigation scrolls within its own region instead of expanding the document width.
+- The mobile sheet has a backdrop, explicit close control, and labelled dialog semantics.
 
-Example response:
-
-```json
-{
-  "theme_preset": "classic"
-}
-```
-
-The React preference client first attempts the API. If the endpoint is unavailable, it falls back to documented local storage using `cdl-theme-preset` so shell behaviour remains usable during parallel backend work.
-
-## Cross-Feature Behaviour
-
-- Authenticated shell content is guarded by the auth/session helpers from issue #2.
-- Rules content from issue #8 is rendered inside the shared shell so the rules surface inherits navigation and preset behaviour.
-- Scouting remains globally accessible from the shell header and supported navigation entries.
-- The visual preset is applied through CSS variables so dense tables, charts, and forms can consume shared tokens rather than hard-code styling.
-- The preference API is intentionally narrow to avoid conflicting with broader backend platform contracts from issue #4.
-
-## Testing
-
-Coverage added for issue #3:
-
-- Unit tests for navigation configuration and active route matching.
-- React integration tests for authenticated shell rendering, mobile drawer behaviour, active route changes, preset persistence, and unauthenticated shell blocking.
-- Backend integration tests for preference API round trip.
-- Service tests for preference defaults, persistence, and unsupported preset fallback.
-
-## Validation Commands
+## Validation
 
 ```bash
 uv run pytest
@@ -93,6 +70,5 @@ cd frontend
 npm run lint
 npm run test
 npm run build
+node ../scripts/test-app-interactions.mjs
 ```
-
-The feature document remains in `docs/features/active/` until validation passes in CI.

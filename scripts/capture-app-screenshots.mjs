@@ -12,7 +12,7 @@ const viewports = [
 ];
 
 const routes = [
-  ['home-rules', '/'],
+  ['overview', '/'],
   ['league', '/league'],
   ['dashboard', '/dashboard'],
   ['fdr', '/fdr'],

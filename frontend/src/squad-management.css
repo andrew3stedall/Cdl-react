@@ -672,3 +672,21 @@
   overscroll-behavior-inline: contain;
 }
 
+/* Intrinsic grid containment */
+.squad-workspace,
+.squad-tab-panel {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.squad-workspace > *,
+.squad-tab-panel > * {
+  min-inline-size: 0;
+}
+
+.squad-table-scroll {
+  contain: inline-size;
+  inline-size: 100%;
+  max-inline-size: 100%;
+  min-inline-size: 0;
+}
+

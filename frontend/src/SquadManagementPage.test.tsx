@@ -25,8 +25,8 @@ beforeEach(() => {
                 position: 'FWD',
                 epl_team: { name: 'Manchester City', short_name: 'MCI' },
                 status: 'owned',
-                points: 0,
-                value: 0,
+                points: 52,
+                value: 14.0,
               },
             ],
           }),
@@ -43,8 +43,8 @@ beforeEach(() => {
                 position: 'FWD',
                 epl_team: { name: 'Manchester City', short_name: 'MCI' },
                 status: 'owned',
-                points: 0,
-                value: 0,
+                points: 52,
+                value: 14.0,
               },
               {
                 id: 'fpl-154',
@@ -52,8 +52,8 @@ beforeEach(() => {
                 position: 'MID',
                 epl_team: { name: 'Chelsea', short_name: 'CHE' },
                 status: 'available',
-                points: 0,
-                value: 0,
+                points: 48,
+                value: 10.5,
               },
             ],
           }),
@@ -100,21 +100,41 @@ async function renderPage() {
   return { container, root };
 }
 
+function clickButton(container: HTMLElement, label: string) {
+  const button = Array.from(container.querySelectorAll('button')).find(
+    (candidate) => candidate.textContent?.includes(label),
+  ) as HTMLButtonElement | undefined;
+  expect(button).toBeDefined();
+  button?.click();
+}
+
 describe('SquadManagementPage', () => {
-  test('renders squad summary and scouting table', async () => {
+  test('starts with a focused squad view and moves secondary content into tabs', async () => {
     const { container } = await renderPage();
 
-    expect(container.textContent).toContain('Squad, scouting, interests, and transfers');
-    expect(container.textContent).toContain('Total players');
     expect(container.textContent).toContain('Exeter Gently');
+    expect(container.textContent).toContain('Current squad');
     expect(container.textContent).toContain('Haaland');
+    expect(container.textContent).not.toContain('Palmer');
+    expect(container.querySelectorAll('[role="tab"]')).toHaveLength(3);
+
+    await act(async () => {
+      clickButton(container, 'Player pool');
+      await Promise.resolve();
+    });
+
+    expect(container.textContent).toContain('Search the shared player pool');
     expect(container.textContent).toContain('Palmer');
   });
 
-  test('filters scouting players and creates interests', async () => {
+  test('filters the player pool and adds a player to interests', async () => {
     const { container } = await renderPage();
-    const input = container.querySelector('input[aria-label="Search players"]') as HTMLInputElement;
+    await act(async () => {
+      clickButton(container, 'Player pool');
+      await Promise.resolve();
+    });
 
+    const input = container.querySelector('input[aria-label="Search players"]') as HTMLInputElement;
     await act(async () => {
       input.value = 'palmer';
       input.dispatchEvent(new Event('change', { bubbles: true }));
@@ -122,28 +142,45 @@ describe('SquadManagementPage', () => {
     });
 
     expect(input.value).toBe('palmer');
-    expect(container.textContent).toContain('Palmer');
+    expect(container.textContent).toContain('1 players');
 
-    const interestButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Interest') && !button.disabled) as HTMLButtonElement;
+    const interestButton = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent?.includes('Interest') && !button.disabled,
+    ) as HTMLButtonElement;
     await act(async () => {
       interestButton.click();
       await Promise.resolve();
       await Promise.resolve();
     });
 
-    expect(container.textContent).toContain('added to interests');
-    expect(container.textContent).toContain('Palmer');
+    expect(container.textContent).toContain('Palmer added to interests.');
+    expect(container.textContent).toContain('Watching');
+
+    await act(async () => {
+      clickButton(container, 'Activity');
+      await Promise.resolve();
+    });
+    expect(container.querySelector('section[aria-label="Interests and proposed trades"]')?.textContent).toContain('Palmer');
   });
 
-  test('opens player detail without exposing the obsolete sample trade action', async () => {
+  test('opens player detail in a contextual drawer', async () => {
     const { container } = await renderPage();
-    expect(container.textContent).not.toContain('Propose sample trade');
-    const playerButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Palmer')) as HTMLButtonElement;
+    await act(async () => {
+      clickButton(container, 'Player pool');
+      await Promise.resolve();
+    });
+
+    const playerButton = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent?.includes('Palmer') && button.textContent?.includes('View player'),
+    ) as HTMLButtonElement;
     await act(async () => {
       playerButton.click();
       await Promise.resolve();
     });
 
-    expect(container.querySelector('[role="dialog"]')?.textContent).toContain('Palmer');
+    const drawer = container.querySelector('[role="dialog"]');
+    expect(drawer?.textContent).toContain('Palmer');
+    expect(drawer?.textContent).toContain('Availability');
+    expect(container.textContent).not.toContain('Propose sample trade');
   });
 });

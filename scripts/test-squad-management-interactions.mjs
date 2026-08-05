@@ -18,7 +18,19 @@ const squadSummary = {
   gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1 },
   players: [
     { id: 'player-1', display_name: 'Alex Keeper', position: 'GKP', epl_team: { name: 'Arsenal', short_name: 'ARS' }, status: 'owned', points: 48, value: 5.0 },
+    { id: 'player-4', display_name: 'Dev Forward', position: 'FWD', epl_team: { name: 'Manchester City', short_name: 'MCI' }, status: 'owned', points: 57, value: 8.5 },
   ],
+};
+
+const teamSelection = {
+  manager_team: { id: 'team-exeter-gently', name: 'Exeter Gently', short_name: 'EXE' },
+  gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1 },
+  lineup: [
+    { id: 'player-1', display_name: 'Alex Keeper', position: 'GKP', epl_team: { id: 'ars', name: 'Arsenal', short_name: 'ARS' }, slot: 'starter', slot_order: 1, is_captain: true, is_vice_captain: false },
+    { id: 'player-4', display_name: 'Dev Forward', position: 'FWD', epl_team: { id: 'mci', name: 'Manchester City', short_name: 'MCI' }, slot: 'bench', slot_order: 1, is_captain: false, is_vice_captain: true },
+  ],
+  chips: [],
+  fixture_lock: { locked: false, fixture_id: null, fixture_type: null, lock_scope: null, locked_at: null, reason: null },
 };
 
 const scoutingPlayers = {
@@ -50,6 +62,9 @@ async function mockApi(page) {
     }
     if (path === '/api/squad/summary') {
       return route.fulfill({ json: squadSummary });
+    }
+    if (path === '/api/team-selection') {
+      return route.fulfill({ json: teamSelection });
     }
     if (path === '/api/scouting/players') {
       return route.fulfill({ json: scoutingPlayers });
@@ -112,12 +127,25 @@ async function openActivity(page) {
   return page.locator('section[aria-label="Interests and proposed trades"]');
 }
 
+async function assertPitchAndListViews(page) {
+  const pitch = page.locator('section[aria-label="Squad pitch"]');
+  await pitch.waitFor();
+  await pitch.getByRole('button', { name: 'View Alex Keeper details' }).waitFor();
+  await pitch.locator('section[aria-label="Bench"]').getByText('Dev Forward', { exact: true }).waitFor();
+
+  await page.getByRole('button', { name: 'List', exact: true }).click();
+  await page.locator('[aria-label="Players table"]').waitFor();
+  await page.getByRole('button', { name: 'Pitch', exact: true }).click();
+  await pitch.waitFor();
+}
+
 async function testSquadPersistence(browser, viewport) {
   const context = await browser.newContext({ viewport });
   const page = await context.newPage();
   await mockApi(page);
   await page.goto(`${baseUrl}/squad-management`, { waitUntil: 'networkidle' });
-  await expectStatus(page, 'Exeter Gently loaded from staging PostgreSQL.');
+  await expectStatus(page, 'Exeter Gently lineup loaded from staging PostgreSQL.');
+  await assertPitchAndListViews(page);
 
   await openPlayerPool(page);
   const search = page.getByRole('textbox', { name: 'Search players' });
@@ -142,7 +170,8 @@ async function testSquadPersistence(browser, viewport) {
   }
 
   await page.reload({ waitUntil: 'networkidle' });
-  await expectStatus(page, 'Exeter Gently loaded from staging PostgreSQL.');
+  await expectStatus(page, 'Exeter Gently lineup loaded from staging PostgreSQL.');
+  await assertPitchAndListViews(page);
   activity = await openActivity(page);
   await activity.getByText('Casey Midfielder', { exact: true }).waitFor();
   await activity.getByText('Trade proposed: Alex Keeper ↔ Dev Forward', { exact: true }).waitFor();
@@ -200,6 +229,9 @@ async function testUnauthorizedMutations(browser) {
     if (path === '/api/squad/summary') {
       return route.fulfill({ json: squadSummary });
     }
+    if (path === '/api/team-selection') {
+      return route.fulfill({ json: teamSelection });
+    }
     if (path === '/api/scouting/players') {
       return route.fulfill({ json: scoutingPlayers });
     }
@@ -218,6 +250,7 @@ async function testUnauthorizedMutations(browser) {
     return route.fulfill({ json: {} });
   });
   await page.goto(`${baseUrl}/squad-management`, { waitUntil: 'networkidle' });
+  await assertPitchAndListViews(page);
   await openPlayerPool(page);
   await page.getByRole('textbox', { name: 'Search players' }).fill('Casey');
   await page.getByRole('button', { name: 'Add Casey Midfielder to interests' }).click();

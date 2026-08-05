@@ -1,0 +1,60 @@
+name: Patch squad grid containment
+
+on:
+  push:
+    branches:
+      - codex/squad-management-workspace-redesign
+    paths:
+      - .github/workflows/patch-squad-grid-containment.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: codex/squad-management-workspace-redesign
+          fetch-depth: 0
+      - name: Contain intrinsic table width
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('frontend/src/squad-management.css')
+          source = path.read_text(encoding='utf-8')
+          marker = '/* Intrinsic grid containment */'
+          addition = '''
+
+          /* Intrinsic grid containment */
+          .squad-workspace,
+          .squad-tab-panel {
+            grid-template-columns: minmax(0, 1fr);
+          }
+
+          .squad-workspace > *,
+          .squad-tab-panel > * {
+            min-inline-size: 0;
+          }
+
+          .squad-table-scroll {
+            contain: inline-size;
+            inline-size: 100%;
+            max-inline-size: 100%;
+            min-inline-size: 0;
+          }
+          '''
+          if marker not in source:
+              path.write_text(source.rstrip() + addition + '\n', encoding='utf-8')
+          PY
+      - name: Commit grid containment
+        run: |
+          if git diff --quiet -- frontend/src/squad-management.css; then
+            exit 0
+          fi
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -- frontend/src/squad-management.css
+          git commit -m "Contain squad table intrinsic width"
+          git push origin HEAD:codex/squad-management-workspace-redesign

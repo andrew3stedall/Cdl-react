@@ -212,6 +212,7 @@ export function AppShell({
             aria-hidden={isMobileNavigationOpen || undefined}
             aria-label="Shell actions"
             className="shell-actions"
+            role="group"
           >
             <Button
               aria-label="Reload data"

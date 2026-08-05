@@ -509,7 +509,15 @@ async function testTeamSelection(page) {
 
 async function testSquadManagement(page) {
   await page.goto(`${baseUrl}/squad-management`, { waitUntil: 'networkidle' });
-  await expectStatus(page, 'Exeter Gently loaded from staging PostgreSQL.');
+  await expectStatus(page, 'Exeter Gently lineup loaded from staging PostgreSQL.');
+
+  const pitch = page.locator('section[aria-label="Squad pitch"]');
+  await pitch.waitFor();
+  await pitch.locator('section[aria-label="Bench"]').waitFor();
+  await page.getByRole('button', { name: 'List', exact: true }).click();
+  await page.locator('[aria-label="Players table"]').waitFor();
+  await page.getByRole('button', { name: 'Pitch', exact: true }).click();
+  await pitch.waitFor();
 
   await page.getByRole('tab', { name: /Player pool/ }).click();
   const search = page.getByRole('textbox', { name: 'Search players' });

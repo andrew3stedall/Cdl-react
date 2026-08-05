@@ -646,3 +646,29 @@
     width: 100%;
   }
 }
+
+/* Mobile overflow containment */
+.squad-workspace,
+.squad-content-card,
+.squad-tab-panel,
+.squad-table-scroll {
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 0;
+  width: 100%;
+}
+
+.squad-tab-panel {
+  overflow-x: hidden;
+}
+
+.squad-tab-panel > * {
+  min-width: 0;
+}
+
+.squad-table-scroll {
+  display: block;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+}
+

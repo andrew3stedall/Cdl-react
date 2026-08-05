@@ -1,0 +1,557 @@
+{
+  "viewport": 390,
+  "documentScrollWidth": 755,
+  "bodyScrollWidth": 390,
+  "items": [
+    {
+      "selector": "html",
+      "rect": {
+        "left": 0,
+        "right": 390,
+        "width": 390
+      },
+      "clientWidth": 390,
+      "scrollWidth": 755,
+      "display": "block",
+      "position": "static",
+      "width": "390px",
+      "minWidth": "0px",
+      "maxWidth": "none",
+      "overflowX": "visible",
+      "contain": "none",
+      "gridTemplateColumns": "none"
+    },
+    {
+      "selector": "body",
+      "rect": {
+        "left": 0,
+        "right": 390,
+        "width": 390
+      },
+      "clientWidth": 390,
+      "scrollWidth": 390,
+      "display": "block",
+      "position": "static",
+      "width": "390px",
+      "minWidth": "320px",
+      "maxWidth": "none",
+      "overflowX": "visible",
+      "contain": "none",
+      "gridTemplateColumns": "none"
+    },
+    {
+      "selector": "#root",
+      "rect": {
+        "left": 0,
+        "right": 390,
+        "width": 390
+      },
+      "clientWidth": 390,
+      "scrollWidth": 390,
+      "display": "block",
+      "position": "static",
+      "width": "390px",
+      "minWidth": "0px",
+      "maxWidth": "none",
+      "overflowX": "visible",
+      "contain": "none",
+      "gridTemplateColumns": "none"
+    },
+    {
+      "selector": ".app-shell",
+      "rect": {
+        "left": 0,
+        "right": 390,
+        "width": 390
+      },
+      "clientWidth": 390,
+      "scrollWidth": 390,
+      "display": "grid",
+      "position": "static",
+      "width": "390px",
+      "minWidth": "0px",
+      "maxWidth": "none",
+      "overflowX": "visible",
+      "contain": "none",
+      "gridTemplateColumns": "390px"
+    },
+    {
+      "selector": ".shell-main",
+      "rect": {
+        "left": 0,
+        "right": 390,
+        "width": 390
+      },
+      "clientWidth": 390,
+      "scrollWidth": 390,
+      "display": "block",
+      "position": "static",
+      "width": "390px",
+      "minWidth": "0px",
+      "maxWidth": "none",
+      "overflowX": "visible",
+      "contain": "none",
+      "gridTemplateColumns": "none"
+    },
+    {
+      "selector": ".shell-header",
+      "rect": {
+        "left": 20,
+        "right": 370,
+        "width": 350
+      },
+      "clientWidth": 350,
+      "scrollWidth": 350,
+      "display": "flex",
+      "position": "static",
+      "width": "350px",
+      "minWidth": "0px",
+      "maxWidth": "none",
+      "overflowX": "visible",
+      "contain": "none",
+      "gridTemplateColumns": "none"
+    },
+    {
+      "selector": ".session-card",
+      "rect": {
+        "left": 20,
+        "right": 370,
+        "width": 350
+      },
+      "clientWidth": 348,
+      "scrollWidth": 348,
+      "display": "flex",
+      "position": "static",
+      "width": "350px",
+      "minWidth": "0px",
+      "maxWidth": "none",
+      "overflowX": "visible",
+      "contain": "none",
+      "gridTemplateColumns": "none"
+    },
+    {
+      "selector": ".feature-screen",
+      "rect": {
+        "left": 20,
+        "right": 370,
+        "width": 350
+      },
+      "clientWidth": 348,
+      "scrollWidth": 348,
+      "display": "grid",
+      "position": "static",
+      "width": "350px",
+      "minWidth": "0px",
+      "maxWidth": "100%",
+      "overflowX": "visible",
+      "contain": "none",
+      "gridTemplateColumns": "316px"
+    },
+    {
+      "selector": ".squad-workspace",
+      "rect": {
+        "left": 20,
+        "right": 370,
+        "width": 350
+      },
+      "clientWidth": 348,
+      "scrollWidth": 348,
+      "display": "grid",
+      "position": "static",
+      "width": "350px",
+      "minWidth": "0px",
+      "maxWidth": "100%",
+      "overflowX": "visible",
+      "contain": "none",
+      "gridTemplateColumns": "316px"
+    },
+    {
+      "selector": ".squad-page-header",
+      "rect": {
+        "left": 37,
+        "right": 353,
+        "width": 316
+      },
+      "clientWidth": 314,
+      "scrollWidth": 314,
+      "display": "flex",
+      "position": "static",
+      "width": "316px",
+      "minWidth": "0px",
+      "maxWidth": "none",
+      "overflowX": "visible",
+      "contain": "none",
+      "gridTemplateColumns": "none"
+    },
+    {
+      "selector": ".squad-metric-grid",
+      "rect": {
+        "left": 37,
+        "right": 353,
+        "width": 316
+      },
+      "clientWidth": 316,
+      "scrollWidth": 316,
+      "display": "grid",
+      "position": "static",
+      "width": "316px",
+      "minWidth": "0px",
+      "maxWidth": "none",
+      "overflowX": "visible",
+      "contain": "none",
+      "gridTemplateColumns": "316px"
+    },
+    {
+      "selector": ".squad-content-card",
+      "rect": {
+        "left": 37,
+        "right": 353,
+        "width": 316
+      },
+      "clientWidth": 314,
+      "scrollWidth": 314,
+      "display": "block",
+      "position": "static",
+      "width": "316px",
+      "minWidth": "0px",
+      "maxWidth": "100%",
+      "overflowX": "hidden",
+      "contain": "none",
+      "gridTemplateColumns": "none"
+    },
+    {
+      "selector": ".squad-tabs",
+      "rect": {
+        "left": 38,
+        "right": 352,
+        "width": 314
+      },
+      "clientWidth": 314,
+      "scrollWidth": 459,
+      "display": "flex",
+      "position": "static",
+      "width": "314px",
+      "minWidth": "0px",
+      "maxWidth": "none",
+      "overflowX": "auto",
+      "contain": "none",
+      "gridTemplateColumns": "none"
+    },
+    {
+      "selector": ".squad-tab-panel",
+      "rect": {
+        "left": 38,
+        "right": 352,
+        "width": 314
+      },
+      "clientWidth": 314,
+      "scrollWidth": 314,
+      "display": "grid",
+      "position": "static",
+      "width": "314px",
+      "minWidth": "0px",
+      "maxWidth": "100%",
+      "overflowX": "hidden",
+      "contain": "none",
+      "gridTemplateColumns": "282px"
+    },
+    {
+      "selector": ".squad-table-scroll",
+      "rect": {
+        "left": 54,
+        "right": 336,
+        "width": 282
+      },
+      "clientWidth": 280,
+      "scrollWidth": 760,
+      "display": "block",
+      "position": "static",
+      "width": "282px",
+      "minWidth": "0px",
+      "maxWidth": "100%",
+      "overflowX": "auto",
+      "contain": "inline-size",
+      "gridTemplateColumns": "none"
+    },
+    {
+      "selector": ".squad-table",
+      "rect": {
+        "left": 55,
+        "right": 815,
+        "width": 760
+      },
+      "clientWidth": 760,
+      "scrollWidth": 760,
+      "display": "table",
+      "position": "static",
+      "width": "760px",
+      "minWidth": "760px",
+      "maxWidth": "none",
+      "overflowX": "visible",
+      "contain": "none",
+      "gridTemplateColumns": "none"
+    }
+  ],
+  "widest": [
+    {
+      "tag": "TABLE",
+      "id": "",
+      "className": "squad-table",
+      "left": 55,
+      "right": 815,
+      "width": 760,
+      "overflowX": "visible",
+      "parentClass": "squad-table-scroll",
+      "parentClientWidth": 280,
+      "parentScrollWidth": 760,
+      "parentOverflowX": "auto"
+    },
+    {
+      "tag": "THEAD",
+      "id": "",
+      "className": "",
+      "left": 55,
+      "right": 815,
+      "width": 760,
+      "overflowX": "visible",
+      "parentClass": "squad-table",
+      "parentClientWidth": 760,
+      "parentScrollWidth": 760,
+      "parentOverflowX": "visible"
+    },
+    {
+      "tag": "TR",
+      "id": "",
+      "className": "",
+      "left": 55,
+      "right": 815,
+      "width": 760,
+      "overflowX": "visible",
+      "parentClass": "",
+      "parentClientWidth": 760,
+      "parentScrollWidth": 760,
+      "parentOverflowX": "visible"
+    },
+    {
+      "tag": "TH",
+      "id": "",
+      "className": "",
+      "left": 743.265625,
+      "right": 815,
+      "width": 71.734375,
+      "overflowX": "visible",
+      "parentClass": "",
+      "parentClientWidth": 760,
+      "parentScrollWidth": 760,
+      "parentOverflowX": "visible"
+    },
+    {
+      "tag": "TBODY",
+      "id": "",
+      "className": "",
+      "left": 55,
+      "right": 815,
+      "width": 760,
+      "overflowX": "visible",
+      "parentClass": "squad-table",
+      "parentClientWidth": 760,
+      "parentScrollWidth": 760,
+      "parentOverflowX": "visible"
+    },
+    {
+      "tag": "TR",
+      "id": "",
+      "className": "",
+      "left": 55,
+      "right": 815,
+      "width": 760,
+      "overflowX": "visible",
+      "parentClass": "",
+      "parentClientWidth": 760,
+      "parentScrollWidth": 760,
+      "parentOverflowX": "visible"
+    },
+    {
+      "tag": "TD",
+      "id": "",
+      "className": "squad-row-action",
+      "left": 743.265625,
+      "right": 815,
+      "width": 71.734375,
+      "overflowX": "visible",
+      "parentClass": "",
+      "parentClientWidth": 760,
+      "parentScrollWidth": 760,
+      "parentOverflowX": "visible"
+    },
+    {
+      "tag": "BUTTON",
+      "id": "",
+      "className": "squad-icon-button",
+      "left": 767,
+      "right": 803,
+      "width": 36,
+      "overflowX": "visible",
+      "parentClass": "squad-row-action",
+      "parentClientWidth": 72,
+      "parentScrollWidth": 72,
+      "parentOverflowX": "visible"
+    },
+    {
+      "tag": "svg",
+      "id": "",
+      "className": "",
+      "left": 776,
+      "right": 794,
+      "width": 18,
+      "overflowX": "hidden",
+      "parentClass": "squad-icon-button",
+      "parentClientWidth": 34,
+      "parentScrollWidth": 34,
+      "parentOverflowX": "visible"
+    },
+    {
+      "tag": "path",
+      "id": "",
+      "className": "",
+      "left": 782.75,
+      "right": 787.25,
+      "width": 4.5,
+      "overflowX": "visible",
+      "parentClass": "",
+      "parentClientWidth": 18,
+      "parentScrollWidth": 18,
+      "parentOverflowX": "hidden"
+    },
+    {
+      "tag": "SPAN",
+      "id": "",
+      "className": "sr-only",
+      "left": 754.265625,
+      "right": 755.265625,
+      "width": 1,
+      "overflowX": "hidden",
+      "parentClass": "",
+      "parentClientWidth": 72,
+      "parentScrollWidth": 72,
+      "parentOverflowX": "visible"
+    },
+    {
+      "tag": "TH",
+      "id": "",
+      "className": "",
+      "left": 625.671875,
+      "right": 743.265625,
+      "width": 117.59375,
+      "overflowX": "visible",
+      "parentClass": "",
+      "parentClientWidth": 760,
+      "parentScrollWidth": 760,
+      "parentOverflowX": "visible"
+    },
+    {
+      "tag": "TD",
+      "id": "",
+      "className": "",
+      "left": 625.671875,
+      "right": 743.265625,
+      "width": 117.59375,
+      "overflowX": "visible",
+      "parentClass": "",
+      "parentClientWidth": 760,
+      "parentScrollWidth": 760,
+      "parentOverflowX": "visible"
+    },
+    {
+      "tag": "SPAN",
+      "id": "",
+      "className": "squad-status-badge status-owned",
+      "left": 637.671875,
+      "right": 712.109375,
+      "width": 74.4375,
+      "overflowX": "visible",
+      "parentClass": "",
+      "parentClientWidth": 118,
+      "parentScrollWidth": 118,
+      "parentOverflowX": "visible"
+    },
+    {
+      "tag": "TH",
+      "id": "",
+      "className": "",
+      "left": 535.796875,
+      "right": 625.671875,
+      "width": 89.875,
+      "overflowX": "visible",
+      "parentClass": "",
+      "parentClientWidth": 760,
+      "parentScrollWidth": 760,
+      "parentOverflowX": "visible"
+    },
+    {
+      "tag": "TD",
+      "id": "",
+      "className": "",
+      "left": 535.796875,
+      "right": 625.671875,
+      "width": 89.875,
+      "overflowX": "visible",
+      "parentClass": "",
+      "parentClientWidth": 760,
+      "parentScrollWidth": 760,
+      "parentOverflowX": "visible"
+    },
+    {
+      "tag": "TH",
+      "id": "",
+      "className": "",
+      "left": 446.515625,
+      "right": 535.796875,
+      "width": 89.28125,
+      "overflowX": "visible",
+      "parentClass": "",
+      "parentClientWidth": 760,
+      "parentScrollWidth": 760,
+      "parentOverflowX": "visible"
+    },
+    {
+      "tag": "TD",
+      "id": "",
+      "className": "",
+      "left": 446.515625,
+      "right": 535.796875,
+      "width": 89.28125,
+      "overflowX": "visible",
+      "parentClass": "",
+      "parentClientWidth": 760,
+      "parentScrollWidth": 760,
+      "parentOverflowX": "visible"
+    },
+    {
+      "tag": "BUTTON",
+      "id": "activity-tab",
+      "className": "squad-tab ",
+      "left": 360.09375,
+      "right": 484.28125,
+      "width": 124.1875,
+      "overflowX": "visible",
+      "parentClass": "squad-tabs",
+      "parentClientWidth": 314,
+      "parentScrollWidth": 459,
+      "parentOverflowX": "auto"
+    },
+    {
+      "tag": "STRONG",
+      "id": "",
+      "className": "",
+      "left": 458.515625,
+      "right": 480.78125,
+      "width": 22.265625,
+      "overflowX": "visible",
+      "parentClass": "",
+      "parentClientWidth": 89,
+      "parentScrollWidth": 89,
+      "parentOverflowX": "visible"
+    }
+  ]
+}

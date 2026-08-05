@@ -137,9 +137,7 @@ def test_refresh_persists_official_bootstrap_and_fixtures_idempotently() -> None
         player_count = session.execute(
             select(func.count()).select_from(fpl_players_table)
         ).scalar_one()
-        team_count = session.execute(
-            select(func.count()).select_from(epl_teams_table)
-        ).scalar_one()
+        team_count = session.execute(select(func.count()).select_from(epl_teams_table)).scalar_one()
         gameweek_count = session.execute(
             select(func.count()).select_from(fpl_gameweeks_table)
         ).scalar_one()

@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from collections.abc import Iterable
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Protocol
 
 from cdl_api.contracts.fpl_data import (
@@ -40,7 +40,7 @@ class FplDataService:
     def refresh(self, resources: Iterable[FplRefreshResource]) -> FplRefreshResponse:
         results = []
         for resource in resources:
-            fetched_at = datetime.now(timezone.utc)
+            fetched_at = datetime.now(UTC)
             endpoint = self._endpoint_for(resource)
             try:
                 response = self._fetch(resource)

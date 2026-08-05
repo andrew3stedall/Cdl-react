@@ -511,21 +511,25 @@ async function testSquadManagement(page) {
   await page.goto(`${baseUrl}/squad-management`, { waitUntil: 'networkidle' });
   await expectStatus(page, 'Exeter Gently loaded from staging PostgreSQL.');
 
+  await page.getByRole('tab', { name: /Player pool/ }).click();
   const search = page.getByRole('textbox', { name: 'Search players' });
   await search.fill('Casey');
+  await page.getByText('1 players', { exact: true }).waitFor();
 
-  await page.getByRole('button', { name: 'Interest' }).click();
+  await page.getByRole('button', { name: 'Add Casey Midfielder to interests' }).click();
   await expectStatus(page, 'Casey Midfielder added to interests.');
 
-  const interests = page.locator('section[aria-label="Interests and proposed trades"]');
-  await interests.getByText('Casey Midfielder', { exact: true }).waitFor();
-
-  await page.getByRole('cell', { name: 'Casey Midfielder', exact: true }).click();
-  const playerDialog = page.getByRole('dialog', { name: 'Player detail' });
+  await page.getByRole('button', { name: /Casey Midfielder.*View player/ }).click();
+  const playerDialog = page.getByRole('dialog', { name: 'Casey Midfielder' });
   await playerDialog.getByRole('heading', { name: 'Casey Midfielder' }).waitFor();
-  await playerDialog.getByText('Points: 61 · Value: £7.5m', { exact: true }).waitFor();
+  await playerDialog.getByText('61', { exact: true }).waitFor();
+  await playerDialog.getByText('£7.5m', { exact: true }).waitFor();
   await playerDialog.getByRole('button', { name: 'Close' }).click();
   await playerDialog.waitFor({ state: 'hidden' });
+
+  await page.getByRole('tab', { name: /Activity/ }).click();
+  const interests = page.locator('section[aria-label="Interests and proposed trades"]');
+  await interests.getByText('Casey Midfielder', { exact: true }).waitFor();
 
   if (await page.getByRole('button', { name: 'Propose sample trade' }).count() !== 0) {
     throw new Error('The obsolete sample-trade action must not be exposed.');

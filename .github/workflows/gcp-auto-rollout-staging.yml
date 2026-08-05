@@ -1,0 +1,357 @@
+name: GCP Auto Rollout Staging
+
+on:
+  pull_request:
+    paths:
+      - "Dockerfile"
+      - "frontend/**"
+      - "src/**"
+      - "migrations/**"
+      - "infra/terraform/environments/staging/**"
+      - "infra/terraform/modules/**"
+      - ".github/workflows/gcp-auto-rollout-staging.yml"
+      - "tests/test_gcp_auto_rollout_staging.py"
+  push:
+    branches:
+      - main
+    paths:
+      - "Dockerfile"
+      - "frontend/**"
+      - "src/**"
+      - "migrations/**"
+      - "infra/terraform/environments/staging/**"
+      - "infra/terraform/modules/**"
+      - ".github/workflows/gcp-auto-rollout-staging.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+  issues: write
+
+concurrency:
+  group: gcp-auto-rollout-staging
+  cancel-in-progress: false
+
+env:
+  REGION: australia-southeast1
+  ARTIFACT_REPOSITORY: cdl-react-backend
+  IMAGE_NAME: cdl-react-app
+
+jobs:
+  validate:
+    name: Validate automatic staging rollout
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: infra/terraform/environments/staging
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_wrapper: false
+
+      - name: Terraform format
+        run: terraform fmt -recursive -check
+
+      - name: Terraform init without backend
+        run: terraform init -backend=false -input=false
+
+      - name: Terraform validate
+        run: terraform validate -no-color
+
+  rollout:
+    name: Build, migrate, deploy, and refresh staging
+    needs: validate
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    environment: staging
+
+    env:
+      PROJECT_ID: ${{ vars.GCP_STAGING_PROJECT_ID }}
+      PROJECT_NUMBER: ${{ vars.GCP_STAGING_PROJECT_NUMBER }}
+      WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_STAGING_WORKLOAD_IDENTITY_PROVIDER }}
+      DEPLOY_SERVICE_ACCOUNT: ${{ vars.GCP_STAGING_DEPLOY_SERVICE_ACCOUNT }}
+      TERRAFORM_STATE_BUCKET: ${{ vars.GCP_TERRAFORM_STATE_BUCKET }}
+      GH_TOKEN: ${{ github.token }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Record rollout start
+        run: |
+          set -euo pipefail
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          body="Automatic staging rollout started for commit \`${GITHUB_SHA}\`: ${run_url}"
+          gh api "repos/${GITHUB_REPOSITORY}/issues/96/comments" -f body="${body}"
+
+      - name: Validate staging identity
+        run: |
+          set -euo pipefail
+          test "${PROJECT_ID}" = "cdl-react-staging-ast"
+          test -n "${PROJECT_NUMBER}"
+          test -n "${TERRAFORM_STATE_BUCKET}"
+          test "${WORKLOAD_IDENTITY_PROVIDER}" = \
+            "projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
+          test "${DEPLOY_SERVICE_ACCOUNT}" = \
+            "github-deploy@${PROJECT_ID}.iam.gserviceaccount.com"
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.DEPLOY_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
+        with:
+          version: ">= 416.0.0"
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_wrapper: false
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+
+      - name: Build and push immutable application image
+        run: |
+          set -euo pipefail
+          image_uri="${REGION}-docker.pkg.dev/${PROJECT_ID}/${ARTIFACT_REPOSITORY}/${IMAGE_NAME}:${GITHUB_SHA}"
+          docker build --pull --tag "${image_uri}" .
+          docker push "${image_uri}"
+          digest="$(
+            gcloud artifacts docker images describe "${image_uri}" \
+              --project "${PROJECT_ID}" \
+              --format='value(image_summary.digest)'
+          )"
+          [[ "${digest}" =~ ^sha256:[0-9a-f]{64}$ ]]
+          image_digest_uri="${REGION}-docker.pkg.dev/${PROJECT_ID}/${ARTIFACT_REPOSITORY}/${IMAGE_NAME}@${digest}"
+          echo "IMAGE_DIGEST_URI=${image_digest_uri}" >> "${GITHUB_ENV}"
+          printf 'source_sha=%s\nimage_digest_uri=%s\n' \
+            "${GITHUB_SHA}" "${image_digest_uri}" \
+            > "${RUNNER_TEMP}/staging-image-reference.txt"
+
+      - name: Terraform init with remote backend
+        working-directory: infra/terraform/environments/staging
+        run: terraform init -input=false
+
+      - name: Create automatic staging plan
+        id: plan
+        working-directory: infra/terraform/environments/staging
+        run: |
+          set +e
+          terraform plan \
+            -input=false \
+            -no-color \
+            -lock-timeout=5m \
+            -detailed-exitcode \
+            -out="${RUNNER_TEMP}/auto-rollout.tfplan" \
+            -var="project_id=${PROJECT_ID}" \
+            -var="enable_database_jobs=true" \
+            -var="enable_cloud_run=true" \
+            -var="enable_google_sign_in=true" \
+            -var="backend_image=${IMAGE_DIGEST_URI}" \
+            -var="allow_public_invoker=true"
+          exit_code=$?
+          set -e
+          if [ "${exit_code}" -eq 1 ]; then
+            echo "Terraform plan failed." >&2
+            exit 1
+          fi
+          echo "exit_code=${exit_code}" >> "${GITHUB_OUTPUT}"
+
+      - name: Render and gate automatic staging plan
+        working-directory: infra/terraform/environments/staging
+        run: |
+          set -euo pipefail
+          terraform show -no-color "${RUNNER_TEMP}/auto-rollout.tfplan" \
+            > "${RUNNER_TEMP}/auto-rollout-plan.txt"
+          terraform show -json "${RUNNER_TEMP}/auto-rollout.tfplan" \
+            > "${RUNNER_TEMP}/auto-rollout-plan.json"
+          python "${GITHUB_WORKSPACE}/src/cdl_api/terraform_plan_summary.py" \
+            --plan-json "${RUNNER_TEMP}/auto-rollout-plan.json" \
+            --plan-file "${RUNNER_TEMP}/auto-rollout.tfplan" \
+            --output "${RUNNER_TEMP}/auto-rollout-plan-summary.md" \
+            --plan-exit-code "${{ steps.plan.outputs.exit_code }}" \
+            --allow-staging-public-invoker
+          grep -Fq "Safety gate: **PASS**" \
+            "${RUNNER_TEMP}/auto-rollout-plan-summary.md"
+
+      - name: Restrict automatic Terraform changes to the staging rollout allowlist
+        run: |
+          set -euo pipefail
+          python - "${RUNNER_TEMP}/auto-rollout-plan.json" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          plan = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          allowed = {
+              "google_cloud_run_v2_job.database_migration[0]": {("update",)},
+              "google_cloud_run_v2_job.synthetic_seed[0]": {("update",)},
+              "google_cloud_run_v2_job.fpl_refresh[0]": {("create",), ("update",)},
+              "module.cloud_run_api[0].google_cloud_run_v2_service.this": {("update",)},
+          }
+          unexpected = []
+          for resource in plan.get("resource_changes", []):
+              actions = tuple(resource.get("change", {}).get("actions", []))
+              if actions in {("no-op",), ("read",)}:
+                  continue
+              address = resource.get("address", "<unknown>")
+              if address not in allowed or actions not in allowed[address]:
+                  unexpected.append({"address": address, "actions": actions})
+          if unexpected:
+              raise SystemExit(
+                  "Automatic staging rollout contains non-allowlisted changes: "
+                  + json.dumps(unexpected, sort_keys=True)
+              )
+          PY
+
+      - name: Apply exact automatic staging plan
+        working-directory: infra/terraform/environments/staging
+        run: terraform apply -input=false "${RUNNER_TEMP}/auto-rollout.tfplan"
+
+      - name: Verify post-apply no-change state
+        working-directory: infra/terraform/environments/staging
+        run: |
+          set +e
+          terraform plan \
+            -input=false \
+            -no-color \
+            -lock-timeout=5m \
+            -detailed-exitcode \
+            -out="${RUNNER_TEMP}/post-rollout.tfplan" \
+            -var="project_id=${PROJECT_ID}" \
+            -var="enable_database_jobs=true" \
+            -var="enable_cloud_run=true" \
+            -var="enable_google_sign_in=true" \
+            -var="backend_image=${IMAGE_DIGEST_URI}" \
+            -var="allow_public_invoker=true"
+          exit_code=$?
+          set -e
+          if [ "${exit_code}" -ne 0 ]; then
+            echo "Post-rollout Terraform plan was not a clean no-change result." >&2
+            exit 1
+          fi
+
+      - name: Resolve applied resource names
+        working-directory: infra/terraform/environments/staging
+        run: |
+          set -euo pipefail
+          echo "MIGRATION_JOB=$(terraform output -raw database_migration_job_name)" >> "${GITHUB_ENV}"
+          echo "SYNTHETIC_SEED_JOB=$(terraform output -raw synthetic_seed_job_name)" >> "${GITHUB_ENV}"
+          echo "FPL_REFRESH_JOB=$(terraform output -raw fpl_refresh_job_name)" >> "${GITHUB_ENV}"
+          echo "SERVICE_URL=$(terraform output -raw cloud_run_api_url)" >> "${GITHUB_ENV}"
+
+      - name: Verify immutable job images
+        run: |
+          set -euo pipefail
+          for job in "${MIGRATION_JOB}" "${SYNTHETIC_SEED_JOB}" "${FPL_REFRESH_JOB}"; do
+            image="$(
+              gcloud run jobs describe "${job}" \
+                --project "${PROJECT_ID}" \
+                --region "${REGION}" \
+                --format='value(spec.template.spec.template.spec.containers[0].image)'
+            )"
+            test "${image}" = "${IMAGE_DIGEST_URI}"
+          done
+
+      - name: Run database migrations
+        run: |
+          set -euo pipefail
+          gcloud run jobs execute "${MIGRATION_JOB}" \
+            --project "${PROJECT_ID}" \
+            --region "${REGION}" \
+            --wait
+
+      - name: Refresh official FPL data
+        run: |
+          set -euo pipefail
+          gcloud run jobs execute "${FPL_REFRESH_JOB}" \
+            --project "${PROJECT_ID}" \
+            --region "${REGION}" \
+            --wait
+
+      - name: Verify live service and authentication boundary
+        run: |
+          set -euo pipefail
+          test -n "${SERVICE_URL}"
+          for attempt in $(seq 1 20); do
+            if curl --fail --silent --show-error "${SERVICE_URL}/health" \
+              > "${RUNNER_TEMP}/health.json"; then
+              break
+            fi
+            if [ "${attempt}" -eq 20 ]; then
+              echo "Staging health endpoint did not become ready." >&2
+              exit 1
+            fi
+            sleep 5
+          done
+          grep -Fq '"status":"ok"' "${RUNNER_TEMP}/health.json"
+          status_code="$(
+            curl --silent --show-error \
+              --output "${RUNNER_TEMP}/fpl-status-unauthenticated.json" \
+              --write-out '%{http_code}' \
+              "${SERVICE_URL}/api/fpl/status"
+          )"
+          test "${status_code}" = "401"
+
+      - name: Create rollout evidence
+        run: |
+          set -euo pipefail
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          {
+            echo "# Automatic staging rollout evidence"
+            echo
+            echo "- Source commit: \`${GITHUB_SHA}\`"
+            echo "- Workflow run: ${run_url}"
+            echo "- Immutable image: \`${IMAGE_DIGEST_URI}\`"
+            echo "- Terraform plan safety gate: passed"
+            echo "- Terraform change allowlist: passed"
+            echo "- Terraform apply: completed"
+            echo "- Post-apply no-change plan: passed"
+            echo "- Database migration job: completed"
+            echo "- Official FPL refresh job: completed with non-empty normalized data"
+            echo "- Synthetic seed job: not executed"
+            echo "- Staging health check: passed"
+            echo "- Unauthenticated FPL status boundary: HTTP 401"
+            echo "- Service URL: ${SERVICE_URL}"
+          } > "${RUNNER_TEMP}/automatic-staging-rollout.md"
+
+      - name: Upload rollout evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: automatic-staging-rollout-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/automatic-staging-rollout.md
+            ${{ runner.temp }}/staging-image-reference.txt
+            ${{ runner.temp }}/auto-rollout-plan.txt
+            ${{ runner.temp }}/auto-rollout-plan-summary.md
+            ${{ runner.temp }}/health.json
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Record successful rollout
+        run: |
+          set -euo pipefail
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          body="Automatic staging rollout succeeded for commit \`${GITHUB_SHA}\`. Migrations and official FPL refresh completed. Service: ${SERVICE_URL}. Evidence: ${run_url}"
+          gh api "repos/${GITHUB_REPOSITORY}/issues/96/comments" -f body="${body}"
+
+      - name: Record failed rollout
+        if: failure()
+        run: |
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          body="Automatic staging rollout failed for commit \`${GITHUB_SHA}\`: ${run_url}"
+          gh api "repos/${GITHUB_REPOSITORY}/issues/96/comments" -f body="${body}" || true

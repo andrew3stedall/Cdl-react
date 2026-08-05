@@ -524,7 +524,7 @@ async function testSquadManagement(page) {
   await playerDialog.getByRole('heading', { name: 'Casey Midfielder' }).waitFor();
   await playerDialog.getByText('61', { exact: true }).waitFor();
   await playerDialog.getByText('£7.5m', { exact: true }).waitFor();
-  await playerDialog.getByRole('button', { name: 'Close' }).click();
+  await playerDialog.getByRole('button', { name: 'Close', exact: true }).click();
   await playerDialog.waitFor({ state: 'hidden' });
 
   await page.getByRole('tab', { name: /Activity/ }).click();

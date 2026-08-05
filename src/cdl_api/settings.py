@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     database_max_overflow: int = Field(default=5, ge=0)
     repository_mode: RepositoryMode = "memory"
     frontend_dist_dir: Path | None = None
+    fpl_api_base_url: str = "https://fantasy.premierleague.com/api"
+    fpl_api_timeout_seconds: float = Field(default=20.0, gt=0, le=60)
 
     model_config = SettingsConfigDict(env_prefix="CDL_", env_file=".env")
 

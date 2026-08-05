@@ -16,5 +16,6 @@ Date: 2026-08-06
 ## Boundaries
 
 - The pitch is a display surface for the persisted lineup; lineup editing remains in Team Selection.
+- The Pitch / List choice is presentation state for the current browser session and does not alter the saved lineup.
 - Player cards use initials and club abbreviations because official shirt artwork is not currently part of the application data contract.
 - No synthetic formation is created when the lineup endpoint is unavailable.

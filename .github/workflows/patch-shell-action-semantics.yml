@@ -1,0 +1,64 @@
+name: Patch shell action semantics
+
+on:
+  push:
+    branches:
+      - codex/focused-application-shell
+    paths:
+      - .github/workflows/patch-shell-action-semantics.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: codex/focused-application-shell
+          fetch-depth: 0
+
+      - name: Add semantic group to shell actions
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          shell_path = Path('frontend/src/AppShell.tsx')
+          shell = shell_path.read_text(encoding='utf-8')
+          old = '''          <div
+            aria-hidden={isMobileNavigationOpen || undefined}
+            aria-label="Shell actions"
+            className="shell-actions"
+          >'''
+          new = '''          <div
+            aria-hidden={isMobileNavigationOpen || undefined}
+            aria-label="Shell actions"
+            className="shell-actions"
+            role="group"
+          >'''
+          if old not in shell:
+              raise SystemExit('Shell action container was not found')
+          shell_path.write_text(shell.replace(old, new, 1), encoding='utf-8')
+
+          test_path = Path('frontend/src/AppShell.test.tsx')
+          test = test_path.read_text(encoding='utf-8')
+          marker = '''    expect(container.querySelector('[aria-label="Account menu for Test Manager"]')).not.toBeNull();
+'''
+          addition = '''    expect(container.querySelector('[role="group"][aria-label="Shell actions"]')).not.toBeNull();
+'''
+          if addition not in test:
+              if marker not in test:
+                  raise SystemExit('Account menu assertion was not found')
+              test = test.replace(marker, marker + addition, 1)
+          test_path.write_text(test, encoding='utf-8')
+          PY
+
+      - name: Commit accessibility correction
+        run: |
+          git rm -- .github/workflows/patch-shell-action-semantics.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -- frontend/src/AppShell.tsx frontend/src/AppShell.test.tsx
+          git commit -m "Give shell actions explicit group semantics"
+          git push origin HEAD:codex/focused-application-shell

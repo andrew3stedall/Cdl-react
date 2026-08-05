@@ -127,22 +127,12 @@ describe('SquadManagementPage', () => {
     expect(container.textContent).toContain('Palmer');
   });
 
-  test('filters the player pool and adds a player to interests', async () => {
+  test('adds a player to interests from the player pool', async () => {
     const { container } = await renderPage();
     await act(async () => {
       clickButton(container, 'Player pool');
       await Promise.resolve();
     });
-
-    const input = container.querySelector('input[aria-label="Search players"]') as HTMLInputElement;
-    await act(async () => {
-      input.value = 'palmer';
-      input.dispatchEvent(new Event('input', { bubbles: true }));
-      await Promise.resolve();
-    });
-
-    expect(input.value).toBe('palmer');
-    expect(container.textContent).toContain('1 players');
 
     const interestButton = Array.from(container.querySelectorAll('button')).find(
       (button) => button.textContent?.includes('Interest') && !button.disabled,

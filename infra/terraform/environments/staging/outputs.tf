@@ -24,7 +24,7 @@ output "runtime_service_account_email" {
 }
 
 output "migration_service_account_email" {
-  description = "Service account for controlled migration and seed jobs."
+  description = "Service account for controlled migration, seed, and refresh jobs."
   value       = google_service_account.migration.email
 }
 
@@ -41,6 +41,11 @@ output "database_migration_job_name" {
 output "synthetic_seed_job_name" {
   description = "Cloud Run deterministic synthetic seed job name when database jobs are enabled."
   value       = try(google_cloud_run_v2_job.synthetic_seed[0].name, null)
+}
+
+output "fpl_refresh_job_name" {
+  description = "Cloud Run official FPL refresh job name when database jobs are enabled."
+  value       = try(google_cloud_run_v2_job.fpl_refresh[0].name, null)
 }
 
 output "cloud_run_api_url" {

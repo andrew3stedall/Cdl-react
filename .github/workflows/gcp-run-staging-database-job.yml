@@ -10,6 +10,7 @@ on:
         options:
           - migrate
           - synthetic-seed
+          - fpl-refresh
       confirm_database_jobs_applied:
         description: Confirm the reviewed database-jobs Terraform stage has been applied
         required: true
@@ -61,6 +62,9 @@ jobs:
                 exit 1
               fi
               job_name="cdl-react-staging-synthetic-seed"
+              ;;
+            fpl-refresh)
+              job_name="cdl-react-staging-fpl-refresh"
               ;;
             *)
               echo "Unsupported database operation." >&2

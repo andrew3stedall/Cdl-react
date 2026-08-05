@@ -1,0 +1,98 @@
+name: Patch squad screenshot fixture
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.head_ref == 'codex/squad-pitch-list-view'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: codex/squad-pitch-list-view
+      - name: Expand the screenshot lineup
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('scripts/capture-app-screenshots.mjs')
+          content = path.read_text(encoding='utf-8')
+
+          lineup_start = content.index('const screenshotTeamSelection = {')
+          summary_start = content.index('const screenshotSquadSummary = {')
+          scouting_start = content.index('const screenshotScoutingPlayers = {')
+
+          lineup = '''const screenshotTeamSelection = {
+            manager_team: { id: 'team-castle', name: 'Castle FC', short_name: 'CFC' },
+            gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1 },
+            lineup: [
+              { id: 'player-1', display_name: 'Alex Keeper', position: 'GKP', epl_team: { id: 'epl-ars', name: 'Arsenal', short_name: 'ARS' }, slot: 'starter', slot_order: 1, is_captain: false, is_vice_captain: false },
+              { id: 'player-2', display_name: 'Ben Defender', position: 'DEF', epl_team: { id: 'epl-mci', name: 'Manchester City', short_name: 'MCI' }, slot: 'starter', slot_order: 2, is_captain: false, is_vice_captain: false },
+              { id: 'player-6', display_name: 'Dana Fullback', position: 'DEF', epl_team: { id: 'epl-liv', name: 'Liverpool', short_name: 'LIV' }, slot: 'starter', slot_order: 3, is_captain: false, is_vice_captain: false },
+              { id: 'player-7', display_name: 'Elliot Centreback', position: 'DEF', epl_team: { id: 'epl-new', name: 'Newcastle United', short_name: 'NEW' }, slot: 'starter', slot_order: 4, is_captain: false, is_vice_captain: false },
+              { id: 'player-8', display_name: 'Frankie Wingback', position: 'DEF', epl_team: { id: 'epl-tot', name: 'Tottenham Hotspur', short_name: 'TOT' }, slot: 'starter', slot_order: 5, is_captain: false, is_vice_captain: false },
+              { id: 'player-3', display_name: 'Casey Midfielder', position: 'MID', epl_team: { id: 'epl-ars', name: 'Arsenal', short_name: 'ARS' }, slot: 'starter', slot_order: 6, is_captain: true, is_vice_captain: false },
+              { id: 'player-9', display_name: 'Jamie Playmaker', position: 'MID', epl_team: { id: 'epl-che', name: 'Chelsea', short_name: 'CHE' }, slot: 'starter', slot_order: 7, is_captain: false, is_vice_captain: true },
+              { id: 'player-10', display_name: 'Morgan Winger', position: 'MID', epl_team: { id: 'epl-mun', name: 'Manchester United', short_name: 'MUN' }, slot: 'starter', slot_order: 8, is_captain: false, is_vice_captain: false },
+              { id: 'player-11', display_name: 'Taylor Eight', position: 'MID', epl_team: { id: 'epl-whu', name: 'West Ham United', short_name: 'WHU' }, slot: 'starter', slot_order: 9, is_captain: false, is_vice_captain: false },
+              { id: 'player-12', display_name: 'Riley Forward', position: 'FWD', epl_team: { id: 'epl-mci', name: 'Manchester City', short_name: 'MCI' }, slot: 'starter', slot_order: 10, is_captain: false, is_vice_captain: false },
+              { id: 'player-13', display_name: 'Jordan Striker', position: 'FWD', epl_team: { id: 'epl-avl', name: 'Aston Villa', short_name: 'AVL' }, slot: 'starter', slot_order: 11, is_captain: false, is_vice_captain: false },
+              { id: 'player-4', display_name: 'Robin Reserve', position: 'GKP', epl_team: { id: 'epl-eve', name: 'Everton', short_name: 'EVE' }, slot: 'bench', slot_order: 1, is_captain: false, is_vice_captain: false },
+              { id: 'player-14', display_name: 'Sam Defender', position: 'DEF', epl_team: { id: 'epl-bha', name: 'Brighton', short_name: 'BHA' }, slot: 'bench', slot_order: 2, is_captain: false, is_vice_captain: false },
+              { id: 'player-5', display_name: 'Morgan Reserve', position: 'MID', epl_team: { id: 'epl-ars', name: 'Arsenal', short_name: 'ARS' }, slot: 'bench', slot_order: 3, is_captain: false, is_vice_captain: false },
+              { id: 'player-15', display_name: 'Devon Forward', position: 'FWD', epl_team: { id: 'epl-wol', name: 'Wolverhampton Wanderers', short_name: 'WOL' }, slot: 'bench', slot_order: 4, is_captain: false, is_vice_captain: false },
+            ],
+            chips: [
+              { id: 'wildcard', name: 'Wildcard', status: 'available' },
+              { id: 'bench-boost', name: 'Bench Boost', status: 'used' },
+              { id: 'triple-captain', name: 'Triple Captain', status: 'available' },
+            ],
+            validation_messages: [],
+            fixture_lock: { locked: false, fixture_id: null, fixture_type: null, lock_scope: null, locked_at: null, reason: null },
+          };
+
+          '''
+
+          summary = '''const screenshotSquadSummary = {
+            manager_team: { id: 'team-exeter-gently', name: 'Exeter Gently' },
+            gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1 },
+            players: [
+              { id: 'player-1', display_name: 'Alex Keeper', position: 'GKP', epl_team: { name: 'Arsenal', short_name: 'ARS' }, status: 'owned', points: 48, value: 5.0 },
+              { id: 'player-2', display_name: 'Ben Defender', position: 'DEF', epl_team: { name: 'Manchester City', short_name: 'MCI' }, status: 'owned', points: 55, value: 6.2 },
+              { id: 'player-6', display_name: 'Dana Fullback', position: 'DEF', epl_team: { name: 'Liverpool', short_name: 'LIV' }, status: 'owned', points: 51, value: 6.0 },
+              { id: 'player-7', display_name: 'Elliot Centreback', position: 'DEF', epl_team: { name: 'Newcastle United', short_name: 'NEW' }, status: 'owned', points: 43, value: 5.4 },
+              { id: 'player-8', display_name: 'Frankie Wingback', position: 'DEF', epl_team: { name: 'Tottenham Hotspur', short_name: 'TOT' }, status: 'owned', points: 47, value: 5.8 },
+              { id: 'player-3', display_name: 'Casey Midfielder', position: 'MID', epl_team: { name: 'Arsenal', short_name: 'ARS' }, status: 'owned', points: 61, value: 7.5 },
+              { id: 'player-9', display_name: 'Jamie Playmaker', position: 'MID', epl_team: { name: 'Chelsea', short_name: 'CHE' }, status: 'owned', points: 64, value: 8.1 },
+              { id: 'player-10', display_name: 'Morgan Winger', position: 'MID', epl_team: { name: 'Manchester United', short_name: 'MUN' }, status: 'owned', points: 58, value: 7.8 },
+              { id: 'player-11', display_name: 'Taylor Eight', position: 'MID', epl_team: { name: 'West Ham United', short_name: 'WHU' }, status: 'owned', points: 46, value: 6.7 },
+              { id: 'player-12', display_name: 'Riley Forward', position: 'FWD', epl_team: { name: 'Manchester City', short_name: 'MCI' }, status: 'owned', points: 72, value: 13.8 },
+              { id: 'player-13', display_name: 'Jordan Striker', position: 'FWD', epl_team: { name: 'Aston Villa', short_name: 'AVL' }, status: 'owned', points: 60, value: 9.0 },
+              { id: 'player-4', display_name: 'Robin Reserve', position: 'GKP', epl_team: { name: 'Everton', short_name: 'EVE' }, status: 'owned', points: 35, value: 4.8 },
+              { id: 'player-14', display_name: 'Sam Defender', position: 'DEF', epl_team: { name: 'Brighton', short_name: 'BHA' }, status: 'owned', points: 39, value: 4.9 },
+              { id: 'player-5', display_name: 'Morgan Reserve', position: 'MID', epl_team: { name: 'Arsenal', short_name: 'ARS' }, status: 'owned', points: 41, value: 5.9 },
+              { id: 'player-15', display_name: 'Devon Forward', position: 'FWD', epl_team: { name: 'Wolverhampton Wanderers', short_name: 'WOL' }, status: 'owned', points: 38, value: 6.1 },
+            ],
+          };
+
+          '''
+
+          content = content[:lineup_start] + lineup + summary + content[scouting_start:]
+          path.write_text(content, encoding='utf-8')
+          PY
+      - name: Commit screenshot fixture
+        run: |
+          if git diff --quiet; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add scripts/capture-app-screenshots.mjs
+          git commit -m "Capture a full squad pitch formation"
+          git push origin HEAD:codex/squad-pitch-list-view

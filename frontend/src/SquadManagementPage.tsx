@@ -5,6 +5,8 @@ import {
   CalendarDays,
   ChevronRight,
   CirclePoundSterling,
+  LayoutGrid,
+  List,
   Search,
   SlidersHorizontal,
   Star,
@@ -15,6 +17,11 @@ import {
 import { Button } from './components/ui/button';
 import { Card } from './components/ui/card';
 import type { ThemePreset } from './contracts';
+import {
+  HttpTeamSelectionClient,
+  type TeamSelectionPlayer,
+  type TeamSelectionSlot,
+} from './team-selection-api';
 import './squad-management.css';
 
 interface SquadManagementPageProps {
@@ -22,6 +29,7 @@ interface SquadManagementPageProps {
 }
 
 type WorkspaceTab = 'squad' | 'players' | 'activity';
+type SquadView = 'pitch' | 'list';
 type PositionFilter = 'all' | 'GKP' | 'DEF' | 'MID' | 'FWD';
 type StatusFilter = 'all' | PlayerView['status'];
 
@@ -33,6 +41,10 @@ interface PlayerView {
   status: 'owned' | 'available' | 'interested' | 'trade_target';
   points: number;
   value: number;
+  slot?: TeamSelectionSlot;
+  slotOrder?: number;
+  captain?: boolean;
+  viceCaptain?: boolean;
 }
 
 interface PlayerApiResponse {
@@ -82,11 +94,13 @@ const statusOptions: Array<{ label: string; value: StatusFilter }> = [
   { label: 'Trade targets', value: 'trade_target' },
 ];
 
+const pitchPositionOrder = ['GKP', 'DEF', 'MID', 'FWD'];
+
 function mapPlayer(player: PlayerApiResponse): PlayerView {
   return {
     id: player.id,
     displayName: player.display_name,
-    position: player.position,
+    position: normalizePosition(player.position),
     team: player.epl_team.short_name ?? player.epl_team.name,
     status: player.status,
     points: player.points,
@@ -94,10 +108,39 @@ function mapPlayer(player: PlayerApiResponse): PlayerView {
   };
 }
 
+function mergeLineupPlayers(
+  roster: PlayerView[],
+  lineup: TeamSelectionPlayer[] | null,
+): PlayerView[] {
+  if (!lineup) return roster;
+
+  const rosterById = new Map(roster.map((player) => [player.id, player]));
+  const lineupIds = new Set(lineup.map((player) => player.id));
+  const positioned = lineup.map((player) => {
+    const existing = rosterById.get(player.id);
+    return {
+      id: player.id,
+      displayName: existing?.displayName ?? player.name,
+      position: normalizePosition(existing?.position ?? player.position),
+      team: existing?.team ?? player.team,
+      status: existing?.status ?? 'owned',
+      points: existing?.points ?? 0,
+      value: existing?.value ?? 0,
+      slot: player.slot,
+      slotOrder: player.slotOrder,
+      captain: player.captain,
+      viceCaptain: player.viceCaptain,
+    } satisfies PlayerView;
+  });
+
+  return [...positioned, ...roster.filter((player) => !lineupIds.has(player.id))];
+}
+
 export function SquadManagementPage({ preset }: SquadManagementPageProps) {
   const [activeTab, setActiveTab] = useState<WorkspaceTab>(() => (
     window.location.pathname.startsWith('/scouting') ? 'players' : 'squad'
   ));
+  const [squadView, setSquadView] = useState<SquadView>('pitch');
   const [query, setQuery] = useState('');
   const [positionFilter, setPositionFilter] = useState<PositionFilter>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
@@ -107,38 +150,50 @@ export function SquadManagementPage({ preset }: SquadManagementPageProps) {
   const [trades, setTrades] = useState<TradeApiResponse[]>([]);
   const [managerTeam, setManagerTeam] = useState('Current team');
   const [gameweek, setGameweek] = useState('Gameweek 1');
+  const [lineupAvailable, setLineupAvailable] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerView | null>(null);
   const [status, setStatus] = useState('Loading squad data.');
   const drawerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
+    const teamSelectionClient = new HttpTeamSelectionClient();
     void Promise.all([
       fetch('/api/squad/summary', { credentials: 'include' }),
       fetch('/api/scouting/players', { credentials: 'include' }),
       fetch('/api/interests', { credentials: 'include' }),
       fetch('/api/trades', { credentials: 'include' }),
+      teamSelectionClient.getTeamSelection().catch(() => null),
     ])
-      .then(async ([summaryResponse, scoutingResponse, interestResponse, tradeResponse]) => {
+      .then(async ([summaryResponse, scoutingResponse, interestResponse, tradeResponse, lineup]) => {
         if (!summaryResponse.ok || !scoutingResponse.ok || !interestResponse.ok || !tradeResponse.ok) {
           const unauthorized = [summaryResponse, scoutingResponse, interestResponse, tradeResponse]
             .some((response) => response.status === 401);
           throw new Error(unauthorized ? 'Sign in to manage squad activity.' : 'Unable to load squad activity.');
         }
-        return Promise.all([
+        const [summary, scouting, persistedInterests, persistedTrades] = await Promise.all([
           summaryResponse.json() as Promise<SquadSummaryApiResponse>,
           scoutingResponse.json() as Promise<ScoutingApiResponse>,
           interestResponse.json() as Promise<InterestApiResponse[]>,
           tradeResponse.json() as Promise<{ trades?: TradeApiResponse[] }>,
         ]);
+        return { summary, scouting, persistedInterests, persistedTrades, lineup };
       })
-      .then(([summary, scouting, persistedInterests, persistedTrades]) => {
-        setSquadPlayers(summary.players.map(mapPlayer));
+      .then(({ summary, scouting, persistedInterests, persistedTrades, lineup }) => {
+        const roster = summary.players.map(mapPlayer);
+        const hasLineup = Boolean(lineup?.players.length);
+        setSquadPlayers(mergeLineupPlayers(roster, lineup?.players ?? null));
         setScoutingPool(scouting.players.map(mapPlayer));
         setManagerTeam(summary.manager_team.name);
         setGameweek(summary.gameweek.name);
         setInterests(persistedInterests);
         setTrades(persistedTrades.trades ?? []);
-        setStatus(`${summary.manager_team.name} loaded from staging PostgreSQL.`);
+        setLineupAvailable(hasLineup);
+        if (!hasLineup) setSquadView('list');
+        setStatus(
+          hasLineup
+            ? `${summary.manager_team.name} lineup loaded from staging PostgreSQL.`
+            : `${summary.manager_team.name} roster loaded. Pitch view is unavailable until a lineup is saved.`,
+        );
       })
       .catch((error: Error) => setStatus(error.message));
   }, []);
@@ -202,10 +257,13 @@ export function SquadManagementPage({ preset }: SquadManagementPageProps) {
   return (
     <main aria-labelledby="squad-management-title" className="feature-screen squad-workspace" data-density={preset.tokens.density}>
       <header className="squad-page-header">
-        <div>
-          <p className="eyebrow">Squad management</p>
-          <h1 id="squad-management-title">{managerTeam}</h1>
-          <p className="squad-page-description">Review your roster, find players, and keep transfer activity in one focused workspace.</p>
+        <div className="squad-title-lockup">
+          <span aria-hidden="true" className="squad-title-mark"><LayoutGrid size={24} /></span>
+          <div>
+            <p className="eyebrow">My team</p>
+            <h1 id="squad-management-title">Squad management</h1>
+            <p className="squad-page-description">{managerTeam} · {gameweek}</p>
+          </div>
         </div>
         <div className="squad-header-actions">
           <Button onClick={() => setActiveTab('players')} type="button" variant="secondary">
@@ -214,7 +272,7 @@ export function SquadManagementPage({ preset }: SquadManagementPageProps) {
           </Button>
           <Button onClick={() => setActiveTab('activity')} type="button">
             <Activity aria-hidden="true" size={16} />
-            Review activity
+            Activity
             {activityCount > 0 ? <span className="squad-action-count">{activityCount}</span> : null}
           </Button>
         </div>
@@ -238,17 +296,43 @@ export function SquadManagementPage({ preset }: SquadManagementPageProps) {
 
         {activeTab === 'squad' ? (
           <div aria-labelledby="squad-tab" className="squad-tab-panel" id="squad-panel" role="tabpanel">
-            <SectionHeading
-              description="Your active roster for the current gameweek. Open a player for context without leaving the page."
-              title="Current squad"
-            />
-            <PlayerTable
-              emptyMessage="No drafted players found."
-              interestedPlayerIds={interestedPlayerIds}
-              onInterest={registerInterest}
-              onSelect={openPlayer}
-              players={squadPlayers}
-            />
+            <div className="squad-view-header">
+              <SectionHeading
+                description="Review the persisted lineup on the pitch or switch to a complete roster table."
+                title="Current squad"
+              />
+              <div aria-label="Squad view" className="squad-view-toggle" role="group">
+                <button
+                  aria-pressed={squadView === 'pitch'}
+                  disabled={!lineupAvailable}
+                  onClick={() => setSquadView('pitch')}
+                  type="button"
+                >
+                  <LayoutGrid aria-hidden="true" size={17} />
+                  Pitch
+                </button>
+                <button
+                  aria-pressed={squadView === 'list'}
+                  onClick={() => setSquadView('list')}
+                  type="button"
+                >
+                  <List aria-hidden="true" size={17} />
+                  List
+                </button>
+              </div>
+            </div>
+
+            {squadView === 'pitch' && lineupAvailable ? (
+              <SquadPitch onSelect={openPlayer} players={squadPlayers} />
+            ) : (
+              <PlayerTable
+                emptyMessage="No drafted players found."
+                interestedPlayerIds={interestedPlayerIds}
+                onInterest={registerInterest}
+                onSelect={openPlayer}
+                players={squadPlayers}
+              />
+            )}
           </div>
         ) : null}
 
@@ -306,7 +390,7 @@ export function SquadManagementPage({ preset }: SquadManagementPageProps) {
         {activeTab === 'activity' ? (
           <div aria-labelledby="activity-tab" className="squad-tab-panel" id="activity-panel" role="tabpanel">
             <SectionHeading
-              description="Interests and trade proposals are separated from your roster so they only appear when needed."
+              description="Interests and trade proposals stay separate from the lineup until you need them."
               title="Transfer activity"
             />
             <section aria-label="Interests and proposed trades" className="squad-activity-grid">
@@ -418,6 +502,84 @@ export function SquadManagementPage({ preset }: SquadManagementPageProps) {
         </div>
       ) : null}
     </main>
+  );
+}
+
+function SquadPitch({ players, onSelect }: { players: PlayerView[]; onSelect: (player: PlayerView) => void }) {
+  const starters = players
+    .filter((player) => player.slot === 'starter')
+    .sort((left, right) => (left.slotOrder ?? 0) - (right.slotOrder ?? 0));
+  const bench = players
+    .filter((player) => player.slot === 'bench' || player.slot === 'reserve')
+    .sort((left, right) => (left.slotOrder ?? 0) - (right.slotOrder ?? 0));
+  const rows = pitchPositionOrder
+    .map((position) => ({ position, players: starters.filter((player) => player.position === position) }))
+    .filter((row) => row.players.length > 0);
+  const formation = pitchPositionOrder
+    .slice(1)
+    .map((position) => starters.filter((player) => player.position === position).length)
+    .filter((count) => count > 0)
+    .join('-');
+
+  return (
+    <section aria-label="Squad pitch" className="squad-pitch-shell">
+      <header className="squad-pitch-meta">
+        <span><strong>{starters.length}</strong> starters</span>
+        <span><strong>{bench.length}</strong> bench</span>
+        <span><strong>{formation || '—'}</strong> formation</span>
+      </header>
+      <div className="squad-pitch">
+        <div aria-hidden="true" className="squad-pitch-markings">
+          <span className="pitch-halfway" />
+          <span className="pitch-centre-circle" />
+          <span className="pitch-box pitch-box-top" />
+          <span className="pitch-box pitch-box-bottom" />
+        </div>
+        <div className="squad-pitch-lineup">
+          {rows.map((row) => (
+            <div className={`squad-pitch-row pitch-row-${row.position.toLowerCase()}`} key={row.position}>
+              {row.players.map((player) => <PitchPlayerCard key={player.id} onSelect={onSelect} player={player} />)}
+            </div>
+          ))}
+        </div>
+      </div>
+      <section aria-label="Bench" className="squad-bench">
+        <header><h3>Bench</h3><span>{bench.length} players</span></header>
+        <div className="squad-bench-grid">
+          {bench.map((player) => <PitchPlayerCard compact key={player.id} onSelect={onSelect} player={player} />)}
+        </div>
+      </section>
+    </section>
+  );
+}
+
+function PitchPlayerCard({
+  compact = false,
+  onSelect,
+  player,
+}: {
+  compact?: boolean;
+  onSelect: (player: PlayerView) => void;
+  player: PlayerView;
+}) {
+  return (
+    <button
+      aria-label={`View ${player.displayName} details`}
+      className={`pitch-player-card ${compact ? 'compact' : ''}`}
+      onClick={() => onSelect(player)}
+      type="button"
+    >
+      <span className={`squad-position-badge position-${player.position.toLowerCase()}`}>{player.position}</span>
+      <span className="pitch-player-avatar">{initials(player.displayName)}</span>
+      <strong>{player.displayName}</strong>
+      <small>{player.team}</small>
+      <span className="pitch-player-metrics">
+        <span><strong>{player.points}</strong> pts</span>
+        <span>£{player.value.toFixed(1)}m</span>
+      </span>
+      {player.captain ? <span className="pitch-captain">C</span> : null}
+      {player.viceCaptain ? <span className="pitch-captain">VC</span> : null}
+    </button>
   );
 }
 
@@ -545,6 +707,11 @@ function EmptyState({ message }: { message: string }) {
 
 function initials(name: string): string {
   return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
+}
+
+function normalizePosition(position: string): string {
+  const normalized = position.trim().toUpperCase();
+  return normalized === 'GK' ? 'GKP' : normalized;
 }
 
 function formatStatus(status: PlayerView['status']): string {

@@ -7,6 +7,7 @@ INTERACTION_SCRIPT = Path("scripts/test-app-interactions.mjs")
 LEAGUE_PAGE = Path("frontend/src/LeaguePage.tsx")
 STYLES = Path("frontend/src/styles.css")
 APP = Path("frontend/src/App.tsx")
+LOGIN_PAGE = Path("frontend/src/LoginPage.tsx")
 MAIN = Path("frontend/src/main.tsx")
 TEAM_SELECTION_API = Path("frontend/src/team-selection-api.ts")
 TEAM_SELECTION_PAGE = Path("frontend/src/TeamSelectionPage.tsx")
@@ -37,7 +38,7 @@ def test_screenshot_workflow_uploads_artifact_without_deploying() -> None:
 
 def test_screenshot_script_captures_core_routes() -> None:
     content = SCRIPT.read_text(encoding="utf-8")
-    for route in ["/", "/league", "/dashboard", "/fdr", "/squad-management", "/team-selection"]:
+    for route in ["/", "/login", "/league", "/dashboard", "/fdr", "/squad-management", "/team-selection"]:
         assert route in content
     assert "chromium.launch" in content
     assert "page.screenshot" in content
@@ -124,13 +125,14 @@ def test_browser_journey_exercises_protected_session_boundary() -> None:
     interactions = INTERACTION_SCRIPT.read_text(encoding="utf-8")
     screenshots = SCRIPT.read_text(encoding="utf-8")
     app = APP.read_text(encoding="utf-8")
+    login_page = LOGIN_PAGE.read_text(encoding="utf-8")
     main = MAIN.read_text(encoding="utf-8")
     auth = AUTH.read_text(encoding="utf-8")
     assert "/api/auth/session" in interactions
     assert "/api/auth/session" in screenshots
     assert "screenshotSession" in screenshots
     assert "authenticated: false" in interactions
-    assert "Sign in to CDL Manager" in interactions
+    assert "Welcome back" in interactions
     assert "await expectPath(page, '/login')" in interactions
     assert "expireSession" in interactions
     assert "/api/auth/logout" in interactions
@@ -141,10 +143,11 @@ def test_browser_journey_exercises_protected_session_boundary() -> None:
     assert "demo-manager" not in app
     assert "Checking your session" in app
     assert "VITE_STATIC_PREVIEW" in main
+    assert "./login-page.css" in main
     assert "session: staticPreviewSession" in main
     assert "/api/auth/login" in interactions
-    assert "Email address" in app
-    assert "current-password" in app
+    assert "Email address" in login_page
+    assert "current-password" in login_page
     assert "Invalid email or password." in interactions
     assert "browser-login-secret" in interactions
     assert "testLoginAndLogout(page, api, viewportName)" in interactions

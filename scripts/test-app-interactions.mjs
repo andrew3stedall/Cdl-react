@@ -623,21 +623,18 @@ async function testShellAndLeagueNavigation(page, viewportName) {
   await page.getByRole('heading', { name: 'Head-to-head records' }).waitFor();
 }
 
-async function testUnauthenticatedGuard(page, viewportName) {
+async function testUnauthenticatedGuard(page) {
   await page.reload({ waitUntil: 'networkidle' });
   await page.goto(baseUrl + '/team-selection', { waitUntil: 'networkidle' });
   await expectPath(page, '/login');
-  await page.getByRole('heading', { name: 'Sign in to CDL Manager' }).waitFor();
-  if (viewportName === 'mobile') {
-    await page.getByRole('button', { name: 'Menu', exact: true }).click();
-    const navigation = page.getByRole('navigation', { name: 'Primary navigation' });
-    await navigation.waitFor({ state: 'visible' });
-    await navigation.getByRole('link', { name: 'Dashboard' }).click();
-  } else {
-    await page.getByRole('navigation', { name: 'Primary navigation' })
-      .getByRole('link', { name: 'Dashboard' }).click();
+  await page.getByRole('heading', { name: 'Welcome back' }).waitFor();
+  await page.getByText('Castle Draft League', { exact: true }).waitFor();
+  await page.getByLabel('Email address').waitFor();
+  await page.getByLabel('Password').waitFor();
+
+  if (await page.getByRole('navigation', { name: 'Primary navigation' }).count() !== 0) {
+    throw new Error('The login page must not expose authenticated application navigation.');
   }
-  await expectPath(page, '/login');
 }
 
 async function testLoginAndLogout(page, api, viewportName) {

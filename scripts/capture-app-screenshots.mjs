@@ -31,6 +31,12 @@ const screenshotSession = {
   expires_at: '2099-01-01T00:00:00Z',
 };
 
+const unauthenticatedScreenshotSession = {
+  is_authenticated: false,
+  user: null,
+  expires_at: null,
+};
+
 const screenshotTeamSelection = {
   manager_team: { id: 'team-castle', name: 'Castle FC', short_name: 'CFC' },
   gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1 },
@@ -194,13 +200,21 @@ const fdrView = (view) => ({
   available_gameweeks: [gameweek],
 });
 
-async function mockApi(page) {
+async function mockApi(page, authenticated = true) {
   await page.route('**/api/**', async (route) => {
     const url = new URL(route.request().url());
     const path = url.pathname;
 
     if (path === '/api/auth/session') {
-      return route.fulfill({ json: screenshotSession });
+      return route.fulfill({ json: authenticated ? screenshotSession : unauthenticatedScreenshotSession });
+    }
+
+    if (path === '/api/auth/google/config') {
+      return route.fulfill({
+        json: authenticated
+          ? { enabled: false, client_id: null }
+          : { enabled: true, client_id: 'screenshot-client' },
+      });
     }
 
     if (path === '/api/squad/summary') {
@@ -377,6 +391,43 @@ async function capture() {
     }
 
     await context.close();
+
+    const loginContext = await browser.newContext({
+      viewport: { width: viewport.width, height: viewport.height },
+      deviceScaleFactor: viewport.deviceScaleFactor,
+    });
+    const loginPage = await loginContext.newPage();
+    await loginPage.route('https://accounts.google.com/gsi/client', async (route) => {
+      await route.fulfill({
+        contentType: 'application/javascript',
+        body: `window.google = { accounts: { id: {
+          initialize() {},
+          renderButton(parent) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.textContent = 'Sign in with Google';
+            button.setAttribute('aria-label', 'Sign in with Google');
+            button.style.width = '100%';
+            button.style.minHeight = '44px';
+            button.style.border = '1px solid rgba(148, 163, 184, 0.35)';
+            button.style.borderRadius = '12px';
+            button.style.background = '#ffffff';
+            button.style.color = '#172033';
+            button.style.fontWeight = '700';
+            button.style.cursor = 'pointer';
+            parent.append(button);
+          },
+        } } };`,
+      });
+    });
+    await mockApi(loginPage, false);
+    await loginPage.goto(`${baseUrl}/login`, { waitUntil: 'networkidle' });
+    await loginPage.getByRole('heading', { name: 'Welcome back' }).waitFor();
+    await loginPage.getByRole('button', { name: 'Sign in with Google' }).waitFor();
+    await assertAccessibilityAndKeyboard(loginPage, 'login', viewport.name);
+    await assertLayoutSafety(loginPage, 'login', viewport.name);
+    await loginPage.screenshot({ path: `${viewportDir}/login.png`, fullPage: true });
+    await loginContext.close();
   }
 
   await browser.close();

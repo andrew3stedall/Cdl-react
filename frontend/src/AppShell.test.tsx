@@ -131,20 +131,28 @@ function renderApp({
 }
 
 describe('AppShell integration', () => {
-  test('renders route-aware authenticated navigation around rules content', async () => {
+  test('renders a focused primary hierarchy around rules content', async () => {
     const { container } = renderApp({ initialPath: '/rules' });
 
     await act(async () => {
       await Promise.resolve();
     });
 
+    const primaryNavigation = container.querySelector('nav[aria-label="Primary navigation"]');
+    const supportNavigation = container.querySelector('nav[aria-label="Support navigation"]');
+
     expect(container.querySelector('[aria-current="page"]')?.textContent).toContain('Rules');
     expect(container.textContent).toContain('Rules Knowledge Base');
-    expect(container.textContent).toContain('Sign out');
-    expect(container.textContent).toContain('Scouting');
+    expect(primaryNavigation?.textContent).toContain('Overview');
+    expect(primaryNavigation?.textContent).toContain('Squad');
+    expect(primaryNavigation?.textContent).toContain('Team');
+    expect(primaryNavigation?.textContent).toContain('League');
+    expect(primaryNavigation?.textContent).not.toContain('Scouting');
+    expect(supportNavigation?.textContent).toContain('Rules');
+    expect(container.querySelector('[aria-label="Account menu for Test Manager"]')).not.toBeNull();
   });
 
-  test('renders league content from the league API client through the shared shell', async () => {
+  test('renders league context from the league API client through the shared shell', async () => {
     const { container } = renderApp({ initialPath: '/league' });
 
     await act(async () => {
@@ -152,6 +160,8 @@ describe('AppShell integration', () => {
     });
 
     expect(container.querySelector('[aria-current="page"]')?.textContent).toContain('League');
+    expect(container.querySelector('nav[aria-label="League navigation"]')?.textContent).toContain('Fixtures');
+    expect(container.querySelector('nav[aria-label="League navigation"]')?.textContent).toContain('Table');
     expect(container.textContent).toContain('League fixtures and results');
     expect(container.textContent).toContain('Gameweek 12');
     expect(container.textContent).toContain('Castle United');

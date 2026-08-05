@@ -397,9 +397,7 @@ def _upsert_many(session: Session, table: Table, rows: list[dict[str, object]]) 
     primary_key = next(iter(table.primary_key.columns))
     key_name = primary_key.name
     keys = [row[key_name] for row in rows]
-    existing = set(
-        session.execute(select(primary_key).where(primary_key.in_(keys))).scalars()
-    )
+    existing = set(session.execute(select(primary_key).where(primary_key.in_(keys))).scalars())
     new_rows = [row for row in rows if row[key_name] not in existing]
     changed_rows = [row for row in rows if row[key_name] in existing]
     if new_rows:
@@ -416,10 +414,7 @@ def _count(session: Session, table: Table) -> int:
     return int(session.execute(select(func.count()).select_from(table)).scalar_one())
 
 
-def _list_of_mappings(
-    payload: Mapping[str, object],
-    key: str,
-) -> list[Mapping[str, object]]:
+def _list_of_mappings(payload: Mapping[str, object], key: str) -> list[Mapping[str, object]]:
     value = payload.get(key)
     if not isinstance(value, list) or not all(isinstance(row, Mapping) for row in value):
         raise InvalidFplPayloadError(f"FPL payload field {key!r} must be a list of objects.")

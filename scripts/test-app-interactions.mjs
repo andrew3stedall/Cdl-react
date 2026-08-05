@@ -630,7 +630,7 @@ async function testUnauthenticatedGuard(page) {
   await page.getByRole('heading', { name: 'Welcome back' }).waitFor();
   await page.getByText('Castle Draft League', { exact: true }).waitFor();
   await page.getByLabel('Email address').waitFor();
-  await page.getByLabel('Password').waitFor();
+  await page.getByLabel('Password', { exact: true }).waitFor();
 
   if (await page.getByRole('navigation', { name: 'Primary navigation' }).count() !== 0) {
     throw new Error('The login page must not expose authenticated application navigation.');
@@ -640,10 +640,10 @@ async function testUnauthenticatedGuard(page) {
 async function testLoginAndLogout(page, api, viewportName) {
   await page.goto(baseUrl + '/login', { waitUntil: 'networkidle' });
   await page.getByLabel('Email').fill(authenticatedSession.user.email);
-  await page.getByLabel('Password').fill('wrong-password');
+  await page.getByLabel('Password', { exact: true }).fill('wrong-password');
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expectStatus(page, 'Invalid email or password.');
-  await page.getByLabel('Password').fill('browser-login-secret');
+  await page.getByLabel('Password', { exact: true }).fill('browser-login-secret');
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expectPath(page, '/dashboard');
   if (viewportName === 'mobile') {

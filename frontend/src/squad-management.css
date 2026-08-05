@@ -1145,3 +1145,30 @@
     transition: none;
   }
 }
+
+
+/* High-specificity dark surface contract */
+.feature-screen.squad-workspace {
+  background:
+    radial-gradient(circle at 12% 0%, rgb(34 211 238 / 0.11), transparent 28rem),
+    linear-gradient(160deg, #071625 0%, #06111d 62%, #030a12 100%);
+  color: #f8fafc;
+}
+
+.squad-workspace .squad-load-status {
+  color: #cbd5e1;
+}
+
+.squad-workspace .squad-metric-card.ui-card {
+  background: #0b2032;
+  border-color: transparent;
+  color: #f8fafc;
+}
+
+.squad-workspace .squad-metric-card.ui-card div > span {
+  color: #cbd5e1;
+}
+
+.squad-workspace .squad-metric-card.ui-card div > strong {
+  color: #ffffff;
+}

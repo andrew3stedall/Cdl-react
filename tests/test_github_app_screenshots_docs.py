@@ -83,9 +83,11 @@ def test_interaction_script_exercises_team_selection_validation() -> None:
 def test_interaction_script_exercises_squad_management_journey() -> None:
     content = INTERACTION_SCRIPT.read_text(encoding="utf-8")
     assert "/squad-management" in content
+    assert "Player pool" in content
     assert "Search players" in content
     assert "Casey Midfielder added to interests." in content
-    assert "Player detail" in content
+    assert "getByRole('dialog', { name: 'Casey Midfielder' })" in content
+    assert "Activity" in content
     assert "Propose sample trade" in content
     assert "/rules#trade-window" in content
 

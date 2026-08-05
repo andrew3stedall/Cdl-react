@@ -137,7 +137,7 @@ describe('SquadManagementPage', () => {
     const input = container.querySelector('input[aria-label="Search players"]') as HTMLInputElement;
     await act(async () => {
       input.value = 'palmer';
-      input.dispatchEvent(new Event('change', { bubbles: true }));
+      input.dispatchEvent(new Event('input', { bubbles: true }));
       await Promise.resolve();
     });
 

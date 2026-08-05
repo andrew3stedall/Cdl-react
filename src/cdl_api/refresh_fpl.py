@@ -27,6 +27,29 @@ def main() -> None:
     refresh = service.refresh(list(FplRefreshResource))
     status = service.status()
 
+    required_counts = ("teams", "players", "fixtures")
+    empty_resources = [
+        resource
+        for resource in required_counts
+        if status.normalized_counts.get(resource, 0) <= 0
+    ]
+    if empty_resources:
+        raise RuntimeError(
+            "Official FPL refresh produced empty normalized resources: "
+            + ", ".join(empty_resources)
+        )
+
+    failed_resources = [
+        resource.resource.value
+        for resource in status.resources
+        if resource.last_updated_at is None or resource.last_fetch_error is not None
+    ]
+    if failed_resources:
+        raise RuntimeError(
+            "Official FPL refresh did not establish fresh successful resources: "
+            + ", ".join(failed_resources)
+        )
+
     print(
         json.dumps(
             {

@@ -1,0 +1,84 @@
+name: Diagnose squad mobile width comment
+
+on:
+  push:
+    branches:
+      - codex/squad-management-workspace-redesign
+    paths:
+      - .github/workflows/diagnose-squad-mobile-width-comment.yml
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: codex/squad-management-workspace-redesign
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install frontend and browser packages
+        working-directory: frontend
+        run: npm install
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Start frontend
+        working-directory: frontend
+        run: npm run dev -- --host 127.0.0.1 > ../vite-diagnostic.log 2>&1 &
+      - name: Wait for frontend
+        run: |
+          for i in {1..30}; do
+            curl -fsS http://127.0.0.1:5173 >/dev/null && exit 0
+            sleep 2
+          done
+          exit 1
+      - name: Report mobile widths
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          node --input-type=module > "${RUNNER_TEMP}/squad-width-report.json" <<'JS'
+          import { chromium } from 'playwright';
+          const browser = await chromium.launch();
+          const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+          const page = await context.newPage();
+          await page.route('**/api/**', async (route) => {
+            const request = route.request();
+            const path = new URL(request.url()).pathname;
+            if (path === '/api/auth/session') return route.fulfill({ json: { is_authenticated: true, user: { id: 'diagnostic', email: 'diagnostic@example.com', display_name: 'Diagnostic Manager', roles: ['manager'] }, expires_at: '2099-01-01T00:00:00Z' } });
+            if (path === '/api/squad/summary') return route.fulfill({ json: { manager_team: { id: 'team-1', name: 'Exeter Gently' }, gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1 }, players: [{ id: 'player-1', display_name: 'Alex Keeper', position: 'GKP', epl_team: { name: 'Arsenal', short_name: 'ARS' }, status: 'owned', points: 48, value: 5.0 }] } });
+            if (path === '/api/scouting/players') return route.fulfill({ json: { players: [{ id: 'player-1', display_name: 'Alex Keeper', position: 'GKP', epl_team: { name: 'Arsenal', short_name: 'ARS' }, status: 'owned', points: 48, value: 5.0 }] } });
+            if (path === '/api/interests') return route.fulfill({ json: [] });
+            if (path === '/api/trades') return route.fulfill({ json: { trades: [] } });
+            if (path === '/api/contracts/theme-presets') return route.fulfill({ json: { presets: [] } });
+            return route.fulfill({ json: {} });
+          });
+          await page.goto('http://127.0.0.1:5173/squad-management', { waitUntil: 'networkidle' });
+          await page.getByRole('status').getByText('Exeter Gently loaded from staging PostgreSQL.', { exact: true }).waitFor();
+          const report = await page.evaluate(() => {
+            const selectors = ['html','body','#root','.app-shell','.shell-main','.feature-screen','.squad-workspace','.squad-content-card','.squad-tab-panel','.squad-table-scroll','.squad-table'];
+            const item = (selector) => {
+              const element = document.querySelector(selector);
+              if (!element) return { selector, missing: true };
+              const rect = element.getBoundingClientRect();
+              const style = getComputedStyle(element);
+              return { selector, rect: { left: rect.left, right: rect.right, width: rect.width }, clientWidth: element.clientWidth, scrollWidth: element.scrollWidth, display: style.display, width: style.width, minWidth: style.minWidth, maxWidth: style.maxWidth, overflowX: style.overflowX, contain: style.contain, gridTemplateColumns: style.gridTemplateColumns };
+            };
+            const widest = [...document.querySelectorAll('*')].map((element) => ({ element, rect: element.getBoundingClientRect() })).sort((a,b) => b.rect.right - a.rect.right).slice(0,12).map(({element,rect}) => ({ tag: element.tagName, id: element.id, className: typeof element.className === 'string' ? element.className : '', right: rect.right, width: rect.width, parentClass: typeof element.parentElement?.className === 'string' ? element.parentElement.className : '', parentOverflowX: element.parentElement ? getComputedStyle(element.parentElement).overflowX : null }));
+            return { viewport: innerWidth, documentScrollWidth: document.documentElement.scrollWidth, bodyScrollWidth: document.body.scrollWidth, items: selectors.map(item), widest };
+          });
+          console.log(JSON.stringify(report, null, 2));
+          await browser.close();
+          JS
+          {
+            echo 'Squad mobile width diagnostic for PR #136:'
+            echo '```json'
+            cat "${RUNNER_TEMP}/squad-width-report.json"
+            echo '```'
+          } > "${RUNNER_TEMP}/comment.md"
+          gh api "repos/${GITHUB_REPOSITORY}/issues/96/comments" -f body="$(cat "${RUNNER_TEMP}/comment.md")"

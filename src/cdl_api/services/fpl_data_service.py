@@ -18,14 +18,11 @@ from cdl_api.repositories.postgres_fpl_data import PostgreSQLFplDataRepository
 
 
 class FplApiClientProtocol(Protocol):
-    def endpoint_for(self, path: str) -> str:
-        ...
+    def endpoint_for(self, path: str) -> str: ...
 
-    def fetch_bootstrap_static(self) -> FplApiResponse:
-        ...
+    def fetch_bootstrap_static(self) -> FplApiResponse: ...
 
-    def fetch_fixtures(self) -> FplApiResponse:
-        ...
+    def fetch_fixtures(self) -> FplApiResponse: ...
 
 
 class FplDataService:
@@ -86,9 +83,7 @@ class FplDataService:
 
     def _endpoint_for(self, resource: FplRefreshResource) -> str:
         suffix = (
-            "bootstrap-static/"
-            if resource is FplRefreshResource.BOOTSTRAP_STATIC
-            else "fixtures/"
+            "bootstrap-static/" if resource is FplRefreshResource.BOOTSTRAP_STATIC else "fixtures/"
         )
         return self._client.endpoint_for(suffix)
 

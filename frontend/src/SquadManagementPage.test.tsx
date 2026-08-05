@@ -28,7 +28,56 @@ beforeEach(() => {
                 points: 52,
                 value: 14.0,
               },
+              {
+                id: 'fpl-235',
+                display_name: 'Pickford',
+                position: 'GKP',
+                epl_team: { name: 'Everton', short_name: 'EVE' },
+                status: 'owned',
+                points: 31,
+                value: 5.0,
+              },
             ],
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        );
+      }
+      if (path === '/api/team-selection') {
+        return new Response(
+          JSON.stringify({
+            manager_team: { id: 'team-1', name: 'Exeter Gently', short_name: 'EXE' },
+            gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1 },
+            lineup: [
+              {
+                id: 'fpl-411',
+                display_name: 'Haaland',
+                position: 'FWD',
+                epl_team: { id: 'mci', name: 'Manchester City', short_name: 'MCI' },
+                slot: 'starter',
+                slot_order: 1,
+                is_captain: true,
+                is_vice_captain: false,
+              },
+              {
+                id: 'fpl-235',
+                display_name: 'Pickford',
+                position: 'GKP',
+                epl_team: { id: 'eve', name: 'Everton', short_name: 'EVE' },
+                slot: 'bench',
+                slot_order: 1,
+                is_captain: false,
+                is_vice_captain: false,
+              },
+            ],
+            chips: [],
+            fixture_lock: {
+              locked: false,
+              fixture_id: null,
+              fixture_type: null,
+              lock_scope: null,
+              locked_at: null,
+              reason: null,
+            },
           }),
           { status: 200, headers: { 'Content-Type': 'application/json' } },
         );
@@ -45,6 +94,15 @@ beforeEach(() => {
                 status: 'owned',
                 points: 52,
                 value: 14.0,
+              },
+              {
+                id: 'fpl-235',
+                display_name: 'Pickford',
+                position: 'GKP',
+                epl_team: { name: 'Everton', short_name: 'EVE' },
+                status: 'owned',
+                points: 31,
+                value: 5.0,
               },
               {
                 id: 'fpl-154',
@@ -109,14 +167,24 @@ function clickButton(container: HTMLElement, label: string) {
 }
 
 describe('SquadManagementPage', () => {
-  test('starts with a focused squad view and moves secondary content into tabs', async () => {
+  test('starts on the persisted pitch and switches to the complete list', async () => {
     const { container } = await renderPage();
 
     expect(container.textContent).toContain('Exeter Gently');
-    expect(container.textContent).toContain('Current squad');
+    expect(container.querySelector('[aria-label="Squad pitch"]')).not.toBeNull();
     expect(container.textContent).toContain('Haaland');
+    expect(container.querySelector('[aria-label="Bench"]')?.textContent).toContain('Pickford');
+    expect(container.querySelector('button[aria-pressed="true"]')?.textContent).toContain('Pitch');
     expect(container.textContent).not.toContain('Palmer');
     expect(container.querySelectorAll('[role="tab"]')).toHaveLength(3);
+
+    await act(async () => {
+      clickButton(container, 'List');
+      await Promise.resolve();
+    });
+
+    expect(container.querySelector('[aria-label="Players table"]')).not.toBeNull();
+    expect(container.querySelector('button[aria-pressed="true"]')?.textContent).toContain('List');
 
     await act(async () => {
       clickButton(container, 'Player pool');
@@ -155,21 +223,17 @@ describe('SquadManagementPage', () => {
 
   test('opens player detail in a contextual drawer', async () => {
     const { container } = await renderPage();
-    await act(async () => {
-      clickButton(container, 'Player pool');
-      await Promise.resolve();
-    });
 
-    const playerButton = Array.from(container.querySelectorAll('button')).find(
-      (button) => button.textContent?.includes('Palmer') && button.textContent?.includes('View player'),
+    const pitchPlayer = container.querySelector(
+      'button[aria-label="View Haaland details"]',
     ) as HTMLButtonElement;
     await act(async () => {
-      playerButton.click();
+      pitchPlayer.click();
       await Promise.resolve();
     });
 
     const drawer = container.querySelector('[role="dialog"]');
-    expect(drawer?.textContent).toContain('Palmer');
+    expect(drawer?.textContent).toContain('Haaland');
     expect(drawer?.textContent).toContain('Availability');
     expect(container.textContent).not.toContain('Propose sample trade');
   });

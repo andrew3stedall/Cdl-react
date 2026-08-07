@@ -160,6 +160,12 @@ function buttonByText(container: HTMLElement, text: string) {
   return button as HTMLButtonElement;
 }
 
+function setInputValue(input: HTMLInputElement, value: string) {
+  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+  setter?.call(input, value);
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
 describe('SquadPage', () => {
   test('opens as a season squad workspace and remembers pitch/list choice', async () => {
     const { container } = await renderPage();
@@ -204,8 +210,7 @@ describe('SquadPage', () => {
 
     const search = container.querySelector('input[aria-label="Search comparison players"]') as HTMLInputElement;
     await act(async () => {
-      search.value = 'Palmer';
-      search.dispatchEvent(new Event('input', { bubbles: true }));
+      setInputValue(search, 'Palmer');
       await Promise.resolve();
     });
 
@@ -227,6 +232,8 @@ describe('SquadPage', () => {
     await act(async () => {
       haaland.click();
       await Promise.resolve();
+    });
+    await act(async () => {
       buttonByText(container, 'Release to free agency').click();
       await Promise.resolve();
     });
@@ -248,6 +255,8 @@ describe('SquadPage', () => {
     await act(async () => {
       buttonByText(container, 'Back').click();
       await Promise.resolve();
+    });
+    await act(async () => {
       buttonByText(container, 'Restore to Squad').click();
       await Promise.resolve();
     });

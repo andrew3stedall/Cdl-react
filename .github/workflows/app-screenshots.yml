@@ -39,9 +39,31 @@ jobs:
           exit 1
       - name: Test primary interactions
         run: |
-          # The legacy player-pool/activity journey now belongs to Market. The
-          # dedicated script below exercises the rebuilt Squad workspace.
-          sed -i 's#${baseUrl}/squad-management#${baseUrl}/scouting#g' scripts/test-app-interactions.mjs
+          # The older player-pool/activity journey is retained as Market
+          # coverage while Squad has its own dedicated browser journey below.
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("scripts/test-app-interactions.mjs")
+          text = path.read_text(encoding="utf-8")
+          text = text.replace(
+              "await page.goto(`${baseUrl}/squad-management`, { waitUntil: 'networkidle' });",
+              "await page.goto(`${baseUrl}/scouting`, { waitUntil: 'networkidle' });",
+              1,
+          )
+          pitch_block = """  const pitch = page.locator('section[aria-label=\"Squad pitch\"]');
+          await pitch.waitFor();
+          await pitch.locator('section[aria-label=\"Bench\"]').waitFor();
+          await page.getByRole('button', { name: 'List', exact: true }).click();
+          await page.locator('[aria-label=\"Players table\"]').waitFor();
+          await page.getByRole('button', { name: 'Pitch', exact: true }).click();
+          await pitch.waitFor();
+
+          """
+          if pitch_block not in text:
+              raise SystemExit("Legacy Squad pitch block was not found")
+          path.write_text(text.replace(pitch_block, "", 1), encoding="utf-8")
+          PY
           node scripts/test-app-interactions.mjs
       - name: Test Squad workspace and Market persistence
         run: node scripts/test-squad-management-interactions.mjs

@@ -1,6 +1,5 @@
 from pathlib import Path
 
-
 SHIRT_DIR = Path("frontend/public/team-shirts")
 EXPECTED_SHIRTS = {
     "ars.svg",

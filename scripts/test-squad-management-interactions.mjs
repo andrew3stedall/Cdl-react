@@ -194,6 +194,7 @@ async function testSquadWorkspace(browser, viewport) {
   await review.getByRole('button', { name: 'Back', exact: true }).click();
   await changes.getByRole('button', { name: 'Restore to Squad', exact: true }).click();
   await page.getByRole('status').getByText('Alex Keeper restored to the squad.', { exact: true }).waitFor();
+  await changes.getByRole('button', { name: 'Collapse squad changes', exact: true }).click();
 
   await page.getByRole('button', { name: 'List', exact: true }).click();
   await page.locator('[aria-label="Squad players table"]').waitFor();

@@ -121,7 +121,7 @@ function renderApp(initialPath: string, session?: SessionState) {
 }
 
 describe('dashboard shell integration', () => {
-  test('routes authenticated managers to overview inside the focused shell', async () => {
+  test('routes authenticated managers to Home inside the focused shell', async () => {
     const { container } = renderApp('/dashboard', authenticatedSession);
 
     await act(async () => {
@@ -129,7 +129,7 @@ describe('dashboard shell integration', () => {
       await Promise.resolve();
     });
 
-    expect(container.querySelector('[aria-current="page"]')?.textContent).toContain('Overview');
+    expect(container.querySelector('[aria-current="page"]')?.textContent).toContain('Home');
     expect(container.textContent).toContain('Manager Analytics Dashboard');
     expect(container.querySelector('[aria-label="Account menu for CDL Manager"]')).not.toBeNull();
   });

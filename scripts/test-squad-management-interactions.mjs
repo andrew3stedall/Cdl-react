@@ -170,7 +170,7 @@ async function testSquadWorkspace(browser, viewport) {
 
   const playerDrawer = page.locator('.squad-page__drawer');
   await playerDrawer.getByText(/Release to free agency/i).waitFor();
-  await playerDrawer.getByRole('button', { name: 'Compare', exact: true }).click();
+  await playerDrawer.getByRole('button', { name: /^Compare/ }).click();
 
   const comparisonSearch = page.getByRole('textbox', { name: 'Search comparison players' });
   await comparisonSearch.fill('Rival Winger');

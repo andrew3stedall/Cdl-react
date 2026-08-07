@@ -16,20 +16,26 @@ export interface NavigationSection {
 
 export const primaryNavigationItems: NavigationItem[] = [
   {
-    label: 'Overview',
+    label: 'Home',
     href: '/dashboard',
     featureKey: 'dashboard',
-    description: 'Performance and current gameweek insights',
+    description: 'Priorities, deadlines and actions that need attention',
   },
   {
     label: 'Squad',
     href: '/squad-management',
     featureKey: 'squad-management',
-    description: 'Roster, player discovery and fixture planning',
+    description: 'Season-long squad health and roster actions',
+  },
+  {
+    label: 'Market',
+    href: '/scouting',
+    featureKey: 'scouting',
+    description: 'Player discovery, draws, interests and trades',
     supportsScouting: true,
   },
   {
-    label: 'Team',
+    label: 'Matchweek',
     href: '/team-selection',
     featureKey: 'team-selection',
     description: 'Lineup, captaincy, bench and chips',
@@ -44,18 +50,13 @@ export const primaryNavigationItems: NavigationItem[] = [
 
 export const contextualNavigationSections: NavigationSection[] = [
   {
-    key: 'squad',
-    label: 'Squad workspace',
-    primaryHref: '/squad-management',
-    matchPrefixes: ['/squad-management', '/scouting', '/fdr'],
+    key: 'market',
+    label: 'Market navigation',
+    primaryHref: '/scouting',
+    matchPrefixes: ['/scouting', '/fdr'],
     items: [
       {
-        label: 'My squad',
-        href: '/squad-management',
-        featureKey: 'squad-management',
-      },
-      {
-        label: 'Scouting',
+        label: 'Discovery',
         href: '/scouting',
         featureKey: 'scouting',
         supportsScouting: true,

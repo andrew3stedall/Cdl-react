@@ -91,7 +91,7 @@ function renderApp(initialPath: string, session?: SessionState) {
 }
 
 describe('team selection shell integration', () => {
-  test('routes authenticated managers to team selection inside the focused shell', async () => {
+  test('routes authenticated managers to Matchweek inside the focused shell', async () => {
     const { container } = renderApp('/team-selection', authenticatedSession);
 
     await act(async () => {
@@ -99,7 +99,7 @@ describe('team selection shell integration', () => {
       await Promise.resolve();
     });
 
-    expect(container.querySelector('[aria-current="page"]')?.textContent).toContain('Team');
+    expect(container.querySelector('[aria-current="page"]')?.textContent).toContain('Matchweek');
     expect(container.textContent).toContain('Lineup, chips, bench, and reserves');
     expect(container.querySelector('[aria-label="Account menu for CDL Manager"]')).not.toBeNull();
   });

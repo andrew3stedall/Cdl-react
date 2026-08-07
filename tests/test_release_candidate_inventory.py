@@ -119,20 +119,20 @@ def test_team_selection_release_evidence_is_focused_and_truthful() -> None:
         assert claim in inventory
 
 
-def test_authenticated_squad_mutation_evidence_is_focused_and_truthful() -> None:
+def test_authenticated_squad_and_market_evidence_is_focused_and_truthful() -> None:
     inventory = INVENTORY.read_text(encoding="utf-8")
     browser = SQUAD_BROWSER_INTERACTIONS.read_text(encoding="utf-8")
     router = SQUAD_ROUTER.read_text(encoding="utf-8")
     postgres_test = POSTGRES_SQUAD_TEST.read_text(encoding="utf-8")
 
     required_browser_evidence = (
+        "Release to free agency",
+        "Pending Removal",
+        "Removed",
+        "Submit Squad Changes",
+        "Add 1 draw-won player before confirming.",
+        "Restore to Squad",
         "Casey Midfielder added to interests.",
-        "Interest already exists.",
-        "Trade proposal created.",
-        "Trade proposal already exists.",
-        "Authentication required.",
-        "rejected duplicate interest to leave persisted server state unchanged",
-        "rejected duplicate trade to leave persisted server state unchanged",
         "page.reload({ waitUntil: 'networkidle' })",
         "{ width: 390, height: 844 }",
         "{ width: 1440, height: 900 }",

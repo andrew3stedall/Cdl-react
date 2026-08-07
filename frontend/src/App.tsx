@@ -19,6 +19,7 @@ import { ModernisationCheckpointPage } from './ModernisationCheckpointPage';
 import type { PreferenceClient } from './preferences-api';
 import { RulesPage } from './RulesPage';
 import { SquadManagementPage } from './SquadManagementPage';
+import { SquadPage } from './SquadPage';
 import { TeamSelectionPage } from './TeamSelectionPage';
 import type { TeamSelectionClient } from './team-selection-api';
 import { getDefaultThemePreset } from './theme-presets';
@@ -344,7 +345,7 @@ export function App({
   }
 
   if (currentPath.startsWith('/squad-management')) {
-    routeContent = <SquadManagementPage preset={preset} />;
+    routeContent = <SquadPage preset={preset} />;
   }
 
   if (currentPath.startsWith('/scouting')) {

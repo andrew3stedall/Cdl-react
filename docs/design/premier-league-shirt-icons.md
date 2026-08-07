@@ -33,6 +33,11 @@ Assets live in `frontend/public/team-shirts/` for the 20 confirmed 2026/27 Premi
 - `sun.svg` — Sunderland — red / white stripes;
 - `tot.svg` — Tottenham Hotspur — white / navy.
 
+The repository also retains two colour icons used by existing staging/test-season fixtures while those fixtures are migrated to the current season:
+
+- `whu.svg` — West Ham United — claret / sky blue;
+- `wol.svg` — Wolverhampton Wanderers — gold.
+
 `unknown.svg` is the fallback for an unrecognised team code.
 
 ## Maintenance
@@ -42,4 +47,5 @@ At each new Premier League season:
 1. verify the 20-club membership against an official Premier League source;
 2. verify whether any home colour treatment materially changed;
 3. add/remove SVG assets for promoted/relegated teams;
-4. keep icons generic unless the project later establishes an explicit licensed crest/kit asset strategy.
+4. retain legacy assets only while persisted/test data still references those team codes;
+5. keep icons generic unless the project later establishes an explicit licensed crest/kit asset strategy.

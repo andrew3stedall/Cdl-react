@@ -23,10 +23,12 @@ EXPECTED_SHIRTS = {
     "sun.svg",
     "tot.svg",
     "unknown.svg",
+    "whu.svg",
+    "wol.svg",
 }
 
 
-def test_2026_27_team_shirt_asset_set_is_complete() -> None:
+def test_team_shirt_asset_set_is_complete() -> None:
     assert {path.name for path in SHIRT_DIR.glob("*.svg")} == EXPECTED_SHIRTS
 
 

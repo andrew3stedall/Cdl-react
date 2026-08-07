@@ -21,7 +21,7 @@ jobs:
       - name: Install browser test packages
         run: npm install --no-save playwright axe-core
       - name: Install Playwright browser
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium
       - name: Start frontend preview
         working-directory: frontend
         run: |

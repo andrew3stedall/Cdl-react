@@ -1,8 +1,8 @@
+import pathlib
 import xml.etree.ElementTree as ElementTree
-from pathlib import Path
 
 
-SHIRT_DIR = Path("frontend/public/team-shirts")
+SHIRT_DIR = pathlib.Path("frontend/public/team-shirts")
 EXPECTED_SHIRTS = {
     "ars.svg",
     "avl.svg",

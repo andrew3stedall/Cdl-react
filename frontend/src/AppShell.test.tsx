@@ -131,7 +131,7 @@ function renderApp({
 }
 
 describe('AppShell integration', () => {
-  test('renders a focused primary hierarchy around rules content', async () => {
+  test('renders the agreed feature-led primary hierarchy around rules content', async () => {
     const { container } = renderApp({ initialPath: '/rules' });
 
     await act(async () => {
@@ -143,9 +143,10 @@ describe('AppShell integration', () => {
 
     expect(container.querySelector('[aria-current="page"]')?.textContent).toContain('Rules');
     expect(container.textContent).toContain('Rules Knowledge Base');
-    expect(primaryNavigation?.textContent).toContain('Overview');
+    expect(primaryNavigation?.textContent).toContain('Home');
     expect(primaryNavigation?.textContent).toContain('Squad');
-    expect(primaryNavigation?.textContent).toContain('Team');
+    expect(primaryNavigation?.textContent).toContain('Market');
+    expect(primaryNavigation?.textContent).toContain('Matchweek');
     expect(primaryNavigation?.textContent).toContain('League');
     expect(primaryNavigation?.textContent).not.toContain('Scouting');
     expect(supportNavigation?.textContent).toContain('Rules');

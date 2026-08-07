@@ -171,8 +171,11 @@ describe('SquadPage', () => {
     const { container } = await renderPage();
 
     expect(container.textContent).toContain('Exeter Gently');
-    expect(container.textContent).toContain('Season-long roster');
+    expect(container.textContent).toContain('Total Points');
+    expect(container.textContent).toContain('Form (Last 5)');
+    expect(container.textContent).toContain('API needed');
     expect(container.querySelector('[aria-label="Squad pitch"]')).not.toBeNull();
+    expect(container.querySelector('img[src="/team-shirts/mci.svg"]')).not.toBeNull();
     expect(container.textContent).not.toContain('PostgreSQL');
 
     await act(async () => {
@@ -184,7 +187,7 @@ describe('SquadPage', () => {
     expect(window.localStorage.getItem('cdl:squad-view')).toBe('list');
 
     await act(async () => {
-      buttonByText(container, 'Forwards').click();
+      buttonByText(container, 'FWD').click();
       await Promise.resolve();
     });
 
@@ -201,7 +204,7 @@ describe('SquadPage', () => {
       haaland.click();
       await Promise.resolve();
     });
-    expect(container.querySelector('.squad-page__drawer')?.textContent).toContain('Release to free agency');
+    expect(container.querySelector('.squad-page__drawer')?.textContent).toContain('Release to Free Agency');
 
     await act(async () => {
       buttonByText(container, 'Compare').click();
@@ -234,7 +237,7 @@ describe('SquadPage', () => {
       await Promise.resolve();
     });
     await act(async () => {
-      buttonByText(container, 'Release to free agency').click();
+      buttonByText(container, 'Release to Free Agency').click();
       await Promise.resolve();
     });
 

@@ -1,5 +1,5 @@
+import xml.etree.ElementTree as ElementTree
 from pathlib import Path
-from xml.etree import ElementTree
 
 
 SHIRT_DIR = Path("frontend/public/team-shirts")
@@ -34,6 +34,6 @@ def test_2026_27_team_shirt_asset_set_is_complete() -> None:
 
 def test_team_shirt_assets_are_valid_svg_xml() -> None:
     for path in sorted(SHIRT_DIR.glob("*.svg")):
-        root = ElementTree.fromstring(path.read_text(encoding="utf-8"))
+        root = ElementTree.fromstring(path.read_text(encoding="utf-8"))  # noqa: S314
         assert root.tag == "{http://www.w3.org/2000/svg}svg", path
         assert root.find("{http://www.w3.org/2000/svg}title") is not None, path

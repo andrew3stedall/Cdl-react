@@ -169,7 +169,7 @@ async function testSquadWorkspace(browser, viewport) {
   await pitch.getByRole('button', { name: 'View Alex Keeper details' }).click();
 
   const playerDrawer = page.locator('.squad-page__drawer');
-  await playerDrawer.getByText('Release to free agency', { exact: true }).waitFor();
+  await playerDrawer.getByText('Release to Free Agency', { exact: true }).waitFor();
   await playerDrawer.getByRole('button', { name: 'Compare', exact: true }).click();
 
   const comparisonSearch = page.getByRole('textbox', { name: 'Search comparison players' });
@@ -182,7 +182,7 @@ async function testSquadWorkspace(browser, viewport) {
 
   await page.getByRole('button', { name: 'Close drawer', exact: true }).last().click();
   await pitch.getByRole('button', { name: 'View Alex Keeper details' }).click();
-  await page.getByRole('button', { name: 'Release to free agency', exact: true }).click();
+  await page.getByRole('button', { name: 'Release to Free Agency', exact: true }).click();
 
   const changes = page.locator('aside[aria-label="Squad changes"]');
   await changes.getByText('Pending Removal', { exact: true }).waitFor();
@@ -194,7 +194,7 @@ async function testSquadWorkspace(browser, viewport) {
   await review.getByRole('button', { name: 'Back', exact: true }).click();
   await changes.getByRole('button', { name: 'Restore to Squad', exact: true }).click();
   await page.getByRole('status').getByText('Alex Keeper restored to the squad.', { exact: true }).waitFor();
-  await changes.getByRole('button', { name: 'Collapse squad changes', exact: true }).click();
+  await changes.getByRole('button', { name: /Squad Changes/ }).click();
 
   await page.getByRole('button', { name: 'List', exact: true }).click();
   await page.locator('[aria-label="Squad players table"]').waitFor();

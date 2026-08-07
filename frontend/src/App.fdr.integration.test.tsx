@@ -98,7 +98,7 @@ function renderApp(initialPath: string, session?: SessionState) {
 }
 
 describe('FDR shell integration', () => {
-  test('routes authenticated managers to fixture difficulty inside squad context', async () => {
+  test('routes authenticated managers to fixture difficulty inside Market context', async () => {
     const { container } = renderApp('/fdr', authenticatedSession);
 
     await act(async () => {
@@ -108,7 +108,7 @@ describe('FDR shell integration', () => {
 
     const activeLabels = Array.from(container.querySelectorAll('[aria-current="page"]'))
       .map((element) => element.textContent ?? '');
-    expect(activeLabels.some((label) => label.includes('Squad'))).toBe(true);
+    expect(activeLabels.some((label) => label.includes('Market'))).toBe(true);
     expect(activeLabels.some((label) => label.includes('Fixture difficulty'))).toBe(true);
     expect(container.textContent).toContain('Attack and defence FDR');
     expect(container.querySelector('[aria-label="Account menu for CDL Manager"]')).not.toBeNull();

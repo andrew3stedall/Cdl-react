@@ -1,6 +1,9 @@
+import { mkdir } from 'node:fs/promises';
+
 import { chromium } from 'playwright';
 
 const baseUrl = process.env.APP_PREVIEW_URL ?? 'http://127.0.0.1:5173';
+const reviewCaptureDirectory = 'artifacts/app-screenshots/mobile';
 
 const authenticatedSession = {
   is_authenticated: true,
@@ -157,6 +160,12 @@ async function mockApi(page) {
   });
 }
 
+async function captureReviewState(page, viewport, name) {
+  if (viewport.width !== 390) return;
+  await mkdir(reviewCaptureDirectory, { recursive: true });
+  await page.screenshot({ path: `${reviewCaptureDirectory}/${name}.png` });
+}
+
 async function testSquadWorkspace(browser, viewport) {
   const context = await browser.newContext({ viewport });
   const page = await context.newPage();
@@ -166,11 +175,13 @@ async function testSquadWorkspace(browser, viewport) {
   await page.getByRole('status').getByText('Exeter Gently squad ready for review.', { exact: true }).waitFor();
   const pitch = page.locator('section[aria-label="Squad pitch"]');
   await pitch.waitFor();
+  await captureReviewState(page, viewport, 'squad-reference-pitch');
   await pitch.getByRole('button', { name: 'View Alex Keeper details' }).click();
 
   const playerDrawer = page.locator('.squad-page__drawer');
-  await playerDrawer.getByText('Release to free agency', { exact: true }).waitFor();
-  await playerDrawer.getByRole('button', { name: 'Compare', exact: true }).click();
+  await playerDrawer.getByText(/Release to free agency/i).waitFor();
+  await captureReviewState(page, viewport, 'squad-reference-player-drawer');
+  await playerDrawer.getByRole('button', { name: /^Compare/ }).click();
 
   const comparisonSearch = page.getByRole('textbox', { name: 'Search comparison players' });
   await comparisonSearch.fill('Rival Winger');
@@ -182,7 +193,7 @@ async function testSquadWorkspace(browser, viewport) {
 
   await page.getByRole('button', { name: 'Close drawer', exact: true }).last().click();
   await pitch.getByRole('button', { name: 'View Alex Keeper details' }).click();
-  await page.getByRole('button', { name: 'Release to free agency', exact: true }).click();
+  await page.getByRole('button', { name: /Release to free agency/i }).click();
 
   const changes = page.locator('aside[aria-label="Squad changes"]');
   await changes.getByText('Pending Removal', { exact: true }).waitFor();
@@ -191,13 +202,15 @@ async function testSquadWorkspace(browser, viewport) {
   await changes.getByRole('button', { name: 'Submit Squad Changes', exact: true }).click();
   const review = page.getByRole('dialog');
   await review.getByText('Add 1 draw-won player before confirming.', { exact: true }).waitFor();
+  await captureReviewState(page, viewport, 'squad-reference-changes');
   await review.getByRole('button', { name: 'Back', exact: true }).click();
   await changes.getByRole('button', { name: 'Restore to Squad', exact: true }).click();
   await page.getByRole('status').getByText('Alex Keeper restored to the squad.', { exact: true }).waitFor();
-  await changes.getByRole('button', { name: 'Collapse squad changes', exact: true }).click();
+  await changes.locator('.squad-page__changes-toggle').click();
 
   await page.getByRole('button', { name: 'List', exact: true }).click();
   await page.locator('[aria-label="Squad players table"]').waitFor();
+  await captureReviewState(page, viewport, 'squad-reference-list');
   await context.close();
 }
 

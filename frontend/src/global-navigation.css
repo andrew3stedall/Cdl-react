@@ -1,0 +1,48 @@
+.global-mobile-navigation {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .global-mobile-navigation {
+    align-items: stretch;
+    backdrop-filter: blur(18px);
+    background: color-mix(in srgb, var(--cdl-surface, #111827) 94%, transparent);
+    border-top: 1px solid var(--cdl-border);
+    bottom: 0;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    left: 0;
+    padding: 0.45rem max(0.45rem, env(safe-area-inset-left)) calc(0.45rem + env(safe-area-inset-bottom)) max(0.45rem, env(safe-area-inset-right));
+    position: fixed;
+    right: 0;
+    z-index: 60;
+  }
+
+  .global-mobile-navigation a {
+    align-items: center;
+    border-radius: 0.7rem;
+    color: var(--cdl-muted-foreground, #94a3b8);
+    display: flex;
+    flex-direction: column;
+    font-size: 0.7rem;
+    font-weight: 700;
+    gap: 0.2rem;
+    justify-content: center;
+    min-height: 3.35rem;
+    padding: 0.35rem 0.25rem;
+    text-decoration: none;
+  }
+
+  .global-mobile-navigation a.active {
+    background: var(--cdl-accent);
+    color: var(--cdl-primary);
+  }
+
+  .shell-main {
+    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
+  }
+
+  .squad-page__mobile-nav {
+    display: none !important;
+  }
+}

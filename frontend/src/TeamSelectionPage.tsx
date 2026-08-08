@@ -23,10 +23,23 @@ interface TeamSelectionPageProps {
   teamSelectionClient?: TeamSelectionClient;
 }
 
-export function TeamSelectionPage({
+interface TeamSelectionPanelProps extends TeamSelectionPageProps {
+  embedded?: boolean;
+}
+
+export function TeamSelectionPage(props: TeamSelectionPageProps) {
+  return (
+    <main className="feature-screen team-selection-page" data-density={props.preset.tokens.density}>
+      <TeamSelectionPanel {...props} />
+    </main>
+  );
+}
+
+export function TeamSelectionPanel({
+  embedded = false,
   preset,
   teamSelectionClient = defaultTeamSelectionClient,
-}: TeamSelectionPageProps) {
+}: TeamSelectionPanelProps) {
   const [snapshot, setSnapshot] = useState<TeamSelectionSnapshot | null>(null);
   const [fixtureSummary, setFixtureSummary] = useState<TeamSelectionFixtureSummary | null>(null);
   const [loadState, setLoadState] = useState<'loading' | 'loaded' | 'error'>('loading');
@@ -73,6 +86,8 @@ export function TeamSelectionPage({
   const reserves = players.filter((player) => player.slot === 'reserve');
   const activeChip = chips.find((chip) => chip.status === 'active');
   const valid = selectionIsValid(players);
+  const Heading = embedded ? 'h2' : 'h1';
+  const headingId = embedded ? 'squad-lineup-title' : 'team-selection-title';
 
   const movePlayer = (playerId: string, slot: TeamSelectionSlot) => {
     if (locked) return;
@@ -128,11 +143,15 @@ export function TeamSelectionPage({
   };
 
   return (
-    <main className="feature-screen team-selection-page" data-density={preset.tokens.density} aria-labelledby="team-selection-title">
+    <section
+      aria-labelledby={headingId}
+      className={embedded ? 'team-selection-page team-selection-panel' : 'team-selection-content'}
+      data-density={preset.tokens.density}
+    >
       <header>
-        <p className="eyebrow">Team Selection</p>
-        <h1 id="team-selection-title">Lineup, chips, bench, and reserves</h1>
-        <p>Manage starters, bench, reserves, and chip state for the current gameweek.</p>
+        <p className="eyebrow">Gameweek lineup</p>
+        <Heading id={headingId}>Lineup, chips, bench, and reserves</Heading>
+        <p>Manage the current gameweek without leaving Squad.</p>
       </header>
 
       {loadState === 'loading' ? <p role="status">Loading team selection.</p> : null}
@@ -208,7 +227,7 @@ export function TeamSelectionPage({
           ) : null}
         </>
       ) : null}
-    </main>
+    </section>
   );
 }
 

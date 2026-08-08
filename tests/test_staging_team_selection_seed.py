@@ -6,7 +6,8 @@ from sqlalchemy.pool import StaticPool
 
 from cdl_api.staging_draft_seed import SEASON_ID, TEAM_IDS
 from cdl_api.staging_team_selection_seed import (
-    STARTER_LIMITS,
+    STARTER_MAXIMUMS,
+    STARTER_MINIMUMS,
     RosterPlayer,
     build_legal_lineup,
     seed_staging_team_selections,
@@ -49,8 +50,8 @@ def test_every_staging_squad_shape_can_produce_legal_weekly_selection() -> None:
 
         assert (len(starters), len(bench), len(reserves)) == (11, 5, 4)
         starter_counts = Counter(assignment.position for assignment in starters)
-        for position, (minimum, maximum) in STARTER_LIMITS.items():
-            assert minimum <= starter_counts[position] <= maximum
+        for position, minimum in STARTER_MINIMUMS.items():
+            assert minimum <= starter_counts[position] <= STARTER_MAXIMUMS[position]
         assert sum(assignment.position == "GKP" for assignment in bench) == 1
         assert sorted(
             assignment.slot_order for assignment in bench if assignment.position != "GKP"
@@ -92,7 +93,8 @@ def test_seed_persists_complete_legal_lineups_for_all_eight_teams() -> None:
                 "id TEXT PRIMARY KEY, season_id TEXT NOT NULL, draft_team_id TEXT NOT NULL, "
                 "player_id TEXT NOT NULL, gameweek INTEGER NOT NULL, slot TEXT NOT NULL, "
                 "slot_order INTEGER NOT NULL, is_captain BOOLEAN NOT NULL, "
-                "is_vice_captain BOOLEAN NOT NULL, locked_at DATETIME, updated_at DATETIME NOT NULL)"
+                "is_vice_captain BOOLEAN NOT NULL, locked_at DATETIME, "
+                "updated_at DATETIME NOT NULL)"
             )
         )
 

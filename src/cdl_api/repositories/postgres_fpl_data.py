@@ -11,6 +11,7 @@ from sqlalchemy import (
     Boolean,
     Column,
     DateTime,
+    Float,
     Integer,
     MetaData,
     String,
@@ -70,6 +71,23 @@ fpl_fixtures_table = Table(
     Column("updated_at", DateTime(timezone=True), nullable=False),
 )
 
+fpl_player_current_metrics_table = Table(
+    "fpl_player_current_metrics",
+    metadata,
+    Column("player_id", String(64), primary_key=True),
+    Column("total_points", Integer(), nullable=False),
+    Column("form", Float(), nullable=False),
+    Column("selected_by_percent", Float(), nullable=False),
+    Column("minutes", Integer(), nullable=False),
+    Column("goals_scored", Integer(), nullable=False),
+    Column("assists", Integer(), nullable=False),
+    Column("clean_sheets", Integer(), nullable=False),
+    Column("expected_goals", Float(), nullable=False),
+    Column("expected_assists", Float(), nullable=False),
+    Column("chance_of_playing_next_round", Integer(), nullable=True),
+    Column("updated_at", DateTime(timezone=True), nullable=False),
+)
+
 external_payload_cache_table = Table(
     "external_payload_cache",
     metadata,
@@ -96,6 +114,7 @@ external_fetch_log_table = Table(
 FPL_INGESTION_TABLES = (
     fpl_gameweeks_table,
     fpl_fixtures_table,
+    fpl_player_current_metrics_table,
     external_payload_cache_table,
     external_fetch_log_table,
 )
@@ -161,7 +180,7 @@ class PostgreSQLFplDataRepository:
         ]
         player_rows = [
             {
-                "id": str(_required_int(row, "id")),
+                "id": _player_id(row),
                 "first_name": _required_text(row, "first_name"),
                 "second_name": _required_text(row, "second_name"),
                 "web_name": _required_text(row, "web_name"),
@@ -172,8 +191,8 @@ class PostgreSQLFplDataRepository:
         ]
         value_rows = [
             {
-                "id": f"{_required_int(row, 'id')}:{current_gameweek}",
-                "player_id": str(_required_int(row, "id")),
+                "id": f"{_player_id(row)}:{current_gameweek}",
+                "player_id": _player_id(row),
                 "gameweek": current_gameweek,
                 "value": _required_int(row, "now_cost"),
             }
@@ -181,10 +200,29 @@ class PostgreSQLFplDataRepository:
         ]
         availability_rows = [
             {
-                "id": str(_required_int(row, "id")),
-                "player_id": str(_required_int(row, "id")),
+                "id": _player_id(row),
+                "player_id": _player_id(row),
                 "status": _required_text(row, "status"),
                 "news": str(row.get("news") or "")[:512],
+            }
+            for row in elements
+        ]
+        metric_rows = [
+            {
+                "player_id": _player_id(row),
+                "total_points": _optional_int(row.get("total_points")) or 0,
+                "form": _optional_float(row.get("form")) or 0.0,
+                "selected_by_percent": _optional_float(row.get("selected_by_percent")) or 0.0,
+                "minutes": _optional_int(row.get("minutes")) or 0,
+                "goals_scored": _optional_int(row.get("goals_scored")) or 0,
+                "assists": _optional_int(row.get("assists")) or 0,
+                "clean_sheets": _optional_int(row.get("clean_sheets")) or 0,
+                "expected_goals": _optional_float(row.get("expected_goals")) or 0.0,
+                "expected_assists": _optional_float(row.get("expected_assists")) or 0.0,
+                "chance_of_playing_next_round": _optional_int(
+                    row.get("chance_of_playing_next_round")
+                ),
+                "updated_at": fetched_at,
             }
             for row in elements
         ]
@@ -196,6 +234,7 @@ class PostgreSQLFplDataRepository:
             _upsert_many(session, fpl_players_table, player_rows)
             _upsert_many(session, fpl_player_values_table, value_rows)
             _upsert_many(session, fpl_player_availability_table, availability_rows)
+            _upsert_many(session, fpl_player_current_metrics_table, metric_rows)
             self._record_success(
                 session,
                 resource=FplRefreshResource.BOOTSTRAP_STATIC,
@@ -220,6 +259,7 @@ class PostgreSQLFplDataRepository:
                 "players": len(player_rows),
                 "player_values": len(value_rows),
                 "player_availability": len(availability_rows),
+                "player_metrics": len(metric_rows),
             },
         )
 
@@ -273,20 +313,67 @@ class PostgreSQLFplDataRepository:
             records_upserted={"fixtures": len(fixture_rows)},
         )
 
+    def persist_element_summary(
+        self,
+        player_id: str,
+        payload: Mapping[str, object],
+        *,
+        endpoint: str,
+        status_code: int,
+        response_sha256: str,
+        fetched_at: datetime,
+    ) -> None:
+        history = _list_of_mappings(payload, "history")
+        fixtures = _list_of_mappings(payload, "fixtures")
+        resource = f"element-summary:{player_id}"
+        with self._session_factory() as session:
+            self._record_success(
+                session,
+                resource=resource,
+                endpoint=endpoint,
+                status_code=status_code,
+                response_sha256=response_sha256,
+                payload=dict(payload),
+                fetched_at=fetched_at,
+                record_count=len(history) + len(fixtures),
+            )
+            session.commit()
+
+    def cached_payload(
+        self,
+        resource: str,
+    ) -> tuple[object, datetime, str] | None:
+        with self._session_factory() as session:
+            row = (
+                session.execute(
+                    select(
+                        external_payload_cache_table.c.payload_json,
+                        external_payload_cache_table.c.fetched_at,
+                        external_payload_cache_table.c.response_sha256,
+                    ).where(external_payload_cache_table.c.resource == resource)
+                )
+                .mappings()
+                .first()
+            )
+        if row is None:
+            return None
+        return row["payload_json"], row["fetched_at"], str(row["response_sha256"])
+
     def record_failure(
         self,
         *,
-        resource: FplRefreshResource,
+        resource: FplRefreshResource | str,
         endpoint: str,
         fetched_at: datetime,
         error: str,
         status_code: int | None = None,
     ) -> None:
+        resource_value = _resource_value(resource)
         with self._session_factory() as session:
             session.execute(
                 insert(external_fetch_log_table).values(
                     id=uuid4().hex,
-                    resource=resource.value,
+                    resource=resource_value,
                     endpoint=endpoint,
                     status_code=status_code,
                     response_sha256=None,
@@ -317,7 +404,14 @@ class PostgreSQLFplDataRepository:
             counts = {
                 "gameweeks": _count(session, fpl_gameweeks_table),
                 "teams": _count(session, epl_teams_table),
-                "players": _count(session, fpl_players_table),
+                "players": int(
+                    session.execute(
+                        select(func.count())
+                        .select_from(fpl_players_table)
+                        .where(fpl_players_table.c.id.like("fpl-%"))
+                    ).scalar_one()
+                ),
+                "player_metrics": _count(session, fpl_player_current_metrics_table),
                 "fixtures": _count(session, fpl_fixtures_table),
             }
 
@@ -351,7 +445,7 @@ class PostgreSQLFplDataRepository:
     def _record_success(
         session: Session,
         *,
-        resource: FplRefreshResource,
+        resource: FplRefreshResource | str,
         endpoint: str,
         status_code: int,
         response_sha256: str,
@@ -359,12 +453,13 @@ class PostgreSQLFplDataRepository:
         fetched_at: datetime,
         record_count: int,
     ) -> None:
+        resource_value = _resource_value(resource)
         _upsert_many(
             session,
             external_payload_cache_table,
             [
                 {
-                    "resource": resource.value,
+                    "resource": resource_value,
                     "endpoint": endpoint,
                     "payload_json": payload,
                     "response_sha256": response_sha256,
@@ -375,12 +470,12 @@ class PostgreSQLFplDataRepository:
         _upsert_many(
             session,
             fpl_cache_freshness_table,
-            [{"resource": resource.value, "last_updated_at": fetched_at}],
+            [{"resource": resource_value, "last_updated_at": fetched_at}],
         )
         session.execute(
             insert(external_fetch_log_table).values(
                 id=uuid4().hex,
-                resource=resource.value,
+                resource=resource_value,
                 endpoint=endpoint,
                 status_code=status_code,
                 response_sha256=response_sha256,
@@ -389,6 +484,14 @@ class PostgreSQLFplDataRepository:
                 fetched_at=fetched_at,
             )
         )
+
+
+def _resource_value(resource: FplRefreshResource | str) -> str:
+    return resource.value if isinstance(resource, FplRefreshResource) else resource
+
+
+def _player_id(row: Mapping[str, object]) -> str:
+    return f"fpl-{_required_int(row, 'id')}"
 
 
 def _upsert_many(session: Session, table: Table, rows: list[dict[str, object]]) -> None:
@@ -450,6 +553,17 @@ def _optional_int(value: object) -> int | None:
         return int(value)
     except (TypeError, ValueError) as exc:
         raise InvalidFplPayloadError("FPL optional integer field is invalid.") from exc
+
+
+def _optional_float(value: object) -> float | None:
+    if value is None or value == "":
+        return None
+    if isinstance(value, bool):
+        raise InvalidFplPayloadError("FPL optional numeric field cannot be boolean.")
+    try:
+        return float(value)
+    except (TypeError, ValueError) as exc:
+        raise InvalidFplPayloadError("FPL optional numeric field is invalid.") from exc
 
 
 def _required_text(row: Mapping[str, object], key: str) -> str:

@@ -7,25 +7,41 @@ from cdl_api.repositories.postgres_squad import squad_ownerships_table
 from cdl_api.repositories.postgres_squad_repository import PostgreSQLSquadRepository
 from cdl_api.repositories.postgres_team_selection import PostgreSQLTeamSelectionRepository
 from cdl_api.staging_draft_seed import (
+    POSITION_LIMITS,
     PRIMARY_TEAM_ID,
+    SQUAD_SIZE,
     TEAM_IDS,
+    allocation_position_counts,
+    constrained_snake_allocation,
     draft_board,
     seed_staging_snake_draft,
     snake_team_index,
 )
 
+EXPECTED_POSITION_COUNTS = (
+    (2, 5, 10, 3),
+    (2, 6, 10, 2),
+    (2, 5, 9, 4),
+    (2, 6, 10, 2),
+    (2, 7, 7, 4),
+    (2, 5, 9, 4),
+    (2, 6, 8, 4),
+    (2, 4, 10, 4),
+)
 
-def test_canonical_board_has_160_unique_contiguous_players() -> None:
+
+def test_draft_pool_has_ranked_top_160_and_goalkeeper_buffer() -> None:
     players = draft_board()
 
-    assert len(players) == 160
-    assert [player.rank for player in players] == list(range(1, 161))
-    assert len({player.fpl_id for player in players}) == 160
+    assert len(players) == 163
+    assert [player.rank for player in players] == list(range(1, 164))
+    assert len({player.fpl_id for player in players}) == 163
     assert players[0].name == "Haaland"
-    assert players[-1].name == "Struijk"
+    assert players[159].name == "Struijk"
+    assert [player.name for player in players[160:]] == ["Henderson", "Sels", "Martinez"]
 
 
-def test_snake_allocation_gives_every_team_20_players() -> None:
+def test_snake_turn_order_gives_every_team_20_picks() -> None:
     team_indexes = [snake_team_index(pick) for pick in range(1, 161)]
 
     assert team_indexes[:8] == list(range(8))
@@ -34,7 +50,22 @@ def test_snake_allocation_gives_every_team_20_players() -> None:
     assert [team_indexes.count(index) for index in range(len(TEAM_IDS))] == [20] * 8
 
 
-def test_seed_is_idempotent_and_postgres_repository_reads_it() -> None:
+def test_constrained_snake_allocation_meets_every_position_limit() -> None:
+    allocations = constrained_snake_allocation()
+
+    assert len(allocations) == len(TEAM_IDS) * SQUAD_SIZE == 160
+    assert len({allocation.player.fpl_id for allocation in allocations}) == 160
+    assert allocations[0].player.name == "Haaland"
+    assert allocation_position_counts(allocations) == EXPECTED_POSITION_COUNTS
+
+    for counts_tuple in allocation_position_counts(allocations):
+        counts = dict(zip(("GKP", "DEF", "MID", "FWD"), counts_tuple, strict=True))
+        assert sum(counts.values()) == SQUAD_SIZE
+        for position, (minimum, maximum) in POSITION_LIMITS.items():
+            assert minimum <= counts[position] <= maximum
+
+
+def test_seed_is_idempotent_and_persists_valid_position_counts() -> None:
     engine = create_engine(
         "sqlite+pysqlite:///:memory:",
         connect_args={"check_same_thread": False},
@@ -96,12 +127,16 @@ def test_seed_is_idempotent_and_postgres_repository_reads_it() -> None:
     second = seed_staging_snake_draft(session_factory)
 
     assert first == second
+    assert first.players == 160
+    assert first.ownerships == 160
+    assert first.position_counts == EXPECTED_POSITION_COUNTS
+
     with session_factory() as session:
         assert (
             session.execute(select(func.count()).select_from(draft_teams_table)).scalar_one() == 8
         )
         assert (
-            session.execute(select(func.count()).select_from(fpl_players_table)).scalar_one() == 160
+            session.execute(select(func.count()).select_from(fpl_players_table)).scalar_one() == 163
         )
         team_counts = dict(
             session.execute(
@@ -111,7 +146,33 @@ def test_seed_is_idempotent_and_postgres_repository_reads_it() -> None:
                 ).group_by(squad_ownerships_table.c.draft_team_id)
             ).all()
         )
+        persisted_position_rows = session.execute(
+            select(
+                squad_ownerships_table.c.draft_team_id,
+                fpl_players_table.c.position_id,
+                func.count(),
+            )
+            .join(
+                fpl_players_table,
+                squad_ownerships_table.c.player_id == fpl_players_table.c.id,
+            )
+            .group_by(
+                squad_ownerships_table.c.draft_team_id,
+                fpl_players_table.c.position_id,
+            )
+        ).all()
+
     assert team_counts == {team_id: 20 for team_id in TEAM_IDS}
+    persisted_counts = {team_id: {position: 0 for position in POSITION_LIMITS} for team_id in TEAM_IDS}
+    for team_id, position, count in persisted_position_rows:
+        persisted_counts[team_id][position] = count
+    for team_index, team_id in enumerate(TEAM_IDS):
+        counts = persisted_counts[team_id]
+        assert (counts["GKP"], counts["DEF"], counts["MID"], counts["FWD"]) == (
+            EXPECTED_POSITION_COUNTS[team_index]
+        )
+        for position, (minimum, maximum) in POSITION_LIMITS.items():
+            assert minimum <= counts[position] <= maximum
 
     repository = PostgreSQLSquadRepository(session_factory)
     summary_players = [

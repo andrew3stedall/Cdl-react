@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from sqlalchemy import create_engine, func, select
+from sqlalchemy import create_engine, func, insert, select
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -239,6 +239,47 @@ def test_refresh_persists_official_bootstrap_and_fixtures_idempotently() -> None
     }
     assert all(resource.last_fetch_status == 200 for resource in status.resources)
     assert all(resource.last_updated_at is not None for resource in status.resources)
+
+
+def test_bootstrap_refresh_enriches_existing_canonical_draft_player_in_place() -> None:
+    sessions = _session_factory()
+    with sessions() as session:
+        session.execute(
+            insert(fpl_positions_table).values(
+                id="GKP",
+                singular_name="Goalkeeper",
+                plural_name="Goalkeepers",
+            )
+        )
+        session.execute(
+            insert(epl_teams_table).values(
+                id="seed-team",
+                short_name="SEE",
+                name="Seed Team",
+            )
+        )
+        session.execute(
+            insert(fpl_players_table).values(
+                id="fpl-10",
+                first_name="Seeded",
+                second_name="Placeholder",
+                web_name="Placeholder",
+                position_id="GKP",
+                team_id="seed-team",
+            )
+        )
+        session.commit()
+
+    service = FplDataService(FakeClient(), PostgreSQLFplDataRepository(sessions))
+    service.refresh([FplRefreshResource.BOOTSTRAP_STATIC])
+
+    with sessions() as session:
+        players = list(session.execute(select(fpl_players_table)).mappings())
+        assert len(players) == 1
+        assert players[0]["id"] == "fpl-10"
+        assert players[0]["first_name"] == "Test"
+        assert players[0]["web_name"] == "Keeper"
+        assert players[0]["team_id"] == "1"
 
 
 def test_player_history_fetches_once_then_uses_postgres_cache() -> None:

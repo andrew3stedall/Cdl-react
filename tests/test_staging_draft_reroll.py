@@ -15,10 +15,7 @@ def test_reroll_moves_complete_legal_squads_and_clears_saved_lineups() -> None:
     )
     with engine.begin() as connection:
         connection.execute(
-            text(
-                "CREATE TABLE fpl_players ("
-                "id TEXT PRIMARY KEY, position_id TEXT NOT NULL)"
-            )
+            text("CREATE TABLE fpl_players (id TEXT PRIMARY KEY, position_id TEXT NOT NULL)")
         )
         connection.execute(
             text(
@@ -79,8 +76,7 @@ def test_reroll_moves_complete_legal_squads_and_clears_saved_lineups() -> None:
                 )
             connection.execute(
                 text(
-                    "INSERT INTO team_selection_lineup_slots (id, season_id) "
-                    "VALUES (:id, :season)"
+                    "INSERT INTO team_selection_lineup_slots (id, season_id) VALUES (:id, :season)"
                 ),
                 {"id": f"lineup-{team_index}", "season": SEASON_ID},
             )

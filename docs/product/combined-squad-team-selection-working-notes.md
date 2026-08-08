@@ -29,7 +29,14 @@ For each gameweek the 20 players are partitioned into:
   - the other 4 substitutes are outfield players ordered **1–4** by substitution preference;
 - **Reserves:** 4 players.
 
-This replaces the current implementation assumption of 11 starters + 4 bench + 5 reserves.
+A valid Starting XI uses the legal formation bounds:
+
+- exactly 1 goalkeeper;
+- 3–5 defenders;
+- 2–5 midfielders;
+- 1–3 forwards.
+
+Captain and vice-captain must both be different Starting XI players.
 
 ### Future-gameweek planning
 
@@ -55,6 +62,16 @@ The save unit includes all weekly choices together:
 - chips.
 
 Do not auto-save these choices independently because chip selection and lineup/captaincy are intended to form one deliberate gameweek submission.
+
+### Current Squad representation
+
+The current implementation now uses the weekly role boundaries directly in the Squad workspace.
+
+- Pitch view separates the Starting XI, five-player Bench and four-player Reserves.
+- List view explicitly groups Starting XI, Bench and Reserves.
+- Bench roles distinguish the goalkeeper substitute from outfield preference 1–4.
+- GKP, DEF, MID and FWD are visually differentiated in List view.
+- Analytics sorting is kept within meaningful lineup groups; it must not destroy substitute preference order.
 
 ## Existing squad-management decisions that still apply
 
@@ -82,10 +99,21 @@ Options not yet answered:
 
 Current recommendation when the session resumes: **5**.
 
-## Implementation gaps created by these decisions
+## Implementation status and remaining gaps
 
-The current team-selection backend must be revised because it presently models a 20-player gameweek as **11 starters + 4 bench + 5 reserves**. The target is **11 starters + 5 substitutes + 4 reserves**, with one goalkeeper substitute and four ordered outfield substitutes.
+Implemented in the current refinement slice:
 
-Future-gameweek persistence also needs an explicit contract so selections can be saved independently per gameweek, inherited only as the initial state of an unsaved future gameweek, and flagged when later squad changes invalidate them.
+- 20-player validation uses **11 starters + 5 substitutes + 4 reserves**;
+- legal Starting XI formation limits are enforced server-side;
+- the bench requires one goalkeeper plus four outfield substitutes ordered 1–4;
+- captain and vice-captain must be different Starting XI players;
+- the staging mock-data workflow creates a valid gameweek-one selection for all eight teams;
+- Squad Pitch and List views expose Starting XI, Bench and Reserves as separate roles.
 
-The combined page design should not be implemented until the remaining interaction questions have been resolved or a bounded prototype proves the layout direction.
+Still outstanding:
+
+- future-gameweek persistence needs an explicit contract so selections can be saved independently per gameweek, inherited only as the initial state of an unsaved future gameweek, and flagged when later squad changes invalidate them;
+- the combined Squad page still needs the final editing interaction for moving players among Starting XI, Bench and Reserves;
+- chip presentation and combined Save Team confirmation remain unresolved from the grilling session.
+
+Do not reopen settled lineup-count or legal-formation rules unless implementation evidence shows a genuine rules mismatch.

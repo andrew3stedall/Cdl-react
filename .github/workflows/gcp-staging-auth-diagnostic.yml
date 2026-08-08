@@ -25,6 +25,11 @@ jobs:
       SERVICE_NAME: cdl-react-staging-api
       GH_TOKEN: ${{ github.token }}
     steps:
+      - name: Record diagnostic start
+        run: |
+          gh api "repos/${GITHUB_REPOSITORY}/issues/96/comments" \
+            -f body="Staging auth diagnostic started: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+
       - uses: actions/checkout@v4
 
       - name: Authenticate to Google Cloud

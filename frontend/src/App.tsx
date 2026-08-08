@@ -12,15 +12,16 @@ import type { RuleSection, SessionState } from './contracts';
 import type { DashboardClient } from './dashboard-api';
 import { FixtureDifficultyPage } from './FixtureDifficultyPage';
 import type { FdrClient } from './fdr-api';
+import { GlobalNavigation } from './GlobalNavigation';
 import { LeaguePage } from './LeaguePage';
 import type { LeagueClient } from './league-api';
 import { LoginPage } from './LoginPage';
 import { ModernisationCheckpointPage } from './ModernisationCheckpointPage';
+import { isSquadRoute } from './navigation';
 import type { PreferenceClient } from './preferences-api';
 import { RulesPage } from './RulesPage';
 import { SquadManagementPage } from './SquadManagementPage';
-import { SquadPage } from './SquadPage';
-import { TeamSelectionPage } from './TeamSelectionPage';
+import { SquadWorkspacePage } from './SquadWorkspacePage';
 import type { TeamSelectionClient } from './team-selection-api';
 import { getDefaultThemePreset } from './theme-presets';
 import { ThemePresetProvider } from './theme-preset-provider';
@@ -358,40 +359,39 @@ export function App({
     routeContent = <FixtureDifficultyPage fdrClient={fdrClient} />;
   }
 
-  if (currentPath.startsWith('/squad-management')) {
-    routeContent = <SquadPage preset={preset} />;
-  }
-
   if (currentPath.startsWith('/scouting')) {
     routeContent = <SquadManagementPage preset={preset} />;
   }
 
-  if (currentPath.startsWith('/team-selection')) {
-    routeContent = <TeamSelectionPage preset={preset} teamSelectionClient={teamSelectionClient} />;
+  if (isSquadRoute(currentPath)) {
+    routeContent = <SquadWorkspacePage preset={preset} teamSelectionClient={teamSelectionClient} />;
   }
 
   return (
     <ThemePresetProvider preferenceClient={preferenceClient}>
-      <AppShell
-        currentPath={currentPath}
-        isMobileNavigationOpen={isMobileNavigationOpen}
-        refreshCount={refreshCount}
-        onCloseMobileNavigation={() => {
-          setMobileNavigationOpen(false);
-        }}
-        onNavigate={handleNavigate}
-        onOpenMobileNavigation={() => {
-          setMobileNavigationOpen(true);
-        }}
-        onRefresh={() => {
-          setRefreshCount((count) => count + 1);
-          void refreshActiveSession();
-        }}
-        onSignOut={() => void handleSignOut()}
-        session={activeSession}
-      >
-        {routeContent}
-      </AppShell>
+      <>
+        <AppShell
+          currentPath={currentPath}
+          isMobileNavigationOpen={isMobileNavigationOpen}
+          refreshCount={refreshCount}
+          onCloseMobileNavigation={() => {
+            setMobileNavigationOpen(false);
+          }}
+          onNavigate={handleNavigate}
+          onOpenMobileNavigation={() => {
+            setMobileNavigationOpen(true);
+          }}
+          onRefresh={() => {
+            setRefreshCount((count) => count + 1);
+            void refreshActiveSession();
+          }}
+          onSignOut={() => void handleSignOut()}
+          session={activeSession}
+        >
+          {routeContent}
+        </AppShell>
+        <GlobalNavigation currentPath={currentPath} onNavigate={handleNavigate} />
+      </>
     </ThemePresetProvider>
   );
 }

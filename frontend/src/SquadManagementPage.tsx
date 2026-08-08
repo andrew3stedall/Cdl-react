@@ -40,7 +40,14 @@ interface PlayerView {
   team: string;
   status: 'owned' | 'available' | 'interested' | 'trade_target';
   points: number;
+  form: number;
   value: number;
+  selectedByPercent: number;
+  expectedGoals: number;
+  expectedAssists: number;
+  availabilityStatus?: string | null;
+  availabilityNews: string;
+  chanceOfPlayingNextRound?: number | null;
   slot?: TeamSelectionSlot;
   slotOrder?: number;
   captain?: boolean;
@@ -54,7 +61,14 @@ interface PlayerApiResponse {
   epl_team: { name: string; short_name?: string | null };
   status: PlayerView['status'];
   points: number;
+  form?: number;
   value: number;
+  selected_by_percent?: number;
+  expected_goals?: number;
+  expected_assists?: number;
+  availability_status?: string | null;
+  availability_news?: string;
+  chance_of_playing_next_round?: number | null;
 }
 
 interface SquadSummaryApiResponse {
@@ -76,6 +90,27 @@ interface TradeApiResponse {
   id: string;
   status: string;
   assets: Array<{ player: { display_name: string } }>;
+}
+
+interface PlayerHistoryRow {
+  gameweek: number;
+  total_points: number;
+  minutes: number;
+  expected_goals: number;
+  expected_assists: number;
+}
+
+interface PlayerUpcomingFixture {
+  gameweek?: number | null;
+  difficulty: number;
+  is_home: boolean;
+}
+
+interface PlayerHistoryApiResponse {
+  player_id: string;
+  fetched_at: string;
+  history: PlayerHistoryRow[];
+  fixtures: PlayerUpcomingFixture[];
 }
 
 const positionOptions: Array<{ label: string; value: PositionFilter }> = [
@@ -104,7 +139,14 @@ function mapPlayer(player: PlayerApiResponse): PlayerView {
     team: player.epl_team.short_name ?? player.epl_team.name,
     status: player.status,
     points: player.points,
+    form: player.form ?? 0,
     value: player.value,
+    selectedByPercent: player.selected_by_percent ?? 0,
+    expectedGoals: player.expected_goals ?? 0,
+    expectedAssists: player.expected_assists ?? 0,
+    availabilityStatus: player.availability_status,
+    availabilityNews: player.availability_news ?? '',
+    chanceOfPlayingNextRound: player.chance_of_playing_next_round,
   };
 }
 
@@ -125,7 +167,14 @@ function mergeLineupPlayers(
       team: existing?.team ?? player.team,
       status: existing?.status ?? 'owned',
       points: existing?.points ?? 0,
+      form: existing?.form ?? 0,
       value: existing?.value ?? 0,
+      selectedByPercent: existing?.selectedByPercent ?? 0,
+      expectedGoals: existing?.expectedGoals ?? 0,
+      expectedAssists: existing?.expectedAssists ?? 0,
+      availabilityStatus: existing?.availabilityStatus,
+      availabilityNews: existing?.availabilityNews ?? '',
+      chanceOfPlayingNextRound: existing?.chanceOfPlayingNextRound,
       slot: player.slot,
       slotOrder: player.slotOrder,
       captain: player.captain,
@@ -152,6 +201,8 @@ export function SquadManagementPage({ preset }: SquadManagementPageProps) {
   const [gameweek, setGameweek] = useState('Gameweek 1');
   const [lineupAvailable, setLineupAvailable] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerView | null>(null);
+  const [playerHistory, setPlayerHistory] = useState<PlayerHistoryApiResponse | null>(null);
+  const [playerHistoryStatus, setPlayerHistoryStatus] = useState('');
   const [status, setStatus] = useState('Loading squad data.');
   const drawerRef = useRef<HTMLElement | null>(null);
 
@@ -199,14 +250,40 @@ export function SquadManagementPage({ preset }: SquadManagementPageProps) {
   }, []);
 
   useEffect(() => {
-    if (!selectedPlayer) return;
+    if (!selectedPlayer) {
+      setPlayerHistory(null);
+      setPlayerHistoryStatus('');
+      return;
+    }
+
+    let cancelled = false;
+    setPlayerHistory(null);
+    setPlayerHistoryStatus('Loading official FPL history…');
+    void fetch(`/api/fpl/players/${encodeURIComponent(selectedPlayer.id)}/history`, {
+      credentials: 'include',
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error('Official FPL history is currently unavailable.');
+        return response.json() as Promise<PlayerHistoryApiResponse>;
+      })
+      .then((history) => {
+        if (cancelled) return;
+        setPlayerHistory(history);
+        setPlayerHistoryStatus('');
+      })
+      .catch((error: Error) => {
+        if (!cancelled) setPlayerHistoryStatus(error.message);
+      });
 
     drawerRef.current?.focus();
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setSelectedPlayer(null);
     };
     window.addEventListener('keydown', closeOnEscape);
-    return () => window.removeEventListener('keydown', closeOnEscape);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('keydown', closeOnEscape);
+    };
   }, [selectedPlayer]);
 
   const interestedPlayerIds = useMemo(
@@ -480,13 +557,45 @@ export function SquadManagementPage({ preset }: SquadManagementPageProps) {
 
             <section aria-label="Player metrics" className="squad-drawer-metrics">
               <div><span>Points</span><strong>{selectedPlayer.points}</strong></div>
+              <div><span>Form</span><strong>{selectedPlayer.form.toFixed(1)}</strong></div>
               <div><span>Value</span><strong>£{selectedPlayer.value.toFixed(1)}m</strong></div>
-              <div><span>Position</span><strong>{selectedPlayer.position}</strong></div>
+              <div><span>Selected</span><strong>{selectedPlayer.selectedByPercent.toFixed(1)}%</strong></div>
+              <div><span>xG</span><strong>{selectedPlayer.expectedGoals.toFixed(2)}</strong></div>
+              <div><span>xA</span><strong>{selectedPlayer.expectedAssists.toFixed(2)}</strong></div>
             </section>
 
             <section className="squad-drawer-context">
-              <h3>Availability</h3>
-              <p>{availabilityDescription(selectedPlayer.status)}</p>
+              <h3>FPL availability</h3>
+              <p>{fplAvailabilityDescription(selectedPlayer)}</p>
+            </section>
+
+            <section className="squad-drawer-context">
+              <h3>FPL gameweek history</h3>
+              {playerHistoryStatus ? <p role="status">{playerHistoryStatus}</p> : null}
+              {playerHistory?.history.length ? (
+                <div aria-label="Recent FPL gameweek history" className="squad-table-scroll" role="region" tabIndex={0}>
+                  <table className="squad-table">
+                    <thead><tr><th>GW</th><th>Pts</th><th>Min</th><th>xG</th><th>xA</th></tr></thead>
+                    <tbody>
+                      {playerHistory.history.slice(-6).reverse().map((row) => (
+                        <tr key={row.gameweek}>
+                          <td>{row.gameweek}</td>
+                          <td><strong>{row.total_points}</strong></td>
+                          <td>{row.minutes}</td>
+                          <td>{row.expected_goals.toFixed(2)}</td>
+                          <td>{row.expected_assists.toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : null}
+              {playerHistory && playerHistory.history.length === 0 ? <p>No completed FPL gameweek history yet.</p> : null}
+              {playerHistory?.fixtures[0] ? (
+                <p>
+                  Next fixture: {playerHistory.fixtures[0].gameweek ? `GW${playerHistory.fixtures[0].gameweek}` : 'TBC'} · FDR {playerHistory.fixtures[0].difficulty} · {playerHistory.fixtures[0].is_home ? 'Home' : 'Away'}
+                </p>
+              ) : null}
             </section>
 
             <footer className="squad-drawer-actions">
@@ -575,7 +684,7 @@ function PitchPlayerCard({
       <small>{player.team}</small>
       <span className="pitch-player-metrics">
         <span><strong>{player.points}</strong> pts</span>
-        <span>£{player.value.toFixed(1)}m</span>
+        <span>Form {player.form.toFixed(1)}</span>
       </span>
       {player.captain ? <span className="pitch-captain">C</span> : null}
       {player.viceCaptain ? <span className="pitch-captain">VC</span> : null}
@@ -651,7 +760,7 @@ function PlayerTable({
     <div aria-label="Players table" className="squad-table-scroll" role="region" tabIndex={0}>
       <table className="squad-table">
         <thead>
-          <tr><th>Player</th><th>Position</th><th>Club</th><th>Points</th><th>Value</th><th>Status</th><th><span className="sr-only">Actions</span></th></tr>
+          <tr><th>Player</th><th>Position</th><th>Club</th><th>Points</th><th>Form</th><th>Value</th><th>Status</th><th><span className="sr-only">Actions</span></th></tr>
         </thead>
         <tbody>
           {players.map((player) => {
@@ -668,6 +777,7 @@ function PlayerTable({
                 <td><span className={`squad-position-badge position-${player.position.toLowerCase()}`}>{player.position}</span></td>
                 <td>{player.team}</td>
                 <td><strong>{player.points}</strong></td>
+                <td>{player.form.toFixed(1)}</td>
                 <td>£{player.value.toFixed(1)}m</td>
                 <td><StatusBadge status={status} /></td>
                 <td className="squad-row-action">
@@ -721,9 +831,11 @@ function formatStatus(status: PlayerView['status']): string {
   return 'Available';
 }
 
-function availabilityDescription(status: PlayerView['status']): string {
-  if (status === 'owned') return 'This player is currently assigned to your active squad.';
-  if (status === 'trade_target') return 'This player is associated with an active trade target.';
-  if (status === 'interested') return 'You are monitoring this player in your interests list.';
-  return 'This player is currently available for a permitted squad workflow.';
+function fplAvailabilityDescription(player: PlayerView): string {
+  const chance = player.chanceOfPlayingNextRound;
+  const chanceText = chance == null ? '' : ` ${chance}% chance of playing next round.`;
+  if (player.availabilityNews.trim()) return `${player.availabilityNews.trim()}${chanceText}`;
+  if (player.availabilityStatus === 'a') return 'Available according to the latest official FPL data.';
+  if (player.availabilityStatus) return `FPL status: ${player.availabilityStatus}.${chanceText}`;
+  return 'No official FPL availability note is currently published.';
 }

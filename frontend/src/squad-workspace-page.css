@@ -20,6 +20,10 @@
   gap: 0.35rem;
 }
 
+.team-selection-panel > header .eyebrow {
+  color: var(--cdl-foreground);
+}
+
 .team-selection-panel > header h2,
 .team-selection-panel > header p {
   margin: 0;

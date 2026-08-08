@@ -166,9 +166,13 @@ def _player_history_response(
         raise FplApiError("Cached FPL element-summary payload must be an object.")
     raw_history = payload.get("history")
     raw_fixtures = payload.get("fixtures")
-    if not isinstance(raw_history, list) or not all(isinstance(row, Mapping) for row in raw_history):
+    if not isinstance(raw_history, list) or not all(
+        isinstance(row, Mapping) for row in raw_history
+    ):
         raise FplApiError("FPL element-summary history must be a list of objects.")
-    if not isinstance(raw_fixtures, list) or not all(isinstance(row, Mapping) for row in raw_fixtures):
+    if not isinstance(raw_fixtures, list) or not all(
+        isinstance(row, Mapping) for row in raw_fixtures
+    ):
         raise FplApiError("FPL element-summary fixtures must be a list of objects.")
 
     history = [

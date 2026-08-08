@@ -26,7 +26,14 @@ beforeEach(() => {
                 epl_team: { name: 'Manchester City', short_name: 'MCI' },
                 status: 'owned',
                 points: 52,
+                form: 7.1,
                 value: 14.0,
+                selected_by_percent: 58.4,
+                expected_goals: 8.21,
+                expected_assists: 1.34,
+                availability_status: 'a',
+                availability_news: '',
+                chance_of_playing_next_round: 100,
               },
               {
                 id: 'fpl-235',
@@ -35,7 +42,13 @@ beforeEach(() => {
                 epl_team: { name: 'Everton', short_name: 'EVE' },
                 status: 'owned',
                 points: 31,
+                form: 4.2,
                 value: 5.0,
+                selected_by_percent: 14.2,
+                expected_goals: 0,
+                expected_assists: 0,
+                availability_status: 'a',
+                availability_news: '',
               },
             ],
           }),
@@ -93,7 +106,14 @@ beforeEach(() => {
                 epl_team: { name: 'Manchester City', short_name: 'MCI' },
                 status: 'owned',
                 points: 52,
+                form: 7.1,
                 value: 14.0,
+                selected_by_percent: 58.4,
+                expected_goals: 8.21,
+                expected_assists: 1.34,
+                availability_status: 'a',
+                availability_news: '',
+                chance_of_playing_next_round: 100,
               },
               {
                 id: 'fpl-235',
@@ -102,6 +122,7 @@ beforeEach(() => {
                 epl_team: { name: 'Everton', short_name: 'EVE' },
                 status: 'owned',
                 points: 31,
+                form: 4.2,
                 value: 5.0,
               },
               {
@@ -111,9 +132,55 @@ beforeEach(() => {
                 epl_team: { name: 'Chelsea', short_name: 'CHE' },
                 status: 'available',
                 points: 48,
+                form: 6.8,
                 value: 10.5,
+                selected_by_percent: 45.1,
+                expected_goals: 5.7,
+                expected_assists: 6.1,
               },
             ],
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        );
+      }
+      if (path === '/api/fpl/players/fpl-411/history') {
+        return new Response(
+          JSON.stringify({
+            player_id: 'fpl-411',
+            fetched_at: '2026-08-09T04:30:00Z',
+            response_sha256: 'a'.repeat(64),
+            history: [
+              {
+                gameweek: 1,
+                fixture_id: 100,
+                opponent_team_id: 2,
+                total_points: 8,
+                minutes: 90,
+                expected_goals: 0.84,
+                expected_assists: 0.12,
+              },
+            ],
+            fixtures: [
+              {
+                fixture_id: 101,
+                gameweek: 2,
+                opponent_team_id: 3,
+                difficulty: 3,
+                is_home: false,
+              },
+            ],
+          }),
+          { status: 200, headers: { 'Content-Type': 'application/json' } },
+        );
+      }
+      if (path.startsWith('/api/fpl/players/')) {
+        return new Response(
+          JSON.stringify({
+            player_id: path.split('/')[4],
+            fetched_at: '2026-08-09T04:30:00Z',
+            response_sha256: 'b'.repeat(64),
+            history: [],
+            fixtures: [],
           }),
           { status: 200, headers: { 'Content-Type': 'application/json' } },
         );
@@ -173,6 +240,7 @@ describe('SquadManagementPage', () => {
     expect(container.textContent).toContain('Exeter Gently');
     expect(container.querySelector('[aria-label="Squad pitch"]')).not.toBeNull();
     expect(container.textContent).toContain('Haaland');
+    expect(container.textContent).toContain('Form 7.1');
     expect(container.querySelector('[aria-label="Bench"]')?.textContent).toContain('Pickford');
     expect(container.querySelector('button[aria-pressed="true"]')?.textContent).toContain('Pitch');
     expect(container.textContent).not.toContain('Palmer');
@@ -221,7 +289,7 @@ describe('SquadManagementPage', () => {
     expect(container.querySelector('section[aria-label="Interests and proposed trades"]')?.textContent).toContain('Palmer');
   });
 
-  test('opens player detail in a contextual drawer', async () => {
+  test('opens player detail with official metrics, availability, and cached history', async () => {
     const { container } = await renderPage();
 
     const pitchPlayer = container.querySelector(
@@ -230,11 +298,18 @@ describe('SquadManagementPage', () => {
     await act(async () => {
       pitchPlayer.click();
       await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
     });
 
     const drawer = container.querySelector('[role="dialog"]');
     expect(drawer?.textContent).toContain('Haaland');
-    expect(drawer?.textContent).toContain('Availability');
+    expect(drawer?.textContent).toContain('FPL availability');
+    expect(drawer?.textContent).toContain('58.4%');
+    expect(drawer?.textContent).toContain('8.21');
+    expect(drawer?.textContent).toContain('FPL gameweek history');
+    expect(drawer?.querySelector('[aria-label="Recent FPL gameweek history"]')?.textContent).toContain('0.84');
+    expect(drawer?.textContent).toContain('Next fixture: GW2 · FDR 3 · Away');
     expect(container.textContent).not.toContain('Propose sample trade');
   });
 });

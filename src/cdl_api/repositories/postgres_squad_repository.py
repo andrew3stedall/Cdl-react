@@ -4,7 +4,7 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from sqlalchemy import func, insert, select, update
+from sqlalchemy import exists, func, insert, literal, or_, select, update
 from sqlalchemy.orm import Session
 
 from cdl_api.contracts.domain import TeamSummary
@@ -57,6 +57,7 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
 
     def _database_players(self) -> list[PlayerDetail]:
         active_ownerships = squad_ownerships_table.alias("active_ownerships")
+        canonical_players = fpl_players_table.alias("canonical_players")
         latest_values = (
             select(
                 fpl_player_values_table.c.player_id,
@@ -64,6 +65,14 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
             )
             .group_by(fpl_player_values_table.c.player_id)
             .subquery("latest_player_values")
+        )
+        legacy_without_canonical_counterpart = ~exists(
+            select(1)
+            .select_from(canonical_players)
+            .where(
+                canonical_players.c.id
+                == literal("fpl-") + fpl_players_table.c.id
+            )
         )
         with self._session_factory() as session:
             rows = list(
@@ -120,7 +129,12 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
                         draft_teams_table,
                         active_ownerships.c.draft_team_id == draft_teams_table.c.id,
                     )
-                    .where(fpl_players_table.c.id.like("fpl-%"))
+                    .where(
+                        or_(
+                            fpl_players_table.c.id.like("fpl-%"),
+                            legacy_without_canonical_counterpart,
+                        )
+                    )
                     .order_by(active_ownerships.c.id, fpl_players_table.c.web_name)
                 ).mappings()
             )

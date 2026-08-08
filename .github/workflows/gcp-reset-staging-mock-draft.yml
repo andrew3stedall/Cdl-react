@@ -1,0 +1,122 @@
+name: GCP Reset Staging Mock Draft
+
+on:
+  workflow_run:
+    workflows:
+      - GCP Auto Rollout Staging
+    types:
+      - completed
+
+permissions:
+  contents: read
+  id-token: write
+  issues: write
+
+concurrency:
+  group: gcp-staging-database-operation
+  cancel-in-progress: false
+
+jobs:
+  execute:
+    name: Reset staging squads with constrained mock draft
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    environment: staging
+
+    env:
+      REGION: australia-southeast1
+      EXPECTED_PROJECT_ID: cdl-react-staging-ast
+      PROJECT_ID: ${{ vars.GCP_STAGING_PROJECT_ID }}
+      WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_STAGING_WORKLOAD_IDENTITY_PROVIDER }}
+      DEPLOY_SERVICE_ACCOUNT: ${{ vars.GCP_STAGING_DEPLOY_SERVICE_ACCOUNT }}
+      SYNTHETIC_SEED_JOB: cdl-react-staging-synthetic-seed
+
+    steps:
+      - name: Checkout rolled-out commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+
+      - name: Confirm this commit explicitly requests a draft reset
+        id: request
+        run: |
+          set -euo pipefail
+          commit_message="$(git log -1 --pretty=%B)"
+          if grep -Fq '[reset-staging-draft]' <<< "${commit_message}"; then
+            echo "requested=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "requested=false" >> "${GITHUB_OUTPUT}"
+            echo "No [reset-staging-draft] marker; staging squads will not be mutated."
+          fi
+
+      - name: Validate staging identity
+        if: steps.request.outputs.requested == 'true'
+        run: |
+          set -euo pipefail
+          test "${PROJECT_ID}" = "${EXPECTED_PROJECT_ID}"
+          test -n "${WORKLOAD_IDENTITY_PROVIDER}"
+          test -n "${DEPLOY_SERVICE_ACCOUNT}"
+
+      - name: Authenticate to Google Cloud
+        if: steps.request.outputs.requested == 'true'
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.DEPLOY_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        if: steps.request.outputs.requested == 'true'
+        uses: google-github-actions/setup-gcloud@v3
+        with:
+          version: ">= 416.0.0"
+
+      - name: Verify Terraform-managed immutable seed job
+        if: steps.request.outputs.requested == 'true'
+        run: |
+          set -euo pipefail
+          image="$(
+            gcloud run jobs describe "${SYNTHETIC_SEED_JOB}" \
+              --project "${PROJECT_ID}" \
+              --region "${REGION}" \
+              --format='value(spec.template.spec.template.spec.containers[0].image)'
+          )"
+          image_pattern="^${REGION}-docker\\.pkg\\.dev/${PROJECT_ID}/cdl-react-backend/cdl-react-app@sha256:[0-9a-f]{64}$"
+          if [[ ! "${image}" =~ ${image_pattern} ]]; then
+            echo "The staging seed job is not using an immutable Terraform-managed image." >&2
+            exit 1
+          fi
+          echo "Seed job image: ${image}"
+
+      - name: Empty and repopulate all staging squads
+        if: steps.request.outputs.requested == 'true'
+        run: |
+          set -euo pipefail
+          gcloud run jobs execute "${SYNTHETIC_SEED_JOB}" \
+            --project "${PROJECT_ID}" \
+            --region "${REGION}" \
+            --wait
+
+      - name: Record successful constrained draft reset
+        if: steps.request.outputs.requested == 'true' && success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          source_sha="${{ github.event.workflow_run.head_sha }}"
+          body="Staging squads were atomically cleared and repopulated by the position-constrained mock draft for commit \`${source_sha}\`. The seed job validates 8 squads × 20 unique players against GKP 2-3, DEF 4-10, MID 5-10, FWD 2-4 before committing. Evidence: ${run_url}"
+          gh api "repos/${GITHUB_REPOSITORY}/issues/96/comments" -f body="${body}"
+
+      - name: Record failed constrained draft reset
+        if: steps.request.outputs.requested == 'true' && failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          source_sha="${{ github.event.workflow_run.head_sha }}"
+          body="Position-constrained staging mock draft failed for commit \`${source_sha}\`; transaction safety prevents a partial draft from committing. Evidence: ${run_url}"
+          gh api "repos/${GITHUB_REPOSITORY}/issues/96/comments" -f body="${body}" || true

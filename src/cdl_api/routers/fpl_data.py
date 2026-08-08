@@ -1,9 +1,10 @@
-"""Authenticated routes for official FPL cache refresh and status."""
+"""Authenticated routes for official FPL cache refresh, status, and player history."""
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
 from cdl_api.contracts.fpl_data import (
     FplCacheStatusResponse,
+    FplPlayerHistoryResponse,
     FplRefreshRequest,
     FplRefreshResponse,
 )
@@ -52,6 +53,21 @@ def fpl_status(
     service: FplDataService = Depends(get_fpl_service),
 ) -> FplCacheStatusResponse:
     return service.status()
+
+
+@router.get("/players/{player_id}/history", response_model=FplPlayerHistoryResponse)
+def fpl_player_history(
+    player_id: str,
+    _: SessionUser = Depends(require_authenticated_session),
+    service: FplDataService = Depends(get_fpl_service),
+) -> FplPlayerHistoryResponse:
+    try:
+        return service.player_history(player_id)
+    except (FplApiError, InvalidFplPayloadError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=str(exc),
+        ) from exc
 
 
 @router.post("/refresh", response_model=FplRefreshResponse)

@@ -30,6 +30,7 @@ import {
   type TeamSelectionSlot,
 } from './team-selection-api';
 import './squad-page.css';
+import './squad-lineup-groups.css';
 
 interface SquadPageProps {
   preset: ThemePreset;
@@ -234,7 +235,8 @@ export function SquadPage({ preset }: SquadPageProps) {
         ]);
         return { summary, scouting, persistedTrades, lineup };
       })
-      .then(({ summary, scouting, persistedTrades, lineup }) => {
+      .then(({ summary, scouting, persistedInterests: _persistedInterests, persistedTrades, lineup }: never) => {
+        void _persistedInterests;
         const roster = summary.players.map(mapPlayer);
         const hasLineup = Boolean(lineup?.players.length);
         setSquadPlayers(mergeLineupPlayers(roster, lineup?.players ?? null));
@@ -289,7 +291,7 @@ export function SquadPage({ preset }: SquadPageProps) {
     const filtered = visibleSquadPlayers
       .filter((player) => positionFilter === 'all' || player.position === positionFilter)
       .filter((player) => matchesQuery(player, query));
-    return [...filtered].sort((left, right) => compareSortMetric(left, right, sortKey));
+    return [...filtered].sort((left, right) => compareListPlayers(left, right, sortKey));
   }, [positionFilter, query, sortKey, visibleSquadPlayers]);
   const positionCounts = useMemo(() => ({
     all: visibleSquadPlayers.length,
@@ -581,7 +583,8 @@ function SummaryMetric({ dots = false, label, placeholder = false, value }: { do
 
 function SquadPitch({ players, onSelect }: { players: PlayerView[]; onSelect: (player: PlayerView) => void }) {
   const starters = players.filter((player) => player.slot === 'starter').sort(sortBySlot);
-  const bench = players.filter((player) => player.slot === 'bench' || player.slot === 'reserve').sort(sortBySlot);
+  const bench = players.filter((player) => player.slot === 'bench').sort(sortBySlot);
+  const reserves = players.filter((player) => player.slot === 'reserve').sort(sortBySlot);
   const rows = pitchPositionOrder
     .map((position) => ({ position, players: starters.filter((player) => player.position === position) }))
     .filter((row) => row.players.length > 0);
@@ -603,8 +606,12 @@ function SquadPitch({ players, onSelect }: { players: PlayerView[]; onSelect: (p
         </div>
       </div>
       <section aria-label="Bench" className="squad-page__bench">
-        <header><h3>Bench</h3><span>{bench.length} players</span></header>
-        <div>{bench.map((player, index) => <PitchCard benchOrder={index} compact key={player.id} onSelect={onSelect} player={player} />)}</div>
+        <header><h3>Bench</h3><span>1 GK + 4 ordered substitutes</span></header>
+        <div>{bench.map((player) => <PitchCard benchOrder={player.slotOrder} compact key={player.id} onSelect={onSelect} player={player} />)}</div>
+      </section>
+      <section aria-label="Reserves" className="squad-page__reserves">
+        <header><h3>Reserves</h3><span>{reserves.length} players</span></header>
+        <div>{reserves.map((player) => <PitchCard compact key={player.id} onSelect={onSelect} player={player} />)}</div>
       </section>
     </section>
   );
@@ -650,6 +657,7 @@ function SquadList({
   query: string;
   sortKey: SortKey;
 }) {
+  const groups = lineupGroups(players);
   return (
     <div className="squad-page__list">
       <div className="squad-page__list-controls">
@@ -675,20 +683,24 @@ function SquadList({
 
       <div aria-label="Squad players table" className="squad-page__table-scroll" role="region" tabIndex={0}>
         <table>
-          <thead><tr><th>Player</th><th className="sorted">Tot Pts <ArrowDown size={12} /></th><th>Form</th><th>xG</th><th>xA</th><th>Availability</th><th><span className="sr-only">Actions</span></th></tr></thead>
-          <tbody>
-            {players.map((player) => (
-              <tr key={player.id}>
-                <td><button className="squad-page__player-link" onClick={() => onSelect(player)} type="button"><PlayerIdentity player={player} /></button></td>
-                <td><strong>{player.points}</strong></td>
-                <td className="metric-accent">{formatMetric(player.form)}</td>
-                <td><OptionalValue value={player.xg} /></td>
-                <td><OptionalValue value={player.xa} /></td>
-                <td><AvailabilityLabel player={player} /></td>
-                <td><button aria-label={`View ${player.displayName} details`} className="squad-page__icon-button" onClick={() => onSelect(player)} type="button"><ChevronRight size={18} /></button></td>
-              </tr>
-            ))}
-          </tbody>
+          <thead><tr><th>Player</th><th>Role</th><th className="sorted">Tot Pts <ArrowDown size={12} /></th><th>Form</th><th>xG</th><th>xA</th><th>Availability</th><th><span className="sr-only">Actions</span></th></tr></thead>
+          {groups.map((group) => (
+            <tbody className={`squad-page__lineup-group ${group.slot}`} key={group.slot}>
+              <tr className="squad-page__lineup-group-heading"><th colSpan={8}><span>{group.label}</span><small>{group.description}</small></th></tr>
+              {group.players.map((player) => (
+                <tr className={`squad-page__player-row position-${player.position.toLowerCase()}`} key={player.id}>
+                  <td><button className="squad-page__player-link" onClick={() => onSelect(player)} type="button"><PlayerIdentity player={player} /></button></td>
+                  <td><span className={`squad-page__lineup-role ${player.slot ?? 'unassigned'}`}>{lineupRoleLabel(player)}</span></td>
+                  <td><strong>{player.points}</strong></td>
+                  <td className="metric-accent">{formatMetric(player.form)}</td>
+                  <td><OptionalValue value={player.xg} /></td>
+                  <td><OptionalValue value={player.xa} /></td>
+                  <td><AvailabilityLabel player={player} /></td>
+                  <td><button aria-label={`View ${player.displayName} details`} className="squad-page__icon-button" onClick={() => onSelect(player)} type="button"><ChevronRight size={18} /></button></td>
+                </tr>
+              ))}
+            </tbody>
+          ))}
         </table>
       </div>
     </div>
@@ -703,7 +715,7 @@ function DrawerHeader({ onClose, player, title }: { onClose: () => void; player?
   return (
     <header className="squad-page__drawer-header">
       {player ? <TeamShirt large team={player.team} /> : <span className="squad-page__brand-mark"><Shield size={22} /></span>}
-      <div><h2>{title}</h2>{player ? <p><span className="squad-page__position">{player.position}</span> {player.team} · <span className={player.nextOpponent ? '' : 'is-placeholder'}>{player.nextOpponent ?? 'Next fixture —'}</span></p> : null}</div>
+      <div><h2>{title}</h2>{player ? <p><span className={`squad-page__position position-${player.position.toLowerCase()}`}>{player.position}</span> {player.team} · <span className={player.nextOpponent ? '' : 'is-placeholder'}>{player.nextOpponent ?? 'Next fixture —'}</span></p> : null}</div>
       <button aria-label="Close drawer" className="squad-page__icon-button" onClick={onClose} type="button"><X size={19} /></button>
     </header>
   );
@@ -855,7 +867,7 @@ function PlayerIdentity({ large = false, player }: { large?: boolean; player: Pl
   return (
     <span className={`squad-page__identity ${large ? 'large' : ''}`}>
       <TeamShirt large={large} team={player.team} />
-      <span><strong>{player.displayName}</strong><small><span className="squad-page__position">{player.position}</span> {player.team} · <span className={player.nextOpponent ? '' : 'is-placeholder'}>{player.nextOpponent ?? 'Next —'}</span></small></span>
+      <span><strong>{player.displayName}</strong><small><span className={`squad-page__position position-${player.position.toLowerCase()}`}>{player.position}</span> {player.team} · <span className={player.nextOpponent ? '' : 'is-placeholder'}>{player.nextOpponent ?? 'Next —'}</span></small></span>
     </span>
   );
 }
@@ -926,6 +938,39 @@ function compareSortMetric(left: PlayerView, right: PlayerView, key: SortKey): n
   if (leftValue === null) return 1;
   if (rightValue === null) return -1;
   return rightValue - leftValue || left.displayName.localeCompare(right.displayName);
+}
+
+function compareListPlayers(left: PlayerView, right: PlayerView, key: SortKey): number {
+  const slotOrder: Record<TeamSelectionSlot, number> = { starter: 0, bench: 1, reserve: 2 };
+  const leftSlot = left.slot ?? 'reserve';
+  const rightSlot = right.slot ?? 'reserve';
+  const slotDifference = slotOrder[leftSlot] - slotOrder[rightSlot];
+  if (slotDifference !== 0) return slotDifference;
+  if (leftSlot === 'bench') return sortBySlot(left, right);
+  const positionDifference = pitchPositionOrder.indexOf(left.position) - pitchPositionOrder.indexOf(right.position);
+  if (positionDifference !== 0) return positionDifference;
+  return compareSortMetric(left, right, key);
+}
+
+function lineupGroups(players: PlayerView[]) {
+  const definitions: Array<{ slot: TeamSelectionSlot; label: string; description: string }> = [
+    { slot: 'starter', label: 'Starting XI', description: 'Legal matchday formation' },
+    { slot: 'bench', label: 'Bench', description: '1 goalkeeper + outfield substitutes 1–4' },
+    { slot: 'reserve', label: 'Reserves', description: 'Not in the matchday squad' },
+  ];
+  return definitions
+    .map((definition) => ({
+      ...definition,
+      players: players.filter((player) => (player.slot ?? 'reserve') === definition.slot),
+    }))
+    .filter((group) => group.players.length > 0);
+}
+
+function lineupRoleLabel(player: PlayerView): string {
+  if (player.slot === 'starter') return 'Starting XI';
+  if (player.slot === 'bench' && player.position === 'GKP') return 'GK sub';
+  if (player.slot === 'bench') return `Sub ${player.slotOrder ?? '—'}`;
+  return 'Reserve';
 }
 
 function sortBySlot(left: PlayerView, right: PlayerView): number {

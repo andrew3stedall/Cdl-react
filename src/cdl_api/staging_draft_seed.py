@@ -297,9 +297,9 @@ def draft_board() -> tuple[DraftBoardPlayer, ...]:
         raise ValueError("The staging draft pool must contain 163 unique players.")
     if [player.rank for player in players] != list(range(1, 164)):
         raise ValueError("The staging draft pool ranks must be contiguous from 1 to 163.")
-    if Counter(player.position for player in players)["GKP"] < POSITION_LIMITS["GKP"][0] * len(
-        TEAM_IDS
-    ):
+    goalkeeper_count = Counter(player.position for player in players)["GKP"]
+    required_goalkeepers = POSITION_LIMITS["GKP"][0] * len(TEAM_IDS)
+    if goalkeeper_count < required_goalkeepers:
         raise ValueError("The staging draft pool does not contain enough goalkeepers.")
     return players
 
@@ -313,7 +313,10 @@ def snake_team_index(overall_pick: int, manager_count: int = 8) -> int:
 
 
 def _minimum_deficit(counts: Counter[str]) -> int:
-    return sum(max(0, minimum - counts[position]) for position, (minimum, _) in POSITION_LIMITS.items())
+    return sum(
+        max(0, minimum - counts[position])
+        for position, (minimum, _) in POSITION_LIMITS.items()
+    )
 
 
 def _candidate_keeps_draft_feasible(
@@ -324,8 +327,7 @@ def _candidate_keeps_draft_feasible(
     remaining_players: list[DraftBoardPlayer],
     overall_pick: int,
 ) -> bool:
-    candidate_minimum, candidate_maximum = POSITION_LIMITS[candidate.position]
-    del candidate_minimum
+    _, candidate_maximum = POSITION_LIMITS[candidate.position]
     if team_counts[team_index][candidate.position] >= candidate_maximum:
         return False
 
@@ -339,9 +341,7 @@ def _candidate_keeps_draft_feasible(
     positions_left = Counter(player.position for player in remaining_players)
     positions_left[candidate.position] -= 1
     aggregate_minimum_deficit = {
-        position: sum(
-            max(0, minimum - counts[position]) for counts in projected_counts
-        )
+        position: sum(max(0, minimum - counts[position]) for counts in projected_counts)
         for position, (minimum, _) in POSITION_LIMITS.items()
     }
     if any(

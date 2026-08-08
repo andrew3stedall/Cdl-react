@@ -170,7 +170,10 @@ module "cloud_run_api" {
   labels                        = merge(local.common_labels, { component = "api" })
   repository_mode               = var.runtime_repository_mode
   environment_variables = {
-    CDL_SESSION_COOKIE_SECURE = "true"
+    CDL_SESSION_COOKIE_SECURE         = "true"
+    CDL_DATABASE_POOL_SIZE            = "2"
+    CDL_DATABASE_MAX_OVERFLOW         = "1"
+    CDL_DATABASE_POOL_RECYCLE_SECONDS = "300"
   }
   secret_environment_variables = merge({
     CDL_DATABASE_URL = {

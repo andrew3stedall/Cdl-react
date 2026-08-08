@@ -62,6 +62,17 @@ test('maps the backend snake-case session contract for React', async () => {
   vi.unstubAllGlobals();
 });
 
+test('session outage rejects instead of pretending the user is logged out', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+    code: 'server_error',
+    message: 'Session verification is temporarily unavailable. Retry.',
+    details: {},
+  }), { status: 503 })));
+
+  await expect(getSession()).rejects.toThrow('Session verification is temporarily unavailable. Retry.');
+  vi.unstubAllGlobals();
+});
+
 test('expired session cannot access a protected route', () => {
   const session: SessionState = {
     isAuthenticated: true,
@@ -173,5 +184,41 @@ test('posts Google credential with the same-origin sign-in header', async () => 
     headers: expect.objectContaining({ 'X-CDL-Google-Sign-In': '1' }),
   }));
   expect(result.ok).toBe(true);
+  vi.unstubAllGlobals();
+});
+
+test('preserves structured Google database outage response', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+    code: 'server_error',
+    message: 'Google sign-in is temporarily unavailable. Try again.',
+    details: {},
+  }), { status: 503 })));
+
+  const result = await loginWithGoogleCredential('signed-google-id-token');
+
+  expect(result).toEqual({
+    ok: false,
+    error: {
+      code: 'server_error',
+      message: 'Google sign-in is temporarily unavailable. Try again.',
+      details: {},
+    },
+  });
+  vi.unstubAllGlobals();
+});
+
+test('Google infrastructure failure with non-JSON body still returns a safe error', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('upstream failure', { status: 500 })));
+
+  const result = await loginWithGoogleCredential('signed-google-id-token');
+
+  expect(result).toEqual({
+    ok: false,
+    error: {
+      code: 'server_error',
+      message: 'Google sign-in is temporarily unavailable. Try again.',
+      details: {},
+    },
+  });
   vi.unstubAllGlobals();
 });

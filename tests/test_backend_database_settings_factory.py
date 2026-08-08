@@ -2,7 +2,8 @@ from pathlib import Path
 
 import pytest
 
-from cdl_api.database import build_session_factory
+import cdl_api.database as database
+from cdl_api.database import build_engine, build_session_factory
 from cdl_api.repositories.auth import InMemorySessionRepository, InMemoryUserRepository
 from cdl_api.repositories.factory import build_repositories
 from cdl_api.repositories.postgres_auth import (
@@ -28,6 +29,7 @@ def test_settings_expose_database_and_repository_controls() -> None:
         database_url="postgresql+psycopg://example/db",
         database_pool_size=7,
         database_max_overflow=3,
+        database_pool_recycle_seconds=240,
         environment="test",
         repository_mode="memory",
     )
@@ -35,8 +37,46 @@ def test_settings_expose_database_and_repository_controls() -> None:
     assert settings.database_url == "postgresql+psycopg://example/db"
     assert settings.database_pool_size == 7
     assert settings.database_max_overflow == 3
+    assert settings.database_pool_recycle_seconds == 240
     assert settings.environment == "test"
     assert settings.repository_mode == "memory"
+
+
+def test_database_engine_is_shared_and_uses_resilient_pool_options(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    database._build_cached_engine.cache_clear()
+    captured: list[dict[str, object]] = []
+    sentinel = object()
+
+    def fake_create_engine(url: str, **kwargs: object) -> object:
+        captured.append({"url": url, **kwargs})
+        return sentinel
+
+    monkeypatch.setattr(database, "create_engine", fake_create_engine)
+    settings = Settings(
+        repository_mode="postgres",
+        database_url="postgresql+psycopg://shared-pool-test/db",
+        database_pool_size=2,
+        database_max_overflow=1,
+        database_pool_recycle_seconds=300,
+    )
+
+    first = build_engine(settings)
+    second = build_engine(settings)
+
+    assert first is sentinel
+    assert second is sentinel
+    assert captured == [
+        {
+            "url": "postgresql+psycopg://shared-pool-test/db",
+            "pool_size": 2,
+            "max_overflow": 1,
+            "pool_pre_ping": True,
+            "pool_recycle": 300,
+        }
+    ]
+    database._build_cached_engine.cache_clear()
 
 
 def test_memory_repository_mode_builds_current_repositories() -> None:

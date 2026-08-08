@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 DOCKERFILE = Path("Dockerfile")
@@ -42,7 +43,10 @@ def test_staging_runtime_is_postgres_ready_but_disabled_by_default() -> None:
     assert "CDL_GOOGLE_CLIENT_ID" in main
     assert "var.enable_google_sign_in ?" in main
     assert 'variable "enable_google_sign_in"' in variables
-    assert 'CDL_SESSION_COOKIE_SECURE = "true"' in main
+    assert re.search(r'CDL_SESSION_COOKIE_SECURE\s*=\s*"true"', main)
+    assert re.search(r'CDL_DATABASE_POOL_SIZE\s*=\s*"2"', main)
+    assert re.search(r'CDL_DATABASE_MAX_OVERFLOW\s*=\s*"1"', main)
+    assert re.search(r'CDL_DATABASE_POOL_RECYCLE_SECONDS\s*=\s*"300"', main)
     assert "allow_public_invoker = var.allow_public_invoker" in main
     assert "@sha256:[0-9a-f]{64}$" in variables
 

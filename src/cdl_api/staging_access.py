@@ -4,6 +4,7 @@ from collections.abc import Awaitable, Callable
 
 from fastapi import Request, Response, status
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import OperationalError
 
 from cdl_api.contracts.common import ApiErrorResponse, ErrorCode
 from cdl_api.services.auth import AuthenticationService
@@ -44,7 +45,17 @@ def build_staging_access_middleware(
     ) -> Response:
         if staging_access_required(settings, request.url.path):
             session_id = request.cookies.get(settings.session_cookie_name)
-            session = auth_service.get_session(session_id)
+            try:
+                session = auth_service.get_session(session_id)
+            except OperationalError:
+                error = ApiErrorResponse(
+                    code=ErrorCode.SERVER_ERROR,
+                    message="Session verification is temporarily unavailable. Retry.",
+                )
+                return JSONResponse(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    content=error.model_dump(),
+                )
             if not session.is_authenticated:
                 error = ApiErrorResponse(
                     code=ErrorCode.UNAUTHENTICATED,

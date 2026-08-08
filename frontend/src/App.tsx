@@ -102,6 +102,7 @@ export function App({
 }: AppProps) {
   const [currentPath, setCurrentPath] = useState(initialPath);
   const [activeSession, setActiveSession] = useState<SessionState | null>(session ?? null);
+  const [sessionCheckError, setSessionCheckError] = useState<string | null>(null);
   const [isMobileNavigationOpen, setMobileNavigationOpen] = useState(false);
   const [loginEmail, setLoginEmail] = useState('');
   const [loginError, setLoginError] = useState<string | null>(null);
@@ -115,16 +116,19 @@ export function App({
     let cancelled = false;
 
     if (session !== undefined) {
+      setSessionCheckError(null);
       setActiveSession(session);
       return () => {
         cancelled = true;
       };
     }
 
+    setSessionCheckError(null);
     setActiveSession(null);
     void sessionClient.getSession()
       .then((resolvedSession) => {
         if (!cancelled) {
+          setSessionCheckError(null);
           setActiveSession(resolvedSession);
           if (!canAccessProtectedRoute(resolvedSession)) {
             try {
@@ -138,13 +142,9 @@ export function App({
       })
       .catch(() => {
         if (!cancelled) {
-          setActiveSession(getUnauthenticatedSession());
-          try {
-            window.history.replaceState({}, '', '/login');
-          } catch {
-            // Browser history can be unavailable in isolated DOM tests.
-          }
-          setCurrentPath('/login');
+          setSessionCheckError(
+            'Your session could not be verified because the server is temporarily unavailable.',
+          );
         }
       });
 
@@ -197,6 +197,7 @@ export function App({
 
   const refreshActiveSession = async () => {
     if (session !== undefined) return;
+    setSessionCheckError(null);
     setActiveSession(null);
     try {
       const resolvedSession = await sessionClient.getSession();
@@ -205,8 +206,9 @@ export function App({
         setBrowserPath('/login', true);
       }
     } catch {
-      setActiveSession(getUnauthenticatedSession());
-      setBrowserPath('/login', true);
+      setSessionCheckError(
+        'Your session could not be verified because the server is temporarily unavailable.',
+      );
     }
   };
 
@@ -225,6 +227,7 @@ export function App({
         return;
       }
 
+      setSessionCheckError(null);
       setLoginPassword('');
       setMobileNavigationOpen(false);
       setBrowserPath('/dashboard', true);
@@ -246,6 +249,7 @@ export function App({
           setLoginError(result.error.message);
           return;
         }
+        setSessionCheckError(null);
         setMobileNavigationOpen(false);
         setBrowserPath('/dashboard', true);
         setActiveSession(result.data.session);
@@ -260,6 +264,7 @@ export function App({
 
   const handleSignOut = async () => {
     setActiveSession(null);
+    setSessionCheckError(null);
     setBrowserPath('/login', true);
     if (session !== undefined) {
       setActiveSession(getUnauthenticatedSession());
@@ -281,9 +286,18 @@ export function App({
     return (
       <main className="session-boundary" aria-label="Protected route session state">
         <h1>Castle Draft League</h1>
-        <div className="login-required" role="status">
-          Checking your session…
-        </div>
+        {sessionCheckError ? (
+          <div className="login-required" role="alert">
+            <p>{sessionCheckError}</p>
+            <button onClick={() => void refreshActiveSession()} type="button">
+              Retry session check
+            </button>
+          </div>
+        ) : (
+          <div className="login-required" role="status">
+            Checking your session…
+          </div>
+        )}
       </main>
     );
   }

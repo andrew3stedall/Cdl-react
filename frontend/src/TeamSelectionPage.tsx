@@ -72,7 +72,7 @@ export function TeamSelectionPage({
   const bench = players.filter((player) => player.slot === 'bench');
   const reserves = players.filter((player) => player.slot === 'reserve');
   const activeChip = chips.find((chip) => chip.status === 'active');
-  const valid = starters.length === 3 && bench.length === 1 && reserves.length === 1;
+  const valid = selectionIsValid(players);
 
   const movePlayer = (playerId: string, slot: TeamSelectionSlot) => {
     if (locked) return;
@@ -212,6 +212,28 @@ export function TeamSelectionPage({
   );
 }
 
+function selectionIsValid(players: TeamSelectionPlayer[]): boolean {
+  const starters = players.filter((player) => player.slot === 'starter');
+  const bench = players.filter((player) => player.slot === 'bench');
+  const reserves = players.filter((player) => player.slot === 'reserve');
+  if (players.length !== 20) {
+    return starters.length === 3 && bench.length === 1 && reserves.length === 1;
+  }
+  if (starters.length !== 11 || bench.length !== 5 || reserves.length !== 4) return false;
+
+  const countPosition = (position: string) => starters.filter((player) => player.position === position).length;
+  if (countPosition('GKP') !== 1) return false;
+  if (countPosition('DEF') < 3 || countPosition('DEF') > 5) return false;
+  if (countPosition('MID') < 2 || countPosition('MID') > 5) return false;
+  if (countPosition('FWD') < 1 || countPosition('FWD') > 3) return false;
+
+  const benchGoalkeepers = bench.filter((player) => player.position === 'GKP');
+  const benchOutfield = bench.filter((player) => player.position !== 'GKP');
+  return benchGoalkeepers.length === 1
+    && benchGoalkeepers[0].slotOrder === 0
+    && benchOutfield.length === 4
+    && benchOutfield.map((player) => player.slotOrder).sort((left, right) => left - right).join(',') === '1,2,3,4';
+}
 
 interface FixtureSummaryCardProps {
   fixtures: TeamSelectionFixture[];

@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from cdl_api.repositories.postgres_league_fpl import fpl_players_table
 from cdl_api.repositories.postgres_squad import squad_ownerships_table, squad_roster_slots_table
-from cdl_api.staging_draft_seed import SEASON_ID, SQUAD_SIZE, TEAM_IDS, TEAM_NAMES
+from cdl_api.staging_draft_seed import SEASON_ID, SQUAD_SIZE, TEAM_IDS
 
 GAMEWEEK = 1
 STARTER_MINIMUMS = {"GKP": 1, "DEF": 3, "MID": 2, "FWD": 1}
@@ -62,7 +62,9 @@ def build_legal_lineup(roster: list[RosterPlayer]) -> tuple[LineupAssignment, ..
     for position, minimum in STARTER_MINIMUMS.items():
         bench_allowance = 1 if position == "GKP" else 0
         if len(by_position[position]) < minimum + bench_allowance:
-            raise ValueError(f"Roster does not contain enough {position} players for a legal lineup.")
+            raise ValueError(
+                f"Roster does not contain enough {position} players for a legal lineup."
+            )
 
     starters: list[RosterPlayer] = []
     selected_ids: set[str] = set()
@@ -86,20 +88,30 @@ def build_legal_lineup(roster: list[RosterPlayer]) -> tuple[LineupAssignment, ..
         starter_counts[player.position] += 1
 
     if len(starters) != 11:
-        raise ValueError("Could not construct an 11-player legal Starting XI from the staging roster.")
+        raise ValueError(
+            "Could not construct an 11-player legal Starting XI from the staging roster."
+        )
 
     remaining = [player for player in ordered if player.player_id not in selected_ids]
-    bench_goalkeeper = next((player for player in remaining if player.position == "GKP"), None)
+    bench_goalkeeper = next(
+        (player for player in remaining if player.position == "GKP"),
+        None,
+    )
     if bench_goalkeeper is None:
         raise ValueError("A legal bench requires one goalkeeper.")
     bench_outfield = [player for player in remaining if player.position != "GKP"][:4]
     if len(bench_outfield) != 4:
         raise ValueError("A legal bench requires four outfield substitutes.")
 
-    bench_ids = {bench_goalkeeper.player_id, *(player.player_id for player in bench_outfield)}
+    bench_ids = {
+        bench_goalkeeper.player_id,
+        *(player.player_id for player in bench_outfield),
+    }
     reserves = [player for player in remaining if player.player_id not in bench_ids]
     if len(reserves) != 4:
-        raise ValueError(f"A 20-player squad must leave exactly four reserves; found {len(reserves)}.")
+        raise ValueError(
+            f"A 20-player squad must leave exactly four reserves; found {len(reserves)}."
+        )
 
     ranked_starters = sorted(starters, key=lambda player: player.sort_order)
     captain_candidates = [player for player in ranked_starters if player.position != "GKP"]
@@ -162,7 +174,11 @@ def validate_legal_lineup(assignments: tuple[LineupAssignment, ...]) -> None:
 
     starter_counts = Counter(assignment.position for assignment in starters)
     for position in POSITION_ORDER:
-        if not STARTER_MINIMUMS[position] <= starter_counts[position] <= STARTER_MAXIMUMS[position]:
+        if not (
+            STARTER_MINIMUMS[position]
+            <= starter_counts[position]
+            <= STARTER_MAXIMUMS[position]
+        ):
             raise ValueError(
                 f"Illegal Starting XI {position} count {starter_counts[position]} "
                 f"(allowed {STARTER_MINIMUMS[position]}-{STARTER_MAXIMUMS[position]})."
@@ -171,8 +187,11 @@ def validate_legal_lineup(assignments: tuple[LineupAssignment, ...]) -> None:
     bench_goalkeepers = [assignment for assignment in bench if assignment.position == "GKP"]
     bench_outfield = [assignment for assignment in bench if assignment.position != "GKP"]
     if len(bench_goalkeepers) != 1 or bench_goalkeepers[0].slot_order != 0:
-        raise ValueError("Bench must contain exactly one goalkeeper with goalkeeper bench order 0.")
-    if len(bench_outfield) != 4 or sorted(player.slot_order for player in bench_outfield) != [1, 2, 3, 4]:
+        raise ValueError(
+            "Bench must contain exactly one goalkeeper with goalkeeper bench order 0."
+        )
+    outfield_order = sorted(player.slot_order for player in bench_outfield)
+    if len(bench_outfield) != 4 or outfield_order != [1, 2, 3, 4]:
         raise ValueError("Bench must contain four outfield substitutes ordered 1 through 4.")
     if sum(assignment.is_captain for assignment in starters) != 1:
         raise ValueError("Starting XI must contain exactly one captain.")

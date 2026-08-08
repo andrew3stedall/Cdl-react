@@ -69,10 +69,7 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
         legacy_without_canonical_counterpart = ~exists(
             select(1)
             .select_from(canonical_players)
-            .where(
-                canonical_players.c.id
-                == literal("fpl-") + fpl_players_table.c.id
-            )
+            .where(canonical_players.c.id == literal("fpl-") + fpl_players_table.c.id)
         )
         with self._session_factory() as session:
             rows = list(

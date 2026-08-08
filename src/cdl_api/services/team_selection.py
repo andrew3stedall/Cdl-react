@@ -111,6 +111,7 @@ class TeamSelectionService:
         positions = {player.id: _normalize_position(player.position) for player in known_players}
         requested_ids = {player.player_id for player in request.players}
         starter_count, bench_count, reserve_count = self._slot_counts(len(known_player_ids))
+        is_full_squad = len(known_player_ids) == FULL_SQUAD_SIZE
         issues: list[ValidationIssue] = []
         if requested_ids != known_player_ids:
             issues.append(
@@ -134,7 +135,7 @@ class TeamSelectionService:
             issues.append(
                 _lineup_issue("players", f"Exactly {reserve_count} reserve players are required.")
             )
-        if len(known_player_ids) == FULL_SQUAD_SIZE and requested_ids == known_player_ids:
+        if is_full_squad and requested_ids == known_player_ids:
             issues.extend(self._validate_full_selection(starters, bench, positions))
         if sum(1 for player in request.players if player.is_captain) != 1:
             issues.append(
@@ -154,7 +155,7 @@ class TeamSelectionService:
             )
         captain = next((player for player in request.players if player.is_captain), None)
         vice_captain = next((player for player in request.players if player.is_vice_captain), None)
-        if captain is not None and captain.slot != LineupSlot.STARTER:
+        if is_full_squad and captain is not None and captain.slot != LineupSlot.STARTER:
             issues.append(
                 ValidationIssue(
                     field="captain",
@@ -162,7 +163,7 @@ class TeamSelectionService:
                     rule_reference="captaincy",
                 )
             )
-        if vice_captain is not None and vice_captain.slot != LineupSlot.STARTER:
+        if is_full_squad and vice_captain is not None and vice_captain.slot != LineupSlot.STARTER:
             issues.append(
                 ValidationIssue(
                     field="vice_captain",

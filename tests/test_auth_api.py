@@ -1,9 +1,10 @@
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy.exc import OperationalError
 
 from cdl_api.app import create_app
 from cdl_api.google_identity import GoogleIdentity
-from cdl_api.routers.auth import get_google_identity_verifier
+from cdl_api.routers.auth import get_auth_service, get_google_identity_verifier
 
 
 def test_login_session_and_logout_flow() -> None:
@@ -78,6 +79,18 @@ class StubGoogleIdentityVerifier:
         )
 
 
+class DatabaseOutageAuthService:
+    @staticmethod
+    def _raise() -> None:
+        raise OperationalError("SELECT 1", {}, Exception("database unavailable"))
+
+    def get_session(self, session_id: str | None):
+        self._raise()
+
+    def login_google(self, identity: GoogleIdentity):
+        self._raise()
+
+
 def test_google_login_creates_application_session(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("CDL_GOOGLE_CLIENT_ID", "staging-client.apps.googleusercontent.com")
     monkeypatch.setenv("CDL_GOOGLE_ALLOWED_EMAILS", "andrew3stedall@gmail.com")
@@ -113,3 +126,38 @@ def test_google_login_requires_same_origin_header() -> None:
 
     assert response.status_code == 403
     assert response.json()["message"] == "Google sign-in request was rejected."
+
+
+def test_session_database_outage_returns_structured_503() -> None:
+    app = create_app()
+    app.dependency_overrides[get_auth_service] = DatabaseOutageAuthService
+    client = TestClient(app)
+
+    response = client.get("/api/auth/session")
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "code": "server_error",
+        "message": "Session verification is temporarily unavailable. Retry.",
+        "details": {},
+    }
+
+
+def test_google_login_database_outage_returns_structured_503() -> None:
+    app = create_app()
+    app.dependency_overrides[get_auth_service] = DatabaseOutageAuthService
+    app.dependency_overrides[get_google_identity_verifier] = StubGoogleIdentityVerifier
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/auth/google",
+        json={"credential": "valid-google-credential"},
+        headers={"X-CDL-Google-Sign-In": "1"},
+    )
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "code": "server_error",
+        "message": "Google sign-in is temporarily unavailable. Try again.",
+        "details": {},
+    }

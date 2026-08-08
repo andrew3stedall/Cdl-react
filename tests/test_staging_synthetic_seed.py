@@ -79,7 +79,12 @@ def test_seed_loads_each_idempotent_domain_once(monkeypatch: pytest.MonkeyPatch)
 
     def _draft_seed(_factory: object) -> DraftSeedResult:
         calls.append("draft")
-        return DraftSeedResult(teams=8, players=160, ownerships=160)
+        return DraftSeedResult(
+            teams=8,
+            players=160,
+            ownerships=160,
+            position_counts=((2, 5, 10, 3),) * 8,
+        )
 
     monkeypatch.setenv("CDL_ALLOW_SYNTHETIC_STAGING_SEED", "true")
     monkeypatch.setattr(module, "build_session_factory", _build_session_factory)

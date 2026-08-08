@@ -1,10 +1,14 @@
-"""Deterministic staging league and snake-draft seed.
+"""Deterministic staging league and position-constrained snake-draft seed.
 
-The ranking is copied from ``andrew3stedall/-static--cdl`` at commit
-``711455f4dac079810fd4d4d71f707f1c6c7a92b6``. The canonical board was
-last updated at 2026-08-03T23:16:00+10:00.
+The primary ranking is copied from ``andrew3stedall/-static--cdl`` at commit
+``711455f4dac079810fd4d4d71f707f1c6c7a92b6``. The original top-160 pool
+contains only 13 goalkeepers, which cannot satisfy eight squads requiring at
+least two goalkeepers each. Three later reviewed goalkeeper candidates are
+therefore appended as a staging-only eligibility buffer; the mock draft still
+selects exactly 160 players across eight 20-player squads.
 """
 
+from collections import Counter
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
@@ -54,6 +58,15 @@ TEAM_IDS = (
     "team-wilde-boars",
     "team-class-of-84",
 )
+
+SQUAD_SIZE = 20
+POSITION_LIMITS = {
+    "GKP": (2, 3),
+    "DEF": (4, 10),
+    "MID": (5, 10),
+    "FWD": (2, 4),
+}
+TOTAL_DRAFT_PICKS = len(TEAM_IDS) * SQUAD_SIZE
 
 EPL_TEAM_NAMES = {
     "ARS": "Arsenal",
@@ -238,6 +251,15 @@ _DRAFT_BOARD_TEXT = """
 160|Struijk|DEF|BHA|328
 """.strip()
 
+# Staging-only eligibility buffer. These are reviewed goalkeeper candidates from
+# the current static-CDL goalkeeper ordering; their artificial pool ranks preserve
+# the original top-160 order while making a legal eight-team mock draft possible.
+_SUPPLEMENTAL_GOALKEEPERS_TEXT = """
+161|Henderson|GKP|CRY|198
+162|Sels|GKP|NFO|467
+163|Martinez|GKP|AVL|28
+""".strip()
+
 
 @dataclass(frozen=True)
 class DraftBoardPlayer:
@@ -249,23 +271,36 @@ class DraftBoardPlayer:
 
 
 @dataclass(frozen=True)
+class DraftAllocation:
+    overall_pick: int
+    team_index: int
+    player: DraftBoardPlayer
+
+
+@dataclass(frozen=True)
 class DraftSeedResult:
     teams: int
     players: int
     ownerships: int
+    position_counts: tuple[tuple[int, int, int, int], ...]
 
 
 def draft_board() -> tuple[DraftBoardPlayer, ...]:
+    pool_text = _DRAFT_BOARD_TEXT + "\n" + _SUPPLEMENTAL_GOALKEEPERS_TEXT
     players = tuple(
         DraftBoardPlayer(int(rank), name, position, team, int(fpl_id))
         for rank, name, position, team, fpl_id in (
-            line.split("|") for line in _DRAFT_BOARD_TEXT.splitlines()
+            line.split("|") for line in pool_text.splitlines()
         )
     )
-    if len(players) != 160 or len({player.fpl_id for player in players}) != 160:
-        raise ValueError("The staging draft board must contain 160 unique players.")
-    if [player.rank for player in players] != list(range(1, 161)):
-        raise ValueError("The staging draft board ranks must be contiguous from 1 to 160.")
+    if len(players) != 163 or len({player.fpl_id for player in players}) != 163:
+        raise ValueError("The staging draft pool must contain 163 unique players.")
+    if [player.rank for player in players] != list(range(1, 164)):
+        raise ValueError("The staging draft pool ranks must be contiguous from 1 to 163.")
+    goalkeeper_count = Counter(player.position for player in players)["GKP"]
+    required_goalkeepers = POSITION_LIMITS["GKP"][0] * len(TEAM_IDS)
+    if goalkeeper_count < required_goalkeepers:
+        raise ValueError("The staging draft pool does not contain enough goalkeepers.")
     return players
 
 
@@ -275,6 +310,135 @@ def snake_team_index(overall_pick: int, manager_count: int = 8) -> int:
         raise ValueError("overall_pick must be positive")
     round_number, offset = divmod(overall_pick - 1, manager_count)
     return offset if round_number % 2 == 0 else manager_count - 1 - offset
+
+
+def _minimum_deficit(counts: Counter[str]) -> int:
+    return sum(
+        max(0, minimum - counts[position]) for position, (minimum, _) in POSITION_LIMITS.items()
+    )
+
+
+def _candidate_keeps_draft_feasible(
+    candidate: DraftBoardPlayer,
+    team_index: int,
+    team_counts: list[Counter[str]],
+    team_pick_counts: list[int],
+    remaining_players: list[DraftBoardPlayer],
+    overall_pick: int,
+) -> bool:
+    _, candidate_maximum = POSITION_LIMITS[candidate.position]
+    if team_counts[team_index][candidate.position] >= candidate_maximum:
+        return False
+
+    projected_counts = [counts.copy() for counts in team_counts]
+    projected_counts[team_index][candidate.position] += 1
+    projected_team_pick_count = team_pick_counts[team_index] + 1
+    local_slots_left = SQUAD_SIZE - projected_team_pick_count
+    if _minimum_deficit(projected_counts[team_index]) > local_slots_left:
+        return False
+
+    positions_left = Counter(player.position for player in remaining_players)
+    positions_left[candidate.position] -= 1
+    aggregate_minimum_deficit = {
+        position: sum(max(0, minimum - counts[position]) for counts in projected_counts)
+        for position, (minimum, _) in POSITION_LIMITS.items()
+    }
+    if any(
+        positions_left[position] < aggregate_minimum_deficit[position]
+        for position in POSITION_LIMITS
+    ):
+        return False
+
+    selections_left = TOTAL_DRAFT_PICKS - overall_pick
+    undrafted_slots = len(remaining_players) - 1 - selections_left
+    for position, (_, maximum) in POSITION_LIMITS.items():
+        available_capacity = sum(maximum - counts[position] for counts in projected_counts)
+        forced_position_selections = max(0, positions_left[position] - undrafted_slots)
+        if forced_position_selections > available_capacity:
+            return False
+
+    return True
+
+
+def constrained_snake_allocation(
+    players: tuple[DraftBoardPlayer, ...] | None = None,
+) -> tuple[DraftAllocation, ...]:
+    """Draft the highest-ranked eligible player at each snake pick.
+
+    Eligibility enforces each team's positional maximum while preserving enough
+    remaining slots and players for every team to reach every positional minimum.
+    """
+    remaining_players = list(players or draft_board())
+    team_counts = [Counter() for _ in TEAM_IDS]
+    team_pick_counts = [0] * len(TEAM_IDS)
+    allocations: list[DraftAllocation] = []
+
+    for overall_pick in range(1, TOTAL_DRAFT_PICKS + 1):
+        team_index = snake_team_index(overall_pick, len(TEAM_IDS))
+        candidate_index = next(
+            (
+                index
+                for index, candidate in enumerate(remaining_players)
+                if _candidate_keeps_draft_feasible(
+                    candidate,
+                    team_index,
+                    team_counts,
+                    team_pick_counts,
+                    remaining_players,
+                    overall_pick,
+                )
+            ),
+            None,
+        )
+        if candidate_index is None:
+            raise ValueError(
+                f"No legal player remains for mock-draft pick {overall_pick} "
+                f"({TEAM_NAMES[team_index]})."
+            )
+        player = remaining_players.pop(candidate_index)
+        team_counts[team_index][player.position] += 1
+        team_pick_counts[team_index] += 1
+        allocations.append(DraftAllocation(overall_pick, team_index, player))
+
+    validate_draft_allocations(tuple(allocations))
+    return tuple(allocations)
+
+
+def allocation_position_counts(
+    allocations: tuple[DraftAllocation, ...],
+) -> tuple[tuple[int, int, int, int], ...]:
+    counts = [Counter() for _ in TEAM_IDS]
+    for allocation in allocations:
+        counts[allocation.team_index][allocation.player.position] += 1
+    return tuple(
+        (
+            team_counts["GKP"],
+            team_counts["DEF"],
+            team_counts["MID"],
+            team_counts["FWD"],
+        )
+        for team_counts in counts
+    )
+
+
+def validate_draft_allocations(allocations: tuple[DraftAllocation, ...]) -> None:
+    if len(allocations) != TOTAL_DRAFT_PICKS:
+        raise ValueError(f"Mock draft must contain exactly {TOTAL_DRAFT_PICKS} selections.")
+    player_ids = [allocation.player.fpl_id for allocation in allocations]
+    if len(set(player_ids)) != len(player_ids):
+        raise ValueError("Mock draft cannot assign the same player more than once.")
+
+    position_counts = allocation_position_counts(allocations)
+    for team_index, counts_tuple in enumerate(position_counts):
+        counts = dict(zip(("GKP", "DEF", "MID", "FWD"), counts_tuple, strict=True))
+        if sum(counts.values()) != SQUAD_SIZE:
+            raise ValueError(f"{TEAM_NAMES[team_index]} must have exactly {SQUAD_SIZE} players.")
+        for position, (minimum, maximum) in POSITION_LIMITS.items():
+            if not minimum <= counts[position] <= maximum:
+                raise ValueError(
+                    f"{TEAM_NAMES[team_index]} has invalid {position} count {counts[position]} "
+                    f"(allowed {minimum}-{maximum})."
+                )
 
 
 def _upsert(session: Session, table: object, values: dict[str, object]) -> None:
@@ -287,9 +451,10 @@ def _upsert(session: Session, table: object, values: dict[str, object]) -> None:
 
 
 def seed_staging_snake_draft(session_factory: object) -> DraftSeedResult:
-    """Replace the controlled 2026/27 staging season with the canonical snake draft."""
+    """Atomically empty and repopulate the controlled 2026/27 staging squads."""
     players = draft_board()
-    drafted_at = datetime(2026, 8, 3, tzinfo=UTC)
+    allocations = constrained_snake_allocation(players)
+    drafted_at = datetime(2026, 8, 8, tzinfo=UTC)
 
     with session_factory() as session:
         _upsert(session, leagues_table, {"id": LEAGUE_ID, "name": "CDL", "code": "CDL-2627"})
@@ -386,6 +551,8 @@ def seed_staging_snake_draft(session_factory: object) -> DraftSeedResult:
                 },
             )
 
+        # The reset and replacement happen in one transaction so staging never
+        # exposes a partially drafted league if validation or insertion fails.
         session.execute(
             delete(squad_ownerships_table).where(squad_ownerships_table.c.season_id == SEASON_ID)
         )
@@ -394,9 +561,8 @@ def seed_staging_snake_draft(session_factory: object) -> DraftSeedResult:
                 squad_roster_slots_table.c.season_id == SEASON_ID
             )
         )
-        slots_used = [0] * len(TEAM_IDS)
         for team_id in TEAM_IDS:
-            for slot_number in range(1, 21):
+            for slot_number in range(1, SQUAD_SIZE + 1):
                 session.execute(
                     insert(squad_roster_slots_table).values(
                         id=f"slot-{team_id.removeprefix('team-')}-{slot_number:02d}",
@@ -408,24 +574,32 @@ def seed_staging_snake_draft(session_factory: object) -> DraftSeedResult:
                         is_required=True,
                     )
                 )
-        for player in players:
-            team_index = snake_team_index(player.rank)
-            slots_used[team_index] += 1
-            team_id = TEAM_IDS[team_index]
-            slot_id = f"slot-{team_id.removeprefix('team-')}-{slots_used[team_index]:02d}"
+
+        slots_used = [0] * len(TEAM_IDS)
+        for allocation in allocations:
+            slots_used[allocation.team_index] += 1
+            team_id = TEAM_IDS[allocation.team_index]
+            slot_id = (
+                f"slot-{team_id.removeprefix('team-')}-{slots_used[allocation.team_index]:02d}"
+            )
             session.execute(
                 insert(squad_ownerships_table).values(
-                    id=f"ownership-pick-{player.rank:03d}",
+                    id=f"ownership-pick-{allocation.overall_pick:03d}",
                     season_id=SEASON_ID,
                     draft_team_id=team_id,
-                    player_id=f"fpl-{player.fpl_id}",
+                    player_id=f"fpl-{allocation.player.fpl_id}",
                     roster_slot_id=slot_id,
                     started_at=drafted_at,
                     ended_at=None,
                 )
             )
-        if slots_used != [20] * 8:
-            raise ValueError("Snake allocation must assign exactly 20 players to every team.")
+        if slots_used != [SQUAD_SIZE] * len(TEAM_IDS):
+            raise ValueError("Mock draft must assign exactly 20 players to every team.")
         session.commit()
 
-    return DraftSeedResult(teams=len(TEAM_IDS), players=len(players), ownerships=len(players))
+    return DraftSeedResult(
+        teams=len(TEAM_IDS),
+        players=len(allocations),
+        ownerships=len(allocations),
+        position_counts=allocation_position_counts(allocations),
+    )

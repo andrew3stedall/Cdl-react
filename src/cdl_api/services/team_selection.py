@@ -216,7 +216,8 @@ class TeamSelectionService:
             issues.append(
                 _lineup_issue(
                     "players",
-                    "The substitute goalkeeper uses the goalkeeper bench slot, separate from outfield order.",
+                    "The substitute goalkeeper uses the goalkeeper bench slot, "
+                    "separate from outfield order.",
                 )
             )
         if len(bench_outfield) == 4:
@@ -244,12 +245,16 @@ class TeamSelectionService:
             return issues
         if len(bench) != bench_count:
             issues.append(
-                _lineup_issue("players", f"Team selection needs exactly {bench_count} bench players.")
+                _lineup_issue(
+                    "players",
+                    f"Team selection needs exactly {bench_count} bench players.",
+                )
             )
         if len(reserves) != reserve_count:
             issues.append(
                 _lineup_issue(
-                    "players", f"Team selection needs exactly {reserve_count} reserve players."
+                    "players",
+                    f"Team selection needs exactly {reserve_count} reserve players.",
                 )
             )
         starter_positions = Counter(_normalize_position(player.position) for player in starters)

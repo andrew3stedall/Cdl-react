@@ -1,0 +1,162 @@
+.squad-page__bench > div {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+.squad-page__reserves {
+  background: #05101a;
+  border: 1px solid var(--squad-border);
+  border-radius: 0.82rem;
+  padding: 0.7rem;
+}
+
+.squad-page__reserves header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.55rem;
+}
+
+.squad-page__reserves h3 {
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+.squad-page__reserves header span {
+  color: var(--squad-muted);
+  font-size: 0.62rem;
+}
+
+.squad-page__reserves > div {
+  display: grid;
+  gap: 0.4rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.squad-page__lineup-group-heading th {
+  background: #0b2231;
+  border-bottom: 1px solid rgb(34 211 238 / 0.26);
+  border-top: 1px solid rgb(34 211 238 / 0.2);
+  color: var(--squad-text);
+  padding: 0.62rem 0.7rem;
+}
+
+.squad-page__lineup-group-heading th > span {
+  display: block;
+  font-size: 0.76rem;
+  font-weight: 850;
+  letter-spacing: 0.02em;
+}
+
+.squad-page__lineup-group-heading th > small {
+  color: var(--squad-muted);
+  display: block;
+  font-size: 0.59rem;
+  font-weight: 550;
+  margin-top: 0.12rem;
+}
+
+.squad-page__lineup-group.bench .squad-page__lineup-group-heading th {
+  background: #101f2a;
+  border-color: rgb(248 178 47 / 0.24);
+}
+
+.squad-page__lineup-group.reserve .squad-page__lineup-group-heading th {
+  background: #0a151f;
+  border-color: rgb(154 174 190 / 0.18);
+}
+
+.squad-page__player-row {
+  box-shadow: inset 0.18rem 0 0 transparent;
+}
+
+.squad-page__player-row.position-gkp {
+  box-shadow: inset 0.18rem 0 0 #f8b22f;
+}
+
+.squad-page__player-row.position-def {
+  box-shadow: inset 0.18rem 0 0 #22d3ee;
+}
+
+.squad-page__player-row.position-mid {
+  box-shadow: inset 0.18rem 0 0 #8bdb70;
+}
+
+.squad-page__player-row.position-fwd {
+  box-shadow: inset 0.18rem 0 0 #d68bf0;
+}
+
+.squad-page__position {
+  border: 1px solid currentcolor;
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 0.52rem;
+  font-weight: 850;
+  justify-content: center;
+  line-height: 1;
+  min-width: 2rem;
+  padding: 0.18rem 0.3rem;
+}
+
+.squad-page__position.position-gkp {
+  background: rgb(248 178 47 / 0.1);
+  color: #f8c45e;
+}
+
+.squad-page__position.position-def {
+  background: rgb(34 211 238 / 0.1);
+  color: #5de6f5;
+}
+
+.squad-page__position.position-mid {
+  background: rgb(117 205 100 / 0.1);
+  color: #9be28b;
+}
+
+.squad-page__position.position-fwd {
+  background: rgb(205 114 230 / 0.1);
+  color: #dfa0f1;
+}
+
+.squad-page__lineup-role {
+  border: 1px solid rgb(133 175 199 / 0.24);
+  border-radius: 999px;
+  color: var(--squad-muted-strong);
+  display: inline-flex;
+  font-size: 0.58rem;
+  font-weight: 800;
+  padding: 0.22rem 0.42rem;
+  white-space: nowrap;
+}
+
+.squad-page__lineup-role.starter {
+  background: rgb(34 211 238 / 0.08);
+  border-color: rgb(34 211 238 / 0.3);
+  color: var(--squad-accent);
+}
+
+.squad-page__lineup-role.bench {
+  background: rgb(248 178 47 / 0.08);
+  border-color: rgb(248 178 47 / 0.28);
+  color: #f6c969;
+}
+
+.squad-page__lineup-role.reserve {
+  background: rgb(154 174 190 / 0.07);
+  color: #aebbc5;
+}
+
+@media (max-width: 640px) {
+  .squad-page__bench,
+  .squad-page__reserves {
+    padding: 0.55rem 0.4rem;
+  }
+
+  .squad-page__bench > div,
+  .squad-page__reserves > div {
+    gap: 0.25rem;
+  }
+
+  .squad-page__lineup-group-heading th {
+    padding: 0.55rem 0.5rem;
+  }
+}

@@ -175,6 +175,9 @@ def _player_history_response(
     ):
         raise FplApiError("FPL element-summary fixtures must be a list of objects.")
 
+    normalized_fetched_at = (
+        fetched_at if fetched_at.tzinfo is not None else fetched_at.replace(tzinfo=UTC)
+    )
     history = [
         FplPlayerGameweekHistory(
             gameweek=_as_int(row.get("round")),
@@ -208,7 +211,7 @@ def _player_history_response(
     ]
     return FplPlayerHistoryResponse(
         player_id=player_id,
-        fetched_at=fetched_at,
+        fetched_at=normalized_fetched_at,
         response_sha256=response_sha256,
         history=history,
         fixtures=fixtures,

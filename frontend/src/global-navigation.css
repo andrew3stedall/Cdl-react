@@ -21,7 +21,7 @@
   .global-mobile-navigation a {
     align-items: center;
     border-radius: 0.7rem;
-    color: var(--cdl-muted-foreground, #94a3b8);
+    color: var(--cdl-foreground);
     display: flex;
     flex-direction: column;
     font-size: 0.7rem;

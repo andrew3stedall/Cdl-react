@@ -84,12 +84,14 @@ export async function login(request: LoginRequest): Promise<AuthResult<LoginResp
     credentials: 'include',
   });
 
-  const payload = await response.json();
   if (!response.ok) {
-    return { ok: false, error: payload as ApiErrorResponse };
+    return {
+      ok: false,
+      error: await readApiError(response, 'Sign in is temporarily unavailable. Try again.'),
+    };
   }
 
-  const loginResponse = payload as ApiLoginResponse;
+  const loginResponse = (await response.json()) as ApiLoginResponse;
   return { ok: true, data: { session: mapSession(loginResponse.session) } };
 }
 
@@ -99,7 +101,11 @@ export async function getSession(): Promise<SessionState> {
   });
 
   if (!response.ok) {
-    return getUnauthenticatedSession();
+    const error = await readApiError(
+      response,
+      'Session verification is temporarily unavailable. Retry.',
+    );
+    throw new Error(error.message);
   }
 
   return mapSession((await response.json()) as ApiSessionState);
@@ -128,12 +134,17 @@ export async function loginWithGoogleCredential(
     credentials: 'include',
   });
 
-  const payload = await response.json();
   if (!response.ok) {
-    return { ok: false, error: payload as ApiErrorResponse };
+    return {
+      ok: false,
+      error: await readApiError(
+        response,
+        'Google sign-in is temporarily unavailable. Try again.',
+      ),
+    };
   }
 
-  const loginResponse = payload as ApiLoginResponse;
+  const loginResponse = (await response.json()) as ApiLoginResponse;
   return { ok: true, data: { session: mapSession(loginResponse.session) } };
 }
 
@@ -142,6 +153,10 @@ export async function logout(): Promise<LogoutResponse> {
     method: 'POST',
     credentials: 'include',
   });
+  if (!response.ok) {
+    const error = await readApiError(response, 'Sign out is temporarily unavailable. Try again.');
+    throw new Error(error.message);
+  }
   const payload = (await response.json()) as ApiLogoutResponse;
   return { session: mapSession(payload.session) };
 }
@@ -153,6 +168,26 @@ export const defaultSessionClient: SessionClient = {
   loginWithGoogleCredential,
   logout,
 };
+
+async function readApiError(response: Response, fallbackMessage: string): Promise<ApiErrorResponse> {
+  try {
+    const payload = (await response.json()) as Partial<ApiErrorResponse>;
+    if (typeof payload.message === 'string' && payload.message.trim()) {
+      return {
+        code: payload.code ?? 'server_error',
+        message: payload.message,
+        details: payload.details ?? {},
+      };
+    }
+  } catch {
+    // Some infrastructure failures return HTML/plain-text instead of the API error contract.
+  }
+  return {
+    code: 'server_error',
+    message: fallbackMessage,
+    details: {},
+  };
+}
 
 function mapSession(session: ApiSessionState): SessionState {
   return {

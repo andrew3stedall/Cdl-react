@@ -14,6 +14,8 @@ export interface NavigationSection {
   items: NavigationItem[];
 }
 
+const squadRouteAliases = ['/squad', '/squad-management', '/team-selection'];
+
 export const primaryNavigationItems: NavigationItem[] = [
   {
     label: 'Home',
@@ -23,9 +25,9 @@ export const primaryNavigationItems: NavigationItem[] = [
   },
   {
     label: 'Squad',
-    href: '/squad-management',
+    href: '/squad',
     featureKey: 'squad-management',
-    description: 'Season-long squad health and roster actions',
+    description: 'Squad management, lineup, captaincy, bench, reserves and chips',
   },
   {
     label: 'Market',
@@ -33,12 +35,6 @@ export const primaryNavigationItems: NavigationItem[] = [
     featureKey: 'scouting',
     description: 'Player discovery, draws, interests and trades',
     supportsScouting: true,
-  },
-  {
-    label: 'Matchweek',
-    href: '/team-selection',
-    featureKey: 'team-selection',
-    description: 'Lineup, captaincy, bench and chips',
   },
   {
     label: 'League',
@@ -112,9 +108,17 @@ export const utilityNavigationItems: NavigationItem[] = [
   },
 ];
 
+export function isSquadRoute(path: string): boolean {
+  return squadRouteAliases.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
+}
+
 export function isRouteActive(currentPath: string, itemHref: string): boolean {
   if (currentPath === '/' && itemHref === '/dashboard') {
     return true;
+  }
+
+  if (itemHref === '/squad') {
+    return isSquadRoute(currentPath);
   }
 
   if (itemHref === '/') {

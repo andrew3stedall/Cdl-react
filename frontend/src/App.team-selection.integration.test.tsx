@@ -90,8 +90,8 @@ function renderApp(initialPath: string, session?: SessionState) {
   return { container, root };
 }
 
-describe('team selection shell integration', () => {
-  test('routes authenticated managers to Matchweek inside the focused shell', async () => {
+describe('unified Squad shell integration', () => {
+  test('routes the legacy team-selection path into Squad with gameweek controls', async () => {
     const { container } = renderApp('/team-selection', authenticatedSession);
 
     await act(async () => {
@@ -99,12 +99,14 @@ describe('team selection shell integration', () => {
       await Promise.resolve();
     });
 
-    expect(container.querySelector('[aria-current="page"]')?.textContent).toContain('Matchweek');
+    expect(container.querySelector('[aria-current="page"]')?.textContent).toContain('Squad');
+    expect(container.querySelector('nav[aria-label="Global mobile navigation"]')?.textContent).not.toContain('Matchweek');
     expect(container.textContent).toContain('Lineup, chips, bench, and reserves');
+    expect(container.textContent).toContain('Manage the current gameweek without leaving Squad.');
     expect(container.querySelector('[aria-label="Account menu for CDL Manager"]')).not.toBeNull();
   });
 
-  test('blocks unauthenticated team selection route before rendering feature UI', () => {
+  test('blocks unauthenticated legacy team-selection route before rendering feature UI', () => {
     const session: SessionState = {
       isAuthenticated: false,
       user: null,

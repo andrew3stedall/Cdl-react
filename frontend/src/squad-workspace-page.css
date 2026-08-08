@@ -1,0 +1,49 @@
+.squad-workspace-page {
+  display: grid;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+.squad-workspace-page__gameweek {
+  border-top: 1px solid var(--cdl-border);
+  min-width: 0;
+  padding-top: 1.25rem;
+}
+
+.team-selection-panel {
+  background: color-mix(in srgb, var(--cdl-surface, #111827) 78%, transparent);
+  border: 1px solid var(--cdl-border);
+  border-radius: var(--cdl-radius);
+  min-width: 0;
+  padding: clamp(1rem, 2vw, 1.5rem);
+}
+
+.team-selection-panel > header {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.team-selection-panel > header .eyebrow {
+  color: var(--cdl-foreground);
+}
+
+.team-selection-panel > header h2,
+.team-selection-panel > header p {
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .squad-workspace-page {
+    gap: 1rem;
+  }
+
+  .squad-workspace-page__gameweek {
+    padding-top: 1rem;
+  }
+
+  .team-selection-panel {
+    border-radius: 0;
+    margin-inline: 0;
+    padding: 1rem 0.25rem;
+  }
+}

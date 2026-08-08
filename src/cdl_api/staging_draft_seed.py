@@ -314,8 +314,7 @@ def snake_team_index(overall_pick: int, manager_count: int = 8) -> int:
 
 def _minimum_deficit(counts: Counter[str]) -> int:
     return sum(
-        max(0, minimum - counts[position])
-        for position, (minimum, _) in POSITION_LIMITS.items()
+        max(0, minimum - counts[position]) for position, (minimum, _) in POSITION_LIMITS.items()
     )
 
 

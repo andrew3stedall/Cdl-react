@@ -57,8 +57,7 @@ def test_every_staging_squad_shape_can_produce_legal_weekly_selection() -> None:
             assignment.slot_order for assignment in bench if assignment.position != "GKP"
         ) == [1, 2, 3, 4]
         assert (
-            next(assignment.slot_order for assignment in bench if assignment.position == "GKP")
-            == 0
+            next(assignment.slot_order for assignment in bench if assignment.position == "GKP") == 0
         )
         assert sum(assignment.is_captain for assignment in starters) == 1
         assert sum(assignment.is_vice_captain for assignment in starters) == 1

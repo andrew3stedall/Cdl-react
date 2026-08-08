@@ -8,6 +8,7 @@ from cdl_api.repositories.postgres_auth import PostgreSQLUserRepository
 from cdl_api.repositories.postgres_league_fixtures import PostgreSQLLeagueRepository
 from cdl_api.repositories.postgres_squad_repository import PostgreSQLSquadRepository
 from cdl_api.settings import Settings
+from cdl_api.staging_draft_reroll import reroll_staging_draft_assignments
 from cdl_api.staging_draft_seed import seed_staging_snake_draft
 
 SEED_CONFIRMATION_ENV = "CDL_ALLOW_SYNTHETIC_STAGING_SEED"
@@ -43,6 +44,7 @@ def seed_synthetic_staging_data(settings: Settings | None = None) -> SeedResult:
     PostgreSQLUserRepository(session_factory).seed_demo_user()
     PostgreSQLSquadRepository(session_factory).seed_demo_data()
     draft_result = seed_staging_snake_draft(session_factory)
+    reroll_result = reroll_staging_draft_assignments(session_factory)
     PostgreSQLLeagueRepository(session_factory).seed_synthetic_data()
 
     return SeedResult(
@@ -50,7 +52,8 @@ def seed_synthetic_staging_data(settings: Settings | None = None) -> SeedResult:
         synthetic=True,
         domains=(
             "identity",
-            f"draft:{draft_result.teams}-teams/{draft_result.ownerships}-ownerships",
+            f"draft:{draft_result.teams}-teams/{reroll_result.ownerships}-ownerships",
+            f"lineup-reset:{reroll_result.cleared_lineup_rows}-rows",
             "league",
         ),
     )

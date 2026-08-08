@@ -6,6 +6,7 @@ import pytest
 
 from cdl_api.seed_staging import seed_synthetic_staging_data
 from cdl_api.settings import Settings
+from cdl_api.staging_draft_reroll import StagingDraftRerollResult
 from cdl_api.staging_draft_seed import DraftSeedResult
 
 
@@ -86,19 +87,29 @@ def test_seed_loads_each_idempotent_domain_once(monkeypatch: pytest.MonkeyPatch)
             position_counts=((2, 5, 10, 3),) * 8,
         )
 
+    def _draft_reroll(_factory: object) -> StagingDraftRerollResult:
+        calls.append("reroll")
+        return StagingDraftRerollResult(
+            ownerships=160,
+            cleared_lineup_rows=20,
+            position_counts=((2, 5, 10, 3),) * 8,
+        )
+
     monkeypatch.setenv("CDL_ALLOW_SYNTHETIC_STAGING_SEED", "true")
     monkeypatch.setattr(module, "build_session_factory", _build_session_factory)
     monkeypatch.setattr(module, "PostgreSQLUserRepository", _user_repository)
     monkeypatch.setattr(module, "PostgreSQLSquadRepository", _squad_repository)
     monkeypatch.setattr(module, "PostgreSQLLeagueRepository", _league_repository)
     monkeypatch.setattr(module, "seed_staging_snake_draft", _draft_seed)
+    monkeypatch.setattr(module, "reroll_staging_draft_assignments", _draft_reroll)
 
     result = seed_synthetic_staging_data(_settings())
 
-    assert calls == ["identity", "squad", "draft", "league"]
+    assert calls == ["identity", "squad", "draft", "reroll", "league"]
     assert result.synthetic is True
     assert result.domains == (
         "identity",
         "draft:8-teams/160-ownerships",
+        "lineup-reset:20-rows",
         "league",
     )

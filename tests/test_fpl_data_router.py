@@ -5,6 +5,9 @@ from fastapi.testclient import TestClient
 
 from cdl_api.contracts.fpl_data import (
     FplCacheStatusResponse,
+    FplPlayerGameweekHistory,
+    FplPlayerHistoryResponse,
+    FplPlayerUpcomingFixture,
     FplRefreshResource,
     FplRefreshResponse,
     FplResourceRefreshResult,
@@ -29,10 +32,40 @@ class FakeService:
             ],
             normalized_counts={
                 "players": 600,
+                "player_metrics": 600,
                 "teams": 20,
                 "gameweeks": 38,
                 "fixtures": 380,
             },
+        )
+
+    def player_history(self, player_id: str) -> FplPlayerHistoryResponse:
+        return FplPlayerHistoryResponse(
+            player_id=player_id,
+            fetched_at=datetime(2026, 8, 9, tzinfo=UTC),
+            response_sha256="c" * 64,
+            history=[
+                FplPlayerGameweekHistory(
+                    gameweek=1,
+                    fixture_id=100,
+                    opponent_team_id=2,
+                    total_points=8,
+                    minutes=90,
+                    expected_goals=0.4,
+                    expected_assists=0.2,
+                    value=14.0,
+                    was_home=True,
+                )
+            ],
+            fixtures=[
+                FplPlayerUpcomingFixture(
+                    fixture_id=101,
+                    gameweek=2,
+                    opponent_team_id=3,
+                    difficulty=2,
+                    is_home=False,
+                )
+            ],
         )
 
     def refresh(self, resources: list[FplRefreshResource]) -> FplRefreshResponse:
@@ -68,10 +101,11 @@ def _client() -> TestClient:
     return TestClient(app)
 
 
-def test_status_and_refresh_routes_return_typed_fpl_cache_evidence() -> None:
+def test_status_refresh_and_player_history_routes_return_typed_fpl_cache_evidence() -> None:
     client = _client()
 
     status_response = client.get("/api/fpl/status")
+    history_response = client.get("/api/fpl/players/fpl-411/history")
     refresh_response = client.post(
         "/api/fpl/refresh",
         json={"resources": ["bootstrap-static", "fixtures"]},
@@ -79,6 +113,9 @@ def test_status_and_refresh_routes_return_typed_fpl_cache_evidence() -> None:
 
     assert status_response.status_code == 200
     assert status_response.json()["normalized_counts"]["players"] == 600
+    assert history_response.status_code == 200
+    assert history_response.json()["player_id"] == "fpl-411"
+    assert history_response.json()["history"][0]["total_points"] == 8
     assert refresh_response.status_code == 200
     assert [item["resource"] for item in refresh_response.json()["resources"]] == [
         "bootstrap-static",

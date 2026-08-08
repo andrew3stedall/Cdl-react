@@ -116,6 +116,116 @@ jobs:
         with:
           version: ">= 416.0.0"
 
+      - name: Diagnose recent staging auth failures
+        continue-on-error: true
+        run: |
+          set +e
+          gcloud logging read \
+            'resource.type="cloud_run_revision" AND resource.labels.service_name="cdl-react-staging-api" AND httpRequest.requestUrl:"/api/auth/"' \
+            --project "${PROJECT_ID}" \
+            --freshness=12h \
+            --limit=200 \
+            --format=json > "${RUNNER_TEMP}/auth-requests.json" 2> "${RUNNER_TEMP}/auth-requests.err"
+          request_rc=$?
+          gcloud logging read \
+            'resource.type="cloud_run_revision" AND resource.labels.service_name="cdl-react-staging-api" AND severity>=ERROR' \
+            --project "${PROJECT_ID}" \
+            --freshness=12h \
+            --limit=200 \
+            --format=json > "${RUNNER_TEMP}/service-errors.json" 2> "${RUNNER_TEMP}/service-errors.err"
+          error_rc=$?
+          set -e
+
+          python - "${RUNNER_TEMP}/auth-requests.json" "${RUNNER_TEMP}/service-errors.json" "${request_rc}" "${error_rc}" <<'PY'
+          import json
+          import re
+          import sys
+          from collections import Counter
+          from pathlib import Path
+          from urllib.parse import urlsplit
+
+          def load(path: str):
+              try:
+                  text = Path(path).read_text(encoding="utf-8").strip()
+                  return json.loads(text) if text else []
+              except Exception:
+                  return []
+
+          requests = load(sys.argv[1])
+          errors = load(sys.argv[2])
+          request_rc = int(sys.argv[3])
+          error_rc = int(sys.argv[4])
+
+          status_counts = Counter()
+          recent = []
+          for entry in requests:
+              req = entry.get("httpRequest") or {}
+              url = req.get("requestUrl") or ""
+              path = urlsplit(url).path if url else ""
+              if not path.startswith("/api/auth/"):
+                  continue
+              status = int(req.get("status") or 0)
+              status_counts[(path, status)] += 1
+              recent.append((entry.get("timestamp", ""), path, status, (entry.get("resource") or {}).get("labels", {}).get("revision_name", "")))
+
+          safe_frames = []
+          exception_summaries = []
+          exception_classes = Counter()
+          frame_re = re.compile(r'File "(/app/[^\"]+)", line (\d+), in ([^\s]+)')
+          exc_line_re = re.compile(r"^([A-Za-z_][A-Za-z0-9_.]*(?:Error|Exception))(?::\s*(.*))?$")
+          email_re = re.compile(r"[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}", re.I)
+          url_re = re.compile(r"(?:postgresql|postgres|https?)://\S+", re.I)
+          token_re = re.compile(r"\b[A-Za-z0-9_-]{40,}\b")
+          quoted_re = re.compile(r"(['\"])[^'\"]{8,}\1")
+
+          def sanitize(message: str) -> str:
+              message = email_re.sub("<redacted-email>", message)
+              message = url_re.sub("<redacted-url>", message)
+              message = token_re.sub("<redacted-token>", message)
+              message = quoted_re.sub("<redacted-value>", message)
+              return message[:240]
+
+          for entry in errors:
+              pieces = []
+              text = entry.get("textPayload")
+              if isinstance(text, str):
+                  pieces.append(text)
+              payload = entry.get("jsonPayload")
+              if isinstance(payload, dict):
+                  for key in ("message", "exception", "stack_trace", "stackTrace"):
+                      value = payload.get(key)
+                      if isinstance(value, str):
+                          pieces.append(value)
+              combined = "\n".join(pieces)
+              for match in frame_re.finditer(combined):
+                  frame = f"{match.group(1)}:{match.group(2)} in {match.group(3)}"
+                  if frame not in safe_frames:
+                      safe_frames.append(frame)
+              for line in combined.splitlines():
+                  match = exc_line_re.match(line.strip())
+                  if not match:
+                      continue
+                  name = match.group(1)
+                  exception_classes[name] += 1
+                  summary = f"{name}: {sanitize(match.group(2) or '')}".rstrip()
+                  if summary not in exception_summaries:
+                      exception_summaries.append(summary)
+
+          print("AUTH_DIAGNOSTIC_BEGIN")
+          print(f"logging_read_rc requests={request_rc} errors={error_rc}")
+          for (path, status), count in sorted(status_counts.items()):
+              print(f"auth_status path={path} status={status} count={count}")
+          for timestamp, path, status, revision in sorted(recent, reverse=True)[:20]:
+              print(f"auth_recent timestamp={timestamp} path={path} status={status} revision={revision}")
+          for name, count in exception_classes.most_common():
+              print(f"exception_class name={name} count={count}")
+          for summary in exception_summaries[-20:]:
+              print(f"exception_summary {summary}")
+          for frame in safe_frames[-40:]:
+              print(f"trace_frame {frame}")
+          print("AUTH_DIAGNOSTIC_END")
+          PY
+
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v4
         with:

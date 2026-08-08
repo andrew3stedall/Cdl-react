@@ -15,7 +15,7 @@
     padding: 0.45rem max(0.45rem, env(safe-area-inset-left)) calc(0.45rem + env(safe-area-inset-bottom)) max(0.45rem, env(safe-area-inset-right));
     position: fixed;
     right: 0;
-    z-index: 60;
+    z-index: 30;
   }
 
   .global-mobile-navigation a {

@@ -2,6 +2,7 @@
 
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import OperationalError
 
 from cdl_api.contracts.auth import (
     GoogleAuthConfig,
@@ -56,12 +57,29 @@ def _set_session_cookie(
     )
 
 
+def _database_unavailable(message: str) -> JSONResponse:
+    error = ApiErrorResponse(
+        code=ErrorCode.SERVER_ERROR,
+        message=message,
+    )
+    return JSONResponse(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        content=error.model_dump(),
+    )
+
+
 def require_authenticated_session(
     request: Request,
     settings: Settings = Depends(get_settings),
     service: AuthenticationService = Depends(get_auth_service),
 ) -> SessionUser:
-    session = service.get_session(_session_id_from_request(request, settings))
+    try:
+        session = service.get_session(_session_id_from_request(request, settings))
+    except OperationalError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Session verification is temporarily unavailable.",
+        ) from exc
     if not session.is_authenticated or session.user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -77,7 +95,10 @@ def login(
     settings: Settings = Depends(get_settings),
     service: AuthenticationService = Depends(get_auth_service),
 ) -> LoginResponse | JSONResponse:
-    result = service.login(payload)
+    try:
+        result = service.login(payload)
+    except OperationalError:
+        return _database_unavailable("Sign in is temporarily unavailable. Try again.")
     if result is None:
         error = ApiErrorResponse(
             code=ErrorCode.UNAUTHENTICATED,
@@ -122,7 +143,10 @@ def google_login(
         )
         return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content=error.model_dump())
 
-    session_id, session = service.login_google(identity)
+    try:
+        session_id, session = service.login_google(identity)
+    except OperationalError:
+        return _database_unavailable("Google sign-in is temporarily unavailable. Try again.")
     _set_session_cookie(response, settings, session_id)
     return LoginResponse(session=session)
 
@@ -132,8 +156,11 @@ def session(
     request: Request,
     settings: Settings = Depends(get_settings),
     service: AuthenticationService = Depends(get_auth_service),
-) -> SessionState:
-    return service.get_session(_session_id_from_request(request, settings))
+) -> SessionState | JSONResponse:
+    try:
+        return service.get_session(_session_id_from_request(request, settings))
+    except OperationalError:
+        return _database_unavailable("Session verification is temporarily unavailable. Retry.")
 
 
 @router.post("/logout", response_model=LogoutResponse)
@@ -142,8 +169,11 @@ def logout(
     response: Response,
     settings: Settings = Depends(get_settings),
     service: AuthenticationService = Depends(get_auth_service),
-) -> LogoutResponse:
-    session = service.logout(_session_id_from_request(request, settings))
+) -> LogoutResponse | JSONResponse:
+    try:
+        session = service.logout(_session_id_from_request(request, settings))
+    except OperationalError:
+        return _database_unavailable("Sign out is temporarily unavailable. Try again.")
     response.delete_cookie(
         settings.session_cookie_name,
         secure=settings.session_cookie_secure,

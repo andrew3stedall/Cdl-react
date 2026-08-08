@@ -205,9 +205,7 @@ class TeamSelectionService:
         bench_goalkeepers = [player for player in bench if positions[player.player_id] == "GKP"]
         bench_outfield = [player for player in bench if positions[player.player_id] != "GKP"]
         if len(bench_goalkeepers) != 1:
-            issues.append(
-                _lineup_issue("players", "Bench must contain exactly one goalkeeper.")
-            )
+            issues.append(_lineup_issue("players", "Bench must contain exactly one goalkeeper."))
         if len(bench_outfield) != 4:
             issues.append(
                 _lineup_issue("players", "Bench must contain exactly four outfield substitutes.")

@@ -47,6 +47,15 @@ class FplApiClient:
             raise FplApiError("FPL fixtures returned a non-list payload.")
         return response
 
+    def fetch_element_summary(self, player_id: int) -> FplApiResponse:
+        response = self._get(f"element-summary/{player_id}/")
+        if not isinstance(response.payload, dict):
+            raise FplApiError("FPL element-summary returned a non-object payload.")
+        for key in ("history", "fixtures"):
+            if not isinstance(response.payload.get(key), list):
+                raise FplApiError(f"FPL element-summary is missing list field {key!r}.")
+        return response
+
     def _get(self, path: str) -> FplApiResponse:
         endpoint = self.endpoint_for(path)
         try:

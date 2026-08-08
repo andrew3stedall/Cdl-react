@@ -54,3 +54,38 @@ class FplResourceStatus(BaseModel):
 class FplCacheStatusResponse(BaseModel):
     resources: list[FplResourceStatus]
     normalized_counts: dict[str, int]
+
+
+class FplPlayerGameweekHistory(BaseModel):
+    gameweek: int
+    fixture_id: int
+    opponent_team_id: int
+    total_points: int
+    minutes: int
+    goals_scored: int = 0
+    assists: int = 0
+    clean_sheets: int = 0
+    bonus: int = 0
+    bps: int = 0
+    expected_goals: float = 0
+    expected_assists: float = 0
+    value: float = 0
+    was_home: bool
+    kickoff_time: datetime | None = None
+
+
+class FplPlayerUpcomingFixture(BaseModel):
+    fixture_id: int
+    gameweek: int | None = None
+    opponent_team_id: int
+    difficulty: int
+    is_home: bool
+    kickoff_time: datetime | None = None
+
+
+class FplPlayerHistoryResponse(BaseModel):
+    player_id: str
+    fetched_at: datetime
+    response_sha256: str
+    history: list[FplPlayerGameweekHistory]
+    fixtures: list[FplPlayerUpcomingFixture]

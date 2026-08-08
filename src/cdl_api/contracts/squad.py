@@ -36,6 +36,15 @@ class PlayerDetail(PlayerSummary):
     form: float = 0
     value: float = 0
     selected_by_percent: float = 0
+    minutes: int = 0
+    goals_scored: int = 0
+    assists: int = 0
+    clean_sheets: int = 0
+    expected_goals: float = 0
+    expected_assists: float = 0
+    availability_status: str | None = None
+    availability_news: str = ""
+    chance_of_playing_next_round: int | None = None
 
 
 class ScoutingFilters(BaseModel):

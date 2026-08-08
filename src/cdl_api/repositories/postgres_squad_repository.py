@@ -4,7 +4,7 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from sqlalchemy import insert, select, update
+from sqlalchemy import exists, func, insert, literal, or_, select, update
 from sqlalchemy.orm import Session
 
 from cdl_api.contracts.domain import TeamSummary
@@ -17,9 +17,12 @@ from cdl_api.contracts.squad import (
     TradeProposal,
     TradeStatus,
 )
+from cdl_api.repositories.postgres_fpl_data import fpl_player_current_metrics_table
 from cdl_api.repositories.postgres_league_fpl import (
     draft_teams_table,
     epl_teams_table,
+    fpl_player_availability_table,
+    fpl_player_values_table,
     fpl_players_table,
 )
 from cdl_api.repositories.postgres_squad import (
@@ -54,6 +57,20 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
 
     def _database_players(self) -> list[PlayerDetail]:
         active_ownerships = squad_ownerships_table.alias("active_ownerships")
+        canonical_players = fpl_players_table.alias("canonical_players")
+        latest_values = (
+            select(
+                fpl_player_values_table.c.player_id,
+                func.max(fpl_player_values_table.c.gameweek).label("gameweek"),
+            )
+            .group_by(fpl_player_values_table.c.player_id)
+            .subquery("latest_player_values")
+        )
+        legacy_without_canonical_counterpart = ~exists(
+            select(1)
+            .select_from(canonical_players)
+            .where(canonical_players.c.id == literal("fpl-") + fpl_players_table.c.id)
+        )
         with self._session_factory() as session:
             rows = list(
                 session.execute(
@@ -63,11 +80,42 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
                         fpl_players_table.c.position_id,
                         epl_teams_table.c.id.label("epl_team_id"),
                         epl_teams_table.c.name.label("epl_team_name"),
+                        epl_teams_table.c.short_name.label("epl_team_short_name"),
                         draft_teams_table.c.id.label("draft_team_id"),
                         draft_teams_table.c.name.label("draft_team_name"),
                         active_ownerships.c.id.label("ownership_id"),
+                        fpl_player_values_table.c.value.label("current_value"),
+                        fpl_player_availability_table.c.status.label("availability_status"),
+                        fpl_player_availability_table.c.news.label("availability_news"),
+                        fpl_player_current_metrics_table.c.total_points,
+                        fpl_player_current_metrics_table.c.form,
+                        fpl_player_current_metrics_table.c.selected_by_percent,
+                        fpl_player_current_metrics_table.c.minutes,
+                        fpl_player_current_metrics_table.c.goals_scored,
+                        fpl_player_current_metrics_table.c.assists,
+                        fpl_player_current_metrics_table.c.clean_sheets,
+                        fpl_player_current_metrics_table.c.expected_goals,
+                        fpl_player_current_metrics_table.c.expected_assists,
+                        fpl_player_current_metrics_table.c.chance_of_playing_next_round,
                     )
                     .join(epl_teams_table, fpl_players_table.c.team_id == epl_teams_table.c.id)
+                    .outerjoin(
+                        latest_values,
+                        latest_values.c.player_id == fpl_players_table.c.id,
+                    )
+                    .outerjoin(
+                        fpl_player_values_table,
+                        (fpl_player_values_table.c.player_id == fpl_players_table.c.id)
+                        & (fpl_player_values_table.c.gameweek == latest_values.c.gameweek),
+                    )
+                    .outerjoin(
+                        fpl_player_availability_table,
+                        fpl_player_availability_table.c.player_id == fpl_players_table.c.id,
+                    )
+                    .outerjoin(
+                        fpl_player_current_metrics_table,
+                        fpl_player_current_metrics_table.c.player_id == fpl_players_table.c.id,
+                    )
                     .outerjoin(
                         active_ownerships,
                         (active_ownerships.c.player_id == fpl_players_table.c.id)
@@ -78,6 +126,12 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
                         draft_teams_table,
                         active_ownerships.c.draft_team_id == draft_teams_table.c.id,
                     )
+                    .where(
+                        or_(
+                            fpl_players_table.c.id.like("fpl-%"),
+                            legacy_without_canonical_counterpart,
+                        )
+                    )
                     .order_by(active_ownerships.c.id, fpl_players_table.c.web_name)
                 ).mappings()
             )
@@ -85,7 +139,11 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
 
     @staticmethod
     def _player_from_database_row(row: object) -> PlayerDetail:
-        epl_team = TeamSummary(id=row["epl_team_id"], name=row["epl_team_name"])
+        epl_team = TeamSummary(
+            id=row["epl_team_id"],
+            name=row["epl_team_name"],
+            short_name=row["epl_team_short_name"],
+        )
         draft_team = (
             TeamSummary(id=row["draft_team_id"], name=row["draft_team_name"])
             if row["draft_team_id"] is not None
@@ -103,6 +161,19 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
                 if draft_team is not None
                 else PlayerOwnershipStatus.AVAILABLE
             ),
+            points=int(row["total_points"] or 0),
+            form=float(row["form"] or 0),
+            value=float(row["current_value"] or 0) / 10,
+            selected_by_percent=float(row["selected_by_percent"] or 0),
+            minutes=int(row["minutes"] or 0),
+            goals_scored=int(row["goals_scored"] or 0),
+            assists=int(row["assists"] or 0),
+            clean_sheets=int(row["clean_sheets"] or 0),
+            expected_goals=float(row["expected_goals"] or 0),
+            expected_assists=float(row["expected_assists"] or 0),
+            availability_status=row["availability_status"],
+            availability_news=row["availability_news"] or "",
+            chance_of_playing_next_round=row["chance_of_playing_next_round"],
         )
 
     def list_squad_players(self) -> list[PlayerDetail]:

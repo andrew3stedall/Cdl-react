@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 
-from sqlalchemy import create_engine, func, select
+from sqlalchemy import create_engine, func, insert, select
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -12,6 +12,7 @@ from cdl_api.repositories.postgres_fpl_data import (
     external_payload_cache_table,
     fpl_fixtures_table,
     fpl_gameweeks_table,
+    fpl_player_current_metrics_table,
 )
 from cdl_api.repositories.postgres_league_fpl import (
     epl_teams_table,
@@ -57,8 +58,18 @@ BOOTSTRAP = {
             "element_type": 1,
             "team": 1,
             "now_cost": 55,
-            "status": "a",
-            "news": "",
+            "status": "d",
+            "news": "75% chance of playing",
+            "total_points": 42,
+            "form": "6.5",
+            "selected_by_percent": "12.3",
+            "minutes": 720,
+            "goals_scored": 0,
+            "assists": 1,
+            "clean_sheets": 4,
+            "expected_goals": "0.10",
+            "expected_assists": "0.75",
+            "chance_of_playing_next_round": 75,
         }
     ],
 }
@@ -79,8 +90,44 @@ FIXTURES = [
     }
 ]
 
+ELEMENT_SUMMARY = {
+    "history": [
+        {
+            "round": 1,
+            "fixture": 100,
+            "opponent_team": 2,
+            "total_points": 8,
+            "minutes": 90,
+            "goals_scored": 0,
+            "assists": 1,
+            "clean_sheets": 1,
+            "bonus": 2,
+            "bps": 28,
+            "expected_goals": "0.05",
+            "expected_assists": "0.42",
+            "value": 55,
+            "was_home": True,
+            "kickoff_time": "2026-08-15T14:00:00Z",
+        }
+    ],
+    "fixtures": [
+        {
+            "id": 101,
+            "event": 2,
+            "opponent_team": 2,
+            "difficulty": 3,
+            "is_home": False,
+            "kickoff_time": "2026-08-22T14:00:00Z",
+        }
+    ],
+    "history_past": [],
+}
+
 
 class FakeClient:
+    def __init__(self) -> None:
+        self.element_summary_calls = 0
+
     def endpoint_for(self, path: str) -> str:
         return f"https://fantasy.premierleague.com/api/{path}"
 
@@ -95,6 +142,14 @@ class FakeClient:
         return FplApiResponse(
             endpoint=self.endpoint_for("fixtures/"),
             payload=FIXTURES,
+            status_code=200,
+        )
+
+    def fetch_element_summary(self, player_id: int) -> FplApiResponse:
+        self.element_summary_calls += 1
+        return FplApiResponse(
+            endpoint=self.endpoint_for(f"element-summary/{player_id}/"),
+            payload=ELEMENT_SUMMARY,
             status_code=200,
         )
 
@@ -114,6 +169,7 @@ def _session_factory() -> sessionmaker[Session]:
         fpl_cache_freshness_table,
         fpl_gameweeks_table,
         fpl_fixtures_table,
+        fpl_player_current_metrics_table,
         external_payload_cache_table,
         external_fetch_log_table,
     ):
@@ -132,6 +188,7 @@ def test_refresh_persists_official_bootstrap_and_fixtures_idempotently() -> None
     assert [result.resource for result in first.resources] == list(FplRefreshResource)
     assert len(first.resources[0].response_sha256) == 64
     assert second.resources[0].records_upserted["players"] == 1
+    assert second.resources[0].records_upserted["player_metrics"] == 1
 
     with sessions() as session:
         player_count = session.execute(
@@ -144,6 +201,9 @@ def test_refresh_persists_official_bootstrap_and_fixtures_idempotently() -> None
         fixture_count = session.execute(
             select(func.count()).select_from(fpl_fixtures_table)
         ).scalar_one()
+        metric_count = session.execute(
+            select(func.count()).select_from(fpl_player_current_metrics_table)
+        ).scalar_one()
         payload_count = session.execute(
             select(func.count()).select_from(external_payload_cache_table)
         ).scalar_one()
@@ -154,12 +214,18 @@ def test_refresh_persists_official_bootstrap_and_fixtures_idempotently() -> None
         assert team_count == 2
         assert gameweek_count == 1
         assert fixture_count == 1
+        assert metric_count == 1
         assert payload_count == 2
         assert fetch_count == 4
         player = session.execute(select(fpl_players_table)).mappings().one()
+        metrics = session.execute(select(fpl_player_current_metrics_table)).mappings().one()
         fixture = session.execute(select(fpl_fixtures_table)).mappings().one()
+        assert player["id"] == "fpl-10"
         assert player["web_name"] == "Keeper"
         assert player["position_id"] == "GKP"
+        assert metrics["total_points"] == 42
+        assert metrics["form"] == 6.5
+        assert metrics["chance_of_playing_next_round"] == 75
         assert fixture["home_team_id"] == "1"
         assert fixture["away_difficulty"] == 4
 
@@ -168,10 +234,70 @@ def test_refresh_persists_official_bootstrap_and_fixtures_idempotently() -> None
         "gameweeks": 1,
         "teams": 2,
         "players": 1,
+        "player_metrics": 1,
         "fixtures": 1,
     }
     assert all(resource.last_fetch_status == 200 for resource in status.resources)
     assert all(resource.last_updated_at is not None for resource in status.resources)
+
+
+def test_bootstrap_refresh_enriches_existing_canonical_draft_player_in_place() -> None:
+    sessions = _session_factory()
+    with sessions() as session:
+        session.execute(
+            insert(fpl_positions_table).values(
+                id="GKP",
+                singular_name="Goalkeeper",
+                plural_name="Goalkeepers",
+            )
+        )
+        session.execute(
+            insert(epl_teams_table).values(
+                id="seed-team",
+                short_name="SEE",
+                name="Seed Team",
+            )
+        )
+        session.execute(
+            insert(fpl_players_table).values(
+                id="fpl-10",
+                first_name="Seeded",
+                second_name="Placeholder",
+                web_name="Placeholder",
+                position_id="GKP",
+                team_id="seed-team",
+            )
+        )
+        session.commit()
+
+    service = FplDataService(FakeClient(), PostgreSQLFplDataRepository(sessions))
+    service.refresh([FplRefreshResource.BOOTSTRAP_STATIC])
+
+    with sessions() as session:
+        players = list(session.execute(select(fpl_players_table)).mappings())
+        assert len(players) == 1
+        assert players[0]["id"] == "fpl-10"
+        assert players[0]["first_name"] == "Test"
+        assert players[0]["web_name"] == "Keeper"
+        assert players[0]["team_id"] == "1"
+
+
+def test_player_history_fetches_once_then_uses_postgres_cache() -> None:
+    sessions = _session_factory()
+    repository = PostgreSQLFplDataRepository(sessions)
+    client = FakeClient()
+    service = FplDataService(client, repository)
+
+    first = service.player_history("fpl-10")
+    second = service.player_history("fpl-10")
+
+    assert client.element_summary_calls == 1
+    assert first == second
+    assert first.history[0].gameweek == 1
+    assert first.history[0].total_points == 8
+    assert first.history[0].expected_assists == 0.42
+    assert first.fixtures[0].gameweek == 2
+    assert first.fixtures[0].difficulty == 3
 
 
 def test_repository_records_fetch_failure_without_marking_freshness() -> None:

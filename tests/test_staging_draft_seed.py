@@ -93,6 +93,19 @@ def test_seed_is_idempotent_and_persists_valid_position_counts() -> None:
             id TEXT PRIMARY KEY, first_name TEXT, second_name TEXT, web_name TEXT,
             position_id TEXT, team_id TEXT
         )""",
+        """CREATE TABLE fpl_player_values (
+            id TEXT PRIMARY KEY, player_id TEXT, gameweek INTEGER, value INTEGER
+        )""",
+        """CREATE TABLE fpl_player_availability (
+            id TEXT PRIMARY KEY, player_id TEXT, status TEXT, news TEXT
+        )""",
+        """CREATE TABLE fpl_player_current_metrics (
+            player_id TEXT PRIMARY KEY, total_points INTEGER, form REAL,
+            selected_by_percent REAL, minutes INTEGER, goals_scored INTEGER,
+            assists INTEGER, clean_sheets INTEGER, expected_goals REAL,
+            expected_assists REAL, chance_of_playing_next_round INTEGER,
+            updated_at DATETIME
+        )""",
         """CREATE TABLE squad_roster_slots (
             id TEXT PRIMARY KEY, season_id TEXT, draft_team_id TEXT, slot_key TEXT,
             position_id TEXT, sort_order INTEGER, is_required BOOLEAN

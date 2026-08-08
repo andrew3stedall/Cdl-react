@@ -131,7 +131,7 @@ function renderApp({
 }
 
 describe('AppShell integration', () => {
-  test('renders the agreed feature-led primary hierarchy around rules content', async () => {
+  test('renders the global feature hierarchy consistently around rules content', async () => {
     const { container } = renderApp({ initialPath: '/rules' });
 
     await act(async () => {
@@ -139,6 +139,7 @@ describe('AppShell integration', () => {
     });
 
     const primaryNavigation = container.querySelector('nav[aria-label="Primary navigation"]');
+    const mobileNavigation = container.querySelector('nav[aria-label="Global mobile navigation"]');
     const supportNavigation = container.querySelector('nav[aria-label="Support navigation"]');
 
     expect(container.querySelector('[aria-current="page"]')?.textContent).toContain('Rules');
@@ -146,9 +147,10 @@ describe('AppShell integration', () => {
     expect(primaryNavigation?.textContent).toContain('Home');
     expect(primaryNavigation?.textContent).toContain('Squad');
     expect(primaryNavigation?.textContent).toContain('Market');
-    expect(primaryNavigation?.textContent).toContain('Matchweek');
     expect(primaryNavigation?.textContent).toContain('League');
+    expect(primaryNavigation?.textContent).not.toContain('Matchweek');
     expect(primaryNavigation?.textContent).not.toContain('Scouting');
+    expect(mobileNavigation?.textContent).toBe(primaryNavigation?.textContent);
     expect(supportNavigation?.textContent).toContain('Rules');
     expect(container.querySelector('[aria-label="Account menu for Test Manager"]')).not.toBeNull();
   });

@@ -1,0 +1,141 @@
+name: GCP Staging Auth Diagnostic
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/gcp-staging-auth-diagnostic.yml"
+
+permissions:
+  contents: read
+  id-token: write
+  issues: write
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    environment: staging
+    env:
+      PROJECT_ID: ${{ vars.GCP_STAGING_PROJECT_ID }}
+      PROJECT_NUMBER: ${{ vars.GCP_STAGING_PROJECT_NUMBER }}
+      WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_STAGING_WORKLOAD_IDENTITY_PROVIDER }}
+      DEPLOY_SERVICE_ACCOUNT: ${{ vars.GCP_STAGING_DEPLOY_SERVICE_ACCOUNT }}
+      REGION: australia-southeast1
+      SERVICE_NAME: cdl-react-staging-api
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.DEPLOY_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
+        with:
+          version: ">= 416.0.0"
+
+      - name: Collect sanitized auth failure evidence
+        run: |
+          set -euo pipefail
+          gcloud logging read \
+            'resource.type="cloud_run_revision" AND resource.labels.service_name="cdl-react-staging-api" AND httpRequest.requestUrl:"/api/auth/"' \
+            --project "${PROJECT_ID}" \
+            --freshness=2h \
+            --limit=100 \
+            --format=json > "${RUNNER_TEMP}/auth-requests.json"
+
+          gcloud logging read \
+            'resource.type="cloud_run_revision" AND resource.labels.service_name="cdl-react-staging-api" AND severity>=ERROR' \
+            --project "${PROJECT_ID}" \
+            --freshness=2h \
+            --limit=100 \
+            --format=json > "${RUNNER_TEMP}/service-errors.json"
+
+          python - "${RUNNER_TEMP}/auth-requests.json" "${RUNNER_TEMP}/service-errors.json" > "${RUNNER_TEMP}/auth-diagnostic.md" <<'PY'
+          import json
+          import re
+          import sys
+          from collections import Counter
+          from pathlib import Path
+          from urllib.parse import urlsplit
+
+          requests = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8") or "[]")
+          errors = json.loads(Path(sys.argv[2]).read_text(encoding="utf-8") or "[]")
+
+          status_counts = Counter()
+          recent = []
+          for entry in requests:
+              req = entry.get("httpRequest") or {}
+              url = req.get("requestUrl") or ""
+              path = urlsplit(url).path if url else ""
+              if not path.startswith("/api/auth/"):
+                  continue
+              status = int(req.get("status") or 0)
+              status_counts[(path, status)] += 1
+              recent.append((entry.get("timestamp", ""), path, status, (entry.get("resource") or {}).get("labels", {}).get("revision_name", "")))
+
+          safe_frames = []
+          exception_classes = Counter()
+          email_re = re.compile(r"[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}", re.I)
+          token_re = re.compile(r"[A-Za-z0-9_-]{40,}")
+          frame_re = re.compile(r'File "(/app/[^\"]+)", line (\d+), in ([^\s]+)')
+          exc_re = re.compile(r"(?:^|\n)([A-Za-z_][A-Za-z0-9_.]*(?:Error|Exception))(?::|$)")
+
+          for entry in errors:
+              pieces = []
+              text = entry.get("textPayload")
+              if isinstance(text, str):
+                  pieces.append(text)
+              payload = entry.get("jsonPayload")
+              if isinstance(payload, dict):
+                  for key in ("message", "exception", "stack_trace", "stackTrace"):
+                      value = payload.get(key)
+                      if isinstance(value, str):
+                          pieces.append(value)
+              combined = "\n".join(pieces)
+              for match in frame_re.finditer(combined):
+                  frame = f"{match.group(1)}:{match.group(2)} in {match.group(3)}"
+                  if frame not in safe_frames:
+                      safe_frames.append(frame)
+              for match in exc_re.finditer(combined):
+                  exception_classes[match.group(1)] += 1
+
+          print("## Staging auth diagnostic")
+          print()
+          print("### Auth request status counts (last 2h)")
+          if status_counts:
+              for (path, status), count in sorted(status_counts.items()):
+                  print(f"- `{path}` HTTP {status}: {count}")
+          else:
+              print("- No matching request logs found.")
+          print()
+          print("### Most recent auth requests")
+          for timestamp, path, status, revision in sorted(recent, reverse=True)[:20]:
+              revision = token_re.sub("<redacted>", revision)
+              revision = email_re.sub("<redacted-email>", revision)
+              print(f"- {timestamp} `{path}` HTTP {status} revision `{revision}`")
+          if not recent:
+              print("- None.")
+          print()
+          print("### Exception classes")
+          if exception_classes:
+              for name, count in exception_classes.most_common():
+                  print(f"- `{name}`: {count}")
+          else:
+              print("- No exception class could be safely extracted.")
+          print()
+          print("### Application traceback frames")
+          if safe_frames:
+              for frame in safe_frames[-30:]:
+                  print(f"- `{frame}`")
+          else:
+              print("- No `/app/` traceback frames found.")
+          PY
+
+          gh api "repos/${GITHUB_REPOSITORY}/issues/96/comments" \
+            -f body="$(cat "${RUNNER_TEMP}/auth-diagnostic.md")"

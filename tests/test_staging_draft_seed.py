@@ -163,7 +163,9 @@ def test_seed_is_idempotent_and_persists_valid_position_counts() -> None:
         ).all()
 
     assert team_counts == {team_id: 20 for team_id in TEAM_IDS}
-    persisted_counts = {team_id: {position: 0 for position in POSITION_LIMITS} for team_id in TEAM_IDS}
+    persisted_counts = {
+        team_id: {position: 0 for position in POSITION_LIMITS} for team_id in TEAM_IDS
+    }
     for team_id, position, count in persisted_position_rows:
         persisted_counts[team_id][position] = count
     for team_index, team_id in enumerate(TEAM_IDS):

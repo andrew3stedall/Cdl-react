@@ -84,10 +84,10 @@ class DatabaseOutageAuthService:
     def _raise() -> None:
         raise OperationalError("SELECT 1", {}, Exception("database unavailable"))
 
-    def get_session(self, session_id: str | None):
+    def get_session(self, session_id: str | None) -> None:
         self._raise()
 
-    def login_google(self, identity: GoogleIdentity):
+    def login_google(self, identity: GoogleIdentity) -> None:
         self._raise()
 
 

@@ -235,8 +235,7 @@ export function SquadPage({ preset }: SquadPageProps) {
         ]);
         return { summary, scouting, persistedTrades, lineup };
       })
-      .then(({ summary, scouting, persistedInterests: _persistedInterests, persistedTrades, lineup }: never) => {
-        void _persistedInterests;
+      .then(({ summary, scouting, persistedTrades, lineup }) => {
         const roster = summary.players.map(mapPlayer);
         const hasLineup = Boolean(lineup?.players.length);
         setSquadPlayers(mergeLineupPlayers(roster, lineup?.players ?? null));

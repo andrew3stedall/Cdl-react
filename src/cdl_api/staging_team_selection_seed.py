@@ -175,9 +175,7 @@ def validate_legal_lineup(assignments: tuple[LineupAssignment, ...]) -> None:
     starter_counts = Counter(assignment.position for assignment in starters)
     for position in POSITION_ORDER:
         if not (
-            STARTER_MINIMUMS[position]
-            <= starter_counts[position]
-            <= STARTER_MAXIMUMS[position]
+            STARTER_MINIMUMS[position] <= starter_counts[position] <= STARTER_MAXIMUMS[position]
         ):
             raise ValueError(
                 f"Illegal Starting XI {position} count {starter_counts[position]} "
@@ -187,9 +185,7 @@ def validate_legal_lineup(assignments: tuple[LineupAssignment, ...]) -> None:
     bench_goalkeepers = [assignment for assignment in bench if assignment.position == "GKP"]
     bench_outfield = [assignment for assignment in bench if assignment.position != "GKP"]
     if len(bench_goalkeepers) != 1 or bench_goalkeepers[0].slot_order != 0:
-        raise ValueError(
-            "Bench must contain exactly one goalkeeper with goalkeeper bench order 0."
-        )
+        raise ValueError("Bench must contain exactly one goalkeeper with goalkeeper bench order 0.")
     outfield_order = sorted(player.slot_order for player in bench_outfield)
     if len(bench_outfield) != 4 or outfield_order != [1, 2, 3, 4]:
         raise ValueError("Bench must contain four outfield substitutes ordered 1 through 4.")

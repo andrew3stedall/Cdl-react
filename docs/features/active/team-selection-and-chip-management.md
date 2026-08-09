@@ -16,7 +16,7 @@ Implemented in the canonical Squad workspace. Fixture/table presentation is inte
 
 ## Current Behaviour
 
-Managers view their selected team, bench, reserves, next deadline, and compact chip controls in Squad. The pitch/list switch is icon-only, the list is split into Starting XI/Bench/Reserves tables, and players can be moved and saved without leaving Squad. Available chips are actionable, active chips show a dot, and used chips remain visibly unavailable. Fixtures and tables remain available through the API but are not duplicated into this workspace yet.
+Managers view their selected team, bench, reserves, next deadline, and compact chip controls in Squad. The pitch/list switch is icon-only, the list is split into Starting XI/Bench/Reserves tables, and players are substituted from the contextual drawer rather than per-row dropdowns. Available chips are actionable, active chips show a dot, and used chips remain visibly unavailable. Fixtures and tables remain available through the API but are not duplicated into this workspace yet.
 
 ## Business Rules
 
@@ -24,6 +24,7 @@ Managers view their selected team, bench, reserves, next deadline, and compact c
 - Chips have active, used, and available states.
 - Only one unused chip can be active at a time.
 - Team, bench, and reserve constraints must be enforced server-side.
+- Substitution candidates must preserve the Starting XI formation and bench composition; the existing lineup save endpoint remains authoritative.
 
 ## Risks
 
@@ -49,7 +50,7 @@ Managers view their selected team, bench, reserves, next deadline, and compact c
 ## React Requirements
 
 - Team pitch and compact list layouts.
-- Bench and reserves sections with movement controls.
+- Bench and reserves sections with context-menu substitutions and numbered bench slots.
 - Icon-only chip toggles with available, active, and used states.
 - Next deadline date and countdown context.
 - Validation messages for invalid lineup states.
@@ -58,7 +59,7 @@ Managers view their selected team, bench, reserves, next deadline, and compact c
 
 - Use shadcn/ui cards, tabs, badges, buttons, dialogs, sheets, and tooltips.
 - Visual presets must define pitch density, badge styles, and table density.
-- Accessibility support is required for chip toggles and player movement.
+- Accessibility support is required for chip toggles and player substitution actions.
 
 ## Data Access Requirements
 

@@ -16,6 +16,7 @@ Checkpoint 4 complete.
 - Temporary rights should be visible with expiry warnings.
 - Loaned-in and loaned-out players should be visible.
 - Injury/status risk should be visible but not forcibly hidden.
+- Fit players should have no positive check marker; only actionable availability issues should be marked.
 
 ## Target Architecture
 

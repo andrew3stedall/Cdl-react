@@ -6,7 +6,7 @@ Replace repeated legacy static headers, off-canvas panels, reload links, and glo
 
 ## Status
 
-Implemented foundation. Persisted user preferences and full legacy responsive regression coverage remain pending.
+Implemented. The global shell, teal token system, authenticated profile route, and per-user appearance persistence are in place.
 
 ## Legacy Inventory
 
@@ -16,7 +16,7 @@ Implemented foundation. Persisted user preferences and full legacy responsive re
 
 ## Current Behaviour
 
-The application provides repeated page navigation, responsive side/top panels, manual reload, and page-specific active navigation state.
+The application provides responsive shared navigation, manual reload, route-aware active state, an authenticated profile/preferences route, and account actions for profile access and sign out.
 
 ## Business Rules
 
@@ -24,6 +24,7 @@ The application provides repeated page navigation, responsive side/top panels, m
 - Active feature state must be visible.
 - Scouting must be available from supported feature areas.
 - Sign out must remain globally accessible.
+- Users must be able to reach their profile and appearance preferences from the account controls.
 
 ## Risks
 
@@ -34,9 +35,10 @@ The application provides repeated page navigation, responsive side/top panels, m
 ## Target Architecture
 
 - React `AppShell` with route-aware navigation.
-- shadcn/ui sidebar, sheet, navigation menu, button, dropdown, command, and toast components.
+- shadcn/ui-inspired sidebar, sheet, card, button, select, navigation menu, and popover primitives.
 - Theme preset provider for user-selectable look and feel.
 - Python API endpoint for persisted user preferences if visual presets are saved server-side.
+- Shared semantic tokens keep Teal as the primary colour in light and dark modes.
 
 ## API Requirements
 
@@ -55,8 +57,9 @@ The application provides repeated page navigation, responsive side/top panels, m
 ## UI Requirements
 
 - shadcn/ui is mandatory for shell primitives unless an exception is documented.
-- Presets must include named defaults, for example `classic`, `dark`, and `compact`.
+- Presets must include Teal light/dark options and comfortable/compact density variants.
 - Presets must define colour tokens, density, radius, typography scale, and chart palette hooks.
+- Surfaces must avoid gradients, shadows, glows, and information-heavy colour highlighting.
 
 ## Data Access Requirements
 
@@ -67,6 +70,7 @@ The application provides repeated page navigation, responsive side/top panels, m
 
 - Users can navigate all modernised modules from a shared shell.
 - Users can select a visual preset and see it applied consistently.
+- Users can open Profile & preferences, inspect their authenticated account, change appearance, and sign out.
 - Shell works on mobile and desktop.
 - Active route state is clear.
 
@@ -75,6 +79,7 @@ The application provides repeated page navigation, responsive side/top panels, m
 - Unit tests for route and menu configuration.
 - React integration tests for navigation and preset selection.
 - Accessibility tests for keyboard navigation and drawer behaviour.
+- Integration coverage for profile routing and preference persistence.
 
 ## Documentation Requirements
 

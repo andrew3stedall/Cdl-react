@@ -12,6 +12,7 @@ import {
   Search,
   ShieldCheck,
   Users,
+  UserRound,
   X,
 } from 'lucide-react';
 
@@ -59,6 +60,7 @@ const navigationIcons: Record<string, LucideIcon> = {
   'league-knockout': ShieldCheck,
   'league-head-to-head': Users,
   rules: BookOpen,
+  profile: UserRound,
 };
 
 export function AppShell({
@@ -175,6 +177,17 @@ export function AppShell({
             setPresetName={setPresetName}
           />
           <div className="mobile-account-actions">
+            <Button
+              onClick={() => {
+                onNavigate('/profile');
+                onCloseMobileNavigation();
+              }}
+              type="button"
+              variant="secondary"
+            >
+              <UserRound aria-hidden="true" size={16} />
+              Profile & preferences
+            </Button>
             <Button onClick={onRefresh} type="button" variant="secondary">
               <RefreshCw aria-hidden="true" size={16} />
               Refresh data
@@ -255,6 +268,16 @@ export function AppShell({
                   setPresetName={setPresetName}
                 />
                 <p className="refresh-count">Manual data refreshes: {refreshCount}</p>
+                <Button
+                  onClick={() => {
+                    onNavigate('/profile');
+                  }}
+                  type="button"
+                  variant="secondary"
+                >
+                  <UserRound aria-hidden="true" size={16} />
+                  Profile & preferences
+                </Button>
                 <Button onClick={signOut} type="button" variant="ghost">
                   <LogOut aria-hidden="true" size={16} />
                   Sign out

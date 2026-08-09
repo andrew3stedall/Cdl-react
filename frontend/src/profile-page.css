@@ -1,0 +1,227 @@
+.profile-page {
+  display: grid;
+  gap: 1.25rem;
+  max-width: 72rem;
+}
+
+.profile-page__header,
+.profile-card {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.profile-page__header h1,
+.profile-page__header p,
+.profile-card h2,
+.profile-card p {
+  margin: 0;
+}
+
+.profile-page__header h1 {
+  font-size: clamp(1.7rem, 4vw, 2.35rem);
+  letter-spacing: -0.04em;
+}
+
+.profile-page__header > p:last-child,
+.profile-card__copy,
+.profile-identity p,
+.profile-session-card p {
+  color: var(--muted-foreground);
+  line-height: 1.55;
+}
+
+.profile-page__grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(15rem, 0.75fr) minmax(0, 1.5fr);
+}
+
+.profile-identity {
+  align-items: center;
+  display: flex;
+  gap: 0.9rem;
+}
+
+.profile-avatar {
+  align-items: center;
+  background: var(--secondary);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--primary);
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 1rem;
+  font-weight: 800;
+  height: 3.25rem;
+  justify-content: center;
+  width: 3.25rem;
+}
+
+.profile-card__eyebrow {
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.profile-identity h2,
+.profile-card__header h2,
+.profile-session-card h2 {
+  font-size: 1.05rem;
+  letter-spacing: -0.02em;
+}
+
+.profile-details {
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 0.7rem;
+  margin: 0.4rem 0 0;
+  padding-top: 0.85rem;
+}
+
+.profile-details div {
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.profile-details dt,
+.profile-details dd {
+  font-size: 0.78rem;
+  margin: 0;
+}
+
+.profile-details dt {
+  color: var(--muted-foreground);
+}
+
+.profile-details dd {
+  color: var(--foreground);
+  font-weight: 700;
+  max-width: 65%;
+  overflow: hidden;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-card__header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.profile-appearance-icon {
+  color: var(--primary);
+}
+
+.profile-preset-grid {
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.profile-preset-option {
+  align-items: stretch;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--card-foreground);
+  cursor: pointer;
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: 4.1rem minmax(0, 1fr) auto;
+  padding: 0.65rem;
+  text-align: left;
+}
+
+.profile-preset-option:hover {
+  border-color: var(--primary);
+}
+
+.profile-preset-option:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.profile-preset-option.is-selected {
+  border-color: var(--primary);
+}
+
+.profile-preset-preview {
+  background: var(--preview-background);
+  border: 1px solid var(--preview-border);
+  border-radius: calc(var(--radius) * 0.7);
+  display: grid;
+  gap: 0.25rem;
+  grid-template-columns: 0.55rem 1fr;
+  grid-template-rows: repeat(3, 0.45rem);
+  overflow: hidden;
+  padding: 0.35rem;
+}
+
+.profile-preset-preview span:first-child {
+  background: var(--preview-primary);
+  grid-row: 1 / -1;
+}
+
+.profile-preset-preview span:not(:first-child) {
+  background: var(--preview-card);
+  border: 1px solid var(--preview-border);
+}
+
+.profile-preset-copy {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.profile-preset-copy strong {
+  font-size: 0.8rem;
+}
+
+.profile-preset-copy small {
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+  line-height: 1.35;
+}
+
+.profile-preset-check {
+  align-items: center;
+  color: var(--muted-foreground);
+  display: inline-flex;
+  justify-content: center;
+}
+
+.profile-preset-option.is-selected .profile-preset-check {
+  color: var(--primary);
+}
+
+.profile-save-status {
+  color: var(--muted-foreground);
+  font-size: 0.76rem;
+  min-height: 1.1rem;
+}
+
+.profile-session-card {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.profile-session-card .ui-button {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 760px) {
+  .profile-page__grid,
+  .profile-preset-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-session-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

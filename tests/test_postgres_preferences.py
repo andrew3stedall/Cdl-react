@@ -66,19 +66,22 @@ def test_authenticated_preferences_persist_and_remain_isolated() -> None:
     app.dependency_overrides[require_authenticated_session] = lambda: _user("preferences-manager-1")
     client = TestClient(app)
 
-    assert client.put("/api/me/preferences", json={"theme_preset": "dark"}).json() == {
-        "theme_preset": "dark"
+    assert client.put("/api/me/preferences", json={"theme_preset": "teal-dark"}).json() == {
+        "theme_preset": "teal-dark"
     }
 
     app.dependency_overrides[require_authenticated_session] = lambda: _user("preferences-manager-2")
-    assert client.get("/api/me/preferences").json() == {"theme_preset": "classic"}
-    assert client.put("/api/me/preferences", json={"theme_preset": "compact"}).json() == {
-        "theme_preset": "compact"
+    assert client.get("/api/me/preferences").json() == {"theme_preset": "teal-light"}
+    assert client.put("/api/me/preferences", json={"theme_preset": "teal-dark-compact"}).json() == {
+        "theme_preset": "teal-dark-compact"
     }
 
     reloaded_repository = PostgreSQLUserPreferenceRepository(session_factory)
-    assert reloaded_repository.get_for_user("preferences-manager-1").theme_preset == "dark"
-    assert reloaded_repository.get_for_user("preferences-manager-2").theme_preset == "compact"
+    assert reloaded_repository.get_for_user("preferences-manager-1").theme_preset == "teal-dark"
+    assert (
+        reloaded_repository.get_for_user("preferences-manager-2").theme_preset
+        == "teal-dark-compact"
+    )
 
     with engine.begin() as connection:
         connection.execute(

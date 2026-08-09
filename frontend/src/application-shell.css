@@ -1,6 +1,6 @@
 /* Focused authenticated application shell */
 .app-shell {
-  background: #f5f7fb;
+  background: var(--background);
   color: var(--cdl-foreground);
   display: grid;
   grid-template-columns: 15rem minmax(0, 1fr);
@@ -8,8 +8,8 @@
 }
 
 .app-sidebar {
-  background: color-mix(in srgb, var(--cdl-surface) 96%, var(--cdl-accent));
-  border-right: 1px solid color-mix(in srgb, var(--cdl-border) 78%, transparent);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
   height: 100vh;
@@ -44,16 +44,16 @@
 }
 
 .shell-brand span:last-child {
-  color: #64748b;
+  color: var(--muted-foreground);
   font-size: 0.75rem;
   line-height: 1.25;
 }
 
 .brand-mark {
-  background: linear-gradient(145deg, var(--cdl-primary), #4338ca);
-  border-radius: 0.7rem;
-  box-shadow: 0 7px 18px rgb(29 78 216 / 0.2);
-  color: white;
+  background: var(--primary);
+  border: 1px solid var(--primary);
+  border-radius: var(--radius);
+  color: var(--primary-foreground);
   display: inline-grid;
   flex: 0 0 auto;
   font-size: 0.82rem;
@@ -64,7 +64,7 @@
 }
 
 .navigation-label {
-  color: #64748b;
+  color: var(--muted-foreground);
   font-size: 0.7rem;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -82,8 +82,8 @@
   align-items: center;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 0.72rem;
-  color: #475569;
+  border-radius: var(--radius);
+  color: var(--foreground);
   cursor: pointer;
   display: flex;
   font-size: 0.9rem;
@@ -101,16 +101,16 @@
 
 .nav-item:hover,
 .nav-item:focus-visible {
-  background: color-mix(in srgb, var(--cdl-accent) 58%, transparent);
-  border-color: color-mix(in srgb, var(--cdl-border) 72%, transparent);
-  color: var(--cdl-foreground);
+  background: var(--secondary);
+  border-color: var(--border);
+  color: var(--foreground);
   outline: none;
 }
 
 .nav-item.active {
-  background: color-mix(in srgb, var(--cdl-accent) 88%, white);
-  border-color: color-mix(in srgb, var(--cdl-primary) 24%, var(--cdl-border));
-  color: var(--cdl-primary);
+  background: var(--secondary);
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 .nav-item.compact {
@@ -126,7 +126,7 @@
 }
 
 .sidebar-footer {
-  border-top: 1px solid color-mix(in srgb, var(--cdl-border) 70%, transparent);
+  border-top: 1px solid var(--border);
   display: grid;
   gap: 0.8rem;
   margin-top: auto;
@@ -158,13 +158,13 @@
 
 .sidebar-session span:last-child,
 .account-summary span:last-child {
-  color: #64748b;
+  color: var(--muted-foreground);
   font-size: 0.72rem;
 }
 
 .account-avatar {
-  background: color-mix(in srgb, var(--cdl-primary) 13%, var(--cdl-surface));
-  border: 1px solid color-mix(in srgb, var(--cdl-primary) 22%, var(--cdl-border));
+  background: var(--secondary);
+  border: 1px solid var(--border);
   border-radius: 50%;
   color: var(--cdl-primary);
   display: inline-grid;
@@ -183,9 +183,8 @@
 
 .shell-header {
   align-items: center;
-  backdrop-filter: blur(12px);
-  background: color-mix(in srgb, var(--cdl-background) 88%, transparent);
-  border-bottom: 1px solid color-mix(in srgb, var(--cdl-border) 72%, transparent);
+  background: var(--background);
+  border-bottom: 1px solid var(--border);
   display: flex;
   gap: 1rem;
   justify-content: space-between;
@@ -234,8 +233,8 @@
   align-items: center;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 0.65rem;
-  color: #475569;
+  border-radius: var(--radius);
+  color: var(--muted-foreground);
   display: inline-flex;
   height: 2.5rem;
   justify-content: center;
@@ -249,9 +248,9 @@
 .shell-icon-button:focus-visible,
 .shell-icon-link:hover,
 .shell-icon-link:focus-visible {
-  background: var(--cdl-surface);
-  border-color: var(--cdl-border);
-  color: var(--cdl-foreground);
+  background: var(--secondary);
+  border-color: var(--border);
+  color: var(--foreground);
   outline: none;
 }
 
@@ -283,8 +282,8 @@
 .account-menu > summary:hover,
 .account-menu > summary:focus-visible,
 .account-menu[open] > summary {
-  background: var(--cdl-surface);
-  border-color: var(--cdl-border);
+  background: var(--secondary);
+  border-color: var(--border);
   outline: none;
 }
 
@@ -298,7 +297,7 @@
 }
 
 .account-popover {
-  box-shadow: 0 18px 48px rgb(15 23 42 / 0.16);
+  background: var(--popover);
   display: grid;
   gap: 0.9rem;
   margin-top: 0.5rem;
@@ -318,7 +317,7 @@
 
 .account-popover-header span,
 .refresh-count {
-  color: #64748b;
+  color: var(--muted-foreground);
   font-size: 0.76rem;
 }
 
@@ -341,14 +340,14 @@
 }
 
 .preset-control .ui-select select {
-  background: var(--cdl-surface);
+  background: var(--surface);
   width: 100%;
 }
 
 .context-navigation-horizontal {
   align-items: center;
-  background: color-mix(in srgb, var(--cdl-surface) 92%, var(--cdl-background));
-  border-bottom: 1px solid color-mix(in srgb, var(--cdl-border) 70%, transparent);
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
   display: flex;
   gap: 0.3rem;
   max-width: 100%;
@@ -370,7 +369,7 @@
 }
 
 .sheet-backdrop {
-  background: rgb(15 23 42 / 0.44);
+  background: rgb(15 23 42 / 0.38);
   border: 0;
   inset: 0;
   padding: 0;
@@ -379,9 +378,8 @@
 }
 
 .ui-sheet {
-  background: var(--cdl-surface);
+  background: var(--popover);
   border: 0;
-  box-shadow: 16px 0 48px rgb(15 23 42 / 0.22);
   display: flex;
   flex-direction: column;
   inset: 0 auto 0 0;
@@ -398,7 +396,7 @@
 
 .mobile-sheet-header {
   align-items: center;
-  border-bottom: 1px solid var(--cdl-border);
+  border-bottom: 1px solid var(--border);
   display: flex;
   justify-content: space-between;
   margin: 0;
@@ -432,11 +430,13 @@
   justify-content: center;
 }
 
-[data-theme-preset='compact'] .app-sidebar {
+[data-theme-preset='teal-light-compact'] .app-sidebar,
+[data-theme-preset='teal-dark-compact'] .app-sidebar {
   padding: 0.7rem;
 }
 
-[data-theme-preset='compact'] .shell-content {
+[data-theme-preset='teal-light-compact'] .shell-content,
+[data-theme-preset='teal-dark-compact'] .shell-content {
   padding: 0.75rem 1rem 1.5rem;
 }
 

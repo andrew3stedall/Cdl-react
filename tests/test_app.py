@@ -19,7 +19,13 @@ def test_theme_contract_endpoint() -> None:
 
     assert response.status_code == 200
     presets = response.json()
-    assert presets[0]["name"] == "classic"
+    assert presets[0]["name"] == "teal-light"
+    assert [preset["name"] for preset in presets] == [
+        "teal-light",
+        "teal-dark",
+        "teal-light-compact",
+        "teal-dark-compact",
+    ]
 
 
 def test_user_preferences_endpoint_round_trip() -> None:
@@ -28,15 +34,15 @@ def test_user_preferences_endpoint_round_trip() -> None:
         "/api/auth/login",
         json={"email": "manager@example.com", "password": "demo-login-secret"},
     )
-    reset_response = client.put("/api/me/preferences", json={"theme_preset": "classic"})
+    reset_response = client.put("/api/me/preferences", json={"theme_preset": "teal-light"})
     initial_response = client.get("/api/me/preferences")
-    update_response = client.put("/api/me/preferences", json={"theme_preset": "compact"})
+    update_response = client.put("/api/me/preferences", json={"theme_preset": "teal-dark-compact"})
     final_response = client.get("/api/me/preferences")
 
     assert login_response.status_code == 200
     assert reset_response.status_code == 200
     assert initial_response.status_code == 200
-    assert initial_response.json() == {"theme_preset": "classic"}
+    assert initial_response.json() == {"theme_preset": "teal-light"}
     assert update_response.status_code == 200
-    assert update_response.json() == {"theme_preset": "compact"}
-    assert final_response.json() == {"theme_preset": "compact"}
+    assert update_response.json() == {"theme_preset": "teal-dark-compact"}
+    assert final_response.json() == {"theme_preset": "teal-dark-compact"}

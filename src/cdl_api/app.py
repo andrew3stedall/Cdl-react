@@ -62,9 +62,30 @@ def create_app() -> FastAPI:
     @app.get(f"{settings.api_prefix}/contracts/theme-presets")
     def theme_presets() -> list[dict[str, object]]:
         return [
-            {"name": "classic", "label": "Classic", "is_default": True},
-            {"name": "dark", "label": "Dark", "is_default": False},
-            {"name": "compact", "label": "Compact", "is_default": False},
+            {
+                "name": "teal-light",
+                "label": "Teal · Light",
+                "description": "A bright, restrained workspace with teal actions.",
+                "is_default": True,
+            },
+            {
+                "name": "teal-dark",
+                "label": "Teal · Dark",
+                "description": "A deep, low-contrast workspace for evening sessions.",
+                "is_default": False,
+            },
+            {
+                "name": "teal-light-compact",
+                "label": "Teal · Light Compact",
+                "description": "The light theme with tighter tables and controls.",
+                "is_default": False,
+            },
+            {
+                "name": "teal-dark-compact",
+                "label": "Teal · Dark Compact",
+                "description": "The dark theme with tighter tables and controls.",
+                "is_default": False,
+            },
         ]
 
     mount_static_frontend(

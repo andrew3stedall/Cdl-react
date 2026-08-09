@@ -5,7 +5,7 @@
 
 .dashboard-filters {
   align-items: end;
-  background: var(--cdl-accent);
+  background: var(--secondary);
   border: 1px solid var(--cdl-border);
   border-radius: var(--cdl-radius);
   display: flex;
@@ -32,11 +32,7 @@
 
 .dashboard-chart-bar {
   align-items: center;
-  background: linear-gradient(
-    to right,
-    var(--cdl-primary) var(--bar-size),
-    var(--cdl-accent) var(--bar-size)
-  );
+  background: var(--secondary);
   border: 1px solid var(--cdl-border);
   border-radius: var(--cdl-radius);
   color: var(--cdl-foreground);
@@ -46,7 +42,21 @@
   grid-template-columns: 1fr auto;
   min-height: 2.5rem;
   padding: 0.5rem 0.75rem;
+  position: relative;
   text-align: left;
+}
+
+.dashboard-chart-bar::before {
+  background: var(--primary);
+  content: '';
+  inset: 0 auto 0 0;
+  opacity: 0.14;
+  position: absolute;
+  width: var(--bar-size);
+}
+
+.dashboard-chart-bar > * {
+  position: relative;
 }
 
 .dashboard-widget-card table,
@@ -66,7 +76,7 @@
 
 .dashboard-widget-card th,
 .dashboard-drilldown th {
-  color: #64748b;
+  color: var(--muted-foreground);
   font-size: 0.75rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -75,8 +85,7 @@
 .dashboard-drilldown {
   background: var(--cdl-surface);
   border: 1px solid var(--cdl-border);
-  border-radius: var(--cdl-radius);
-  box-shadow: 0 1rem 2rem rgb(15 23 42 / 18%);
+  border-radius: var(--radius);
   display: grid;
   gap: 1rem;
   inset: auto 1.25rem 1.25rem auto;

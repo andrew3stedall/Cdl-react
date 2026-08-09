@@ -3,7 +3,15 @@
 from cdl_api.contracts.theme import UserPreferences
 from cdl_api.repositories.preferences import InMemoryUserPreferenceRepository
 
-SUPPORTED_THEME_PRESETS = {"classic", "dark", "compact"}
+SUPPORTED_THEME_PRESETS = {
+    "classic",
+    "dark",
+    "compact",
+    "teal-light",
+    "teal-dark",
+    "teal-light-compact",
+    "teal-dark-compact",
+}
 
 
 class UserPreferenceService:

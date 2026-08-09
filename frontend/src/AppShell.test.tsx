@@ -24,7 +24,7 @@ const authenticatedSession: SessionState = {
 };
 
 class MemoryPreferenceClient implements PreferenceClient {
-  preferences: UserPreferences = { themePreset: 'classic' };
+  preferences: UserPreferences = { themePreset: 'teal-light' };
 
   async getPreferences(): Promise<UserPreferences> {
     return this.preferences;
@@ -169,5 +169,44 @@ describe('AppShell integration', () => {
     expect(container.textContent).toContain('Gameweek 12');
     expect(container.textContent).toContain('Castle United');
     expect(container.textContent).toContain('58 - 52');
+  });
+
+  test('provides an account profile with persisted appearance controls', async () => {
+    const preferenceClient = new MemoryPreferenceClient();
+    const { container } = renderApp({ initialPath: '/profile', preferenceClient });
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(container.textContent).toContain('Profile & preferences');
+    expect(container.textContent).toContain('Test Manager');
+    expect(container.textContent).toContain('Sign out');
+
+    const darkCompactOption = [...container.querySelectorAll<HTMLButtonElement>('.profile-preset-option')]
+      .find((option) => option.textContent?.includes('Teal · Dark Compact'));
+    expect(darkCompactOption).toBeDefined();
+
+    await act(async () => {
+      darkCompactOption?.click();
+      await Promise.resolve();
+    });
+
+    expect(preferenceClient.preferences.themePreset).toBe('teal-dark-compact');
+    expect(document.documentElement.dataset.themeMode).toBe('dark');
+  });
+
+  test('passes the persisted preset into page-level density consumers', async () => {
+    const preferenceClient = new MemoryPreferenceClient();
+    preferenceClient.preferences = { themePreset: 'teal-dark-compact' };
+    const { container } = renderApp({ initialPath: '/rules', preferenceClient });
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(container.querySelector('[data-preset="teal-dark-compact"]')).not.toBeNull();
+    expect(document.documentElement.dataset.themePreset).toBe('teal-dark-compact');
   });
 });

@@ -1,85 +1,130 @@
-import type { ThemePreset } from './contracts';
+import type { ThemePreset, ThemePresetName } from './contracts';
+
+const lightColors = {
+  background: '#f8fafc',
+  foreground: '#0f172a',
+  card: '#ffffff',
+  cardForeground: '#0f172a',
+  surface: '#ffffff',
+  surfaceForeground: '#0f172a',
+  popover: '#ffffff',
+  popoverForeground: '#0f172a',
+  primary: '#0f766e',
+  primaryForeground: '#f0fdfa',
+  secondary: '#f1f5f9',
+  secondaryForeground: '#1e293b',
+  muted: '#f1f5f9',
+  mutedForeground: '#64748b',
+  accent: '#f1f5f9',
+  accentForeground: '#0f766e',
+  border: '#dbe4e2',
+  input: '#dbe4e2',
+  ring: '#14b8a6',
+  destructive: '#b91c1c',
+  destructiveForeground: '#fff1f2',
+};
+
+const darkColors = {
+  background: '#0b1111',
+  foreground: '#e6fffb',
+  card: '#111c1b',
+  cardForeground: '#e6fffb',
+  surface: '#111c1b',
+  surfaceForeground: '#e6fffb',
+  popover: '#111c1b',
+  popoverForeground: '#e6fffb',
+  primary: '#2dd4bf',
+  primaryForeground: '#042f2e',
+  secondary: '#192523',
+  secondaryForeground: '#d1fae5',
+  muted: '#182321',
+  mutedForeground: '#9db2ae',
+  accent: '#1c2e2b',
+  accentForeground: '#5eead4',
+  border: '#2a3b38',
+  input: '#2a3b38',
+  ring: '#2dd4bf',
+  destructive: '#f87171',
+  destructiveForeground: '#2b0b0b',
+};
+
+const lightPalette = ['#0f766e', '#115e59', '#0d9488', '#64748b'];
+const darkPalette = ['#2dd4bf', '#5eead4', '#99f6e4', '#94a3b8'];
 
 export const themePresets: ThemePreset[] = [
   {
-    name: 'classic',
-    label: 'Classic',
+    name: 'teal-light',
+    label: 'Teal · Light',
+    description: 'A bright, restrained workspace with teal actions.',
     isDefault: true,
     tokens: {
-      colors: {
-        background: '#f8fafc',
-        foreground: '#0f172a',
-        surface: '#ffffff',
-        surfaceForeground: '#111827',
-        primary: '#1d4ed8',
-        primaryForeground: '#ffffff',
-        muted: '#e2e8f0',
-        mutedForeground: '#475569',
-        border: '#cbd5e1',
-        accent: '#dbeafe',
-      },
+      colors: lightColors,
       density: 'comfortable',
-      radius: '0.875rem',
+      radius: '0.65rem',
       typographyScale: 'standard',
-      chartPaletteHooks: ['#1d4ed8', '#0f766e', '#b45309', '#be123c'],
+      chartPaletteHooks: lightPalette,
     },
   },
   {
-    name: 'dark',
-    label: 'Dark',
+    name: 'teal-dark',
+    label: 'Teal · Dark',
+    description: 'A deep, low-contrast workspace for evening sessions.',
     isDefault: false,
     tokens: {
-      colors: {
-        background: '#0f172a',
-        foreground: '#f8fafc',
-        surface: '#111827',
-        surfaceForeground: '#f9fafb',
-        primary: '#60a5fa',
-        primaryForeground: '#0f172a',
-        muted: '#1e293b',
-        mutedForeground: '#cbd5e1',
-        border: '#334155',
-        accent: '#1e3a8a',
-      },
+      colors: darkColors,
       density: 'comfortable',
-      radius: '0.875rem',
+      radius: '0.65rem',
       typographyScale: 'standard',
-      chartPaletteHooks: ['#60a5fa', '#34d399', '#fbbf24', '#fb7185'],
+      chartPaletteHooks: darkPalette,
     },
   },
   {
-    name: 'compact',
-    label: 'Compact',
+    name: 'teal-light-compact',
+    label: 'Teal · Light Compact',
+    description: 'The light theme with tighter tables and controls.',
     isDefault: false,
     tokens: {
-      colors: {
-        background: '#f9fafb',
-        foreground: '#111827',
-        surface: '#ffffff',
-        surfaceForeground: '#111827',
-        primary: '#4338ca',
-        primaryForeground: '#ffffff',
-        muted: '#e5e7eb',
-        mutedForeground: '#4b5563',
-        border: '#d1d5db',
-        accent: '#e0e7ff',
-      },
+      colors: lightColors,
       density: 'compact',
-      radius: '0.5rem',
+      radius: '0.45rem',
       typographyScale: 'condensed',
-      chartPaletteHooks: ['#4338ca', '#047857', '#c2410c', '#be185d'],
+      chartPaletteHooks: lightPalette,
+    },
+  },
+  {
+    name: 'teal-dark-compact',
+    label: 'Teal · Dark Compact',
+    description: 'The dark theme with tighter tables and controls.',
+    isDefault: false,
+    tokens: {
+      colors: darkColors,
+      density: 'compact',
+      radius: '0.45rem',
+      typographyScale: 'condensed',
+      chartPaletteHooks: darkPalette,
     },
   },
 ];
+
+const legacyPresetAliases: Record<string, ThemePresetName> = {
+  classic: 'teal-light',
+  dark: 'teal-dark',
+  compact: 'teal-light-compact',
+};
 
 export function getDefaultThemePreset(): ThemePreset {
   return themePresets.find((preset) => preset.isDefault) ?? themePresets[0];
 }
 
 export function resolveThemePreset(name: string | null | undefined): ThemePreset {
-  return themePresets.find((preset) => preset.name === name) ?? getDefaultThemePreset();
+  const resolvedName = legacyPresetAliases[name ?? ''] ?? name;
+  return themePresets.find((preset) => preset.name === resolvedName) ?? getDefaultThemePreset();
 }
 
 export function getThemePresetClassName(preset: ThemePreset): string {
   return `theme-${preset.name} density-${preset.tokens.density} type-${preset.tokens.typographyScale}`;
+}
+
+export function getThemeMode(preset: ThemePreset): 'light' | 'dark' {
+  return preset.name.includes('dark') ? 'dark' : 'light';
 }

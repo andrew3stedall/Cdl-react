@@ -5,7 +5,7 @@
 
 .team-selection-status {
   align-items: center;
-  background: var(--cdl-accent);
+  background: var(--secondary);
   border: 1px solid var(--cdl-border);
   border-radius: var(--cdl-radius);
   display: inline-flex;
@@ -45,13 +45,13 @@
 }
 
 .chip-status.active {
-  background: var(--cdl-primary);
-  color: white;
+  background: var(--primary);
+  color: var(--primary-foreground);
 }
 
 .chip-status.available,
 .chip-status.used {
-  background: var(--cdl-accent);
+  background: var(--secondary);
 }
 
 .team-selection-table {
@@ -74,7 +74,7 @@
 }
 
 .team-selection-head {
-  background: var(--cdl-accent);
+  background: var(--secondary);
   font-size: 0.8rem;
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -131,7 +131,7 @@
 
   .team-selection-position,
   .team-selection-team {
-    color: #64748b;
+    color: var(--muted-foreground);
     font-size: 0.8rem;
     font-weight: 700;
   }

@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 
 import type { ThemePreset, UserPreferences } from './contracts';
 import { FallbackPreferenceClient, type PreferenceClient } from './preferences-api';
-import { getThemePresetClassName, resolveThemePreset } from './theme-presets';
+import { getThemeMode, getThemePresetClassName, resolveThemePreset } from './theme-presets';
 
 interface ThemePresetContextValue {
   preset: ThemePreset;
@@ -53,16 +53,41 @@ export function ThemePresetProvider({
 
   useEffect(() => {
     const root = document.documentElement;
+    const colors = preset.tokens.colors;
+    const tokenValues: Record<string, string> = {
+      background: colors.background,
+      foreground: colors.foreground,
+      card: colors.card,
+      'card-foreground': colors.cardForeground,
+      surface: colors.surface,
+      'surface-foreground': colors.surfaceForeground,
+      popover: colors.popover,
+      'popover-foreground': colors.popoverForeground,
+      primary: colors.primary,
+      'primary-foreground': colors.primaryForeground,
+      secondary: colors.secondary,
+      'secondary-foreground': colors.secondaryForeground,
+      muted: colors.muted,
+      'muted-foreground': colors.mutedForeground,
+      accent: colors.accent,
+      'accent-foreground': colors.accentForeground,
+      border: colors.border,
+      input: colors.input,
+      ring: colors.ring,
+      destructive: colors.destructive,
+      'destructive-foreground': colors.destructiveForeground,
+    };
 
     root.dataset.themePreset = preset.name;
+    root.dataset.themeMode = getThemeMode(preset);
     root.dataset.themeClass = getThemePresetClassName(preset);
-    root.style.setProperty('--cdl-background', preset.tokens.colors.background);
-    root.style.setProperty('--cdl-foreground', preset.tokens.colors.foreground);
-    root.style.setProperty('--cdl-surface', preset.tokens.colors.surface);
-    root.style.setProperty('--cdl-primary', preset.tokens.colors.primary);
-    root.style.setProperty('--cdl-border', preset.tokens.colors.border);
-    root.style.setProperty('--cdl-accent', preset.tokens.colors.accent);
+    root.style.colorScheme = getThemeMode(preset);
+    Object.entries(tokenValues).forEach(([token, value]) => {
+      root.style.setProperty(`--${token}`, value);
+      root.style.setProperty(`--cdl-${token}`, value);
+    });
     root.style.setProperty('--cdl-radius', preset.tokens.radius);
+    root.style.setProperty('--radius', preset.tokens.radius);
   }, [preset]);
 
   const savePresetPreference = (preferences: UserPreferences) => {

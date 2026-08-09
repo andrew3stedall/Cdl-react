@@ -23,7 +23,7 @@ const authenticatedSession: SessionState = {
 
 const teamSelectionSnapshot: TeamSelectionSnapshot = {
   managerTeam: { id: 'team-castle', name: 'Castle FC' },
-  gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1 },
+  gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1, deadlineAt: '2026-08-14T17:30:00Z' },
   players: [
     { id: 'player-1', name: 'Alex Keeper', position: 'GKP', team: 'ARS', slot: 'starter', slotOrder: 1, captain: false, viceCaptain: false },
     { id: 'player-2', name: 'Ben Defender', position: 'DEF', team: 'MCI', slot: 'starter', slotOrder: 2, captain: false, viceCaptain: false },
@@ -101,8 +101,14 @@ describe('unified Squad shell integration', () => {
 
     expect(container.querySelector('[aria-current="page"]')?.textContent).toContain('Squad');
     expect(container.querySelector('nav[aria-label="Global mobile navigation"]')?.textContent).not.toContain('Matchweek');
-    expect(container.textContent).toContain('Lineup, chips, bench, and reserves');
-    expect(container.textContent).toContain('Manage the current gameweek without leaving Squad.');
+    expect(container.textContent).toContain('Next deadline');
+    expect(container.textContent).not.toContain('Lineup, chips, bench, and reserves');
+    await act(async () => {
+      (container.querySelector('button[aria-label="View as list"]') as HTMLButtonElement).click();
+      await Promise.resolve();
+    });
+    expect(container.querySelector('[aria-label="Starting XI players"]')).not.toBeNull();
+    expect(container.querySelector('.team-selection-panel')).toBeNull();
     expect(container.querySelector('[aria-label="Account menu for CDL Manager"]')).not.toBeNull();
   });
 

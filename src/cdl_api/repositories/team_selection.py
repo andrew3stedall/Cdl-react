@@ -27,7 +27,12 @@ class InMemoryTeamSelectionRepository:
         rival = TeamSummary(id="team-rival", name="Rival Town", short_name="RTN")
         arsenal = TeamSummary(id="epl-ars", name="Arsenal", short_name="ARS")
         city = TeamSummary(id="epl-mci", name="Manchester City", short_name="MCI")
-        self.gameweek = GameweekSummary(id="gw-1", name="Gameweek 1", number=1)
+        self.gameweek = GameweekSummary(
+            id="gw-1",
+            name="Gameweek 1",
+            number=1,
+            deadline_at=datetime(2026, 8, 14, 17, 30, tzinfo=UTC),
+        )
         self._players = [
             self._player("player-1", "Alex Keeper", "GKP", arsenal, LineupSlot.STARTER, 1),
             self._player("player-2", "Ben Defender", "DEF", city, LineupSlot.STARTER, 2),

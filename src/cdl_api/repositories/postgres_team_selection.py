@@ -26,6 +26,7 @@ from cdl_api.contracts.team_selection import (
     LineupSlot,
     TeamSelectionPlayer,
 )
+from cdl_api.repositories.postgres_fpl_data import fpl_gameweeks_table
 from cdl_api.repositories.postgres_league_fpl import (
     draft_teams_table,
     epl_teams_table,
@@ -127,7 +128,12 @@ class PostgreSQLTeamSelectionRepository(InMemoryTeamSelectionRepository):
         super().__init__()
         self._session_factory = session_factory
         self.manager_team = TeamSummary(id=PRIMARY_TEAM_ID, name=TEAM_NAMES[0])
-        self.gameweek = GameweekSummary(id="gw-1", name="Gameweek 1", number=1)
+        self.gameweek = GameweekSummary(
+            id="gw-1",
+            name="Gameweek 1",
+            number=1,
+            deadline_at=self._read_next_deadline() or self.gameweek.deadline_at,
+        )
 
     def get_players(self) -> list[TeamSelectionPlayer]:
         players = self._database_roster()
@@ -392,6 +398,26 @@ class PostgreSQLTeamSelectionRepository(InMemoryTeamSelectionRepository):
                 )
             )
             return _mapping_rows(result)
+
+    def _read_next_deadline(self) -> datetime | None:
+        """Use the cached official FPL deadline when it is available."""
+        try:
+            with self._session_factory() as session:
+                result = session.execute(
+                    select(fpl_gameweeks_table.c.deadline_time)
+                    .where(fpl_gameweeks_table.c.deadline_time.is_not(None))
+                    .order_by(
+                        fpl_gameweeks_table.c.is_next.desc(),
+                        fpl_gameweeks_table.c.deadline_time.asc(),
+                    )
+                    .limit(1)
+                )
+                rows = _mapping_rows(result)
+        except Exception:
+            return None
+
+        deadline = rows[0].get("deadline_time") if rows else None
+        return deadline if isinstance(deadline, datetime) else None
 
     def _chip_rows(self) -> list[Mapping[str, object]]:
         with self._session_factory() as session:

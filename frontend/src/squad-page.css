@@ -134,8 +134,8 @@
   border: 1px solid var(--squad-border);
   border-radius: 0.8rem;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  padding: 0.22rem;
+  grid-template-columns: repeat(2, 2.25rem);
+  padding: 0.16rem;
 }
 
 .squad-page__view-toggle button {
@@ -146,11 +146,11 @@
   color: var(--squad-muted);
   cursor: pointer;
   display: inline-flex;
-  font-size: 0.92rem;
   font-weight: 800;
-  gap: 0.45rem;
   justify-content: center;
-  min-height: 3rem;
+  min-height: 2.2rem;
+  padding: 0;
+  width: 2.2rem;
 }
 
 .squad-page__view-toggle button[aria-pressed='true'] {
@@ -166,6 +166,146 @@
 .squad-page__view-toggle button:disabled {
   cursor: not-allowed;
   opacity: 0.4;
+}
+
+.squad-page__matchweek-controls {
+  align-items: center;
+  background: var(--squad-panel);
+  border: 1px solid var(--squad-border);
+  border-radius: 0.85rem;
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: minmax(12rem, 1fr) auto minmax(12rem, auto);
+  padding: 0.7rem 0.8rem;
+}
+
+.squad-page__deadline {
+  align-items: center;
+  display: flex;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.squad-page__deadline-icon {
+  align-items: center;
+  background: var(--secondary);
+  border: 1px solid var(--squad-border);
+  border-radius: 0.62rem;
+  color: var(--squad-accent);
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 2.35rem;
+  justify-content: center;
+  width: 2.35rem;
+}
+
+.squad-page__deadline > div {
+  display: grid;
+  gap: 0.08rem;
+  min-width: 0;
+}
+
+.squad-page__deadline .eyebrow {
+  font-size: 0.58rem;
+  margin-bottom: 0;
+}
+
+.squad-page__deadline strong {
+  font-size: 0.8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.squad-page__deadline small {
+  color: var(--squad-muted);
+  font-size: 0.64rem;
+}
+
+.squad-page__chips {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  justify-content: flex-end;
+}
+
+.squad-page__chip-toggle {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--squad-border);
+  border-radius: 0.62rem;
+  color: var(--squad-muted);
+  cursor: pointer;
+  display: inline-flex;
+  height: 2.25rem;
+  justify-content: center;
+  min-width: 2.25rem;
+  padding: 0;
+  position: relative;
+  width: 2.25rem;
+}
+
+.squad-page__chip-toggle:hover,
+.squad-page__chip-toggle:focus-visible {
+  border-color: var(--squad-border-strong);
+  color: var(--squad-text);
+}
+
+.squad-page__chip-toggle.is-active {
+  background: var(--secondary);
+  border-color: var(--squad-border-strong);
+  color: var(--squad-accent);
+}
+
+.squad-page__chip-toggle.is-used {
+  background: var(--squad-panel-soft);
+  color: var(--squad-muted);
+  opacity: 0.62;
+}
+
+.squad-page__chip-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.squad-page__chip-dot {
+  background: var(--squad-accent);
+  border: 2px solid var(--squad-panel);
+  border-radius: 999px;
+  bottom: 0.15rem;
+  height: 0.42rem;
+  position: absolute;
+  right: 0.15rem;
+  width: 0.42rem;
+}
+
+.squad-page__chip-used {
+  bottom: 0.16rem;
+  color: var(--squad-muted);
+  position: absolute;
+  right: 0.16rem;
+}
+
+.squad-page__matchweek-actions {
+  align-items: center;
+  display: flex;
+  gap: 0.6rem;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.squad-page__matchweek-actions .ui-button {
+  flex: 0 0 auto;
+  min-height: 2.35rem;
+  white-space: nowrap;
+}
+
+.squad-page__matchweek-status {
+  color: var(--squad-muted);
+  font-size: 0.64rem;
+  margin: 0;
+  max-width: 14rem;
 }
 
 .squad-page__summary {
@@ -499,6 +639,12 @@
   color: var(--squad-warning);
 }
 
+.squad-page__availability-flag.inline {
+  left: auto;
+  position: static;
+  top: auto;
+}
+
 .squad-page__bench {
   background: var(--surface);
   border: 1px solid var(--squad-border);
@@ -546,6 +692,45 @@
   display: grid;
   gap: 0.65rem;
   min-width: 0;
+}
+
+.squad-page__lineup-tables {
+  display: grid;
+  gap: 0.7rem;
+  min-width: 0;
+}
+
+.squad-page__list-section {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.squad-page__list-section-header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 0.15rem;
+}
+
+.squad-page__list-section-header h2 {
+  font-size: 0.78rem;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.squad-page__list-section-header span {
+  align-items: center;
+  background: var(--secondary);
+  border: 1px solid var(--squad-border);
+  border-radius: 999px;
+  color: var(--squad-muted);
+  display: inline-flex;
+  font-size: 0.6rem;
+  height: 1.25rem;
+  justify-content: center;
+  min-width: 1.25rem;
+  padding: 0 0.25rem;
 }
 
 .squad-page__list-controls {
@@ -679,6 +864,166 @@
   border-collapse: collapse;
   min-width: 44rem;
   width: 100%;
+}
+
+.squad-page__list-section .squad-page__table-scroll {
+  overflow: hidden;
+}
+
+.squad-page__list-section .squad-page__table-scroll table {
+  min-width: 0;
+  table-layout: fixed;
+}
+
+.squad-page__list-table col.player {
+  width: 31%;
+}
+
+.squad-page__list-table col.next {
+  width: 16%;
+}
+
+.squad-page__list-table col.points,
+.squad-page__list-table col.form {
+  width: 9%;
+}
+
+.squad-page__list-table col.expected {
+  width: 15%;
+}
+
+.squad-page__list-table col.availability {
+  width: 8%;
+}
+
+.squad-page__list-table col.action {
+  width: 12%;
+}
+
+.squad-page__list-table th,
+.squad-page__list-table td {
+  overflow: hidden;
+}
+
+.squad-page__list-table th:not(:first-child),
+.squad-page__list-table td:not(:first-child) {
+  text-align: center;
+}
+
+.squad-page__list-table th {
+  font-size: 0.56rem;
+  padding-left: 0.28rem;
+  padding-right: 0.28rem;
+}
+
+.squad-page__list-table td {
+  font-size: 0.68rem;
+  padding-left: 0.28rem;
+  padding-right: 0.28rem;
+}
+
+.squad-page__list-table .squad-page__player-link {
+  align-items: center;
+  display: flex;
+  gap: 0.25rem;
+  max-width: 100%;
+  width: 100%;
+}
+
+.squad-page__list-table .squad-page__identity {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.squad-page__list-table .squad-page__identity strong {
+  font-size: 0.68rem;
+}
+
+.squad-page__list-table .squad-page__shirt {
+  flex: 0 0 auto;
+  height: 1.75rem;
+  width: 2rem;
+}
+
+.squad-page__row-badge {
+  align-items: center;
+  background: var(--primary);
+  border-radius: 999px;
+  color: var(--primary-foreground);
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 0.48rem;
+  font-weight: 900;
+  height: 1rem;
+  justify-content: center;
+  width: 1rem;
+}
+
+.squad-page__row-badge.vice {
+  background: var(--secondary);
+  border: 1px solid var(--squad-border);
+  color: var(--squad-text);
+  font-size: 0.42rem;
+}
+
+.squad-page__next-opponent {
+  color: var(--squad-text);
+  display: block;
+  font-size: 0.6rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.squad-page__expected {
+  color: var(--squad-muted);
+  display: inline-flex;
+  font-size: 0.58rem;
+  gap: 0.2rem;
+  white-space: nowrap;
+}
+
+.squad-page__expected span + span::before {
+  color: var(--squad-border);
+  content: '/';
+  margin-right: 0.2rem;
+}
+
+.squad-page__move-select {
+  align-items: center;
+  background: var(--secondary);
+  border: 1px solid var(--squad-border);
+  border-radius: 0.48rem;
+  color: var(--squad-text);
+  display: inline-flex;
+  justify-content: center;
+  min-height: 1.8rem;
+  min-width: 2.65rem;
+  position: relative;
+}
+
+.squad-page__move-select select {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.55rem;
+  min-height: 1.8rem;
+  outline: 0;
+  padding: 0 0.8rem 0 0.25rem;
+  width: 100%;
+}
+
+.squad-page__move-select svg {
+  pointer-events: none;
+  position: absolute;
+  right: 0.16rem;
+}
+
+.squad-page__move-select:has(select:disabled) {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .squad-page__table-scroll th,
@@ -1498,7 +1843,28 @@
   }
 
   .squad-page__view-toggle button {
-    min-height: 2.8rem;
+    min-height: 2.2rem;
+  }
+
+  .squad-page__matchweek-controls {
+    align-items: start;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .squad-page__chips {
+    justify-content: flex-end;
+  }
+
+  .squad-page__matchweek-actions {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    grid-column: 1 / -1;
+    justify-content: space-between;
+  }
+
+  .squad-page__matchweek-status {
+    flex: 1 1 11rem;
+    max-width: none;
   }
 
   .squad-page__summary-card {
@@ -1597,6 +1963,24 @@
 
   .squad-page__table-scroll table {
     min-width: 41rem;
+  }
+
+  .squad-page__list-section .squad-page__table-scroll table {
+    min-width: 0;
+  }
+
+  .squad-page__list-table .squad-page__shirt {
+    height: 1.55rem;
+    width: 1.8rem;
+  }
+
+  .squad-page__list-table .squad-page__identity strong {
+    font-size: 0.62rem;
+  }
+
+  .squad-page__list-table td {
+    padding-left: 0.18rem;
+    padding-right: 0.18rem;
   }
 
   .squad-page__change-player {

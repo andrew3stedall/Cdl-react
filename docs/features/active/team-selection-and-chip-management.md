@@ -2,11 +2,11 @@
 
 ## Purpose
 
-Plan the modern replacement for the legacy Team Selection screen, including lineup selection, chips, bench, reserves, CDL fixtures, EPL fixtures, and tables.
+Plan the modern replacement for the legacy Team Selection screen, with lineup selection and chip controls owned by the existing Squad workspace.
 
 ## Status
 
-Implemented foundation. Persistent lineup/chip storage and full legacy rule parity remain pending.
+Implemented in the canonical Squad workspace. Fixture/table presentation is intentionally deferred to the fixtures slice; lineup and chip mutations use the existing API contracts.
 
 ## Legacy Inventory
 
@@ -16,7 +16,7 @@ Implemented foundation. Persistent lineup/chip storage and full legacy rule pari
 
 ## Current Behaviour
 
-Managers view their selected team, bench, reserves, chips, league fixtures, and EPL fixtures. Chips can be toggled when available and not used.
+Managers view their selected team, bench, reserves, next deadline, and compact chip controls in Squad. The pitch/list switch is icon-only, the list is split into Starting XI/Bench/Reserves tables, and players can be moved and saved without leaving Squad. Available chips are actionable, active chips show a dot, and used chips remain visibly unavailable. Fixtures and tables remain available through the API but are not duplicated into this workspace yet.
 
 ## Business Rules
 
@@ -33,7 +33,8 @@ Managers view their selected team, bench, reserves, chips, league fixtures, and 
 
 ## Target Architecture
 
-- React team selection route with stateful lineup editor.
+- Canonical `/squad` workspace with `/team-selection` and `/squad-management` compatibility aliases.
+- Stateful lineup editor shared by the pitch and list views.
 - Python `TeamSelectionService`, `ChipService`, and `FixtureSummaryService` classes.
 - Pydantic models for lineup, player slot, chip state, fixture summary, and validation response.
 - Repositories for players, squads, chips, fixtures, tables, and gameweeks.
@@ -47,10 +48,10 @@ Managers view their selected team, bench, reserves, chips, league fixtures, and 
 
 ## React Requirements
 
-- Team pitch or equivalent lineup layout.
-- Bench and reserves panels.
-- Chip selector with state indicators.
-- CDL and EPL fixture/table panels.
+- Team pitch and compact list layouts.
+- Bench and reserves sections with movement controls.
+- Icon-only chip toggles with available, active, and used states.
+- Next deadline date and countdown context.
 - Validation messages for invalid lineup states.
 
 ## UI Requirements
@@ -70,7 +71,9 @@ Managers view their selected team, bench, reserves, chips, league fixtures, and 
 - Managers can view current team selection data.
 - Managers can update lineup and chip selection through typed API calls.
 - Invalid team or chip states are rejected with clear errors.
-- Fixtures and tables are visible alongside team selection.
+- Managers can see the next deadline and make lineup/chip changes from Squad.
+- The old standalone team-selection panel is not rendered below Squad.
+- Fixture/table rendering is tracked for the next fixtures slice rather than duplicated here.
 
 ## Test Requirements
 

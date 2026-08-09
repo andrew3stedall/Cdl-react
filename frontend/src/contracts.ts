@@ -78,6 +78,7 @@ export interface GameweekSummary {
   id: string;
   name: string;
   number: number;
+  deadlineAt?: string | null;
 }
 
 export interface FixtureSummary {

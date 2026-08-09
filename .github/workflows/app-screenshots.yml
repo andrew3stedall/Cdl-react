@@ -38,28 +38,7 @@ jobs:
           cat vite-preview.log
           exit 1
       - name: Test primary interactions
-        run: |
-          # The older player-pool/activity journey is retained as Market
-          # coverage while Squad has its own dedicated browser journey below.
-          python - <<'PY'
-          from pathlib import Path
-          import re
-
-          path = Path("scripts/test-app-interactions.mjs")
-          text = path.read_text(encoding="utf-8")
-          old_route = "await page.goto(`${baseUrl}/squad-management`, { waitUntil: 'networkidle' });"
-          new_route = "await page.goto(`${baseUrl}/scouting`, { waitUntil: 'networkidle' });"
-          if old_route not in text:
-              raise SystemExit("Legacy Squad route was not found")
-          text = text.replace(old_route, new_route, 1)
-          pattern = r"\n  const pitch = page\.locator\('section\[aria-label=\"Squad pitch\"\]'\);.*?\n  await pitch\.waitFor\(\);\n\n  await page\.getByRole\('tab'"
-          replacement = "\n  await page.getByRole('tab'"
-          text, count = re.subn(pattern, replacement, text, count=1, flags=re.S)
-          if count != 1:
-              raise SystemExit("Legacy Squad pitch block was not found")
-          path.write_text(text, encoding="utf-8")
-          PY
-          node scripts/test-app-interactions.mjs
+        run: node scripts/test-app-interactions.mjs
       - name: Test Squad workspace and Market persistence
         run: node scripts/test-squad-management-interactions.mjs
       - name: Test dashboard recovery

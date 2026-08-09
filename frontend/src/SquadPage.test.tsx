@@ -17,7 +17,7 @@ beforeEach(() => {
       if (path === '/api/squad/summary') {
         return new Response(JSON.stringify({
           manager_team: { id: 'team-1', name: 'Exeter Gently', short_name: 'EXE' },
-          gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1 },
+          gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1, deadline_at: '2026-08-14T17:30:00Z' },
           players: [
             {
               id: 'fpl-411',
@@ -49,7 +49,7 @@ beforeEach(() => {
       if (path === '/api/team-selection') {
         return new Response(JSON.stringify({
           manager_team: { id: 'team-1', name: 'Exeter Gently', short_name: 'EXE' },
-          gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1 },
+          gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1, deadline_at: '2026-08-14T17:30:00Z' },
           lineup: [
             {
               id: 'fpl-411',
@@ -171,19 +171,19 @@ describe('SquadPage', () => {
     const { container } = await renderPage();
 
     expect(container.textContent).toContain('Exeter Gently');
-    expect(container.textContent).toContain('Total Points');
-    expect(container.textContent).toContain('Form (Last 5)');
-    expect(container.textContent).toContain('API needed');
+    expect(container.textContent).toContain('Next deadline');
+    expect(container.querySelector('[aria-label="Matchweek controls"]')).not.toBeNull();
+    expect(container.textContent).not.toContain('Total Points');
     expect(container.querySelector('[aria-label="Squad pitch"]')).not.toBeNull();
     expect(container.querySelector('img[src="/team-shirts/mci.svg"]')).not.toBeNull();
     expect(container.textContent).not.toContain('PostgreSQL');
 
     await act(async () => {
-      buttonByText(container, 'List').click();
+      (container.querySelector('button[aria-label="View as list"]') as HTMLButtonElement).click();
       await Promise.resolve();
     });
 
-    expect(container.querySelector('[aria-label="Squad players table"]')).not.toBeNull();
+    expect(container.querySelector('[aria-label="Starting XI players table"]')).not.toBeNull();
     expect(window.localStorage.getItem('cdl:squad-view')).toBe('list');
 
     await act(async () => {
@@ -191,7 +191,7 @@ describe('SquadPage', () => {
       await Promise.resolve();
     });
 
-    const table = container.querySelector('[aria-label="Squad players table"]');
+    const table = container.querySelector('[aria-label="Starting XI players table"]');
     expect(table?.textContent).toContain('Haaland');
     expect(table?.textContent).not.toContain('Pickford');
   });

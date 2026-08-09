@@ -10,7 +10,7 @@ APP = Path("frontend/src/App.tsx")
 LOGIN_PAGE = Path("frontend/src/LoginPage.tsx")
 MAIN = Path("frontend/src/main.tsx")
 TEAM_SELECTION_API = Path("frontend/src/team-selection-api.ts")
-TEAM_SELECTION_PAGE = Path("frontend/src/TeamSelectionPage.tsx")
+SQUAD_PAGE = Path("frontend/src/SquadPage.tsx")
 AUTH = Path("frontend/src/auth.ts")
 
 
@@ -87,19 +87,16 @@ def test_interaction_script_exercises_team_selection_validation() -> None:
     assert "page.reload" in content
     assert "Move Ben Defender" in content
     assert "Move Riley Forward" in content
-    assert "Deactivate" in content
+    assert "Wildcard, active" in content
 
 
 def test_interaction_script_exercises_squad_management_journey() -> None:
     content = INTERACTION_SCRIPT.read_text(encoding="utf-8")
     assert "/squad-management" in content
-    assert "Player pool" in content
-    assert "Search players" in content
-    assert "Casey Midfielder added to interests." in content
-    assert "getByRole('dialog', { name: 'Casey Midfielder' })" in content
-    assert "Activity" in content
-    assert "Propose sample trade" in content
-    assert "/rules#trade-window" in content
+    assert "Exeter Gently squad ready for review." in content
+    assert "View as list" in content
+    assert "Starting XI players table" in content
+    assert "View as pitch" in content
 
 
 def test_interaction_script_exercises_dashboard_and_fdr_at_two_widths() -> None:
@@ -165,11 +162,10 @@ def test_browser_journey_exercises_protected_session_boundary() -> None:
 def test_team_selection_consumes_api_lock_state() -> None:
     interactions = INTERACTION_SCRIPT.read_text(encoding="utf-8")
     api_client = TEAM_SELECTION_API.read_text(encoding="utf-8")
-    page = TEAM_SELECTION_PAGE.read_text(encoding="utf-8")
+    page = SQUAD_PAGE.read_text(encoding="utf-8")
     assert "/api/team-selection" in interactions
-    assert "/api/team-selection/fixtures-summary" in interactions
-    assert "Harbour Athletic vs Mountain United" in interactions
-    assert "Castle FC vs Rival Town" not in page
+    assert "Next deadline" in interactions
+    assert "Wildcard, available" in interactions
     assert "teamSelectionLocked" in interactions
     assert "Team selection is locked for this gameweek." in interactions
     assert "testLockedTeamSelection(page)" in interactions
@@ -177,3 +173,4 @@ def test_team_selection_consumes_api_lock_state() -> None:
     assert "HttpTeamSelectionClient" in api_client
     assert "fixtureLock.locked" in page
     assert "Save lineup" in page
+    assert "squad-page__chip-toggle" in page

@@ -6,19 +6,23 @@ interface GoogleCredentialResponse {
 
 interface GoogleAccountsId {
   initialize(options: {
+    button_auto_select: boolean;
     client_id: string;
     callback(response: GoogleCredentialResponse): void;
+    use_fedcm_for_button: boolean;
   }): void;
   renderButton(
     parent: HTMLElement,
     options: {
+      logo_alignment: 'left';
       shape: 'rectangular';
       size: 'large';
       text: 'signin_with';
-      theme: 'outline';
+      theme: 'filled_black';
       width: number;
     },
   ): void;
+  prompt(): void;
 }
 
 declare global {
@@ -60,29 +64,40 @@ function loadGoogleIdentityServices(): Promise<void> {
 export function GoogleSignInButton({ clientId, onCredential }: GoogleSignInButtonProps) {
   const buttonRef = useRef<HTMLDivElement>(null);
   const [loadError, setLoadError] = useState(false);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     setLoadError(false);
+    setReady(false);
 
     void loadGoogleIdentityServices()
       .then(() => {
         if (cancelled || !window.google || !buttonRef.current) return;
         window.google.accounts.id.initialize({
+          // FedCM lets returning users confirm the account already shown by Google's
+          // personalized button without opening the account chooser first.
+          button_auto_select: true,
           client_id: clientId,
           callback: (response) => void onCredential(response.credential),
+          use_fedcm_for_button: true,
         });
         buttonRef.current.replaceChildren();
         window.google.accounts.id.renderButton(buttonRef.current, {
+          logo_alignment: 'left',
           shape: 'rectangular',
           size: 'large',
           text: 'signin_with',
-          theme: 'outline',
+          theme: 'filled_black',
           width: Math.min(400, buttonRef.current.clientWidth || 320),
         });
+        setReady(true);
       })
       .catch(() => {
-        if (!cancelled) setLoadError(true);
+        if (!cancelled) {
+          setLoadError(true);
+          setReady(false);
+        }
       });
 
     return () => {
@@ -94,5 +109,18 @@ export function GoogleSignInButton({ clientId, onCredential }: GoogleSignInButto
     return <p className="login-error">Google sign-in could not load. Use Chrome or try again.</p>;
   }
 
-  return <div className="google-sign-in" ref={buttonRef} />;
+  return (
+    <div className="google-sign-in-shell">
+      <div className="google-sign-in" ref={buttonRef} />
+      {ready ? (
+        <button
+          className="google-account-switch"
+          onClick={() => window.google?.accounts.id.prompt()}
+          type="button"
+        >
+          Use another Google account
+        </button>
+      ) : null}
+    </div>
+  );
 }

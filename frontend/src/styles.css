@@ -257,7 +257,12 @@ textarea:focus-visible {
   color: var(--card-foreground);
   display: grid;
   gap: 1rem;
+  min-width: 0;
   padding: clamp(1rem, 2.4vw, 1.5rem);
+}
+
+.feature-screen > * {
+  min-width: 0;
 }
 
 .session-boundary {
@@ -335,8 +340,10 @@ textarea:focus-visible {
 
 .responsive-table {
   max-width: 100%;
+  min-width: 0;
   overflow-x: auto;
   overscroll-behavior-inline: contain;
+  width: 100%;
 }
 
 .responsive-table:focus-visible {

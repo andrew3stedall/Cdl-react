@@ -3,6 +3,7 @@ import {
   ArrowDown,
   ArrowRightLeft,
   Bell,
+  CalendarClock,
   CalendarDays,
   ChevronDown,
   ChevronRight,
@@ -10,15 +11,20 @@ import {
   CircleCheck,
   CircleMinus,
   CirclePlus,
+  Crown,
   Filter,
   Home,
+  Layers,
   LayoutGrid,
   List,
+  LockKeyhole,
+  Save,
   Search,
   Shield,
   SlidersHorizontal,
   Trophy,
   Users,
+  WandSparkles,
   X,
 } from 'lucide-react';
 
@@ -26,14 +32,19 @@ import { Button } from './components/ui/button';
 import type { ThemePreset } from './contracts';
 import {
   HttpTeamSelectionClient,
+  TeamSelectionApiError,
+  type TeamSelectionChip,
   type TeamSelectionPlayer,
+  type TeamSelectionClient,
   type TeamSelectionSlot,
+  type TeamSelectionSnapshot,
 } from './team-selection-api';
 import './squad-page.css';
 import './squad-lineup-groups.css';
 
 interface SquadPageProps {
   preset: ThemePreset;
+  teamSelectionClient?: TeamSelectionClient;
 }
 
 type SquadView = 'pitch' | 'list';
@@ -117,6 +128,7 @@ const positionOptions: Array<{ shortLabel: string; value: PositionFilter }> = [
   { shortLabel: 'MID', value: 'MID' },
   { shortLabel: 'FWD', value: 'FWD' },
 ];
+const defaultTeamSelectionClient = new HttpTeamSelectionClient();
 
 function getStoredView(): SquadView {
   try {
@@ -154,6 +166,40 @@ function mapPlayer(player: PlayerApiResponse): PlayerView {
   };
 }
 
+function mapTeamSelectionPlayer(player: TeamSelectionPlayer): PlayerView {
+  return {
+    id: player.id,
+    displayName: player.name,
+    position: normalizePosition(player.position),
+    team: player.team,
+    status: 'owned',
+    points: 0,
+    form: null,
+    value: 0,
+    selectedByPercent: null,
+    draftTeam: null,
+    xg: null,
+    xa: null,
+    nextOpponent: null,
+    availability: null,
+    chanceOfPlaying: null,
+    slot: player.slot,
+    slotOrder: player.slotOrder,
+    captain: player.captain,
+    viceCaptain: player.viceCaptain,
+  };
+}
+
+async function fetchOptionalJson<T>(path: string): Promise<T | null> {
+  try {
+    const response = await fetch(path, { credentials: 'include' });
+    if (!response.ok) return null;
+    return await response.json() as T;
+  } catch {
+    return null;
+  }
+}
+
 function mergeLineupPlayers(roster: PlayerView[], lineup: TeamSelectionPlayer[] | null): PlayerView[] {
   if (!lineup) return roster;
 
@@ -187,7 +233,7 @@ function mergeLineupPlayers(roster: PlayerView[], lineup: TeamSelectionPlayer[] 
   return [...positioned, ...roster.filter((player) => !lineupIds.has(player.id))];
 }
 
-export function SquadPage({ preset }: SquadPageProps) {
+export function SquadPage({ preset, teamSelectionClient = defaultTeamSelectionClient }: SquadPageProps) {
   const [squadView, setSquadView] = useState<SquadView>(getStoredView);
   const [positionFilter, setPositionFilter] = useState<PositionFilter>('all');
   const [query, setQuery] = useState('');
@@ -199,6 +245,10 @@ export function SquadPage({ preset }: SquadPageProps) {
   const [managerTeam, setManagerTeam] = useState<TeamRef>({ id: '', name: 'Current team', shortName: '' });
   const [gameweek, setGameweek] = useState('Gameweek');
   const [lineupAvailable, setLineupAvailable] = useState(false);
+  const [teamSelection, setTeamSelection] = useState<TeamSelectionSnapshot | null>(null);
+  const [lineupDirty, setLineupDirty] = useState(false);
+  const [lineupSaving, setLineupSaving] = useState(false);
+  const [clockNow, setClockNow] = useState(() => Date.now());
   const [status, setStatus] = useState('Loading squad.');
   const [drawerMode, setDrawerMode] = useState<DrawerMode>(null);
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerView | null>(null);
@@ -215,48 +265,42 @@ export function SquadPage({ preset }: SquadPageProps) {
   const drawerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    const teamSelectionClient = new HttpTeamSelectionClient();
     void Promise.all([
-      fetch('/api/squad/summary', { credentials: 'include' }),
-      fetch('/api/scouting/players', { credentials: 'include' }),
-      fetch('/api/trades', { credentials: 'include' }),
+      fetchOptionalJson<SquadSummaryApiResponse>('/api/squad/summary'),
+      fetchOptionalJson<ScoutingApiResponse>('/api/scouting/players'),
+      fetchOptionalJson<{ trades?: TradeApiResponse[] }>('/api/trades'),
       teamSelectionClient.getTeamSelection().catch(() => null),
     ])
-      .then(async ([summaryResponse, scoutingResponse, tradeResponse, lineup]) => {
-        if (!summaryResponse.ok || !scoutingResponse.ok || !tradeResponse.ok) {
-          const unauthorized = [summaryResponse, scoutingResponse, tradeResponse]
-            .some((response) => response.status === 401);
-          throw new Error(unauthorized ? 'Sign in to manage your squad.' : 'Unable to load your squad.');
-        }
-        const [summary, scouting, persistedTrades] = await Promise.all([
-          summaryResponse.json() as Promise<SquadSummaryApiResponse>,
-          scoutingResponse.json() as Promise<ScoutingApiResponse>,
-          tradeResponse.json() as Promise<{ trades?: TradeApiResponse[] }>,
-        ]);
-        return { summary, scouting, persistedTrades, lineup };
-      })
-      .then(({ summary, scouting, persistedTrades, lineup }) => {
-        const roster = summary.players.map(mapPlayer);
+      .then(([summary, scouting, persistedTrades, lineup]) => {
+        if (!summary && !lineup) throw new Error('Unable to load your squad.');
+        const roster = summary?.players.map(mapPlayer)
+          ?? lineup?.players.map(mapTeamSelectionPlayer)
+          ?? [];
         const hasLineup = Boolean(lineup?.players.length);
+        setTeamSelection(lineup);
         setSquadPlayers(mergeLineupPlayers(roster, lineup?.players ?? null));
-        setScoutingPool(scouting.players.map(mapPlayer));
+        setScoutingPool(scouting?.players.map(mapPlayer) ?? []);
         setManagerTeam({
-          id: summary.manager_team.id,
-          name: summary.manager_team.name,
-          shortName: summary.manager_team.short_name ?? summary.manager_team.name,
+          id: summary?.manager_team.id ?? lineup?.managerTeam.id ?? '',
+          name: summary?.manager_team.name ?? lineup?.managerTeam.name ?? 'Current team',
+          shortName: summary?.manager_team.short_name
+            ?? lineup?.managerTeam.shortName
+            ?? lineup?.managerTeam.name
+            ?? '',
         });
-        setGameweek(summary.gameweek.name);
-        setTrades(persistedTrades.trades ?? []);
+        setGameweek(lineup?.gameweek.name ?? summary?.gameweek.name ?? 'Gameweek');
+        setTrades(persistedTrades?.trades ?? []);
         setLineupAvailable(hasLineup);
+        setLineupDirty(false);
         if (!hasLineup) setSquadView('list');
         setStatus(
           hasLineup
-            ? `${summary.manager_team.name} squad ready for review.`
-            : `${summary.manager_team.name} squad loaded. Open Matchweek to set a lineup.`,
+            ? `${summary?.manager_team.name ?? lineup?.managerTeam.name} squad ready for review.`
+            : `${summary?.manager_team.name ?? 'Your'} squad loaded.`,
         );
       })
       .catch((error: Error) => setStatus(error.message));
-  }, []);
+  }, [teamSelectionClient]);
 
   useEffect(() => {
     try {
@@ -275,6 +319,17 @@ export function SquadPage({ preset }: SquadPageProps) {
     window.addEventListener('keydown', closeOnEscape);
     return () => window.removeEventListener('keydown', closeOnEscape);
   }, [drawerMode]);
+
+  const deadlineAt = teamSelection?.gameweek.deadlineAt ?? null;
+  const lineupLocked = teamSelection?.fixtureLock.locked ?? false;
+  const lineupValid = selectionIsValid(teamSelection?.players ?? []);
+
+  useEffect(() => {
+    if (!deadlineAt) return;
+    setClockNow(Date.now());
+    const interval = window.setInterval(() => setClockNow(Date.now()), 1000);
+    return () => window.clearInterval(interval);
+  }, [deadlineAt]);
 
   const visibleSquadPlayers = useMemo(
     () => squadPlayers.filter((player) => !stagedRemovalIds.has(player.id)),
@@ -311,11 +366,6 @@ export function SquadPage({ preset }: SquadPageProps) {
     .filter((player) => player.draftTeam?.id === tradeTeamId)
     .filter((player) => matchesQuery(player, tradeQuery))
     .slice(0, 8);
-  const totalPoints = visibleSquadPlayers.reduce((total, player) => total + player.points, 0);
-  const averageForm = averageOptional(visibleSquadPlayers.map((player) => player.form));
-  const totalXg = sumOptional(visibleSquadPlayers.map((player) => player.xg));
-  const totalXa = sumOptional(visibleSquadPlayers.map((player) => player.xa));
-
   function closeDrawer() {
     setDrawerMode(null);
     setSelectedPlayer(null);
@@ -372,6 +422,61 @@ export function SquadPage({ preset }: SquadPageProps) {
     setStatus(`${player.displayName} restored to the squad.`);
   }
 
+  function movePlayer(playerId: string, slot: TeamSelectionSlot) {
+    if (!teamSelection || lineupLocked) return;
+    const player = teamSelection.players.find((candidate) => candidate.id === playerId);
+    if (!player || player.slot === slot) return;
+    const players = normalizeLineupPlayers(
+      teamSelection.players.map((candidate) =>
+        candidate.id === playerId ? { ...candidate, slot } : candidate,
+      ),
+    );
+    setTeamSelection((current) => current ? { ...current, players } : current);
+    setSquadPlayers((current) => mergeLineupPlayers(current, players));
+    setLineupDirty(true);
+    setStatus(`${player.name} moved to ${slotLabel(slot)}. Save lineup to validate server-side.`);
+  }
+
+  async function saveLineup() {
+    if (!teamSelection || lineupLocked) return;
+    if (!lineupValid) {
+      setStatus('Invalid lineup. Review /rules#lineup-validation.');
+      return;
+    }
+    setLineupSaving(true);
+    try {
+      const updated = await teamSelectionClient.saveLineup(teamSelection.players);
+      setTeamSelection(updated);
+      setSquadPlayers((current) => mergeLineupPlayers(current, updated.players));
+      setLineupDirty(false);
+      setStatus('Lineup saved and validated.');
+    } catch (error) {
+      setStatus(apiErrorMessage(error, 'Unable to save the lineup.'));
+    } finally {
+      setLineupSaving(false);
+    }
+  }
+
+  async function toggleChip(chip: TeamSelectionChip) {
+    if (!teamSelection || lineupLocked) return;
+    if (chip.status === 'used') {
+      setStatus('Used chips cannot be activated. See /rules#chip-usage.');
+      return;
+    }
+    const activeChip = teamSelection.chips.find((candidate) => candidate.status === 'active');
+    if (chip.status !== 'active' && activeChip) {
+      setStatus('Only one chip can be active at a time. See /rules#chip-usage.');
+      return;
+    }
+    try {
+      const updated = await teamSelectionClient.updateChip(chip.id, chip.status !== 'active');
+      setTeamSelection(updated);
+      setStatus(`${chip.name} chip state updated.`);
+    } catch (error) {
+      setStatus(apiErrorMessage(error, 'Unable to update the chip.'));
+    }
+  }
+
   return (
     <main aria-labelledby="squad-title" className="squad-page" data-density={preset.tokens.density}>
       <header className="squad-page__hero">
@@ -384,33 +489,58 @@ export function SquadPage({ preset }: SquadPageProps) {
           </div>
         </div>
         <div aria-label="Squad utilities" className="squad-page__hero-icons">
+          <div aria-label="Squad view" className="squad-page__view-toggle" role="group">
+            <button
+              aria-label="View as pitch"
+              aria-pressed={squadView === 'pitch'}
+              disabled={!lineupAvailable}
+              onClick={() => setSquadView('pitch')}
+              title="Pitch view"
+              type="button"
+            >
+              <LayoutGrid aria-hidden="true" size={18} />
+            </button>
+            <button
+              aria-label="View as list"
+              aria-pressed={squadView === 'list'}
+              onClick={() => setSquadView('list')}
+              title="List view"
+              type="button"
+            >
+              <List aria-hidden="true" size={18} />
+            </button>
+          </div>
           <span aria-label="Notifications placeholder" className="squad-page__utility-placeholder" role="img" title="Notifications API not connected"><Bell size={20} /></span>
         </div>
       </header>
 
-      <p className="squad-page__status sr-only" role="status">{status}</p>
-
-      <div aria-label="Squad view" className="squad-page__view-toggle" role="group">
-        <button
-          aria-pressed={squadView === 'pitch'}
-          disabled={!lineupAvailable}
-          onClick={() => setSquadView('pitch')}
-          type="button"
-        >
-          <LayoutGrid aria-hidden="true" size={19} />
-          Pitch
-        </button>
-        <button aria-pressed={squadView === 'list'} onClick={() => setSquadView('list')} type="button">
-          <List aria-hidden="true" size={19} />
-          List
-        </button>
-      </div>
-
-      <section aria-label="Squad summary" className="squad-page__summary">
-        <SummaryMetric label="Total Points" value={String(totalPoints)} />
-        <SummaryMetric dots label="Form (Last 5)" value={formatMetric(averageForm)} />
-        <SummaryMetric label="xG" placeholder={totalXg === null} value={formatMetric(totalXg)} />
-        <SummaryMetric label="xA" placeholder={totalXa === null} value={formatMetric(totalXa)} />
+      <section aria-label="Matchweek controls" className="squad-page__matchweek-controls">
+        <div className="squad-page__deadline">
+          <span className="squad-page__deadline-icon"><CalendarClock aria-hidden="true" size={19} /></span>
+          <div>
+            <span className="eyebrow">Next deadline</span>
+            <strong>{deadlineAt ? formatDeadlineDate(deadlineAt) : 'Deadline pending'}</strong>
+            <small>{deadlineAt ? formatCountdown(deadlineAt, clockNow) : 'Awaiting gameweek schedule'}</small>
+          </div>
+        </div>
+        <div aria-label="Chip controls" className="squad-page__chips">
+          {(teamSelection?.chips ?? []).map((chip) => (
+            <ChipToggle chip={chip} disabled={lineupLocked} key={chip.id} onToggle={() => void toggleChip(chip)} />
+          ))}
+        </div>
+        <div className="squad-page__matchweek-actions">
+          <Button
+            disabled={!teamSelection || lineupLocked || lineupSaving || !lineupDirty}
+            onClick={() => void saveLineup()}
+            type="button"
+          >
+            {lineupLocked ? <LockKeyhole aria-hidden="true" size={16} /> : <Save aria-hidden="true" size={16} />}
+            Save lineup
+          </Button>
+          <p className="squad-page__matchweek-status" role="status">
+            {lineupLocked ? `Lineup locked. ${teamSelection?.fixtureLock.reason ?? 'The gameweek deadline has passed.'}` : status}
+          </p>
+        </div>
       </section>
 
       {proposedTradeCount > 0 ? (
@@ -432,6 +562,9 @@ export function SquadPage({ preset }: SquadPageProps) {
             onQueryChange={setQuery}
             onSelect={openPlayer}
             onSortChange={setSortKey}
+            locked={lineupLocked}
+            onMove={movePlayer}
+            lineupEnabled={Boolean(teamSelection)}
             players={listPlayers}
             positionCounts={positionCounts}
             positionFilter={positionFilter}
@@ -570,16 +703,6 @@ export function SquadPage({ preset }: SquadPageProps) {
   );
 }
 
-function SummaryMetric({ dots = false, label, placeholder = false, value }: { dots?: boolean; label: string; placeholder?: boolean; value: string }) {
-  return (
-    <article className={`squad-page__summary-card ${placeholder ? 'is-placeholder' : ''}`}>
-      <small>{label}</small>
-      <strong>{value}</strong>
-      {dots && !placeholder ? <FormDots value={Number(value)} /> : <span className="squad-page__summary-note">{placeholder ? 'API needed' : 'Season squad'}</span>}
-    </article>
-  );
-}
-
 function SquadPitch({ players, onSelect }: { players: PlayerView[]; onSelect: (player: PlayerView) => void }) {
   const starters = players.filter((player) => player.slot === 'starter').sort(sortBySlot);
   const bench = players.filter((player) => player.slot === 'bench').sort(sortBySlot);
@@ -621,7 +744,7 @@ function PitchCard({ benchOrder, compact = false, onSelect, player }: { benchOrd
     <button aria-label={`View ${player.displayName} details`} className={`squad-page__pitch-player ${compact ? 'compact' : ''}`} onClick={() => onSelect(player)} type="button">
       <TeamShirt team={player.team} />
       <strong>{shortPlayerName(player.displayName)}</strong>
-      <small className={player.nextOpponent ? '' : 'is-placeholder'}>{player.team} · {player.nextOpponent ?? 'Next —'}</small>
+      <small className={player.nextOpponent ? '' : 'is-placeholder'}>{player.nextOpponent ? `vs ${player.nextOpponent}` : 'Next —'}</small>
       <div className="squad-page__player-form"><FormDots value={player.form} /><b>{formatMetric(player.form)}</b></div>
       {player.captain ? <span className="squad-page__captain">C</span> : null}
       {player.viceCaptain ? <span className="squad-page__captain vice">VC</span> : null}
@@ -631,9 +754,40 @@ function PitchCard({ benchOrder, compact = false, onSelect, player }: { benchOrd
   );
 }
 
+function ChipToggle({ chip, disabled, onToggle }: { chip: TeamSelectionChip; disabled: boolean; onToggle: () => void }) {
+  const active = chip.status === 'active';
+  const used = chip.status === 'used';
+  return (
+    <button
+      aria-label={`${chip.name}, ${chip.status}`}
+      aria-pressed={active}
+      className={`squad-page__chip-toggle ${active ? 'is-active' : ''} ${used ? 'is-used' : ''}`}
+      disabled={disabled}
+      onClick={onToggle}
+      title={`${chip.name}: ${chip.status}`}
+      type="button"
+    >
+      <ChipGlyph chip={chip} />
+      {active ? <span aria-hidden="true" className="squad-page__chip-dot" /> : null}
+      {used ? <CircleCheck aria-hidden="true" className="squad-page__chip-used" size={12} /> : null}
+      <span className="sr-only">{chip.name}</span>
+    </button>
+  );
+}
+
+function ChipGlyph({ chip }: { chip: TeamSelectionChip }) {
+  const name = `${chip.id} ${chip.name}`.toLowerCase();
+  if (name.includes('bench')) return <Layers aria-hidden="true" size={18} />;
+  if (name.includes('captain')) return <Crown aria-hidden="true" size={18} />;
+  return <WandSparkles aria-hidden="true" size={18} />;
+}
+
 function SquadList({
   filtersOpen,
+  lineupEnabled,
+  locked,
   onFiltersOpenChange,
+  onMove,
   onPositionChange,
   onQueryChange,
   onSelect,
@@ -645,7 +799,10 @@ function SquadList({
   sortKey,
 }: {
   filtersOpen: boolean;
+  lineupEnabled: boolean;
+  locked: boolean;
   onFiltersOpenChange: (open: boolean) => void;
+  onMove: (playerId: string, slot: TeamSelectionSlot) => void;
   onPositionChange: (position: PositionFilter) => void;
   onQueryChange: (query: string) => void;
   onSelect: (player: PlayerView) => void;
@@ -680,27 +837,62 @@ function SquadList({
         ))}
       </div>
 
-      <div aria-label="Squad players table" className="squad-page__table-scroll" role="region" tabIndex={0}>
-        <table>
-          <thead><tr><th>Player</th><th>Role</th><th className="sorted">Tot Pts <ArrowDown size={12} /></th><th>Form</th><th>xG</th><th>xA</th><th>Availability</th><th><span className="sr-only">Actions</span></th></tr></thead>
-          {groups.map((group) => (
-            <tbody className={`squad-page__lineup-group ${group.slot}`} key={group.slot}>
-              <tr className="squad-page__lineup-group-heading"><th colSpan={8}><span>{group.label}</span><small>{group.description}</small></th></tr>
-              {group.players.map((player) => (
-                <tr className={`squad-page__player-row position-${player.position.toLowerCase()}`} key={player.id}>
-                  <td><button className="squad-page__player-link" onClick={() => onSelect(player)} type="button"><PlayerIdentity player={player} /></button></td>
-                  <td><span className={`squad-page__lineup-role ${player.slot ?? 'unassigned'}`}>{lineupRoleLabel(player)}</span></td>
-                  <td><strong>{player.points}</strong></td>
-                  <td className="metric-accent">{formatMetric(player.form)}</td>
-                  <td><OptionalValue value={player.xg} /></td>
-                  <td><OptionalValue value={player.xa} /></td>
-                  <td><AvailabilityLabel player={player} /></td>
-                  <td><button aria-label={`View ${player.displayName} details`} className="squad-page__icon-button" onClick={() => onSelect(player)} type="button"><ChevronRight size={18} /></button></td>
-                </tr>
-              ))}
-            </tbody>
-          ))}
-        </table>
+      <div className="squad-page__lineup-tables">
+        {groups.map((group) => (
+          <section aria-label={`${group.label} players`} className="squad-page__list-section" key={group.slot}>
+            <header className="squad-page__list-section-header">
+              <h2>{group.label}</h2>
+              <span>{group.players.length}</span>
+            </header>
+            <div aria-label={`${group.label} players table`} className="squad-page__table-scroll" role="region" tabIndex={0}>
+              <table className="squad-page__list-table">
+                <colgroup>
+                  <col className="player" />
+                  <col className="next" />
+                  <col className="points" />
+                  <col className="form" />
+                  <col className="expected" />
+                  <col className="availability" />
+                  <col className="action" />
+                </colgroup>
+                <thead><tr><th>Player</th><th>Next</th><th className="sorted">Pts <ArrowDown size={11} /></th><th>Form</th><th>xG / xA</th><th><span className="sr-only">Availability</span><CircleCheck aria-hidden="true" size={13} /></th><th><span className="sr-only">Move</span></th></tr></thead>
+                <tbody>
+                  {group.players.map((player) => (
+                    <tr className={`squad-page__player-row position-${player.position.toLowerCase()}`} key={player.id}>
+                      <td>
+                        <button className="squad-page__player-link" onClick={() => onSelect(player)} type="button">
+                          <PlayerIdentity player={player} showMeta={false} />
+                          {player.captain ? <span className="squad-page__row-badge">C</span> : null}
+                          {player.viceCaptain ? <span className="squad-page__row-badge vice">VC</span> : null}
+                        </button>
+                      </td>
+                      <td><span className={`squad-page__next-opponent ${player.nextOpponent ? '' : 'is-placeholder'}`}>{player.nextOpponent ? `vs ${player.nextOpponent}` : 'Next —'}</span></td>
+                      <td><strong>{player.points}</strong></td>
+                      <td className="metric-accent">{formatMetric(player.form)}</td>
+                      <td><span className="squad-page__expected"><span>{formatMetric(player.xg)}</span><span>{formatMetric(player.xa)}</span></span></td>
+                      <td><AvailabilityFlag inline player={player} /></td>
+                      <td>
+                        {lineupEnabled ? (
+                          <label className="squad-page__move-select">
+                            <span className="sr-only">Move {player.displayName}</span>
+                            <select aria-label={`Move ${player.displayName}`} disabled={locked} onChange={(event) => onMove(player.id, event.target.value as TeamSelectionSlot)} value={player.slot ?? 'reserve'}>
+                              <option value="starter">XI</option>
+                              <option value="bench">Bench</option>
+                              <option value="reserve">Res.</option>
+                            </select>
+                            <ChevronDown aria-hidden="true" size={12} />
+                          </label>
+                        ) : (
+                          <button aria-label={`View ${player.displayName} details`} className="squad-page__icon-button" onClick={() => onSelect(player)} type="button"><ChevronRight size={16} /></button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        ))}
       </div>
     </div>
   );
@@ -714,7 +906,7 @@ function DrawerHeader({ onClose, player, title }: { onClose: () => void; player?
   return (
     <header className="squad-page__drawer-header">
       {player ? <TeamShirt large team={player.team} /> : <span className="squad-page__brand-mark"><Shield size={22} /></span>}
-      <div><h2>{title}</h2>{player ? <p><span className={`squad-page__position position-${player.position.toLowerCase()}`}>{player.position}</span> {player.team} · <span className={player.nextOpponent ? '' : 'is-placeholder'}>{player.nextOpponent ?? 'Next fixture —'}</span></p> : null}</div>
+      <div><h2>{title}</h2>{player ? <p><span className={`squad-page__position position-${player.position.toLowerCase()}`}>{player.position}</span> · <span className={player.nextOpponent ? '' : 'is-placeholder'}>{player.nextOpponent ? `vs ${player.nextOpponent}` : 'Next fixture —'}</span></p> : null}</div>
       <button aria-label="Close drawer" className="squad-page__icon-button" onClick={onClose} type="button"><X size={19} /></button>
     </header>
   );
@@ -862,11 +1054,11 @@ function TradeDrawer({
   );
 }
 
-function PlayerIdentity({ large = false, player }: { large?: boolean; player: PlayerView }) {
+function PlayerIdentity({ large = false, player, showMeta = true }: { large?: boolean; player: PlayerView; showMeta?: boolean }) {
   return (
     <span className={`squad-page__identity ${large ? 'large' : ''}`}>
       <TeamShirt large={large} team={player.team} />
-      <span><strong>{player.displayName}</strong><small><span className={`squad-page__position position-${player.position.toLowerCase()}`}>{player.position}</span> {player.team} · <span className={player.nextOpponent ? '' : 'is-placeholder'}>{player.nextOpponent ?? 'Next —'}</span></small></span>
+      <span><strong>{player.displayName}</strong>{showMeta ? <small><span className={`squad-page__position position-${player.position.toLowerCase()}`}>{player.position}</span> · <span className={player.nextOpponent ? '' : 'is-placeholder'}>{player.nextOpponent ? `vs ${player.nextOpponent}` : 'Next —'}</span></small> : null}</span>
     </span>
   );
 }
@@ -877,22 +1069,11 @@ function TeamShirt({ large = false, team }: { large?: boolean; team: string }) {
   return <img alt="" aria-hidden="true" className={`squad-page__shirt ${large ? 'large' : ''}`} src={src} />;
 }
 
-function AvailabilityFlag({ player }: { player: PlayerView }) {
+function AvailabilityFlag({ inline = false, player }: { inline?: boolean; player: PlayerView }) {
   const label = availabilityLabel(player);
   if (!label) return null;
   const tone = player.chanceOfPlaying !== null && player.chanceOfPlaying < 75 ? 'warning' : 'fit';
-  return <span aria-label={`Availability: ${label}`} className={`squad-page__availability-flag ${tone}`}>{tone === 'fit' ? <CircleCheck size={13} /> : <CircleAlert size={13} />}</span>;
-}
-
-function AvailabilityLabel({ player }: { player: PlayerView }) {
-  const label = availabilityLabel(player);
-  if (!label) return <span className="squad-page__placeholder-value">— <small>API</small></span>;
-  const tone = player.chanceOfPlaying !== null && player.chanceOfPlaying < 75 ? 'warning' : 'fit';
-  return <span className={`squad-page__availability-label ${tone}`}>{tone === 'fit' ? <CircleCheck size={14} /> : <CircleAlert size={14} />}{label}</span>;
-}
-
-function OptionalValue({ value }: { value: number | null }) {
-  return value === null ? <span className="squad-page__placeholder-value">— <small>API</small></span> : <>{value.toFixed(1)}</>;
+  return <span aria-label={`Availability: ${label}`} className={`squad-page__availability-flag ${tone} ${inline ? 'inline' : ''}`} title={`Availability: ${label}`}>{tone === 'fit' ? <CircleCheck size={13} /> : <CircleAlert size={13} />}</span>;
 }
 
 function Metric({ dots = false, label, placeholder = false, value }: { dots?: boolean; label: string; placeholder?: boolean; value: string }) {
@@ -965,15 +1146,117 @@ function lineupGroups(players: PlayerView[]) {
     .filter((group) => group.players.length > 0);
 }
 
-function lineupRoleLabel(player: PlayerView): string {
-  if (player.slot === 'starter') return 'Starting XI';
-  if (player.slot === 'bench' && player.position === 'GKP') return 'GK sub';
-  if (player.slot === 'bench') return `Sub ${player.slotOrder ?? '—'}`;
-  return 'Reserve';
-}
-
 function sortBySlot(left: PlayerView, right: PlayerView): number {
   return (left.slotOrder ?? Number.MAX_SAFE_INTEGER) - (right.slotOrder ?? Number.MAX_SAFE_INTEGER);
+}
+
+function selectionIsValid(players: TeamSelectionPlayer[]): boolean {
+  const starters = players.filter((player) => player.slot === 'starter');
+  const bench = players.filter((player) => player.slot === 'bench');
+  const reserves = players.filter((player) => player.slot === 'reserve');
+  const captainCount = players.filter((player) => player.captain).length;
+  const viceCaptainCount = players.filter((player) => player.viceCaptain).length;
+  if (captainCount !== 1 || viceCaptainCount !== 1) return false;
+  if (players.length !== 20) {
+    return starters.length === 3 && bench.length === 1 && reserves.length === 1;
+  }
+  if (starters.length !== 11 || bench.length !== 5 || reserves.length !== 4) return false;
+
+  const countPosition = (position: string) => starters.filter((player) => normalizePosition(player.position) === position).length;
+  if (countPosition('GKP') !== 1) return false;
+  if (countPosition('DEF') < 3 || countPosition('DEF') > 5) return false;
+  if (countPosition('MID') < 2 || countPosition('MID') > 5) return false;
+  if (countPosition('FWD') < 1 || countPosition('FWD') > 3) return false;
+
+  const benchGoalkeepers = bench.filter((player) => normalizePosition(player.position) === 'GKP');
+  const benchOutfield = bench.filter((player) => normalizePosition(player.position) !== 'GKP');
+  const captain = players.find((player) => player.captain);
+  const viceCaptain = players.find((player) => player.viceCaptain);
+  return benchGoalkeepers.length === 1
+    && benchGoalkeepers[0].slotOrder === 0
+    && benchOutfield.length === 4
+    && benchOutfield.map((player) => player.slotOrder).sort((left, right) => left - right).join(',') === '1,2,3,4'
+    && captain?.slot === 'starter'
+    && viceCaptain?.slot === 'starter'
+    && captain.id !== viceCaptain.id;
+}
+
+function normalizeLineupPlayers(players: TeamSelectionPlayer[]): TeamSelectionPlayer[] {
+  const starters = players.filter((player) => player.slot === 'starter').sort(sortTeamSelectionPlayers);
+  const bench = players.filter((player) => player.slot === 'bench').sort(sortTeamSelectionPlayers);
+  const reserves = players.filter((player) => player.slot === 'reserve').sort(sortTeamSelectionPlayers);
+  const fullSquad = players.length === 20;
+  const captainId = fullSquad
+    ? (starters.find((player) => player.captain)?.id ?? starters[0]?.id)
+    : undefined;
+  const viceCaptainId = fullSquad
+    ? (starters.find((player) => player.viceCaptain && player.id !== captainId)?.id
+      ?? starters.find((player) => player.id !== captainId)?.id)
+    : undefined;
+
+  const normalizeGroup = (group: TeamSelectionPlayer[], slot: TeamSelectionSlot) => {
+    let outfieldOrder = 0;
+    return group.map((player, index) => ({
+      ...player,
+      slot,
+      slotOrder: slot === 'bench' && normalizePosition(player.position) === 'GKP'
+        ? 0
+        : slot === 'bench'
+          ? ++outfieldOrder
+          : index + 1,
+      captain: fullSquad ? player.id === captainId : player.captain,
+      viceCaptain: fullSquad ? player.id === viceCaptainId : player.viceCaptain,
+    }));
+  };
+
+  return [
+    ...normalizeGroup(starters, 'starter'),
+    ...normalizeGroup(bench, 'bench'),
+    ...normalizeGroup(reserves, 'reserve'),
+  ];
+}
+
+function sortTeamSelectionPlayers(left: TeamSelectionPlayer, right: TeamSelectionPlayer): number {
+  return left.slotOrder - right.slotOrder || left.name.localeCompare(right.name);
+}
+
+function slotLabel(slot: TeamSelectionSlot): string {
+  if (slot === 'starter') return 'starter';
+  if (slot === 'bench') return 'bench';
+  return 'reserves';
+}
+
+function apiErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof TeamSelectionApiError && error.code === 'conflict') {
+    const reason = typeof error.details.reason === 'string' ? error.details.reason : error.message;
+    return `Lineup locked. ${reason}`;
+  }
+  return fallback;
+}
+
+function formatDeadlineDate(deadlineAt: string): string {
+  const deadline = new Date(deadlineAt);
+  if (Number.isNaN(deadline.getTime())) return 'Deadline pending';
+  return new Intl.DateTimeFormat(undefined, {
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    month: 'short',
+    weekday: 'short',
+  }).format(deadline);
+}
+
+function formatCountdown(deadlineAt: string, now: number): string {
+  const remainingSeconds = Math.max(0, Math.floor((new Date(deadlineAt).getTime() - now) / 1000));
+  if (remainingSeconds <= 0) return 'Deadline passed';
+  const days = Math.floor(remainingSeconds / 86_400);
+  const hours = Math.floor((remainingSeconds % 86_400) / 3_600);
+  const minutes = Math.floor((remainingSeconds % 3_600) / 60);
+  const seconds = remainingSeconds % 60;
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${minutes}m`;
+  if (minutes > 0) return `${minutes}m ${seconds}s`;
+  return `${seconds}s`;
 }
 
 function normalizePosition(position: string): string {
@@ -987,16 +1270,6 @@ function normalizePosition(position: string): string {
 
 function firstNumber(...values: Array<number | null | undefined>): number | null {
   return values.find((value): value is number => typeof value === 'number') ?? null;
-}
-
-function averageOptional(values: Array<number | null>): number | null {
-  const present = values.filter((value): value is number => value !== null);
-  return present.length ? present.reduce((sum, value) => sum + value, 0) / present.length : null;
-}
-
-function sumOptional(values: Array<number | null>): number | null {
-  const present = values.filter((value): value is number => value !== null);
-  return present.length ? present.reduce((sum, value) => sum + value, 0) : null;
 }
 
 function formatMetric(value: number | null): string {

@@ -6,7 +6,7 @@ Squad is the season-long squad health workspace. It answers:
 
 > What is the condition of my squad, and what squad action should I take next?
 
-It is not the weekly lineup editor and it is not the general player-discovery area.
+It is not the general player-discovery area. The weekly lineup editor is intentionally consolidated here so the manager has one place to review and submit the current team.
 
 ## Entry behaviour
 
@@ -25,18 +25,19 @@ Support **Pitch** and **List**.
 - Pitch is the overview representation.
 - List is the analytical representation.
 - Remember the manager's last choice.
-- The current Matchweek lineup may be used to position players on the pitch, but lineup editing belongs in Matchweek.
+- The current gameweek lineup positions players on the pitch and is editable from the same workspace.
 
 ### Shared essentials
 
 Both views should show, when the underlying data is available:
 
 - player name;
-- position;
 - club shirt or club identity;
 - next opponent;
 - form;
 - availability.
+
+The list view also keeps points, xG/xA, and movement controls visible without horizontal scrolling. Position and lineup group are communicated by the table section rather than repeated in each row.
 
 Do not invent missing metrics or substitute implementation status for user-facing data.
 
@@ -143,15 +144,17 @@ A lightweight trade drawer starts with the owned player preselected. It lets the
 
 - squad health;
 - full-squad review;
+- current gameweek lineup and bench management;
+- captain/vice-captain state and chip controls;
+- next deadline context;
 - owned-player comparison;
 - staged additions/removals from draw wins;
 - release staging;
 - starting a trade from an owned player;
-- read-only lineup preview.
+- lineup preview and submission.
 
 ### Belongs elsewhere
 
-- weekly lineup editing -> Matchweek;
 - player discovery -> Market;
 - watchlist -> Market;
 - draw Interests and preference ranking -> Market;
@@ -167,8 +170,8 @@ A lightweight trade drawer starts with the owned player preselected. It lets the
 
 ## Usability acceptance criteria
 
-- The manager can understand the condition of the squad without entering Matchweek.
-- Squad and Matchweek responsibilities are unambiguous.
+- The manager can review and save the current lineup without leaving Squad.
+- `/team-selection` and `/squad-management` do not create duplicate player panels.
 - Selecting a player exposes Compare, Release, Draft Trade and Full Profile without hunting through menus.
 - A manager can stage and restore removals without mutating the server immediately.
 - Draw-won players are clearly distinct from ordinary free agents.

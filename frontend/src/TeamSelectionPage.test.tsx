@@ -1,6 +1,6 @@
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
-import { describe, expect, test } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { TeamSelectionPage } from './TeamSelectionPage';
 import type {
@@ -15,28 +15,16 @@ const testGlobal = globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT:
 testGlobal.IS_REACT_ACT_ENVIRONMENT = true;
 
 const fixtureSummary: TeamSelectionFixtureSummary = {
-  cdlFixtures: [{
-    id: 'cdl-api-fixture',
-    gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1 },
-    homeTeam: { id: 'api-castle', name: 'API Castle' },
-    awayTeam: { id: 'api-rival', name: 'API Rival' },
-    status: 'scheduled',
-  }],
-  eplFixtures: [{
-    id: 'epl-api-fixture',
-    gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1 },
-    homeTeam: { id: 'api-arsenal', name: 'API Arsenal' },
-    awayTeam: { id: 'api-city', name: 'API City' },
-    status: 'scheduled',
-  }],
-  cdlTable: [{ id: 'api-castle', name: 'API Castle' }, { id: 'api-rival', name: 'API Rival' }],
-  eplTable: [{ id: 'api-arsenal', name: 'API Arsenal' }, { id: 'api-city', name: 'API City' }],
+  cdlFixtures: [],
+  eplFixtures: [],
+  cdlTable: [],
+  eplTable: [],
 };
 
 function snapshot(locked = false): TeamSelectionSnapshot {
   return {
     managerTeam: { id: 'team-castle', name: 'Castle FC', shortName: 'CFC' },
-    gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1 },
+    gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1, deadlineAt: '2026-08-14T17:30:00Z' },
     players: [
       { id: 'player-1', name: 'Alex Keeper', position: 'GKP', team: 'ARS', slot: 'starter', slotOrder: 1, captain: false, viceCaptain: false },
       { id: 'player-2', name: 'Ben Defender', position: 'DEF', team: 'MCI', slot: 'starter', slotOrder: 2, captain: false, viceCaptain: false },
@@ -91,44 +79,71 @@ class MemoryTeamSelectionClient implements TeamSelectionClient {
   }
 }
 
+beforeEach(() => {
+  vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+    const path = String(input);
+    const players = snapshot().players.map((player) => ({
+      id: player.id,
+      display_name: player.name,
+      position: player.position,
+      epl_team: { name: player.team, short_name: player.team },
+      status: 'owned',
+      points: 10,
+      form: 5,
+      value: 5,
+    }));
+    if (path === '/api/squad/summary' || path === '/api/scouting/players') {
+      return new Response(JSON.stringify({
+        manager_team: { id: 'team-castle', name: 'Castle FC', short_name: 'CFC' },
+        gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1 },
+        players,
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }
+    if (path === '/api/trades') {
+      return new Response(JSON.stringify({ trades: [] }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }
+    return new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } });
+  }));
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+  document.body.replaceChildren();
+});
+
 async function renderPage(locked = false) {
   const container = document.createElement('div');
   document.body.append(container);
   const root = createRoot(container);
   const client = new MemoryTeamSelectionClient(locked);
   await act(async () => {
-    root.render(
-      <TeamSelectionPage
-        preset={getDefaultThemePreset()}
-        teamSelectionClient={client}
-      />,
-    );
+    root.render(<TeamSelectionPage preset={getDefaultThemePreset()} teamSelectionClient={client} />);
     await Promise.resolve();
     await Promise.resolve();
   });
   return { client, container, root };
 }
 
-describe('TeamSelectionPage', () => {
-  test('renders API lineup, chips, bench, reserves, and fixture context', async () => {
+describe('TeamSelectionPage compatibility export', () => {
+  test('renders the canonical Squad workspace without a duplicate panel', async () => {
     const { container } = await renderPage();
 
-    expect(container.textContent).toContain('Team selection loaded.');
-    expect(container.textContent).toContain('Wildcard');
-    expect(container.textContent).toContain('Starters');
-    expect(container.textContent).toContain('Bench');
-    expect(container.textContent).toContain('Reserves');
-    expect(container.textContent).toContain('API Castle vs API Rival');
-    expect(container.textContent).toContain('API Arsenal vs API City');
-    expect(container.textContent).toContain('CDL table: API Castle, API Rival');
-    expect(container.querySelectorAll('.team-selection-player[role="cell"]')).toHaveLength(5);
+    expect(container.textContent).toContain('Castle FC squad ready for review.');
+    expect(container.textContent).toContain('Next deadline');
+    await act(async () => {
+      (container.querySelector('button[aria-label="View as list"]') as HTMLButtonElement).click();
+      await Promise.resolve();
+    });
+    expect(container.querySelector('[aria-label="Starting XI players"]')).not.toBeNull();
+    expect(container.querySelector('[aria-label="Bench players"]')).not.toBeNull();
+    expect(container.querySelector('[aria-label="Reserves players"]')).not.toBeNull();
+    expect(container.querySelector('.team-selection-panel')).toBeNull();
+    expect(container.querySelector('[aria-label="Wildcard, available"]')).not.toBeNull();
   });
 
-  test('persists an available chip through the API client and rejects a used chip locally', async () => {
+  test('persists an available chip through the API client and reports used chips', async () => {
     const { client, container } = await renderPage();
-    const wildcardButton = Array.from(container.querySelectorAll('button')).find((button) => {
-      return button.parentElement?.textContent?.includes('Wildcard');
-    }) as HTMLButtonElement;
+    const wildcardButton = container.querySelector('[aria-label="Wildcard, available"]') as HTMLButtonElement;
 
     await act(async () => {
       wildcardButton.click();
@@ -138,11 +153,8 @@ describe('TeamSelectionPage', () => {
     expect(client.current.chips[0].status).toBe('active');
     expect(container.textContent).toContain('Wildcard chip state updated.');
 
-    const benchBoostButton = Array.from(container.querySelectorAll('button')).find((button) => {
-      return button.parentElement?.textContent?.includes('Bench Boost');
-    }) as HTMLButtonElement;
     await act(async () => {
-      benchBoostButton.click();
+      (container.querySelector('[aria-label="Bench Boost, used"]') as HTMLButtonElement).click();
       await Promise.resolve();
     });
 
@@ -151,6 +163,10 @@ describe('TeamSelectionPage', () => {
 
   test('shows invalid lineup feedback before sending a save', async () => {
     const { container } = await renderPage();
+    await act(async () => {
+      (container.querySelector('button[aria-label="View as list"]') as HTMLButtonElement).click();
+      await Promise.resolve();
+    });
     const select = container.querySelector('select[aria-label="Move Alex Keeper"]') as HTMLSelectElement;
 
     await act(async () => {
@@ -159,7 +175,7 @@ describe('TeamSelectionPage', () => {
       await Promise.resolve();
     });
 
-    const saveButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Save lineup') as HTMLButtonElement;
+    const saveButton = container.querySelector('button.ui-button') as HTMLButtonElement;
     await act(async () => {
       saveButton.click();
       await Promise.resolve();
@@ -169,13 +185,16 @@ describe('TeamSelectionPage', () => {
     expect(container.textContent).toContain('/rules#lineup-validation');
   });
 
-  test('renders a view-only locked lineup with every mutation control disabled', async () => {
+  test('renders a locked lineup with mutation controls disabled', async () => {
     const { container } = await renderPage(true);
 
     expect(container.textContent).toContain('Lineup locked. FPL deadline passed.');
-    expect(container.textContent).toContain('View-only lineup');
-    expect(container.textContent).toContain('Gameweek 1 can no longer be changed.');
-    expect(Array.from(container.querySelectorAll('select')).every((control) => control.disabled)).toBe(true);
-    expect(Array.from(container.querySelectorAll('button')).every((control) => control.disabled)).toBe(true);
+    await act(async () => {
+      (container.querySelector('button[aria-label="View as list"]') as HTMLButtonElement).click();
+      await Promise.resolve();
+    });
+    expect(Array.from(container.querySelectorAll('select[aria-label^="Move "]')).every((control) => (control as HTMLSelectElement).disabled)).toBe(true);
+    expect((container.querySelector('button[aria-label="Wildcard, available"]') as HTMLButtonElement).disabled).toBe(true);
+    expect((container.querySelector('button.ui-button') as HTMLButtonElement).disabled).toBe(true);
   });
 });

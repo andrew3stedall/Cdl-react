@@ -69,6 +69,7 @@ interface ApiGameweek {
   id: string;
   name: string;
   number: number;
+  deadline_at?: string | null;
 }
 
 interface ApiPlayer {
@@ -193,10 +194,19 @@ function mapTeam(team: ApiTeam): TeamSummary {
 function mapFixture(fixture: ApiFixture): TeamSelectionFixture {
   return {
     id: fixture.id,
-    gameweek: fixture.gameweek,
+    gameweek: mapGameweek(fixture.gameweek),
     homeTeam: mapTeam(fixture.home_team),
     awayTeam: mapTeam(fixture.away_team),
     status: fixture.status,
+  };
+}
+
+function mapGameweek(gameweek: ApiGameweek): GameweekSummary {
+  return {
+    id: gameweek.id,
+    name: gameweek.name,
+    number: gameweek.number,
+    deadlineAt: gameweek.deadline_at ?? null,
   };
 }
 
@@ -212,7 +222,7 @@ function mapFixtureSummary(response: ApiFixtureSummaryResponse): TeamSelectionFi
 function mapResponse(response: ApiTeamSelectionResponse): TeamSelectionSnapshot {
   return {
     managerTeam: mapTeam(response.manager_team),
-    gameweek: response.gameweek,
+    gameweek: mapGameweek(response.gameweek),
     players: response.lineup.map((player) => ({
       id: player.id,
       name: player.display_name,

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Issue #6 adds the modern Team Selection route for lineup editing, chip lifecycle management, bench and reserves, fixture summaries, and validation feedback.
+Issue #6 adds the lineup and chip controls that now live in the canonical Squad workspace. The old Team Selection route remains an alias for compatibility; it does not render a second panel.
 
 ## Source of Truth
 
@@ -23,6 +23,8 @@ GET /api/team-selection
 ```
 
 Returns manager team, gameweek, lineup rows, chips, and validation messages.
+
+The gameweek includes `deadline_at` when the schedule source provides it. The UI uses this value for the next-deadline date and countdown.
 
 ### Update lineup
 
@@ -74,19 +76,20 @@ Returns CDL fixtures, EPL fixtures, CDL table summary, and EPL table summary.
 
 ## UI Behaviour
 
-`/team-selection` renders inside the shared application shell and includes:
+`/squad`, `/team-selection`, and `/squad-management` resolve to the same Squad workspace and include:
 
-- Chip selector cards with state indicators.
+- An icon-only pitch/list switch at the top right.
+- A compact next-deadline date and countdown.
+- Inline chip icon buttons: available, active, and used states are visually distinct; active chips carry a dot.
 - Starter pitch-style lineup panel.
-- Bench and reserves panels.
+- Split Starting XI, Bench, and Reserves list tables.
 - Accessible select controls for player movement.
 - Save-lineup validation feedback.
-- Fixture and table summary cards.
-- Links to `/rules#chip-usage` and `/rules#lineup-validation`.
+- Fixture/table presentation is deferred to the fixtures slice; the API contract remains available.
 
 ## Data Access
 
-The implementation uses an in-memory repository behind service boundaries. Persistent lineup and chip storage remain future migration work.
+The implementation uses the configured team-selection repository behind service boundaries. The in-memory repository supplies a deterministic deadline for development; PostgreSQL mode reads the next cached FPL deadline when available and falls back to the repository default.
 
 ## Validation
 

@@ -1,5 +1,7 @@
 """Shared domain summary contracts used across feature APIs."""
 
+from datetime import datetime
+
 from pydantic import BaseModel
 
 
@@ -20,6 +22,7 @@ class GameweekSummary(BaseModel):
     id: str
     name: str
     number: int
+    deadline_at: datetime | None = None
 
 
 class FixtureSummary(BaseModel):

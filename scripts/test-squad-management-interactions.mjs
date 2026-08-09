@@ -21,7 +21,7 @@ const rivalTeam = { id: 'team-castle', name: 'Castle FC', short_name: 'CAS' };
 
 const squadSummary = {
   manager_team: managerTeam,
-  gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1 },
+  gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1, deadline_at: '2026-08-14T17:30:00Z' },
   players: [
     {
       id: 'player-1',
@@ -52,7 +52,7 @@ const squadSummary = {
 
 const teamSelection = {
   manager_team: managerTeam,
-  gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1 },
+  gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1, deadline_at: '2026-08-14T17:30:00Z' },
   lineup: [
     {
       id: 'player-1',
@@ -208,8 +208,8 @@ async function testSquadWorkspace(browser, viewport) {
   await page.getByRole('status').getByText('Alex Keeper restored to the squad.', { exact: true }).waitFor();
   await changes.locator('.squad-page__changes-toggle').click();
 
-  await page.getByRole('button', { name: 'List', exact: true }).click();
-  await page.locator('[aria-label="Squad players table"]').waitFor();
+  await page.getByRole('button', { name: 'View as list' }).click();
+  await page.locator('[aria-label="Starting XI players table"]').waitFor();
   await captureReviewState(page, viewport, 'squad-reference-list');
   await context.close();
 }

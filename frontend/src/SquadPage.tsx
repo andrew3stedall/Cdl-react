@@ -975,7 +975,7 @@ export function SquadPage({
       ) : null}
 
       <nav aria-label="Squad mobile navigation" className="squad-page__mobile-nav">
-        <a href="/dashboard"><Home size={19} /><span>Home</span></a>
+        <a href="/"><Home size={19} /><span>Desk</span></a>
         <a aria-current="page" href="/squad-management"><Shield size={19} /><span>Squad</span></a>
         <a href="/scouting"><Search size={19} /><span>Market</span></a>
         <a href="/team-selection"><CalendarDays size={19} /><span>Matchweek</span></a>

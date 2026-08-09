@@ -104,8 +104,10 @@ class MemoryLeagueClient implements LeagueClient {
 }
 
 class MemorySquadClient implements SquadClient {
-  async getSummary() { return squad; }
-  async getScoutingPlayers() { return { players: squad.players }; }
+  constructor(private readonly summary: SquadApiSummary = squad) {}
+
+  async getSummary() { return this.summary; }
+  async getScoutingPlayers() { return { players: this.summary.players }; }
   async getTrades() { return { trades: [] }; }
   async getChanges() { return { available_to_add: [] }; }
   async getNotifications() {
@@ -123,10 +125,13 @@ class MemorySquadClient implements SquadClient {
     return { player_id: 'p1', fetched_at: '2030-01-01', response_sha256: 'test', history: [], fixtures: [] };
   }
   async createTrade() { return { id: 'trade-1', status: 'proposed' }; }
-  async applyChanges() { return squad; }
+  async applyChanges() { return this.summary; }
 }
 
-function renderPage(onNavigate: (href: string) => void = () => undefined) {
+function renderPage(
+  onNavigate: (href: string) => void = () => undefined,
+  squadClient: SquadClient = new MemorySquadClient(),
+) {
   const container = document.createElement('div');
   document.body.append(container);
   const root = createRoot(container);
@@ -136,7 +141,7 @@ function renderPage(onNavigate: (href: string) => void = () => undefined) {
         leagueClient={new MemoryLeagueClient()}
         onNavigate={onNavigate}
         session={session}
-        squadClient={new MemorySquadClient()}
+        squadClient={squadClient}
         teamSelectionClient={new MemoryTeamSelectionClient()}
       />,
     );
@@ -198,5 +203,25 @@ describe('ManagerDeskPage', () => {
     expect(container.textContent).toContain('Your team is locked in.');
     expect(container.textContent).toContain('View your team');
     expect(container.textContent).not.toContain('Choose a captain');
+  });
+
+  test('does not flag players whose FPL status is available', async () => {
+    const fitSquad: SquadApiSummary = {
+      ...squad,
+      players: [{
+        ...squad.players[0],
+        availability_status: 'a',
+        availability_news: '',
+        chance_of_playing_next_round: null,
+      }],
+    };
+    const { container } = renderPage(() => undefined, new MemorySquadClient(fitSquad));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(container.textContent).toContain('1 players · 0 flagged');
+    expect(container.textContent).not.toContain('Check squad availability');
   });
 });

@@ -94,6 +94,8 @@ beforeEach(() => {
               form: 7.4,
               value: 14.0,
               selected_by_percent: 62.1,
+              availability_status: 'a',
+              chance_of_playing_next_round: null,
             },
             {
               id: 'fpl-235',
@@ -106,6 +108,8 @@ beforeEach(() => {
               form: 4.8,
               value: 5.0,
               selected_by_percent: 18.0,
+              availability_status: 'available',
+              chance_of_playing_next_round: 100,
             },
           ],
         }), { status: 200, headers: { 'Content-Type': 'application/json' } });
@@ -297,6 +301,7 @@ describe('SquadPage', () => {
     const { container } = await renderPage();
 
     expect(container.textContent).toContain('Exeter Gently');
+    expect(container.querySelectorAll('.squad-page__availability-flag')).toHaveLength(0);
     expect(container.textContent).toContain('Next deadline');
     expect(container.querySelector('[aria-label="Matchweek controls"]')).not.toBeNull();
     expect(container.textContent).not.toContain('Total Points');

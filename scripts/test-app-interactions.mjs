@@ -506,6 +506,7 @@ async function testSquadManagement(page) {
   await page.goto(`${baseUrl}/squad-management`, { waitUntil: 'networkidle' });
   await expectStatus(page, 'Exeter Gently squad ready for review.');
 
+  await page.getByRole('button', { name: 'View as pitch' }).click();
   const pitch = page.locator('section[aria-label="Squad pitch"]');
   await pitch.waitFor();
   await pitch.locator('section[aria-label="Bench"]').waitFor();

@@ -161,19 +161,32 @@ describe('TeamSelectionPage compatibility export', () => {
     expect(container.textContent).toContain('Used chips cannot be activated');
   });
 
-  test('shows invalid lineup feedback before sending a save', async () => {
-    const { container } = await renderPage();
+  test('stages a context-menu substitution before sending a save', async () => {
+    const { client, container } = await renderPage();
     await act(async () => {
       (container.querySelector('button[aria-label="View as list"]') as HTMLButtonElement).click();
       await Promise.resolve();
     });
-    const select = container.querySelector('select[aria-label="Move Alex Keeper"]') as HTMLSelectElement;
 
     await act(async () => {
-      select.value = 'bench';
-      select.dispatchEvent(new Event('change', { bubbles: true }));
+      (container.querySelector('button[aria-label="Player actions for Alex Keeper"]') as HTMLButtonElement).click();
       await Promise.resolve();
     });
+    await act(async () => {
+      (Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Substitute player')) as HTMLButtonElement).click();
+      await Promise.resolve();
+    });
+    await act(async () => {
+      (container.querySelector('button[aria-label="Substitute with Riley Forward"]') as HTMLButtonElement).click();
+      await Promise.resolve();
+    });
+    await act(async () => {
+      (Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Confirm substitution')) as HTMLButtonElement).click();
+      await Promise.resolve();
+    });
+
+    expect(client.current.players.find((player) => player.id === 'player-1')?.slot).toBe('starter');
+    expect(container.textContent).toContain('Alex Keeper swapped with Riley Forward.');
 
     const saveButton = container.querySelector('button.ui-button') as HTMLButtonElement;
     await act(async () => {
@@ -181,8 +194,9 @@ describe('TeamSelectionPage compatibility export', () => {
       await Promise.resolve();
     });
 
-    expect(container.textContent).toContain('Invalid lineup');
-    expect(container.textContent).toContain('/rules#lineup-validation');
+    expect(client.current.players.find((player) => player.id === 'player-1')?.slot).toBe('bench');
+    expect(client.current.players.find((player) => player.id === 'player-4')?.slot).toBe('starter');
+    expect(container.textContent).toContain('Lineup saved and validated.');
   });
 
   test('renders a locked lineup with mutation controls disabled', async () => {
@@ -193,8 +207,13 @@ describe('TeamSelectionPage compatibility export', () => {
       (container.querySelector('button[aria-label="View as list"]') as HTMLButtonElement).click();
       await Promise.resolve();
     });
-    expect(Array.from(container.querySelectorAll('select[aria-label^="Move "]')).every((control) => (control as HTMLSelectElement).disabled)).toBe(true);
+    expect(container.querySelectorAll('select[aria-label^="Move "]').length).toBe(0);
     expect((container.querySelector('button[aria-label="Wildcard, available"]') as HTMLButtonElement).disabled).toBe(true);
     expect((container.querySelector('button.ui-button') as HTMLButtonElement).disabled).toBe(true);
+    await act(async () => {
+      (container.querySelector('button[aria-label="Player actions for Alex Keeper"]') as HTMLButtonElement).click();
+      await Promise.resolve();
+    });
+    expect(Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Substitute player'))).toHaveProperty('disabled', true);
   });
 });

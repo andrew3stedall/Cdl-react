@@ -534,6 +534,14 @@ async function testTeamSelection(page) {
   await page.getByRole('button', { name: 'Wildcard, active' }).waitFor();
 }
 
+async function testManagerDesk(page) {
+  await page.goto(baseUrl + '/', { waitUntil: 'networkidle' });
+  await page.getByRole('heading', { name: 'Managers Desk' }).waitFor();
+  await page.getByText('Action centre', { exact: true }).waitFor();
+  await page.getByRole('button', { name: 'Set your team' }).click();
+  await expectPath(page, '/team-selection');
+}
+
 async function testSquadManagement(page) {
   await page.goto(`${baseUrl}/squad-management`, { waitUntil: 'networkidle' });
   await expectStatus(page, 'Exeter Gently squad ready for review.');
@@ -549,7 +557,7 @@ async function testSquadManagement(page) {
 }
 
 async function testDashboard(page) {
-  await page.goto(baseUrl + '/dashboard', { waitUntil: 'networkidle' });
+  await page.goto(baseUrl + '/dashboard/analytics', { waitUntil: 'networkidle' });
   await page.getByRole('heading', { name: 'Manager Analytics Dashboard' }).waitFor();
 
   await page.getByRole('combobox', { name: 'Team', exact: true }).selectOption('Castle FC');
@@ -653,7 +661,7 @@ async function testLoginAndLogout(page, api, viewportName) {
   await expectStatus(page, 'Invalid email or password.');
   await page.getByLabel('Password', { exact: true }).fill('browser-login-secret');
   await page.getByRole('button', { name: 'Sign in' }).click();
-  await expectPath(page, '/dashboard');
+  await expectPath(page, '/');
   if (viewportName === 'mobile') {
     await page.getByRole('button', { name: 'Menu', exact: true }).click();
   } else {
@@ -689,6 +697,7 @@ async function runViewport(viewport, viewportName) {
   const page = await context.newPage();
   const api = await mockApi(page);
 
+  await testManagerDesk(page);
   await testTeamSelection(page);
   await testSquadManagement(page);
   await testDashboard(page);

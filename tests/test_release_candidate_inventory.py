@@ -81,7 +81,7 @@ def test_tester_guide_is_deterministic_and_truthful() -> None:
         "Invalid email or password.",
         "Interest already exists.",
         "Trade proposal created.",
-        "Invalid lineup.",
+        "formation-valid substitutions",
         "Lineup saved and validated.",
         "deterministic API test doubles",
         "Live browser-to-PostgreSQL",
@@ -96,23 +96,25 @@ def test_team_selection_release_evidence_is_focused_and_truthful() -> None:
     inventory = INVENTORY.read_text(encoding="utf-8")
     browser = BROWSER_INTERACTIONS.read_text(encoding="utf-8")
     required_browser_evidence = (
-        "Invalid lineup.",
+        "Player actions for Alex Keeper",
+        "Substitute with Riley Forward",
+        "Bench position 2",
         "Lineup saved and validated.",
-        "Expected the saved Ben Defender bench slot to survive a reload",
-        "Expected the saved Riley Forward starter slot to survive a reload",
+        "Expected the saved lineup to render its player action controls after reload",
+        "Expected list view to remain free of player movement dropdowns after reload",
         "Wildcard chip state updated.",
         "Expected Save lineup to be disabled after fixture lock",
         "Expected chip controls to be disabled after fixture lock",
-        "Expected lineup controls to be disabled after fixture lock",
+        "Expected substitution to be disabled after fixture lock",
         "runViewport({ width: 390, height: 844 }, 'mobile')",
         "runViewport({ width: 1440, height: 900 }, 'desktop')",
     )
     for evidence in required_browser_evidence:
         assert evidence in browser
     required_inventory_claims = (
-        "invalid-lineup feedback",
-        "lineup and wildcard state surviving reload",
-        "disabled lineup and chip controls when a fixture lock is active",
+        "formation-aware context-menu substitution",
+        "valid lineup save survives reload",
+        "lineup/chip/substitution controls are disabled when a fixture lock is active",
         "Live PostgreSQL browser integration and staging identity remain separate gates",
     )
     for claim in required_inventory_claims:

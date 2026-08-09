@@ -2,12 +2,10 @@
   --login-accent: #12c8f4;
   --login-accent-strong: #22d3ee;
   --login-bg: #06111d;
-  --login-panel: rgba(8, 22, 35, 0.9);
+  --login-panel: #081827;
   --login-border: rgba(148, 163, 184, 0.2);
   --login-muted: #94a3b8;
-  background:
-    radial-gradient(circle at 50% 4%, rgba(18, 200, 244, 0.12), transparent 26rem),
-    linear-gradient(155deg, #071523 0%, var(--login-bg) 58%, #030a12 100%);
+  background: var(--login-bg);
   color: #f8fafc;
   display: grid;
   min-height: 100svh;
@@ -17,32 +15,7 @@
   position: relative;
 }
 
-.login-ambient {
-  border-radius: 999px;
-  filter: blur(80px);
-  opacity: 0.18;
-  pointer-events: none;
-  position: absolute;
-}
-
-.login-ambient-top {
-  background: #0ea5e9;
-  height: 18rem;
-  right: -8rem;
-  top: -9rem;
-  width: 18rem;
-}
-
-.login-ambient-bottom {
-  background: #0891b2;
-  bottom: -10rem;
-  height: 20rem;
-  left: -10rem;
-  width: 20rem;
-}
-
 .login-panel {
-  backdrop-filter: blur(18px);
   background: var(--login-panel);
   border: 1px solid var(--login-border);
   border-radius: 1.75rem;
@@ -65,7 +38,7 @@
 }
 
 .login-brand-mark {
-  background: linear-gradient(145deg, #22d3ee, #0284c7);
+  background: #12c8f4;
   clip-path: polygon(50% 0, 93% 17%, 93% 54%, 78% 79%, 50% 100%, 22% 79%, 7% 54%, 7% 17%);
   display: grid;
   flex: 0 0 auto;
@@ -116,7 +89,7 @@
 }
 
 .login-rule {
-  background: linear-gradient(90deg, transparent, var(--login-border), transparent);
+  background: var(--login-border);
   height: 1px;
 }
 
@@ -227,7 +200,7 @@
 
 .login-submit {
   align-items: center;
-  background: linear-gradient(135deg, #22d3ee, #0ea5e9);
+  background: #12c8f4;
   border: 0;
   border-radius: 0.95rem;
   color: #02111c;
@@ -300,6 +273,18 @@
   height: 1px;
 }
 
+.login-google-redesigned .google-sign-in-shell {
+  align-items: center;
+  background: #0d2234;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 0.9rem;
+  display: grid;
+  gap: 0.4rem;
+  min-height: 4.2rem;
+  padding: 0.35rem;
+  width: 100%;
+}
+
 .login-google-redesigned .google-sign-in {
   display: grid;
   min-height: 44px;
@@ -310,6 +295,27 @@
 .login-google-redesigned .google-sign-in > div,
 .login-google-redesigned .google-sign-in iframe {
   max-width: 100%;
+}
+
+.google-account-switch {
+  background: transparent;
+  border: 0;
+  border-radius: 0.5rem;
+  color: #9fb1c5;
+  cursor: pointer;
+  font-size: 0.78rem;
+  justify-self: center;
+  min-height: 2rem;
+  padding: 0.35rem 0.65rem;
+}
+
+.google-account-switch:hover {
+  color: var(--login-accent-strong);
+}
+
+.google-account-switch:focus-visible {
+  outline: 3px solid rgba(34, 211, 238, 0.5);
+  outline-offset: 2px;
 }
 
 .login-footnote {
@@ -326,7 +332,6 @@
   }
 
   .login-panel {
-    backdrop-filter: none;
     background: transparent;
     border: 0;
     border-radius: 0;

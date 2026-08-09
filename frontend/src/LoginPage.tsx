@@ -44,9 +44,6 @@ export function LoginPage({
 
   return (
     <main className="login-screen" aria-labelledby="login-title">
-      <div aria-hidden="true" className="login-ambient login-ambient-top" />
-      <div aria-hidden="true" className="login-ambient login-ambient-bottom" />
-
       <section className="login-panel">
         <header className="login-brand">
           <span className="login-brand-mark">

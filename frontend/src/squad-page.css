@@ -854,16 +854,16 @@
   width: 1.15rem;
 }
 
-.squad-page__availability-flag.fit {
-  background: var(--secondary);
-  border: 1px solid var(--border);
-  color: var(--squad-success);
-}
-
 .squad-page__availability-flag.warning {
   background: var(--secondary);
   border: 1px solid var(--border);
   color: var(--squad-warning);
+}
+
+.squad-page__availability-flag.critical {
+  background: var(--secondary);
+  border: 1px solid var(--border);
+  color: var(--squad-danger);
 }
 
 .squad-page__availability-flag.inline {

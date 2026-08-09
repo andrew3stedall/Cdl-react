@@ -8,6 +8,7 @@
 - Added canonical Squad changes and notifications endpoints, including atomic temporary-right add/remove submission.
 - Added a typed Squad API client for summary, scouting, trades, changes, notifications and cached FPL player history.
 - Added the official current FPL shirt artwork mapping for all 20 2026/27 clubs, with the existing local SVGs retained as fallbacks.
+- Extended browser interaction fixtures to cover squad changes, notifications and player-history API calls.
 
 ### Changed
 

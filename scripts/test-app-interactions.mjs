@@ -242,6 +242,30 @@ async function mockApi(page, { authenticated = true, teamSelectionLocked = false
       return route.fulfill({ json: scoutingPlayers });
     }
 
+    if (path === '/api/squad/changes' && request.method() === 'GET') {
+      return route.fulfill({ json: { available_to_add: scoutingPlayers.players.filter((player) => player.status === 'available') } });
+    }
+
+    if (path === '/api/squad/changes' && request.method() === 'POST') {
+      return route.fulfill({ json: squadSummary });
+    }
+
+    if (path === '/api/squad/notifications') {
+      return route.fulfill({ json: { notifications: [] } });
+    }
+
+    if (path.startsWith('/api/fpl/players/') && path.endsWith('/history')) {
+      return route.fulfill({
+        json: {
+          player_id: path.split('/').at(-2),
+          fetched_at: '2026-08-09T00:00:00Z',
+          response_sha256: 'browser-fixture',
+          history: [],
+          fixtures: [],
+        },
+      });
+    }
+
     if (path === '/api/interests' && request.method() === 'GET') {
       return route.fulfill({ json: interests });
     }

@@ -45,6 +45,11 @@ approval_requests
 - Get approval queue notification counts.
 - Manage simple notification preferences.
 
+## Current API implementation
+
+- `GET /api/squad/notifications` returns manager-scoped derived alerts for proposed trades and reduced FPL availability.
+- The endpoint intentionally does not claim durable unread state or replace the future notification/activity tables described above.
+
 ## React Requirements
 
 - Notification centre.

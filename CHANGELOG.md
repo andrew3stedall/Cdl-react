@@ -1,5 +1,25 @@
 # Changelog
 
+## 2026-08-09 - Complete Squad API wiring and official FPL shirt assets
+
+### Added
+
+- Added next-opponent, home/away, kickoff and FDR enrichment from the persisted official FPL fixture cache.
+- Added canonical Squad changes and notifications endpoints, including atomic temporary-right add/remove submission.
+- Added a typed Squad API client for summary, scouting, trades, changes, notifications and cached FPL player history.
+- Added the official current FPL shirt artwork mapping for all 20 2026/27 clubs, with the existing local SVGs retained as fallbacks.
+
+### Changed
+
+- Wired the canonical Squad profile drawer to official FPL history and upcoming fixtures.
+- Wired Trade submission to `POST /api/trades` and validated the selected manager/team on the backend.
+- Replaced silent API fallbacks and visible endpoint placeholders with explicit states and source-backed values.
+- Added real availability and next-fixture filters to List view.
+
+### Validation
+
+- Added coverage for the official FPL asset URL used by the Squad surface and kept lineup/substitution regression coverage green.
+
 ## 2026-08-04 - Serve the staged snake draft through application APIs
 
 ### Fixed

@@ -33,6 +33,14 @@ import {
 
 import { Button } from './components/ui/button';
 import type { ThemePreset } from './contracts';
+import { officialFplShirtUrl } from './fpl-shirt-assets';
+import {
+  HttpSquadClient,
+  SquadApiError,
+  type SquadApiHistoryResponse,
+  type SquadApiNotification,
+  type SquadClient,
+} from './squad-api';
 import {
   HttpTeamSelectionClient,
   TeamSelectionApiError,
@@ -48,6 +56,7 @@ import './squad-lineup-groups.css';
 interface SquadPageProps {
   preset: ThemePreset;
   teamSelectionClient?: TeamSelectionClient;
+  squadClient?: SquadClient;
 }
 
 type SquadView = 'pitch' | 'list';
@@ -69,6 +78,7 @@ interface TeamRef {
   id: string;
   name: string;
   shortName: string;
+  fplCode?: number | null;
 }
 
 interface PlayerView {
@@ -77,15 +87,18 @@ interface PlayerView {
   position: string;
   team: string;
   status: PlayerStatus;
-  points: number;
+  points: number | null;
   form: number | null;
-  value: number;
+  value: number | null;
   selectedByPercent: number | null;
   draftTeam: TeamRef | null;
   xg: number | null;
   xa: number | null;
   nextOpponent: string | null;
+  nextFixtureDifficulty: number | null;
+  nextFixtureKickoff: string | null;
   availability: string | null;
+  availabilityNews: string | null;
   chanceOfPlaying: number | null;
   slot?: TeamSelectionSlot;
   slotOrder?: number;
@@ -97,7 +110,7 @@ interface PlayerApiResponse {
   id: string;
   display_name: string;
   position: string;
-  epl_team: { id?: string; name: string; short_name?: string | null };
+  epl_team: { id?: string; name: string; short_name?: string | null; fpl_code?: number | null };
   draft_team?: { id: string; name: string; short_name?: string | null } | null;
   status: PlayerStatus;
   points: number;
@@ -110,17 +123,14 @@ interface PlayerApiResponse {
   expected_assists?: number | null;
   next_opponent?: string | null;
   availability?: string | null;
+  availability_status?: string | null;
+  availability_news?: string | null;
   chance_of_playing_next_round?: number | null;
-}
-
-interface SquadSummaryApiResponse {
-  manager_team: { id: string; name: string; short_name?: string | null };
-  gameweek: { name: string };
-  players: PlayerApiResponse[];
-}
-
-interface ScoutingApiResponse {
-  players: PlayerApiResponse[];
+  next_fixture?: {
+    opponent: { id: string; name: string; short_name?: string | null };
+    difficulty?: number | null;
+    kickoff_at?: string | null;
+  } | null;
 }
 
 interface TradeApiResponse {
@@ -129,10 +139,6 @@ interface TradeApiResponse {
 }
 
 const pitchPositionOrder = ['GKP', 'DEF', 'MID', 'FWD'];
-const teamShirtCodes = new Set([
-  'ars', 'avl', 'bou', 'bre', 'bha', 'che', 'cov', 'cry', 'eve', 'ful',
-  'hul', 'ips', 'lee', 'liv', 'mci', 'mun', 'new', 'nfo', 'sun', 'tot',
-]);
 const positionOptions: Array<{ shortLabel: string; value: PositionFilter }> = [
   { shortLabel: 'All', value: 'all' },
   { shortLabel: 'GKP', value: 'GKP' },
@@ -141,6 +147,7 @@ const positionOptions: Array<{ shortLabel: string; value: PositionFilter }> = [
   { shortLabel: 'FWD', value: 'FWD' },
 ];
 const defaultTeamSelectionClient = new HttpTeamSelectionClient();
+const defaultSquadClient = new HttpSquadClient();
 const STARTER_LIMITS: Record<string, readonly [number, number]> = {
   GKP: [1, 1],
   DEF: [3, 5],
@@ -158,15 +165,16 @@ function getStoredView(): SquadView {
 }
 
 function mapPlayer(player: PlayerApiResponse): PlayerView {
+  const nextFixture = player.next_fixture ?? null;
   return {
     id: player.id,
     displayName: player.display_name,
     position: normalizePosition(player.position),
     team: player.epl_team.short_name ?? player.epl_team.name,
     status: player.status,
-    points: player.points,
+    points: typeof player.points === 'number' ? player.points : null,
     form: typeof player.form === 'number' ? player.form : null,
-    value: player.value,
+    value: typeof player.value === 'number' ? player.value : null,
     selectedByPercent: typeof player.selected_by_percent === 'number' ? player.selected_by_percent : null,
     draftTeam: player.draft_team
       ? {
@@ -177,8 +185,11 @@ function mapPlayer(player: PlayerApiResponse): PlayerView {
       : null,
     xg: firstNumber(player.xg, player.expected_goals),
     xa: firstNumber(player.xa, player.expected_assists),
-    nextOpponent: player.next_opponent ?? null,
-    availability: player.availability ?? null,
+    nextOpponent: nextFixture?.opponent.short_name ?? nextFixture?.opponent.name ?? player.next_opponent ?? null,
+    nextFixtureDifficulty: typeof nextFixture?.difficulty === 'number' ? nextFixture.difficulty : null,
+    nextFixtureKickoff: nextFixture?.kickoff_at ?? null,
+    availability: player.availability ?? player.availability_status ?? null,
+    availabilityNews: player.availability_news ?? null,
     chanceOfPlaying: typeof player.chance_of_playing_next_round === 'number'
       ? player.chance_of_playing_next_round
       : null,
@@ -192,31 +203,24 @@ function mapTeamSelectionPlayer(player: TeamSelectionPlayer): PlayerView {
     position: normalizePosition(player.position),
     team: player.team,
     status: 'owned',
-    points: 0,
+    points: null,
     form: null,
-    value: 0,
+    value: null,
     selectedByPercent: null,
     draftTeam: null,
     xg: null,
     xa: null,
     nextOpponent: null,
+    nextFixtureDifficulty: null,
+    nextFixtureKickoff: null,
     availability: null,
+    availabilityNews: null,
     chanceOfPlaying: null,
     slot: player.slot,
     slotOrder: player.slotOrder,
     captain: player.captain,
     viceCaptain: player.viceCaptain,
   };
-}
-
-async function fetchOptionalJson<T>(path: string): Promise<T | null> {
-  try {
-    const response = await fetch(path, { credentials: 'include' });
-    if (!response.ok) return null;
-    return await response.json() as T;
-  } catch {
-    return null;
-  }
 }
 
 function mergeLineupPlayers(roster: PlayerView[], lineup: TeamSelectionPlayer[] | null): PlayerView[] {
@@ -232,15 +236,18 @@ function mergeLineupPlayers(roster: PlayerView[], lineup: TeamSelectionPlayer[] 
       position: normalizePosition(existing?.position ?? player.position),
       team: existing?.team ?? player.team,
       status: existing?.status ?? 'owned',
-      points: existing?.points ?? 0,
+      points: existing?.points ?? null,
       form: existing?.form ?? null,
-      value: existing?.value ?? 0,
+      value: existing?.value ?? null,
       selectedByPercent: existing?.selectedByPercent ?? null,
       draftTeam: existing?.draftTeam ?? null,
       xg: existing?.xg ?? null,
       xa: existing?.xa ?? null,
       nextOpponent: existing?.nextOpponent ?? null,
+      nextFixtureDifficulty: existing?.nextFixtureDifficulty ?? null,
+      nextFixtureKickoff: existing?.nextFixtureKickoff ?? null,
       availability: existing?.availability ?? null,
+      availabilityNews: existing?.availabilityNews ?? null,
       chanceOfPlaying: existing?.chanceOfPlaying ?? null,
       slot: player.slot,
       slotOrder: player.slotOrder,
@@ -252,7 +259,11 @@ function mergeLineupPlayers(roster: PlayerView[], lineup: TeamSelectionPlayer[] 
   return [...positioned, ...roster.filter((player) => !lineupIds.has(player.id))];
 }
 
-export function SquadPage({ preset, teamSelectionClient = defaultTeamSelectionClient }: SquadPageProps) {
+export function SquadPage({
+  preset,
+  squadClient = defaultSquadClient,
+  teamSelectionClient = defaultTeamSelectionClient,
+}: SquadPageProps) {
   const [squadView, setSquadView] = useState<SquadView>(getStoredView);
   const [positionFilter, setPositionFilter] = useState<PositionFilter>('all');
   const [query, setQuery] = useState('');
@@ -261,6 +272,8 @@ export function SquadPage({ preset, teamSelectionClient = defaultTeamSelectionCl
   const [squadPlayers, setSquadPlayers] = useState<PlayerView[]>([]);
   const [scoutingPool, setScoutingPool] = useState<PlayerView[]>([]);
   const [trades, setTrades] = useState<TradeApiResponse[]>([]);
+  const [notifications, setNotifications] = useState<SquadApiNotification[]>([]);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [managerTeam, setManagerTeam] = useState<TeamRef>({ id: '', name: 'Current team', shortName: '' });
   const [gameweek, setGameweek] = useState('Gameweek');
   const [lineupAvailable, setLineupAvailable] = useState(false);
@@ -281,19 +294,36 @@ export function SquadPage({ preset, teamSelectionClient = defaultTeamSelectionCl
   const [tradeTarget, setTradeTarget] = useState<PlayerView | null>(null);
   const [tradeQuery, setTradeQuery] = useState('');
   const [stagedRemovalIds, setStagedRemovalIds] = useState<Set<string>>(() => new Set());
-  const [stagedAdditionIds] = useState<Set<string>>(() => new Set());
+  const [stagedAdditionIds, setStagedAdditionIds] = useState<Set<string>>(() => new Set());
+  const [drawWins, setDrawWins] = useState<PlayerView[]>([]);
   const [changesPanelOpen, setChangesPanelOpen] = useState(false);
   const [confirmationOpen, setConfirmationOpen] = useState(false);
+  const [changesSaving, setChangesSaving] = useState(false);
+  const [profileHistory, setProfileHistory] = useState<SquadApiHistoryResponse | null>(null);
+  const [profileHistoryLoading, setProfileHistoryLoading] = useState(false);
+  const [profileHistoryError, setProfileHistoryError] = useState<string | null>(null);
+  const [availabilityFilter, setAvailabilityFilter] = useState<'all' | 'risk'>('all');
+  const [fixtureFilter, setFixtureFilter] = useState<'all' | 'easy'>('all');
   const drawerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    void Promise.all([
-      fetchOptionalJson<SquadSummaryApiResponse>('/api/squad/summary'),
-      fetchOptionalJson<ScoutingApiResponse>('/api/scouting/players'),
-      fetchOptionalJson<{ trades?: TradeApiResponse[] }>('/api/trades'),
-      teamSelectionClient.getTeamSelection().catch(() => null),
+    let mounted = true;
+    void Promise.allSettled([
+      squadClient.getSummary(),
+      squadClient.getScoutingPlayers(),
+      squadClient.getTrades(),
+      squadClient.getChanges(),
+      squadClient.getNotifications(),
+      teamSelectionClient.getTeamSelection(),
     ])
-      .then(([summary, scouting, persistedTrades, lineup]) => {
+      .then(([summaryResult, scoutingResult, tradesResult, changesResult, notificationsResult, lineupResult]) => {
+        if (!mounted) return;
+        const summary = settledValue(summaryResult);
+        const scouting = settledValue(scoutingResult);
+        const persistedTrades = settledValue(tradesResult);
+        const changes = settledValue(changesResult);
+        const notificationResponse = settledValue(notificationsResult);
+        const lineup = settledValue(lineupResult);
         if (!summary && !lineup) throw new Error('Unable to load your squad.');
         const roster = summary?.players.map(mapPlayer)
           ?? lineup?.players.map(mapTeamSelectionPlayer)
@@ -312,17 +342,62 @@ export function SquadPage({ preset, teamSelectionClient = defaultTeamSelectionCl
         });
         setGameweek(lineup?.gameweek.name ?? summary?.gameweek.name ?? 'Gameweek');
         setTrades(persistedTrades?.trades ?? []);
+        setDrawWins((changes?.available_to_add ?? []).map(mapPlayer));
+        setNotifications(notificationResponse?.notifications ?? []);
+        setStagedAdditionIds(new Set());
         setLineupAvailable(hasLineup);
         setLineupDirty(false);
         if (!hasLineup) setSquadView('list');
         setStatus(
           hasLineup
-            ? `${summary?.manager_team.name ?? lineup?.managerTeam.name} squad ready for review.`
-            : `${summary?.manager_team.name ?? 'Your'} squad loaded.`,
+            ? `${summary?.manager_team.name ?? lineup?.managerTeam.name ?? 'Your'} squad ready for review.`
+            : `${summary?.manager_team.name ?? lineup?.managerTeam.name ?? 'Your'} squad loaded.`,
         );
+        const failures = [
+          summaryResult,
+          scoutingResult,
+          tradesResult,
+          changesResult,
+          notificationsResult,
+          lineupResult,
+        ].filter((result): result is PromiseRejectedResult => result.status === 'rejected');
+        if (failures.length > 0) {
+          const reason = failures[0].reason instanceof Error ? failures[0].reason.message : 'one or more data sources failed';
+          setStatus(`Squad loaded with partial data. ${reason}`);
+        }
       })
-      .catch((error: Error) => setStatus(error.message));
-  }, [teamSelectionClient]);
+      .catch((error: Error) => {
+        if (mounted) setStatus(error.message);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [squadClient, teamSelectionClient]);
+
+  useEffect(() => {
+    if (drawerMode !== 'profile' || !selectedPlayer) {
+      setProfileHistory(null);
+      setProfileHistoryError(null);
+      return;
+    }
+    let mounted = true;
+    setProfileHistory(null);
+    setProfileHistoryError(null);
+    setProfileHistoryLoading(true);
+    void squadClient.getPlayerHistory(selectedPlayer.id)
+      .then((history) => {
+        if (mounted) setProfileHistory(history);
+      })
+      .catch((error: Error) => {
+        if (mounted) setProfileHistoryError(error.message);
+      })
+      .finally(() => {
+        if (mounted) setProfileHistoryLoading(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [drawerMode, selectedPlayer, squadClient]);
 
   useEffect(() => {
     try {
@@ -361,14 +436,15 @@ export function SquadPage({ preset, teamSelectionClient = defaultTeamSelectionCl
     () => squadPlayers.filter((player) => stagedRemovalIds.has(player.id)),
     [squadPlayers, stagedRemovalIds],
   );
-  const drawWins: PlayerView[] = [];
   const stagedAdditionPlayers = drawWins.filter((player) => stagedAdditionIds.has(player.id));
   const listPlayers = useMemo(() => {
     const filtered = visibleSquadPlayers
       .filter((player) => positionFilter === 'all' || player.position === positionFilter)
-      .filter((player) => matchesQuery(player, query));
+      .filter((player) => matchesQuery(player, query))
+      .filter((player) => availabilityFilter === 'all' || isAvailabilityRisk(player))
+      .filter((player) => fixtureFilter === 'all' || (player.nextFixtureDifficulty !== null && player.nextFixtureDifficulty <= 3));
     return [...filtered].sort((left, right) => compareListPlayers(left, right, sortKey));
-  }, [positionFilter, query, sortKey, visibleSquadPlayers]);
+  }, [availabilityFilter, fixtureFilter, positionFilter, query, sortKey, visibleSquadPlayers]);
   const positionCounts = useMemo(() => ({
     all: visibleSquadPlayers.length,
     GKP: visibleSquadPlayers.filter((player) => player.position === 'GKP').length,
@@ -508,6 +584,21 @@ export function SquadPage({ preset, teamSelectionClient = defaultTeamSelectionCl
     setStatus(`${player.displayName} staged for removal.`);
   }
 
+  function stageAddition(player: PlayerView) {
+    setStagedAdditionIds((current) => new Set([...current, player.id]));
+    setChangesPanelOpen(true);
+    setStatus(`${player.displayName} staged to join the squad.`);
+  }
+
+  function restoreAddition(player: PlayerView) {
+    setStagedAdditionIds((current) => {
+      const next = new Set(current);
+      next.delete(player.id);
+      return next;
+    });
+    setStatus(`${player.displayName} removed from pending additions.`);
+  }
+
   function restorePlayer(player: PlayerView) {
     setStagedRemovalIds((current) => {
       const next = new Set(current);
@@ -557,6 +648,43 @@ export function SquadPage({ preset, teamSelectionClient = defaultTeamSelectionCl
     }
   }
 
+  async function submitTrade() {
+    if (!tradeSource || !tradeTarget || !tradeTeamId) return;
+    try {
+      const trade = await squadClient.createTrade(tradeTeamId, [tradeSource.id], [tradeTarget.id]);
+      setTrades((current) => [...current, trade]);
+      closeDrawer();
+      setStatus(`Trade proposal for ${tradeSource.displayName} sent to ${tradeTarget.draftTeam?.name ?? 'the selected manager'}.`);
+    } catch (error) {
+      setStatus(apiErrorMessage(error, 'Unable to submit the trade proposal.'));
+    }
+  }
+
+  async function confirmChanges() {
+    if (lineupLocked || validationMessages.length > 0 || changesSaving) return;
+    setChangesSaving(true);
+    try {
+      const summary = await squadClient.applyChanges(
+        stagedAdditionPlayers.map((player) => player.id),
+        [...stagedRemovalIds],
+      );
+      const updatedLineup = await teamSelectionClient.getTeamSelection();
+      setTeamSelection(updatedLineup);
+      setSquadPlayers(mergeLineupPlayers(summary.players.map(mapPlayer), updatedLineup.players));
+      setDrawWins((await squadClient.getChanges()).available_to_add.map(mapPlayer));
+      setStagedRemovalIds(new Set());
+      setStagedAdditionIds(new Set());
+      setConfirmationOpen(false);
+      setChangesPanelOpen(false);
+      setLineupDirty(false);
+      setStatus('Squad changes saved and temporary rights updated.');
+    } catch (error) {
+      setStatus(apiErrorMessage(error, 'Unable to save squad changes.'));
+    } finally {
+      setChangesSaving(false);
+    }
+  }
+
   return (
     <main aria-labelledby="squad-title" className="squad-page" data-density={preset.tokens.density}>
       <header className="squad-page__hero">
@@ -590,7 +718,29 @@ export function SquadPage({ preset, teamSelectionClient = defaultTeamSelectionCl
               <List aria-hidden="true" size={18} />
             </button>
           </div>
-          <span aria-label="Notifications placeholder" className="squad-page__utility-placeholder" role="img" title="Notifications API not connected"><Bell size={20} /></span>
+          <div className="squad-page__notifications">
+            <button
+              aria-expanded={notificationsOpen}
+              aria-label={`Notifications${notifications.length ? `, ${notifications.length} unread` : ''}`}
+              className="squad-page__icon-button"
+              onClick={() => setNotificationsOpen((open) => !open)}
+              title="Notifications"
+              type="button"
+            >
+              <Bell size={20} />
+              {notifications.length ? <span className="squad-page__notification-count">{notifications.length}</span> : null}
+            </button>
+            {notificationsOpen ? (
+              <div aria-label="Notifications" className="squad-page__notifications-popover" role="dialog">
+                <div className="squad-page__notifications-heading"><strong>Notifications</strong><span>{notifications.length}</span></div>
+                {notifications.length === 0 ? <p className="squad-page__empty-copy">You are all caught up.</p> : notifications.map((notification) => (
+                  <a href={notification.action_href} key={notification.id} className="squad-page__notification">
+                    <strong>{notification.title}</strong><span>{notification.message}</span>
+                  </a>
+                ))}
+              </div>
+            ) : null}
+          </div>
         </div>
       </header>
 
@@ -670,6 +820,10 @@ export function SquadPage({ preset, teamSelectionClient = defaultTeamSelectionCl
             positionFilter={positionFilter}
             query={query}
             sortKey={sortKey}
+            availabilityFilter={availabilityFilter}
+            fixtureFilter={fixtureFilter}
+            onAvailabilityFilterChange={setAvailabilityFilter}
+            onFixtureFilterChange={setFixtureFilter}
             substitutionCandidateIds={substitutionCandidateIds}
             substitutionMode={Boolean(substitutionSource)}
             substitutionSourceId={substitutionSource?.id ?? null}
@@ -690,11 +844,22 @@ export function SquadPage({ preset, teamSelectionClient = defaultTeamSelectionCl
             <section className="squad-page__change-section">
               <div className="squad-page__change-heading"><h3>Available to Add</h3><span>{drawWins.length}</span></div>
               {drawWins.length === 0 ? (
-                <div className="squad-page__api-placeholder">
-                  <CirclePlus aria-hidden="true" size={18} />
-                  <div><strong>Awaiting draw-rights API</strong><span>Draw-won players will appear here when the persistent manager endpoint is available.</span></div>
-                </div>
+                <p className="squad-page__empty-copy">No active temporary player rights.</p>
               ) : null}
+              <div className="squad-page__change-list">
+                {drawWins.map((player) => {
+                  const staged = stagedAdditionIds.has(player.id);
+                  return (
+                    <div className={`squad-page__change-player ${staged ? 'added' : ''}`} key={player.id}>
+                      <PlayerIdentity player={player} />
+                      <span className="squad-page__change-badge added">{staged ? 'Added' : 'Right active'}</span>
+                      <Button onClick={() => (staged ? restoreAddition(player) : stageAddition(player))} type="button" variant="secondary">
+                        {staged ? 'Undo' : 'Add to Squad'}
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
             </section>
 
             <section className="squad-page__change-section">
@@ -711,9 +876,9 @@ export function SquadPage({ preset, teamSelectionClient = defaultTeamSelectionCl
               </div>
             </section>
 
-            <Button disabled={stagedChangeCount === 0} onClick={() => setConfirmationOpen(true)} type="button">
-              Submit Squad Changes
-            </Button>
+              <Button disabled={stagedChangeCount === 0 || lineupLocked} onClick={() => setConfirmationOpen(true)} type="button">
+                Submit Squad Changes
+              </Button>
           </div>
         ) : null}
       </aside>
@@ -733,7 +898,15 @@ export function SquadPage({ preset, teamSelectionClient = defaultTeamSelectionCl
                 substitutionDisabled={lineupLocked}
               />
             ) : null}
-            {drawerMode === 'profile' && selectedPlayer ? <ProfileDrawer onClose={closeDrawer} player={selectedPlayer} /> : null}
+            {drawerMode === 'profile' && selectedPlayer ? (
+              <ProfileDrawer
+                history={profileHistory}
+                historyError={profileHistoryError}
+                historyLoading={profileHistoryLoading}
+                onClose={closeDrawer}
+                player={selectedPlayer}
+              />
+            ) : null}
             {drawerMode === 'compare' ? (
               <CompareDrawer
                 candidates={comparisonCandidates}
@@ -761,6 +934,7 @@ export function SquadPage({ preset, teamSelectionClient = defaultTeamSelectionCl
                 target={tradeTarget}
                 teams={tradeTeams}
                 teamId={tradeTeamId}
+                onSubmit={() => void submitTrade()}
               />
             ) : null}
           </aside>
@@ -792,7 +966,9 @@ export function SquadPage({ preset, teamSelectionClient = defaultTeamSelectionCl
             ) : null}
             <footer>
               <Button onClick={() => setConfirmationOpen(false)} type="button" variant="secondary">Back</Button>
-              <Button disabled={validationMessages.length > 0} type="button">Confirm Changes</Button>
+              <Button disabled={validationMessages.length > 0 || changesSaving || lineupLocked} onClick={() => void confirmChanges()} type="button">
+                {changesSaving ? 'Saving…' : 'Confirm Changes'}
+              </Button>
             </footer>
           </section>
         </div>
@@ -986,8 +1162,12 @@ function ChipGlyph({ chip }: { chip: TeamSelectionChip }) {
 }
 
 function SquadList({
+  availabilityFilter,
+  fixtureFilter,
   filtersOpen,
+  onAvailabilityFilterChange,
   onFiltersOpenChange,
+  onFixtureFilterChange,
   onPositionChange,
   onQueryChange,
   onSelect,
@@ -1003,8 +1183,12 @@ function SquadList({
   substitutionSourceId,
   substitutionTargetId,
 }: {
+  availabilityFilter: 'all' | 'risk';
+  fixtureFilter: 'all' | 'easy';
   filtersOpen: boolean;
+  onAvailabilityFilterChange: (filter: 'all' | 'risk') => void;
   onFiltersOpenChange: (open: boolean) => void;
+  onFixtureFilterChange: (filter: 'all' | 'easy') => void;
   onPositionChange: (position: PositionFilter) => void;
   onQueryChange: (query: string) => void;
   onSelect: (player: PlayerView) => void;
@@ -1046,9 +1230,10 @@ function SquadList({
       </div>
 
       {filtersOpen ? (
-        <div className="squad-page__filter-placeholder">
+        <div className="squad-page__filter-controls">
           <SlidersHorizontal size={17} />
-          <span>Advanced availability and fixture filters need the Squad analytics API.</span>
+          <label><span>Availability</span><select aria-label="Filter by availability" onChange={(event) => onAvailabilityFilterChange(event.target.value as 'all' | 'risk')} value={availabilityFilter}><option value="all">All players</option><option value="risk">Reduced chance</option></select></label>
+          <label><span>Next fixture</span><select aria-label="Filter by next fixture difficulty" onChange={(event) => onFixtureFilterChange(event.target.value as 'all' | 'easy')} value={fixtureFilter}><option value="all">Any difficulty</option><option value="easy">FDR 1–3</option></select></label>
         </div>
       ) : null}
 
@@ -1104,7 +1289,7 @@ function SquadList({
                         </button>
                       </td>
                       <td><span className={`squad-page__next-opponent ${player.nextOpponent ? '' : 'is-placeholder'}`}>{player.nextOpponent ? `vs ${player.nextOpponent}` : 'Next —'}</span></td>
-                      <td><strong>{player.points}</strong></td>
+                      <td><strong>{formatInteger(player.points)}</strong></td>
                       <td className="metric-accent">{formatMetric(player.form)}</td>
                       <td><span className="squad-page__expected"><span>{formatMetric(player.xg)}</span><span>{formatMetric(player.xa)}</span></span></td>
                       <td><AvailabilityFlag inline player={player} /></td>
@@ -1145,7 +1330,7 @@ function DrawerHeader({ onClose, player, title }: { onClose: () => void; player?
   return (
     <header className="squad-page__drawer-header">
       {player ? <TeamShirt large team={player.team} /> : <span className="squad-page__brand-mark"><Shield size={22} /></span>}
-      <div><h2>{title}</h2>{player ? <p><PositionMarker position={player.position} /> · <span className={player.nextOpponent ? '' : 'is-placeholder'}>{player.nextOpponent ? `vs ${player.nextOpponent}` : 'Next fixture —'}</span></p> : null}</div>
+      <div><h2>{title}</h2>{player ? <p><PositionMarker position={player.position} /> · <span className={player.nextOpponent ? '' : 'is-placeholder'}>{player.nextOpponent ? `vs ${player.nextOpponent}` : 'Next fixture —'}</span>{player.nextFixtureDifficulty !== null ? ` · FDR ${player.nextFixtureDifficulty}` : ''}</p> : null}</div>
       <button aria-label="Close drawer" className="squad-page__icon-button" onClick={onClose} type="button"><X size={19} /></button>
     </header>
   );
@@ -1175,15 +1360,15 @@ function PlayerDrawer({
       <span aria-hidden="true" className="squad-page__sheet-handle" />
       <DrawerHeader onClose={onClose} player={player} title={player.displayName} />
       <div className="squad-page__drawer-metrics">
-        <Metric label="Total Points" value={String(player.points)} />
+        <Metric label="Total Points" value={formatInteger(player.points)} />
         <Metric dots label="Form (Last 5)" value={formatMetric(player.form)} />
         <Metric placeholder={player.xg === null} label="xG" value={formatMetric(player.xg)} />
         <Metric placeholder={player.xa === null} label="xA" value={formatMetric(player.xa)} />
       </div>
       <section className="squad-page__trade-guidance">
-        <div><strong>Trade value guidance</strong><span className="squad-page__api-chip">API needed</span></div>
-        <p>Projection, positional scarcity and league-demand signals are not exposed yet.</p>
-        <div className="squad-page__guidance-evidence"><span>Projection <b>—</b></span><span>Recent form <b>{formatMetric(player.form)}</b></span><span>Scarcity <b>—</b></span></div>
+        <div><strong>FPL evidence</strong><span className="squad-page__api-chip">Official data</span></div>
+        <p>Use current official FPL value and performance when reviewing a proposal. CDL demand and projections are intentionally not inferred.</p>
+        <div className="squad-page__guidance-evidence"><span>Value <b>{player.value === null ? '—' : `£${player.value.toFixed(1)}m`}</b></span><span>Recent form <b>{formatMetric(player.form)}</b></span><span>Selected <b>{player.selectedByPercent === null ? '—' : `${player.selectedByPercent.toFixed(1)}%`}</b></span></div>
       </section>
       <div className="squad-page__drawer-actions">
         {onSubstitute ? <button disabled={substitutionDisabled} onClick={onSubstitute} type="button"><span className="action-icon"><Repeat2 size={18} /></span><span><strong>Substitute player</strong><small>{substitutionDisabled ? 'Lineup is locked for this gameweek' : 'Swap this player with an eligible squad player'}</small></span><ChevronRight size={19} /></button> : null}
@@ -1279,7 +1464,19 @@ function SubstitutionModePanel({
   );
 }
 
-function ProfileDrawer({ onClose, player }: { onClose: () => void; player: PlayerView }) {
+function ProfileDrawer({
+  history,
+  historyError,
+  historyLoading,
+  onClose,
+  player,
+}: {
+  history: SquadApiHistoryResponse | null;
+  historyError: string | null;
+  historyLoading: boolean;
+  onClose: () => void;
+  player: PlayerView;
+}) {
   return (
     <>
       <span aria-hidden="true" className="squad-page__sheet-handle" />
@@ -1287,13 +1484,28 @@ function ProfileDrawer({ onClose, player }: { onClose: () => void; player: Playe
       <div className="squad-page__profile-grid">
         <Metric label="Position" value={player.position} />
         <Metric label="Club" value={player.team} />
-        <Metric label="Season points" value={String(player.points)} />
+        <Metric label="Season points" value={formatInteger(player.points)} />
         <Metric label="Form" value={formatMetric(player.form)} />
         <Metric placeholder={player.xg === null} label="xG" value={formatMetric(player.xg)} />
         <Metric placeholder={player.xa === null} label="xA" value={formatMetric(player.xa)} />
       </div>
       <section className="squad-page__drawer-section"><h3>Ownership</h3><p>{player.draftTeam ? `Owned by ${player.draftTeam.name}.` : statusDescription(player)}</p></section>
-      <section className="squad-page__api-placeholder"><CircleAlert size={18} /><div><strong>Full profile API incomplete</strong><span>Fixtures, availability history, xG/xA history and projections are placeholders until their contracts exist.</span></div></section>
+      <section className="squad-page__drawer-section"><h3>Availability</h3><p>{availabilityLabel(player) ?? 'No current availability flag from FPL.'}{player.availabilityNews ? ` ${player.availabilityNews}` : ''}</p></section>
+      <section className="squad-page__drawer-section">
+        <div className="squad-page__section-heading"><h3>Official FPL history</h3><span>{history ? `Fetched ${formatFetchedAt(history.fetched_at)}` : 'Live cache'}</span></div>
+        {historyLoading ? <p className="squad-page__empty-copy">Loading official FPL history…</p> : null}
+        {historyError ? <p className="squad-page__error-copy">FPL history unavailable: {historyError}</p> : null}
+        {!historyLoading && !historyError && history ? (
+          <>
+            {history.fixtures.length > 0 ? <div className="squad-page__profile-fixtures"><strong>Upcoming</strong>{history.fixtures.slice(0, 3).map((fixture) => <span key={fixture.fixture_id}>{formatFixtureOpponent(fixture.opponent_team_id)} · FDR {fixture.difficulty} · {fixture.is_home ? 'H' : 'A'}</span>)}</div> : <p className="squad-page__empty-copy">No upcoming FPL fixtures in the cache.</p>}
+            {history.history.length > 0 ? (
+              <div className="squad-page__profile-history-scroll">
+                <table className="squad-page__profile-history"><thead><tr><th>GW</th><th>Opponent</th><th>Pts</th><th>Min</th><th>xG</th><th>xA</th></tr></thead><tbody>{history.history.slice(-5).reverse().map((row) => <tr key={`${row.fixture_id}-${row.gameweek}`}><td>{row.gameweek}</td><td>{formatFixtureOpponent(row.opponent_team_id)}</td><td>{row.total_points}</td><td>{row.minutes}</td><td>{row.expected_goals.toFixed(1)}</td><td>{row.expected_assists.toFixed(1)}</td></tr>)}</tbody></table>
+              </div>
+            ) : <p className="squad-page__empty-copy">No completed FPL history in the cache.</p>}
+          </>
+        ) : null}
+      </section>
     </>
   );
 }
@@ -1325,7 +1537,7 @@ function CompareDrawer({
           <article className="squad-page__compare-card" key={player.id}>
             <div className="squad-page__compare-order">{index + 1}</div>
             <PlayerIdentity player={player} />
-            <div className="squad-page__compare-metrics"><Metric label="Points" value={String(player.points)} /><Metric label="Form" value={formatMetric(player.form)} /><Metric placeholder={player.xg === null} label="xG" value={formatMetric(player.xg)} /><Metric placeholder={player.xa === null} label="xA" value={formatMetric(player.xa)} /></div>
+            <div className="squad-page__compare-metrics"><Metric label="Points" value={formatInteger(player.points)} /><Metric label="Form" value={formatMetric(player.form)} /><Metric placeholder={player.xg === null} label="xG" value={formatMetric(player.xg)} /><Metric placeholder={player.xa === null} label="xA" value={formatMetric(player.xa)} /></div>
             {index > 0 ? <button className="squad-page__text-button" onClick={() => onRemove(player.id)} type="button">Remove</button> : null}
           </article>
         ))}
@@ -1344,6 +1556,7 @@ function TradeDrawer({
   candidates,
   onClose,
   onQueryChange,
+  onSubmit,
   onTargetChange,
   onTeamChange,
   query,
@@ -1355,6 +1568,7 @@ function TradeDrawer({
   candidates: PlayerView[];
   onClose: () => void;
   onQueryChange: (query: string) => void;
+  onSubmit: () => void;
   onTargetChange: (player: PlayerView) => void;
   onTeamChange: (teamId: string) => void;
   query: string;
@@ -1375,8 +1589,8 @@ function TradeDrawer({
           {query.trim() ? <div className="squad-page__search-results">{candidates.map((player) => <button key={player.id} onClick={() => onTargetChange(player)} type="button"><PlayerIdentity player={player} /><span>Select</span></button>)}</div> : null}
         </section>
       ) : null}
-      {target ? <section className="squad-page__drawer-section"><h3>Target</h3><PlayerIdentity large player={target} /><div className="squad-page__trade-guidance"><div><strong>Trade-value guidance</strong><span className="squad-page__api-chip">API needed</span></div><p>{source.displayName}: {source.points} pts · {formatMetric(source.form)} form. {target.displayName}: {target.points} pts · {formatMetric(target.form)} form.</p></div></section> : null}
-      <a className={`squad-page__market-link ${target ? '' : 'disabled'}`} aria-disabled={!target} href={target ? '/scouting' : undefined}>Continue in Market</a>
+      {target ? <section className="squad-page__drawer-section"><h3>Target</h3><PlayerIdentity large player={target} /><div className="squad-page__trade-guidance"><div><strong>FPL evidence</strong><span className="squad-page__api-chip">Official data</span></div><p>{source.displayName}: {formatInteger(source.points)} pts · {formatMetric(source.form)} form. {target.displayName}: {formatInteger(target.points)} pts · {formatMetric(target.form)} form.</p></div></section> : null}
+      <Button disabled={!target} onClick={onSubmit} type="button">Send trade proposal</Button>
     </>
   );
 }
@@ -1397,8 +1611,20 @@ function PositionMarker({ position }: { position: string }) {
 
 function TeamShirt({ large = false, team }: { large?: boolean; team: string }) {
   const normalized = team.trim().toLowerCase();
-  const src = teamShirtCodes.has(normalized) ? `/team-shirts/${normalized}.svg` : '/team-shirts/unknown.svg';
-  return <img alt="" aria-hidden="true" className={`squad-page__shirt ${large ? 'large' : ''}`} src={src} />;
+  const officialSrc = officialFplShirtUrl(team, large);
+  const fallbackSrc = `/team-shirts/${normalized}.svg`;
+  return (
+    <img
+      alt=""
+      aria-hidden="true"
+      className={`squad-page__shirt ${large ? 'large' : ''}`}
+      onError={(event) => {
+        event.currentTarget.onerror = null;
+        event.currentTarget.src = officialSrc ? fallbackSrc : '/team-shirts/unknown.svg';
+      }}
+      src={officialSrc ?? '/team-shirts/unknown.svg'}
+    />
+  );
 }
 
 function AvailabilityFlag({ inline = false, player }: { inline?: boolean; player: PlayerView }) {
@@ -1409,7 +1635,7 @@ function AvailabilityFlag({ inline = false, player }: { inline?: boolean; player
 }
 
 function Metric({ dots = false, label, placeholder = false, value }: { dots?: boolean; label: string; placeholder?: boolean; value: string }) {
-  return <div className={`squad-page__metric ${placeholder ? 'is-placeholder' : ''}`}><span>{label}</span><strong>{value}</strong>{dots ? <FormDots value={Number(value)} /> : null}{placeholder ? <small>API needed</small> : null}</div>;
+  return <div className={`squad-page__metric ${placeholder ? 'is-placeholder' : ''}`}><span>{label}</span><strong>{value}</strong>{dots ? <FormDots value={Number(value)} /> : null}{placeholder ? <small>Not in source</small> : null}</div>;
 }
 
 function FormDots({ value }: { value: number | null }) {
@@ -1701,6 +1927,7 @@ function apiErrorMessage(error: unknown, fallback: string): string {
     const reason = typeof error.details.reason === 'string' ? error.details.reason : error.message;
     return `Lineup locked. ${reason}`;
   }
+  if (error instanceof SquadApiError) return error.message;
   return fallback;
 }
 
@@ -1751,8 +1978,30 @@ function firstNumber(...values: Array<number | null | undefined>): number | null
   return values.find((value): value is number => typeof value === 'number') ?? null;
 }
 
+function settledValue<T>(result: PromiseSettledResult<T>): T | null {
+  return result.status === 'fulfilled' ? result.value : null;
+}
+
 function formatMetric(value: number | null): string {
   return value === null || Number.isNaN(value) ? '—' : value.toFixed(1);
+}
+
+function formatInteger(value: number | null): string {
+  return value === null || Number.isNaN(value) ? '—' : String(value);
+}
+
+function formatFetchedAt(value: string): string {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? 'time unavailable' : new Intl.DateTimeFormat(undefined, { dateStyle: 'short', timeStyle: 'short' }).format(date);
+}
+
+function formatFixtureOpponent(teamId: number): string {
+  return FPL_TEAM_SHORT_NAMES_BY_ID[teamId] ?? `FPL team ${teamId}`;
+}
+
+function isAvailabilityRisk(player: PlayerView): boolean {
+  if (player.chanceOfPlaying !== null) return player.chanceOfPlaying < 75;
+  return ['d', 'i', 'u'].includes((player.availability ?? '').toLowerCase());
 }
 
 function availabilityLabel(player: PlayerView): string | null {
@@ -1772,3 +2021,26 @@ function shortPlayerName(name: string): string {
   if (parts.length <= 2) return name;
   return `${parts[0][0]}. ${parts.at(-1)}`;
 }
+
+const FPL_TEAM_SHORT_NAMES_BY_ID: Record<number, string> = {
+  1: 'MUN',
+  2: 'LEE',
+  3: 'ARS',
+  4: 'NEW',
+  6: 'TOT',
+  7: 'AVL',
+  8: 'CHE',
+  9: 'COV',
+  11: 'EVE',
+  14: 'LIV',
+  17: 'NFO',
+  31: 'CRY',
+  36: 'BHA',
+  40: 'IPS',
+  43: 'MCI',
+  54: 'FUL',
+  56: 'SUN',
+  88: 'HUL',
+  91: 'BOU',
+  94: 'BRE',
+};

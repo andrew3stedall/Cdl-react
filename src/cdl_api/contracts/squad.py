@@ -1,5 +1,6 @@
 """Squad management, scouting, interest, and trade contracts."""
 
+from datetime import datetime
 from enum import StrEnum
 
 from pydantic import BaseModel, Field
@@ -28,6 +29,15 @@ class PlayerOwnershipStatus(StrEnum):
     TRADE_TARGET = "trade_target"
 
 
+class PlayerNextFixture(BaseModel):
+    fixture_id: str
+    gameweek: GameweekSummary | None = None
+    opponent: TeamSummary
+    difficulty: int | None = None
+    is_home: bool
+    kickoff_at: datetime | None = None
+
+
 class PlayerDetail(PlayerSummary):
     epl_team: TeamSummary
     draft_team: TeamSummary | None = None
@@ -45,6 +55,7 @@ class PlayerDetail(PlayerSummary):
     availability_status: str | None = None
     availability_news: str = ""
     chance_of_playing_next_round: int | None = None
+    next_fixture: PlayerNextFixture | None = None
 
 
 class ScoutingFilters(BaseModel):
@@ -63,6 +74,27 @@ class SquadSummaryResponse(BaseModel):
     positional_totals: dict[PlayerPosition, int]
     squad_value: float
     validation_messages: list[ValidationIssue] = Field(default_factory=list)
+
+
+class SquadChangesRequest(BaseModel):
+    add_player_ids: list[str] = Field(default_factory=list)
+    remove_player_ids: list[str] = Field(default_factory=list)
+
+
+class SquadChangesResponse(BaseModel):
+    available_to_add: list[PlayerDetail]
+
+
+class SquadNotification(BaseModel):
+    id: str
+    title: str
+    message: str
+    action_href: str
+    kind: str
+
+
+class SquadNotificationsResponse(BaseModel):
+    notifications: list[SquadNotification] = Field(default_factory=list)
 
 
 class ScoutingPlayersResponse(BaseModel):

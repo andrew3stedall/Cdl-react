@@ -5,19 +5,24 @@ from datetime import UTC, datetime
 from uuid import uuid4
 
 from sqlalchemy import exists, func, insert, literal, or_, select, update
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from cdl_api.contracts.domain import TeamSummary
+from cdl_api.contracts.domain import GameweekSummary, TeamSummary
 from cdl_api.contracts.squad import (
     InterestResponse,
     PlayerDetail,
+    PlayerNextFixture,
     PlayerOwnershipStatus,
     ScoutingFilters,
     TradeAsset,
     TradeProposal,
     TradeStatus,
 )
-from cdl_api.repositories.postgres_fpl_data import fpl_player_current_metrics_table
+from cdl_api.repositories.postgres_fpl_data import (
+    fpl_fixtures_table,
+    fpl_player_current_metrics_table,
+)
 from cdl_api.repositories.postgres_league_fpl import (
     draft_teams_table,
     epl_teams_table,
@@ -26,6 +31,7 @@ from cdl_api.repositories.postgres_league_fpl import (
     fpl_players_table,
 )
 from cdl_api.repositories.postgres_squad import (
+    player_rights_table,
     squad_interests_table,
     squad_ownerships_table,
     trade_assets_table,
@@ -135,10 +141,88 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
                     .order_by(active_ownerships.c.id, fpl_players_table.c.web_name)
                 ).mappings()
             )
-        return [self._player_from_database_row(row) for row in rows]
+            next_fixtures = self._next_fixtures_by_team(session)
+        return [
+            self._player_from_database_row(row, next_fixtures.get(row["epl_team_id"]))
+            for row in rows
+        ]
 
     @staticmethod
-    def _player_from_database_row(row: object) -> PlayerDetail:
+    def _next_fixtures_by_team(session: Session) -> dict[str, PlayerNextFixture]:
+        home_team = epl_teams_table.alias("fixture_home_team")
+        away_team = epl_teams_table.alias("fixture_away_team")
+        try:
+            rows = list(
+                session.execute(
+                    select(
+                        fpl_fixtures_table.c.id,
+                        fpl_fixtures_table.c.gameweek,
+                        fpl_fixtures_table.c.home_team_id,
+                        fpl_fixtures_table.c.away_team_id,
+                        fpl_fixtures_table.c.kickoff_time,
+                        fpl_fixtures_table.c.home_difficulty,
+                        fpl_fixtures_table.c.away_difficulty,
+                        home_team.c.name.label("home_team_name"),
+                        home_team.c.short_name.label("home_team_short_name"),
+                        away_team.c.name.label("away_team_name"),
+                        away_team.c.short_name.label("away_team_short_name"),
+                    )
+                    .join(home_team, fpl_fixtures_table.c.home_team_id == home_team.c.id)
+                    .join(away_team, fpl_fixtures_table.c.away_team_id == away_team.c.id)
+                    .where(
+                        fpl_fixtures_table.c.started.is_(False),
+                        fpl_fixtures_table.c.finished.is_(False),
+                    )
+                    .order_by(fpl_fixtures_table.c.kickoff_time.asc().nulls_last())
+                ).mappings()
+            )
+        except SQLAlchemyError:
+            return {}
+        fixtures: dict[str, PlayerNextFixture] = {}
+        for row in rows:
+            gameweek_number = row["gameweek"]
+            gameweek = (
+                GameweekSummary(
+                    id=f"gw-{gameweek_number}",
+                    name=f"Gameweek {gameweek_number}",
+                    number=int(gameweek_number),
+                )
+                if gameweek_number is not None
+                else None
+            )
+            home_fixture = PlayerNextFixture(
+                fixture_id=str(row["id"]),
+                gameweek=gameweek,
+                opponent=TeamSummary(
+                    id=str(row["away_team_id"]),
+                    name=str(row["away_team_name"]),
+                    short_name=str(row["away_team_short_name"]),
+                ),
+                difficulty=row["home_difficulty"],
+                is_home=True,
+                kickoff_at=row["kickoff_time"],
+            )
+            away_fixture = PlayerNextFixture(
+                fixture_id=str(row["id"]),
+                gameweek=gameweek,
+                opponent=TeamSummary(
+                    id=str(row["home_team_id"]),
+                    name=str(row["home_team_name"]),
+                    short_name=str(row["home_team_short_name"]),
+                ),
+                difficulty=row["away_difficulty"],
+                is_home=False,
+                kickoff_at=row["kickoff_time"],
+            )
+            fixtures.setdefault(str(row["home_team_id"]), home_fixture)
+            fixtures.setdefault(str(row["away_team_id"]), away_fixture)
+        return fixtures
+
+    @staticmethod
+    def _player_from_database_row(
+        row: object,
+        next_fixture: PlayerNextFixture | None = None,
+    ) -> PlayerDetail:
         epl_team = TeamSummary(
             id=row["epl_team_id"],
             name=row["epl_team_name"],
@@ -174,6 +258,7 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
             availability_status=row["availability_status"],
             availability_news=row["availability_news"] or "",
             chance_of_playing_next_round=row["chance_of_playing_next_round"],
+            next_fixture=next_fixture,
         )
 
     def list_squad_players(self) -> list[PlayerDetail]:
@@ -207,6 +292,100 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
                 player.status = PlayerOwnershipStatus.INTERESTED
         metric = "points" if filters.metric.value == "total_points" else filters.metric.value
         return sorted(players, key=lambda player: getattr(player, metric), reverse=True)
+
+    def list_available_rights(self) -> list[PlayerDetail]:
+        now = datetime.now(UTC)
+        with self._session_factory() as session:
+            player_ids = list(
+                session.execute(
+                    select(player_rights_table.c.player_id)
+                    .where(
+                        player_rights_table.c.season_id == DEMO_SEASON_ID,
+                        player_rights_table.c.draft_team_id == self.manager_team.id,
+                        player_rights_table.c.released_at.is_(None),
+                        (player_rights_table.c.expires_at.is_(None))
+                        | (player_rights_table.c.expires_at > now),
+                    )
+                    .order_by(player_rights_table.c.acquired_at)
+                ).scalars()
+            )
+        players = {player.id: player for player in self._database_players()}
+        available = []
+        for player_id in player_ids:
+            player = players.get(str(player_id))
+            if player is not None and player.draft_team is None:
+                player.status = PlayerOwnershipStatus.AVAILABLE
+                available.append(player)
+        return available
+
+    def apply_squad_changes(self, add_player_ids: list[str], remove_player_ids: list[str]) -> None:
+        if len(add_player_ids) != len(remove_player_ids):
+            raise ValueError("Each squad addition must replace one removed player.")
+        if not add_player_ids:
+            return
+        now = datetime.now(UTC)
+        with self._session_factory() as session:
+            rights = list(
+                session.execute(
+                    select(player_rights_table).where(
+                        player_rights_table.c.season_id == DEMO_SEASON_ID,
+                        player_rights_table.c.draft_team_id == self.manager_team.id,
+                        player_rights_table.c.player_id.in_(add_player_ids),
+                        player_rights_table.c.released_at.is_(None),
+                        (player_rights_table.c.expires_at.is_(None))
+                        | (player_rights_table.c.expires_at > now),
+                    )
+                ).mappings()
+            )
+            if {str(row["player_id"]) for row in rights} != set(add_player_ids):
+                raise ValueError("Every added player must have an active temporary right.")
+            ownerships = list(
+                session.execute(
+                    select(squad_ownerships_table)
+                    .where(
+                        squad_ownerships_table.c.season_id == DEMO_SEASON_ID,
+                        squad_ownerships_table.c.draft_team_id == self.manager_team.id,
+                        squad_ownerships_table.c.player_id.in_(remove_player_ids),
+                        squad_ownerships_table.c.ended_at.is_(None),
+                    )
+                    .order_by(squad_ownerships_table.c.started_at)
+                ).mappings()
+            )
+            if {str(row["player_id"]) for row in ownerships} != set(remove_player_ids):
+                raise ValueError("Every removed player must be in the active squad.")
+            slots_by_player = {str(row["player_id"]): row["roster_slot_id"] for row in ownerships}
+            for player_id in remove_player_ids:
+                session.execute(
+                    update(squad_ownerships_table)
+                    .where(squad_ownerships_table.c.player_id == player_id)
+                    .where(squad_ownerships_table.c.draft_team_id == self.manager_team.id)
+                    .where(squad_ownerships_table.c.season_id == DEMO_SEASON_ID)
+                    .where(squad_ownerships_table.c.ended_at.is_(None))
+                    .values(ended_at=now)
+                )
+            for index, player_id in enumerate(add_player_ids):
+                session.execute(
+                    insert(squad_ownerships_table).values(
+                        id=f"ownership-right-{uuid4().hex[:12]}",
+                        season_id=DEMO_SEASON_ID,
+                        draft_team_id=self.manager_team.id,
+                        player_id=player_id,
+                        roster_slot_id=slots_by_player[remove_player_ids[index]],
+                        started_at=now,
+                        ended_at=None,
+                    )
+                )
+                session.execute(
+                    update(player_rights_table)
+                    .where(
+                        player_rights_table.c.season_id == DEMO_SEASON_ID,
+                        player_rights_table.c.draft_team_id == self.manager_team.id,
+                        player_rights_table.c.player_id == player_id,
+                        player_rights_table.c.released_at.is_(None),
+                    )
+                    .values(released_at=now)
+                )
+            session.commit()
 
     def get_player(self, player_id: str) -> PlayerDetail | None:
         return next(
@@ -346,6 +525,23 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
             return session.execute(
                 select(draft_teams_table.c.manager_id).where(draft_teams_table.c.id == team_id)
             ).scalar_one_or_none()
+
+    def team_for_id(self, team_id: str) -> TeamSummary | None:
+        if team_id == self.manager_team.id:
+            return self.manager_team
+        if team_id == self.rival_team.id:
+            return self.rival_team
+        with self._session_factory() as session:
+            row = (
+                session.execute(
+                    select(draft_teams_table.c.id, draft_teams_table.c.name).where(
+                        draft_teams_table.c.id == team_id
+                    )
+                )
+                .mappings()
+                .first()
+            )
+        return None if row is None else TeamSummary(id=str(row["id"]), name=str(row["name"]))
 
     def update_trade_status(
         self,

@@ -47,6 +47,12 @@ end_reason
 - Validate squad cap and position limits.
 - Explain why a player is or is not available.
 
+## Current API implementation
+
+- `GET /api/squad/changes` returns active, unexpired temporary player rights for the authenticated manager.
+- `POST /api/squad/changes` atomically applies equal-sized additions and releases, reuses released roster slots, and marks consumed rights released.
+- Validation responses use the shared API error contract; lineup/deadline lock enforcement remains owned by the team-selection boundary.
+
 ## React Requirements
 
 - Squad page with filled and empty slot cards.

@@ -1,5 +1,21 @@
 # Changelog
 
+## 2026-08-09 - Correct player availability flags
+
+### Fixed
+
+- Interpreted the official FPL `a` status as available rather than as an issue on Managers Desk and Squad.
+- Removed positive availability markers from fit players; only reduced chances, injuries, suspensions and other actionable statuses are marked.
+- Centralised availability interpretation so the dashboard count, list filter, pitch markers and player drawer use the same contract.
+
+### Changed
+
+- Added restrained warning/critical availability markers with percentage and status details available on hover and in the player drawer.
+
+### Validation
+
+- Added regression coverage for raw FPL available statuses, 100%/unknown chances, reduced chances, doubtful players and severe statuses.
+
 ## 2026-08-09 - Complete Squad API wiring and official FPL shirt assets
 
 ### Added

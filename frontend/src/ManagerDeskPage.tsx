@@ -17,6 +17,7 @@ import { Card } from './components/ui/card';
 import type { SessionState } from './contracts';
 import type { LeagueClient, LeagueFixture, LeagueSnapshot } from './league-api';
 import { HttpLeagueClient } from './league-api';
+import { hasAvailabilityIssue } from './player-availability';
 import type {
   SquadApiNotification,
   SquadApiPlayer,
@@ -418,11 +419,7 @@ function mapSquadGameweek(squad: SquadApiSummary | null): TeamSelectionSnapshot[
 }
 
 function getFlaggedPlayers(players: SquadApiPlayer[]): SquadApiPlayer[] {
-  return players.filter((player) => {
-    const chance = player.chance_of_playing_next_round;
-    const availability = (player.availability_status ?? '').toLowerCase();
-    return (typeof chance === 'number' && chance < 100) || (availability.length > 0 && availability !== 'available' && availability !== 'fit');
-  });
+  return players.filter(hasAvailabilityIssue);
 }
 
 function findTeamRow(league: LeagueSnapshot | null, teamId: string | undefined, teamName: string) {

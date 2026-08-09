@@ -446,7 +446,7 @@
 }
 
 .manager-desk__fixture-badge--muted {
-  color: var(--muted-foreground);
+  color: var(--foreground);
 }
 
 .manager-desk__fixture-vs {

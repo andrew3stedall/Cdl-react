@@ -22,6 +22,7 @@ from cdl_api.repositories.postgres_league_fpl import (
     fpl_players_table,
     fpl_positions_table,
 )
+from cdl_api.repositories.postgres_squad_repository import PostgreSQLSquadRepository
 from cdl_api.services.fpl_data_service import FplDataService
 
 BOOTSTRAP = {
@@ -298,6 +299,35 @@ def test_player_history_fetches_once_then_uses_postgres_cache() -> None:
     assert first.history[0].expected_assists == 0.42
     assert first.fixtures[0].gameweek == 2
     assert first.fixtures[0].difficulty == 3
+
+
+def test_squad_fixture_enrichment_returns_next_opponent_and_home_away_context() -> None:
+    sessions = _session_factory()
+    repository = PostgreSQLFplDataRepository(sessions)
+    repository.persist_bootstrap_static(
+        BOOTSTRAP,
+        endpoint="https://fantasy.premierleague.com/api/bootstrap-static/",
+        status_code=200,
+        response_sha256="bootstrap-sha",
+        fetched_at=datetime.now(UTC),
+    )
+    repository.persist_fixtures(
+        FIXTURES,
+        endpoint="https://fantasy.premierleague.com/api/fixtures/",
+        status_code=200,
+        response_sha256="fixtures-sha",
+        fetched_at=datetime.now(UTC),
+    )
+
+    with sessions() as session:
+        fixtures = PostgreSQLSquadRepository._next_fixtures_by_team(session)
+
+    assert fixtures["1"].opponent.short_name == "AVL"
+    assert fixtures["1"].is_home is True
+    assert fixtures["1"].difficulty == 2
+    assert fixtures["2"].opponent.short_name == "ARS"
+    assert fixtures["2"].is_home is False
+    assert fixtures["2"].difficulty == 4
 
 
 def test_repository_records_fetch_failure_without_marking_freshness() -> None:

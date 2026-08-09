@@ -1,0 +1,204 @@
+import type { ApiErrorResponse } from './contracts';
+
+export interface SquadApiTeam {
+  id: string;
+  name: string;
+  short_name?: string | null;
+}
+
+export interface SquadApiNextFixture {
+  fixture_id: string;
+  gameweek?: { id: string; name: string; number: number; deadline_at?: string | null } | null;
+  opponent: SquadApiTeam;
+  difficulty?: number | null;
+  is_home: boolean;
+  kickoff_at?: string | null;
+}
+
+export interface SquadApiPlayer {
+  id: string;
+  display_name: string;
+  position: string;
+  epl_team: SquadApiTeam;
+  draft_team?: SquadApiTeam | null;
+  status: 'owned' | 'available' | 'interested' | 'trade_target';
+  points: number;
+  form?: number | null;
+  value: number;
+  selected_by_percent?: number | null;
+  expected_goals?: number | null;
+  expected_assists?: number | null;
+  availability_status?: string | null;
+  availability_news?: string | null;
+  chance_of_playing_next_round?: number | null;
+  next_fixture?: SquadApiNextFixture | null;
+}
+
+export interface SquadApiSummary {
+  manager_team: SquadApiTeam;
+  gameweek: { id: string; name: string; number: number; deadline_at?: string | null };
+  players: SquadApiPlayer[];
+}
+
+export interface SquadApiScoutingResponse {
+  players: SquadApiPlayer[];
+}
+
+export interface SquadApiTrade {
+  id: string;
+  status: string;
+}
+
+export interface SquadApiHistoryRow {
+  gameweek: number;
+  fixture_id: number;
+  opponent_team_id: number;
+  total_points: number;
+  minutes: number;
+  goals_scored: number;
+  assists: number;
+  clean_sheets: number;
+  bonus: number;
+  bps: number;
+  expected_goals: number;
+  expected_assists: number;
+  value: number;
+  was_home: boolean;
+  kickoff_time?: string | null;
+}
+
+export interface SquadApiUpcomingFixture {
+  fixture_id: number;
+  gameweek?: number | null;
+  opponent_team_id: number;
+  difficulty: number;
+  is_home: boolean;
+  kickoff_time?: string | null;
+}
+
+export interface SquadApiHistoryResponse {
+  player_id: string;
+  fetched_at: string;
+  response_sha256: string;
+  history: SquadApiHistoryRow[];
+  fixtures: SquadApiUpcomingFixture[];
+}
+
+export interface SquadApiNotification {
+  id: string;
+  title: string;
+  message: string;
+  action_href: string;
+  kind: string;
+}
+
+export interface SquadApiChangesResponse {
+  available_to_add: SquadApiPlayer[];
+}
+
+export interface SquadClient {
+  getSummary(): Promise<SquadApiSummary>;
+  getScoutingPlayers(): Promise<SquadApiScoutingResponse>;
+  getTrades(): Promise<{ trades: SquadApiTrade[] }>;
+  getChanges(): Promise<SquadApiChangesResponse>;
+  getNotifications(): Promise<{ notifications: SquadApiNotification[] }>;
+  getPlayerHistory(playerId: string): Promise<SquadApiHistoryResponse>;
+  createTrade(
+    offeredToTeamId: string,
+    offeredPlayerIds: string[],
+    requestedPlayerIds: string[],
+  ): Promise<SquadApiTrade>;
+  applyChanges(addPlayerIds: string[], removePlayerIds: string[]): Promise<SquadApiSummary>;
+}
+
+export class SquadApiError extends Error {
+  constructor(
+    message: string,
+    readonly code: ApiErrorResponse['code'] | 'request_failed',
+    readonly details: Record<string, unknown> = {},
+  ) {
+    super(message);
+  }
+}
+
+export class HttpSquadClient implements SquadClient {
+  constructor(private readonly baseUrl = '/api') {}
+
+  getSummary(): Promise<SquadApiSummary> {
+    return this.request<SquadApiSummary>('/squad/summary');
+  }
+
+  getScoutingPlayers(): Promise<SquadApiScoutingResponse> {
+    return this.request<SquadApiScoutingResponse>('/scouting/players');
+  }
+
+  getTrades(): Promise<{ trades: SquadApiTrade[] }> {
+    return this.request<{ trades: SquadApiTrade[] }>('/trades');
+  }
+
+  getChanges(): Promise<SquadApiChangesResponse> {
+    return this.request<SquadApiChangesResponse>('/squad/changes');
+  }
+
+  getNotifications(): Promise<{ notifications: SquadApiNotification[] }> {
+    return this.request<{ notifications: SquadApiNotification[] }>('/squad/notifications');
+  }
+
+  getPlayerHistory(playerId: string): Promise<SquadApiHistoryResponse> {
+    return this.request<unknown>(`/fpl/players/${encodeURIComponent(playerId)}/history`).then((payload) => {
+      if (!payload || typeof payload !== 'object' || !Array.isArray((payload as SquadApiHistoryResponse).history) || !Array.isArray((payload as SquadApiHistoryResponse).fixtures)) {
+        throw new SquadApiError('FPL history response is incomplete.', 'request_failed');
+      }
+      return payload as SquadApiHistoryResponse;
+    });
+  }
+
+  createTrade(
+    offeredToTeamId: string,
+    offeredPlayerIds: string[],
+    requestedPlayerIds: string[],
+  ): Promise<SquadApiTrade> {
+    return this.request<SquadApiTrade>('/trades', {
+      method: 'POST',
+      body: JSON.stringify({
+        offered_to_team_id: offeredToTeamId,
+        offered_player_ids: offeredPlayerIds,
+        requested_player_ids: requestedPlayerIds,
+      }),
+    });
+  }
+
+  applyChanges(addPlayerIds: string[], removePlayerIds: string[]): Promise<SquadApiSummary> {
+    return this.request<SquadApiSummary>('/squad/changes', {
+      method: 'POST',
+      body: JSON.stringify({
+        add_player_ids: addPlayerIds,
+        remove_player_ids: removePlayerIds,
+      }),
+    });
+  }
+
+  private async request<T>(path: string, init: RequestInit = {}): Promise<T> {
+    let response: Response;
+    try {
+      response = await fetch(`${this.baseUrl}${path}`, {
+        ...init,
+        credentials: 'include',
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json', ...init.headers },
+      });
+    } catch (error) {
+      throw new SquadApiError(error instanceof Error ? error.message : 'Network request failed.', 'request_failed');
+    }
+
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const error = payload as Partial<ApiErrorResponse>;
+      throw new SquadApiError(
+        error.message ?? `Squad API request failed with ${response.status}.`,
+        error.code ?? 'request_failed',
+        error.details ?? {},
+      );
+    }
+    return payload as T;
+  }
+}

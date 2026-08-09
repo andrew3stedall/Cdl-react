@@ -13,6 +13,9 @@ from cdl_api.contracts.squad import (
     PlayerPosition,
     ScoutingFilters,
     ScoutingPlayersResponse,
+    SquadChangesRequest,
+    SquadChangesResponse,
+    SquadNotificationsResponse,
     SquadSummaryResponse,
     TradeCreateRequest,
     TradeProposal,
@@ -68,6 +71,34 @@ def squad_summary(
     service: SquadManagementService = Depends(get_squad_service),
 ) -> SquadSummaryResponse:
     return service.get_summary()
+
+
+@router.get("/squad/changes", response_model=SquadChangesResponse)
+def squad_changes(
+    _: SessionUser = Depends(require_manager_session),
+    service: SquadManagementService = Depends(get_squad_service),
+) -> SquadChangesResponse:
+    return service.get_changes()
+
+
+@router.post("/squad/changes", response_model=SquadSummaryResponse)
+def apply_squad_changes(
+    payload: SquadChangesRequest,
+    _: SessionUser = Depends(require_manager_session),
+    service: SquadManagementService = Depends(get_squad_service),
+) -> SquadSummaryResponse | JSONResponse:
+    try:
+        return service.apply_changes(payload)
+    except SquadValidationError as exc:
+        return validation_error_response(exc)
+
+
+@router.get("/squad/notifications", response_model=SquadNotificationsResponse)
+def squad_notifications(
+    _: SessionUser = Depends(require_manager_session),
+    service: SquadManagementService = Depends(get_squad_service),
+) -> SquadNotificationsResponse:
+    return service.notifications()
 
 
 @router.get("/scouting/players", response_model=ScoutingPlayersResponse)

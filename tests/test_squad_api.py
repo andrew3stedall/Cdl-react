@@ -59,6 +59,20 @@ def test_interest_and_trade_routes_require_authentication() -> None:
     assert trade_response.json()["detail"] == "Authentication required."
 
 
+def test_squad_changes_and_notifications_are_manager_scoped() -> None:
+    client = TestClient(create_app())
+    assert client.get("/api/squad/changes").status_code == 401
+    assert client.get("/api/squad/notifications").status_code == 401
+
+    authenticated = _authenticated_client()
+    changes = authenticated.get("/api/squad/changes")
+    notifications = authenticated.get("/api/squad/notifications")
+    assert changes.status_code == 200
+    assert changes.json() == {"available_to_add": []}
+    assert notifications.status_code == 200
+    assert notifications.json() == {"notifications": []}
+
+
 def test_interest_create_reload_duplicate_delete_and_validation_flow() -> None:
     client = _authenticated_client()
     create_response = client.post(

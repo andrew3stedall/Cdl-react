@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The Squad UI deliberately renders placeholders rather than synthetic values when a generated-design element is not backed by a persistent manager API. This document is the implementation backlog for replacing those placeholders with real data.
+The Squad UI uses persistent APIs and the official FPL cache for data-backed interactions. This document records the remaining model-dependent work rather than masking it with synthetic values.
 
 ## Current real data used
 
@@ -12,24 +12,26 @@ The page currently uses existing authenticated endpoints for:
 - `/api/scouting/players` — comparison and trade target discovery;
 - `/api/trades` — pending trade awareness;
 - `/api/team-selection` — persisted lineup slots, captaincy and bench placement used for Pitch view.
+- `/api/squad/changes` — active temporary rights and atomic add/remove submission;
+- `/api/squad/notifications` — derived trade and availability alerts;
+- `/api/fpl/players/{id}/history` — cached official FPL history and upcoming fixtures.
 
 ## Missing contracts shown as placeholders
 
 ### Player analytics
 
-Add persistent fields or a dedicated player-analytics endpoint for:
+The current summary/scouting contract now supplies:
 
-- expected goals (`xG`);
-- expected assists (`xA`);
-- next opponent and home/away label;
-- player availability/injury state;
-- chance of playing next round;
+- expected goals (`xG`) and expected assists (`xA`);
+- next opponent, home/away label, kickoff and FDR;
+- player availability/injury state and chance of playing next round.
+
+Still requiring a defined source or calculation:
+
 - availability/return-date history;
 - projection over an agreed horizon;
 - positional scarcity;
 - league demand / trade-interest signal.
-
-The frontend already accepts optional `xg`, `xa`, `expected_goals`, `expected_assists`, `next_opponent`, `availability`, and `chance_of_playing_next_round` fields so a later contract can replace placeholders without another visual redesign.
 
 ### Squad summary analytics
 
@@ -39,18 +41,11 @@ Add support for:
 - aggregate squad xA;
 - squad/league ranking for total points and other summary metrics if ranking remains useful after usability review.
 
-Until available, the xG/xA summary cards display `—` with an `API needed` label. No values are fabricated.
+The page does not show aggregate xG/xA cards until an aggregate contract exists. No values are fabricated.
 
 ### Draw rights and atomic squad changes
 
-The persistent manager workflow still needs:
-
-- draw-won temporary player rights for the current manager;
-- expiry/state for those rights;
-- an atomic mutation that applies the complete set of draw additions and squad releases together;
-- validation errors suitable for the confirmation sheet.
-
-Until this exists, **Available to Add** displays an API placeholder and removals remain staged client-side only.
+The current manager workflow reads active rights and submits the complete set of draw additions and squad releases atomically. Future work is to add a durable squad-action/audit projection and explicit right expiry notifications.
 
 ### Trade-value guidance
 
@@ -62,11 +57,11 @@ The generated design includes a simple trade-value guidance area. Do not produce
 - league demand;
 - relevant injury/availability context.
 
-The current drawer therefore labels this area `API needed` and only shows real form/points evidence.
+The current drawer shows real official-FPL value, points, form and selected-by evidence without pretending those inputs constitute a trade rating.
 
 ### Full player profile
 
-The quick drawer can open the profile presentation, but a complete profile contract still needs:
+The quick drawer now loads the cached official FPL history and upcoming fixture run. A complete profile contract still needs:
 
 - fixture run;
 - historical xG/xA and performance series;
@@ -77,11 +72,11 @@ The quick drawer can open the profile presentation, but a complete profile contr
 
 ### Advanced squad filters
 
-The List view exposes an advanced-filter control for visual parity. Availability and fixture-aware filters remain placeholders until those fields are available in the Squad analytics contract.
+The List view filters real loaded availability and next-fixture difficulty fields. More advanced projection/scarcity filters remain out of scope until those calculations exist.
 
 ### Notifications
 
-The generated visual target includes a notification icon. It is currently presentation-only. A future notification/action-centre contract should determine unread state and actionable items before this becomes interactive.
+The notification icon now reads derived pending-trade and reduced-availability alerts. Persistent read/unread state and the wider activity feed remain future work.
 
 ## Rule
 

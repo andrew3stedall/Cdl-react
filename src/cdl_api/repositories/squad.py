@@ -43,6 +43,14 @@ class SquadRepository(Protocol):
 
     def update_trade_status(self, trade_id: str, status: TradeStatus) -> TradeProposal | None: ...
 
+    def team_for_id(self, team_id: str) -> TeamSummary | None: ...
+
+    def list_available_rights(self) -> list[PlayerDetail]: ...
+
+    def apply_squad_changes(
+        self, add_player_ids: list[str], remove_player_ids: list[str]
+    ) -> None: ...
+
 
 class InMemorySquadRepository:
     def __init__(self) -> None:
@@ -175,9 +183,23 @@ class InMemorySquadRepository:
             self.rival_team.id: "manager-rival",
         }.get(team_id)
 
+    def team_for_id(self, team_id: str) -> TeamSummary | None:
+        if team_id == self.manager_team.id:
+            return deepcopy(self.manager_team)
+        if team_id == self.rival_team.id:
+            return deepcopy(self.rival_team)
+        return None
+
     def update_trade_status(self, trade_id: str, status: TradeStatus) -> TradeProposal | None:
         trade = self._trades.get(trade_id)
         if trade is None:
             return None
         trade.status = status
         return deepcopy(trade)
+
+    def list_available_rights(self) -> list[PlayerDetail]:
+        return []
+
+    def apply_squad_changes(self, add_player_ids: list[str], remove_player_ids: list[str]) -> None:
+        if add_player_ids or remove_player_ids:
+            raise ValueError("Squad changes are unavailable in the in-memory repository.")

@@ -8,6 +8,7 @@ export interface TeamSelectionPlayer {
   name: string;
   position: string;
   team: string;
+  teamCode?: number | null;
   slot: TeamSelectionSlot;
   slotOrder: number;
   captain: boolean;
@@ -63,6 +64,7 @@ interface ApiTeam {
   id: string;
   name: string;
   short_name?: string | null;
+  fpl_code?: number | null;
 }
 
 interface ApiGameweek {
@@ -228,6 +230,7 @@ function mapResponse(response: ApiTeamSelectionResponse): TeamSelectionSnapshot 
       name: player.display_name,
       position: player.position,
       team: player.epl_team.short_name ?? player.epl_team.name,
+      teamCode: player.epl_team.fpl_code ?? null,
       slot: player.slot,
       slotOrder: player.slot_order,
       captain: player.is_captain,

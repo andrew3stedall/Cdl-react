@@ -26,6 +26,7 @@ Implemented:
   and lineup references so an official refresh enriches drafted players in place;
 - current official points, form, selected percentage, minutes, goals, assists, clean
   sheets, xG, xA and chance-of-playing data exposed by Squad/scouting product routes;
+- next unfinished FPL fixture, opponent, home/away, kickoff and fixture difficulty exposed on Squad player records;
 - lazy `element-summary/{player}` retrieval through
   `GET /api/fpl/players/{player_id}/history`;
 - six-hour PostgreSQL reuse of cached element-summary payloads so repeated player detail
@@ -48,8 +49,9 @@ Still required:
 - `event/{gameweek}/live` ingestion and scoring integration;
 - previous-season player history if the product needs more than current-season
   `element-summary` history;
-- named-opponent enrichment for player history/upcoming fixtures rather than exposing
-  only the normalized team identifier internally;
+- named-opponent enrichment in the history response rather than exposing only the
+  normalized team identifier internally (the canonical Squad UI currently maps IDs
+  against the refreshed club set);
 - commissioner refresh controls and live scoring freshness displays;
 - broader visible source-freshness treatment on player surfaces.
 

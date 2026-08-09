@@ -225,6 +225,38 @@ beforeEach(() => {
       if (path === '/api/trades') {
         return new Response(JSON.stringify({ trades: [] }), { status: 200, headers: { 'Content-Type': 'application/json' } });
       }
+      if (path.startsWith('/api/fpl/players/')) {
+        return new Response(JSON.stringify({
+          player_id: 'fpl-411',
+          fetched_at: '2026-08-09T10:00:00Z',
+          response_sha256: 'history-sha',
+          history: [{
+            gameweek: 1,
+            fixture_id: 100,
+            opponent_team_id: 11,
+            total_points: 9,
+            minutes: 90,
+            goals_scored: 1,
+            assists: 0,
+            clean_sheets: 0,
+            bonus: 2,
+            bps: 30,
+            expected_goals: 0.8,
+            expected_assists: 0.1,
+            value: 14.0,
+            was_home: true,
+            kickoff_time: '2026-08-15T14:00:00Z',
+          }],
+          fixtures: [{
+            fixture_id: 101,
+            gameweek: 2,
+            opponent_team_id: 11,
+            difficulty: 3,
+            is_home: false,
+            kickoff_time: '2026-08-22T14:00:00Z',
+          }],
+        }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
       return new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } });
     }),
   );
@@ -269,7 +301,7 @@ describe('SquadPage', () => {
     expect(container.querySelector('[aria-label="Matchweek controls"]')).not.toBeNull();
     expect(container.textContent).not.toContain('Total Points');
     expect(container.querySelector('[aria-label="Squad pitch"]')).not.toBeNull();
-    expect(container.querySelector('img[src="/team-shirts/mci.svg"]')).not.toBeNull();
+    expect(container.querySelector('img[src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_43-66.webp"]')).not.toBeNull();
     expect(container.textContent).not.toContain('PostgreSQL');
 
     await act(async () => {
@@ -413,6 +445,24 @@ describe('SquadPage', () => {
     expect(cards).toHaveLength(2);
     expect(cards[0].textContent).toContain('Haaland');
     expect(cards[1].textContent).toContain('Palmer');
+  });
+
+  test('loads official FPL history inside the canonical profile drawer', async () => {
+    const { container } = await renderPage();
+
+    await act(async () => {
+      (container.querySelector('button[aria-label="View Haaland details"]') as HTMLButtonElement).click();
+      await Promise.resolve();
+    });
+    await act(async () => {
+      buttonByText(container, 'Full Profile').click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(container.textContent).toContain('Official FPL history');
+    expect(container.textContent).toContain('9');
+    expect(container.textContent).toContain('EVE');
   });
 
   test('stages removals and validates the complete change set only at submission', async () => {

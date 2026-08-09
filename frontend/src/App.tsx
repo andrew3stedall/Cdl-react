@@ -16,6 +16,7 @@ import { GlobalNavigation } from './GlobalNavigation';
 import { LeaguePage } from './LeaguePage';
 import type { LeagueClient } from './league-api';
 import { LoginPage } from './LoginPage';
+import { ManagerDeskPage } from './ManagerDeskPage';
 import { ModernisationCheckpointPage } from './ModernisationCheckpointPage';
 import { isSquadRoute } from './navigation';
 import type { PreferenceClient } from './preferences-api';
@@ -23,6 +24,7 @@ import { ProfilePage } from './ProfilePage';
 import { RulesPage } from './RulesPage';
 import { SquadManagementPage } from './SquadManagementPage';
 import { SquadWorkspacePage } from './SquadWorkspacePage';
+import type { SquadClient } from './squad-api';
 import type { TeamSelectionClient } from './team-selection-api';
 import { ThemePresetProvider, useThemePreset } from './theme-preset-provider';
 
@@ -88,6 +90,7 @@ interface AppProps {
   preferenceClient?: PreferenceClient;
   session?: SessionState;
   sessionClient?: SessionClient;
+  squadClient?: SquadClient;
   teamSelectionClient?: TeamSelectionClient;
 }
 
@@ -99,6 +102,7 @@ export function App({
   preferenceClient,
   session,
   sessionClient = defaultSessionClient,
+  squadClient,
   teamSelectionClient,
 }: AppProps) {
   const [currentPath, setCurrentPath] = useState(initialPath);
@@ -230,7 +234,7 @@ export function App({
       setSessionCheckError(null);
       setLoginPassword('');
       setMobileNavigationOpen(false);
-      setBrowserPath('/dashboard', true);
+      setBrowserPath('/', true);
       setActiveSession(result.data.session);
     } catch {
       setLoginError('Sign in is temporarily unavailable. Try again.');
@@ -251,7 +255,7 @@ export function App({
         }
         setSessionCheckError(null);
         setMobileNavigationOpen(false);
-        setBrowserPath('/dashboard', true);
+        setBrowserPath('/', true);
         setActiveSession(result.data.session);
       } catch {
         setLoginError('Google sign-in is temporarily unavailable. Try again.');
@@ -347,7 +351,9 @@ export function App({
             dashboardClient={dashboardClient}
             fdrClient={fdrClient}
             leagueClient={leagueClient}
+            onNavigate={handleNavigate}
             onSignOut={() => void handleSignOut()}
+            squadClient={squadClient}
             teamSelectionClient={teamSelectionClient}
           />
         </AppShell>
@@ -363,7 +369,9 @@ interface AppRouteContentProps {
   dashboardClient?: DashboardClient;
   fdrClient?: FdrClient;
   leagueClient?: LeagueClient;
+  onNavigate: (href: string) => void;
   onSignOut: () => void;
+  squadClient?: SquadClient;
   teamSelectionClient?: TeamSelectionClient;
 }
 
@@ -373,11 +381,21 @@ function AppRouteContent({
   dashboardClient,
   fdrClient,
   leagueClient,
+  onNavigate,
   onSignOut,
+  squadClient,
   teamSelectionClient,
 }: AppRouteContentProps) {
   const { preset } = useThemePreset();
-  let routeContent = <AnalyticsDashboardPage dashboardClient={dashboardClient} />;
+  let routeContent = (
+    <ManagerDeskPage
+      leagueClient={leagueClient}
+      onNavigate={onNavigate}
+      session={activeSession}
+      squadClient={squadClient}
+      teamSelectionClient={teamSelectionClient}
+    />
+  );
 
   if (currentPath.startsWith('/profile')) {
     routeContent = <ProfilePage onSignOut={onSignOut} session={activeSession} />;
@@ -411,8 +429,20 @@ function AppRouteContent({
     routeContent = <ModernisationCheckpointPage checkpoint={5} />;
   }
 
-  if (currentPath.startsWith('/dashboard')) {
+  if (currentPath.startsWith('/dashboard/analytics') || currentPath.startsWith('/analytics')) {
     routeContent = <AnalyticsDashboardPage dashboardClient={dashboardClient} />;
+  }
+
+  if (currentPath === '/dashboard' || currentPath === '/') {
+    routeContent = (
+      <ManagerDeskPage
+        leagueClient={leagueClient}
+        onNavigate={onNavigate}
+        session={activeSession}
+        squadClient={squadClient}
+        teamSelectionClient={teamSelectionClient}
+      />
+    );
   }
 
   if (currentPath.startsWith('/fdr')) {

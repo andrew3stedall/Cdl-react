@@ -675,9 +675,12 @@
   white-space: nowrap;
 }
 
-.squad-page .is-placeholder,
-.squad-page__pitch-player > small.is-placeholder {
+.squad-page .is-placeholder {
   color: var(--squad-muted);
+}
+
+.squad-page__pitch-player > small.is-placeholder {
+  color: var(--squad-text);
 }
 
 .squad-page__shirt {

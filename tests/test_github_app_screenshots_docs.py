@@ -79,14 +79,14 @@ def test_league_tables_are_contained_on_narrow_screens() -> None:
 def test_interaction_script_exercises_team_selection_validation() -> None:
     content = INTERACTION_SCRIPT.read_text(encoding="utf-8")
     assert "/team-selection" in content
-    assert "Move Alex Keeper" in content
-    assert "Invalid lineup." in content
+    assert "Player actions for Alex Keeper" in content
+    assert "Substitute with Riley Forward" in content
+    assert "Bench position 2" in content
     assert "Lineup saved and validated." in content
-    assert "selectOption('bench')" in content
-    assert "selectOption('starter')" in content
+    assert "Confirm substitution" in content
+    assert "List view must not expose player movement dropdowns" in content
     assert "page.reload" in content
-    assert "Move Ben Defender" in content
-    assert "Move Riley Forward" in content
+    assert "Player actions for Ben Defender" in content
     assert "Wildcard, active" in content
 
 

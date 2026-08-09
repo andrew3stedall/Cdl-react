@@ -83,7 +83,9 @@ Returns CDL fixtures, EPL fixtures, CDL table summary, and EPL table summary.
 - Inline chip icon buttons: available, active, and used states are visually distinct; active chips carry a dot.
 - Starter pitch-style lineup panel.
 - Split Starting XI, Bench, and Reserves list tables.
-- Accessible select controls for player movement.
+- Player context drawers with formation-valid substitutions between lineup groups.
+- Numbered outfield bench slots 1–4 and a separate goalkeeper bench slot.
+- No per-player movement dropdowns in list view.
 - Save-lineup validation feedback.
 - Fixture/table presentation is deferred to the fixtures slice; the API contract remains available.
 

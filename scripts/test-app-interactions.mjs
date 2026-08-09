@@ -472,18 +472,26 @@ async function testTeamSelection(page) {
   await page.getByRole('button', { name: 'View as list' }).click();
   await page.locator('[aria-label="Starting XI players table"]').waitFor();
 
-  const alexSlot = page.getByLabel('Move Alex Keeper');
-  await alexSlot.selectOption('bench');
-  await expectStatus(page, 'Alex Keeper moved to bench.');
+  if (await page.locator('[aria-label="Starting XI players table"] select').count() !== 0) {
+    throw new Error('List view must not expose player movement dropdowns');
+  }
+
+  await page.getByRole('button', { name: 'Player actions for Alex Keeper' }).click();
+  await page.getByRole('button', { name: /Substitute player/ }).click();
+  await page.getByRole('button', { name: 'Substitute with Riley Forward' }).click();
+  await page.getByRole('button', { name: 'Bench position goalkeeper' }).click();
+  await page.getByRole('button', { name: /Confirm substitution/ }).click();
+  await expectStatus(page, 'Alex Keeper swapped with Riley Forward.');
 
   await page.getByRole('button', { name: 'Save lineup' }).click();
-  await expectStatus(page, 'Invalid lineup.');
+  await expectStatus(page, 'Lineup saved and validated.');
 
-  await alexSlot.selectOption('starter');
-  await expectStatus(page, 'Alex Keeper moved to starter.');
-
-  await page.getByLabel('Move Ben Defender').selectOption('bench');
-  await page.getByLabel('Move Riley Forward').selectOption('starter');
+  await page.getByRole('button', { name: 'Player actions for Ben Defender' }).click();
+  await page.getByRole('button', { name: /Substitute player/ }).click();
+  await page.getByRole('button', { name: 'Substitute with Alex Keeper' }).click();
+  await page.getByRole('button', { name: 'Bench position 2' }).click();
+  await page.getByRole('button', { name: /Confirm substitution/ }).click();
+  await expectStatus(page, 'Ben Defender swapped with Alex Keeper.');
   await page.getByRole('button', { name: 'Save lineup' }).click();
   await expectStatus(page, 'Lineup saved and validated.');
 
@@ -493,11 +501,11 @@ async function testTeamSelection(page) {
   await page.reload({ waitUntil: 'networkidle' });
   await expectStatus(page, 'Exeter Gently squad ready for review.');
 
-  if (await page.getByLabel('Move Ben Defender').inputValue() !== 'bench') {
-    throw new Error('Expected the saved Ben Defender bench slot to survive a reload');
+  if (await page.getByRole('button', { name: 'Player actions for Ben Defender' }).count() !== 1) {
+    throw new Error('Expected the saved lineup to render its player action controls after reload');
   }
-  if (await page.getByLabel('Move Riley Forward').inputValue() !== 'starter') {
-    throw new Error('Expected the saved Riley Forward starter slot to survive a reload');
+  if (await page.locator('[aria-label="Starting XI players table"] select').count() !== 0) {
+    throw new Error('Expected list view to remain free of player movement dropdowns after reload');
   }
   await page.getByRole('button', { name: 'Wildcard, active' }).waitFor();
 }
@@ -645,8 +653,9 @@ async function testLockedTeamSelection(page) {
   if (!(await wildcardActivate.isDisabled())) {
     throw new Error('Expected chip controls to be disabled after fixture lock');
   }
-  if (!(await page.getByLabel('Move Alex Keeper').isDisabled())) {
-    throw new Error('Expected lineup controls to be disabled after fixture lock');
+  await page.getByRole('button', { name: 'Player actions for Alex Keeper' }).click();
+  if (!(await page.getByRole('button', { name: /Substitute player/ }).isDisabled())) {
+    throw new Error('Expected substitution to be disabled after fixture lock');
   }
 }
 

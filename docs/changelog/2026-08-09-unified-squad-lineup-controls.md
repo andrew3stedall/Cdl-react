@@ -10,7 +10,7 @@ The canonical Squad workspace now owns the current gameweek lineup and chip cont
 - Replaced the full-width pitch/list text switch with icon-only controls in the hero.
 - Removed the duplicated metrics strip and repeated team acronyms from player rows.
 - Added inline chip icon buttons with clear available, active, and used states; active chips show a dot.
-- Split list view into Starting XI, Bench, and Reserves tables with movement controls and no horizontal scrolling.
+- Split list view into Starting XI, Bench, and Reserves tables with compact player action controls and no horizontal scrolling.
 - Added lineup save validation and fixture-lock enforcement to the shared Squad page.
 
 ## Data and validation

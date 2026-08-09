@@ -478,7 +478,7 @@ async function testTeamSelection(page) {
 
   await page.getByRole('button', { name: 'Player actions for Alex Keeper' }).click();
   await page.getByRole('button', { name: /Substitute player/ }).click();
-  await page.getByRole('button', { name: 'Substitute with Riley Forward' }).click();
+  await page.getByRole('button', { name: 'Substitute with Riley Forward' }).first().click();
   await page.getByRole('button', { name: 'Bench position goalkeeper' }).click();
   await page.getByRole('button', { name: /Confirm substitution/ }).click();
   await expectStatus(page, 'Alex Keeper swapped with Riley Forward.');
@@ -488,7 +488,7 @@ async function testTeamSelection(page) {
 
   await page.getByRole('button', { name: 'Player actions for Ben Defender' }).click();
   await page.getByRole('button', { name: /Substitute player/ }).click();
-  await page.getByRole('button', { name: 'Substitute with Alex Keeper' }).click();
+  await page.getByRole('button', { name: 'Substitute with Alex Keeper' }).first().click();
   await page.getByRole('button', { name: 'Bench position 2' }).click();
   await page.getByRole('button', { name: /Confirm substitution/ }).click();
   await expectStatus(page, 'Ben Defender swapped with Alex Keeper.');

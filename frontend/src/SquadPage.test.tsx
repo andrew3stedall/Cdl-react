@@ -290,6 +290,30 @@ describe('SquadPage', () => {
     expect(table?.textContent).not.toContain('Pickford');
   });
 
+  test('selects a legal replacement directly from pitch view', async () => {
+    const { container } = await renderPage();
+
+    await act(async () => {
+      (container.querySelector('button[aria-label="View Haaland details"]') as HTMLButtonElement).click();
+      await Promise.resolve();
+    });
+    await act(async () => {
+      buttonByText(container, 'Substitute player').click();
+      await Promise.resolve();
+    });
+
+    expect(container.querySelector('.squad-page__drawer')).toBeNull();
+    expect(container.querySelector('[aria-label="Substitution mode"]')).not.toBeNull();
+
+    await act(async () => {
+      (container.querySelector('button[aria-label="Substitute with Riley Forward"]') as HTMLButtonElement).click();
+      await Promise.resolve();
+    });
+
+    expect(container.querySelector('[aria-label="Bench position for Haaland"]')).not.toBeNull();
+    expect(container.querySelector('[aria-label="Squad pitch"]')?.textContent).toContain('Riley Forward');
+  });
+
   test('uses the player context menu for legal substitutions and bench ordering', async () => {
     const { container } = await renderPage();
 
@@ -309,10 +333,11 @@ describe('SquadPage', () => {
       await Promise.resolve();
     });
 
-    const options = container.querySelector('.squad-page__substitution-options');
-    expect(options?.textContent).toContain('Riley Forward');
-    expect(options?.textContent).toContain('Morgan Reserve');
-    expect(options?.textContent).not.toContain('Ben Defender');
+    expect(container.querySelector('.squad-page__drawer')).toBeNull();
+    expect(container.querySelector('[aria-label="Substitution mode"]')).not.toBeNull();
+    expect(container.querySelector('button[aria-label="Substitute with Riley Forward"]')).not.toBeNull();
+    expect(container.querySelector('button[aria-label="Substitute with Morgan Reserve"]')).not.toBeNull();
+    expect(container.querySelector('button[aria-label="Substitute with Ben Defender"]')).toBeNull();
 
     await act(async () => {
       (container.querySelector('button[aria-label="Substitute with Riley Forward"]') as HTMLButtonElement).click();
@@ -352,11 +377,10 @@ describe('SquadPage', () => {
       await Promise.resolve();
     });
 
-    const options = container.querySelector('.squad-page__substitution-options');
-    expect(options?.textContent).toContain('Bench Defender');
-    expect(options?.textContent).toContain('Reserve Forward');
-    expect(options?.textContent).not.toContain('Bench Keeper');
-    expect(options?.textContent).not.toContain('Reserve Keeper');
+    expect(container.querySelector('button[aria-label="Substitute with Bench Defender"]')).not.toBeNull();
+    expect(container.querySelector('button[aria-label="Substitute with Reserve Forward"]')).not.toBeNull();
+    expect(container.querySelector('button[aria-label="Substitute with Bench Keeper"]')).toBeNull();
+    expect(container.querySelector('button[aria-label="Substitute with Reserve Keeper"]')).toBeNull();
   });
 
   test('compares manually selected players in selection order', async () => {

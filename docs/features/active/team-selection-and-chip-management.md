@@ -16,7 +16,7 @@ Implemented in the canonical Squad workspace. Fixture/table presentation is inte
 
 ## Current Behaviour
 
-Managers view their selected team, bench, reserves, next deadline, and compact chip controls in Squad. The pitch/list switch is icon-only, the list is split into Starting XI/Bench/Reserves tables, and players are substituted from the contextual drawer rather than per-row dropdowns. Available chips are actionable, active chips show a dot, and used chips remain visibly unavailable. Fixtures and tables remain available through the API but are not duplicated into this workspace yet.
+Managers view their selected team, bench, reserves, next deadline, and compact chip controls in Squad. The pitch/list switch is icon-only, the list is split into Starting XI/Bench/Reserves tables, and players enter an in-place substitution mode from the player drawer rather than using per-row dropdowns. Legal candidates are selected directly from the current pitch or list, with bench order chosen inline. Available chips are actionable, active chips show a dot, and used chips remain visibly unavailable. Fixtures and tables remain available through the API but are not duplicated into this workspace yet.
 
 ## Business Rules
 
@@ -25,6 +25,7 @@ Managers view their selected team, bench, reserves, next deadline, and compact c
 - Only one unused chip can be active at a time.
 - Team, bench, and reserve constraints must be enforced server-side.
 - Substitution candidates must preserve the Starting XI formation and bench composition; the existing lineup save endpoint remains authoritative.
+- Substitution selection returns to the visible Squad pitch/list surface; the candidate drawer is not a separate context.
 
 ## Risks
 

@@ -474,13 +474,13 @@ async function testTeamSelection(page) {
 
   const alexSlot = page.getByLabel('Move Alex Keeper');
   await alexSlot.selectOption('bench');
-  await expectStatus(page, 'Player moved to bench.');
+  await expectStatus(page, 'Alex Keeper moved to bench.');
 
   await page.getByRole('button', { name: 'Save lineup' }).click();
   await expectStatus(page, 'Invalid lineup.');
 
   await alexSlot.selectOption('starter');
-  await expectStatus(page, 'Player moved to starter.');
+  await expectStatus(page, 'Alex Keeper moved to starter.');
 
   await page.getByLabel('Move Ben Defender').selectOption('bench');
   await page.getByLabel('Move Riley Forward').selectOption('starter');

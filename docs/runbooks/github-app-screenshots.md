@@ -54,7 +54,7 @@ The normal runtime maps the backend's snake-case `/api/auth/session` contract in
 
 1. Open `/team-selection` against the unlocked API fixtures and confirm the shared Squad workspace loads from `/api/team-selection`.
 2. Switch to List view and confirm player rows expose an action button, not per-player movement dropdowns.
-3. Open Alex Keeper's player actions, choose **Substitute player**, select Riley Forward, choose the goalkeeper bench slot, and confirm the staged swap.
+3. Open Alex Keeper's player actions, choose **Substitute player**, confirm the drawer closes, select Riley Forward directly from the visible List view, choose the goalkeeper bench slot, and confirm the staged swap.
 4. Save through `PUT /api/team-selection/lineup` and confirm the valid-lineup feedback.
 5. Open Ben Defender's player actions, substitute Alex Keeper, choose bench position 2, and save the second valid swap.
 6. Activate Wildcard through the chip API and confirm success feedback.

@@ -37,7 +37,7 @@ Both views should show, when the underlying data is available:
 - form;
 - availability.
 
-The list view also keeps points, xG/xA, and an icon-only player action control visible without horizontal scrolling. Position and lineup group are communicated by the table section rather than repeated in each row. Player movement is handled from the contextual drawer rather than per-row dropdowns.
+The list view also keeps points, xG/xA, and an icon-only player action control visible without horizontal scrolling. Position and lineup group are communicated by the table section rather than repeated in each row. Player movement starts from the player drawer, then returns to the current pitch or list surface so the manager chooses the replacement from the visible squad.
 
 Do not invent missing metrics or substitute implementation status for user-facing data.
 
@@ -76,13 +76,17 @@ The owned-player actions are:
 
 ### Substitute player
 
-Substitution is a contextual swap between Starting XI, Bench and Reserves.
+Substitution is an in-place swap between Starting XI, Bench and Reserves.
 
-- The drawer shows only candidates whose swap preserves the configured Starting XI formation and bench composition.
+- Choosing **Substitute player** closes the player drawer and enters a page-level substitution mode.
+- The current pitch or list surface remains visible; legal candidates are marked there and can be selected directly.
+- Candidates are limited to swaps that preserve the configured Starting XI formation and bench composition.
 - Starting XI eligibility uses the authoritative formation limits: 1 goalkeeper, 3–5 defenders, 2–5 midfielders and 1–3 forwards.
-- When a player enters the bench, the drawer exposes the legal bench slot: goalkeeper or outfield positions 1–4.
+- When a player enters the bench, the page-level mode exposes the legal bench slot: goalkeeper or outfield positions 1–4.
 - The swap is staged locally until **Save lineup** is selected; the existing backend lineup validation remains authoritative.
 - A locked gameweek exposes the context but disables substitution.
+
+Pitch players use a restrained position marker colour rather than a visible position label. Position rows remain transparent so the pitch markings stay visible, and the pitch uses compact vertical spacing.
 
 ### Compare
 
@@ -185,7 +189,7 @@ A lightweight trade drawer starts with the owned player preselected. It lets the
 - `/team-selection` and `/squad-management` do not create duplicate player panels.
 - Selecting a player exposes Substitute, Compare, Release, Draft Trade and Full Profile without hunting through menus.
 - A manager can see only formation-valid substitution candidates and choose a numbered bench slot when needed.
-- List view does not use per-player movement dropdowns; its player action control opens the same contextual drawer as Pitch view.
+- List view does not use per-player movement dropdowns; its player action control starts the same in-place substitution mode as Pitch view.
 - A manager can stage and restore removals without mutating the server immediately.
 - Draw-won players are clearly distinct from ordinary free agents.
 - Added and Removed states are visible but not visually dominant.

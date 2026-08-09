@@ -52,7 +52,7 @@ interface SquadPageProps {
 
 type SquadView = 'pitch' | 'list';
 type PositionFilter = 'all' | 'GKP' | 'DEF' | 'MID' | 'FWD';
-type DrawerMode = 'player' | 'compare' | 'trade' | 'profile' | 'substitute' | null;
+type DrawerMode = 'player' | 'compare' | 'trade' | 'profile' | null;
 type PlayerStatus = 'owned' | 'available' | 'interested' | 'trade_target';
 type SortKey = 'points' | 'form' | 'xg' | 'xa';
 type BenchSlotOrder = 0 | 1 | 2 | 3 | 4;
@@ -396,17 +396,29 @@ export function SquadPage({ preset, teamSelectionClient = defaultTeamSelectionCl
         ?? mapTeamSelectionPlayer(option.target),
     }));
   }, [squadPlayers, substitutionSource, teamSelection]);
+  const substitutionCandidateIds = useMemo(
+    () => new Set(substitutionOptions.map((option) => option.target.id)),
+    [substitutionOptions],
+  );
+  const substitutionSourceView = substitutionSource
+    ? squadPlayers.find((player) => player.id === substitutionSource.id) ?? mapTeamSelectionPlayer(substitutionSource)
+    : null;
   const selectedSubstitutionOption = substitutionOptions.find(
     (option) => option.target.id === substitutionTargetId,
   ) ?? null;
   function closeDrawer() {
     setDrawerMode(null);
     setSelectedPlayer(null);
+    setCompareQuery('');
+    setTradeQuery('');
+  }
+
+  function cancelSubstitution() {
+    const sourceName = substitutionSource?.name;
     setSubstitutionSource(null);
     setSubstitutionTargetId(null);
     setSubstitutionBenchOrder(null);
-    setCompareQuery('');
-    setTradeQuery('');
+    if (sourceName) setStatus(`Substitution for ${sourceName} cancelled.`);
   }
 
   function openPlayer(player: PlayerView) {
@@ -423,16 +435,24 @@ export function SquadPage({ preset, teamSelectionClient = defaultTeamSelectionCl
     if (!teamSelection || lineupLocked || !player.slot) return;
     const source = teamSelection.players.find((candidate) => candidate.id === player.id);
     if (!source) return;
-    setSelectedPlayer(player);
-    setSubstitutionSource(source);
     setSubstitutionTargetId(null);
     setSubstitutionBenchOrder(null);
-    setDrawerMode('substitute');
+    setPositionFilter('all');
+    setQuery('');
+    closeDrawer();
+    setSubstitutionSource(source);
+    setStatus(`Choose a replacement for ${source.name} from the squad below.`);
   }
 
   function chooseSubstitutionTarget(option: SubstitutionOption) {
     setSubstitutionTargetId(option.target.id);
     setSubstitutionBenchOrder(option.defaultBenchOrder ?? option.benchOrders[0] ?? null);
+    setStatus(`${option.target.name} selected. Choose a bench position if needed, then confirm.`);
+  }
+
+  function chooseSubstitutionTargetView(player: PlayerView) {
+    const option = substitutionOptions.find((candidate) => candidate.target.id === player.id);
+    if (option) chooseSubstitutionTarget(option);
   }
 
   function confirmSubstitution() {
@@ -452,7 +472,9 @@ export function SquadPage({ preset, teamSelectionClient = defaultTeamSelectionCl
     setTeamSelection((current) => current ? { ...current, players: nextPlayers } : current);
     setSquadPlayers((current) => mergeLineupPlayers(current, nextPlayers));
     setLineupDirty(true);
-    closeDrawer();
+    setSubstitutionSource(null);
+    setSubstitutionTargetId(null);
+    setSubstitutionBenchOrder(null);
     setStatus(`${sourceName} swapped with ${targetName}. Save lineup to apply this change.`);
   }
 
@@ -609,9 +631,31 @@ export function SquadPage({ preset, teamSelectionClient = defaultTeamSelectionCl
         </section>
       ) : null}
 
+      {substitutionSource && substitutionSourceView ? (
+        <SubstitutionModePanel
+          candidateCount={substitutionOptions.length}
+          locked={lineupLocked}
+          onBenchOrderChange={setSubstitutionBenchOrder}
+          onCancel={cancelSubstitution}
+          onConfirm={confirmSubstitution}
+          option={selectedSubstitutionOption}
+          selectedBenchOrder={substitutionBenchOrder}
+          source={substitutionSource}
+          sourceView={substitutionSourceView}
+        />
+      ) : null}
+
       <section className="squad-page__roster-card">
         {squadView === 'pitch' && lineupAvailable ? (
-          <SquadPitch onSelect={openPlayer} players={visibleSquadPlayers} />
+          <SquadPitch
+            onSelect={openPlayer}
+            onSubstitutionTarget={chooseSubstitutionTargetView}
+            players={visibleSquadPlayers}
+            substitutionCandidateIds={substitutionCandidateIds}
+            substitutionMode={Boolean(substitutionSource)}
+            substitutionSourceId={substitutionSource?.id ?? null}
+            substitutionTargetId={substitutionTargetId}
+          />
         ) : (
           <SquadList
             filtersOpen={filtersOpen}
@@ -619,12 +663,17 @@ export function SquadPage({ preset, teamSelectionClient = defaultTeamSelectionCl
             onPositionChange={setPositionFilter}
             onQueryChange={setQuery}
             onSelect={openPlayer}
+            onSubstitutionTarget={chooseSubstitutionTargetView}
             onSortChange={setSortKey}
             players={listPlayers}
             positionCounts={positionCounts}
             positionFilter={positionFilter}
             query={query}
             sortKey={sortKey}
+            substitutionCandidateIds={substitutionCandidateIds}
+            substitutionMode={Boolean(substitutionSource)}
+            substitutionSourceId={substitutionSource?.id ?? null}
+            substitutionTargetId={substitutionTargetId}
           />
         )}
       </section>
@@ -685,20 +734,6 @@ export function SquadPage({ preset, teamSelectionClient = defaultTeamSelectionCl
               />
             ) : null}
             {drawerMode === 'profile' && selectedPlayer ? <ProfileDrawer onClose={closeDrawer} player={selectedPlayer} /> : null}
-            {drawerMode === 'substitute' && substitutionSource && selectedPlayer ? (
-              <SubstitutionDrawer
-                onBenchOrderChange={setSubstitutionBenchOrder}
-                onChooseTarget={chooseSubstitutionTarget}
-                onClose={closeDrawer}
-                onConfirm={confirmSubstitution}
-                option={selectedSubstitutionOption}
-                options={substitutionOptions}
-                source={selectedPlayer}
-                sourceSelection={substitutionSource}
-                selectedBenchOrder={substitutionBenchOrder}
-                locked={lineupLocked}
-              />
-            ) : null}
             {drawerMode === 'compare' ? (
               <CompareDrawer
                 candidates={comparisonCandidates}
@@ -774,7 +809,23 @@ export function SquadPage({ preset, teamSelectionClient = defaultTeamSelectionCl
   );
 }
 
-function SquadPitch({ players, onSelect }: { players: PlayerView[]; onSelect: (player: PlayerView) => void }) {
+function SquadPitch({
+  onSelect,
+  onSubstitutionTarget,
+  players,
+  substitutionCandidateIds,
+  substitutionMode,
+  substitutionSourceId,
+  substitutionTargetId,
+}: {
+  onSelect: (player: PlayerView) => void;
+  onSubstitutionTarget: (player: PlayerView) => void;
+  players: PlayerView[];
+  substitutionCandidateIds: ReadonlySet<string>;
+  substitutionMode: boolean;
+  substitutionSourceId: string | null;
+  substitutionTargetId: string | null;
+}) {
   const starters = players.filter((player) => player.slot === 'starter').sort(sortBySlot);
   const bench = players.filter((player) => player.slot === 'bench').sort(sortBySlot);
   const reserves = players.filter((player) => player.slot === 'reserve').sort(sortBySlot);
@@ -793,26 +844,107 @@ function SquadPitch({ players, onSelect }: { players: PlayerView[]; onSelect: (p
         <div className="squad-page__pitch-lineup">
           {rows.map((row) => (
             <div className={`squad-page__pitch-row position-${row.position.toLowerCase()}`} key={row.position}>
-              {row.players.map((player) => <PitchCard key={player.id} onSelect={onSelect} player={player} />)}
+              {row.players.map((player) => (
+                <PitchCard
+                  key={player.id}
+                  onSelect={onSelect}
+                  onSubstitutionTarget={onSubstitutionTarget}
+                  player={player}
+                  substitutionCandidateIds={substitutionCandidateIds}
+                  substitutionMode={substitutionMode}
+                  substitutionSourceId={substitutionSourceId}
+                  substitutionTargetId={substitutionTargetId}
+                />
+              ))}
             </div>
           ))}
         </div>
       </div>
       <section aria-label="Bench" className="squad-page__bench">
         <header><h3>Bench</h3><span>1 GK + 4 ordered substitutes</span></header>
-        <div>{bench.map((player) => <PitchCard benchOrder={player.slotOrder} compact key={player.id} onSelect={onSelect} player={player} />)}</div>
+        <div>{bench.map((player) => (
+          <PitchCard
+            benchOrder={player.slotOrder}
+            compact
+            key={player.id}
+            onSelect={onSelect}
+            onSubstitutionTarget={onSubstitutionTarget}
+            player={player}
+            substitutionCandidateIds={substitutionCandidateIds}
+            substitutionMode={substitutionMode}
+            substitutionSourceId={substitutionSourceId}
+            substitutionTargetId={substitutionTargetId}
+          />
+        ))}</div>
       </section>
       <section aria-label="Reserves" className="squad-page__reserves">
         <header><h3>Reserves</h3><span>{reserves.length} players</span></header>
-        <div>{reserves.map((player) => <PitchCard compact key={player.id} onSelect={onSelect} player={player} />)}</div>
+        <div>{reserves.map((player) => (
+          <PitchCard
+            compact
+            key={player.id}
+            onSelect={onSelect}
+            onSubstitutionTarget={onSubstitutionTarget}
+            player={player}
+            substitutionCandidateIds={substitutionCandidateIds}
+            substitutionMode={substitutionMode}
+            substitutionSourceId={substitutionSourceId}
+            substitutionTargetId={substitutionTargetId}
+          />
+        ))}</div>
       </section>
     </section>
   );
 }
 
-function PitchCard({ benchOrder, compact = false, onSelect, player }: { benchOrder?: number; compact?: boolean; onSelect: (player: PlayerView) => void; player: PlayerView }) {
+function PitchCard({
+  benchOrder,
+  compact = false,
+  onSelect,
+  onSubstitutionTarget,
+  player,
+  substitutionCandidateIds,
+  substitutionMode,
+  substitutionSourceId,
+  substitutionTargetId,
+}: {
+  benchOrder?: number;
+  compact?: boolean;
+  onSelect: (player: PlayerView) => void;
+  onSubstitutionTarget: (player: PlayerView) => void;
+  player: PlayerView;
+  substitutionCandidateIds: ReadonlySet<string>;
+  substitutionMode: boolean;
+  substitutionSourceId: string | null;
+  substitutionTargetId: string | null;
+}) {
+  const isSource = substitutionSourceId === player.id;
+  const isCandidate = substitutionCandidateIds.has(player.id);
+  const isTarget = substitutionTargetId === player.id;
+  const handleClick = () => {
+    if (substitutionMode) {
+      if (isCandidate) onSubstitutionTarget(player);
+      return;
+    }
+    onSelect(player);
+  };
+  const label = substitutionMode
+    ? isCandidate
+      ? `Substitute with ${player.displayName}`
+      : isSource
+        ? `Substitution source ${player.displayName}`
+        : `${player.displayName} is not a legal substitution candidate`
+    : `View ${player.displayName} details`;
   return (
-    <button aria-label={`View ${player.displayName} details`} className={`squad-page__pitch-player ${compact ? 'compact' : ''}`} onClick={() => onSelect(player)} type="button">
+    <button
+      aria-label={label}
+      aria-pressed={substitutionMode && isCandidate ? isTarget : undefined}
+      className={`squad-page__pitch-player position-${player.position.toLowerCase()} ${compact ? 'compact' : ''} ${substitutionMode ? 'is-substitution-mode' : ''} ${isSource ? 'is-substitution-source' : ''} ${isCandidate ? 'is-substitution-candidate' : ''} ${isTarget ? 'is-substitution-target' : ''} ${substitutionMode && !isCandidate ? 'is-substitution-unavailable' : ''}`}
+      disabled={substitutionMode && !isCandidate}
+      onClick={handleClick}
+      type="button"
+    >
+      <PositionMarker position={player.position} />
       <TeamShirt team={player.team} />
       <strong>{shortPlayerName(player.displayName)}</strong>
       <small className={player.nextOpponent ? '' : 'is-placeholder'}>{player.nextOpponent ? `vs ${player.nextOpponent}` : 'Next —'}</small>
@@ -859,26 +991,43 @@ function SquadList({
   onPositionChange,
   onQueryChange,
   onSelect,
+  onSubstitutionTarget,
   onSortChange,
   players,
   positionCounts,
   positionFilter,
   query,
   sortKey,
+  substitutionCandidateIds,
+  substitutionMode,
+  substitutionSourceId,
+  substitutionTargetId,
 }: {
   filtersOpen: boolean;
   onFiltersOpenChange: (open: boolean) => void;
   onPositionChange: (position: PositionFilter) => void;
   onQueryChange: (query: string) => void;
   onSelect: (player: PlayerView) => void;
+  onSubstitutionTarget: (player: PlayerView) => void;
   onSortChange: (sort: SortKey) => void;
   players: PlayerView[];
   positionCounts: Record<PositionFilter, number>;
   positionFilter: PositionFilter;
   query: string;
   sortKey: SortKey;
+  substitutionCandidateIds: ReadonlySet<string>;
+  substitutionMode: boolean;
+  substitutionSourceId: string | null;
+  substitutionTargetId: string | null;
 }) {
   const groups = lineupGroups(players);
+  function selectPlayer(player: PlayerView) {
+    if (substitutionMode) {
+      if (substitutionCandidateIds.has(player.id)) onSubstitutionTarget(player);
+      return;
+    }
+    onSelect(player);
+  }
   return (
     <div className="squad-page__list">
       <div className="squad-page__list-controls">
@@ -932,9 +1081,23 @@ function SquadList({
                 <thead><tr><th>Player</th><th>Next</th><th className="sorted">Pts <ArrowDown size={11} /></th><th>Form</th><th>xG / xA</th><th><span className="sr-only">Availability</span><CircleCheck aria-hidden="true" size={13} /></th><th><span className="sr-only">Actions</span></th></tr></thead>
                 <tbody>
                   {group.players.map((player) => (
-                    <tr className={`squad-page__player-row position-${player.position.toLowerCase()}`} key={player.id}>
+                    <tr
+                      className={`squad-page__player-row position-${player.position.toLowerCase()} ${substitutionMode ? 'is-substitution-mode' : ''} ${substitutionSourceId === player.id ? 'is-substitution-source' : ''} ${substitutionCandidateIds.has(player.id) ? 'is-substitution-candidate' : ''} ${substitutionTargetId === player.id ? 'is-substitution-target' : ''} ${substitutionMode && !substitutionCandidateIds.has(player.id) ? 'is-substitution-unavailable' : ''}`}
+                      key={player.id}
+                    >
                       <td>
-                        <button className="squad-page__player-link" onClick={() => onSelect(player)} type="button">
+                        <button
+                          aria-label={substitutionMode
+                            ? substitutionCandidateIds.has(player.id)
+                              ? `Substitute with ${player.displayName}`
+                              : `${player.displayName} is not a legal substitution candidate`
+                            : `View ${player.displayName} details`}
+                          aria-pressed={substitutionMode && substitutionCandidateIds.has(player.id) ? substitutionTargetId === player.id : undefined}
+                          className="squad-page__player-link"
+                          disabled={substitutionMode && !substitutionCandidateIds.has(player.id)}
+                          onClick={() => selectPlayer(player)}
+                          type="button"
+                        >
                           <PlayerIdentity player={player} showMeta={false} />
                           {player.captain ? <span className="squad-page__row-badge">C</span> : null}
                           {player.viceCaptain ? <span className="squad-page__row-badge vice">VC</span> : null}
@@ -946,7 +1109,21 @@ function SquadList({
                       <td><span className="squad-page__expected"><span>{formatMetric(player.xg)}</span><span>{formatMetric(player.xa)}</span></span></td>
                       <td><AvailabilityFlag inline player={player} /></td>
                       <td>
-                        <button aria-label={`Player actions for ${player.displayName}`} className="squad-page__icon-button" onClick={() => onSelect(player)} title={`Actions for ${player.displayName}`} type="button"><MoreHorizontal size={17} /></button>
+                        <button
+                          aria-label={substitutionMode
+                            ? substitutionCandidateIds.has(player.id)
+                              ? `Substitute with ${player.displayName}`
+                              : `${player.displayName} is not a legal substitution candidate`
+                            : `Player actions for ${player.displayName}`}
+                          aria-pressed={substitutionMode && substitutionCandidateIds.has(player.id) ? substitutionTargetId === player.id : undefined}
+                          className="squad-page__icon-button"
+                          disabled={substitutionMode && !substitutionCandidateIds.has(player.id)}
+                          onClick={() => selectPlayer(player)}
+                          title={substitutionMode ? `Substitute with ${player.displayName}` : `Actions for ${player.displayName}`}
+                          type="button"
+                        >
+                          {substitutionMode ? <Repeat2 size={17} /> : <MoreHorizontal size={17} />}
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -968,7 +1145,7 @@ function DrawerHeader({ onClose, player, title }: { onClose: () => void; player?
   return (
     <header className="squad-page__drawer-header">
       {player ? <TeamShirt large team={player.team} /> : <span className="squad-page__brand-mark"><Shield size={22} /></span>}
-      <div><h2>{title}</h2>{player ? <p><span className={`squad-page__position position-${player.position.toLowerCase()}`}>{player.position}</span> · <span className={player.nextOpponent ? '' : 'is-placeholder'}>{player.nextOpponent ? `vs ${player.nextOpponent}` : 'Next fixture —'}</span></p> : null}</div>
+      <div><h2>{title}</h2>{player ? <p><PositionMarker position={player.position} /> · <span className={player.nextOpponent ? '' : 'is-placeholder'}>{player.nextOpponent ? `vs ${player.nextOpponent}` : 'Next fixture —'}</span></p> : null}</div>
       <button aria-label="Close drawer" className="squad-page__icon-button" onClick={onClose} type="button"><X size={19} /></button>
     </header>
   );
@@ -1019,80 +1196,61 @@ function PlayerDrawer({
   );
 }
 
-function SubstitutionDrawer({
+function SubstitutionModePanel({
+  candidateCount,
   onBenchOrderChange,
-  onChooseTarget,
-  onClose,
+  onCancel,
   onConfirm,
   option,
-  options,
-  source,
-  sourceSelection,
   selectedBenchOrder,
+  source,
+  sourceView,
   locked,
 }: {
+  candidateCount: number;
   onBenchOrderChange: (order: BenchSlotOrder | null) => void;
-  onChooseTarget: (option: SubstitutionOption) => void;
-  onClose: () => void;
+  onCancel: () => void;
   onConfirm: () => void;
   option: SubstitutionOptionView | null;
-  options: SubstitutionOptionView[];
-  source: PlayerView;
-  sourceSelection: TeamSelectionPlayer;
   selectedBenchOrder: BenchSlotOrder | null;
+  source: TeamSelectionPlayer;
+  sourceView: PlayerView;
   locked: boolean;
 }) {
-  const benchPlayer = option ? benchEntrantForSubstitution(sourceSelection, option.target) : null;
+  const benchPlayer = option ? benchEntrantForSubstitution(source, option.target) : null;
   return (
-    <>
-      <span aria-hidden="true" className="squad-page__sheet-handle" />
-      <DrawerHeader onClose={onClose} player={source} title="Substitute player" />
-      <section className="squad-page__substitution-source">
-        <p className="eyebrow">Selected player</p>
-        <PlayerIdentity large player={source} />
-        <span>{lineupAreaLabel(sourceSelection)}</span>
-      </section>
-      <p className="squad-page__drawer-copy">
-        Choose a player to swap with. Only swaps that leave the Starting XI and bench rules valid are shown.
-      </p>
-      <section aria-labelledby="eligible-substitutions-title" className="squad-page__substitution-section">
-        <div className="squad-page__substitution-heading">
-          <h3 id="eligible-substitutions-title">Eligible replacements</h3>
-          <span>{options.length}</span>
+    <section aria-label="Substitution mode" className="squad-page__substitution-mode">
+      <div className="squad-page__substitution-mode-header">
+        <span className="action-icon"><Repeat2 aria-hidden="true" size={18} /></span>
+        <div>
+          <p className="eyebrow">Substitution mode</p>
+          <strong>Choose a player from the squad below</strong>
+          <small>{candidateCount === 0 ? 'No legal replacements are available in this formation.' : `${candidateCount} legal replacement${candidateCount === 1 ? '' : 's'} shown.`}</small>
         </div>
-        {options.length === 0 ? (
-          <div className="squad-page__substitution-empty" role="status">
-            <CircleAlert aria-hidden="true" size={17} />
-            <span>No legal substitution is available for this player in the current formation.</span>
-          </div>
-        ) : (
-          <div className="squad-page__substitution-options">
-            {options.map((candidate) => (
-              <button
-                aria-pressed={option?.target.id === candidate.target.id}
-                aria-label={`Substitute with ${candidate.target.name}`}
-                className="squad-page__substitution-option"
-                disabled={locked}
-                key={candidate.target.id}
-                onClick={() => onChooseTarget(candidate)}
-                type="button"
-              >
-                <PlayerIdentity player={candidate.targetView} showMeta={false} />
-                <span className="squad-page__substitution-route">
-                  <strong>{lineupAreaLabel(candidate.target)}</strong>
-                  <ChevronRight aria-hidden="true" size={14} />
-                  <strong>{lineupAreaLabel(sourceSelection)}</strong>
-                </span>
-              </button>
-            ))}
-          </div>
-        )}
-      </section>
+        <button aria-label="Cancel substitution" className="squad-page__icon-button" onClick={onCancel} type="button"><X size={18} /></button>
+      </div>
+      <div className="squad-page__substitution-mode-selection">
+        <div className="squad-page__substitution-mode-player">
+          <span className="eyebrow">Replacing</span>
+          <PlayerIdentity player={sourceView} showMeta={false} />
+          <small>{lineupAreaLabel(source)}</small>
+        </div>
+        {option ? (
+          <>
+            <ArrowRightLeft aria-hidden="true" className="squad-page__substitution-mode-arrow" size={17} />
+            <div className="squad-page__substitution-mode-player selected">
+              <span className="eyebrow">Selected replacement</span>
+              <PlayerIdentity player={option.targetView} showMeta={false} />
+              <small>{lineupAreaLabel(option.target)}</small>
+            </div>
+          </>
+        ) : null}
+      </div>
       {option && option.benchOrders.length > 0 && benchPlayer ? (
-        <section aria-labelledby="bench-position-title" className="squad-page__substitution-section">
-          <div className="squad-page__substitution-heading">
-            <h3 id="bench-position-title">Bench position</h3>
-            <span>{benchPlayer.name}</span>
+        <div className="squad-page__substitution-mode-slots">
+          <div>
+            <span className="eyebrow">Bench position for {benchPlayer.name}</span>
+            <small>Choose the goalkeeper slot or outfield order.</small>
           </div>
           <div aria-label={`Bench position for ${benchPlayer.name}`} className="squad-page__bench-slot-options" role="group">
             {option.benchOrders.map((order) => (
@@ -1109,10 +1267,7 @@ function SubstitutionDrawer({
               </button>
             ))}
           </div>
-          <p className="squad-page__substitution-note">
-            The incoming bench player will take this numbered position. Goalkeepers use the separate GK slot.
-          </p>
-        </section>
+        </div>
       ) : null}
       {option ? (
         <Button disabled={locked} onClick={onConfirm} type="button">
@@ -1120,7 +1275,7 @@ function SubstitutionDrawer({
           Confirm substitution
         </Button>
       ) : null}
-    </>
+    </section>
   );
 }
 
@@ -1229,10 +1384,15 @@ function TradeDrawer({
 function PlayerIdentity({ large = false, player, showMeta = true }: { large?: boolean; player: PlayerView; showMeta?: boolean }) {
   return (
     <span className={`squad-page__identity ${large ? 'large' : ''}`}>
+      <PositionMarker position={player.position} />
       <TeamShirt large={large} team={player.team} />
-      <span><strong>{player.displayName}</strong>{showMeta ? <small><span className={`squad-page__position position-${player.position.toLowerCase()}`}>{player.position}</span> · <span className={player.nextOpponent ? '' : 'is-placeholder'}>{player.nextOpponent ? `vs ${player.nextOpponent}` : 'Next —'}</span></small> : null}</span>
+      <span><strong>{player.displayName}</strong>{showMeta ? <small><span className={player.nextOpponent ? '' : 'is-placeholder'}>{player.nextOpponent ? `vs ${player.nextOpponent}` : 'Next —'}</span></small> : null}</span>
     </span>
   );
+}
+
+function PositionMarker({ position }: { position: string }) {
+  return <span aria-hidden="true" className={`squad-page__position-marker position-${normalizePosition(position).toLowerCase()}`} title={`${positionLabel(position)} player`} />;
 }
 
 function TeamShirt({ large = false, team }: { large?: boolean; team: string }) {
@@ -1575,6 +1735,15 @@ function normalizePosition(position: string): string {
   if (normalized === 'DEFENDER') return 'DEF';
   if (normalized === 'MIDFIELDER') return 'MID';
   if (normalized === 'FORWARD' || normalized === 'STRIKER') return 'FWD';
+  return normalized;
+}
+
+function positionLabel(position: string): string {
+  const normalized = normalizePosition(position);
+  if (normalized === 'GKP') return 'Goalkeeper';
+  if (normalized === 'DEF') return 'Defender';
+  if (normalized === 'MID') return 'Midfielder';
+  if (normalized === 'FWD') return 'Forward';
   return normalized;
 }
 

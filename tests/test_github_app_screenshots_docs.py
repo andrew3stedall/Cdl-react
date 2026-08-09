@@ -175,4 +175,3 @@ def test_team_selection_consumes_api_lock_state() -> None:
     assert "fixtureLock.locked" in page
     assert "Save lineup" in page
     assert "squad-page__chip-toggle" in page
-

@@ -1,6 +1,7 @@
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowDown,
+  ArrowDownUp,
   ArrowRightLeft,
   Bell,
   CalendarClock,
@@ -18,6 +19,8 @@ import {
   LayoutGrid,
   List,
   LockKeyhole,
+  MoreHorizontal,
+  Repeat2,
   Save,
   Search,
   Shield,
@@ -49,9 +52,18 @@ interface SquadPageProps {
 
 type SquadView = 'pitch' | 'list';
 type PositionFilter = 'all' | 'GKP' | 'DEF' | 'MID' | 'FWD';
-type DrawerMode = 'player' | 'compare' | 'trade' | 'profile' | null;
+type DrawerMode = 'player' | 'compare' | 'trade' | 'profile' | 'substitute' | null;
 type PlayerStatus = 'owned' | 'available' | 'interested' | 'trade_target';
 type SortKey = 'points' | 'form' | 'xg' | 'xa';
+type BenchSlotOrder = 0 | 1 | 2 | 3 | 4;
+
+interface SubstitutionOption {
+  target: TeamSelectionPlayer;
+  benchOrders: BenchSlotOrder[];
+  defaultBenchOrder: BenchSlotOrder | null;
+}
+
+type SubstitutionOptionView = SubstitutionOption & { targetView: PlayerView };
 
 interface TeamRef {
   id: string;
@@ -129,6 +141,13 @@ const positionOptions: Array<{ shortLabel: string; value: PositionFilter }> = [
   { shortLabel: 'FWD', value: 'FWD' },
 ];
 const defaultTeamSelectionClient = new HttpTeamSelectionClient();
+const STARTER_LIMITS: Record<string, readonly [number, number]> = {
+  GKP: [1, 1],
+  DEF: [3, 5],
+  MID: [2, 5],
+  FWD: [1, 3],
+};
+const BENCH_SLOT_ORDERS: BenchSlotOrder[] = [0, 1, 2, 3, 4];
 
 function getStoredView(): SquadView {
   try {
@@ -252,6 +271,9 @@ export function SquadPage({ preset, teamSelectionClient = defaultTeamSelectionCl
   const [status, setStatus] = useState('Loading squad.');
   const [drawerMode, setDrawerMode] = useState<DrawerMode>(null);
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerView | null>(null);
+  const [substitutionSource, setSubstitutionSource] = useState<TeamSelectionPlayer | null>(null);
+  const [substitutionTargetId, setSubstitutionTargetId] = useState<string | null>(null);
+  const [substitutionBenchOrder, setSubstitutionBenchOrder] = useState<BenchSlotOrder | null>(null);
   const [comparePlayers, setComparePlayers] = useState<PlayerView[]>([]);
   const [compareQuery, setCompareQuery] = useState('');
   const [tradeSource, setTradeSource] = useState<PlayerView | null>(null);
@@ -366,9 +388,23 @@ export function SquadPage({ preset, teamSelectionClient = defaultTeamSelectionCl
     .filter((player) => player.draftTeam?.id === tradeTeamId)
     .filter((player) => matchesQuery(player, tradeQuery))
     .slice(0, 8);
+  const substitutionOptions = useMemo(() => {
+    if (!teamSelection || !substitutionSource) return [];
+    return getSubstitutionOptions(teamSelection.players, substitutionSource.id).map((option) => ({
+      ...option,
+      targetView: squadPlayers.find((player) => player.id === option.target.id)
+        ?? mapTeamSelectionPlayer(option.target),
+    }));
+  }, [squadPlayers, substitutionSource, teamSelection]);
+  const selectedSubstitutionOption = substitutionOptions.find(
+    (option) => option.target.id === substitutionTargetId,
+  ) ?? null;
   function closeDrawer() {
     setDrawerMode(null);
     setSelectedPlayer(null);
+    setSubstitutionSource(null);
+    setSubstitutionTargetId(null);
+    setSubstitutionBenchOrder(null);
     setCompareQuery('');
     setTradeQuery('');
   }
@@ -381,6 +417,43 @@ export function SquadPage({ preset, teamSelectionClient = defaultTeamSelectionCl
   function openProfile(player: PlayerView) {
     setSelectedPlayer(player);
     setDrawerMode('profile');
+  }
+
+  function startSubstitution(player: PlayerView) {
+    if (!teamSelection || lineupLocked || !player.slot) return;
+    const source = teamSelection.players.find((candidate) => candidate.id === player.id);
+    if (!source) return;
+    setSelectedPlayer(player);
+    setSubstitutionSource(source);
+    setSubstitutionTargetId(null);
+    setSubstitutionBenchOrder(null);
+    setDrawerMode('substitute');
+  }
+
+  function chooseSubstitutionTarget(option: SubstitutionOption) {
+    setSubstitutionTargetId(option.target.id);
+    setSubstitutionBenchOrder(option.defaultBenchOrder ?? option.benchOrders[0] ?? null);
+  }
+
+  function confirmSubstitution() {
+    if (!teamSelection || !substitutionSource || !selectedSubstitutionOption || lineupLocked) return;
+    const nextPlayers = applySubstitution(
+      teamSelection.players,
+      substitutionSource.id,
+      selectedSubstitutionOption.target.id,
+      substitutionBenchOrder,
+    );
+    if (!selectionIsValid(nextPlayers)) {
+      setStatus('That substitution would make the lineup invalid. Choose another eligible player.');
+      return;
+    }
+    const sourceName = substitutionSource.name;
+    const targetName = selectedSubstitutionOption.target.name;
+    setTeamSelection((current) => current ? { ...current, players: nextPlayers } : current);
+    setSquadPlayers((current) => mergeLineupPlayers(current, nextPlayers));
+    setLineupDirty(true);
+    closeDrawer();
+    setStatus(`${sourceName} swapped with ${targetName}. Save lineup to apply this change.`);
   }
 
   function startCompare(player: PlayerView) {
@@ -420,21 +493,6 @@ export function SquadPage({ preset, teamSelectionClient = defaultTeamSelectionCl
       return next;
     });
     setStatus(`${player.displayName} restored to the squad.`);
-  }
-
-  function movePlayer(playerId: string, slot: TeamSelectionSlot) {
-    if (!teamSelection || lineupLocked) return;
-    const player = teamSelection.players.find((candidate) => candidate.id === playerId);
-    if (!player || player.slot === slot) return;
-    const players = normalizeLineupPlayers(
-      teamSelection.players.map((candidate) =>
-        candidate.id === playerId ? { ...candidate, slot } : candidate,
-      ),
-    );
-    setTeamSelection((current) => current ? { ...current, players } : current);
-    setSquadPlayers((current) => mergeLineupPlayers(current, players));
-    setLineupDirty(true);
-    setStatus(`${player.name} moved to ${slotLabel(slot)}. Save lineup to validate server-side.`);
   }
 
   async function saveLineup() {
@@ -562,9 +620,6 @@ export function SquadPage({ preset, teamSelectionClient = defaultTeamSelectionCl
             onQueryChange={setQuery}
             onSelect={openPlayer}
             onSortChange={setSortKey}
-            locked={lineupLocked}
-            onMove={movePlayer}
-            lineupEnabled={Boolean(teamSelection)}
             players={listPlayers}
             positionCounts={positionCounts}
             positionFilter={positionFilter}
@@ -623,11 +678,27 @@ export function SquadPage({ preset, teamSelectionClient = defaultTeamSelectionCl
                 onCompare={() => startCompare(selectedPlayer)}
                 onProfile={() => openProfile(selectedPlayer)}
                 onRelease={() => stageRemoval(selectedPlayer)}
+                onSubstitute={selectedPlayer.slot ? () => startSubstitution(selectedPlayer) : undefined}
                 onTrade={() => startTrade(selectedPlayer)}
                 player={selectedPlayer}
+                substitutionDisabled={lineupLocked}
               />
             ) : null}
             {drawerMode === 'profile' && selectedPlayer ? <ProfileDrawer onClose={closeDrawer} player={selectedPlayer} /> : null}
+            {drawerMode === 'substitute' && substitutionSource && selectedPlayer ? (
+              <SubstitutionDrawer
+                onBenchOrderChange={setSubstitutionBenchOrder}
+                onChooseTarget={chooseSubstitutionTarget}
+                onClose={closeDrawer}
+                onConfirm={confirmSubstitution}
+                option={selectedSubstitutionOption}
+                options={substitutionOptions}
+                source={selectedPlayer}
+                sourceSelection={substitutionSource}
+                selectedBenchOrder={substitutionBenchOrder}
+                locked={lineupLocked}
+              />
+            ) : null}
             {drawerMode === 'compare' ? (
               <CompareDrawer
                 candidates={comparisonCandidates}
@@ -784,10 +855,7 @@ function ChipGlyph({ chip }: { chip: TeamSelectionChip }) {
 
 function SquadList({
   filtersOpen,
-  lineupEnabled,
-  locked,
   onFiltersOpenChange,
-  onMove,
   onPositionChange,
   onQueryChange,
   onSelect,
@@ -799,10 +867,7 @@ function SquadList({
   sortKey,
 }: {
   filtersOpen: boolean;
-  lineupEnabled: boolean;
-  locked: boolean;
   onFiltersOpenChange: (open: boolean) => void;
-  onMove: (playerId: string, slot: TeamSelectionSlot) => void;
   onPositionChange: (position: PositionFilter) => void;
   onQueryChange: (query: string) => void;
   onSelect: (player: PlayerView) => void;
@@ -819,7 +884,16 @@ function SquadList({
       <div className="squad-page__list-controls">
         <label className="squad-page__search"><Search size={18} /><span className="sr-only">Search squad players</span><input aria-label="Search squad players" onChange={(event) => onQueryChange(event.target.value)} placeholder="Search players..." value={query} /></label>
         <button aria-expanded={filtersOpen} aria-label="Advanced squad filters" className="squad-page__filter-button" onClick={() => onFiltersOpenChange(!filtersOpen)} type="button"><Filter size={18} /></button>
-        <label className="squad-page__sort"><span className="sr-only">Sort squad</span><select aria-label="Sort squad" onChange={(event) => onSortChange(event.target.value as SortKey)} value={sortKey}><option value="points">Sort: Points</option><option value="form">Sort: Form</option><option value="xg">Sort: xG</option><option value="xa">Sort: xA</option></select><ChevronDown aria-hidden="true" size={16} /></label>
+        <button
+          aria-label={`Sort squad by ${sortLabel(sortKey)}`}
+          className="squad-page__sort-button"
+          onClick={() => onSortChange(nextSortKey(sortKey))}
+          title={`Sort by ${sortLabel(sortKey)}. Press to change.`}
+          type="button"
+        >
+          <ArrowDownUp aria-hidden="true" size={17} />
+          <span className="sr-only">Sort by {sortLabel(sortKey)}</span>
+        </button>
       </div>
 
       {filtersOpen ? (
@@ -855,7 +929,7 @@ function SquadList({
                   <col className="availability" />
                   <col className="action" />
                 </colgroup>
-                <thead><tr><th>Player</th><th>Next</th><th className="sorted">Pts <ArrowDown size={11} /></th><th>Form</th><th>xG / xA</th><th><span className="sr-only">Availability</span><CircleCheck aria-hidden="true" size={13} /></th><th><span className="sr-only">Move</span></th></tr></thead>
+                <thead><tr><th>Player</th><th>Next</th><th className="sorted">Pts <ArrowDown size={11} /></th><th>Form</th><th>xG / xA</th><th><span className="sr-only">Availability</span><CircleCheck aria-hidden="true" size={13} /></th><th><span className="sr-only">Actions</span></th></tr></thead>
                 <tbody>
                   {group.players.map((player) => (
                     <tr className={`squad-page__player-row position-${player.position.toLowerCase()}`} key={player.id}>
@@ -872,19 +946,7 @@ function SquadList({
                       <td><span className="squad-page__expected"><span>{formatMetric(player.xg)}</span><span>{formatMetric(player.xa)}</span></span></td>
                       <td><AvailabilityFlag inline player={player} /></td>
                       <td>
-                        {lineupEnabled ? (
-                          <label className="squad-page__move-select">
-                            <span className="sr-only">Move {player.displayName}</span>
-                            <select aria-label={`Move ${player.displayName}`} disabled={locked} onChange={(event) => onMove(player.id, event.target.value as TeamSelectionSlot)} value={player.slot ?? 'reserve'}>
-                              <option value="starter">XI</option>
-                              <option value="bench">Bench</option>
-                              <option value="reserve">Res.</option>
-                            </select>
-                            <ChevronDown aria-hidden="true" size={12} />
-                          </label>
-                        ) : (
-                          <button aria-label={`View ${player.displayName} details`} className="squad-page__icon-button" onClick={() => onSelect(player)} type="button"><ChevronRight size={16} /></button>
-                        )}
+                        <button aria-label={`Player actions for ${player.displayName}`} className="squad-page__icon-button" onClick={() => onSelect(player)} title={`Actions for ${player.displayName}`} type="button"><MoreHorizontal size={17} /></button>
                       </td>
                     </tr>
                   ))}
@@ -917,15 +979,19 @@ function PlayerDrawer({
   onCompare,
   onProfile,
   onRelease,
+  onSubstitute,
   onTrade,
   player,
+  substitutionDisabled,
 }: {
   onClose: () => void;
   onCompare: () => void;
   onProfile: () => void;
   onRelease: () => void;
+  onSubstitute?: () => void;
   onTrade: () => void;
   player: PlayerView;
+  substitutionDisabled: boolean;
 }) {
   return (
     <>
@@ -943,11 +1009,117 @@ function PlayerDrawer({
         <div className="squad-page__guidance-evidence"><span>Projection <b>—</b></span><span>Recent form <b>{formatMetric(player.form)}</b></span><span>Scarcity <b>—</b></span></div>
       </section>
       <div className="squad-page__drawer-actions">
+        {onSubstitute ? <button disabled={substitutionDisabled} onClick={onSubstitute} type="button"><span className="action-icon"><Repeat2 size={18} /></span><span><strong>Substitute player</strong><small>{substitutionDisabled ? 'Lineup is locked for this gameweek' : 'Swap this player with an eligible squad player'}</small></span><ChevronRight size={19} /></button> : null}
         <button onClick={onCompare} type="button"><span className="action-icon"><Search size={18} /></span><span><strong>Compare</strong><small>Compare {shortPlayerName(player.displayName)} with other players</small></span><ChevronRight size={19} /></button>
         <button onClick={onRelease} type="button"><span className="action-icon danger"><CircleMinus size={18} /></span><span><strong>Release to Free Agency</strong><small>Stage removal from your squad</small></span><ChevronRight size={19} /></button>
         <button onClick={onTrade} type="button"><span className="action-icon"><ArrowRightLeft size={18} /></span><span><strong>Draft Trade</strong><small>Start a proposal to another manager</small></span><ChevronRight size={19} /></button>
         <button onClick={onProfile} type="button"><span className="action-icon"><Users size={18} /></span><span><strong>Full Profile</strong><small>View detailed stats and history</small></span><ChevronRight size={19} /></button>
       </div>
+    </>
+  );
+}
+
+function SubstitutionDrawer({
+  onBenchOrderChange,
+  onChooseTarget,
+  onClose,
+  onConfirm,
+  option,
+  options,
+  source,
+  sourceSelection,
+  selectedBenchOrder,
+  locked,
+}: {
+  onBenchOrderChange: (order: BenchSlotOrder | null) => void;
+  onChooseTarget: (option: SubstitutionOption) => void;
+  onClose: () => void;
+  onConfirm: () => void;
+  option: SubstitutionOptionView | null;
+  options: SubstitutionOptionView[];
+  source: PlayerView;
+  sourceSelection: TeamSelectionPlayer;
+  selectedBenchOrder: BenchSlotOrder | null;
+  locked: boolean;
+}) {
+  const benchPlayer = option ? benchEntrantForSubstitution(sourceSelection, option.target) : null;
+  return (
+    <>
+      <span aria-hidden="true" className="squad-page__sheet-handle" />
+      <DrawerHeader onClose={onClose} player={source} title="Substitute player" />
+      <section className="squad-page__substitution-source">
+        <p className="eyebrow">Selected player</p>
+        <PlayerIdentity large player={source} />
+        <span>{lineupAreaLabel(sourceSelection)}</span>
+      </section>
+      <p className="squad-page__drawer-copy">
+        Choose a player to swap with. Only swaps that leave the Starting XI and bench rules valid are shown.
+      </p>
+      <section aria-labelledby="eligible-substitutions-title" className="squad-page__substitution-section">
+        <div className="squad-page__substitution-heading">
+          <h3 id="eligible-substitutions-title">Eligible replacements</h3>
+          <span>{options.length}</span>
+        </div>
+        {options.length === 0 ? (
+          <div className="squad-page__substitution-empty" role="status">
+            <CircleAlert aria-hidden="true" size={17} />
+            <span>No legal substitution is available for this player in the current formation.</span>
+          </div>
+        ) : (
+          <div className="squad-page__substitution-options">
+            {options.map((candidate) => (
+              <button
+                aria-pressed={option?.target.id === candidate.target.id}
+                aria-label={`Substitute with ${candidate.target.name}`}
+                className="squad-page__substitution-option"
+                disabled={locked}
+                key={candidate.target.id}
+                onClick={() => onChooseTarget(candidate)}
+                type="button"
+              >
+                <PlayerIdentity player={candidate.targetView} showMeta={false} />
+                <span className="squad-page__substitution-route">
+                  <strong>{lineupAreaLabel(candidate.target)}</strong>
+                  <ChevronRight aria-hidden="true" size={14} />
+                  <strong>{lineupAreaLabel(sourceSelection)}</strong>
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+      </section>
+      {option && option.benchOrders.length > 0 && benchPlayer ? (
+        <section aria-labelledby="bench-position-title" className="squad-page__substitution-section">
+          <div className="squad-page__substitution-heading">
+            <h3 id="bench-position-title">Bench position</h3>
+            <span>{benchPlayer.name}</span>
+          </div>
+          <div aria-label={`Bench position for ${benchPlayer.name}`} className="squad-page__bench-slot-options" role="group">
+            {option.benchOrders.map((order) => (
+              <button
+                aria-pressed={selectedBenchOrder === order}
+                aria-label={`Bench position ${order === 0 ? 'goalkeeper' : order}`}
+                className="squad-page__bench-slot-option"
+                disabled={locked}
+                key={order}
+                onClick={() => onBenchOrderChange(order)}
+                type="button"
+              >
+                {order === 0 ? 'GK' : order}
+              </button>
+            ))}
+          </div>
+          <p className="squad-page__substitution-note">
+            The incoming bench player will take this numbered position. Goalkeepers use the separate GK slot.
+          </p>
+        </section>
+      ) : null}
+      {option ? (
+        <Button disabled={locked} onClick={onConfirm} type="button">
+          <Repeat2 aria-hidden="true" size={16} />
+          Confirm substitution
+        </Button>
+      ) : null}
     </>
   );
 }
@@ -1132,6 +1304,18 @@ function compareListPlayers(left: PlayerView, right: PlayerView, key: SortKey): 
   return compareSortMetric(left, right, key);
 }
 
+function sortLabel(key: SortKey): string {
+  if (key === 'points') return 'points';
+  if (key === 'form') return 'form';
+  if (key === 'xg') return 'xG';
+  return 'xA';
+}
+
+function nextSortKey(key: SortKey): SortKey {
+  const keys: SortKey[] = ['points', 'form', 'xg', 'xa'];
+  return keys[(keys.indexOf(key) + 1) % keys.length];
+}
+
 function lineupGroups(players: PlayerView[]) {
   const definitions: Array<{ slot: TeamSelectionSlot; label: string; description: string }> = [
     { slot: 'starter', label: 'Starting XI', description: 'Legal matchday formation' },
@@ -1162,11 +1346,10 @@ function selectionIsValid(players: TeamSelectionPlayer[]): boolean {
   }
   if (starters.length !== 11 || bench.length !== 5 || reserves.length !== 4) return false;
 
-  const countPosition = (position: string) => starters.filter((player) => normalizePosition(player.position) === position).length;
-  if (countPosition('GKP') !== 1) return false;
-  if (countPosition('DEF') < 3 || countPosition('DEF') > 5) return false;
-  if (countPosition('MID') < 2 || countPosition('MID') > 5) return false;
-  if (countPosition('FWD') < 1 || countPosition('FWD') > 3) return false;
+  for (const [position, [minimum, maximum]] of Object.entries(STARTER_LIMITS)) {
+    const count = starters.filter((player) => normalizePosition(player.position) === position).length;
+    if (count < minimum || count > maximum) return false;
+  }
 
   const benchGoalkeepers = bench.filter((player) => normalizePosition(player.position) === 'GKP');
   const benchOutfield = bench.filter((player) => normalizePosition(player.position) !== 'GKP');
@@ -1179,6 +1362,139 @@ function selectionIsValid(players: TeamSelectionPlayer[]): boolean {
     && captain?.slot === 'starter'
     && viceCaptain?.slot === 'starter'
     && captain.id !== viceCaptain.id;
+}
+
+function getSubstitutionOptions(
+  players: TeamSelectionPlayer[],
+  sourceId: string,
+): SubstitutionOption[] {
+  const source = players.find((player) => player.id === sourceId);
+  if (!source) return [];
+
+  return players
+    .filter((target) => target.id !== source.id)
+    .filter((target) => target.slot !== source.slot || target.slot === 'bench')
+    .map((target) => {
+      const benchPlayer = benchEntrantForSubstitution(source, target);
+      const possibleBenchOrders = benchPlayer
+        ? benchOrdersForPosition(benchPlayer.position)
+        : [null];
+      const legalBenchOrders = possibleBenchOrders.filter((order) => (
+        selectionIsValid(applySubstitution(players, source.id, target.id, order))
+      ));
+      if (legalBenchOrders.length === 0) return null;
+      const benchOrders = legalBenchOrders.filter(
+        (order): order is BenchSlotOrder => order !== null,
+      );
+      return {
+        target,
+        benchOrders,
+        defaultBenchOrder: benchPlayer
+          ? preferredBenchOrder(source, target, benchOrders)
+          : null,
+      };
+    })
+    .filter((option): option is SubstitutionOption => option !== null)
+    .sort((left, right) => (
+      lineupSlotRank(left.target.slot) - lineupSlotRank(right.target.slot)
+      || left.target.slotOrder - right.target.slotOrder
+      || left.target.name.localeCompare(right.target.name)
+    ));
+}
+
+function benchEntrantForSubstitution(
+  source: TeamSelectionPlayer,
+  target: TeamSelectionPlayer,
+): TeamSelectionPlayer | null {
+  if (source.slot === 'bench' && target.slot !== 'bench') return target;
+  if (source.slot !== 'bench' && target.slot === 'bench') return source;
+  return null;
+}
+
+function benchOrdersForPosition(position: string): BenchSlotOrder[] {
+  return normalizePosition(position) === 'GKP'
+    ? [0]
+    : BENCH_SLOT_ORDERS.filter((order) => order !== 0);
+}
+
+function preferredBenchOrder(
+  source: TeamSelectionPlayer,
+  target: TeamSelectionPlayer,
+  allowedOrders: BenchSlotOrder[],
+): BenchSlotOrder {
+  const currentOrder = source.slot === 'bench' ? source.slotOrder : target.slotOrder;
+  return allowedOrders.includes(currentOrder as BenchSlotOrder)
+    ? currentOrder as BenchSlotOrder
+    : allowedOrders[0];
+}
+
+function applySubstitution(
+  players: TeamSelectionPlayer[],
+  sourceId: string,
+  targetId: string,
+  benchOrder: BenchSlotOrder | null,
+): TeamSelectionPlayer[] {
+  const source = players.find((player) => player.id === sourceId);
+  const target = players.find((player) => player.id === targetId);
+  if (!source || !target) return players;
+
+  if (source.slot === target.slot) {
+    if (source.slot !== 'bench') return players;
+    return normalizeLineupPlayers(players.map((player) => {
+      if (player.id === source.id) return { ...player, slotOrder: target.slotOrder };
+      if (player.id === target.id) return { ...player, slotOrder: source.slotOrder };
+      return player;
+    }));
+  }
+
+  const swapped = players.map((player) => {
+    if (player.id === source.id) {
+      return { ...player, slot: target.slot, slotOrder: target.slotOrder };
+    }
+    if (player.id === target.id) {
+      return { ...player, slot: source.slot, slotOrder: source.slotOrder };
+    }
+    return player;
+  });
+  const benchPlayer = benchEntrantForSubstitution(source, target);
+  return benchPlayer && benchOrder !== null
+    ? applyBenchOrder(swapped, benchPlayer.id, benchOrder)
+    : normalizeLineupPlayers(swapped);
+}
+
+function applyBenchOrder(
+  players: TeamSelectionPlayer[],
+  playerId: string,
+  desiredOrder: BenchSlotOrder,
+): TeamSelectionPlayer[] {
+  const benchPlayer = players.find((player) => player.id === playerId && player.slot === 'bench');
+  if (!benchPlayer) return normalizeLineupPlayers(players);
+  if (desiredOrder === 0) {
+    return normalizeLineupPlayers(players.map((player) => (
+      player.id === playerId ? { ...player, slotOrder: 0 } : player
+    )));
+  }
+
+  const remainingOutfield = players
+    .filter((player) => player.slot === 'bench' && normalizePosition(player.position) !== 'GKP' && player.id !== playerId)
+    .sort(sortTeamSelectionPlayers);
+  const insertAt = Math.max(0, Math.min(remainingOutfield.length, desiredOrder - 1));
+  remainingOutfield.splice(insertAt, 0, benchPlayer);
+  const orderById = new Map(remainingOutfield.map((player, index) => [player.id, index + 1]));
+  return normalizeLineupPlayers(players.map((player) => {
+    const order = orderById.get(player.id);
+    return order === undefined ? player : { ...player, slotOrder: order };
+  }));
+}
+
+function lineupSlotRank(slot: TeamSelectionSlot): number {
+  return slot === 'starter' ? 0 : slot === 'bench' ? 1 : 2;
+}
+
+function lineupAreaLabel(player: TeamSelectionPlayer): string {
+  if (player.slot === 'starter') return 'Starting XI';
+  if (player.slot === 'reserve') return 'Reserves';
+  return player.slotOrder === 0 ? 'Bench · GK' : `Bench · ${player.slotOrder}`;
 }
 
 function normalizeLineupPlayers(players: TeamSelectionPlayer[]): TeamSelectionPlayer[] {
@@ -1218,12 +1534,6 @@ function normalizeLineupPlayers(players: TeamSelectionPlayer[]): TeamSelectionPl
 
 function sortTeamSelectionPlayers(left: TeamSelectionPlayer, right: TeamSelectionPlayer): number {
   return left.slotOrder - right.slotOrder || left.name.localeCompare(right.name);
-}
-
-function slotLabel(slot: TeamSelectionSlot): string {
-  if (slot === 'starter') return 'starter';
-  if (slot === 'bench') return 'bench';
-  return 'reserves';
 }
 
 function apiErrorMessage(error: unknown, fallback: string): string {

@@ -10,6 +10,7 @@ import {
   ChevronRight,
   CircleAlert,
   CircleCheck,
+  CircleX,
   CircleMinus,
   CirclePlus,
   Crown,
@@ -34,6 +35,7 @@ import {
 import { Button } from './components/ui/button';
 import type { ThemePreset } from './contracts';
 import { officialFplShirtUrl } from './fpl-shirt-assets';
+import { availabilityIssueLabel, getAvailabilityIssue, hasAvailabilityIssue } from './player-availability';
 import {
   HttpSquadClient,
   SquadApiError,
@@ -1490,7 +1492,7 @@ function ProfileDrawer({
         <Metric placeholder={player.xa === null} label="xA" value={formatMetric(player.xa)} />
       </div>
       <section className="squad-page__drawer-section"><h3>Ownership</h3><p>{player.draftTeam ? `Owned by ${player.draftTeam.name}.` : statusDescription(player)}</p></section>
-      <section className="squad-page__drawer-section"><h3>Availability</h3><p>{availabilityLabel(player) ?? 'No current availability flag from FPL.'}{player.availabilityNews ? ` ${player.availabilityNews}` : ''}</p></section>
+      <section className="squad-page__drawer-section"><h3>Availability</h3><p>{availabilityIssueLabel({ availability: player.availability, chance_of_playing_next_round: player.chanceOfPlaying }) ?? 'No current availability flag from FPL.'}{player.availabilityNews ? ` ${player.availabilityNews}` : ''}</p></section>
       <section className="squad-page__drawer-section">
         <div className="squad-page__section-heading"><h3>Official FPL history</h3><span>{history ? `Fetched ${formatFetchedAt(history.fetched_at)}` : 'Live cache'}</span></div>
         {historyLoading ? <p className="squad-page__empty-copy">Loading official FPL history…</p> : null}
@@ -1628,10 +1630,13 @@ function TeamShirt({ large = false, team }: { large?: boolean; team: string }) {
 }
 
 function AvailabilityFlag({ inline = false, player }: { inline?: boolean; player: PlayerView }) {
-  const label = availabilityLabel(player);
-  if (!label) return null;
-  const tone = player.chanceOfPlaying !== null && player.chanceOfPlaying < 75 ? 'warning' : 'fit';
-  return <span aria-label={`Availability: ${label}`} className={`squad-page__availability-flag ${tone} ${inline ? 'inline' : ''}`} title={`Availability: ${label}`}>{tone === 'fit' ? <CircleCheck size={13} /> : <CircleAlert size={13} />}</span>;
+  const issue = getAvailabilityIssue({
+    availability: player.availability,
+    chance_of_playing_next_round: player.chanceOfPlaying,
+  });
+  if (!issue) return null;
+  const Icon = issue.severity === 'critical' ? CircleX : CircleAlert;
+  return <span aria-label={`Availability: ${issue.label}`} className={`squad-page__availability-flag ${issue.severity} ${inline ? 'inline' : ''}`} title={`Availability: ${issue.label}`}><Icon aria-hidden="true" size={13} /></span>;
 }
 
 function Metric({ dots = false, label, placeholder = false, value }: { dots?: boolean; label: string; placeholder?: boolean; value: string }) {
@@ -2000,13 +2005,10 @@ function formatFixtureOpponent(teamId: number): string {
 }
 
 function isAvailabilityRisk(player: PlayerView): boolean {
-  if (player.chanceOfPlaying !== null) return player.chanceOfPlaying < 75;
-  return ['d', 'i', 'u'].includes((player.availability ?? '').toLowerCase());
-}
-
-function availabilityLabel(player: PlayerView): string | null {
-  if (player.chanceOfPlaying !== null) return player.chanceOfPlaying >= 100 ? 'Fit' : `${player.chanceOfPlaying}%`;
-  return player.availability;
+  return hasAvailabilityIssue({
+    availability: player.availability,
+    chance_of_playing_next_round: player.chanceOfPlaying,
+  });
 }
 
 function statusDescription(player: PlayerView): string {

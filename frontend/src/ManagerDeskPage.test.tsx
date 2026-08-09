@@ -1,0 +1,202 @@
+import { act } from 'react';
+import { createRoot } from 'react-dom/client';
+import { describe, expect, test } from 'vitest';
+
+import type { SessionState } from './contracts';
+import { ManagerDeskPage } from './ManagerDeskPage';
+import type { LeagueClient, LeagueSnapshot } from './league-api';
+import type {
+  SquadApiHistoryResponse,
+  SquadApiSummary,
+  SquadClient,
+} from './squad-api';
+import type { TeamSelectionClient, TeamSelectionSnapshot } from './team-selection-api';
+
+const testGlobal = globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean };
+testGlobal.IS_REACT_ACT_ENVIRONMENT = true;
+
+const session: SessionState = {
+  isAuthenticated: true,
+  user: {
+    id: 'manager-1',
+    email: 'manager@example.com',
+    displayName: 'Alex Manager',
+    roles: ['manager'],
+  },
+  expiresAt: null,
+};
+
+const selection: TeamSelectionSnapshot = {
+  managerTeam: { id: 'team-castle', name: 'Castle FC', shortName: 'CAS' },
+  gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1, deadlineAt: '2030-08-14T17:30:00Z' },
+  players: [
+    { id: 'p1', name: 'Alex Keeper', position: 'GKP', team: 'ARS', slot: 'starter', slotOrder: 1, captain: true, viceCaptain: false },
+    { id: 'p2', name: 'Ben Defender', position: 'DEF', team: 'MCI', slot: 'starter', slotOrder: 2, captain: false, viceCaptain: false },
+  ],
+  chips: [],
+  fixtureLock: { locked: false, fixtureId: null, fixtureType: null, lockScope: null, lockedAt: null, reason: null },
+};
+
+const league: LeagueSnapshot = {
+  currentFixtures: { gameweek: selection.gameweek, fixtures: [] },
+  nextFixtures: {
+    gameweek: { id: 'gw-2', name: 'Gameweek 2', number: 2 },
+    fixtures: [{
+      id: 'fixture-1',
+      gameweek: { id: 'gw-2', name: 'Gameweek 2', number: 2 },
+      homeTeam: { id: 'team-castle', name: 'Castle FC', shortName: 'CAS' },
+      awayTeam: { id: 'team-river', name: 'River Rangers', shortName: 'RIV' },
+      status: 'pending',
+      kickoffLabel: 'Sat 15:00',
+      roundLabel: 'League',
+      isCurrent: false,
+      isNext: true,
+      detailAvailable: true,
+      score: { homeScore: null, awayScore: null, bonusPoints: {}, chipsPlayed: {}, outcome: 'pending' },
+    }],
+  },
+  allFixtures: { gameweek: null, fixtures: [] },
+  table: {
+    source: 'test',
+    rows: [{
+      position: 2,
+      team: { id: 'team-castle', name: 'Castle FC', shortName: 'CAS' },
+      played: 1,
+      wins: 1,
+      draws: 0,
+      losses: 0,
+      pointsFor: 72,
+      pointsAgainst: 64,
+      pointsDifference: 8,
+      leaguePoints: 3,
+    }],
+  },
+  knockout: { rounds: [], matches: [] },
+  headToHead: { records: [] },
+};
+
+const squad: SquadApiSummary = {
+  manager_team: { id: 'team-castle', name: 'Castle FC', short_name: 'CAS' },
+  gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1 },
+  players: [{
+    id: 'p1',
+    display_name: 'Alex Keeper',
+    position: 'GKP',
+    epl_team: { id: 'epl-ars', name: 'Arsenal', short_name: 'ARS' },
+    status: 'owned',
+    points: 48,
+    value: 5,
+    availability_status: 'doubtful',
+    availability_news: 'Late fitness test',
+    chance_of_playing_next_round: 75,
+  }],
+};
+
+class MemoryTeamSelectionClient implements TeamSelectionClient {
+  async getTeamSelection() { return selection; }
+  async getFixtureSummary() { return { cdlFixtures: [], eplFixtures: [], cdlTable: [], eplTable: [] }; }
+  async saveLineup() { return selection; }
+  async updateChip() { return selection; }
+}
+
+class MemoryLeagueClient implements LeagueClient {
+  async getLeagueSnapshot() { return league; }
+}
+
+class MemorySquadClient implements SquadClient {
+  async getSummary() { return squad; }
+  async getScoutingPlayers() { return { players: squad.players }; }
+  async getTrades() { return { trades: [] }; }
+  async getChanges() { return { available_to_add: [] }; }
+  async getNotifications() {
+    return {
+      notifications: [{
+        id: 'notification-1',
+        title: 'Review fixture difficulty',
+        message: 'Your next run has changed.',
+        action_href: '/fdr',
+        kind: 'fixture_difficulty',
+      }],
+    };
+  }
+  async getPlayerHistory(): Promise<SquadApiHistoryResponse> {
+    return { player_id: 'p1', fetched_at: '2030-01-01', response_sha256: 'test', history: [], fixtures: [] };
+  }
+  async createTrade() { return { id: 'trade-1', status: 'proposed' }; }
+  async applyChanges() { return squad; }
+}
+
+function renderPage(onNavigate: (href: string) => void = () => undefined) {
+  const container = document.createElement('div');
+  document.body.append(container);
+  const root = createRoot(container);
+  act(() => {
+    root.render(
+      <ManagerDeskPage
+        leagueClient={new MemoryLeagueClient()}
+        onNavigate={onNavigate}
+        session={session}
+        squadClient={new MemorySquadClient()}
+        teamSelectionClient={new MemoryTeamSelectionClient()}
+      />,
+    );
+  });
+  return { container, root };
+}
+
+describe('ManagerDeskPage', () => {
+  test('combines manager APIs into an actionable landing page', async () => {
+    const destinations: string[] = [];
+    const { container } = renderPage((href) => destinations.push(href));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(container.querySelector('h1')?.textContent).toBe('Managers Desk');
+    expect(container.textContent).toContain('Good to see you, Alex');
+    expect(container.textContent).toContain('Review your starting XI');
+    expect(container.textContent).toContain('Check squad availability');
+    expect(container.textContent).toContain('Review fixture difficulty');
+    expect(container.textContent).toContain('River Rangers');
+
+    const teamButton = [...container.querySelectorAll<HTMLButtonElement>('button')]
+      .find((button) => button.textContent?.includes('Set your team'));
+    await act(async () => {
+      teamButton?.click();
+    });
+    expect(destinations).toContain('/team-selection');
+  });
+
+  test('changes the primary action when the fixture lock is active', async () => {
+    const lockedSelection = {
+      ...selection,
+      fixtureLock: { ...selection.fixtureLock, locked: true, reason: 'Deadline passed.' },
+    };
+    const teamSelectionClient = new MemoryTeamSelectionClient();
+    teamSelectionClient.getTeamSelection = async () => lockedSelection;
+    const container = document.createElement('div');
+    document.body.append(container);
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(
+        <ManagerDeskPage
+          leagueClient={new MemoryLeagueClient()}
+          onNavigate={() => undefined}
+          session={session}
+          squadClient={new MemorySquadClient()}
+          teamSelectionClient={teamSelectionClient}
+        />,
+      );
+    });
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(container.textContent).toContain('Your team is locked in.');
+    expect(container.textContent).toContain('View your team');
+    expect(container.textContent).not.toContain('Choose a captain');
+  });
+});

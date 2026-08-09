@@ -140,7 +140,7 @@ async function runDashboardRecovery(viewport, viewportName) {
   const page = await context.newPage();
   const api = await mockDashboardApi(page);
 
-  await page.goto(`${baseUrl}/dashboard`, { waitUntil: 'domcontentloaded' });
+  await page.goto(`${baseUrl}/dashboard/analytics`, { waitUntil: 'domcontentloaded' });
   await page.getByRole('status').filter({ hasText: 'Loading dashboard data' }).waitFor();
   await page.getByRole('button', { name: /Castle FC.*72/ }).waitFor();
 

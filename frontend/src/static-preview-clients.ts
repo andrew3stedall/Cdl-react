@@ -7,6 +7,11 @@ import type {
 import type { FdrClient, FdrCombinedResponse, FdrFilters } from './fdr-api';
 import type { LeagueClient, LeagueFixture, LeagueSnapshot, LeagueTeam } from './league-api';
 import { LocalStoragePreferenceClient } from './preferences-api';
+import type {
+  SquadApiHistoryResponse,
+  SquadApiSummary,
+  SquadClient,
+} from './squad-api';
 import type { TeamSelectionClient, TeamSelectionFixtureSummary, TeamSelectionPlayer, TeamSelectionSnapshot } from './team-selection-api';
 
 const teams: LeagueTeam[] = [
@@ -332,5 +337,131 @@ export const staticPreviewTeamSelectionClient: TeamSelectionClient = {
         chip.id === chipId ? { ...chip, status: active ? 'active' : 'available' } : chip,
       ),
     };
+  },
+};
+
+const staticPreviewSquadSummary: SquadApiSummary = {
+  manager_team: { id: 'castle-fc', name: 'Castle FC', short_name: 'CAS' },
+  gameweek: {
+    id: currentGameweek.id,
+    name: currentGameweek.name,
+    number: currentGameweek.number,
+    deadline_at: '2026-08-14T17:30:00Z',
+  },
+  players: [
+    {
+      id: 'player-1',
+      display_name: 'Alex Keeper',
+      position: 'GKP',
+      epl_team: { id: 'epl-ars', name: 'Arsenal', short_name: 'ARS' },
+      status: 'owned',
+      points: 48,
+      form: 6.1,
+      value: 5,
+      availability_status: 'available',
+      chance_of_playing_next_round: 100,
+      next_fixture: {
+        fixture_id: 'preview-fixture-1',
+        opponent: { id: 'epl-riv', name: 'River Rangers', short_name: 'RIV' },
+        is_home: true,
+        difficulty: 2,
+      },
+    },
+    {
+      id: 'player-2',
+      display_name: 'Ben Defender',
+      position: 'DEF',
+      epl_team: { id: 'epl-mci', name: 'Manchester City', short_name: 'MCI' },
+      status: 'owned',
+      points: 55,
+      form: 5.8,
+      value: 6.2,
+      availability_status: 'available',
+      chance_of_playing_next_round: 100,
+      next_fixture: {
+        fixture_id: 'preview-fixture-2',
+        opponent: { id: 'epl-riv', name: 'River Rangers', short_name: 'RIV' },
+        is_home: false,
+        difficulty: 3,
+      },
+    },
+    {
+      id: 'player-3',
+      display_name: 'Casey Midfielder',
+      position: 'MID',
+      epl_team: { id: 'epl-ars', name: 'Arsenal', short_name: 'ARS' },
+      status: 'owned',
+      points: 61,
+      form: 7.2,
+      value: 7.5,
+      availability_status: 'available',
+      chance_of_playing_next_round: 100,
+      next_fixture: {
+        fixture_id: 'preview-fixture-3',
+        opponent: { id: 'epl-riv', name: 'River Rangers', short_name: 'RIV' },
+        is_home: true,
+        difficulty: 2,
+      },
+    },
+    {
+      id: 'player-4',
+      display_name: 'Riley Forward',
+      position: 'FWD',
+      epl_team: { id: 'epl-mci', name: 'Manchester City', short_name: 'MCI' },
+      status: 'owned',
+      points: 72,
+      form: 8.3,
+      value: 13.8,
+      availability_status: 'doubtful',
+      availability_news: 'Late fitness test',
+      chance_of_playing_next_round: 75,
+      next_fixture: {
+        fixture_id: 'preview-fixture-4',
+        opponent: { id: 'epl-riv', name: 'River Rangers', short_name: 'RIV' },
+        is_home: false,
+        difficulty: 3,
+      },
+    },
+  ],
+};
+
+export const staticPreviewSquadClient: SquadClient = {
+  async getSummary() {
+    return structuredClone(staticPreviewSquadSummary);
+  },
+  async getScoutingPlayers() {
+    return { players: structuredClone(staticPreviewSquadSummary.players) };
+  },
+  async getTrades() {
+    return { trades: [] };
+  },
+  async getChanges() {
+    return { available_to_add: [] };
+  },
+  async getNotifications() {
+    return {
+      notifications: [{
+        id: 'preview-notification-1',
+        title: 'Fixture difficulty updated',
+        message: 'Review the upcoming fixture run before making your next transfer.',
+        action_href: '/fdr',
+        kind: 'fixture_difficulty',
+      }],
+    };
+  },
+  async getPlayerHistory(): Promise<SquadApiHistoryResponse> {
+    return {
+      player_id: 'preview-player',
+      fetched_at: '2026-08-09T00:00:00Z',
+      response_sha256: 'static-preview',
+      history: [],
+      fixtures: [],
+    };
+  },
+  async createTrade() {
+    return { id: 'preview-trade', status: 'proposed' };
+  },
+  async applyChanges(): Promise<SquadApiSummary> {
+    return structuredClone(staticPreviewSquadSummary);
   },
 };

@@ -101,7 +101,7 @@ def test_interaction_script_exercises_squad_management_journey() -> None:
 
 def test_interaction_script_exercises_dashboard_and_fdr_at_two_widths() -> None:
     content = INTERACTION_SCRIPT.read_text(encoding="utf-8")
-    assert "/dashboard" in content
+    assert "/dashboard/analytics" in content
     assert "Castle FC drill-down" in content
     assert "Casey Midfielder" in content
     assert "/fdr" in content
@@ -119,7 +119,8 @@ def test_interaction_script_exercises_shell_navigation_and_history() -> None:
     assert "Primary navigation" in content
     assert "League navigation" in content
     assert "Account menu for Browser Manager" in content
-    assert "expectPath(page, '/dashboard')" in content
+    assert "expectPath(page, '/')" in content
+    assert "Managers Desk" in content
     assert "aria-expanded" in content
     assert "expectPath(page, '/league/fixtures')" in content
     assert "expectPath(page, '/league/table')" in content

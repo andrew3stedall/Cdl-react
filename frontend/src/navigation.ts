@@ -18,10 +18,10 @@ const squadRouteAliases = ['/squad', '/squad-management', '/team-selection'];
 
 export const primaryNavigationItems: NavigationItem[] = [
   {
-    label: 'Home',
-    href: '/dashboard',
+    label: 'Desk',
+    href: '/',
     featureKey: 'dashboard',
-    description: 'Priorities, deadlines and actions that need attention',
+    description: 'Managers Desk priorities, deadlines and actions',
   },
   {
     label: 'Squad',
@@ -119,16 +119,12 @@ export function isSquadRoute(path: string): boolean {
 }
 
 export function isRouteActive(currentPath: string, itemHref: string): boolean {
-  if (currentPath === '/' && itemHref === '/dashboard') {
+  if (itemHref === '/' && (currentPath === '/' || currentPath === '/dashboard')) {
     return true;
   }
 
   if (itemHref === '/squad') {
     return isSquadRoute(currentPath);
-  }
-
-  if (itemHref === '/') {
-    return currentPath === itemHref;
   }
 
   return currentPath === itemHref || currentPath.startsWith(`${itemHref}/`);

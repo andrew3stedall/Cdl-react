@@ -15,7 +15,7 @@ import {
 describe('navigation configuration', () => {
   test('uses the four global manager destinations', () => {
     expect(primaryNavigationItems.map((item) => item.label)).toEqual([
-      'Home',
+      'Desk',
       'Squad',
       'Market',
       'League',
@@ -59,7 +59,8 @@ describe('navigation configuration', () => {
   test('detects active nested routes and the root home alias', () => {
     expect(isRouteActive('/league', '/league')).toBe(true);
     expect(isRouteActive('/rules', '/league')).toBe(false);
-    expect(isRouteActive('/', '/dashboard')).toBe(true);
+    expect(isRouteActive('/', '/')).toBe(true);
+    expect(isRouteActive('/dashboard', '/')).toBe(true);
   });
 
   test('keeps contextual routes attached to their primary destination', () => {
@@ -88,7 +89,7 @@ describe('navigation configuration', () => {
     expect(getNavigationItemByPath('/squad-management')?.label).toBe('Squad');
     expect(getNavigationItemByPath('/team-selection')?.label).toBe('Squad');
     expect(getNavigationItemByPath('/profile')?.label).toBe('Profile & preferences');
-    expect(getNavigationItemByPath('/')?.label).toBe('Home');
+    expect(getNavigationItemByPath('/')?.label).toBe('Desk');
     expect(getNavigationItemByPath('/modernisation/checkpoint-1')).toBeUndefined();
     expect(getNavigationItemByPath('/modernisation/checkpoint-5')).toBeUndefined();
   });

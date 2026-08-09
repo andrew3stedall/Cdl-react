@@ -12,9 +12,9 @@ const viewports = [
 ];
 
 const routes = [
-  ['overview', '/'],
+  ['manager-desk', '/'],
   ['league', '/league'],
-  ['dashboard', '/dashboard'],
+  ['dashboard-analytics', '/dashboard/analytics'],
   ['fdr', '/fdr'],
   ['squad-management', '/squad-management'],
   ['team-selection', '/team-selection'],
@@ -243,6 +243,10 @@ async function mockApi(page, authenticated = true) {
 
     if (path === '/api/squad/summary') {
       return route.fulfill({ json: screenshotSquadSummary });
+    }
+
+    if (path === '/api/squad/notifications') {
+      return route.fulfill({ json: { notifications: [] } });
     }
 
     if (path === '/api/scouting/players') {

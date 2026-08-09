@@ -120,8 +120,8 @@ function renderApp(initialPath: string, session?: SessionState) {
   return { container, root };
 }
 
-describe('dashboard shell integration', () => {
-  test('routes authenticated managers to Home inside the focused shell', async () => {
+describe('manager desk shell integration', () => {
+  test('routes authenticated managers to Managers Desk from the legacy dashboard path', async () => {
     const { container } = renderApp('/dashboard', authenticatedSession);
 
     await act(async () => {
@@ -129,9 +129,21 @@ describe('dashboard shell integration', () => {
       await Promise.resolve();
     });
 
-    expect(container.querySelector('[aria-current="page"]')?.textContent).toContain('Home');
-    expect(container.textContent).toContain('Manager Analytics Dashboard');
+    expect(container.querySelector('[aria-current="page"]')?.textContent).toContain('Desk');
+    expect(container.textContent).toContain('Managers Desk');
     expect(container.querySelector('[aria-label="Account menu for CDL Manager"]')).not.toBeNull();
+  });
+
+  test('uses the root path as the canonical Managers Desk landing page', async () => {
+    const { container } = renderApp('/', authenticatedSession);
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(container.querySelector('#manager-desk-title')?.textContent).toBe('Managers Desk');
+    expect(container.querySelector('[aria-current="page"]')?.textContent).toContain('Desk');
   });
 
   test('blocks unauthenticated dashboard route before rendering dashboard UI', () => {
@@ -144,6 +156,6 @@ describe('dashboard shell integration', () => {
     const { container } = renderApp('/dashboard', session);
 
     expect(container.textContent).toContain('Sign in to access');
-    expect(container.textContent).not.toContain('Manager Analytics Dashboard');
+    expect(container.textContent).not.toContain('Managers Desk');
   });
 });

@@ -1,0 +1,612 @@
+.manager-desk {
+  gap: 1.15rem;
+  padding: clamp(1rem, 2.4vw, 1.65rem);
+}
+
+.manager-desk__header,
+.manager-desk__section-heading,
+.manager-desk__hero,
+.manager-desk__fixture-meta,
+.manager-desk__fixture-teams,
+.manager-desk__identity,
+.manager-desk__deadline {
+  align-items: center;
+  display: flex;
+}
+
+.manager-desk__header {
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.manager-desk__header h1,
+.manager-desk__header p,
+.manager-desk__section-heading h2,
+.manager-desk__section-heading p,
+.manager-desk__hero h2,
+.manager-desk__hero p {
+  margin: 0;
+}
+
+.manager-desk__header h1 {
+  font-size: clamp(1.65rem, 3vw, 2.15rem);
+  letter-spacing: -0.035em;
+}
+
+.manager-desk__intro {
+  color: var(--muted-foreground);
+  margin-top: 0.38rem !important;
+}
+
+.manager-desk__identity {
+  flex: 0 0 auto;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.manager-desk__identity > div {
+  display: grid;
+  gap: 0.12rem;
+  min-width: 0;
+}
+
+.manager-desk__identity strong,
+.manager-desk__identity span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.manager-desk__identity span:last-child {
+  color: var(--muted-foreground);
+  font-size: 0.78rem;
+}
+
+.manager-desk__team-mark,
+.manager-desk__fixture-badge {
+  align-items: center;
+  background: var(--secondary);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  color: var(--primary);
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 0.7rem;
+  font-weight: 800;
+  height: 2.35rem;
+  justify-content: center;
+  width: 2.35rem;
+}
+
+.manager-desk__data-note {
+  align-items: center;
+  background: var(--secondary);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--destructive);
+  border-radius: var(--radius);
+  color: var(--foreground);
+  display: flex;
+  gap: 0.65rem;
+  padding: 0.65rem 0.8rem;
+}
+
+.manager-desk__data-note span {
+  flex: 1;
+  font-size: 0.84rem;
+}
+
+.manager-desk__data-note .ui-button {
+  min-height: 2rem;
+  padding: 0.35rem 0.55rem;
+}
+
+.manager-desk__hero {
+  background: var(--surface);
+  border-left: 3px solid var(--primary);
+  gap: 1.5rem;
+  justify-content: space-between;
+  padding: clamp(1.15rem, 3vw, 1.7rem);
+}
+
+.manager-desk__hero-copy {
+  min-width: 0;
+}
+
+.manager-desk__hero-kicker {
+  align-items: center;
+  color: var(--primary);
+  display: flex;
+  font-size: 0.76rem;
+  font-weight: 800;
+  gap: 0.45rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.manager-desk__status-dot {
+  background: var(--primary);
+  border-radius: 50%;
+  display: inline-block;
+  height: 0.45rem;
+  width: 0.45rem;
+}
+
+.manager-desk__hero h2 {
+  font-size: clamp(1.25rem, 2.4vw, 1.7rem);
+  letter-spacing: -0.025em;
+  margin-top: 0.55rem;
+}
+
+.manager-desk__hero p {
+  color: var(--muted-foreground);
+  line-height: 1.5;
+  margin-top: 0.42rem;
+  max-width: 38rem;
+}
+
+.manager-desk__hero-action {
+  align-items: flex-end;
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.manager-desk__deadline {
+  color: var(--muted-foreground);
+  font-size: 0.8rem;
+  gap: 0.45rem;
+  white-space: nowrap;
+}
+
+.manager-desk__hero-action .ui-button {
+  white-space: nowrap;
+}
+
+.manager-desk__stats {
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.manager-desk__snapshot {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--foreground);
+  cursor: pointer;
+  display: grid;
+  gap: 0.28rem;
+  min-width: 0;
+  padding: 0.95rem;
+  position: relative;
+  text-align: left;
+  transition: border-color 140ms ease, background 140ms ease;
+}
+
+.manager-desk__snapshot:hover,
+.manager-desk__snapshot:focus-visible {
+  background: var(--secondary);
+  border-color: var(--primary);
+  outline: none;
+}
+
+.manager-desk__snapshot-icon {
+  align-items: center;
+  background: var(--secondary);
+  border-radius: 0.5rem;
+  color: var(--primary);
+  display: inline-flex;
+  height: 2rem;
+  justify-content: center;
+  margin-bottom: 0.35rem;
+  width: 2rem;
+}
+
+.manager-desk__snapshot-label,
+.manager-desk__snapshot-detail {
+  color: var(--muted-foreground);
+  font-size: 0.77rem;
+}
+
+.manager-desk__snapshot strong {
+  font-size: 1.12rem;
+  letter-spacing: -0.02em;
+}
+
+.manager-desk__snapshot--attention {
+  border-left: 3px solid var(--destructive);
+}
+
+.manager-desk__snapshot--attention .manager-desk__snapshot-icon {
+  color: var(--destructive);
+}
+
+.manager-desk__snapshot--positive {
+  border-left: 3px solid var(--primary);
+}
+
+.manager-desk__snapshot-arrow {
+  color: var(--muted-foreground);
+  position: absolute;
+  right: 0.85rem;
+  top: 1rem;
+}
+
+.manager-desk__columns {
+  display: grid;
+  gap: 1.15rem;
+  grid-template-columns: minmax(0, 1.15fr) minmax(19rem, 0.85fr);
+}
+
+.manager-desk__section {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.manager-desk__section-heading {
+  gap: 0.8rem;
+  justify-content: space-between;
+}
+
+.manager-desk__section-heading h2 {
+  font-size: 1.02rem;
+  letter-spacing: -0.015em;
+  margin-top: 0.18rem;
+}
+
+.manager-desk__section-count {
+  align-items: center;
+  background: var(--secondary);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted-foreground);
+  display: inline-flex;
+  font-size: 0.75rem;
+  font-weight: 800;
+  height: 1.7rem;
+  justify-content: center;
+  min-width: 1.7rem;
+  padding: 0 0.45rem;
+}
+
+.manager-desk__heading-icon {
+  color: var(--primary);
+}
+
+.manager-desk__action-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.manager-desk__action {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--foreground);
+  cursor: pointer;
+  display: flex;
+  gap: 0.7rem;
+  min-height: 4.2rem;
+  padding: 0.75rem 0.85rem;
+  text-align: left;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+
+.manager-desk__action:hover,
+.manager-desk__action:focus-visible {
+  background: var(--secondary);
+  border-color: var(--primary);
+  outline: none;
+}
+
+.manager-desk__action--attention {
+  border-left: 3px solid var(--destructive);
+}
+
+.manager-desk__action-icon {
+  align-items: center;
+  background: var(--secondary);
+  border-radius: 0.5rem;
+  color: var(--primary);
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 2.2rem;
+  justify-content: center;
+  width: 2.2rem;
+}
+
+.manager-desk__action--attention .manager-desk__action-icon {
+  color: var(--destructive);
+}
+
+.manager-desk__action-copy {
+  display: grid;
+  gap: 0.18rem;
+  min-width: 0;
+}
+
+.manager-desk__action-copy strong {
+  font-size: 0.86rem;
+}
+
+.manager-desk__action-copy span {
+  color: var(--muted-foreground);
+  font-size: 0.77rem;
+  line-height: 1.35;
+}
+
+.manager-desk__action > svg {
+  color: var(--muted-foreground);
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.manager-desk__all-clear,
+.manager-desk__loading {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--muted-foreground);
+  display: flex;
+  gap: 0.7rem;
+  min-height: 4.2rem;
+  padding: 0.85rem;
+}
+
+.manager-desk__all-clear {
+  color: var(--primary);
+}
+
+.manager-desk__all-clear div {
+  display: grid;
+  gap: 0.16rem;
+}
+
+.manager-desk__all-clear strong {
+  color: var(--foreground);
+  font-size: 0.86rem;
+}
+
+.manager-desk__all-clear span {
+  color: var(--muted-foreground);
+  font-size: 0.77rem;
+}
+
+.manager-desk__fixture-card {
+  display: grid;
+  gap: 0.85rem;
+  min-height: 12.1rem;
+  padding: 0.95rem;
+}
+
+.manager-desk__fixture-card--empty {
+  align-content: center;
+  grid-template-columns: auto 1fr;
+}
+
+.manager-desk__fixture-card--empty > svg {
+  color: var(--primary);
+}
+
+.manager-desk__fixture-card--empty > div {
+  display: grid;
+  gap: 0.22rem;
+}
+
+.manager-desk__fixture-card--empty span {
+  color: var(--muted-foreground);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.manager-desk__fixture-card--empty .ui-button {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
+.manager-desk__fixture-meta {
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  gap: 0.5rem;
+  justify-content: space-between;
+}
+
+.manager-desk__fixture-meta span:first-child {
+  color: var(--primary);
+  font-weight: 800;
+}
+
+.manager-desk__fixture-teams {
+  gap: 0.55rem;
+  justify-content: space-between;
+}
+
+.manager-desk__fixture-team {
+  align-items: center;
+  display: flex;
+  gap: 0.48rem;
+  min-width: 0;
+}
+
+.manager-desk__fixture-team strong {
+  font-size: 0.8rem;
+  max-width: 7.6rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.manager-desk__fixture-badge {
+  height: 2rem;
+  width: 2rem;
+}
+
+.manager-desk__fixture-badge--muted {
+  color: var(--foreground);
+}
+
+.manager-desk__fixture-vs {
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.manager-desk__fixture-card .ui-button {
+  justify-self: start;
+  min-height: 2rem;
+  padding: 0.35rem 0.45rem;
+}
+
+.manager-desk__quick-section {
+  border-top: 1px solid var(--border);
+  padding-top: 1rem;
+}
+
+.manager-desk__quick-actions {
+  display: grid;
+  gap: 0.6rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.manager-desk__quick-action {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--foreground);
+  cursor: pointer;
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: auto 1fr auto;
+  min-height: 3.3rem;
+  padding: 0.65rem 0.75rem;
+  text-align: left;
+}
+
+.manager-desk__quick-action:hover,
+.manager-desk__quick-action:focus-visible {
+  background: var(--secondary);
+  border-color: var(--primary);
+  outline: none;
+}
+
+.manager-desk__quick-action > span {
+  color: var(--primary);
+}
+
+.manager-desk__quick-action strong {
+  font-size: 0.78rem;
+}
+
+.manager-desk__quick-action > svg {
+  color: var(--muted-foreground);
+}
+
+@media (max-width: 980px) {
+  .manager-desk__columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .manager-desk {
+    padding: 1rem;
+  }
+
+  .manager-desk__header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .manager-desk__identity {
+    width: 100%;
+  }
+
+  .manager-desk__hero {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .manager-desk__hero-action {
+    align-items: stretch;
+  }
+
+  .manager-desk__hero-action .ui-button {
+    justify-content: space-between;
+    width: 100%;
+  }
+
+  .manager-desk__stats {
+    grid-template-columns: 1fr;
+  }
+
+  .manager-desk__snapshot {
+    grid-template-columns: auto 1fr auto;
+    grid-template-rows: auto auto;
+    column-gap: 0.7rem;
+    padding: 0.8rem;
+  }
+
+  .manager-desk__snapshot-icon {
+    grid-row: 1 / span 2;
+    margin: 0;
+  }
+
+  .manager-desk__snapshot-label {
+    align-self: end;
+  }
+
+  .manager-desk__snapshot strong {
+    align-self: start;
+    grid-column: 2;
+  }
+
+  .manager-desk__snapshot-detail {
+    align-self: end;
+    grid-column: 3;
+    grid-row: 1 / span 2;
+    max-width: 9rem;
+    text-align: right;
+  }
+
+  .manager-desk__snapshot-arrow {
+    display: none;
+  }
+
+  .manager-desk__quick-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .manager-desk__fixture-teams {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .manager-desk__fixture-vs {
+    display: none;
+  }
+}
+
+@media (max-width: 420px) {
+  .manager-desk__quick-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .manager-desk__data-note {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .manager-desk__data-note span {
+    flex-basis: calc(100% - 2rem);
+  }
+
+  .manager-desk__data-note .ui-button {
+    margin-left: 2.3rem;
+  }
+}

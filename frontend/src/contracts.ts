@@ -21,13 +21,24 @@ export interface ThemePresetTokens {
   colors: {
     background: string;
     foreground: string;
+    card: string;
+    cardForeground: string;
     surface: string;
     surfaceForeground: string;
+    popover: string;
+    popoverForeground: string;
     primary: string;
     primaryForeground: string;
+    secondary: string;
+    secondaryForeground: string;
     muted: string;
     mutedForeground: string;
+    accentForeground: string;
     border: string;
+    input: string;
+    ring: string;
+    destructive: string;
+    destructiveForeground: string;
     accent: string;
   };
   density: 'comfortable' | 'compact';
@@ -36,15 +47,25 @@ export interface ThemePresetTokens {
   chartPaletteHooks: string[];
 }
 
+export type ThemePresetName =
+  | 'teal-light'
+  | 'teal-dark'
+  | 'teal-light-compact'
+  | 'teal-dark-compact';
+
 export interface ThemePreset {
-  name: 'classic' | 'dark' | 'compact';
+  name: ThemePresetName;
   label: string;
+  description: string;
   isDefault: boolean;
   tokens: ThemePresetTokens;
 }
 
 export interface UserPreferences {
-  themePreset: ThemePreset['name'];
+  // Kept as a single persisted value so existing staging databases and the
+  // current preferences API remain compatible while still exposing complete
+  // appearance choices to users.
+  themePreset: ThemePresetName;
 }
 
 export interface TeamSummary {

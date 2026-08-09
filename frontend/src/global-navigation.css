@@ -5,8 +5,7 @@
 @media (max-width: 900px) {
   .global-mobile-navigation {
     align-items: stretch;
-    backdrop-filter: blur(18px);
-    background: color-mix(in srgb, var(--cdl-surface, #111827) 94%, transparent);
+    background: var(--surface);
     border-top: 1px solid var(--cdl-border);
     bottom: 0;
     display: grid;
@@ -34,7 +33,7 @@
   }
 
   .global-mobile-navigation a.active {
-    background: var(--cdl-accent);
+    border-top: 2px solid var(--primary);
     color: var(--cdl-primary);
   }
 

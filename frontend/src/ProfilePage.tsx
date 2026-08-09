@@ -1,0 +1,146 @@
+import type { CSSProperties } from 'react';
+import { Check, Circle, LogOut, Moon, Sun } from 'lucide-react';
+
+import { Button } from './components/ui/button';
+import { Card } from './components/ui/card';
+import type { SessionState, ThemePreset } from './contracts';
+import { themePresets, getThemeMode } from './theme-presets';
+import { useThemePreset } from './theme-preset-provider';
+import './profile-page.css';
+
+interface ProfilePageProps {
+  onSignOut: () => void;
+  session: SessionState;
+}
+
+export function ProfilePage({ onSignOut, session }: ProfilePageProps) {
+  const { preset, saveStatus, setPresetName } = useThemePreset();
+  const user = session.user;
+  const displayName = user?.displayName ?? 'Authenticated user';
+  const initials = displayName
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join('') || 'CD';
+
+  return (
+    <main aria-labelledby="profile-title" className="feature-screen profile-page">
+      <header className="profile-page__header">
+        <p className="eyebrow">Account</p>
+        <h1 id="profile-title">Profile & preferences</h1>
+        <p>Choose how the Castle Draft League workspace looks and behaves for you.</p>
+      </header>
+
+      <div className="profile-page__grid">
+        <Card className="profile-card profile-identity-card">
+          <div className="profile-identity">
+            <span aria-hidden="true" className="profile-avatar">{initials}</span>
+            <div>
+              <p className="profile-card__eyebrow">Manager profile</p>
+              <h2>{displayName}</h2>
+              <p>{user?.email ?? 'No email address available'}</p>
+            </div>
+          </div>
+          <dl className="profile-details">
+            <div>
+              <dt>Role</dt>
+              <dd>{user?.roles.join(', ') || 'Manager'}</dd>
+            </div>
+            <div>
+              <dt>Account ID</dt>
+              <dd>{user?.id ?? 'Unavailable'}</dd>
+            </div>
+          </dl>
+        </Card>
+
+        <Card className="profile-card profile-appearance-card">
+          <div className="profile-card__header">
+            <div>
+              <p className="profile-card__eyebrow">Workspace appearance</p>
+              <h2>Visual preset</h2>
+            </div>
+            <AppearanceIcon preset={preset} />
+          </div>
+          <p className="profile-card__copy">
+            All options use the shared Teal token set. Pick light or dark, then choose the compact
+            density when you want more information on screen.
+          </p>
+          <div aria-label="Visual preset" className="profile-preset-grid" role="group">
+            {themePresets.map((themePreset) => (
+              <PresetOption
+                key={themePreset.name}
+                isSelected={themePreset.name === preset.name}
+                onSelect={() => setPresetName(themePreset.name)}
+                preset={themePreset}
+              />
+            ))}
+          </div>
+          <p aria-live="polite" className="profile-save-status" role="status">
+            {saveStatus === 'saving' ? 'Saving your appearance preference…' : null}
+            {saveStatus === 'saved' ? 'Appearance preference saved.' : null}
+            {saveStatus === 'error' ? 'The server could not save this preference; local fallback is active.' : null}
+          </p>
+        </Card>
+      </div>
+
+      <Card className="profile-card profile-session-card">
+        <div>
+          <p className="profile-card__eyebrow">Session</p>
+          <h2>Sign out of this device</h2>
+          <p>End your current manager session and return to the sign-in screen.</p>
+        </div>
+        <Button onClick={onSignOut} type="button" variant="secondary">
+          <LogOut aria-hidden="true" size={17} />
+          Sign out
+        </Button>
+      </Card>
+    </main>
+  );
+}
+
+function AppearanceIcon({ preset }: { preset: ThemePreset }) {
+  const Icon = getThemeMode(preset) === 'dark' ? Moon : Sun;
+  return <Icon aria-hidden="true" className="profile-appearance-icon" size={20} />;
+}
+
+function PresetOption({
+  isSelected,
+  onSelect,
+  preset,
+}: {
+  isSelected: boolean;
+  onSelect: () => void;
+  preset: ThemePreset;
+}) {
+  const previewStyle = {
+    '--preview-background': preset.tokens.colors.background,
+    '--preview-card': preset.tokens.colors.card,
+    '--preview-primary': preset.tokens.colors.primary,
+    '--preview-border': preset.tokens.colors.border,
+  } as CSSProperties;
+
+  return (
+    <button
+      aria-pressed={isSelected}
+      className={`profile-preset-option${isSelected ? ' is-selected' : ''}`}
+      onClick={onSelect}
+      type="button"
+    >
+      <span aria-hidden="true" className="profile-preset-preview" style={previewStyle}>
+        <span />
+        <span />
+        <span />
+      </span>
+      <span className="profile-preset-copy">
+        <strong>{preset.label}</strong>
+        <small>{preset.description}</small>
+      </span>
+      <span aria-hidden="true" className="profile-preset-check">
+        {isSelected ? <Check size={15} /> : <Circle size={15} />}
+      </span>
+    </button>
+  );
+}
+
+export default ProfilePage;

@@ -1,11 +1,11 @@
 .squad-page .squad-page__summary-card {
-  background: #07131f;
+  background: var(--squad-panel);
 }
 
 .squad-page .squad-page__summary-card small {
-  color: #cbd5e1;
+  color: var(--squad-muted);
 }
 
 .squad-page .squad-page__summary-card strong {
-  color: #ffffff;
+  color: var(--squad-text);
 }

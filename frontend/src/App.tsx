@@ -19,12 +19,12 @@ import { LoginPage } from './LoginPage';
 import { ModernisationCheckpointPage } from './ModernisationCheckpointPage';
 import { isSquadRoute } from './navigation';
 import type { PreferenceClient } from './preferences-api';
+import { ProfilePage } from './ProfilePage';
 import { RulesPage } from './RulesPage';
 import { SquadManagementPage } from './SquadManagementPage';
 import { SquadWorkspacePage } from './SquadWorkspacePage';
 import type { TeamSelectionClient } from './team-selection-api';
-import { getDefaultThemePreset } from './theme-presets';
-import { ThemePresetProvider } from './theme-preset-provider';
+import { ThemePresetProvider, useThemePreset } from './theme-preset-provider';
 
 const rulesVersion = {
   version: '2026.05',
@@ -111,7 +111,6 @@ export function App({
   const [loginPending, setLoginPending] = useState(false);
   const [googleClientId, setGoogleClientId] = useState<string | null>(null);
   const [refreshCount, setRefreshCount] = useState(0);
-  const preset = getDefaultThemePreset();
 
   useEffect(() => {
     let cancelled = false;
@@ -321,7 +320,68 @@ export function App({
     );
   }
 
+  return (
+    <ThemePresetProvider preferenceClient={preferenceClient}>
+      <>
+        <AppShell
+          currentPath={currentPath}
+          isMobileNavigationOpen={isMobileNavigationOpen}
+          refreshCount={refreshCount}
+          onCloseMobileNavigation={() => {
+            setMobileNavigationOpen(false);
+          }}
+          onNavigate={handleNavigate}
+          onOpenMobileNavigation={() => {
+            setMobileNavigationOpen(true);
+          }}
+          onRefresh={() => {
+            setRefreshCount((count) => count + 1);
+            void refreshActiveSession();
+          }}
+          onSignOut={() => void handleSignOut()}
+          session={activeSession}
+        >
+          <AppRouteContent
+            activeSession={activeSession}
+            currentPath={currentPath}
+            dashboardClient={dashboardClient}
+            fdrClient={fdrClient}
+            leagueClient={leagueClient}
+            onSignOut={() => void handleSignOut()}
+            teamSelectionClient={teamSelectionClient}
+          />
+        </AppShell>
+        <GlobalNavigation currentPath={currentPath} onNavigate={handleNavigate} />
+      </>
+    </ThemePresetProvider>
+  );
+}
+
+interface AppRouteContentProps {
+  activeSession: SessionState;
+  currentPath: string;
+  dashboardClient?: DashboardClient;
+  fdrClient?: FdrClient;
+  leagueClient?: LeagueClient;
+  onSignOut: () => void;
+  teamSelectionClient?: TeamSelectionClient;
+}
+
+function AppRouteContent({
+  activeSession,
+  currentPath,
+  dashboardClient,
+  fdrClient,
+  leagueClient,
+  onSignOut,
+  teamSelectionClient,
+}: AppRouteContentProps) {
+  const { preset } = useThemePreset();
   let routeContent = <AnalyticsDashboardPage dashboardClient={dashboardClient} />;
+
+  if (currentPath.startsWith('/profile')) {
+    routeContent = <ProfilePage onSignOut={onSignOut} session={activeSession} />;
+  }
 
   if (currentPath.startsWith('/rules')) {
     routeContent = <RulesPage categories={['squads', 'trades']} sections={featuredRules} preset={preset} />;
@@ -367,31 +427,5 @@ export function App({
     routeContent = <SquadWorkspacePage preset={preset} teamSelectionClient={teamSelectionClient} />;
   }
 
-  return (
-    <ThemePresetProvider preferenceClient={preferenceClient}>
-      <>
-        <AppShell
-          currentPath={currentPath}
-          isMobileNavigationOpen={isMobileNavigationOpen}
-          refreshCount={refreshCount}
-          onCloseMobileNavigation={() => {
-            setMobileNavigationOpen(false);
-          }}
-          onNavigate={handleNavigate}
-          onOpenMobileNavigation={() => {
-            setMobileNavigationOpen(true);
-          }}
-          onRefresh={() => {
-            setRefreshCount((count) => count + 1);
-            void refreshActiveSession();
-          }}
-          onSignOut={() => void handleSignOut()}
-          session={activeSession}
-        >
-          {routeContent}
-        </AppShell>
-        <GlobalNavigation currentPath={currentPath} onNavigate={handleNavigate} />
-      </>
-    </ThemePresetProvider>
-  );
+  return routeContent;
 }

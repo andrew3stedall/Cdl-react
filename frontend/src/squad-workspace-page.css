@@ -11,7 +11,7 @@
 }
 
 .team-selection-panel {
-  background: color-mix(in srgb, var(--cdl-surface, #111827) 78%, transparent);
+  background: var(--card);
   border: 1px solid var(--cdl-border);
   border-radius: var(--cdl-radius);
   min-width: 0;

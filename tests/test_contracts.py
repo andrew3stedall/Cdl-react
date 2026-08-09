@@ -27,9 +27,15 @@ def test_session_state_contract() -> None:
 
 
 def test_theme_preset_contract() -> None:
-    preset = ThemePreset(name="classic", label="Classic", is_default=True)
+    preset = ThemePreset(
+        name="teal-light",
+        label="Teal · Light",
+        description="A bright, restrained workspace with teal actions.",
+        is_default=True,
+    )
 
-    assert preset.name == "classic"
+    assert preset.name == "teal-light"
+    assert preset.description.startswith("A bright")
     assert preset.is_default is True
 
 

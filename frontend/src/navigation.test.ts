@@ -37,7 +37,10 @@ describe('navigation configuration', () => {
       'Knockout',
       'Head-to-head',
     ]);
-    expect(utilityNavigationItems.map((item) => item.label)).toEqual(['Rules']);
+    expect(utilityNavigationItems.map((item) => item.label)).toEqual([
+      'Rules',
+      'Profile & preferences',
+    ]);
   });
 
   test('does not promote checkpoint scaffolding into product navigation', () => {
@@ -84,6 +87,7 @@ describe('navigation configuration', () => {
     expect(getNavigationItemByPath('/squad')?.label).toBe('Squad');
     expect(getNavigationItemByPath('/squad-management')?.label).toBe('Squad');
     expect(getNavigationItemByPath('/team-selection')?.label).toBe('Squad');
+    expect(getNavigationItemByPath('/profile')?.label).toBe('Profile & preferences');
     expect(getNavigationItemByPath('/')?.label).toBe('Home');
     expect(getNavigationItemByPath('/modernisation/checkpoint-1')).toBeUndefined();
     expect(getNavigationItemByPath('/modernisation/checkpoint-5')).toBeUndefined();

@@ -106,6 +106,12 @@ export const utilityNavigationItems: NavigationItem[] = [
     featureKey: 'rules',
     description: 'League rules and validation references',
   },
+  {
+    label: 'Profile & preferences',
+    href: '/profile',
+    featureKey: 'profile',
+    description: 'Account details, appearance and session controls',
+  },
 ];
 
 export function isSquadRoute(path: string): boolean {

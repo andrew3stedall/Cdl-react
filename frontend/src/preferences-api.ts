@@ -1,7 +1,8 @@
-import type { ThemePreset, UserPreferences } from './contracts';
+import type { UserPreferences } from './contracts';
+import { resolveThemePreset } from './theme-presets';
 
 interface ApiUserPreferences {
-  theme_preset: ThemePreset['name'];
+  theme_preset: string;
 }
 
 export interface PreferenceClient {
@@ -11,7 +12,7 @@ export interface PreferenceClient {
 
 function fromApiPreferences(preferences: ApiUserPreferences): UserPreferences {
   return {
-    themePreset: preferences.theme_preset,
+    themePreset: resolveThemePreset(preferences.theme_preset).name,
   };
 }
 
@@ -65,7 +66,7 @@ export class LocalStoragePreferenceClient implements PreferenceClient {
     const storedPreset = localStorage.getItem(this.storageKey);
 
     return {
-      themePreset: storedPreset === 'dark' || storedPreset === 'compact' ? storedPreset : 'classic',
+      themePreset: resolveThemePreset(storedPreset).name,
     };
   }
 

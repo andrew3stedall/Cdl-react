@@ -20,6 +20,8 @@ Contextual navigation appears beneath the header after a primary destination is 
 
 Rules are a support utility rather than a permanent primary destination.
 
+Profile & preferences is an authenticated account utility. It is available from the desktop account menu, mobile account panel, and support navigation.
+
 ## Shell behaviour
 
 `AppShell` provides:
@@ -28,6 +30,7 @@ Rules are a support utility rather than a permanent primary destination.
 - A mobile sheet with primary, current-context, support, appearance, refresh, and sign-out controls.
 - A compact sticky header showing the current section and page rather than the generic “Application Shell” heading.
 - A desktop account menu containing the authenticated identity, visual preset, manual refresh count, and sign-out action.
+- A Profile & preferences route with account identity, appearance selection, save feedback, and sign-out.
 - A horizontally scrollable contextual navigation row that does not duplicate every subroute in the global sidebar.
 - A backdrop and explicit close control for mobile navigation.
 
@@ -47,11 +50,12 @@ The root route is treated as the Overview alias and authenticated sign-in redire
 
 Presets remain configured in `frontend/src/theme-presets.ts`:
 
-- `classic`
-- `dark`
-- `compact`
+- `teal-light`
+- `teal-dark`
+- `teal-light-compact`
+- `teal-dark-compact`
 
-The preset selector has moved from the global action row into the desktop account menu and mobile account panel. Preferences continue to use `GET /api/me/preferences` and `PUT /api/me/preferences`, with the documented local-storage fallback.
+All presets use the same restrained Teal semantic token system. Light/dark mode and density are explicit preset choices, while shared surfaces use shadcn-style Card, Button, Select, Sheet, and Popover guidance. The global system intentionally avoids shadows, glows, gradients, and coloured information highlighting. Preferences continue to use `GET /api/me/preferences` and `PUT /api/me/preferences`, with legacy names normalized in the frontend and the documented local-storage fallback.
 
 ## Accessibility and responsive behaviour
 
@@ -70,5 +74,6 @@ cd frontend
 npm run lint
 npm run test
 npm run build
+npm run typecheck
 node ../scripts/test-app-interactions.mjs
 ```

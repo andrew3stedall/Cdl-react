@@ -61,7 +61,7 @@ class MemoryTeamSelectionClient implements TeamSelectionClient {
 }
 
 class MemoryPreferenceClient implements PreferenceClient {
-  preferences: UserPreferences = { themePreset: 'classic' };
+  preferences: UserPreferences = { themePreset: 'teal-light' };
 
   async getPreferences(): Promise<UserPreferences> {
     return this.preferences;

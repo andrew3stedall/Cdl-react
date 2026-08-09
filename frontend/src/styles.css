@@ -214,7 +214,7 @@ textarea:focus-visible {
 }
 
 .ui-select > span {
-  color: var(--muted-foreground);
+  color: var(--foreground);
   font-size: 0.75rem;
   font-weight: 700;
 }

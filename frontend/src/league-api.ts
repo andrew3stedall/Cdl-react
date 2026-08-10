@@ -32,6 +32,19 @@ export interface LeagueFixture {
   score: LeagueFixtureScore;
 }
 
+export interface FixtureEvent {
+  label: string;
+  team: LeagueTeam;
+  points: number;
+  ruleReference: string | null;
+}
+
+export interface FixtureDetailResponse {
+  fixture: LeagueFixture;
+  events: FixtureEvent[];
+  notes: string[];
+}
+
 export interface LeagueFixturesResponse {
   gameweek: LeagueGameweek | null;
   fixtures: LeagueFixture[];
@@ -93,6 +106,7 @@ export interface LeagueSnapshot {
 
 export interface LeagueClient {
   getLeagueSnapshot(): Promise<LeagueSnapshot>;
+  getFixtureDetail?(fixtureId: string): Promise<FixtureDetailResponse>;
 }
 
 interface ApiTeam {
@@ -127,6 +141,19 @@ interface ApiFixture {
   is_next: boolean;
   detail_available: boolean;
   score: ApiFixtureScore;
+}
+
+interface ApiFixtureEvent {
+  label: string;
+  team: ApiTeam;
+  points: number;
+  rule_reference?: string | null;
+}
+
+interface ApiFixtureDetailResponse {
+  fixture: ApiFixture;
+  events: ApiFixtureEvent[];
+  notes: string[];
 }
 
 interface ApiFixturesResponse {
@@ -200,6 +227,23 @@ export class HttpLeagueClient implements LeagueClient {
       table: mapTableResponse(table),
       knockout: mapKnockoutResponse(knockout),
       headToHead: mapHeadToHeadResponse(headToHead),
+    };
+  }
+
+  async getFixtureDetail(fixtureId: string): Promise<FixtureDetailResponse> {
+    const response = await this.get<ApiFixtureDetailResponse>(
+      `/league/fixtures/${encodeURIComponent(fixtureId)}`,
+    );
+
+    return {
+      fixture: mapFixture(response.fixture),
+      events: response.events.map((event) => ({
+        label: event.label,
+        team: mapTeam(event.team),
+        points: event.points,
+        ruleReference: event.rule_reference ?? null,
+      })),
+      notes: response.notes,
     };
   }
 

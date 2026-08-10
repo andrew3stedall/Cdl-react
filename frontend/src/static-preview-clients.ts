@@ -212,6 +212,16 @@ export const staticPreviewLeagueClient: LeagueClient = {
       },
     };
   },
+  async getFixtureDetail(fixtureId) {
+    return {
+      fixture: { ...currentFixture, id: fixtureId },
+      events: [
+        { label: 'Bonus points awarded', team: teams[0], points: 3, ruleReference: 'league-table' },
+        { label: 'Chip impact recorded', team: teams[0], points: 0, ruleReference: 'chip-use' },
+      ],
+      notes: ['Started fixtures expose detail data once scoring is available.'],
+    };
+  },
 };
 
 const gameweeks = [currentGameweek, nextGameweek, { id: 'gw-14', name: 'Gameweek 14', number: 14 }];

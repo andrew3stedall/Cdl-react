@@ -1,5 +1,14 @@
 # Changelog
 
+## 2026-08-10 - Refresh the League competition workspace
+
+- Reworked the League route into an overview-first competition workspace with
+  focused Fixtures, Table, Knockout, and Head-to-head views.
+- Added responsive fixture cards, status filtering, started-fixture detail
+  drawers, table-source messaging, and explicit loading/error/empty states.
+- Kept legacy migration operations outside the manager-facing League surface;
+  ambiguous history remains governed by archive-only migration rules.
+
 ## 2026-08-10 - Refresh Market discovery workspace
 
 ### Added

@@ -32,8 +32,10 @@ League may retain contextual sub-navigation for:
 ## Current interaction model
 
 The overview is the decision-first entry point. It surfaces the current round,
-next round, leading team, recorded results, and the two secondary competition
-paths before sending the manager into a detailed view.
+next round, leading team, and recorded results, then recommends the most useful
+next view. Detailed competition content is not duplicated on Overview: fixtures,
+standings, knockout, and head-to-head information render only inside their
+selected contextual tab.
 
 - **Fixtures & results** groups current and upcoming fixtures, then provides an
   all-fixtures browser with lightweight status filters.

@@ -2288,7 +2288,7 @@
   .shell-main:has(.squad-page) > .shell-content {
     background: var(--squad-bg);
     max-width: none;
-    padding: 0;
+    padding: 0 0 calc(2rem + var(--cdl-mobile-navigation-clearance));
   }
 
   .squad-page {

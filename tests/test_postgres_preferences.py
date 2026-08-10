@@ -66,22 +66,35 @@ def test_authenticated_preferences_persist_and_remain_isolated() -> None:
     app.dependency_overrides[require_authenticated_session] = lambda: _user("preferences-manager-1")
     client = TestClient(app)
 
-    assert client.put("/api/me/preferences", json={"theme_preset": "teal-dark"}).json() == {
-        "theme_preset": "teal-dark"
+    assert client.put(
+        "/api/me/preferences",
+        json={"theme_preset": "teal-dark", "attack_direction": "down"},
+    ).json() == {
+        "theme_preset": "teal-dark",
+        "attack_direction": "down",
     }
 
     app.dependency_overrides[require_authenticated_session] = lambda: _user("preferences-manager-2")
-    assert client.get("/api/me/preferences").json() == {"theme_preset": "teal-light"}
-    assert client.put("/api/me/preferences", json={"theme_preset": "teal-dark-compact"}).json() == {
-        "theme_preset": "teal-dark-compact"
+    assert client.get("/api/me/preferences").json() == {
+        "theme_preset": "teal-light",
+        "attack_direction": "up",
+    }
+    assert client.put(
+        "/api/me/preferences",
+        json={"theme_preset": "teal-dark-compact", "attack_direction": "up"},
+    ).json() == {
+        "theme_preset": "teal-dark-compact",
+        "attack_direction": "up",
     }
 
     reloaded_repository = PostgreSQLUserPreferenceRepository(session_factory)
     assert reloaded_repository.get_for_user("preferences-manager-1").theme_preset == "teal-dark"
+    assert reloaded_repository.get_for_user("preferences-manager-1").attack_direction == "down"
     assert (
         reloaded_repository.get_for_user("preferences-manager-2").theme_preset
         == "teal-dark-compact"
     )
+    assert reloaded_repository.get_for_user("preferences-manager-2").attack_direction == "up"
 
     with engine.begin() as connection:
         connection.execute(

@@ -34,15 +34,27 @@ def test_user_preferences_endpoint_round_trip() -> None:
         "/api/auth/login",
         json={"email": "manager@example.com", "password": "demo-login-secret"},
     )
-    reset_response = client.put("/api/me/preferences", json={"theme_preset": "teal-light"})
+    reset_response = client.put(
+        "/api/me/preferences",
+        json={"theme_preset": "teal-light", "attack_direction": "up"},
+    )
     initial_response = client.get("/api/me/preferences")
-    update_response = client.put("/api/me/preferences", json={"theme_preset": "teal-dark-compact"})
+    update_response = client.put(
+        "/api/me/preferences",
+        json={"theme_preset": "teal-dark-compact", "attack_direction": "down"},
+    )
     final_response = client.get("/api/me/preferences")
 
     assert login_response.status_code == 200
     assert reset_response.status_code == 200
     assert initial_response.status_code == 200
-    assert initial_response.json() == {"theme_preset": "teal-light"}
+    assert initial_response.json() == {"theme_preset": "teal-light", "attack_direction": "up"}
     assert update_response.status_code == 200
-    assert update_response.json() == {"theme_preset": "teal-dark-compact"}
-    assert final_response.json() == {"theme_preset": "teal-dark-compact"}
+    assert update_response.json() == {
+        "theme_preset": "teal-dark-compact",
+        "attack_direction": "down",
+    }
+    assert final_response.json() == {
+        "theme_preset": "teal-dark-compact",
+        "attack_direction": "down",
+    }

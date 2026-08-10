@@ -284,12 +284,12 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
-async function renderPage(teamSelectionClient?: TeamSelectionClient) {
+async function renderPage(teamSelectionClient?: TeamSelectionClient, attackDirection: 'up' | 'down' = 'up') {
   const container = document.createElement('div');
   document.body.append(container);
   const root = createRoot(container);
   await act(async () => {
-    root.render(<SquadPage preset={getDefaultThemePreset()} teamSelectionClient={teamSelectionClient} />);
+    root.render(<SquadPage attackDirection={attackDirection} preset={getDefaultThemePreset()} teamSelectionClient={teamSelectionClient} />);
     await Promise.resolve();
     await Promise.resolve();
   });
@@ -318,6 +318,7 @@ describe('SquadPage', () => {
     expect(container.querySelector('[aria-label="Matchweek controls"]')).not.toBeNull();
     expect(container.textContent).not.toContain('Total Points');
     expect(container.querySelector('[aria-label="Squad pitch"]')).not.toBeNull();
+    expect(container.querySelector('.squad-page__pitch[data-attack-direction="up"]')).not.toBeNull();
     expect(container.querySelector('.squad-page__pitch-icon')).not.toBeNull();
     expect(Array.from(container.querySelectorAll('.squad-page__chip-toggle')).map((chip) => chip.getAttribute('aria-label'))).toEqual([
       'Triple Captain, available',
@@ -362,6 +363,16 @@ describe('SquadPage', () => {
     const table = container.querySelector('[aria-label="Starting XI players table"]');
     expect(table?.textContent).toContain('Haaland');
     expect(table?.textContent).not.toContain('Pickford');
+  });
+
+  test('reverses the pitch rows when the manager attacks downwards', async () => {
+    const { container } = await renderPage(undefined, 'down');
+
+    const pitchRows = Array.from(container.querySelectorAll('.squad-page__pitch-row'));
+    expect(container.querySelector('[aria-label="Squad pitch"][data-attack-direction="down"]')).not.toBeNull();
+    expect(pitchRows[0]?.className).toContain('position-gkp');
+    expect(pitchRows.at(-1)?.className).toContain('position-fwd');
+    expect(container.querySelector('.squad-page__pitch.attack-down .squad-page__pitch-field')).not.toBeNull();
   });
 
   test('selects a legal replacement directly from pitch view', async () => {

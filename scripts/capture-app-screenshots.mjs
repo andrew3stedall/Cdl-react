@@ -242,6 +242,10 @@ async function mockApi(page, authenticated = true) {
       });
     }
 
+    if (path === '/api/me/preferences') {
+      return route.fulfill({ json: { theme_preset: 'teal-light', attack_direction: 'up' } });
+    }
+
     if (path === '/api/squad/summary') {
       return route.fulfill({ json: screenshotSquadSummary });
     }

@@ -16,6 +16,11 @@ The `0002_auth_preferences` migration adds:
 - `sessions`
 - `user_preferences`
 
+Migration `0011_pitch_attack_direction` extends `user_preferences` with
+`attack_direction`, defaulting to `up`. The preference API accepts `up` and
+`down`; this is a manager-local display preference and does not change lineup
+or scoring rules.
+
 The #61 baseline migration remains append-only and unchanged.
 
 ## Repository modes
@@ -37,6 +42,8 @@ The following routes keep their response shapes:
 - `POST /api/auth/logout`
 - `GET /api/me/preferences`
 - `PUT /api/me/preferences`
+
+Preference responses contain `theme_preset` and `attack_direction`.
 
 ## Handoff
 

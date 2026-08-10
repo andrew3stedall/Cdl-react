@@ -61,11 +61,14 @@ export interface ThemePreset {
   tokens: ThemePresetTokens;
 }
 
+export type AttackDirection = 'up' | 'down';
+
 export interface UserPreferences {
   // Kept as a single persisted value so existing staging databases and the
   // current preferences API remain compatible while still exposing complete
   // appearance choices to users.
   themePreset: ThemePresetName;
+  attackDirection: AttackDirection;
 }
 
 export interface TeamSummary {

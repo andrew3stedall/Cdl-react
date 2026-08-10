@@ -24,7 +24,7 @@ const authenticatedSession: SessionState = {
 };
 
 class MemoryPreferenceClient implements PreferenceClient {
-  preferences: UserPreferences = { themePreset: 'teal-light' };
+  preferences: UserPreferences = { themePreset: 'teal-light', attackDirection: 'up' };
 
   async getPreferences(): Promise<UserPreferences> {
     return this.preferences;
@@ -201,6 +201,7 @@ describe('AppShell integration', () => {
     expect(container.textContent).toContain('Profile & preferences');
     expect(container.textContent).toContain('Test Manager');
     expect(container.textContent).toContain('Sign out');
+    expect(container.querySelector('.profile-direction-option[aria-pressed="true"]')?.textContent).toContain('Attack upwards');
 
     const darkCompactOption = [...container.querySelectorAll<HTMLButtonElement>('.profile-preset-option')]
       .find((option) => option.textContent?.includes('Teal · Dark Compact'));
@@ -213,11 +214,19 @@ describe('AppShell integration', () => {
 
     expect(preferenceClient.preferences.themePreset).toBe('teal-dark-compact');
     expect(document.documentElement.dataset.themeMode).toBe('dark');
+
+    const attackDownOption = container.querySelector<HTMLButtonElement>('.profile-direction-option[aria-pressed="false"]');
+    expect(attackDownOption?.textContent).toContain('Attack downwards');
+    await act(async () => {
+      attackDownOption?.click();
+      await Promise.resolve();
+    });
+    expect(preferenceClient.preferences.attackDirection).toBe('down');
   });
 
   test('passes the persisted preset into page-level density consumers', async () => {
     const preferenceClient = new MemoryPreferenceClient();
-    preferenceClient.preferences = { themePreset: 'teal-dark-compact' };
+    preferenceClient.preferences = { themePreset: 'teal-dark-compact', attackDirection: 'up' };
     const { container } = renderApp({ initialPath: '/rules', preferenceClient });
 
     await act(async () => {

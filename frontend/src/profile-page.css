@@ -36,6 +36,68 @@
   grid-template-columns: minmax(15rem, 0.75fr) minmax(0, 1.5fr);
 }
 
+.profile-pitch-card {
+  gap: 0.8rem;
+}
+
+.profile-direction-grid {
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.profile-direction-option {
+  align-items: center;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--card-foreground);
+  cursor: pointer;
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  min-height: 4.2rem;
+  padding: 0.7rem;
+  text-align: left;
+}
+
+.profile-direction-option:hover,
+.profile-direction-option.is-selected {
+  border-color: var(--primary);
+}
+
+.profile-direction-option:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.profile-direction-icon {
+  align-items: center;
+  background: var(--secondary);
+  border-radius: 50%;
+  color: var(--primary);
+  display: inline-flex;
+  height: 2.1rem;
+  justify-content: center;
+  width: 2.1rem;
+}
+
+.profile-direction-copy {
+  display: grid;
+  gap: 0.18rem;
+  min-width: 0;
+}
+
+.profile-direction-copy strong {
+  font-size: 0.8rem;
+}
+
+.profile-direction-copy small {
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+  line-height: 1.35;
+}
+
 .profile-identity {
   align-items: center;
   display: flex;
@@ -216,7 +278,8 @@
 
 @media (max-width: 760px) {
   .profile-page__grid,
-  .profile-preset-grid {
+  .profile-preset-grid,
+  .profile-direction-grid {
     grid-template-columns: 1fr;
   }
 

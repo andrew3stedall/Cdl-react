@@ -13,3 +13,4 @@ class ThemePreset(BaseModel):
 
 class UserPreferences(BaseModel):
     theme_preset: str = "teal-light"
+    attack_direction: str = "up"

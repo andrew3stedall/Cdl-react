@@ -380,7 +380,7 @@ function AppRouteContent({
   squadClient,
   teamSelectionClient,
 }: AppRouteContentProps) {
-  const { preset } = useThemePreset();
+  const { attackDirection, preset } = useThemePreset();
   let routeContent = (
     <ManagerDeskPage
       leagueClient={leagueClient}
@@ -452,7 +452,7 @@ function AppRouteContent({
   }
 
   if (isSquadRoute(currentPath)) {
-    routeContent = <SquadWorkspacePage preset={preset} teamSelectionClient={teamSelectionClient} />;
+    routeContent = <SquadWorkspacePage attackDirection={attackDirection} preset={preset} teamSelectionClient={teamSelectionClient} />;
   }
 
   return routeContent;

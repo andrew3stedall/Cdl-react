@@ -15,10 +15,13 @@ Depends on: #76
 ## Scope
 
 - Add PostgreSQL schema for users, sessions, and user preferences.
+- Persist each manager's pitch attack direction (`up` or `down`), defaulting to `up`.
 - Add PostgreSQL-backed repositories for users, sessions, and preferences.
 - Wire `postgres` repository mode through the repository factory.
 - Keep `memory` repository mode as the default.
 - Keep auth and preference API response shapes unchanged.
+
+The preference response now includes `attack_direction` alongside `theme_preset`.
 
 ## Out of Scope
 

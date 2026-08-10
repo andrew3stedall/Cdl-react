@@ -32,7 +32,7 @@ import {
 } from 'lucide-react';
 
 import { Button } from './components/ui/button';
-import type { ThemePreset } from './contracts';
+import type { AttackDirection, ThemePreset } from './contracts';
 import { officialFplShirtUrl } from './fpl-shirt-assets';
 import { availabilityIssueLabel, getAvailabilityIssue, hasAvailabilityIssue } from './player-availability';
 import {
@@ -55,6 +55,7 @@ import './squad-page.css';
 import './squad-lineup-groups.css';
 
 interface SquadPageProps {
+  attackDirection?: AttackDirection;
   preset: ThemePreset;
   teamSelectionClient?: TeamSelectionClient;
   squadClient?: SquadClient;
@@ -284,6 +285,7 @@ function mergeLineupPlayers(roster: PlayerView[], lineup: TeamSelectionPlayer[] 
 }
 
 export function SquadPage({
+  attackDirection = 'up',
   preset,
   squadClient = defaultSquadClient,
   teamSelectionClient = defaultTeamSelectionClient,
@@ -824,6 +826,7 @@ export function SquadPage({
       <section className="squad-page__roster-card">
         {squadView === 'pitch' && lineupAvailable ? (
           <SquadPitch
+            attackDirection={attackDirection}
             onSelect={openPlayer}
             onSubstitutionTarget={chooseSubstitutionTargetView}
             players={visibleSquadPlayers}
@@ -1012,6 +1015,7 @@ export function SquadPage({
 }
 
 function SquadPitch({
+  attackDirection,
   onSelect,
   onSubstitutionTarget,
   players,
@@ -1020,6 +1024,7 @@ function SquadPitch({
   substitutionSourceId,
   substitutionTargetId,
 }: {
+  attackDirection: AttackDirection;
   onSelect: (player: PlayerView) => void;
   onSubstitutionTarget: (player: PlayerView) => void;
   players: PlayerView[];
@@ -1031,7 +1036,10 @@ function SquadPitch({
   const starters = players.filter((player) => player.slot === 'starter').sort(sortBySlot);
   const bench = players.filter((player) => player.slot === 'bench').sort(sortBySlot);
   const reserves = players.filter((player) => player.slot === 'reserve').sort(sortBySlot);
-  const rows = pitchPositionOrder
+  const orientedPositionOrder = attackDirection === 'down'
+    ? [...pitchPositionOrder].reverse()
+    : pitchPositionOrder;
+  const rows = orientedPositionOrder
     .map((position) => ({ position, players: starters.filter((player) => player.position === position) }))
     .filter((row) => row.players.length > 0);
   const formation = ['DEF', 'MID', 'FWD']
@@ -1039,10 +1047,12 @@ function SquadPitch({
     .join('-');
 
   return (
-    <section aria-label="Squad pitch" className="squad-page__pitch-shell">
-      <div className="squad-page__pitch">
+    <section aria-label="Squad pitch" className="squad-page__pitch-shell" data-attack-direction={attackDirection}>
+      <div className={`squad-page__pitch attack-${attackDirection}`} data-attack-direction={attackDirection}>
+        <div aria-hidden="true" className="squad-page__pitch-field">
+          <div className="squad-page__pitch-markings"><span /><span /><span /><span /></div>
+        </div>
         <div className="squad-page__formation">{formation}</div>
-        <div aria-hidden="true" className="squad-page__pitch-markings"><span /><span /><span /><span /></div>
         <div className="squad-page__pitch-lineup">
           {rows.map((row) => (
             <div className={`squad-page__pitch-row position-${row.position.toLowerCase()}`} key={row.position}>

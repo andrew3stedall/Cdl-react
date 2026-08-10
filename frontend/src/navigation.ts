@@ -14,6 +14,13 @@ export interface NavigationSection {
   items: NavigationItem[];
 }
 
+const accountNavigationItem: NavigationItem = {
+  label: 'Account',
+  href: '/account',
+  featureKey: 'account',
+  description: 'Account details, appearance, pitch orientation and session controls',
+};
+
 const squadRouteAliases = ['/squad', '/squad-management', '/team-selection'];
 
 export const primaryNavigationItems: NavigationItem[] = [
@@ -141,6 +148,10 @@ export function isPrimaryNavigationItemActive(
 export function getNavigationItemByPath(path: string): NavigationItem | undefined {
   if (path === '/') {
     return primaryNavigationItems[0];
+  }
+
+  if (path === '/account' || path.startsWith('/account/') || path === '/profile' || path.startsWith('/profile/')) {
+    return accountNavigationItem;
   }
 
   if (path === '/fdr' || path.startsWith('/fdr/')) {

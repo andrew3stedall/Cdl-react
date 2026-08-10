@@ -142,7 +142,6 @@ function renderPage(
         <ManagerDeskPage
         leagueClient={new MemoryLeagueClient()}
         onNavigate={onNavigate}
-        onRefresh={() => undefined}
         onSignOut={() => undefined}
         session={session}
         squadClient={squadClient}
@@ -169,6 +168,12 @@ describe('ManagerDeskPage', () => {
     expect(container.textContent).toContain('Check squad availability');
     expect(container.textContent).toContain('Review fixture difficulty');
     expect(container.textContent).toContain('River Rangers');
+    expect(container.textContent).not.toContain('Quick actions');
+    expect(container.textContent).not.toContain('Shortcuts');
+    expect(container.textContent).not.toContain('Refresh data');
+    expect(container.querySelector('[aria-label="Account settings"]')).not.toBeNull();
+    expect(container.querySelector('[aria-label="Account settings"] select')).toBeNull();
+    expect(container.querySelector('[aria-label="Account settings"]')?.textContent).toContain('Account');
 
     const teamButton = [...container.querySelectorAll<HTMLButtonElement>('button')]
       .find((button) => button.textContent?.includes('Set your team'));
@@ -195,7 +200,6 @@ describe('ManagerDeskPage', () => {
           <ManagerDeskPage
           leagueClient={new MemoryLeagueClient()}
           onNavigate={() => undefined}
-          onRefresh={() => undefined}
           onSignOut={() => undefined}
           session={session}
           squadClient={new MemorySquadClient()}

@@ -166,11 +166,20 @@ describe('AppShell integration', () => {
     });
 
     expect(container.querySelector('[aria-label="Account settings"]')).not.toBeNull();
-    expect(container.querySelector('#manager-desk-visual-preset')).not.toBeNull();
-    expect(container.textContent).toContain('Profile & preferences');
-    expect(container.textContent).toContain('Refresh data');
+    expect(container.querySelector('#manager-desk-visual-preset')).toBeNull();
+    expect(container.textContent).toContain('Account');
+    expect(container.textContent).not.toContain('Profile & preferences');
+    expect(container.textContent).not.toContain('Refresh data');
     expect(container.textContent).toContain('Sign out');
     expect(container.querySelector('nav[aria-label="Global mobile navigation"]')).not.toBeNull();
+
+    const accountButton = container.querySelector<HTMLButtonElement>('[aria-label="Account settings"] button');
+    await act(async () => {
+      accountButton?.click();
+      await Promise.resolve();
+    });
+    expect(container.querySelector('main[aria-labelledby="account-title"]')).not.toBeNull();
+    expect(container.textContent).toContain('Refresh data');
   });
 
   test('renders league context from the league API client through the shared shell', async () => {
@@ -192,14 +201,16 @@ describe('AppShell integration', () => {
 
   test('provides an account profile with persisted appearance controls', async () => {
     const preferenceClient = new MemoryPreferenceClient();
-    const { container } = renderApp({ initialPath: '/profile', preferenceClient });
+    const { container } = renderApp({ initialPath: '/account', preferenceClient });
 
     await act(async () => {
       await Promise.resolve();
     });
 
-    expect(container.textContent).toContain('Profile & preferences');
+    expect(container.querySelector('h1')?.textContent).toBe('Account');
+    expect(container.textContent).not.toContain('Profile & preferences');
     expect(container.textContent).toContain('Test Manager');
+    expect(container.textContent).toContain('Refresh data');
     expect(container.textContent).toContain('Sign out');
     expect(container.querySelector('.profile-direction-option[aria-pressed="true"]')?.textContent).toContain('Attack upwards');
 

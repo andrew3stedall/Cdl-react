@@ -272,8 +272,14 @@
   justify-content: space-between;
 }
 
-.profile-session-card .ui-button {
+.profile-session-card__actions {
+  display: flex;
   flex: 0 0 auto;
+  gap: 0.55rem;
+}
+
+.profile-session-card__actions .ui-button {
+  white-space: nowrap;
 }
 
 @media (max-width: 760px) {
@@ -286,5 +292,9 @@
   .profile-session-card {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .profile-session-card__actions {
+    display: grid;
   }
 }

@@ -9,7 +9,6 @@ import {
   Gauge,
   LogOut,
   ArrowRightLeft,
-  RefreshCw,
   Search,
   ShieldCheck,
   Users,
@@ -19,7 +18,6 @@ import {
 import { Button } from './components/ui/button';
 import { Card } from './components/ui/card';
 import type { SessionState } from './contracts';
-import { PresetSelector } from './ManagerAccountSection';
 import {
   getActiveContextItem,
   getContextNavigation,
@@ -37,9 +35,7 @@ interface AppShellProps {
   children: ReactNode;
   currentPath: string;
   onNavigate: (href: string) => void;
-  onRefresh: () => void;
   onSignOut: () => void;
-  refreshCount: number;
   session: SessionState;
 }
 
@@ -57,19 +53,17 @@ const navigationIcons: Record<string, LucideIcon> = {
   'league-knockout': ShieldCheck,
   'league-head-to-head': Users,
   rules: BookOpen,
-  profile: UserRound,
+  account: UserRound,
 };
 
 export function AppShell({
   children,
   currentPath,
   onNavigate,
-  onRefresh,
   onSignOut,
-  refreshCount,
   session,
 }: AppShellProps) {
-  const { preset, saveStatus, setPresetName } = useThemePreset();
+  const { preset } = useThemePreset();
   const contextNavigation = getContextNavigation(currentPath);
   const activePage = getNavigationItemByPath(currentPath) ?? primaryNavigationItems[0];
   const displayName = session.user?.displayName ?? 'Authenticated user';
@@ -119,16 +113,6 @@ export function AppShell({
             className="shell-actions"
             role="group"
           >
-            <Button
-              aria-label="Reload data"
-              className="shell-icon-button desktop-shell-action"
-              onClick={onRefresh}
-              title="Reload data"
-              type="button"
-              variant="ghost"
-            >
-              <RefreshCw aria-hidden="true" size={18} />
-            </Button>
             <a
               aria-label="Open rules"
               className="shell-icon-link desktop-shell-action"
@@ -153,22 +137,15 @@ export function AppShell({
                   <strong>{displayName}</strong>
                   <span>{session.user?.email ?? 'Authenticated session'}</span>
                 </div>
-                <PresetSelector
-                  controlId="desktop-visual-preset"
-                  preset={preset}
-                  saveStatus={saveStatus}
-                  setPresetName={setPresetName}
-                />
-                <p className="refresh-count">Manual data refreshes: {refreshCount}</p>
                 <Button
                   onClick={() => {
-                    onNavigate('/profile');
+                    onNavigate('/account');
                   }}
                   type="button"
                   variant="secondary"
                 >
                   <UserRound aria-hidden="true" size={16} />
-                  Profile & preferences
+                  Account
                 </Button>
                 <Button onClick={signOut} type="button" variant="ghost">
                   <LogOut aria-hidden="true" size={16} />

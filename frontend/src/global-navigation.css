@@ -1,17 +1,34 @@
+:root {
+  --cdl-mobile-navigation-height: 0px;
+  --cdl-mobile-navigation-clearance: 0px;
+}
+
 .global-mobile-navigation {
   display: none;
 }
 
 @media (max-width: 900px) {
+  :root {
+    /* Keep the fixed navigation and page content clearance on one contract. */
+    --cdl-mobile-navigation-height: 4.5rem;
+    --cdl-mobile-navigation-clearance: calc(
+      var(--cdl-mobile-navigation-height) + env(safe-area-inset-bottom)
+    );
+  }
+
   .global-mobile-navigation {
     align-items: stretch;
     background: var(--surface);
     border-top: 1px solid var(--cdl-border);
     bottom: 0;
+    box-sizing: border-box;
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
+    height: var(--cdl-mobile-navigation-clearance);
     left: 0;
-    padding: 0.45rem max(0.45rem, env(safe-area-inset-left)) calc(0.45rem + env(safe-area-inset-bottom)) max(0.45rem, env(safe-area-inset-right));
+    padding: 0.45rem max(0.45rem, env(safe-area-inset-right))
+      calc(0.45rem + env(safe-area-inset-bottom))
+      max(0.45rem, env(safe-area-inset-left));
     position: fixed;
     right: 0;
     z-index: 18;
@@ -32,13 +49,13 @@
     text-decoration: none;
   }
 
+  .global-mobile-navigation a span {
+    white-space: nowrap;
+  }
+
   .global-mobile-navigation a.active {
     border-top: 2px solid var(--primary);
     color: var(--cdl-primary);
-  }
-
-  .shell-main {
-    padding-bottom: calc(4.5rem + env(safe-area-inset-bottom));
   }
 
   .squad-page__mobile-nav {

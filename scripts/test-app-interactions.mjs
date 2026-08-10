@@ -646,6 +646,40 @@ async function testShellAndLeagueNavigation(page, viewportName) {
   await page.locator('#league-title').filter({ hasText: 'Head-to-head records' }).waitFor();
 }
 
+async function testMobileNavigationClearance(page) {
+  const routes = ['/','/league','/dashboard','/fdr','/scouting','/squad-management','/team-selection'];
+
+  for (const route of routes) {
+    await page.goto(baseUrl + route, { waitUntil: 'networkidle' });
+    await page.getByRole('navigation', { name: 'Global mobile navigation' }).waitFor({ state: 'visible' });
+
+    const geometry = await page.evaluate(() => {
+      const navigation = document.querySelector('.global-mobile-navigation');
+      const content = document.querySelector('.shell-content');
+      if (!navigation || !content) return null;
+
+      const navigationRect = navigation.getBoundingClientRect();
+      const contentStyle = getComputedStyle(content);
+      return {
+        navigationBottom: navigationRect.bottom,
+        navigationHeight: navigationRect.height,
+        viewportHeight: window.innerHeight,
+        contentPaddingBottom: Number.parseFloat(contentStyle.paddingBottom),
+      };
+    });
+
+    if (!geometry) {
+      throw new Error(`Expected mobile shell geometry on ${route}.`);
+    }
+    if (Math.abs(geometry.navigationBottom - geometry.viewportHeight) > 1) {
+      throw new Error(`Mobile navigation is not anchored to the viewport on ${route}.`);
+    }
+    if (geometry.contentPaddingBottom < geometry.navigationHeight) {
+      throw new Error(`Mobile content clearance is smaller than the navigation on ${route}.`);
+    }
+  }
+}
+
 async function testUnauthenticatedGuard(page) {
   await page.reload({ waitUntil: 'networkidle' });
   await page.goto(baseUrl + '/team-selection', { waitUntil: 'networkidle' });
@@ -710,6 +744,9 @@ async function runViewport(viewport, viewportName) {
   await testDashboard(page);
   await testFixtureDifficulty(page);
   await testShellAndLeagueNavigation(page, viewportName);
+  if (viewportName === 'mobile') {
+    await testMobileNavigationClearance(page);
+  }
   api.expireSession();
   await testUnauthenticatedGuard(page, viewportName);
   await testLoginAndLogout(page, api, viewportName);

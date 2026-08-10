@@ -318,9 +318,12 @@ describe('SquadPage', () => {
     expect(container.querySelector('[aria-label="Matchweek controls"]')).not.toBeNull();
     expect(container.textContent).not.toContain('Total Points');
     expect(container.querySelector('[aria-label="Squad pitch"]')).not.toBeNull();
-    expect(container.querySelector('img[src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_43-66.webp"]')).not.toBeNull();
+    expect(container.querySelector('img[src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_43-110.webp"]')).not.toBeNull();
     const pitchHaaland = container.querySelector('button[aria-label="View Haaland details"]');
     expect(pitchHaaland?.className).toContain('form-band-steady');
+    expect(pitchHaaland?.querySelector('.squad-page__shirt.large')).not.toBeNull();
+    expect(pitchHaaland?.querySelector('.squad-page__pitch-player-name')?.textContent).toBe('Haaland');
+    expect(pitchHaaland?.textContent).toContain('CHE');
     expect(pitchHaaland?.querySelector('.squad-page__form-dots')).not.toBeNull();
     expect(pitchHaaland?.textContent).not.toContain('7.4');
     expect(container.textContent).not.toContain('PostgreSQL');

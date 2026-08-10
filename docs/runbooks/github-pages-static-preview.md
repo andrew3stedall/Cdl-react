@@ -36,6 +36,7 @@ https://andrew3stedall.github.io/Cdl-react/
 - `/league`
 - `/dashboard`
 - `/fdr`
+- `/scouting`
 - `/squad-management`
 - `/team-selection`
 

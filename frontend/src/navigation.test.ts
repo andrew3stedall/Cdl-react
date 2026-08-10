@@ -15,7 +15,7 @@ import {
 describe('navigation configuration', () => {
   test('uses the four global manager destinations', () => {
     expect(primaryNavigationItems.map((item) => item.label)).toEqual([
-      'Desk',
+      'Home',
       'Squad',
       'Market',
       'League',
@@ -26,12 +26,7 @@ describe('navigation configuration', () => {
     const market = contextualNavigationSections.find((section) => section.key === 'market');
     const league = contextualNavigationSections.find((section) => section.key === 'league');
 
-    expect(market?.items.map((item) => item.label)).toEqual([
-      'Discovery',
-      'Interests',
-      'Trades',
-      'Fixture difficulty',
-    ]);
+    expect(market).toBeUndefined();
     expect(league?.items.map((item) => item.label)).toEqual([
       'Overview',
       'Fixtures',
@@ -39,10 +34,7 @@ describe('navigation configuration', () => {
       'Knockout',
       'Head-to-head',
     ]);
-    expect(utilityNavigationItems.map((item) => item.label)).toEqual([
-      'Rules',
-      'Profile & preferences',
-    ]);
+    expect(utilityNavigationItems.map((item) => item.label)).toEqual(['Rules']);
   });
 
   test('does not promote checkpoint scaffolding into product navigation', () => {
@@ -61,8 +53,7 @@ describe('navigation configuration', () => {
   test('detects active nested routes and the root home alias', () => {
     expect(isRouteActive('/league', '/league')).toBe(true);
     expect(isRouteActive('/rules', '/league')).toBe(false);
-    expect(isRouteActive('/', '/')).toBe(true);
-    expect(isRouteActive('/dashboard', '/')).toBe(true);
+    expect(isRouteActive('/', '/dashboard')).toBe(true);
   });
 
   test('keeps contextual routes attached to their primary destination', () => {
@@ -70,12 +61,12 @@ describe('navigation configuration', () => {
     const squadItem = primaryNavigationItems.find((item) => item.href === '/squad');
     const leagueItem = primaryNavigationItems.find((item) => item.href === '/league');
 
-    expect(getContextNavigation('/scouting')?.key).toBe('market');
-    expect(getContextNavigation('/scouting/interests')?.key).toBe('market');
-    expect(getContextNavigation('/fdr')?.key).toBe('market');
+    expect(getContextNavigation('/scouting')).toBeUndefined();
+    expect(getContextNavigation('/fdr')).toBeUndefined();
     expect(getContextNavigation('/squad')).toBeUndefined();
     expect(getContextNavigation('/league/table')?.key).toBe('league');
     expect(marketItem && isPrimaryNavigationItemActive('/scouting', marketItem)).toBe(true);
+    expect(marketItem && isPrimaryNavigationItemActive('/fdr', marketItem)).toBe(true);
     expect(squadItem && isPrimaryNavigationItemActive('/team-selection', squadItem)).toBe(true);
     expect(leagueItem && isPrimaryNavigationItemActive('/league/fixtures', leagueItem)).toBe(true);
   });
@@ -86,15 +77,12 @@ describe('navigation configuration', () => {
   });
 
   test('resolves product navigation items by path', () => {
-    expect(getNavigationItemByPath('/fdr/team-1')?.label).toBe('Fixture difficulty');
-    expect(getNavigationItemByPath('/scouting/interests')?.label).toBe('Interests');
-    expect(getNavigationItemByPath('/scouting/trades')?.label).toBe('Trades');
+    expect(getNavigationItemByPath('/fdr/team-1')?.label).toBe('Market');
     expect(getNavigationItemByPath('/league/table')?.label).toBe('Table');
     expect(getNavigationItemByPath('/squad')?.label).toBe('Squad');
     expect(getNavigationItemByPath('/squad-management')?.label).toBe('Squad');
     expect(getNavigationItemByPath('/team-selection')?.label).toBe('Squad');
-    expect(getNavigationItemByPath('/profile')?.label).toBe('Profile & preferences');
-    expect(getNavigationItemByPath('/')?.label).toBe('Desk');
+    expect(getNavigationItemByPath('/')?.label).toBe('Home');
     expect(getNavigationItemByPath('/modernisation/checkpoint-1')).toBeUndefined();
     expect(getNavigationItemByPath('/modernisation/checkpoint-5')).toBeUndefined();
   });

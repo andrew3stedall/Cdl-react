@@ -234,44 +234,36 @@ function clickButton(container: HTMLElement, label: string) {
 }
 
 describe('SquadManagementPage', () => {
-  test('starts on the persisted pitch and switches to the complete list', async () => {
+  test('starts on discovery and exposes one market section navigation', async () => {
     const { container } = await renderPage();
 
-    expect(container.textContent).toContain('Exeter Gently');
-    expect(container.querySelector('[aria-label="Squad pitch"]')).not.toBeNull();
-    expect(container.textContent).toContain('Haaland');
-    expect(container.textContent).toContain('Form 7.1');
-    expect(container.querySelector('[aria-label="Bench"]')?.textContent).toContain('Pickford');
-    expect(container.querySelector('button[aria-pressed="true"]')?.textContent).toContain('Pitch');
-    expect(container.textContent).not.toContain('Palmer');
+    expect(container.textContent).toContain('Player market');
+    expect(container.textContent).toContain('Discover players');
+    expect(container.querySelector('[aria-label="Market sections"]')).not.toBeNull();
     expect(container.querySelectorAll('[role="tab"]')).toHaveLength(3);
+    expect(container.querySelector('[aria-selected="true"]')?.textContent).toContain('Discovery');
+    expect(container.querySelector('[aria-label="Players table"]')?.textContent).toContain('Palmer');
+    expect(container.textContent).not.toContain('Fixture difficulty');
+    expect(container.textContent).not.toContain('Squad management');
 
     await act(async () => {
-      clickButton(container, 'List');
+      clickButton(container, 'Interests');
       await Promise.resolve();
     });
 
-    expect(container.querySelector('[aria-label="Players table"]')).not.toBeNull();
-    expect(container.querySelector('button[aria-pressed="true"]')?.textContent).toContain('List');
-
-    await act(async () => {
-      clickButton(container, 'Player pool');
-      await Promise.resolve();
-    });
-
-    expect(container.textContent).toContain('Search the shared player pool');
-    expect(container.textContent).toContain('Palmer');
+    expect(container.querySelector('[aria-label="Player interests"]')).not.toBeNull();
+    expect(container.querySelector('[aria-label="Players table"]')).toBeNull();
   });
 
   test('adds a player to interests from the player pool', async () => {
     const { container } = await renderPage();
     await act(async () => {
-      clickButton(container, 'Player pool');
+      clickButton(container, 'Discovery');
       await Promise.resolve();
     });
 
-    const interestButton = Array.from(container.querySelectorAll('button')).find(
-      (button) => button.textContent?.includes('Interest') && !button.disabled,
+    const interestButton = container.querySelector(
+      'button[aria-label="Add Palmer to interests"]',
     ) as HTMLButtonElement;
     await act(async () => {
       interestButton.click();
@@ -283,10 +275,17 @@ describe('SquadManagementPage', () => {
     expect(container.textContent).toContain('Watching');
 
     await act(async () => {
-      clickButton(container, 'Activity');
+      clickButton(container, 'Interests');
       await Promise.resolve();
     });
-    expect(container.querySelector('section[aria-label="Interests and proposed trades"]')?.textContent).toContain('Palmer');
+    expect(container.querySelector('section[aria-label="Player interests"]')?.textContent).toContain('Palmer');
+
+    await act(async () => {
+      clickButton(container, 'Trades');
+      await Promise.resolve();
+    });
+    expect(container.querySelector('section[aria-label="Proposed trades"]')?.textContent).toContain('No proposed trades');
+    expect(container.querySelector('[aria-label="Player interests"]')).toBeNull();
   });
 
   test('opens player detail with official metrics, availability, and cached history', async () => {

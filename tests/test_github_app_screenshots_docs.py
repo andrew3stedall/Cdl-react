@@ -93,11 +93,13 @@ def test_interaction_script_exercises_team_selection_validation() -> None:
 
 def test_interaction_script_exercises_squad_management_journey() -> None:
     content = INTERACTION_SCRIPT.read_text(encoding="utf-8")
-    assert "/squad-management" in content
-    assert "Exeter Gently squad ready for review." in content
-    assert "View as list" in content
-    assert "Starting XI players table" in content
-    assert "View as pitch" in content
+    assert "/scouting" in content
+    assert "Discovery" in content
+    assert "Search market players" in content
+    assert "Casey Midfielder added to Interests." in content
+    assert "Interests" in content
+    assert "Trades" in content
+    assert "Trade activity" in content
 
 
 def test_interaction_script_exercises_dashboard_and_fdr_at_two_widths() -> None:

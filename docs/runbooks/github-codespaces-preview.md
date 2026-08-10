@@ -41,6 +41,7 @@ Open the forwarded `5173` URL. Try these routes:
 - `/league`
 - `/dashboard`
 - `/fdr`
+- `/scouting`
 - `/squad-management`
 - `/team-selection`
 

@@ -1,35 +1,24 @@
-import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Activity,
   ArrowRightLeft,
-  CalendarDays,
   ChevronRight,
-  CirclePoundSterling,
-  LayoutGrid,
-  List,
   Search,
   SlidersHorizontal,
+  Store,
   Star,
   Users,
   X,
 } from 'lucide-react';
 
 import { Button } from './components/ui/button';
-import { Card } from './components/ui/card';
 import type { ThemePreset } from './contracts';
-import {
-  HttpTeamSelectionClient,
-  type TeamSelectionPlayer,
-  type TeamSelectionSlot,
-} from './team-selection-api';
 import './squad-management.css';
 
 interface SquadManagementPageProps {
   preset: ThemePreset;
 }
 
-type WorkspaceTab = 'squad' | 'players' | 'activity';
-type SquadView = 'pitch' | 'list';
+type MarketTab = 'discovery' | 'interests' | 'trades';
 type PositionFilter = 'all' | 'GKP' | 'DEF' | 'MID' | 'FWD';
 type StatusFilter = 'all' | PlayerView['status'];
 
@@ -48,10 +37,6 @@ interface PlayerView {
   availabilityStatus?: string | null;
   availabilityNews: string;
   chanceOfPlayingNextRound?: number | null;
-  slot?: TeamSelectionSlot;
-  slotOrder?: number;
-  captain?: boolean;
-  viceCaptain?: boolean;
 }
 
 interface PlayerApiResponse {
@@ -69,12 +54,6 @@ interface PlayerApiResponse {
   availability_status?: string | null;
   availability_news?: string;
   chance_of_playing_next_round?: number | null;
-}
-
-interface SquadSummaryApiResponse {
-  manager_team: { name: string };
-  gameweek: { name: string };
-  players: PlayerApiResponse[];
 }
 
 interface ScoutingApiResponse {
@@ -129,8 +108,6 @@ const statusOptions: Array<{ label: string; value: StatusFilter }> = [
   { label: 'Trade targets', value: 'trade_target' },
 ];
 
-const pitchPositionOrder = ['GKP', 'DEF', 'MID', 'FWD'];
-
 function mapPlayer(player: PlayerApiResponse): PlayerView {
   return {
     id: player.id,
@@ -150,101 +127,44 @@ function mapPlayer(player: PlayerApiResponse): PlayerView {
   };
 }
 
-function mergeLineupPlayers(
-  roster: PlayerView[],
-  lineup: TeamSelectionPlayer[] | null,
-): PlayerView[] {
-  if (!lineup) return roster;
-
-  const rosterById = new Map(roster.map((player) => [player.id, player]));
-  const lineupIds = new Set(lineup.map((player) => player.id));
-  const positioned = lineup.map((player) => {
-    const existing = rosterById.get(player.id);
-    return {
-      id: player.id,
-      displayName: existing?.displayName ?? player.name,
-      position: normalizePosition(existing?.position ?? player.position),
-      team: existing?.team ?? player.team,
-      status: existing?.status ?? 'owned',
-      points: existing?.points ?? 0,
-      form: existing?.form ?? 0,
-      value: existing?.value ?? 0,
-      selectedByPercent: existing?.selectedByPercent ?? 0,
-      expectedGoals: existing?.expectedGoals ?? 0,
-      expectedAssists: existing?.expectedAssists ?? 0,
-      availabilityStatus: existing?.availabilityStatus,
-      availabilityNews: existing?.availabilityNews ?? '',
-      chanceOfPlayingNextRound: existing?.chanceOfPlayingNextRound,
-      slot: player.slot,
-      slotOrder: player.slotOrder,
-      captain: player.captain,
-      viceCaptain: player.viceCaptain,
-    } satisfies PlayerView;
-  });
-
-  return [...positioned, ...roster.filter((player) => !lineupIds.has(player.id))];
-}
-
 export function SquadManagementPage({ preset }: SquadManagementPageProps) {
-  const [activeTab, setActiveTab] = useState<WorkspaceTab>(() => (
-    window.location.pathname.startsWith('/scouting') ? 'players' : 'squad'
-  ));
-  const [squadView, setSquadView] = useState<SquadView>('pitch');
+  const [activeTab, setActiveTab] = useState<MarketTab>('discovery');
   const [query, setQuery] = useState('');
   const [positionFilter, setPositionFilter] = useState<PositionFilter>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
-  const [squadPlayers, setSquadPlayers] = useState<PlayerView[]>([]);
   const [scoutingPool, setScoutingPool] = useState<PlayerView[]>([]);
   const [interests, setInterests] = useState<InterestApiResponse[]>([]);
   const [trades, setTrades] = useState<TradeApiResponse[]>([]);
-  const [managerTeam, setManagerTeam] = useState('Current team');
-  const [gameweek, setGameweek] = useState('Gameweek 1');
-  const [lineupAvailable, setLineupAvailable] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerView | null>(null);
   const [playerHistory, setPlayerHistory] = useState<PlayerHistoryApiResponse | null>(null);
   const [playerHistoryStatus, setPlayerHistoryStatus] = useState('');
-  const [status, setStatus] = useState('Loading squad data.');
+  const [status, setStatus] = useState('Loading market data.');
   const drawerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
-    const teamSelectionClient = new HttpTeamSelectionClient();
     void Promise.all([
-      fetch('/api/squad/summary', { credentials: 'include' }),
       fetch('/api/scouting/players', { credentials: 'include' }),
       fetch('/api/interests', { credentials: 'include' }),
       fetch('/api/trades', { credentials: 'include' }),
-      teamSelectionClient.getTeamSelection().catch(() => null),
     ])
-      .then(async ([summaryResponse, scoutingResponse, interestResponse, tradeResponse, lineup]) => {
-        if (!summaryResponse.ok || !scoutingResponse.ok || !interestResponse.ok || !tradeResponse.ok) {
-          const unauthorized = [summaryResponse, scoutingResponse, interestResponse, tradeResponse]
+      .then(async ([scoutingResponse, interestResponse, tradeResponse]) => {
+        if (!scoutingResponse.ok || !interestResponse.ok || !tradeResponse.ok) {
+          const unauthorized = [scoutingResponse, interestResponse, tradeResponse]
             .some((response) => response.status === 401);
-          throw new Error(unauthorized ? 'Sign in to manage squad activity.' : 'Unable to load squad activity.');
+          throw new Error(unauthorized ? 'Sign in to manage market activity.' : 'Unable to load market activity.');
         }
-        const [summary, scouting, persistedInterests, persistedTrades] = await Promise.all([
-          summaryResponse.json() as Promise<SquadSummaryApiResponse>,
+        const [scouting, persistedInterests, persistedTrades] = await Promise.all([
           scoutingResponse.json() as Promise<ScoutingApiResponse>,
           interestResponse.json() as Promise<InterestApiResponse[]>,
           tradeResponse.json() as Promise<{ trades?: TradeApiResponse[] }>,
         ]);
-        return { summary, scouting, persistedInterests, persistedTrades, lineup };
+        return { scouting, persistedInterests, persistedTrades };
       })
-      .then(({ summary, scouting, persistedInterests, persistedTrades, lineup }) => {
-        const roster = summary.players.map(mapPlayer);
-        const hasLineup = Boolean(lineup?.players.length);
-        setSquadPlayers(mergeLineupPlayers(roster, lineup?.players ?? null));
+      .then(({ scouting, persistedInterests, persistedTrades }) => {
         setScoutingPool(scouting.players.map(mapPlayer));
-        setManagerTeam(summary.manager_team.name);
-        setGameweek(summary.gameweek.name);
         setInterests(persistedInterests);
         setTrades(persistedTrades.trades ?? []);
-        setLineupAvailable(hasLineup);
-        if (!hasLineup) setSquadView('list');
-        setStatus(
-          hasLineup
-            ? `${summary.manager_team.name} lineup loaded from staging PostgreSQL.`
-            : `${summary.manager_team.name} roster loaded. Pitch view is unavailable until a lineup is saved.`,
-        );
+        setStatus('Market data is up to date.');
       })
       .catch((error: Error) => setStatus(error.message));
   }, []);
@@ -298,11 +218,6 @@ export function SquadManagementPage({ preset }: SquadManagementPageProps) {
     const matchesStatus = statusFilter === 'all' || effectiveStatus === statusFilter;
     return matchesQuery && matchesPosition && matchesStatus;
   });
-  const squadValue = squadPlayers.reduce((total, player) => total + player.value, 0);
-  const squadPoints = squadPlayers.reduce((total, player) => total + player.points, 0);
-  const averagePoints = squadPlayers.length > 0 ? Math.round(squadPoints / squadPlayers.length) : 0;
-  const activityCount = interests.length + trades.length;
-
   async function registerInterest(player: PlayerView) {
     const response = await fetch('/api/interests', {
       method: 'POST',
@@ -332,92 +247,32 @@ export function SquadManagementPage({ preset }: SquadManagementPageProps) {
   });
 
   return (
-    <main aria-labelledby="squad-management-title" className="feature-screen squad-workspace" data-density={preset.tokens.density}>
+    <main aria-labelledby="market-title" className="feature-screen squad-workspace market-workspace" data-density={preset.tokens.density}>
       <header className="squad-page-header">
         <div className="squad-title-lockup">
-          <span aria-hidden="true" className="squad-title-mark"><LayoutGrid size={24} /></span>
+          <span aria-hidden="true" className="squad-title-mark"><Store size={24} /></span>
           <div>
-            <p className="eyebrow">My team</p>
-            <h1 id="squad-management-title">Squad management</h1>
-            <p className="squad-page-description">{managerTeam} · {gameweek}</p>
+            <p className="eyebrow">Market</p>
+            <h1 id="market-title">Player market</h1>
+            <p className="squad-page-description">Discover players, set draw preferences and manage trades.</p>
           </div>
-        </div>
-        <div className="squad-header-actions">
-          <Button onClick={() => setActiveTab('players')} type="button" variant="secondary">
-            <Search aria-hidden="true" size={16} />
-            Find players
-          </Button>
-          <Button onClick={() => setActiveTab('activity')} type="button">
-            <Activity aria-hidden="true" size={16} />
-            Activity
-            {activityCount > 0 ? <span className="squad-action-count">{activityCount}</span> : null}
-          </Button>
         </div>
       </header>
 
       <p className="squad-load-status" role="status">{status}</p>
 
-      <section aria-label="Squad summary" className="squad-metric-grid">
-        <MetricCard icon={<Users aria-hidden="true" size={18} />} label="Players" value={String(squadPlayers.length)} />
-        <MetricCard icon={<CirclePoundSterling aria-hidden="true" size={18} />} label="Squad value" value={`£${squadValue.toFixed(1)}m`} />
-        <MetricCard icon={<Activity aria-hidden="true" size={18} />} label="Average points" value={String(averagePoints)} />
-        <MetricCard icon={<CalendarDays aria-hidden="true" size={18} />} label="Current period" value={gameweek} />
-      </section>
-
       <section className="squad-content-card">
-        <div aria-label="Squad workspace sections" className="squad-tabs" role="tablist">
-          <WorkspaceTabButton activeTab={activeTab} count={squadPlayers.length} label="My squad" tab="squad" onSelect={setActiveTab} />
-          <WorkspaceTabButton activeTab={activeTab} count={scoutingPool.length} label="Player pool" tab="players" onSelect={setActiveTab} />
-          <WorkspaceTabButton activeTab={activeTab} count={activityCount} label="Activity" tab="activity" onSelect={setActiveTab} />
+        <div aria-label="Market sections" className="squad-tabs market-tabs" role="tablist">
+          <WorkspaceTabButton activeTab={activeTab} count={scoutingPool.length} label="Discovery" tab="discovery" onSelect={setActiveTab} />
+          <WorkspaceTabButton activeTab={activeTab} count={interests.length} label="Interests" tab="interests" onSelect={setActiveTab} />
+          <WorkspaceTabButton activeTab={activeTab} count={trades.length} label="Trades" tab="trades" onSelect={setActiveTab} />
         </div>
 
-        {activeTab === 'squad' ? (
-          <div aria-labelledby="squad-tab" className="squad-tab-panel" id="squad-panel" role="tabpanel">
-            <div className="squad-view-header">
-              <SectionHeading
-                description="Review the persisted lineup on the pitch or switch to a complete roster table."
-                title="Current squad"
-              />
-              <div aria-label="Squad view" className="squad-view-toggle" role="group">
-                <button
-                  aria-pressed={squadView === 'pitch'}
-                  disabled={!lineupAvailable}
-                  onClick={() => setSquadView('pitch')}
-                  type="button"
-                >
-                  <LayoutGrid aria-hidden="true" size={17} />
-                  Pitch
-                </button>
-                <button
-                  aria-pressed={squadView === 'list'}
-                  onClick={() => setSquadView('list')}
-                  type="button"
-                >
-                  <List aria-hidden="true" size={17} />
-                  List
-                </button>
-              </div>
-            </div>
-
-            {squadView === 'pitch' && lineupAvailable ? (
-              <SquadPitch onSelect={openPlayer} players={squadPlayers} />
-            ) : (
-              <PlayerTable
-                emptyMessage="No drafted players found."
-                interestedPlayerIds={interestedPlayerIds}
-                onInterest={registerInterest}
-                onSelect={openPlayer}
-                players={squadPlayers}
-              />
-            )}
-          </div>
-        ) : null}
-
-        {activeTab === 'players' ? (
-          <div aria-labelledby="players-tab" className="squad-tab-panel" id="players-panel" role="tabpanel">
+        {activeTab === 'discovery' ? (
+          <div aria-labelledby="discovery-tab" className="squad-tab-panel" id="discovery-panel" role="tabpanel">
             <SectionHeading
-              description="Search the shared player pool, then open a player for detail or add them to your interests."
-              title="Player pool"
+              description="Search the player pool, compare the evidence and add players to your draw preferences."
+              title="Discover players"
             />
             <section aria-label="Player pool filters" className="squad-filter-toolbar">
               <label className="squad-search-field">
@@ -464,62 +319,68 @@ export function SquadManagementPage({ preset }: SquadManagementPageProps) {
           </div>
         ) : null}
 
-        {activeTab === 'activity' ? (
-          <div aria-labelledby="activity-tab" className="squad-tab-panel" id="activity-panel" role="tabpanel">
+        {activeTab === 'interests' ? (
+          <div aria-labelledby="interests-tab" className="squad-tab-panel" id="interests-panel" role="tabpanel">
             <SectionHeading
-              description="Interests and trade proposals stay separate from the lineup until you need them."
-              title="Transfer activity"
+              description="Your ranked draw preferences, kept separate from watchlist and trade activity."
+              title="Interests"
             />
-            <section aria-label="Interests and proposed trades" className="squad-activity-grid">
-              <Card className="squad-activity-card">
-                <header className="squad-activity-heading">
-                  <div>
-                    <p className="eyebrow">Watchlist</p>
-                    <h2>Interests</h2>
-                  </div>
-                  <span className="squad-count-badge">{interests.length}</span>
-                </header>
-                {interests.length === 0 ? <EmptyState message="No interests registered yet." /> : null}
-                <div className="squad-activity-list">
-                  {interests.map((interest) => {
-                    const player = scoutingPool.find((candidate) => candidate.id === interest.player.id);
-                    return (
-                      <button
-                        className="squad-activity-item"
-                        key={interest.id}
-                        onClick={() => player && openPlayer(player)}
-                        type="button"
-                      >
-                        <span className="squad-player-avatar">{initials(interest.player.display_name)}</span>
-                        <span><strong>{interest.player.display_name}</strong><small>Registered interest</small></span>
-                        <ChevronRight aria-hidden="true" size={17} />
-                      </button>
-                    );
-                  })}
+            <section aria-label="Player interests" className="squad-activity-card market-list-card">
+              <header className="squad-activity-heading">
+                <div>
+                  <p className="eyebrow">Draw preferences</p>
+                  <h2>{interests.length ? `${interests.length} registered` : 'No interests yet'}</h2>
                 </div>
-              </Card>
+                <span className="squad-count-badge">{interests.length}</span>
+              </header>
+              {interests.length === 0 ? <EmptyState message="Add players from Discovery to build your draw preference list." /> : null}
+              <div className="squad-activity-list">
+                {interests.map((interest) => {
+                  const player = scoutingPool.find((candidate) => candidate.id === interest.player.id);
+                  return (
+                    <button
+                      className="squad-activity-item"
+                      key={interest.id}
+                      onClick={() => player && openPlayer(player)}
+                      type="button"
+                    >
+                      <span className="squad-player-avatar">{initials(interest.player.display_name)}</span>
+                      <span><strong>{interest.player.display_name}</strong><small>Registered interest</small></span>
+                      <ChevronRight aria-hidden="true" size={17} />
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+          </div>
+        ) : null}
 
-              <Card className="squad-activity-card">
-                <header className="squad-activity-heading">
-                  <div>
-                    <p className="eyebrow">Negotiations</p>
-                    <h2>Proposed trades</h2>
-                  </div>
-                  <span className="squad-count-badge">{trades.length}</span>
-                </header>
-                {trades.length === 0 ? <EmptyState message="No proposed trades." /> : null}
-                <div className="squad-activity-list">
-                  {trades.map((trade) => (
-                    <div className="squad-trade-item" key={trade.id}>
-                      <span className="squad-trade-icon"><ArrowRightLeft aria-hidden="true" size={17} /></span>
-                      <span>
-                        <strong>Trade {trade.status}: {trade.assets.map((asset) => asset.player.display_name).join(' ↔ ')}</strong>
-                        <small>Open negotiation</small>
-                      </span>
-                    </div>
-                  ))}
+        {activeTab === 'trades' ? (
+          <div aria-labelledby="trades-tab" className="squad-tab-panel" id="trades-panel" role="tabpanel">
+            <SectionHeading
+              description="Review proposed player swaps and keep negotiations in one place."
+              title="Trades"
+            />
+            <section aria-label="Proposed trades" className="squad-activity-card market-list-card">
+              <header className="squad-activity-heading">
+                <div>
+                  <p className="eyebrow">Negotiations</p>
+                  <h2>{trades.length ? `${trades.length} proposed` : 'No proposed trades'}</h2>
                 </div>
-              </Card>
+                <span className="squad-count-badge">{trades.length}</span>
+              </header>
+              {trades.length === 0 ? <EmptyState message="Trade proposals will appear here when a negotiation is started." /> : null}
+              <div className="squad-activity-list">
+                {trades.map((trade) => (
+                  <div className="squad-trade-item" key={trade.id}>
+                    <span className="squad-trade-icon"><ArrowRightLeft aria-hidden="true" size={17} /></span>
+                    <span>
+                      <strong>Trade {trade.status}: {trade.assets.map((asset) => asset.player.display_name).join(' ↔ ')}</strong>
+                      <small>Open negotiation</small>
+                    </span>
+                  </div>
+                ))}
+              </div>
             </section>
           </div>
         ) : null}
@@ -614,93 +475,6 @@ export function SquadManagementPage({ preset }: SquadManagementPageProps) {
   );
 }
 
-function SquadPitch({ players, onSelect }: { players: PlayerView[]; onSelect: (player: PlayerView) => void }) {
-  const starters = players
-    .filter((player) => player.slot === 'starter')
-    .sort((left, right) => (left.slotOrder ?? 0) - (right.slotOrder ?? 0));
-  const bench = players
-    .filter((player) => player.slot === 'bench' || player.slot === 'reserve')
-    .sort((left, right) => (left.slotOrder ?? 0) - (right.slotOrder ?? 0));
-  const rows = pitchPositionOrder
-    .map((position) => ({ position, players: starters.filter((player) => player.position === position) }))
-    .filter((row) => row.players.length > 0);
-  const formation = pitchPositionOrder
-    .slice(1)
-    .map((position) => starters.filter((player) => player.position === position).length)
-    .filter((count) => count > 0)
-    .join('-');
-
-  return (
-    <section aria-label="Squad pitch" className="squad-pitch-shell">
-      <header className="squad-pitch-meta">
-        <span><strong>{starters.length}</strong> starters</span>
-        <span><strong>{bench.length}</strong> bench</span>
-        <span><strong>{formation || '—'}</strong> formation</span>
-      </header>
-      <div className="squad-pitch">
-        <div aria-hidden="true" className="squad-pitch-markings">
-          <span className="pitch-halfway" />
-          <span className="pitch-centre-circle" />
-          <span className="pitch-box pitch-box-top" />
-          <span className="pitch-box pitch-box-bottom" />
-        </div>
-        <div className="squad-pitch-lineup">
-          {rows.map((row) => (
-            <div className={`squad-pitch-row pitch-row-${row.position.toLowerCase()}`} key={row.position}>
-              {row.players.map((player) => <PitchPlayerCard key={player.id} onSelect={onSelect} player={player} />)}
-            </div>
-          ))}
-        </div>
-      </div>
-      <section aria-label="Bench" className="squad-bench">
-        <header><h3>Bench</h3><span>{bench.length} players</span></header>
-        <div className="squad-bench-grid">
-          {bench.map((player) => <PitchPlayerCard compact key={player.id} onSelect={onSelect} player={player} />)}
-        </div>
-      </section>
-    </section>
-  );
-}
-
-function PitchPlayerCard({
-  compact = false,
-  onSelect,
-  player,
-}: {
-  compact?: boolean;
-  onSelect: (player: PlayerView) => void;
-  player: PlayerView;
-}) {
-  return (
-    <button
-      aria-label={`View ${player.displayName} details`}
-      className={`pitch-player-card ${compact ? 'compact' : ''}`}
-      onClick={() => onSelect(player)}
-      type="button"
-    >
-      <span className={`squad-position-badge position-${player.position.toLowerCase()}`}>{player.position}</span>
-      <span className="pitch-player-avatar">{initials(player.displayName)}</span>
-      <strong>{player.displayName}</strong>
-      <small>{player.team}</small>
-      <span className="pitch-player-metrics">
-        <span><strong>{player.points}</strong> pts</span>
-        <span>Form {player.form.toFixed(1)}</span>
-      </span>
-      {player.captain ? <span className="pitch-captain">C</span> : null}
-      {player.viceCaptain ? <span className="pitch-captain">VC</span> : null}
-    </button>
-  );
-}
-
-function MetricCard({ icon, label, value }: { icon: ReactNode; label: string; value: string }) {
-  return (
-    <Card className="squad-metric-card">
-      <span className="squad-metric-icon">{icon}</span>
-      <div><span>{label}</span><strong>{value}</strong></div>
-    </Card>
-  );
-}
-
 function WorkspaceTabButton({
   activeTab,
   count,
@@ -708,11 +482,11 @@ function WorkspaceTabButton({
   onSelect,
   tab,
 }: {
-  activeTab: WorkspaceTab;
+  activeTab: MarketTab;
   count: number;
   label: string;
-  onSelect: (tab: WorkspaceTab) => void;
-  tab: WorkspaceTab;
+  onSelect: (tab: MarketTab) => void;
+  tab: MarketTab;
 }) {
   const active = activeTab === tab;
   return (

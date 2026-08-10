@@ -282,7 +282,7 @@ async function mockApi(page, { authenticated = true, teamSelectionLocked = false
       }
       const interest = {
         id: 'interest-primary-casey',
-        player: { id: 'player-3', display_name: 'Casey Midfielder' },
+        player: scoutingPlayers.players.find((player) => player.id === 'player-3') ?? scoutingPlayers.players[0],
         gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1 },
         note: null,
       };
@@ -544,18 +544,24 @@ async function testManagerDesk(page) {
   await expectPath(page, '/team-selection');
 }
 
-async function testSquadManagement(page) {
-  await page.goto(`${baseUrl}/squad-management`, { waitUntil: 'networkidle' });
-  await expectStatus(page, 'Exeter Gently squad ready for review.');
+async function testMarket(page) {
+  await page.goto(`${baseUrl}/scouting`, { waitUntil: 'networkidle' });
+  await expectStatus(page, 'Market data is current for this gameweek.');
 
-  await page.getByRole('button', { name: 'View as pitch' }).click();
-  const pitch = page.locator('section[aria-label="Squad pitch"]');
-  await pitch.waitFor();
-  await pitch.locator('section[aria-label="Bench"]').waitFor();
-  await page.getByRole('button', { name: 'View as list' }).click();
-  await page.locator('[aria-label="Starting XI players table"]').waitFor();
-  await page.getByRole('button', { name: 'View as pitch' }).click();
-  await pitch.waitFor();
+  await page.getByRole('tab', { name: /Discovery/ }).click();
+  const search = page.getByRole('textbox', { name: 'Search market players' });
+  await search.fill('Casey');
+  const interest = page.getByRole('button', { name: 'Add Casey Midfielder to Interests' });
+  await interest.waitFor();
+  await interest.click();
+  // Market notice: Casey Midfielder added to Interests.
+
+  await page.getByRole('tab', { name: /Interests/ }).click();
+  await page.locator('section[aria-label="Your Interests"]').getByText('Casey Midfielder', { exact: true }).waitFor();
+
+  await page.getByRole('tab', { name: /Trades/ }).click();
+  await expectPath(page, '/scouting/trades');
+  // Trade activity is the third Market workspace section.
 }
 
 async function testDashboard(page) {
@@ -700,7 +706,7 @@ async function runViewport(viewport, viewportName) {
 
   await testManagerDesk(page);
   await testTeamSelection(page);
-  await testSquadManagement(page);
+  await testMarket(page);
   await testDashboard(page);
   await testFixtureDifficulty(page);
   await testShellAndLeagueNavigation(page, viewportName);

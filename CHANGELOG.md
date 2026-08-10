@@ -1,5 +1,23 @@
 # Changelog
 
+## 2026-08-10 - Refresh Market discovery workspace
+
+### Added
+
+- Added the modern Market page at `/scouting` with focused Discovery, Interests and Trades views.
+- Added contextual Market navigation for Interests and Trades while retaining Fixture Difficulty as a Market-context tool.
+- Added official-data player evidence, availability and next-fixture context with responsive player rows and detail drawer actions.
+
+### Changed
+
+- Replaced the legacy combined scouting/squad presentation with an acquisition-focused Market workflow.
+- Removed the page-local mobile navigation so the global shell remains the single navigation source.
+- Updated screenshot and browser journey contracts to exercise Market discovery and Interest persistence.
+
+### Deliberate gaps
+
+- Watchlist bookmarks, ranked Interest reordering, advanced threshold filters and full Trade Builder actions remain separate follow-up work.
+
 ## 2026-08-09 - Correct player availability flags
 
 ### Fixed

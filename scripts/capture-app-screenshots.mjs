@@ -16,7 +16,8 @@ const routes = [
   ['league', '/league'],
   ['dashboard-analytics', '/dashboard/analytics'],
   ['fdr', '/fdr'],
-  ['squad-management', '/squad-management'],
+  ['squad', '/squad-management'],
+  ['market', '/scouting'],
   ['team-selection', '/team-selection'],
 ];
 

@@ -6,7 +6,7 @@ Plan the modern replacement for the legacy Squad Management screen, including pl
 
 ## Status
 
-Implemented foundation. Persistent squad, interest, scouting, and transfer storage remain pending.
+Implemented foundation. The legacy combined screen remains mapped here for migration evidence, while the modern user-facing ownership is split between **Squad** and **Market**. Persistent squad, Interest, and transfer storage remain pending validation in the production path.
 
 ## Legacy Inventory
 
@@ -39,6 +39,16 @@ Managers view squad totals, inspect players, filter scouting lists, register int
 - Python service classes for squad, scouting, interest, and trade workflows.
 - Pydantic models for players, filters, interests, trades, squad summaries, and validation errors.
 - Repository classes for squads, players, teams, interests, trades, and gameweeks.
+
+The modern route ownership is now:
+
+- `/squad` for season-long squad health, lineup state, and squad actions;
+- `/scouting` for Market discovery;
+- `/scouting/interests` for draw-specific Interests;
+- `/scouting/trades` for trade activity;
+- `/fdr` for contextual fixture difficulty.
+
+The legacy page remains a behavioural reference. It must not be recreated as one overloaded page in the modern shell.
 
 ## API Requirements
 

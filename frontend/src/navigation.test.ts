@@ -28,6 +28,8 @@ describe('navigation configuration', () => {
 
     expect(market?.items.map((item) => item.label)).toEqual([
       'Discovery',
+      'Interests',
+      'Trades',
       'Fixture difficulty',
     ]);
     expect(league?.items.map((item) => item.label)).toEqual([
@@ -69,6 +71,7 @@ describe('navigation configuration', () => {
     const leagueItem = primaryNavigationItems.find((item) => item.href === '/league');
 
     expect(getContextNavigation('/scouting')?.key).toBe('market');
+    expect(getContextNavigation('/scouting/interests')?.key).toBe('market');
     expect(getContextNavigation('/fdr')?.key).toBe('market');
     expect(getContextNavigation('/squad')).toBeUndefined();
     expect(getContextNavigation('/league/table')?.key).toBe('league');
@@ -84,6 +87,8 @@ describe('navigation configuration', () => {
 
   test('resolves product navigation items by path', () => {
     expect(getNavigationItemByPath('/fdr/team-1')?.label).toBe('Fixture difficulty');
+    expect(getNavigationItemByPath('/scouting/interests')?.label).toBe('Interests');
+    expect(getNavigationItemByPath('/scouting/trades')?.label).toBe('Trades');
     expect(getNavigationItemByPath('/league/table')?.label).toBe('Table');
     expect(getNavigationItemByPath('/squad')?.label).toBe('Squad');
     expect(getNavigationItemByPath('/squad-management')?.label).toBe('Squad');

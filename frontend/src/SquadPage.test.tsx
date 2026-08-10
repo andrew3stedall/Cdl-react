@@ -96,6 +96,12 @@ beforeEach(() => {
               selected_by_percent: 62.1,
               availability_status: 'a',
               chance_of_playing_next_round: null,
+              next_fixture: {
+                fixture_id: 'fixture-haaland',
+                opponent: { id: 'che', name: 'Chelsea', short_name: 'CHE' },
+                difficulty: 3,
+                is_home: true,
+              },
             },
             {
               id: 'fpl-235',
@@ -110,6 +116,12 @@ beforeEach(() => {
               selected_by_percent: 18.0,
               availability_status: 'available',
               chance_of_playing_next_round: 100,
+              next_fixture: {
+                fixture_id: 'fixture-pickford',
+                opponent: { id: 'ars', name: 'Arsenal', short_name: 'ARS' },
+                difficulty: 4,
+                is_home: false,
+              },
             },
           ],
         }), { status: 200, headers: { 'Content-Type': 'application/json' } });
@@ -307,6 +319,10 @@ describe('SquadPage', () => {
     expect(container.textContent).not.toContain('Total Points');
     expect(container.querySelector('[aria-label="Squad pitch"]')).not.toBeNull();
     expect(container.querySelector('img[src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_43-66.webp"]')).not.toBeNull();
+    const pitchHaaland = container.querySelector('button[aria-label="View Haaland details"]');
+    expect(pitchHaaland?.className).toContain('form-band-steady');
+    expect(pitchHaaland?.querySelector('.squad-page__form-dots')).not.toBeNull();
+    expect(pitchHaaland?.textContent).not.toContain('7.4');
     expect(container.textContent).not.toContain('PostgreSQL');
 
     await act(async () => {
@@ -316,6 +332,12 @@ describe('SquadPage', () => {
 
     expect(container.querySelector('[aria-label="Starting XI players table"]')).not.toBeNull();
     expect(window.localStorage.getItem('cdl:squad-view')).toBe('list');
+    const startingTable = container.querySelector('[aria-label="Starting XI players table"]');
+    expect(startingTable?.querySelector('.squad-page__list-form')).not.toBeNull();
+    expect(startingTable?.textContent).toContain('CHE');
+    expect(startingTable?.textContent).toContain('ars');
+    expect(startingTable?.textContent).not.toContain('vs');
+    expect(Array.from(startingTable?.querySelectorAll('th') ?? []).some((header) => header.textContent?.includes('Form'))).toBe(false);
 
     await act(async () => {
       buttonByText(container, 'FWD').click();

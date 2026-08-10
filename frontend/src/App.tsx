@@ -16,13 +16,13 @@ import { GlobalNavigation } from './GlobalNavigation';
 import { LeaguePage } from './LeaguePage';
 import type { LeagueClient } from './league-api';
 import { LoginPage } from './LoginPage';
+import { MarketPage } from './MarketPage';
 import { ManagerDeskPage } from './ManagerDeskPage';
 import { ModernisationCheckpointPage } from './ModernisationCheckpointPage';
 import { isSquadRoute } from './navigation';
 import type { PreferenceClient } from './preferences-api';
 import { ProfilePage } from './ProfilePage';
 import { RulesPage } from './RulesPage';
-import { SquadManagementPage } from './SquadManagementPage';
 import { SquadWorkspacePage } from './SquadWorkspacePage';
 import type { SquadClient } from './squad-api';
 import type { TeamSelectionClient } from './team-selection-api';
@@ -450,7 +450,7 @@ function AppRouteContent({
   }
 
   if (currentPath.startsWith('/scouting')) {
-    routeContent = <SquadManagementPage preset={preset} />;
+    routeContent = <MarketPage currentPath={currentPath} onNavigate={onNavigate} preset={preset} />;
   }
 
   if (isSquadRoute(currentPath)) {

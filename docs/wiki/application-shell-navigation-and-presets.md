@@ -8,14 +8,14 @@ The authenticated shell keeps global navigation deliberately small and reveals s
 
 The desktop sidebar and mobile drawer expose four primary destinations:
 
-- **Overview** — dashboard and current gameweek performance.
-- **Squad** — roster management, scouting, and fixture difficulty.
-- **Team** — lineup, bench, captaincy, and chips.
+- **Desk** — urgency-led manager actions and current gameweek context.
+- **Squad** — season-long squad health, lineup, bench, captaincy, and chips.
+- **Market** — player discovery, draw Interests, and trade activity.
 - **League** — fixtures, standings, knockout, and head-to-head records.
 
 Contextual navigation appears beneath the header after a primary destination is selected:
 
-- Squad: **My squad**, **Scouting**, **Fixture difficulty**.
+- Market: **Discovery**, **Interests**, **Trades**, **Fixture difficulty**.
 - League: **Overview**, **Fixtures**, **Table**, **Knockout**, **Head-to-head**.
 
 Rules are a support utility rather than a permanent primary destination.
@@ -44,7 +44,7 @@ Navigation is configured in `frontend/src/navigation.ts` through:
 
 `getContextNavigation` attaches specialist routes to the correct primary destination. `getActiveContextItem` selects the most specific nested route, preventing the League overview item from remaining active on `/league/table` or another deeper route.
 
-The root route is treated as the Overview alias and authenticated sign-in redirects to `/dashboard`.
+The root route is the canonical Desk landing page. `/dashboard` remains an analytics compatibility route, and `/squad-management` / `/team-selection` remain aliases for the unified Squad workspace.
 
 ## Visual presets
 

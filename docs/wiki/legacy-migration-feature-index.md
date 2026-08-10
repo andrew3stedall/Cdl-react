@@ -12,7 +12,7 @@ Source of truth: `docs/features/active/legacy-migration-feature-index.md`.
 | --- | --- | --- | --- |
 | `index.php` login/session | `authentication-and-session-management.md` | Auth API and protected shell guard | Implemented foundation |
 | Static shell/navigation/CSS | `application-shell-navigation-and-presets.md` | Shared shell, navigation, presets | Implemented foundation |
-| `index.html` squad/scouting/transfers | `squad-management-scouting-and-transfers.md` | Squad route and squad/scouting/interests/trades APIs | Implemented foundation |
+| `index.html` squad/scouting/transfers | `squad-management-scouting-and-transfers.md` | Unified Squad route plus Market `/scouting`, `/scouting/interests`, `/scouting/trades` and squad/scouting/interests/trades APIs | Implemented foundation |
 | `myTeam.html` lineup/chips | `team-selection-and-chip-management.md` | Team selection route and lineup/chip APIs | Implemented foundation |
 | `fixtures.html` fixtures/table | `league-fixtures-and-table.md` | League route and fixture/table APIs | Implemented foundation |
 | `rules.html` rules copy | `rules-knowledge-base.md` | Rules route and API | Implemented foundation |

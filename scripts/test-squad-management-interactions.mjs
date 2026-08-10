@@ -220,15 +220,14 @@ async function testMarketPersistence(browser) {
   await mockApi(page);
   await page.goto(`${baseUrl}/scouting`, { waitUntil: 'networkidle' });
 
-  await page.getByRole('tab', { name: /Player pool/ }).click();
-  const search = page.getByRole('textbox', { name: 'Search players' });
+  const search = page.getByRole('textbox', { name: 'Search market players' });
   await search.fill('Casey');
-  await page.getByRole('button', { name: 'Add Casey Midfielder to interests' }).click();
-  await page.getByRole('status').getByText('Casey Midfielder added to interests.', { exact: true }).waitFor();
+  await page.getByRole('button', { name: 'Add Casey Midfielder to Interests' }).click();
+  await page.getByRole('status').getByText('Casey Midfielder added to Interests.', { exact: true }).waitFor();
 
   await page.reload({ waitUntil: 'networkidle' });
-  await page.getByRole('tab', { name: /Activity/ }).click();
-  await page.locator('section[aria-label="Interests and proposed trades"]').getByText('Casey Midfielder', { exact: true }).waitFor();
+  await page.getByRole('tab', { name: 'Interests' }).click();
+  await page.locator('section[aria-label="Your Interests"]').getByText('Casey Midfielder', { exact: true }).waitFor();
 
   await context.close();
 }

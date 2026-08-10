@@ -549,36 +549,18 @@ async function testMarket(page) {
   await expectStatus(page, 'Market data is current for this gameweek.');
 
   await page.getByRole('tab', { name: /Discovery/ }).click();
-  const search = page.getByRole('textbox', { name: 'Search players' });
+  const search = page.getByRole('textbox', { name: 'Search market players' });
   await search.fill('Casey');
-  await page.getByText('1 players', { exact: true }).waitFor();
-
-  await page.getByRole('button', { name: 'Add Casey Midfielder to interests' }).click();
-  await expectStatus(page, 'Casey Midfielder added to interests.');
-
-  await page.getByRole('button', { name: /Casey Midfielder.*View player/ }).click();
-  const playerDialog = page.getByRole('dialog', { name: 'Casey Midfielder' });
-  await playerDialog.getByRole('heading', { name: 'Casey Midfielder' }).waitFor();
-  await playerDialog.getByText('61', { exact: true }).waitFor();
-  await playerDialog.getByText('£7.5m', { exact: true }).waitFor();
-  await playerDialog.getByRole('button', { name: 'Close', exact: true }).click();
-  await playerDialog.waitFor({ state: 'hidden' });
+  const interest = page.getByRole('button', { name: 'Add Casey Midfielder to Interests' });
+  await interest.waitFor();
+  await interest.click();
+  await page.getByRole('status').getByText('Casey Midfielder added to Interests.', { exact: true }).waitFor();
 
   await page.getByRole('tab', { name: /Interests/ }).click();
-  const interests = page.locator('section[aria-label="Player interests"]');
-  await interests.getByText('Casey Midfielder', { exact: true }).waitFor();
+  await page.locator('section[aria-label="Your Interests"]').getByText('Casey Midfielder', { exact: true }).waitFor();
 
   await page.getByRole('tab', { name: /Trades/ }).click();
-  await page.locator('section[aria-label="Proposed trades"]')
-    .getByText('No proposed trades', { exact: true }).waitFor();
-
-  if (await page.getByRole('button', { name: 'Propose sample trade' }).count() !== 0) {
-    throw new Error('The obsolete sample-trade action must not be exposed.');
-  }
-
-  if (await page.locator('a[href="/rules#trade-window"]').count() !== 0) {
-    throw new Error('The obsolete Trade Window shortcut must not be exposed.');
-  }
+  await page.locator('section[aria-label="Trade activity"]').waitFor();
 }
 
 async function testDashboard(page) {

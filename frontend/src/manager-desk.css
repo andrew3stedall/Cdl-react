@@ -461,51 +461,6 @@
   padding: 0.35rem 0.45rem;
 }
 
-.manager-desk__quick-section {
-  border-top: 1px solid var(--border);
-  padding-top: 1rem;
-}
-
-.manager-desk__quick-actions {
-  display: grid;
-  gap: 0.6rem;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-}
-
-.manager-desk__quick-action {
-  align-items: center;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  color: var(--foreground);
-  cursor: pointer;
-  display: grid;
-  gap: 0.55rem;
-  grid-template-columns: auto 1fr auto;
-  min-height: 3.3rem;
-  padding: 0.65rem 0.75rem;
-  text-align: left;
-}
-
-.manager-desk__quick-action:hover,
-.manager-desk__quick-action:focus-visible {
-  background: var(--secondary);
-  border-color: var(--primary);
-  outline: none;
-}
-
-.manager-desk__quick-action > span {
-  color: var(--primary);
-}
-
-.manager-desk__quick-action strong {
-  font-size: 0.78rem;
-}
-
-.manager-desk__quick-action > svg {
-  color: var(--muted-foreground);
-}
-
 .manager-account-section {
   display: none;
   gap: 1rem;
@@ -549,24 +504,6 @@
   height: 3.05rem;
   justify-content: center;
   width: 3.05rem;
-}
-
-.manager-account-section__appearance {
-  display: grid;
-  gap: 0.45rem;
-}
-
-.manager-account-section__appearance h2 {
-  font-size: 1.05rem;
-  margin: 0;
-}
-
-.manager-account-section__appearance .ui-select > span {
-  display: none;
-}
-
-.manager-account-section__appearance .ui-select select {
-  min-height: 3rem;
 }
 
 .manager-account-section__actions {
@@ -658,10 +595,6 @@
     display: none;
   }
 
-  .manager-desk__quick-actions {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .manager-desk__fixture-teams {
     align-items: flex-start;
     flex-direction: column;
@@ -673,10 +606,6 @@
 }
 
 @media (max-width: 420px) {
-  .manager-desk__quick-actions {
-    grid-template-columns: 1fr;
-  }
-
   .manager-desk__data-note {
     align-items: flex-start;
     flex-wrap: wrap;

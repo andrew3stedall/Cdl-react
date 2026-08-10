@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { ArrowDown, ArrowUp, Check, Circle, LogOut, Moon, Sun } from 'lucide-react';
+import { ArrowDown, ArrowUp, Check, Circle, LogOut, Moon, RefreshCw, Sun } from 'lucide-react';
 
 import { Button } from './components/ui/button';
 import { Card } from './components/ui/card';
@@ -9,11 +9,12 @@ import { useThemePreset } from './theme-preset-provider';
 import './profile-page.css';
 
 interface ProfilePageProps {
+  onRefresh: () => void;
   onSignOut: () => void;
   session: SessionState;
 }
 
-export function ProfilePage({ onSignOut, session }: ProfilePageProps) {
+export function ProfilePage({ onRefresh, onSignOut, session }: ProfilePageProps) {
   const { attackDirection, preset, saveStatus, setAttackDirection, setPresetName } = useThemePreset();
   const user = session.user;
   const displayName = user?.displayName ?? 'Authenticated user';
@@ -25,11 +26,11 @@ export function ProfilePage({ onSignOut, session }: ProfilePageProps) {
     .join('') || 'CD';
 
   return (
-    <main aria-labelledby="profile-title" className="feature-screen profile-page">
+    <main aria-labelledby="account-title" className="feature-screen profile-page">
       <header className="profile-page__header">
         <p className="eyebrow">Account</p>
-        <h1 id="profile-title">Profile & preferences</h1>
-        <p>Choose how the Castle Draft League workspace looks and behaves for you.</p>
+        <h1 id="account-title">Account</h1>
+        <p>Manage your identity, workspace appearance, pitch orientation, data, and session.</p>
       </header>
 
       <div className="profile-page__grid">
@@ -37,7 +38,7 @@ export function ProfilePage({ onSignOut, session }: ProfilePageProps) {
           <div className="profile-identity">
             <span aria-hidden="true" className="profile-avatar">{initials}</span>
             <div>
-              <p className="profile-card__eyebrow">Manager profile</p>
+              <p className="profile-card__eyebrow">Manager account</p>
               <h2>{displayName}</h2>
               <p>{user?.email ?? 'No email address available'}</p>
             </div>
@@ -112,14 +113,20 @@ export function ProfilePage({ onSignOut, session }: ProfilePageProps) {
 
       <Card className="profile-card profile-session-card">
         <div>
-          <p className="profile-card__eyebrow">Session</p>
-          <h2>Sign out of this device</h2>
-          <p>End your current manager session and return to the sign-in screen.</p>
+          <p className="profile-card__eyebrow">Data &amp; session</p>
+          <h2>Account actions</h2>
+          <p>Refresh your account data or end your current manager session.</p>
         </div>
-        <Button onClick={onSignOut} type="button" variant="secondary">
-          <LogOut aria-hidden="true" size={17} />
-          Sign out
-        </Button>
+        <div className="profile-session-card__actions">
+          <Button onClick={onRefresh} type="button" variant="secondary">
+            <RefreshCw aria-hidden="true" size={17} />
+            Refresh data
+          </Button>
+          <Button onClick={onSignOut} type="button" variant="ghost">
+            <LogOut aria-hidden="true" size={17} />
+            Sign out
+          </Button>
+        </div>
       </Card>
     </main>
   );

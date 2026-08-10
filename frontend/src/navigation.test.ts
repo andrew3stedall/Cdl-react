@@ -83,6 +83,8 @@ describe('navigation configuration', () => {
     expect(getNavigationItemByPath('/squad-management')?.label).toBe('Squad');
     expect(getNavigationItemByPath('/team-selection')?.label).toBe('Squad');
     expect(getNavigationItemByPath('/')?.label).toBe('Home');
+    expect(getNavigationItemByPath('/account')?.label).toBe('Account');
+    expect(getNavigationItemByPath('/profile')?.label).toBe('Account');
     expect(getNavigationItemByPath('/modernisation/checkpoint-1')).toBeUndefined();
     expect(getNavigationItemByPath('/modernisation/checkpoint-5')).toBeUndefined();
   });

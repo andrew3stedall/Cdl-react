@@ -113,7 +113,6 @@ export function App({
   const [loginPassword, setLoginPassword] = useState('');
   const [loginPending, setLoginPending] = useState(false);
   const [googleClientId, setGoogleClientId] = useState<string | null>(null);
-  const [refreshCount, setRefreshCount] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -283,7 +282,6 @@ export function App({
   };
 
   const handleRefresh = () => {
-    setRefreshCount((count) => count + 1);
     void refreshActiveSession();
   };
 
@@ -330,9 +328,7 @@ export function App({
       <>
         <AppShell
           currentPath={currentPath}
-          refreshCount={refreshCount}
           onNavigate={handleNavigate}
-          onRefresh={handleRefresh}
           onSignOut={() => void handleSignOut()}
           session={activeSession}
         >
@@ -385,7 +381,6 @@ function AppRouteContent({
     <ManagerDeskPage
       leagueClient={leagueClient}
       onNavigate={onNavigate}
-      onRefresh={onRefresh}
       onSignOut={onSignOut}
       session={activeSession}
       squadClient={squadClient}
@@ -393,8 +388,8 @@ function AppRouteContent({
     />
   );
 
-  if (currentPath.startsWith('/profile')) {
-    routeContent = <ProfilePage onSignOut={onSignOut} session={activeSession} />;
+  if (currentPath.startsWith('/account') || currentPath.startsWith('/profile')) {
+    routeContent = <ProfilePage onRefresh={onRefresh} onSignOut={onSignOut} session={activeSession} />;
   }
 
   if (currentPath.startsWith('/rules')) {
@@ -434,7 +429,6 @@ function AppRouteContent({
       <ManagerDeskPage
         leagueClient={leagueClient}
         onNavigate={onNavigate}
-        onRefresh={onRefresh}
         onSignOut={onSignOut}
         session={activeSession}
         squadClient={squadClient}

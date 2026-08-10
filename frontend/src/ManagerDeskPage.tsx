@@ -37,7 +37,6 @@ const defaultTeamSelectionClient = new HttpTeamSelectionClient();
 interface ManagerDeskPageProps {
   leagueClient?: LeagueClient;
   onNavigate: (href: string) => void;
-  onRefresh: () => void;
   onSignOut: () => void;
   session: SessionState;
   squadClient?: SquadClient;
@@ -60,7 +59,6 @@ interface LoadState {
 export function ManagerDeskPage({
   leagueClient = defaultLeagueClient,
   onNavigate,
-  onRefresh,
   onSignOut,
   session,
   squadClient = defaultSquadClient,
@@ -262,24 +260,8 @@ export function ManagerDeskPage({
         </section>
       </div>
 
-      <section aria-labelledby="manager-desk-quick-actions-title" className="manager-desk__section manager-desk__quick-section">
-        <div className="manager-desk__section-heading">
-          <div>
-            <p className="eyebrow">Shortcuts</p>
-            <h2 id="manager-desk-quick-actions-title">Quick actions</h2>
-          </div>
-        </div>
-        <div className="manager-desk__quick-actions">
-          <QuickAction icon={<Users aria-hidden="true" size={18} />} label="Manage squad" onClick={() => onNavigate('/squad')} />
-          <QuickAction icon={<ClipboardCheck aria-hidden="true" size={18} />} label="Team selection" onClick={() => onNavigate('/team-selection')} />
-          <QuickAction icon={<Zap aria-hidden="true" size={18} />} label="Scout the market" onClick={() => onNavigate('/scouting')} />
-          <QuickAction icon={<ShieldCheck aria-hidden="true" size={18} />} label="View league" onClick={() => onNavigate('/league')} />
-        </div>
-      </section>
-
       <ManagerAccountSection
         onNavigate={onNavigate}
-        onRefresh={onRefresh}
         onSignOut={onSignOut}
         session={session}
       />
@@ -389,24 +371,6 @@ function FixtureCard({
         <ArrowRight aria-hidden="true" size={16} />
       </Button>
     </Card>
-  );
-}
-
-function QuickAction({
-  icon,
-  label,
-  onClick,
-}: {
-  icon: ReactNode;
-  label: string;
-  onClick: () => void;
-}) {
-  return (
-    <button className="manager-desk__quick-action" onClick={onClick} type="button">
-      <span>{icon}</span>
-      <strong>{label}</strong>
-      <ArrowRight aria-hidden="true" size={16} />
-    </button>
   );
 }
 

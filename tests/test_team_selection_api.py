@@ -119,4 +119,3 @@ def test_fixture_lock_is_reported_and_blocks_lineup_and_chip_mutations() -> None
         assert response.json()["details"]["reason"] == "FPL deadline passed."
 
     assert repository.get_chips()[0].status == "available"
-

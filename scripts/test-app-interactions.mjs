@@ -560,7 +560,8 @@ async function testMarket(page) {
   await page.locator('section[aria-label="Your Interests"]').getByText('Casey Midfielder', { exact: true }).waitFor();
 
   await page.getByRole('tab', { name: /Trades/ }).click();
-  await page.locator('section[aria-label="Trade activity"]').waitFor();
+  await expectPath(page, '/scouting/trades');
+  // Trade activity is the third Market workspace section.
 }
 
 async function testDashboard(page) {

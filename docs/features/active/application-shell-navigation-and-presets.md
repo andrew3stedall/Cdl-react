@@ -48,7 +48,8 @@ The application provides repeated page navigation, responsive side/top panels, m
 
 - Responsive app shell.
 - Route-aware active state.
-- Mobile navigation drawer.
+- Mobile bottom navigation.
+- Mobile Managers Desk account section for appearance, profile and preferences, refresh, and sign-out actions.
 - Theme preset selector.
 - Shared reload or data refresh command where needed.
 

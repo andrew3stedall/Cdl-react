@@ -596,16 +596,13 @@ async function testShellAndLeagueNavigation(page, viewportName) {
 
   let primaryNavigation;
   if (viewportName === 'mobile') {
-    const menuButton = page.getByRole('button', { name: 'Menu', exact: true });
-    if (await menuButton.getAttribute('aria-expanded') !== 'false') {
-      throw new Error('Expected the mobile menu to start collapsed');
+    if (await page.getByRole('button', { name: 'Menu', exact: true }).count() !== 0) {
+      throw new Error('The mobile shell must not expose a redundant top menu button');
     }
-    await menuButton.click();
-    if (await menuButton.getAttribute('aria-expanded') !== 'true') {
-      throw new Error('Expected the mobile menu to expose aria-expanded=true after opening');
+    if (await page.locator('#mobile-navigation').count() !== 0) {
+      throw new Error('The mobile shell must not expose a redundant side navigation panel');
     }
-    primaryNavigation = page.getByRole('navigation', { name: 'Primary navigation' });
-    await primaryNavigation.waitFor({ state: 'visible' });
+    primaryNavigation = page.getByRole('navigation', { name: 'Global mobile navigation' });
   } else {
     primaryNavigation = page.getByRole('navigation', { name: 'Primary navigation' });
   }
@@ -655,7 +652,7 @@ async function testLoginAndLogout(page, api, viewportName) {
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expectPath(page, '/dashboard');
   if (viewportName === 'mobile') {
-    await page.getByRole('button', { name: 'Menu', exact: true }).click();
+    await page.getByRole('region', { name: 'Account settings' }).waitFor();
   } else {
     await page.getByLabel('Account menu for Browser Manager').click();
   }

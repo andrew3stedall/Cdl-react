@@ -104,7 +104,6 @@ export function App({
   const [currentPath, setCurrentPath] = useState(initialPath);
   const [activeSession, setActiveSession] = useState<SessionState | null>(session ?? null);
   const [sessionCheckError, setSessionCheckError] = useState<string | null>(null);
-  const [isMobileNavigationOpen, setMobileNavigationOpen] = useState(false);
   const [loginEmail, setLoginEmail] = useState('');
   const [loginError, setLoginError] = useState<string | null>(null);
   const [loginPassword, setLoginPassword] = useState('');
@@ -174,7 +173,6 @@ export function App({
   useEffect(() => {
     const handlePopState = () => {
       setCurrentPath(window.location.pathname);
-      setMobileNavigationOpen(false);
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -230,7 +228,6 @@ export function App({
 
       setSessionCheckError(null);
       setLoginPassword('');
-      setMobileNavigationOpen(false);
       setBrowserPath('/dashboard', true);
       setActiveSession(result.data.session);
     } catch {
@@ -251,7 +248,6 @@ export function App({
           return;
         }
         setSessionCheckError(null);
-        setMobileNavigationOpen(false);
         setBrowserPath('/dashboard', true);
         setActiveSession(result.data.session);
       } catch {
@@ -281,6 +277,11 @@ export function App({
 
   const handleNavigate = (href: string) => {
     setBrowserPath(href);
+  };
+
+  const handleRefresh = () => {
+    setRefreshCount((count) => count + 1);
+    void refreshActiveSession();
   };
 
   if (activeSession === null) {
@@ -352,7 +353,14 @@ export function App({
   }
 
   if (currentPath.startsWith('/dashboard')) {
-    routeContent = <AnalyticsDashboardPage dashboardClient={dashboardClient} />;
+    routeContent = (
+      <AnalyticsDashboardPage
+        dashboardClient={dashboardClient}
+        onRefresh={handleRefresh}
+        onSignOut={() => void handleSignOut()}
+        session={activeSession}
+      />
+    );
   }
 
   if (currentPath.startsWith('/fdr')) {
@@ -372,19 +380,9 @@ export function App({
       <>
         <AppShell
           currentPath={currentPath}
-          isMobileNavigationOpen={isMobileNavigationOpen}
           refreshCount={refreshCount}
-          onCloseMobileNavigation={() => {
-            setMobileNavigationOpen(false);
-          }}
           onNavigate={handleNavigate}
-          onOpenMobileNavigation={() => {
-            setMobileNavigationOpen(true);
-          }}
-          onRefresh={() => {
-            setRefreshCount((count) => count + 1);
-            void refreshActiveSession();
-          }}
+          onRefresh={handleRefresh}
           onSignOut={() => void handleSignOut()}
           session={activeSession}
         >

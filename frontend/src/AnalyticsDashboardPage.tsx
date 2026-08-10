@@ -3,6 +3,7 @@ import { type CSSProperties, useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from './components/ui/button';
 import { Card } from './components/ui/card';
 import { Select } from './components/ui/select';
+import type { SessionState } from './contracts';
 import type {
   DashboardClient,
   DashboardConfig,
@@ -12,16 +13,23 @@ import type {
   WidgetQueryResponse,
 } from './dashboard-api';
 import { HttpDashboardClient } from './dashboard-api';
+import { ManagerAccountSection } from './ManagerAccountSection';
 import './dashboard.css';
 
 const defaultDashboardClient = new HttpDashboardClient();
 
 interface AnalyticsDashboardPageProps {
   dashboardClient?: DashboardClient;
+  onRefresh?: () => void;
+  onSignOut?: () => void;
+  session?: SessionState;
 }
 
 export function AnalyticsDashboardPage({
   dashboardClient = defaultDashboardClient,
+  onRefresh,
+  onSignOut,
+  session,
 }: AnalyticsDashboardPageProps) {
   const [config, setConfig] = useState<DashboardConfig | null>(null);
   const [queries, setQueries] = useState<Record<string, WidgetQueryResponse>>({});
@@ -170,6 +178,10 @@ export function AnalyticsDashboardPage({
           </header>
           <DataTable columns={drilldown.columns} rows={drilldown.rows} />
         </section>
+      ) : null}
+
+      {session?.user && onRefresh && onSignOut ? (
+        <ManagerAccountSection onRefresh={onRefresh} onSignOut={onSignOut} session={session} />
       ) : null}
     </main>
   );

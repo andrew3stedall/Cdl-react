@@ -255,10 +255,6 @@
   outline: none;
 }
 
-.mobile-menu-button {
-  display: none;
-}
-
 .account-menu {
   position: relative;
 }
@@ -369,67 +365,98 @@
   padding: clamp(0.85rem, 2vw, 1.5rem) clamp(0.85rem, 2.4vw, 2rem) 2rem;
 }
 
-.sheet-backdrop {
-  background: rgb(15 23 42 / 0.44);
-  border: 0;
-  inset: 0;
-  padding: 0;
-  position: fixed;
-  z-index: 29;
-}
-
-.ui-sheet {
-  background: var(--cdl-surface);
-  border: 0;
-  box-shadow: 16px 0 48px rgb(15 23 42 / 0.22);
-  display: flex;
-  flex-direction: column;
-  inset: 0 auto 0 0;
-  max-width: calc(100vw - 1.5rem);
-  overflow-y: auto;
-  padding: 1rem;
-  width: 21.5rem;
-  z-index: 30;
-}
-
-.ui-sheet[hidden] {
+.manager-account-section {
   display: none;
 }
 
-.mobile-sheet-header {
+.manager-account-summary {
   align-items: center;
-  border-bottom: 1px solid var(--cdl-border);
   display: flex;
-  justify-content: space-between;
-  margin: 0;
-  padding-bottom: 0.9rem;
+  gap: 0.85rem;
 }
 
-.mobile-navigation-content {
+.manager-account-summary > div {
   display: grid;
-  gap: 1.35rem;
-  padding: 1.1rem 0;
-}
-
-.mobile-navigation-content section {
+  gap: 0.15rem;
   min-width: 0;
 }
 
-.mobile-account-card {
-  display: grid;
-  gap: 0.85rem;
-  margin-top: auto;
-  padding: 0.9rem;
+.manager-account-summary strong {
+  font-size: 1.1rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.mobile-account-actions {
-  display: grid;
-  gap: 0.45rem;
-  grid-template-columns: 1fr 1fr;
+.manager-account-summary span:last-child {
+  color: #64748b;
+  font-size: 0.85rem;
 }
 
-.mobile-account-actions .ui-button {
+.manager-account-avatar {
+  align-items: center;
+  background: color-mix(in srgb, var(--cdl-primary) 13%, var(--cdl-surface));
+  border: 1px solid color-mix(in srgb, var(--cdl-primary) 22%, var(--cdl-border));
+  border-radius: 50%;
+  color: var(--cdl-primary);
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 1rem;
+  font-weight: 800;
+  height: 3rem;
   justify-content: center;
+  width: 3rem;
+}
+
+.manager-account-appearance {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.manager-account-appearance h2 {
+  font-size: 1.15rem;
+  margin: 0;
+}
+
+.manager-account-appearance .preset-control {
+  gap: 0.3rem;
+}
+
+.manager-account-appearance .ui-select > span {
+  display: none;
+}
+
+.manager-account-appearance .preset-save-status {
+  padding-inline: 0.1rem;
+}
+
+.manager-account-actions {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.manager-account-action {
+  justify-content: center;
+  min-height: 3.1rem;
+  width: 100%;
+}
+
+.manager-account-profile {
+  background: color-mix(in srgb, var(--cdl-accent) 45%, var(--cdl-surface));
+  border: 1px solid var(--cdl-border);
+  border-radius: calc(var(--cdl-radius) * 0.75);
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.75rem;
+}
+
+.manager-account-profile span {
+  color: #64748b;
+  font-size: 0.78rem;
+}
+
+.manager-account-profile strong {
+  overflow-wrap: anywhere;
 }
 
 [data-theme-preset='compact'] .app-sidebar {
@@ -460,18 +487,7 @@
   }
 
   .shell-header {
-    align-items: center;
-    flex-direction: row;
-    min-height: 3.9rem;
-    padding: 0.55rem 0.8rem;
-  }
-
-  .shell-title-group {
-    gap: 0.55rem;
-  }
-
-  .mobile-menu-button {
-    display: inline-flex;
+    display: none;
   }
 
   .desktop-shell-action,
@@ -490,6 +506,10 @@
   .shell-content {
     padding: 0.75rem 0.75rem 1.5rem;
   }
+
+  .manager-account-section {
+    display: grid;
+  }
 }
 
 @media (max-width: 520px) {
@@ -497,12 +517,7 @@
     font-size: 0.65rem;
   }
 
-  .mobile-account-actions {
-    grid-template-columns: 1fr;
-  }
-
-  .ui-sheet {
-    max-width: calc(100vw - 0.75rem);
-    width: 21rem;
+  .manager-account-section {
+    padding: 0.9rem;
   }
 }

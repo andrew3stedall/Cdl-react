@@ -6,7 +6,7 @@ The authenticated shell keeps global navigation deliberately small and reveals s
 
 ## Information architecture
 
-The desktop sidebar and mobile drawer expose four primary destinations:
+The desktop sidebar and mobile bottom navigation expose four primary destinations:
 
 - **Overview** — dashboard and current gameweek performance.
 - **Squad** — roster management, scouting, and fixture difficulty.
@@ -25,11 +25,11 @@ Rules are a support utility rather than a permanent primary destination.
 `AppShell` provides:
 
 - A compact sticky desktop sidebar with four primary items.
-- A mobile sheet with primary, current-context, support, appearance, refresh, and sign-out controls.
+- A mobile-only account section on Managers Desk with appearance, profile and preferences, refresh, and sign-out controls.
 - A compact sticky header showing the current section and page rather than the generic “Application Shell” heading.
 - A desktop account menu containing the authenticated identity, visual preset, manual refresh count, and sign-out action.
 - A horizontally scrollable contextual navigation row that does not duplicate every subroute in the global sidebar.
-- A backdrop and explicit close control for mobile navigation.
+- A persistent bottom navigation bar for mobile global destinations.
 
 ## Navigation configuration
 
@@ -51,16 +51,16 @@ Presets remain configured in `frontend/src/theme-presets.ts`:
 - `dark`
 - `compact`
 
-The preset selector has moved from the global action row into the desktop account menu and mobile account panel. Preferences continue to use `GET /api/me/preferences` and `PUT /api/me/preferences`, with the documented local-storage fallback.
+The preset selector has moved from the global action row into the desktop account menu and the mobile Managers Desk account section. Preferences continue to use `GET /api/me/preferences` and `PUT /api/me/preferences`, with the documented local-storage fallback.
 
 ## Accessibility and responsive behaviour
 
 - Primary, contextual, and support navigation use separate labelled landmarks.
 - Active routes expose `aria-current="page"`.
-- The mobile menu exposes `aria-expanded` and an associated sheet ID.
+- Mobile global navigation is a labelled bottom navigation landmark.
 - Navigation links and account actions retain minimum touch-target sizing.
 - Contextual navigation scrolls within its own region instead of expanding the document width.
-- The mobile sheet has a backdrop, explicit close control, and labelled dialog semantics.
+- The mobile account section exposes labelled account actions and an expandable profile summary.
 
 ## Validation
 

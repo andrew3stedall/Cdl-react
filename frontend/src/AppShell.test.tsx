@@ -155,6 +155,22 @@ describe('AppShell integration', () => {
     expect(container.querySelector('[aria-label="Account menu for Test Manager"]')).not.toBeNull();
   });
 
+  test('uses the Managers Desk for mobile account actions instead of a second navigation surface', async () => {
+    const { container } = renderApp({ initialPath: '/dashboard' });
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(container.querySelector('button[aria-label="Menu"]')).toBeNull();
+    expect(container.querySelector('#mobile-navigation')).toBeNull();
+    expect(container.querySelector('[aria-label="Global mobile navigation"]')).not.toBeNull();
+    expect(container.querySelector('[aria-label="Account settings"]')).not.toBeNull();
+    expect(container.textContent).toContain('Profile & preferences');
+    expect(container.textContent).toContain('Refresh data');
+    expect(container.textContent).toContain('Sign out');
+  });
+
   test('renders league context from the league API client through the shared shell', async () => {
     const { container } = renderApp({ initialPath: '/league' });
 

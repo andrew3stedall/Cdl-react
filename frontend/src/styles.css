@@ -274,27 +274,6 @@ select {
   font-size: 0.75rem;
 }
 
-.ui-sheet {
-  background: var(--cdl-surface);
-  border-right: 1px solid var(--cdl-border);
-  inset: 0 auto 0 0;
-  padding: 1rem;
-  position: fixed;
-  width: min(21rem, 88vw);
-  z-index: 10;
-}
-
-.mobile-sheet-header {
-  align-items: center;
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 1rem;
-}
-
-.mobile-menu-button {
-  display: none;
-}
-
 .responsive-table {
   max-width: 100%;
   overflow-x: auto;
@@ -324,10 +303,6 @@ select {
 
   .app-sidebar {
     display: none;
-  }
-
-  .mobile-menu-button {
-    display: inline-flex;
   }
 
   .shell-header,

@@ -7,19 +7,16 @@ import {
   ClipboardList,
   Gauge,
   LogOut,
-  Menu,
   RefreshCw,
   Search,
   ShieldCheck,
   Users,
-  X,
 } from 'lucide-react';
 
 import { Button } from './components/ui/button';
 import { Card } from './components/ui/card';
-import { Select } from './components/ui/select';
-import { Sheet } from './components/ui/sheet';
-import type { SessionState, ThemePreset } from './contracts';
+import type { SessionState } from './contracts';
+import { PresetSelector } from './ManagerAccountSection';
 import {
   getActiveContextItem,
   getContextNavigation,
@@ -31,16 +28,12 @@ import {
   type NavigationSection,
   utilityNavigationItems,
 } from './navigation';
-import { themePresets } from './theme-presets';
 import { useThemePreset } from './theme-preset-provider';
 
 interface AppShellProps {
   children: ReactNode;
   currentPath: string;
-  isMobileNavigationOpen: boolean;
-  onCloseMobileNavigation: () => void;
   onNavigate: (href: string) => void;
-  onOpenMobileNavigation: () => void;
   onRefresh: () => void;
   onSignOut: () => void;
   refreshCount: number;
@@ -64,10 +57,7 @@ const navigationIcons: Record<string, LucideIcon> = {
 export function AppShell({
   children,
   currentPath,
-  isMobileNavigationOpen,
-  onCloseMobileNavigation,
   onNavigate,
-  onOpenMobileNavigation,
   onRefresh,
   onSignOut,
   refreshCount,
@@ -86,11 +76,9 @@ export function AppShell({
 
   const navigate = (item: NavigationItem) => {
     onNavigate(item.href);
-    onCloseMobileNavigation();
   };
 
   const signOut = () => {
-    onCloseMobileNavigation();
     onSignOut();
   };
 
@@ -111,97 +99,9 @@ export function AppShell({
         </div>
       </aside>
 
-      {isMobileNavigationOpen ? (
-        <button
-          aria-label="Close navigation"
-          className="sheet-backdrop"
-          onClick={onCloseMobileNavigation}
-          type="button"
-        />
-      ) : null}
-
-      <Sheet id="mobile-navigation" isOpen={isMobileNavigationOpen} labelledBy="mobile-navigation-title">
-        <div className="mobile-sheet-header">
-          <ShellBrand compact />
-          <Button
-            aria-label="Close navigation"
-            className="shell-icon-button"
-            onClick={onCloseMobileNavigation}
-            type="button"
-            variant="ghost"
-          >
-            <X aria-hidden="true" size={20} />
-          </Button>
-        </div>
-
-        <div className="mobile-navigation-content">
-          <section aria-labelledby="mobile-navigation-title">
-            <p className="navigation-label" id="mobile-navigation-title">Workspace</p>
-            <PrimaryNavigation currentPath={currentPath} onNavigate={navigate} />
-          </section>
-
-          {contextNavigation ? (
-            <section aria-labelledby="mobile-context-navigation-title">
-              <p className="navigation-label" id="mobile-context-navigation-title">
-                {contextNavigation.label}
-              </p>
-              <ContextNavigation
-                currentPath={currentPath}
-                onNavigate={navigate}
-                section={contextNavigation}
-                variant="stacked"
-              />
-            </section>
-          ) : null}
-
-          <section aria-labelledby="mobile-support-navigation-title">
-            <p className="navigation-label" id="mobile-support-navigation-title">Support</p>
-            <UtilityNavigation currentPath={currentPath} onNavigate={navigate} />
-          </section>
-        </div>
-
-        <Card className="mobile-account-card" aria-label="Account settings">
-          <div className="account-summary">
-            <span className="account-avatar" aria-hidden="true">{initials}</span>
-            <div>
-              <strong>{displayName}</strong>
-              <span>Signed in</span>
-            </div>
-          </div>
-          <PresetSelector
-            controlId="mobile-visual-preset"
-            preset={preset}
-            saveStatus={saveStatus}
-            setPresetName={setPresetName}
-          />
-          <div className="mobile-account-actions">
-            <Button onClick={onRefresh} type="button" variant="secondary">
-              <RefreshCw aria-hidden="true" size={16} />
-              Refresh data
-            </Button>
-            <Button onClick={signOut} type="button" variant="ghost">
-              <LogOut aria-hidden="true" size={16} />
-              Sign out
-            </Button>
-          </div>
-        </Card>
-      </Sheet>
-
       <main className="shell-main">
         <header className="shell-header">
           <div className="shell-title-group">
-            <Button
-              aria-controls="mobile-navigation"
-              aria-expanded={isMobileNavigationOpen}
-              aria-label="Menu"
-              className="mobile-menu-button shell-icon-button"
-              onClick={onOpenMobileNavigation}
-              type="button"
-              variant="ghost"
-            >
-              <Menu aria-hidden="true" size={20} />
-            </Button>
-
             <div className="shell-heading">
               <span className="eyebrow">{contextNavigation?.label ?? 'Castle Draft League'}</span>
               <h1>{activePage.label}</h1>
@@ -209,7 +109,6 @@ export function AppShell({
           </div>
 
           <div
-            aria-hidden={isMobileNavigationOpen || undefined}
             aria-label="Shell actions"
             className="shell-actions"
             role="group"
@@ -389,40 +288,5 @@ function NavigationLink({
       <Icon aria-hidden="true" className="nav-item-icon" size={18} />
       <span>{item.label}</span>
     </a>
-  );
-}
-
-function PresetSelector({
-  controlId,
-  preset,
-  saveStatus,
-  setPresetName,
-}: {
-  controlId: string;
-  preset: ThemePreset;
-  saveStatus: 'idle' | 'saving' | 'saved' | 'error';
-  setPresetName: (presetName: ThemePreset['name']) => void;
-}) {
-  return (
-    <div className="preset-control">
-      <Select
-        aria-label="Visual preset"
-        id={controlId}
-        label="Appearance"
-        onChange={(event) => {
-          setPresetName(event.target.value as ThemePreset['name']);
-        }}
-        options={themePresets.map((themePreset) => ({
-          label: themePreset.label,
-          value: themePreset.name,
-        }))}
-        value={preset.name}
-      />
-      <span aria-live="polite" className="preset-save-status">
-        {saveStatus === 'saving' ? 'Saving appearance' : null}
-        {saveStatus === 'saved' ? 'Appearance saved' : null}
-        {saveStatus === 'error' ? 'Using local appearance fallback' : null}
-      </span>
-    </div>
   );
 }

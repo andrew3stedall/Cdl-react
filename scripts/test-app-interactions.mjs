@@ -624,7 +624,7 @@ async function testShellAndLeagueNavigation(page, viewportName) {
   const leagueNavigation = page.getByRole('navigation', { name: 'League navigation' });
   await leagueNavigation.getByRole('link', { name: 'Fixtures', exact: true }).click();
   await expectPath(page, '/league/fixtures');
-  await page.getByRole('heading', { name: 'League fixtures and results' }).waitFor();
+  await page.getByRole('heading', { name: 'Fixtures & results' }).waitFor();
 
   await leagueNavigation.getByRole('link', { name: 'Table', exact: true }).click();
   await expectPath(page, '/league/table');

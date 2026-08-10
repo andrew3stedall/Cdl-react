@@ -322,6 +322,7 @@ describe('SquadPage', () => {
     const pitchHaaland = container.querySelector('button[aria-label="View Haaland details"]');
     expect(pitchHaaland?.className).toContain('form-band-steady');
     expect(pitchHaaland?.querySelector('.squad-page__shirt.large')).not.toBeNull();
+    expect(pitchHaaland?.querySelector('.squad-page__pitch-shirt-crop > .squad-page__shirt.large')).not.toBeNull();
     expect(pitchHaaland?.querySelector('.squad-page__pitch-player-name')?.textContent).toBe('Haaland');
     expect(pitchHaaland?.textContent).toContain('CHE');
     expect(pitchHaaland?.querySelector('.squad-page__form-dots')).not.toBeNull();

@@ -23,7 +23,7 @@ const unauthenticatedSession = {
 function teamSelectionResponse(locked = false) {
   return {
     manager_team: { id: 'team-castle', name: 'Castle FC', short_name: 'CFC' },
-    gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1 },
+    gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1, deadline_at: '2026-08-14T17:30:00Z' },
     lineup: [
       { id: 'player-1', display_name: 'Alex Keeper', position: 'GKP', team: { id: 'epl-ars', name: 'Arsenal', short_name: 'ARS' }, epl_team: { id: 'epl-ars', name: 'Arsenal', short_name: 'ARS' }, slot: 'starter', slot_order: 1, is_captain: false, is_vice_captain: false },
       { id: 'player-2', display_name: 'Ben Defender', position: 'DEF', team: { id: 'epl-mci', name: 'Manchester City', short_name: 'MCI' }, epl_team: { id: 'epl-mci', name: 'Manchester City', short_name: 'MCI' }, slot: 'starter', slot_order: 2, is_captain: false, is_vice_captain: false },
@@ -32,9 +32,11 @@ function teamSelectionResponse(locked = false) {
       { id: 'player-5', display_name: 'Morgan Reserve', position: 'MID', team: { id: 'epl-ars', name: 'Arsenal', short_name: 'ARS' }, epl_team: { id: 'epl-ars', name: 'Arsenal', short_name: 'ARS' }, slot: 'reserve', slot_order: 1, is_captain: false, is_vice_captain: false },
     ],
     chips: [
-      { id: 'wildcard', name: 'Wildcard', status: 'available', rule_reference: null },
-      { id: 'bench-boost', name: 'Bench Boost', status: 'used', rule_reference: null },
       { id: 'triple-captain', name: 'Triple Captain', status: 'available', rule_reference: null },
+      { id: 'dual-captain', name: 'Dual Captain', status: 'available', rule_reference: null },
+      { id: 'auto-captain', name: 'Auto Captain', status: 'available', rule_reference: null },
+      { id: 'bench-boost', name: 'Bench Boost', status: 'used', rule_reference: null },
+      { id: 'best-xi', name: 'Best XI', status: 'available', rule_reference: null },
     ],
     validation_messages: [],
     fixture_lock: {
@@ -240,6 +242,30 @@ async function mockApi(page, { authenticated = true, teamSelectionLocked = false
 
     if (path === '/api/scouting/players') {
       return route.fulfill({ json: scoutingPlayers });
+    }
+
+    if (path === '/api/squad/changes' && request.method() === 'GET') {
+      return route.fulfill({ json: { available_to_add: scoutingPlayers.players.filter((player) => player.status === 'available') } });
+    }
+
+    if (path === '/api/squad/changes' && request.method() === 'POST') {
+      return route.fulfill({ json: squadSummary });
+    }
+
+    if (path === '/api/squad/notifications') {
+      return route.fulfill({ json: { notifications: [] } });
+    }
+
+    if (path.startsWith('/api/fpl/players/') && path.endsWith('/history')) {
+      return route.fulfill({
+        json: {
+          player_id: path.split('/').at(-2),
+          fetched_at: '2026-08-09T00:00:00Z',
+          response_sha256: 'browser-fixture',
+          history: [],
+          fixtures: [],
+        },
+      });
     }
 
     if (path === '/api/interests' && request.method() === 'GET') {
@@ -466,45 +492,56 @@ async function expectStatus(page, expected) {
 }
 
 async function testTeamSelection(page) {
-  const fixtureSummaryRequest = page.waitForRequest((request) =>
-    new URL(request.url()).pathname === '/api/team-selection/fixtures-summary',
-  );
   await page.goto(`${baseUrl}/team-selection`, { waitUntil: 'networkidle' });
-  await fixtureSummaryRequest;
-  await page.getByRole('region', { name: 'Fixture and table summaries' })
-    .getByText('Harbour Athletic vs Mountain United', { exact: true }).waitFor();
-  await expectStatus(page, 'Team selection loaded.');
+  await expectStatus(page, 'Exeter Gently squad ready for review.');
+  await page.getByText('Next deadline', { exact: true }).waitFor();
+  await page.getByRole('button', { name: 'View as list' }).click();
+  await page.locator('[aria-label="Starting XI players table"]').waitFor();
 
-  const alexSlot = page.getByLabel('Move Alex Keeper');
-  await alexSlot.selectOption('bench');
-  await expectStatus(page, 'Player moved to bench.');
+  if (await page.locator('[aria-label="Starting XI players table"] select').count() !== 0) {
+    throw new Error('List view must not expose player movement dropdowns');
+  }
 
-  await page.getByRole('button', { name: 'Save lineup' }).click();
-  await expectStatus(page, 'Invalid lineup.');
+  await page.getByRole('button', { name: 'Player actions for Alex Keeper' }).click();
+  await page.getByRole('button', { name: /Substitute player/ }).click();
+  await page.getByRole('button', { name: 'Substitute with Riley Forward' }).first().click();
+  await page.getByRole('button', { name: 'Bench position goalkeeper' }).click();
+  await page.getByRole('button', { name: /Confirm substitution/ }).click();
+  await expectStatus(page, 'Alex Keeper swapped with Riley Forward.');
 
-  await alexSlot.selectOption('starter');
-  await expectStatus(page, 'Player moved to starter.');
-
-  await page.getByLabel('Move Ben Defender').selectOption('bench');
-  await page.getByLabel('Move Riley Forward').selectOption('starter');
   await page.getByRole('button', { name: 'Save lineup' }).click();
   await expectStatus(page, 'Lineup saved and validated.');
 
-  const wildcardCard = page.getByRole('heading', { name: 'Wildcard' }).locator('..');
-  await wildcardCard.getByRole('button', { name: 'Activate' }).click();
-  await expectStatus(page, 'Wildcard chip state updated.');
+  await page.getByRole('button', { name: 'Player actions for Ben Defender' }).click();
+  await page.getByRole('button', { name: /Substitute player/ }).click();
+  await page.getByRole('button', { name: 'Substitute with Alex Keeper' }).first().click();
+  await page.getByRole('button', { name: 'Bench position 2' }).click();
+  await page.getByRole('button', { name: /Confirm substitution/ }).click();
+  await expectStatus(page, 'Ben Defender swapped with Alex Keeper.');
+  await page.getByRole('button', { name: 'Save lineup' }).click();
+  await expectStatus(page, 'Lineup saved and validated.');
+
+  await page.getByRole('button', { name: 'Triple Captain, available' }).click();
+  await expectStatus(page, 'Triple Captain chip state updated.');
 
   await page.reload({ waitUntil: 'networkidle' });
-  await expectStatus(page, 'Team selection loaded.');
+  await expectStatus(page, 'Exeter Gently squad ready for review.');
 
-  if (await page.getByLabel('Move Ben Defender').inputValue() !== 'bench') {
-    throw new Error('Expected the saved Ben Defender bench slot to survive a reload');
+  if (await page.getByRole('button', { name: 'Player actions for Ben Defender' }).count() !== 1) {
+    throw new Error('Expected the saved lineup to render its player action controls after reload');
   }
-  if (await page.getByLabel('Move Riley Forward').inputValue() !== 'starter') {
-    throw new Error('Expected the saved Riley Forward starter slot to survive a reload');
+  if (await page.locator('[aria-label="Starting XI players table"] select').count() !== 0) {
+    throw new Error('Expected list view to remain free of player movement dropdowns after reload');
   }
-  await page.getByRole('heading', { name: 'Wildcard' }).locator('..')
-    .getByRole('button', { name: 'Deactivate' }).waitFor();
+  await page.getByRole('button', { name: 'Triple Captain, active' }).waitFor();
+}
+
+async function testManagerDesk(page) {
+  await page.goto(baseUrl + '/', { waitUntil: 'networkidle' });
+  await page.getByRole('heading', { name: 'Managers Desk' }).waitFor();
+  await page.getByText('Action centre', { exact: true }).waitFor();
+  await page.getByRole('button', { name: 'Set your team' }).click();
+  await expectPath(page, '/team-selection');
 }
 
 async function testMarket(page) {
@@ -545,7 +582,7 @@ async function testMarket(page) {
 }
 
 async function testDashboard(page) {
-  await page.goto(baseUrl + '/dashboard', { waitUntil: 'networkidle' });
+  await page.goto(baseUrl + '/dashboard/analytics', { waitUntil: 'networkidle' });
   await page.getByRole('heading', { name: 'Manager Analytics Dashboard' }).waitFor();
 
   await page.getByRole('combobox', { name: 'Team', exact: true }).selectOption('Castle FC');
@@ -592,13 +629,15 @@ async function testShellAndLeagueNavigation(page, viewportName) {
 
   let primaryNavigation;
   if (viewportName === 'mobile') {
-    if (await page.getByRole('button', { name: 'Menu', exact: true }).count() !== 0) {
-      throw new Error('The mobile shell must not expose a redundant top menu button');
+    const menuButton = page.getByRole('button', { name: 'Menu', exact: true });
+    if (await menuButton.count() !== 0) {
+      throw new Error('The mobile shell must not expose a redundant top menu button.');
     }
     if (await page.locator('#mobile-navigation').count() !== 0) {
-      throw new Error('The mobile shell must not expose a redundant side navigation panel');
+      throw new Error('The mobile shell must not render an off-canvas side panel.');
     }
     primaryNavigation = page.getByRole('navigation', { name: 'Global mobile navigation' });
+    await primaryNavigation.waitFor({ state: 'visible' });
   } else {
     primaryNavigation = page.getByRole('navigation', { name: 'Primary navigation' });
   }
@@ -609,19 +648,19 @@ async function testShellAndLeagueNavigation(page, viewportName) {
   const leagueNavigation = page.getByRole('navigation', { name: 'League navigation' });
   await leagueNavigation.getByRole('link', { name: 'Fixtures', exact: true }).click();
   await expectPath(page, '/league/fixtures');
-  await page.getByRole('heading', { name: 'League fixtures and results' }).waitFor();
+  await page.locator('#league-title').filter({ hasText: 'Fixtures & results' }).waitFor();
 
   await leagueNavigation.getByRole('link', { name: 'Table', exact: true }).click();
   await expectPath(page, '/league/table');
-  await page.getByRole('heading', { name: 'League table' }).waitFor();
+  await page.locator('#league-title').filter({ hasText: 'League table' }).waitFor();
 
   await leagueNavigation.getByRole('link', { name: 'Knockout', exact: true }).click();
   await expectPath(page, '/league/knockout');
-  await page.getByRole('heading', { name: 'Knockout competition' }).waitFor();
+  await page.locator('#league-title').filter({ hasText: 'Knockout competition' }).waitFor();
 
   await leagueNavigation.getByRole('link', { name: 'Head-to-head', exact: true }).click();
   await expectPath(page, '/league/head-to-head');
-  await page.getByRole('heading', { name: 'Head-to-head records' }).waitFor();
+  await page.locator('#league-title').filter({ hasText: 'Head-to-head records' }).waitFor();
 }
 
 async function testUnauthenticatedGuard(page) {
@@ -646,7 +685,7 @@ async function testLoginAndLogout(page, api, viewportName) {
   await expectStatus(page, 'Invalid email or password.');
   await page.getByLabel('Password', { exact: true }).fill('browser-login-secret');
   await page.getByRole('button', { name: 'Sign in' }).click();
-  await expectPath(page, '/dashboard');
+  await expectPath(page, '/');
   if (viewportName === 'mobile') {
     await page.getByRole('region', { name: 'Account settings' }).waitFor();
   } else {
@@ -660,18 +699,19 @@ async function testLoginAndLogout(page, api, viewportName) {
 async function testLockedTeamSelection(page) {
   await page.goto(baseUrl + '/team-selection', { waitUntil: 'networkidle' });
   await expectStatus(page, 'Lineup locked. FPL deadline passed.');
+  await page.getByRole('button', { name: 'View as list' }).click();
 
   const saveLineup = page.getByRole('button', { name: 'Save lineup' });
   if (!(await saveLineup.isDisabled())) {
     throw new Error('Expected Save lineup to be disabled after fixture lock');
   }
-  const wildcardActivate = page.getByRole('heading', { name: 'Wildcard' }).locator('..')
-    .getByRole('button', { name: 'Activate' });
-  if (!(await wildcardActivate.isDisabled())) {
+  const tripleCaptainActivate = page.getByRole('button', { name: 'Triple Captain, available' });
+  if (!(await tripleCaptainActivate.isDisabled())) {
     throw new Error('Expected chip controls to be disabled after fixture lock');
   }
-  if (!(await page.getByLabel('Move Alex Keeper').isDisabled())) {
-    throw new Error('Expected lineup controls to be disabled after fixture lock');
+  await page.getByRole('button', { name: 'Player actions for Alex Keeper' }).click();
+  if (!(await page.getByRole('button', { name: /Substitute player/ }).isDisabled())) {
+    throw new Error('Expected substitution to be disabled after fixture lock');
   }
 }
 
@@ -681,6 +721,7 @@ async function runViewport(viewport, viewportName) {
   const page = await context.newPage();
   const api = await mockApi(page);
 
+  await testManagerDesk(page);
   await testTeamSelection(page);
   await testMarket(page);
   await testDashboard(page);

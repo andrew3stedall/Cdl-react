@@ -29,9 +29,7 @@ class PostgreSQLUserPreferenceRepository:
                 select(
                     user_preferences_table.c.theme_preset,
                     user_preferences_table.c.attack_direction,
-                ).where(
-                    user_preferences_table.c.user_id == user_id
-                )
+                ).where(user_preferences_table.c.user_id == user_id)
             ).one_or_none()
 
         if preference_row is None:

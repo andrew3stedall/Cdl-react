@@ -15,6 +15,7 @@ user_preferences_table = Table(
     metadata,
     Column("user_id", String(64), primary_key=True),
     Column("theme_preset", String(64), nullable=False),
+    Column("attack_direction", String(16), nullable=False),
 )
 
 
@@ -24,25 +25,35 @@ class PostgreSQLUserPreferenceRepository:
 
     def get_for_user(self, user_id: str) -> UserPreferences:
         with self._session_factory() as session:
-            theme_preset = session.execute(
-                select(user_preferences_table.c.theme_preset).where(
+            preference_row = session.execute(
+                select(
+                    user_preferences_table.c.theme_preset,
+                    user_preferences_table.c.attack_direction,
+                ).where(
                     user_preferences_table.c.user_id == user_id
                 )
-            ).scalar_one_or_none()
+            ).one_or_none()
 
-        if theme_preset is None:
+        if preference_row is None:
             return UserPreferences()
 
-        return UserPreferences(theme_preset=theme_preset)
+        return UserPreferences(
+            theme_preset=preference_row.theme_preset,
+            attack_direction=preference_row.attack_direction,
+        )
 
     def save_for_user(self, user_id: str, preferences: UserPreferences) -> UserPreferences:
         statement = postgres_insert(user_preferences_table).values(
             user_id=user_id,
             theme_preset=preferences.theme_preset,
+            attack_direction=preferences.attack_direction,
         )
         statement = statement.on_conflict_do_update(
             index_elements=[user_preferences_table.c.user_id],
-            set_={"theme_preset": preferences.theme_preset},
+            set_={
+                "theme_preset": preferences.theme_preset,
+                "attack_direction": preferences.attack_direction,
+            },
         )
 
         with self._session_factory() as session:

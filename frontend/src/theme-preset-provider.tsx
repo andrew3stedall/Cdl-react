@@ -1,11 +1,13 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
-import type { ThemePreset, UserPreferences } from './contracts';
+import type { AttackDirection, ThemePreset, UserPreferences } from './contracts';
 import { FallbackPreferenceClient, type PreferenceClient } from './preferences-api';
 import { getThemeMode, getThemePresetClassName, resolveThemePreset } from './theme-presets';
 
 interface ThemePresetContextValue {
+  attackDirection: AttackDirection;
   preset: ThemePreset;
+  setAttackDirection: (direction: AttackDirection) => void;
   setPresetName: (presetName: ThemePreset['name']) => void;
   saveStatus: 'idle' | 'saving' | 'saved' | 'error';
 }
@@ -27,6 +29,7 @@ export function ThemePresetProvider({
   const [presetName, setPresetNameState] = useState<ThemePreset['name']>(
     resolveThemePreset(initialPresetName).name,
   );
+  const [attackDirection, setAttackDirectionState] = useState<AttackDirection>('up');
   const [saveStatus, setSaveStatus] = useState<ThemePresetContextValue['saveStatus']>('idle');
   const preset = resolveThemePreset(presetName);
 
@@ -38,6 +41,7 @@ export function ThemePresetProvider({
       .then((preferences) => {
         if (isMounted) {
           setPresetNameState(resolveThemePreset(preferences.themePreset).name);
+          setAttackDirectionState(preferences.attackDirection === 'down' ? 'down' : 'up');
         }
       })
       .catch(() => {
@@ -90,7 +94,7 @@ export function ThemePresetProvider({
     root.style.setProperty('--radius', preset.tokens.radius);
   }, [preset]);
 
-  const savePresetPreference = (preferences: UserPreferences) => {
+  const savePreference = (preferences: UserPreferences) => {
     setSaveStatus('saving');
 
     preferenceClient
@@ -105,16 +109,21 @@ export function ThemePresetProvider({
 
   const value = useMemo<ThemePresetContextValue>(
     () => ({
+      attackDirection,
       preset,
+      setAttackDirection: (nextAttackDirection) => {
+        setAttackDirectionState(nextAttackDirection);
+        savePreference({ themePreset: preset.name, attackDirection: nextAttackDirection });
+      },
       setPresetName: (nextPresetName) => {
         const nextPreset = resolveThemePreset(nextPresetName);
 
         setPresetNameState(nextPreset.name);
-        savePresetPreference({ themePreset: nextPreset.name });
+        savePreference({ themePreset: nextPreset.name, attackDirection });
       },
       saveStatus,
     }),
-    [preset, saveStatus],
+    [attackDirection, preset, saveStatus],
   );
 
   return <ThemePresetContext.Provider value={value}>{children}</ThemePresetContext.Provider>;

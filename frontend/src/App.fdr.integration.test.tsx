@@ -22,7 +22,7 @@ const authenticatedSession: SessionState = {
 };
 
 class MemoryPreferenceClient implements PreferenceClient {
-  preferences: UserPreferences = { themePreset: 'teal-light' };
+  preferences: UserPreferences = { themePreset: 'teal-light', attackDirection: 'up' };
 
   async getPreferences(): Promise<UserPreferences> {
     return this.preferences;

@@ -1,9 +1,9 @@
 import type { CSSProperties } from 'react';
-import { Check, Circle, LogOut, Moon, Sun } from 'lucide-react';
+import { ArrowDown, ArrowUp, Check, Circle, LogOut, Moon, Sun } from 'lucide-react';
 
 import { Button } from './components/ui/button';
 import { Card } from './components/ui/card';
-import type { SessionState, ThemePreset } from './contracts';
+import type { AttackDirection, SessionState, ThemePreset } from './contracts';
 import { themePresets, getThemeMode } from './theme-presets';
 import { useThemePreset } from './theme-preset-provider';
 import './profile-page.css';
@@ -14,7 +14,7 @@ interface ProfilePageProps {
 }
 
 export function ProfilePage({ onSignOut, session }: ProfilePageProps) {
-  const { preset, saveStatus, setPresetName } = useThemePreset();
+  const { attackDirection, preset, saveStatus, setAttackDirection, setPresetName } = useThemePreset();
   const user = session.user;
   const displayName = user?.displayName ?? 'Authenticated user';
   const initials = displayName
@@ -84,6 +84,32 @@ export function ProfilePage({ onSignOut, session }: ProfilePageProps) {
         </Card>
       </div>
 
+      <Card className="profile-card profile-pitch-card">
+        <div className="profile-card__header">
+          <div>
+            <p className="profile-card__eyebrow">Pitch orientation</p>
+            <h2>Your attacking direction</h2>
+          </div>
+          {attackDirection === 'up' ? <ArrowUp aria-hidden="true" className="profile-appearance-icon" size={21} /> : <ArrowDown aria-hidden="true" className="profile-appearance-icon" size={21} />}
+        </div>
+        <p className="profile-card__copy">
+          Choose the direction your team attacks. Pitch views show the attacking end in the same
+          direction every time, with the opposition facing the other way.
+        </p>
+        <div aria-label="Attacking direction" className="profile-direction-grid" role="group">
+          <DirectionOption
+            direction="up"
+            isSelected={attackDirection === 'up'}
+            onSelect={() => setAttackDirection('up')}
+          />
+          <DirectionOption
+            direction="down"
+            isSelected={attackDirection === 'down'}
+            onSelect={() => setAttackDirection('down')}
+          />
+        </div>
+      </Card>
+
       <Card className="profile-card profile-session-card">
         <div>
           <p className="profile-card__eyebrow">Session</p>
@@ -96,6 +122,36 @@ export function ProfilePage({ onSignOut, session }: ProfilePageProps) {
         </Button>
       </Card>
     </main>
+  );
+}
+
+function DirectionOption({
+  direction,
+  isSelected,
+  onSelect,
+}: {
+  direction: AttackDirection;
+  isSelected: boolean;
+  onSelect: () => void;
+}) {
+  const isUp = direction === 'up';
+  const Icon = isUp ? ArrowUp : ArrowDown;
+  return (
+    <button
+      aria-pressed={isSelected}
+      className={`profile-direction-option${isSelected ? ' is-selected' : ''}`}
+      onClick={onSelect}
+      type="button"
+    >
+      <span aria-hidden="true" className="profile-direction-icon"><Icon size={22} /></span>
+      <span className="profile-direction-copy">
+        <strong>{isUp ? 'Attack upwards' : 'Attack downwards'}</strong>
+        <small>{isUp ? 'Forwards at the top of the pitch' : 'Forwards at the bottom of the pitch'}</small>
+      </span>
+      <span aria-hidden="true" className="profile-preset-check">
+        {isSelected ? <Check size={15} /> : <Circle size={15} />}
+      </span>
+    </button>
   );
 }
 

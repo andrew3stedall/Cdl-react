@@ -1,17 +1,18 @@
-import type { ThemePreset } from './contracts';
+import type { AttackDirection, ThemePreset } from './contracts';
 import { SquadPage } from './SquadPage';
 import type { TeamSelectionClient } from './team-selection-api';
 import './squad-workspace-page.css';
 
 interface SquadWorkspacePageProps {
+  attackDirection?: AttackDirection;
   preset: ThemePreset;
   teamSelectionClient?: TeamSelectionClient;
 }
 
-export function SquadWorkspacePage({ preset, teamSelectionClient }: SquadWorkspacePageProps) {
+export function SquadWorkspacePage({ attackDirection = 'up', preset, teamSelectionClient }: SquadWorkspacePageProps) {
   return (
     <div className="squad-workspace-page">
-      <SquadPage preset={preset} teamSelectionClient={teamSelectionClient} />
+      <SquadPage attackDirection={attackDirection} preset={preset} teamSelectionClient={teamSelectionClient} />
     </div>
   );
 }

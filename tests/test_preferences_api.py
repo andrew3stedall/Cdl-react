@@ -33,19 +33,34 @@ def test_preferences_use_authenticated_user_identity() -> None:
     app.dependency_overrides[require_authenticated_session] = lambda: _user("manager-1")
     client = TestClient(app)
 
-    response = client.put("/api/me/preferences", json={"theme_preset": "teal-dark"})
+    response = client.put(
+        "/api/me/preferences",
+        json={"theme_preset": "teal-dark", "attack_direction": "down"},
+    )
 
     assert response.status_code == 200
-    assert response.json() == {"theme_preset": "teal-dark"}
-    assert client.get("/api/me/preferences").json() == {"theme_preset": "teal-dark"}
+    assert response.json() == {"theme_preset": "teal-dark", "attack_direction": "down"}
+    assert client.get("/api/me/preferences").json() == {
+        "theme_preset": "teal-dark",
+        "attack_direction": "down",
+    }
 
     app.dependency_overrides[require_authenticated_session] = lambda: _user("manager-2")
-    assert client.get("/api/me/preferences").json() == {"theme_preset": "teal-light"}
+    assert client.get("/api/me/preferences").json() == {
+        "theme_preset": "teal-light",
+        "attack_direction": "up",
+    }
 
-    response = client.put("/api/me/preferences", json={"theme_preset": "teal-light-compact"})
+    response = client.put(
+        "/api/me/preferences",
+        json={"theme_preset": "teal-light-compact", "attack_direction": "up"},
+    )
 
     assert response.status_code == 200
-    assert response.json() == {"theme_preset": "teal-light-compact"}
+    assert response.json() == {"theme_preset": "teal-light-compact", "attack_direction": "up"}
 
     app.dependency_overrides[require_authenticated_session] = lambda: _user("manager-1")
-    assert client.get("/api/me/preferences").json() == {"theme_preset": "teal-dark"}
+    assert client.get("/api/me/preferences").json() == {
+        "theme_preset": "teal-dark",
+        "attack_direction": "down",
+    }

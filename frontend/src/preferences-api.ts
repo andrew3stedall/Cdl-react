@@ -1,8 +1,9 @@
-import type { UserPreferences } from './contracts';
+import type { AttackDirection, UserPreferences } from './contracts';
 import { resolveThemePreset } from './theme-presets';
 
 interface ApiUserPreferences {
   theme_preset: string;
+  attack_direction?: string;
 }
 
 export interface PreferenceClient {
@@ -13,13 +14,19 @@ export interface PreferenceClient {
 function fromApiPreferences(preferences: ApiUserPreferences): UserPreferences {
   return {
     themePreset: resolveThemePreset(preferences.theme_preset).name,
+    attackDirection: resolveAttackDirection(preferences.attack_direction),
   };
 }
 
 function toApiPreferences(preferences: UserPreferences): ApiUserPreferences {
   return {
     theme_preset: preferences.themePreset,
+    attack_direction: preferences.attackDirection,
   };
+}
+
+function resolveAttackDirection(value: string | undefined): AttackDirection {
+  return value === 'down' ? 'down' : 'up';
 }
 
 export class HttpPreferenceClient implements PreferenceClient {
@@ -61,17 +68,20 @@ export class HttpPreferenceClient implements PreferenceClient {
 
 export class LocalStoragePreferenceClient implements PreferenceClient {
   private readonly storageKey = 'cdl-theme-preset';
+  private readonly attackDirectionStorageKey = 'cdl-attack-direction';
 
   async getPreferences(): Promise<UserPreferences> {
     const storedPreset = localStorage.getItem(this.storageKey);
 
     return {
       themePreset: resolveThemePreset(storedPreset).name,
+      attackDirection: resolveAttackDirection(localStorage.getItem(this.attackDirectionStorageKey) ?? undefined),
     };
   }
 
   async updatePreferences(preferences: UserPreferences): Promise<UserPreferences> {
     localStorage.setItem(this.storageKey, preferences.themePreset);
+    localStorage.setItem(this.attackDirectionStorageKey, preferences.attackDirection);
 
     return preferences;
   }

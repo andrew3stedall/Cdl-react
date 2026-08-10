@@ -69,7 +69,9 @@ def test_chip_activation_and_validation_endpoint() -> None:
     response = client.put("/api/team-selection/chips/triple-captain", json={"active": True})
 
     assert response.status_code == 200
-    triple_captain = next(chip for chip in response.json()["chips"] if chip["id"] == "triple-captain")
+    triple_captain = next(
+        chip for chip in response.json()["chips"] if chip["id"] == "triple-captain"
+    )
     assert triple_captain["status"] == "active"
 
     invalid_response = client.put("/api/team-selection/chips/bench-boost", json={"active": True})
@@ -117,3 +119,4 @@ def test_fixture_lock_is_reported_and_blocks_lineup_and_chip_mutations() -> None
         assert response.json()["details"]["reason"] == "FPL deadline passed."
 
     assert repository.get_chips()[0].status == "available"
+

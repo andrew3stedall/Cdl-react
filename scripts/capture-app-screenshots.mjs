@@ -12,12 +12,12 @@ const viewports = [
 ];
 
 const routes = [
-  ['manager-desk', '/'],
+  ['overview', '/'],
   ['league', '/league'],
-  ['dashboard-analytics', '/dashboard/analytics'],
+  ['dashboard', '/dashboard'],
   ['fdr', '/fdr'],
-  ['squad', '/squad-management'],
   ['market', '/scouting'],
+  ['squad-management', '/squad-management'],
   ['team-selection', '/team-selection'],
 ];
 
@@ -40,7 +40,7 @@ const unauthenticatedScreenshotSession = {
 
 const screenshotTeamSelection = {
   manager_team: { id: 'team-castle', name: 'Castle FC', short_name: 'CFC' },
-  gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1, deadline_at: '2026-08-14T17:30:00Z' },
+  gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1 },
   lineup: [
     { id: 'player-1', display_name: 'Alex Keeper', position: 'GKP', epl_team: { id: 'epl-ars', name: 'Arsenal', short_name: 'ARS' }, slot: 'starter', slot_order: 1, is_captain: false, is_vice_captain: false },
     { id: 'player-2', display_name: 'Ben Defender', position: 'DEF', epl_team: { id: 'epl-mci', name: 'Manchester City', short_name: 'MCI' }, slot: 'starter', slot_order: 2, is_captain: false, is_vice_captain: false },
@@ -244,10 +244,6 @@ async function mockApi(page, authenticated = true) {
 
     if (path === '/api/squad/summary') {
       return route.fulfill({ json: screenshotSquadSummary });
-    }
-
-    if (path === '/api/squad/notifications') {
-      return route.fulfill({ json: { notifications: [] } });
     }
 
     if (path === '/api/scouting/players') {

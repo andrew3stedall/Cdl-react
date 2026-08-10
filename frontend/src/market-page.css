@@ -77,7 +77,7 @@
   background: var(--secondary);
   border: 1px solid var(--border);
   border-radius: 50%;
-  color: var(--primary);
+  color: var(--foreground);
   display: inline-flex;
   font-size: 0.72rem;
   font-weight: 800;
@@ -136,6 +136,10 @@
   background: var(--market-subtle);
   border-color: var(--primary);
   outline: none;
+}
+
+.market-page__action-card.is-active small {
+  color: var(--foreground);
 }
 
 .market-page__action-icon {

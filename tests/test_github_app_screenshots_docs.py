@@ -122,7 +122,8 @@ def test_interaction_script_exercises_shell_navigation_and_history() -> None:
     assert "Account menu for Browser Manager" in content
     assert "expectPath(page, '/')" in content
     assert "Managers Desk" in content
-    assert "aria-expanded" in content
+    assert "Global mobile navigation" in content
+    assert "must not expose a redundant top menu button" in content
     assert "expectPath(page, '/league/fixtures')" in content
     assert "expectPath(page, '/league/table')" in content
     assert "expectPath(page, '/league/knockout')" in content

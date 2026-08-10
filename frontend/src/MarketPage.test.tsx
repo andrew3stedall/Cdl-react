@@ -74,6 +74,10 @@ describe('MarketPage', () => {
     expect(container.textContent).toContain('Official FPL evidence');
     expect(container.textContent).toContain('Casey Midfielder');
     expect(container.textContent).not.toContain('Squad management');
+    expect(container.querySelector('[aria-label="Market actions"]')).toBeNull();
+    expect(container.textContent).not.toContain('Find an upgrade');
+    expect(container.textContent).not.toContain('Review Interests');
+    expect(container.textContent).not.toContain('Review trades');
     expect(container.querySelector('nav[aria-label="Squad mobile navigation"]')).toBeNull();
   });
 

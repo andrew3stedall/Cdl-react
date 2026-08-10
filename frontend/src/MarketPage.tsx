@@ -235,8 +235,6 @@ export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps)
     () => new Set(interests.map((interest) => interest.player.id)),
     [interests],
   );
-  const availableCount = players.filter((player) => effectiveStatus(player, interestedPlayerIds, managerTeam) === 'available').length;
-  const flaggedCount = players.filter((player) => hasAvailabilityIssue(toAvailabilityInput(player))).length;
   const filteredPlayers = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
     return players
@@ -335,30 +333,6 @@ export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps)
         </div>
       ) : null}
       {notice && !error ? <p className="market-page__status" role="status">{notice}</p> : null}
-
-      <section aria-label="Market actions" className="market-page__action-grid">
-        <MarketActionCard
-          active={mode === 'discover'}
-          detail={`${availableCount} available · ${flaggedCount} need availability review`}
-          icon={<Search aria-hidden="true" size={19} />}
-          onClick={() => selectMode('discover')}
-          title="Find an upgrade"
-        />
-        <MarketActionCard
-          active={mode === 'interests'}
-          detail={interests.length > 0 ? `${interests.length} draw Interest${interests.length === 1 ? '' : 's'} to review` : 'Keep a draw shortlist in one place'}
-          icon={<Bookmark aria-hidden="true" size={19} />}
-          onClick={() => selectMode('interests')}
-          title="Review Interests"
-        />
-        <MarketActionCard
-          active={mode === 'trades'}
-          detail={trades.length > 0 ? `${trades.length} proposal${trades.length === 1 ? '' : 's'} in activity` : 'No trade proposals waiting'}
-          icon={<ArrowRightLeft aria-hidden="true" size={19} />}
-          onClick={() => selectMode('trades')}
-          title="Review trades"
-        />
-      </section>
 
       <section aria-labelledby="market-workspace-title" className="market-page__workspace">
         <header className="market-page__workspace-header">
@@ -582,10 +556,6 @@ function PlayerDrawer({ drawerRef, history, historyStatus, interest, managerTeam
   return (
     <div className="market-page__drawer-layer"><button aria-label="Close player details" className="market-page__drawer-backdrop" onClick={onClose} type="button" /><aside aria-labelledby="market-player-detail-title" aria-modal="true" className="market-page__drawer" ref={drawerRef} role="dialog" tabIndex={-1}><span aria-hidden="true" className="market-page__sheet-handle" /><header className="market-page__drawer-header"><TeamShirt large team={player.club} /><div><p className="eyebrow">Player evidence</p><h2 id="market-player-detail-title">{player.displayName}</h2><span><PositionMarker position={player.position} /> {positionLabel(player.position)} · {player.club}</span></div><button aria-label="Close player details" className="market-page__icon-button" onClick={onClose} type="button"><X aria-hidden="true" size={19} /></button></header><section aria-label="Player metrics" className="market-page__detail-metrics"><Metric label="Total points" value={formatInteger(player.points)} /><Metric dots label="Form" value={player.form} /><Metric label="xG" value={formatMetric(player.xg)} /><Metric label="xA" value={formatMetric(player.xa)} /><Metric label="Value" value={player.value === null ? '—' : `£${player.value.toFixed(1)}m`} /><Metric label="Selected" value={player.selectedPercent === null ? '—' : `${formatMetric(player.selectedPercent)}%`} /></section><section className="market-page__drawer-section"><h3>Next fixture</h3><p>{formatFixture(player)}{player.nextDifficulty === null ? '' : ` · FDR ${player.nextDifficulty}`}</p></section><section className="market-page__drawer-section"><h3>Availability</h3><p>{issue ? issue : 'No current availability flag from official FPL data.'}{player.availabilityNews ? ` ${player.availabilityNews}` : ''}</p></section><section className="market-page__drawer-section"><h3>Recent FPL history</h3>{historyStatus ? <p role="status">{historyStatus}</p> : null}{history?.history.length ? <div aria-label="Recent FPL gameweek history" className="market-page__history"><table><thead><tr><th>GW</th><th>Pts</th><th>Min</th><th>xG</th><th>xA</th></tr></thead><tbody>{history.history.slice(-5).reverse().map((row) => <tr key={row.gameweek}><td>{row.gameweek}</td><td><strong>{row.total_points}</strong></td><td>{row.minutes}</td><td>{row.expected_goals.toFixed(2)}</td><td>{row.expected_assists.toFixed(2)}</td></tr>)}</tbody></table></div> : null}{history && history.history.length === 0 ? <p>No completed gameweek history is available.</p> : null}</section><footer className="market-page__drawer-actions">{status === 'owned' ? <Button onClick={() => { onClose(); onNavigate('/squad'); }} type="button"><Users aria-hidden="true" size={16} />View in Squad</Button> : null}{status === 'interested' && interest ? <Button disabled={pendingAction === interest.id} onClick={() => void onRemoveInterest(interest)} type="button" variant="secondary">{pendingAction === interest.id ? 'Removing…' : 'Remove Interest'}</Button> : null}{status !== 'owned' && status !== 'interested' ? <Button disabled={pendingAction === player.id} onClick={onAddInterest} type="button"><Star aria-hidden="true" size={16} />{pendingAction === player.id ? 'Adding…' : 'Add to Interests'}</Button> : null}<Button onClick={onClose} type="button" variant="ghost">Close</Button></footer></aside></div>
   );
-}
-
-function MarketActionCard({ active, detail, icon, onClick, title }: { active: boolean; detail: string; icon: ReactNode; onClick: () => void; title: string }) {
-  return <button className={`market-page__action-card${active ? ' is-active' : ''}`} onClick={onClick} type="button"><span className="market-page__action-icon">{icon}</span><span><strong>{title}</strong><small>{detail}</small></span><ChevronRight aria-hidden="true" size={17} /></button>;
 }
 
 function WorkspaceTab({ active, label, onSelect }: { active: boolean; label: string; onSelect: () => void }) {

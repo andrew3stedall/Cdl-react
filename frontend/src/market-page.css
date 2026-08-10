@@ -42,7 +42,6 @@
 .market-page__explainer span,
 .market-page__empty span,
 .market-page__empty strong + span,
-.market-page__action-card small,
 .market-page__player-identity small,
 .market-page__fixture small,
 .market-page__metric span,
@@ -106,69 +105,6 @@
   background: color-mix(in srgb, var(--destructive) 8%, var(--card));
   border-color: color-mix(in srgb, var(--destructive) 38%, var(--border));
   color: var(--destructive);
-}
-
-.market-page__action-grid {
-  display: grid;
-  gap: 0.7rem;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.market-page__action-card {
-  align-items: center;
-  background: var(--market-surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  color: var(--foreground);
-  cursor: pointer;
-  display: grid;
-  gap: 0.7rem;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  min-height: 4.7rem;
-  padding: 0.85rem 0.95rem;
-  text-align: left;
-  transition: border-color 140ms ease, background 140ms ease;
-}
-
-.market-page__action-card:hover,
-.market-page__action-card:focus-visible,
-.market-page__action-card.is-active {
-  background: var(--market-subtle);
-  border-color: var(--primary);
-  outline: none;
-}
-
-.market-page__action-card.is-active small {
-  color: var(--foreground);
-}
-
-.market-page__action-icon {
-  align-items: center;
-  background: var(--secondary);
-  border: 1px solid var(--border);
-  border-radius: 50%;
-  color: var(--primary);
-  display: inline-flex;
-  height: 2.2rem;
-  justify-content: center;
-  width: 2.2rem;
-}
-
-.market-page__action-card > span:nth-child(2) {
-  display: grid;
-  gap: 0.18rem;
-  min-width: 0;
-}
-
-.market-page__action-card strong {
-  font-size: 0.93rem;
-}
-
-.market-page__action-card small {
-  font-size: 0.75rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .market-page__workspace {
@@ -804,8 +740,6 @@
   }
 
   .market-page__context { align-self: stretch; }
-  .market-page__action-grid { grid-template-columns: 1fr; }
-  .market-page__action-card { min-height: 4rem; }
   .market-page__workspace-header { gap: 0.7rem; }
   .market-page__tabs { align-self: stretch; border-top: 1px solid var(--border); padding-top: 0.45rem; }
   .market-page__tab { flex: 1 1 0; }

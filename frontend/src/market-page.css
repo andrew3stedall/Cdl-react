@@ -352,25 +352,75 @@
   color: var(--primary);
 }
 
-.market-page__player-list {
-  display: grid;
-  gap: 0.45rem;
-}
-
-.market-page__player-row {
-  align-items: center;
-  background: var(--background);
+.market-page__table-wrap {
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  display: grid;
-  gap: 0.6rem;
-  grid-template-columns: minmax(14rem, 2.3fr) repeat(3, minmax(4.2rem, 0.72fr)) minmax(7rem, 0.95fr) minmax(7rem, 0.95fr) auto;
+  max-width: 100%;
   min-width: 0;
-  padding: 0.65rem 0.7rem;
+  overflow-x: auto;
+  width: 100%;
 }
 
-.market-page__player-row:hover {
-  border-color: color-mix(in srgb, var(--primary) 48%, var(--border));
+.market-page__player-table {
+  border-collapse: collapse;
+  min-width: 46rem;
+  table-layout: fixed;
+  width: 100%;
+}
+
+.market-page__player-table th {
+  background: color-mix(in srgb, var(--secondary) 58%, var(--background));
+  border-bottom: 1px solid var(--border);
+  color: var(--foreground);
+  font-size: 0.65rem;
+  font-weight: 750;
+  letter-spacing: 0.05em;
+  padding: 0.55rem 0.7rem;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.market-page__player-table th:first-child,
+.market-page__player-table td:first-child { width: 25%; }
+.market-page__player-table th:nth-child(2),
+.market-page__player-table td:nth-child(2) { width: 8%; }
+.market-page__player-table th:nth-child(3),
+.market-page__player-table td:nth-child(3) { width: 11%; }
+.market-page__player-table th:nth-child(4),
+.market-page__player-table td:nth-child(4) { width: 12%; }
+.market-page__player-table th:nth-child(5),
+.market-page__player-table td:nth-child(5) { width: 16%; }
+.market-page__player-table th:nth-child(6),
+.market-page__player-table td:nth-child(6) { width: 17%; }
+.market-page__player-table th:last-child,
+.market-page__player-table td:last-child { width: 11%; }
+
+.market-page__player-row {
+  background: var(--background);
+}
+
+.market-page__player-row + .market-page__player-row td {
+  border-top: 1px solid var(--border);
+}
+
+.market-page__player-row:hover,
+.market-page__player-row:focus-within {
+  background: color-mix(in srgb, var(--secondary) 32%, var(--background));
+}
+
+.market-page__player-row > td {
+  min-width: 0;
+  padding: 0.55rem 0.7rem;
+  vertical-align: middle;
+}
+
+.market-page__player-row > td:not(:first-child) {
+  white-space: nowrap;
+}
+
+.market-page__player-cell {
+  min-width: 12rem;
 }
 
 .market-page__player-identity {
@@ -382,8 +432,9 @@
   display: flex;
   gap: 0.45rem;
   min-width: 0;
-  padding: 0.15rem;
+  padding: 0.12rem 0;
   text-align: left;
+  width: 100%;
 }
 
 .market-page__player-identity:hover,
@@ -440,6 +491,10 @@
   min-width: 0;
 }
 
+.market-page__player-table .market-page__metric {
+  gap: 0.1rem;
+}
+
 .market-page__metric span {
   font-size: 0.67rem;
   font-weight: 700;
@@ -485,6 +540,11 @@
   white-space: nowrap;
 }
 
+.market-page__fixture-compact,
+.market-page__status-short {
+  display: none;
+}
+
 .market-page__fixture small {
   font-size: 0.68rem;
 }
@@ -515,8 +575,17 @@
 .market-page__status-badge.status-risk { color: var(--destructive); }
 .market-page__availability { min-width: 0; }
 
+.market-page__availability .market-page__status-badge {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .market-page__row-action {
   justify-self: end;
+}
+
+.market-page__action-cell {
+  text-align: right;
 }
 
 .market-page__row-action .ui-button {
@@ -717,14 +786,10 @@
 
 .market-page__drawer-actions .ui-button { flex: 1 1 auto; }
 
-.market-page [data-density='compact'] .market-page__player-row { padding-block: 0.45rem; }
+.market-page [data-density='compact'] .market-page__player-row > td { padding-block: 0.45rem; }
 
 @media (max-width: 1100px) {
-  .market-page__player-row {
-    grid-template-columns: minmax(13rem, 2.2fr) repeat(3, minmax(3.7rem, 0.7fr)) minmax(6.2rem, 0.9fr) auto;
-  }
-
-  .market-page__availability { display: none; }
+  .market-page__player-table { min-width: 43rem; }
 }
 
 @media (max-width: 760px) {
@@ -752,18 +817,28 @@
   .market-page__filter-drawer { display: grid; grid-template-columns: 1fr; }
   .market-page__filter-drawer label { min-width: 0; }
   .market-page__result-bar { align-items: flex-start; flex-direction: column; gap: 0.35rem; }
-  .market-page__player-row {
-    align-items: stretch;
-    grid-template-columns: minmax(0, 1fr) auto;
-    padding: 0.7rem;
-  }
-
-  .market-page__player-identity { grid-column: 1 / -1; }
-  .market-page__availability { display: block; }
-  .market-page__metric { align-content: start; }
-  .market-page__metric--expected { display: none; }
-  .market-page__fixture { align-content: start; }
-  .market-page__row-action { align-self: end; }
+  .market-page__player-table { min-width: 0; }
+  .market-page__player-table th,
+  .market-page__player-row > td { padding-inline: 0.35rem; }
+  .market-page__player-identity { gap: 0.35rem; }
+  .market-page__expected-heading,
+  .market-page__player-row .market-page__metric--expected { display: none; }
+  .market-page__fixture-full,
+  .market-page__status-full { display: none; }
+  .market-page__fixture-compact,
+  .market-page__status-short { display: inline; }
+  .market-page__player-table th:first-child,
+  .market-page__player-table td:first-child { width: 29%; }
+  .market-page__player-table th:nth-child(2),
+  .market-page__player-table td:nth-child(2) { width: 10%; }
+  .market-page__player-table th:nth-child(3),
+  .market-page__player-table td:nth-child(3) { width: 14%; }
+  .market-page__player-table th:nth-child(5),
+  .market-page__player-table td:nth-child(5) { width: 19%; }
+  .market-page__player-table th:nth-child(6),
+  .market-page__player-table td:nth-child(6) { width: 18%; }
+  .market-page__player-table th:last-child,
+  .market-page__player-table td:last-child { width: 10%; }
   .market-page__row-action .ui-button { min-height: 2.35rem; }
   .market-page__activity-row { align-items: flex-start; flex-wrap: wrap; }
   .market-page__activity-row .market-page__player-identity { flex-basis: 100%; }
@@ -776,5 +851,9 @@
 
 @media (max-width: 420px) {
   .market-page__detail-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .market-page__player-row .market-page__metric--expected { display: none; }
+  .market-page__row-action .ui-button {
+    font-size: 0;
+    gap: 0;
+    padding-inline: 0.42rem;
+  }
 }

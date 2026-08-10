@@ -77,6 +77,16 @@ describe('MarketPage', () => {
     expect(container.querySelector('nav[aria-label="Squad mobile navigation"]')).toBeNull();
   });
 
+  test('presents discovery players as aligned table rows', async () => {
+    const { container } = await renderPage();
+    const table = container.querySelector('table[aria-label="Market player results"]');
+
+    expect(table?.querySelectorAll('thead th')).toHaveLength(7);
+    expect(table?.querySelectorAll('tbody tr')).toHaveLength(1);
+    expect(table?.querySelector('tbody tr td')?.textContent).toContain('Casey Midfielder');
+    expect(container.querySelector('.market-page__player-row article')).toBeNull();
+  });
+
   test('filters discovery and persists an Interest action', async () => {
     const { container } = await renderPage();
     const search = container.querySelector('input[aria-label="Search market players"]') as HTMLInputElement;

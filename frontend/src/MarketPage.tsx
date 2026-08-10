@@ -504,18 +504,34 @@ function DiscoveryPanel({
       {loading ? <div className="market-page__empty" role="status"><Search aria-hidden="true" size={22} /><strong>Loading the player pool</strong><span>Pulling the latest available market evidence.</span></div> : null}
       {!loading && filteredPlayers.length === 0 ? <div className="market-page__empty"><Search aria-hidden="true" size={22} /><strong>No players match these filters</strong><span>Clear a filter or broaden your search to keep exploring.</span>{hasFilters ? <Button onClick={onClearFilters} type="button" variant="secondary">Clear filters</Button> : null}</div> : null}
       {!loading && filteredPlayers.length > 0 ? (
-        <div aria-label="Market player results" className="market-page__player-list" role="list">
-          {filteredPlayers.map((player) => (
-            <MarketPlayerRow
-              interested={interestedPlayerIds.has(player.id)}
-              managerTeam={managerTeam}
-              key={player.id}
-              onInterest={onInterest}
-              onOpen={onOpenPlayer}
-              pendingAction={pendingAction}
-              player={player}
-            />
-          ))}
+        <div className="market-page__table-wrap">
+          <table aria-label="Market player results" className="market-page__player-table">
+            <caption className="sr-only">Market player results</caption>
+            <thead>
+              <tr>
+                <th scope="col">Player</th>
+                <th scope="col">Pts</th>
+                <th scope="col">Form</th>
+                <th className="market-page__expected-heading" scope="col">xG / xA</th>
+                <th scope="col">Next</th>
+                <th className="market-page__availability-heading" scope="col">Status</th>
+                <th className="market-page__action-heading" scope="col"><span className="sr-only">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredPlayers.map((player) => (
+                <MarketPlayerRow
+                  interested={interestedPlayerIds.has(player.id)}
+                  managerTeam={managerTeam}
+                  key={player.id}
+                  onInterest={onInterest}
+                  onOpen={onOpenPlayer}
+                  pendingAction={pendingAction}
+                  player={player}
+                />
+              ))}
+            </tbody>
+          </table>
         </div>
       ) : null}
     </div>
@@ -526,21 +542,23 @@ function MarketPlayerRow({ interested, managerTeam, onInterest, onOpen, pendingA
   const status = interested ? 'interested' : effectiveStatus(player, new Set(), managerTeam);
   const canInterest = status !== 'owned' && status !== 'interested';
   return (
-    <article className="market-page__player-row" role="listitem">
-      <button aria-label={`View ${player.displayName} details`} className="market-page__player-identity" onClick={() => onOpen(player)} type="button">
-        <PositionMarker position={player.position} />
-        <TeamShirt team={player.club} />
-        <span><strong>{player.displayName}</strong><small>{positionLabel(player.position)} · {player.club}</small></span>
-      </button>
-      <Metric label="Pts" value={formatInteger(player.points)} />
-      <Metric dots value={player.form} label="Form" />
-      <Metric className="market-page__metric--expected" label="xG / xA" value={`${formatMetric(player.xg)} / ${formatMetric(player.xa)}`} />
-      <div className="market-page__fixture"><span>{formatFixture(player)}</span>{player.nextDifficulty === null ? <small className="is-placeholder">FDR —</small> : <small className={`fdr-band-${player.nextDifficulty}`}>FDR {player.nextDifficulty}</small>}</div>
-      <div className="market-page__availability"><StatusBadge player={player} status={status} /></div>
-      <div className="market-page__row-action">
+    <tr className="market-page__player-row">
+      <td className="market-page__player-cell">
+        <button aria-label={`View ${player.displayName} details`} className="market-page__player-identity" onClick={() => onOpen(player)} type="button">
+          <PositionMarker position={player.position} />
+          <TeamShirt team={player.club} />
+          <span><strong>{player.displayName}</strong><small>{positionLabel(player.position)} · {player.club}</small></span>
+        </button>
+      </td>
+      <td><Metric hideLabel label="Pts" value={formatInteger(player.points)} /></td>
+      <td><Metric dots hideLabel value={player.form} label="Form" /></td>
+      <td className="market-page__metric--expected"><Metric hideLabel label="xG / xA" value={`${formatMetric(player.xg)} / ${formatMetric(player.xa)}`} /></td>
+      <td><div className="market-page__fixture"><span className="market-page__fixture-full">{formatFixture(player)}</span><span className="market-page__fixture-compact">{formatCompactFixture(player)}</span>{player.nextDifficulty === null ? <small className="is-placeholder">FDR —</small> : <small className={`fdr-band-${player.nextDifficulty}`}>FDR {player.nextDifficulty}</small>}</div></td>
+      <td className="market-page__availability"><StatusBadge player={player} status={status} /></td>
+      <td className="market-page__action-cell"><div className="market-page__row-action">
         {canInterest ? <Button aria-label={`Add ${player.displayName} to Interests`} disabled={pendingAction === player.id} onClick={() => void onInterest(player)} type="button" variant="secondary"><Star aria-hidden="true" size={14} />{pendingAction === player.id ? 'Adding…' : 'Interest'}</Button> : <button aria-label={`View ${player.displayName} details`} className="market-page__icon-button" onClick={() => onOpen(player)} type="button"><ChevronRight aria-hidden="true" size={18} /></button>}
-      </div>
-    </article>
+      </div></td>
+    </tr>
   );
 }
 
@@ -578,15 +596,16 @@ function EmptyActivity({ action, description, icon, onAction, title }: { action:
   return <div className="market-page__empty market-page__empty--activity"><span className="market-page__empty-icon">{icon}</span><strong>{title}</strong><span>{description}</span><Button onClick={onAction} type="button">{action}<ArrowRight aria-hidden="true" size={16} /></Button></div>;
 }
 
-function Metric({ className = '', dots = false, label, value }: { className?: string; dots?: boolean; label: string; value: number | string | null }) {
-  return <div className={`market-page__metric ${className}`.trim()}><span>{label}</span><strong>{typeof value === 'number' ? formatMetric(value) : value ?? '—'}</strong>{dots ? <FormDots value={typeof value === 'number' ? value : null} /> : null}</div>;
+function Metric({ className = '', dots = false, hideLabel = false, label, value }: { className?: string; dots?: boolean; hideLabel?: boolean; label: string; value: number | string | null }) {
+  return <div className={`market-page__metric ${className}`.trim()}>{hideLabel ? null : <span>{label}</span>}<strong>{typeof value === 'number' ? formatMetric(value) : value ?? '—'}</strong>{dots ? <FormDots value={typeof value === 'number' ? value : null} /> : null}</div>;
 }
 
 function StatusBadge({ player, status }: { player: MarketPlayer | null; status: string }) {
   const issue = player ? availabilityIssueLabel(toAvailabilityInput(player)) : null;
   const label = issue && status !== 'owned' ? issue : formatStatus(status, player);
+  const shortLabel = issue && status !== 'owned' ? 'Risk' : formatShortStatus(status, player);
   const icon = issue ? <CircleAlert aria-hidden="true" size={13} /> : status === 'available' ? <CircleCheck aria-hidden="true" size={13} /> : null;
-  return <span className={`market-page__status-badge status-${status}`}>{icon}{label}</span>;
+  return <span className={`market-page__status-badge status-${status}`}>{icon}<span className="market-page__status-full">{label}</span><span className="market-page__status-short">{shortLabel}</span></span>;
 }
 
 function FormDots({ value }: { value: number | null }) {
@@ -684,9 +703,25 @@ function formatStatus(status: string, player: MarketPlayer | null): string {
   return player?.draftTeamName ? `Owned by ${player.draftTeamName}` : 'Available';
 }
 
+function formatShortStatus(status: string, player: MarketPlayer | null): string {
+  if (status === 'owned') return 'Squad';
+  if (status === 'owned_by_other') return 'Owned';
+  if (status === 'interested') return 'Interest';
+  if (status === 'trade_target') return 'Trade';
+  if (status === 'proposed') return 'Review';
+  if (status === 'accepted') return 'Accepted';
+  if (status === 'rejected') return 'Rejected';
+  return player?.draftTeamName ? 'Owned' : 'Available';
+}
+
 function formatFixture(player: MarketPlayer): string {
   if (!player.nextOpponent) return 'Next fixture —';
   return `${player.nextOpponent} · ${player.nextFixtureIsHome === false ? 'A' : 'H'}`;
+}
+
+function formatCompactFixture(player: MarketPlayer): string {
+  if (!player.nextOpponent) return '—';
+  return `${player.nextOpponent} ${player.nextFixtureIsHome === false ? 'A' : 'H'}`;
 }
 
 function formatInteger(value: number | null): string {

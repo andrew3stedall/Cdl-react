@@ -104,11 +104,11 @@ def test_postgres_team_selection_chip_update_persists_chip_state() -> None:
     session = _CapturingSession()
     client = _client_with_postgres_repo(session)
 
-    response = client.put("/api/team-selection/chips/wildcard", json={"active": True})
+    response = client.put("/api/team-selection/chips/triple-captain", json={"active": True})
 
     assert response.status_code == 200
     assert "team_selection_chips" in _statement_table_names(session, Delete)
-    assert _statement_table_names(session, Insert).count("team_selection_chips") == 3
+    assert _statement_table_names(session, Insert).count("team_selection_chips") == 5
 
 
 def test_postgres_team_selection_invalid_chip_update_is_rejected() -> None:

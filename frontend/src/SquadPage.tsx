@@ -17,7 +17,6 @@ import {
   Filter,
   Home,
   Layers,
-  LayoutGrid,
   List,
   LockKeyhole,
   MoreHorizontal,
@@ -142,7 +141,7 @@ interface TradeApiResponse {
   status: string;
 }
 
-const pitchPositionOrder = ['GKP', 'DEF', 'MID', 'FWD'];
+const pitchPositionOrder = ['FWD', 'MID', 'DEF', 'GKP'];
 const positionOptions: Array<{ shortLabel: string; value: PositionFilter }> = [
   { shortLabel: 'All', value: 'all' },
   { shortLabel: 'GKP', value: 'GKP' },
@@ -159,6 +158,24 @@ const STARTER_LIMITS: Record<string, readonly [number, number]> = {
   FWD: [1, 3],
 };
 const BENCH_SLOT_ORDERS: BenchSlotOrder[] = [0, 1, 2, 3, 4];
+const REQUIRED_CHIPS: TeamSelectionChip[] = [
+  { id: 'triple-captain', name: 'Triple Captain', status: 'available' },
+  { id: 'dual-captain', name: 'Dual Captain', status: 'available' },
+  { id: 'auto-captain', name: 'Auto Captain', status: 'available' },
+  { id: 'bench-boost', name: 'Bench Boost', status: 'available' },
+  { id: 'best-xi', name: 'Best XI', status: 'available' },
+];
+
+function completeChipSet(chips: TeamSelectionChip[]): TeamSelectionChip[] {
+  const supplied = new Map(chips.map((chip) => [chip.id, chip]));
+  const required = REQUIRED_CHIPS.map((chip) => supplied.get(chip.id) ?? chip);
+  const extras = chips.filter((chip) => !REQUIRED_CHIPS.some((requiredChip) => requiredChip.id === chip.id));
+  return [...required, ...extras];
+}
+
+function normalizeTeamSelection(snapshot: TeamSelectionSnapshot): TeamSelectionSnapshot {
+  return { ...snapshot, chips: completeChipSet(snapshot.chips) };
+}
 
 function getStoredView(): SquadView {
   try {
@@ -331,23 +348,24 @@ export function SquadPage({
         const changes = settledValue(changesResult);
         const notificationResponse = settledValue(notificationsResult);
         const lineup = settledValue(lineupResult);
+        const normalizedLineup = lineup ? normalizeTeamSelection(lineup) : null;
         if (!summary && !lineup) throw new Error('Unable to load your squad.');
         const roster = summary?.players.map(mapPlayer)
-          ?? lineup?.players.map(mapTeamSelectionPlayer)
+          ?? normalizedLineup?.players.map(mapTeamSelectionPlayer)
           ?? [];
-        const hasLineup = Boolean(lineup?.players.length);
-        setTeamSelection(lineup);
-        setSquadPlayers(mergeLineupPlayers(roster, lineup?.players ?? null));
+        const hasLineup = Boolean(normalizedLineup?.players.length);
+        setTeamSelection(normalizedLineup);
+        setSquadPlayers(mergeLineupPlayers(roster, normalizedLineup?.players ?? null));
         setScoutingPool(scouting?.players.map(mapPlayer) ?? []);
         setManagerTeam({
-          id: summary?.manager_team.id ?? lineup?.managerTeam.id ?? '',
-          name: summary?.manager_team.name ?? lineup?.managerTeam.name ?? 'Current team',
+          id: summary?.manager_team.id ?? normalizedLineup?.managerTeam.id ?? '',
+          name: summary?.manager_team.name ?? normalizedLineup?.managerTeam.name ?? 'Current team',
           shortName: summary?.manager_team.short_name
-            ?? lineup?.managerTeam.shortName
-            ?? lineup?.managerTeam.name
+            ?? normalizedLineup?.managerTeam.shortName
+            ?? normalizedLineup?.managerTeam.name
             ?? '',
         });
-        setGameweek(lineup?.gameweek.name ?? summary?.gameweek.name ?? 'Gameweek');
+        setGameweek(normalizedLineup?.gameweek.name ?? summary?.gameweek.name ?? 'Gameweek');
         setTrades(persistedTrades?.trades ?? []);
         setDrawWins((changes?.available_to_add ?? []).map(mapPlayer));
         setNotifications(notificationResponse?.notifications ?? []);
@@ -357,8 +375,8 @@ export function SquadPage({
         if (!hasLineup) setSquadView('list');
         setStatus(
           hasLineup
-            ? `${summary?.manager_team.name ?? lineup?.managerTeam.name ?? 'Your'} squad ready for review.`
-            : `${summary?.manager_team.name ?? lineup?.managerTeam.name ?? 'Your'} squad loaded.`,
+            ? `${summary?.manager_team.name ?? normalizedLineup?.managerTeam.name ?? 'Your'} squad ready for review.`
+            : `${summary?.manager_team.name ?? normalizedLineup?.managerTeam.name ?? 'Your'} squad loaded.`,
         );
         const failures = [
           summaryResult,
@@ -624,7 +642,7 @@ export function SquadPage({
     setLineupSaving(true);
     try {
       const updated = await teamSelectionClient.saveLineup(teamSelection.players);
-      setTeamSelection(updated);
+      setTeamSelection(normalizeTeamSelection(updated));
       setSquadPlayers((current) => mergeLineupPlayers(current, updated.players));
       setLineupDirty(false);
       setStatus('Lineup saved and validated.');
@@ -648,7 +666,7 @@ export function SquadPage({
     }
     try {
       const updated = await teamSelectionClient.updateChip(chip.id, chip.status !== 'active');
-      setTeamSelection(updated);
+      setTeamSelection(normalizeTeamSelection(updated));
       setStatus(`${chip.name} chip state updated.`);
     } catch (error) {
       setStatus(apiErrorMessage(error, 'Unable to update the chip.'));
@@ -676,8 +694,9 @@ export function SquadPage({
         [...stagedRemovalIds],
       );
       const updatedLineup = await teamSelectionClient.getTeamSelection();
-      setTeamSelection(updatedLineup);
-      setSquadPlayers(mergeLineupPlayers(summary.players.map(mapPlayer), updatedLineup.players));
+      const normalizedLineup = normalizeTeamSelection(updatedLineup);
+      setTeamSelection(normalizedLineup);
+      setSquadPlayers(mergeLineupPlayers(summary.players.map(mapPlayer), normalizedLineup.players));
       setDrawWins((await squadClient.getChanges()).available_to_add.map(mapPlayer));
       setStagedRemovalIds(new Set());
       setStagedAdditionIds(new Set());
@@ -713,7 +732,7 @@ export function SquadPage({
               title="Pitch view"
               type="button"
             >
-              <LayoutGrid aria-hidden="true" size={18} />
+              <SoccerPitchIcon />
             </button>
             <button
               aria-label="View as list"
@@ -761,7 +780,7 @@ export function SquadPage({
           </div>
         </div>
         <div aria-label="Chip controls" className="squad-page__chips">
-          {(teamSelection?.chips ?? []).map((chip) => (
+          {(teamSelection?.chips ?? REQUIRED_CHIPS).map((chip) => (
             <ChipToggle chip={chip} disabled={lineupLocked} key={chip.id} onToggle={() => void toggleChip(chip)} />
           ))}
         </div>
@@ -1164,8 +1183,21 @@ function ChipToggle({ chip, disabled, onToggle }: { chip: TeamSelectionChip; dis
 function ChipGlyph({ chip }: { chip: TeamSelectionChip }) {
   const name = `${chip.id} ${chip.name}`.toLowerCase();
   if (name.includes('bench')) return <Layers aria-hidden="true" size={18} />;
+  if (name.includes('dual')) return <Users aria-hidden="true" size={18} />;
+  if (name.includes('auto')) return <CircleCheck aria-hidden="true" size={18} />;
+  if (name.includes('best')) return <Trophy aria-hidden="true" size={18} />;
   if (name.includes('captain')) return <Crown aria-hidden="true" size={18} />;
   return <WandSparkles aria-hidden="true" size={18} />;
+}
+
+function SoccerPitchIcon() {
+  return (
+    <svg aria-hidden="true" className="squad-page__pitch-icon" viewBox="0 0 24 24" fill="none">
+      <rect height="18" rx="1.5" stroke="currentColor" strokeWidth="1.7" width="18" x="3" y="3" />
+      <path d="M12 3v18M3 8h4.2v8H3M21 8h-4.2v8H21" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.7" />
+      <circle cx="12" cy="12" r="2.1" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
+  );
 }
 
 function SquadList({

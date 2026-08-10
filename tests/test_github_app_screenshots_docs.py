@@ -67,7 +67,7 @@ def test_screenshot_script_captures_core_routes() -> None:
 def test_league_tables_are_contained_on_narrow_screens() -> None:
     league_page = LEAGUE_PAGE.read_text(encoding="utf-8")
     styles = STYLES.read_text(encoding="utf-8")
-    assert league_page.count('className="responsive-table"') == 2
+    assert league_page.count('className="league-table-scroll"') == 1
     assert 'role="region"' in league_page
     assert "tabIndex={0}" in league_page
     assert ".responsive-table" in styles

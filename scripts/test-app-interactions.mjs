@@ -546,7 +546,7 @@ async function testManagerDesk(page) {
 
 async function testMarket(page) {
   await page.goto(`${baseUrl}/scouting`, { waitUntil: 'networkidle' });
-  await expectStatus(page, 'Market data is up to date.');
+  await expectStatus(page, 'Market data is current for this gameweek.');
 
   await page.getByRole('tab', { name: /Discovery/ }).click();
   const search = page.getByRole('textbox', { name: 'Search players' });

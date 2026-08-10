@@ -18,10 +18,10 @@ const squadRouteAliases = ['/squad', '/squad-management', '/team-selection'];
 
 export const primaryNavigationItems: NavigationItem[] = [
   {
-    label: 'Desk',
-    href: '/',
+    label: 'Home',
+    href: '/dashboard',
     featureKey: 'dashboard',
-    description: 'Managers Desk priorities, deadlines and actions',
+    description: 'Priorities, deadlines and actions that need attention',
   },
   {
     label: 'Squad',
@@ -45,35 +45,6 @@ export const primaryNavigationItems: NavigationItem[] = [
 ];
 
 export const contextualNavigationSections: NavigationSection[] = [
-  {
-    key: 'market',
-    label: 'Market navigation',
-    primaryHref: '/scouting',
-    matchPrefixes: ['/scouting', '/fdr'],
-    items: [
-      {
-        label: 'Discovery',
-        href: '/scouting',
-        featureKey: 'scouting',
-        supportsScouting: true,
-      },
-      {
-        label: 'Interests',
-        href: '/scouting/interests',
-        featureKey: 'interests',
-      },
-      {
-        label: 'Trades',
-        href: '/scouting/trades',
-        featureKey: 'trades',
-      },
-      {
-        label: 'Fixture difficulty',
-        href: '/fdr',
-        featureKey: 'fdr',
-      },
-    ],
-  },
   {
     key: 'league',
     label: 'League navigation',
@@ -116,12 +87,6 @@ export const utilityNavigationItems: NavigationItem[] = [
     featureKey: 'rules',
     description: 'League rules and validation references',
   },
-  {
-    label: 'Profile & preferences',
-    href: '/profile',
-    featureKey: 'profile',
-    description: 'Account details, appearance and session controls',
-  },
 ];
 
 export function isSquadRoute(path: string): boolean {
@@ -129,12 +94,16 @@ export function isSquadRoute(path: string): boolean {
 }
 
 export function isRouteActive(currentPath: string, itemHref: string): boolean {
-  if (itemHref === '/' && (currentPath === '/' || currentPath === '/dashboard')) {
+  if (currentPath === '/' && itemHref === '/dashboard') {
     return true;
   }
 
   if (itemHref === '/squad') {
     return isSquadRoute(currentPath);
+  }
+
+  if (itemHref === '/') {
+    return currentPath === itemHref;
   }
 
   return currentPath === itemHref || currentPath.startsWith(`${itemHref}/`);
@@ -163,12 +132,19 @@ export function isPrimaryNavigationItemActive(
   if (context) {
     return context.primaryHref === item.href;
   }
+  if (item.href === '/scouting' && (currentPath === '/fdr' || currentPath.startsWith('/fdr/'))) {
+    return true;
+  }
   return isRouteActive(currentPath, item.href);
 }
 
 export function getNavigationItemByPath(path: string): NavigationItem | undefined {
   if (path === '/') {
     return primaryNavigationItems[0];
+  }
+
+  if (path === '/fdr' || path.startsWith('/fdr/')) {
+    return primaryNavigationItems.find((item) => item.href === '/scouting');
   }
 
   const contextualItems = contextualNavigationSections.flatMap((section) => section.items);

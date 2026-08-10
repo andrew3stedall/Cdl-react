@@ -814,10 +814,22 @@
   .market-page__result-bar { align-items: flex-start; flex-direction: column; gap: 0.35rem; }
   .market-page__player-table { min-width: 0; }
   .market-page__player-table th,
-  .market-page__player-row > td { padding-inline: 0.55rem; }
+  .market-page__player-row > td { padding-inline: 0.35rem; }
   .market-page__player-identity { gap: 0.35rem; }
   .market-page__expected-heading,
   .market-page__player-row .market-page__metric--expected { display: none; }
+  .market-page__player-table th:first-child,
+  .market-page__player-table td:first-child { width: 29%; }
+  .market-page__player-table th:nth-child(2),
+  .market-page__player-table td:nth-child(2) { width: 10%; }
+  .market-page__player-table th:nth-child(3),
+  .market-page__player-table td:nth-child(3) { width: 14%; }
+  .market-page__player-table th:nth-child(5),
+  .market-page__player-table td:nth-child(5) { width: 19%; }
+  .market-page__player-table th:nth-child(6),
+  .market-page__player-table td:nth-child(6) { width: 18%; }
+  .market-page__player-table th:last-child,
+  .market-page__player-table td:last-child { width: 10%; }
   .market-page__row-action .ui-button { min-height: 2.35rem; }
   .market-page__activity-row { align-items: flex-start; flex-wrap: wrap; }
   .market-page__activity-row .market-page__player-identity { flex-basis: 100%; }

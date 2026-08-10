@@ -540,6 +540,11 @@
   white-space: nowrap;
 }
 
+.market-page__fixture-compact,
+.market-page__status-short {
+  display: none;
+}
+
 .market-page__fixture small {
   font-size: 0.68rem;
 }
@@ -818,6 +823,10 @@
   .market-page__player-identity { gap: 0.35rem; }
   .market-page__expected-heading,
   .market-page__player-row .market-page__metric--expected { display: none; }
+  .market-page__fixture-full,
+  .market-page__status-full { display: none; }
+  .market-page__fixture-compact,
+  .market-page__status-short { display: inline; }
   .market-page__player-table th:first-child,
   .market-page__player-table td:first-child { width: 29%; }
   .market-page__player-table th:nth-child(2),

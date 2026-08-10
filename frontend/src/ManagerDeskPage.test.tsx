@@ -11,6 +11,7 @@ import type {
   SquadClient,
 } from './squad-api';
 import type { TeamSelectionClient, TeamSelectionSnapshot } from './team-selection-api';
+import { ThemePresetProvider } from './theme-preset-provider';
 
 const testGlobal = globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean };
 testGlobal.IS_REACT_ACT_ENVIRONMENT = true;
@@ -137,13 +138,17 @@ function renderPage(
   const root = createRoot(container);
   act(() => {
     root.render(
-      <ManagerDeskPage
+      <ThemePresetProvider initialPresetName="teal-light">
+        <ManagerDeskPage
         leagueClient={new MemoryLeagueClient()}
         onNavigate={onNavigate}
+        onRefresh={() => undefined}
+        onSignOut={() => undefined}
         session={session}
         squadClient={squadClient}
         teamSelectionClient={new MemoryTeamSelectionClient()}
-      />,
+        />
+      </ThemePresetProvider>,
     );
   });
   return { container, root };
@@ -186,13 +191,17 @@ describe('ManagerDeskPage', () => {
 
     act(() => {
       root.render(
-        <ManagerDeskPage
+        <ThemePresetProvider initialPresetName="teal-light">
+          <ManagerDeskPage
           leagueClient={new MemoryLeagueClient()}
           onNavigate={() => undefined}
+          onRefresh={() => undefined}
+          onSignOut={() => undefined}
           session={session}
           squadClient={new MemorySquadClient()}
           teamSelectionClient={teamSelectionClient}
-        />,
+          />
+        </ThemePresetProvider>,
       );
     });
 

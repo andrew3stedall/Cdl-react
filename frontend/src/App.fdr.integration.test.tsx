@@ -22,7 +22,7 @@ const authenticatedSession: SessionState = {
 };
 
 class MemoryPreferenceClient implements PreferenceClient {
-  preferences: UserPreferences = { themePreset: 'teal-light' };
+  preferences: UserPreferences = { themePreset: 'classic' };
 
   async getPreferences(): Promise<UserPreferences> {
     return this.preferences;
@@ -98,7 +98,7 @@ function renderApp(initialPath: string, session?: SessionState) {
 }
 
 describe('FDR shell integration', () => {
-  test('routes authenticated managers to fixture difficulty inside Market context', async () => {
+  test('keeps the direct fixture difficulty route outside Market navigation', async () => {
     const { container } = renderApp('/fdr', authenticatedSession);
 
     await act(async () => {
@@ -109,7 +109,8 @@ describe('FDR shell integration', () => {
     const activeLabels = Array.from(container.querySelectorAll('[aria-current="page"]'))
       .map((element) => element.textContent ?? '');
     expect(activeLabels.some((label) => label.includes('Market'))).toBe(true);
-    expect(activeLabels.some((label) => label.includes('Fixture difficulty'))).toBe(true);
+    expect(container.querySelector('nav[aria-label="Market navigation"]')).toBeNull();
+    expect(container.textContent).not.toContain('Fixture difficulty');
     expect(container.textContent).toContain('Attack and defence FDR');
     expect(container.querySelector('[aria-label="Account menu for CDL Manager"]')).not.toBeNull();
   });

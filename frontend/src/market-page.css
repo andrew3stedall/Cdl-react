@@ -355,7 +355,10 @@
 .market-page__table-wrap {
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  max-width: 100%;
+  min-width: 0;
   overflow-x: auto;
+  width: 100%;
 }
 
 .market-page__player-table {

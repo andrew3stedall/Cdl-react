@@ -282,7 +282,7 @@ async function mockApi(page, { authenticated = true, teamSelectionLocked = false
       }
       const interest = {
         id: 'interest-primary-casey',
-        player: { id: 'player-3', display_name: 'Casey Midfielder' },
+        player: scoutingPlayers.players.find((player) => player.id === 'player-3') ?? scoutingPlayers.players[0],
         gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1 },
         note: null,
       };

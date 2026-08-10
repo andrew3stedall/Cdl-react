@@ -52,32 +52,26 @@ The normal runtime maps the backend's snake-case `/api/auth/session` contract in
 
 ### Team selection
 
-1. Open `/team-selection` against the unlocked API fixtures and confirm the shared Squad workspace loads from `/api/team-selection`.
-2. Switch to List view and confirm player rows expose an action button, not per-player movement dropdowns.
-3. Open Alex Keeper's player actions, choose **Substitute player**, confirm the drawer closes, select Riley Forward directly from the visible List view, choose the goalkeeper bench slot, and confirm the staged swap.
-4. Save through `PUT /api/team-selection/lineup` and confirm the valid-lineup feedback.
-5. Open Ben Defender's player actions, substitute Alex Keeper, choose bench position 2, and save the second valid swap.
-6. Activate Wildcard through the chip API and confirm success feedback.
-7. Reload the page and verify the saved slots and active chip are restored by the subsequent GET response.
-8. Run this persistence journey at mobile and desktop widths.
-9. Repeat at both widths with the API returning a fixture lock.
-10. Confirm the lock reason renders in a labelled view-only notice and every lineup, chip, substitution, and save control is disabled.
+1. Open `/team-selection` against the unlocked API fixtures and confirm both `/api/team-selection` and `/api/team-selection/fixtures-summary` are requested.
+2. Confirm the CDL and EPL fixtures and table names render from the summary response.
+3. Move Alex Keeper from the starting lineup to the bench.
+4. Attempt to save and confirm the invalid-lineup feedback.
+5. Restore Alex Keeper to the starting lineup.
+6. Swap Ben Defender and Riley Forward while preserving a valid lineup, then save through `PUT /api/team-selection/lineup`.
+7. Activate Wildcard through the chip API and confirm success feedback.
+8. Reload the page and verify the saved slots and active chip are restored by the subsequent GET response.
+9. Run this persistence journey at mobile and desktop widths.
+10. Repeat at both widths with the API returning a fixture lock.
+11. Confirm the lock reason renders in a labelled view-only notice and every lineup, chip, and save control is disabled.
 
-### Squad workspace
+### Market
 
-1. Open `/squad-management` and confirm the squad-loaded status.
-2. Search for Casey Midfielder and add the player to interests.
-3. Confirm the interest list and open the player's detail dialog.
-4. Verify the player summary, then close the dialog.
-5. Propose a sample trade and confirm its Trade Window rules link.
-
-### Market discovery
-
-1. Open `/scouting` and confirm the Market heading, action cards, and official-data note.
-2. Search for Casey Midfielder and add the player to Interests.
-3. Open Interests from the Market context navigation and confirm the player appears with the draw-preference explanation.
-4. Open the player details drawer, verify the evidence metrics and availability section, then close it.
-5. Open Trades and confirm the empty state explains where trade proposals will appear.
+1. Open `/scouting` and confirm the Market data status.
+2. Confirm the single Market section navigation contains Discovery, Interests and Trades.
+3. Search for Casey Midfielder and add the player to interests.
+4. Confirm the interest list and open the player's detail dialog.
+5. Verify the player summary, then close the dialog.
+6. Open Trades and confirm proposed trade activity has its own focused view.
 
 ### Dashboard
 
@@ -112,8 +106,8 @@ These journeys verify that the session boundary, rendered controls, React state 
 - `/league`
 - `/dashboard`
 - `/fdr`
-- `/squad-management`
 - `/scouting`
+- `/squad-management`
 - `/team-selection`
 
 ## Viewports

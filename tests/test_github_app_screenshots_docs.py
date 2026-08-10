@@ -95,7 +95,7 @@ def test_interaction_script_exercises_squad_management_journey() -> None:
     content = INTERACTION_SCRIPT.read_text(encoding="utf-8")
     assert "/scouting" in content
     assert "Discovery" in content
-    assert "Search players" in content
+    assert "Search market players" in content
     assert "Casey Midfielder added to interests." in content
     assert "Interests" in content
     assert "Trades" in content

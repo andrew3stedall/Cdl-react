@@ -58,14 +58,6 @@
     color: var(--cdl-primary);
   }
 
-  .shell-main {
-    padding-bottom: 0;
-  }
-
-  .shell-content {
-    padding-bottom: calc(2rem + var(--cdl-mobile-navigation-clearance));
-  }
-
   .squad-page__mobile-nav {
     display: none !important;
   }

@@ -368,7 +368,7 @@
 .market-page__player-table th {
   background: color-mix(in srgb, var(--secondary) 58%, var(--background));
   border-bottom: 1px solid var(--border);
-  color: var(--market-muted);
+  color: var(--foreground);
   font-size: 0.65rem;
   font-weight: 750;
   letter-spacing: 0.05em;

@@ -51,9 +51,11 @@ def test_team_selection_load_includes_lineup_chips_and_gameweek() -> None:
     assert selection.gameweek.number == 1
     assert len(selection.lineup) == 5
     assert [chip.id for chip in selection.chips] == [
-        "wildcard",
-        "bench-boost",
         "triple-captain",
+        "dual-captain",
+        "auto-captain",
+        "bench-boost",
+        "best-xi",
     ]
 
 
@@ -81,10 +83,10 @@ def test_chip_service_activates_available_chip_and_rejects_used_chip() -> None:
     repository = create_repository()
     chip_service = ChipService(repository)
 
-    selection = chip_service.update_chip("wildcard", ChipUpdateRequest(active=True))
-    wildcard = next(chip for chip in selection.chips if chip.id == "wildcard")
+    selection = chip_service.update_chip("triple-captain", ChipUpdateRequest(active=True))
+    triple_captain = next(chip for chip in selection.chips if chip.id == "triple-captain")
 
-    assert wildcard.status == ChipStatus.ACTIVE
+    assert triple_captain.status == ChipStatus.ACTIVE
 
     with pytest.raises(TeamSelectionValidationError) as exc_info:
         chip_service.update_chip("bench-boost", ChipUpdateRequest(active=True))
@@ -95,10 +97,10 @@ def test_chip_service_activates_available_chip_and_rejects_used_chip() -> None:
 def test_chip_service_rejects_second_active_chip() -> None:
     repository = create_repository()
     chip_service = ChipService(repository)
-    chip_service.update_chip("wildcard", ChipUpdateRequest(active=True))
+    chip_service.update_chip("triple-captain", ChipUpdateRequest(active=True))
 
     with pytest.raises(TeamSelectionValidationError) as exc_info:
-        chip_service.update_chip("triple-captain", ChipUpdateRequest(active=True))
+        chip_service.update_chip("dual-captain", ChipUpdateRequest(active=True))
 
     assert exc_info.value.issues[0].rule_reference == "chip-usage"
 

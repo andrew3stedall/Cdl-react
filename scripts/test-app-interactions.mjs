@@ -32,9 +32,11 @@ function teamSelectionResponse(locked = false) {
       { id: 'player-5', display_name: 'Morgan Reserve', position: 'MID', team: { id: 'epl-ars', name: 'Arsenal', short_name: 'ARS' }, epl_team: { id: 'epl-ars', name: 'Arsenal', short_name: 'ARS' }, slot: 'reserve', slot_order: 1, is_captain: false, is_vice_captain: false },
     ],
     chips: [
-      { id: 'wildcard', name: 'Wildcard', status: 'available', rule_reference: null },
-      { id: 'bench-boost', name: 'Bench Boost', status: 'used', rule_reference: null },
       { id: 'triple-captain', name: 'Triple Captain', status: 'available', rule_reference: null },
+      { id: 'dual-captain', name: 'Dual Captain', status: 'available', rule_reference: null },
+      { id: 'auto-captain', name: 'Auto Captain', status: 'available', rule_reference: null },
+      { id: 'bench-boost', name: 'Bench Boost', status: 'used', rule_reference: null },
+      { id: 'best-xi', name: 'Best XI', status: 'available', rule_reference: null },
     ],
     validation_messages: [],
     fixture_lock: {
@@ -519,8 +521,8 @@ async function testTeamSelection(page) {
   await page.getByRole('button', { name: 'Save lineup' }).click();
   await expectStatus(page, 'Lineup saved and validated.');
 
-  await page.getByRole('button', { name: 'Wildcard, available' }).click();
-  await expectStatus(page, 'Wildcard chip state updated.');
+  await page.getByRole('button', { name: 'Triple Captain, available' }).click();
+  await expectStatus(page, 'Triple Captain chip state updated.');
 
   await page.reload({ waitUntil: 'networkidle' });
   await expectStatus(page, 'Exeter Gently squad ready for review.');
@@ -531,7 +533,7 @@ async function testTeamSelection(page) {
   if (await page.locator('[aria-label="Starting XI players table"] select').count() !== 0) {
     throw new Error('Expected list view to remain free of player movement dropdowns after reload');
   }
-  await page.getByRole('button', { name: 'Wildcard, active' }).waitFor();
+  await page.getByRole('button', { name: 'Triple Captain, active' }).waitFor();
 }
 
 async function testManagerDesk(page) {
@@ -681,8 +683,8 @@ async function testLockedTeamSelection(page) {
   if (!(await saveLineup.isDisabled())) {
     throw new Error('Expected Save lineup to be disabled after fixture lock');
   }
-  const wildcardActivate = page.getByRole('button', { name: 'Wildcard, available' });
-  if (!(await wildcardActivate.isDisabled())) {
+  const tripleCaptainActivate = page.getByRole('button', { name: 'Triple Captain, available' });
+  if (!(await tripleCaptainActivate.isDisabled())) {
     throw new Error('Expected chip controls to be disabled after fixture lock');
   }
   await page.getByRole('button', { name: 'Player actions for Alex Keeper' }).click();

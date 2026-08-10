@@ -318,6 +318,17 @@ describe('SquadPage', () => {
     expect(container.querySelector('[aria-label="Matchweek controls"]')).not.toBeNull();
     expect(container.textContent).not.toContain('Total Points');
     expect(container.querySelector('[aria-label="Squad pitch"]')).not.toBeNull();
+    expect(container.querySelector('.squad-page__pitch-icon')).not.toBeNull();
+    expect(Array.from(container.querySelectorAll('.squad-page__chip-toggle')).map((chip) => chip.getAttribute('aria-label'))).toEqual([
+      'Triple Captain, available',
+      'Dual Captain, available',
+      'Auto Captain, available',
+      'Bench Boost, available',
+      'Best XI, available',
+    ]);
+    const pitchRows = Array.from(container.querySelectorAll('.squad-page__pitch-row'));
+    expect(pitchRows[0]?.className).toContain('position-fwd');
+    expect(pitchRows.at(-1)?.className).toContain('position-gkp');
     expect(container.querySelector('img[src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_43-110.webp"]')).not.toBeNull();
     const pitchHaaland = container.querySelector('button[aria-label="View Haaland details"]');
     expect(pitchHaaland?.className).toContain('form-band-steady');

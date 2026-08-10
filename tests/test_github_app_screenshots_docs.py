@@ -88,7 +88,7 @@ def test_interaction_script_exercises_team_selection_validation() -> None:
     assert "List view must not expose player movement dropdowns" in content
     assert "page.reload" in content
     assert "Player actions for Ben Defender" in content
-    assert "Wildcard, active" in content
+    assert "Triple Captain, active" in content
 
 
 def test_interaction_script_exercises_squad_management_journey() -> None:
@@ -167,7 +167,7 @@ def test_team_selection_consumes_api_lock_state() -> None:
     page = SQUAD_PAGE.read_text(encoding="utf-8")
     assert "/api/team-selection" in interactions
     assert "Next deadline" in interactions
-    assert "Wildcard, available" in interactions
+    assert "Triple Captain, available" in interactions
     assert "teamSelectionLocked" in interactions
     assert "Team selection is locked for this gameweek." in interactions
     assert "testLockedTeamSelection(page)" in interactions

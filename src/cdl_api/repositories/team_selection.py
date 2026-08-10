@@ -68,10 +68,22 @@ class InMemoryTeamSelectionRepository:
         )
         self._chips = [
             ChipState(
-                id="wildcard",
-                name="Wildcard",
+                id="triple-captain",
+                name="Triple Captain",
                 status=ChipStatus.AVAILABLE,
-                rule_reference=chip_rule,
+                rule_reference=captain_rule,
+            ),
+            ChipState(
+                id="dual-captain",
+                name="Dual Captain",
+                status=ChipStatus.AVAILABLE,
+                rule_reference=captain_rule,
+            ),
+            ChipState(
+                id="auto-captain",
+                name="Auto Captain",
+                status=ChipStatus.AVAILABLE,
+                rule_reference=captain_rule,
             ),
             ChipState(
                 id="bench-boost",
@@ -80,10 +92,10 @@ class InMemoryTeamSelectionRepository:
                 rule_reference=chip_rule,
             ),
             ChipState(
-                id="triple-captain",
-                name="Triple Captain",
+                id="best-xi",
+                name="Best XI",
                 status=ChipStatus.AVAILABLE,
-                rule_reference=captain_rule,
+                rule_reference=chip_rule,
             ),
         ]
         self._cdl_fixtures = [

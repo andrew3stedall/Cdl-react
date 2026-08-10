@@ -301,9 +301,11 @@ const staticTeamSelectionSnapshot: TeamSelectionSnapshot = {
     { id: 'player-5', name: 'Morgan Reserve', position: 'MID', team: 'ARS', slot: 'reserve', slotOrder: 1, captain: false, viceCaptain: false },
   ],
   chips: [
-    { id: 'wildcard', name: 'Wildcard', status: 'available' },
-    { id: 'bench-boost', name: 'Bench Boost', status: 'used' },
     { id: 'triple-captain', name: 'Triple Captain', status: 'available' },
+    { id: 'dual-captain', name: 'Dual Captain', status: 'available' },
+    { id: 'auto-captain', name: 'Auto Captain', status: 'available' },
+    { id: 'bench-boost', name: 'Bench Boost', status: 'used' },
+    { id: 'best-xi', name: 'Best XI', status: 'available' },
   ],
   fixtureLock: { locked: false, fixtureId: null, fixtureType: null, lockScope: null, lockedAt: null, reason: null },
 };

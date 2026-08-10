@@ -102,7 +102,7 @@ def test_team_selection_release_evidence_is_focused_and_truthful() -> None:
         "Lineup saved and validated.",
         "Expected the saved lineup to render its player action controls after reload",
         "Expected list view to remain free of player movement dropdowns after reload",
-        "Wildcard chip state updated.",
+        "Triple Captain chip state updated.",
         "Expected Save lineup to be disabled after fixture lock",
         "Expected chip controls to be disabled after fixture lock",
         "Expected substitution to be disabled after fixture lock",

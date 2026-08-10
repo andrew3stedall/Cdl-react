@@ -720,14 +720,13 @@
   border-radius: 50%;
   color: var(--squad-text);
   cursor: pointer;
-  display: grid;
+  display: flex;
   flex: 0 0 var(--squad-pitch-token-size);
-  gap: 0;
   height: var(--squad-pitch-token-size);
-  justify-items: center;
+  justify-content: center;
   min-width: 0;
-  overflow: hidden;
-  padding: 0.3rem 0.18rem;
+  overflow: visible;
+  padding: 0;
   position: relative;
   text-align: center;
   --squad-form-tone: var(--squad-form-low);
@@ -786,26 +785,37 @@
 }
 
 .squad-page__pitch-player-name {
-  align-self: center;
-  font-size: clamp(0.62rem, 1.6vw, 0.78rem);
-  max-width: 100%;
+  font-size: clamp(0.62rem, 1.7vw, 0.78rem);
+  left: 0.12rem;
+  line-height: 1;
+  max-width: calc(100% - 0.24rem);
   overflow: hidden;
+  position: absolute;
+  right: 0.12rem;
   text-overflow: ellipsis;
-  transform: translateY(0.12rem);
+  text-shadow: 0 1px 2px rgba(3, 18, 17, 0.96), 0 0 4px rgba(3, 18, 17, 0.72);
+  top: 50%;
+  transform: translateY(-50%);
   white-space: nowrap;
-  z-index: 2;
+  z-index: 3;
 }
 
 .squad-page__pitch-player > small {
-  align-self: end;
-  bottom: 0.52rem;
-  color: var(--squad-muted);
+  bottom: auto;
+  color: var(--squad-text);
   font-size: clamp(0.54rem, 1.3vw, 0.66rem);
+  font-weight: 800;
+  left: 0.2rem;
+  line-height: 1;
   max-width: 100%;
   overflow: hidden;
   position: absolute;
+  right: 0.2rem;
   text-overflow: ellipsis;
+  text-shadow: 0 1px 2px rgba(3, 18, 17, 0.95);
+  top: calc(50% + 0.72rem);
   white-space: nowrap;
+  z-index: 3;
 }
 
 .squad-page .is-placeholder {
@@ -825,18 +835,24 @@
 }
 
 .squad-page__pitch-player > .squad-page__shirt {
-  align-self: start;
-  height: clamp(2.25rem, 8vw, 3.45rem);
-  margin-top: 0.25rem;
+  height: 78%;
+  left: 50%;
+  margin: 0;
   object-fit: contain;
-  width: clamp(2.7rem, 9vw, 3.85rem);
+  pointer-events: none;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -57%);
+  width: 78%;
+  z-index: 1;
 }
 
 .squad-page__pitch-player-form {
-  align-self: center;
+  bottom: 0.28rem;
+  left: 0;
   position: absolute;
-  top: calc(50% + 0.82rem);
-  z-index: 2;
+  right: 0;
+  z-index: 3;
 }
 
 .squad-page__shirt {
@@ -1001,10 +1017,12 @@
 }
 
 .squad-page__bench-order {
-  bottom: 0.2rem;
+  bottom: auto;
+  left: 0.25rem;
   color: var(--squad-muted);
   font-size: 0.55rem;
   position: absolute;
+  top: 0.2rem;
 }
 
 .squad-page__list {
@@ -2351,15 +2369,14 @@
 
   .squad-page__pitch-player {
     --squad-pitch-token-size: clamp(3.45rem, 17vw, 5.15rem);
-    padding: 0.25rem 0.1rem;
   }
 
   .squad-page__pitch-player strong {
-    font-size: 0.58rem;
+    font-size: 0.61rem;
   }
 
   .squad-page__pitch-player > small {
-    font-size: 0.5rem;
+    font-size: 0.52rem;
   }
 
   .squad-page__bench {
@@ -2537,7 +2554,7 @@
   }
 
   .squad-page__pitch-player {
-    --squad-pitch-token-size: 3.45rem;
+    --squad-pitch-token-size: 3.55rem;
     max-width: none;
     min-height: 0;
   }

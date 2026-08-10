@@ -72,7 +72,7 @@
   font-size: 0.78rem;
 }
 
-.market-page__team-mark {
+.market-page__context .market-page__team-mark {
   align-items: center;
   background: var(--secondary);
   border: 1px solid var(--border);

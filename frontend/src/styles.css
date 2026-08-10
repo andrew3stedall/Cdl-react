@@ -321,23 +321,6 @@ textarea:focus-visible {
   font-weight: 700;
 }
 
-.ui-sheet {
-  background: var(--popover);
-  border-right: 1px solid var(--border);
-  inset: 0 auto 0 0;
-  padding: 1rem;
-  position: fixed;
-  width: min(21rem, 88vw);
-  z-index: 10;
-}
-
-.mobile-sheet-header {
-  align-items: center;
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 1rem;
-}
-
 .responsive-table {
   max-width: 100%;
   min-width: 0;

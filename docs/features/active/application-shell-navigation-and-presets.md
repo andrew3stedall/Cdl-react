@@ -35,7 +35,7 @@ The application provides responsive shared navigation, manual reload, route-awar
 ## Target Architecture
 
 - React `AppShell` with route-aware navigation.
-- shadcn/ui-inspired sidebar, sheet, card, button, select, navigation menu, and popover primitives.
+- shadcn/ui-inspired sidebar, card, button, select, navigation menu, and popover primitives.
 - Theme preset provider for user-selectable look and feel.
 - Python API endpoint for persisted user preferences if visual presets are saved server-side.
 - Shared semantic tokens keep Teal as the primary colour in light and dark modes.
@@ -50,7 +50,7 @@ The application provides responsive shared navigation, manual reload, route-awar
 
 - Responsive app shell.
 - Route-aware active state.
-- Mobile navigation drawer.
+- Persistent bottom navigation on mobile.
 - Theme preset selector.
 - Shared reload or data refresh command where needed.
 
@@ -78,7 +78,7 @@ The application provides responsive shared navigation, manual reload, route-awar
 
 - Unit tests for route and menu configuration.
 - React integration tests for navigation and preset selection.
-- Accessibility tests for keyboard navigation and drawer behaviour.
+- Accessibility tests for keyboard navigation and mobile account actions.
 - Integration coverage for profile routing and preference persistence.
 
 ## Documentation Requirements

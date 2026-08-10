@@ -254,10 +254,6 @@
   outline: none;
 }
 
-.mobile-menu-button {
-  display: none;
-}
-
 .account-menu {
   position: relative;
 }
@@ -368,68 +364,6 @@
   padding: clamp(0.85rem, 2vw, 1.5rem) clamp(0.85rem, 2.4vw, 2rem) 2rem;
 }
 
-.sheet-backdrop {
-  background: rgb(15 23 42 / 0.38);
-  border: 0;
-  inset: 0;
-  padding: 0;
-  position: fixed;
-  z-index: 29;
-}
-
-.ui-sheet {
-  background: var(--popover);
-  border: 0;
-  display: flex;
-  flex-direction: column;
-  inset: 0 auto 0 0;
-  max-width: calc(100vw - 1.5rem);
-  overflow-y: auto;
-  padding: 1rem;
-  width: 21.5rem;
-  z-index: 30;
-}
-
-.ui-sheet[hidden] {
-  display: none;
-}
-
-.mobile-sheet-header {
-  align-items: center;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  justify-content: space-between;
-  margin: 0;
-  padding-bottom: 0.9rem;
-}
-
-.mobile-navigation-content {
-  display: grid;
-  gap: 1.35rem;
-  padding: 1.1rem 0;
-}
-
-.mobile-navigation-content section {
-  min-width: 0;
-}
-
-.mobile-account-card {
-  display: grid;
-  gap: 0.85rem;
-  margin-top: auto;
-  padding: 0.9rem;
-}
-
-.mobile-account-actions {
-  display: grid;
-  gap: 0.45rem;
-  grid-template-columns: 1fr 1fr;
-}
-
-.mobile-account-actions .ui-button {
-  justify-content: center;
-}
-
 [data-theme-preset='teal-light-compact'] .app-sidebar,
 [data-theme-preset='teal-dark-compact'] .app-sidebar {
   padding: 0.7rem;
@@ -460,27 +394,7 @@
   }
 
   .shell-header {
-    align-items: center;
-    flex-direction: row;
-    min-height: 3.9rem;
-    padding: 0.55rem 0.8rem;
-  }
-
-  .shell-title-group {
-    gap: 0.55rem;
-  }
-
-  .mobile-menu-button {
-    display: inline-flex;
-  }
-
-  .desktop-shell-action,
-  .shell-actions .account-menu {
     display: none;
-  }
-
-  .shell-heading h1 {
-    font-size: 1rem;
   }
 
   .context-navigation-horizontal {
@@ -493,16 +407,4 @@
 }
 
 @media (max-width: 520px) {
-  .shell-heading .eyebrow {
-    font-size: 0.65rem;
-  }
-
-  .mobile-account-actions {
-    grid-template-columns: 1fr;
-  }
-
-  .ui-sheet {
-    max-width: calc(100vw - 0.75rem);
-    width: 21rem;
-  }
 }

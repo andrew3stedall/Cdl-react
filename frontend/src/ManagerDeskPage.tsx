@@ -17,6 +17,7 @@ import { Card } from './components/ui/card';
 import type { SessionState } from './contracts';
 import type { LeagueClient, LeagueFixture, LeagueSnapshot } from './league-api';
 import { HttpLeagueClient } from './league-api';
+import { ManagerAccountSection } from './ManagerAccountSection';
 import { hasAvailabilityIssue } from './player-availability';
 import type {
   SquadApiNotification,
@@ -36,6 +37,8 @@ const defaultTeamSelectionClient = new HttpTeamSelectionClient();
 interface ManagerDeskPageProps {
   leagueClient?: LeagueClient;
   onNavigate: (href: string) => void;
+  onRefresh: () => void;
+  onSignOut: () => void;
   session: SessionState;
   squadClient?: SquadClient;
   teamSelectionClient?: TeamSelectionClient;
@@ -57,6 +60,8 @@ interface LoadState {
 export function ManagerDeskPage({
   leagueClient = defaultLeagueClient,
   onNavigate,
+  onRefresh,
+  onSignOut,
   session,
   squadClient = defaultSquadClient,
   teamSelectionClient = defaultTeamSelectionClient,
@@ -271,6 +276,13 @@ export function ManagerDeskPage({
           <QuickAction icon={<ShieldCheck aria-hidden="true" size={18} />} label="View league" onClick={() => onNavigate('/league')} />
         </div>
       </section>
+
+      <ManagerAccountSection
+        onNavigate={onNavigate}
+        onRefresh={onRefresh}
+        onSignOut={onSignOut}
+        session={session}
+      />
     </main>
   );
 }

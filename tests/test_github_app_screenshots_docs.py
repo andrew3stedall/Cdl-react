@@ -10,7 +10,7 @@ APP = Path("frontend/src/App.tsx")
 LOGIN_PAGE = Path("frontend/src/LoginPage.tsx")
 MAIN = Path("frontend/src/main.tsx")
 TEAM_SELECTION_API = Path("frontend/src/team-selection-api.ts")
-TEAM_SELECTION_PAGE = Path("frontend/src/TeamSelectionPage.tsx")
+SQUAD_PAGE = Path("frontend/src/SquadPage.tsx")
 AUTH = Path("frontend/src/auth.ts")
 
 
@@ -44,8 +44,8 @@ def test_screenshot_script_captures_core_routes() -> None:
         "/league",
         "/dashboard",
         "/fdr",
-        "/scouting",
         "/squad-management",
+        "/scouting",
         "/team-selection",
     ]
     for route in routes:
@@ -67,28 +67,28 @@ def test_screenshot_script_captures_core_routes() -> None:
 def test_league_tables_are_contained_on_narrow_screens() -> None:
     league_page = LEAGUE_PAGE.read_text(encoding="utf-8")
     styles = STYLES.read_text(encoding="utf-8")
-    assert league_page.count('className="responsive-table"') == 2
+    assert league_page.count('className="league-table-scroll"') == 1
     assert 'role="region"' in league_page
     assert "tabIndex={0}" in league_page
     assert ".responsive-table" in styles
     assert "overflow-x: auto" in styles
     assert ".responsive-table:focus-visible" in styles
-    assert ".nav-item.active small" in styles
-    assert "color: #475569" in styles
+    assert ".nav-item small" in styles
+    assert "color: var(--muted-foreground)" in styles
 
 
 def test_interaction_script_exercises_team_selection_validation() -> None:
     content = INTERACTION_SCRIPT.read_text(encoding="utf-8")
     assert "/team-selection" in content
-    assert "Move Alex Keeper" in content
-    assert "Invalid lineup." in content
+    assert "Player actions for Alex Keeper" in content
+    assert "Substitute with Riley Forward" in content
+    assert "Bench position 2" in content
     assert "Lineup saved and validated." in content
-    assert "selectOption('bench')" in content
-    assert "selectOption('starter')" in content
+    assert "Confirm substitution" in content
+    assert "List view must not expose player movement dropdowns" in content
     assert "page.reload" in content
-    assert "Move Ben Defender" in content
-    assert "Move Riley Forward" in content
-    assert "Deactivate" in content
+    assert "Player actions for Ben Defender" in content
+    assert "Triple Captain, active" in content
 
 
 def test_interaction_script_exercises_squad_management_journey() -> None:
@@ -97,7 +97,6 @@ def test_interaction_script_exercises_squad_management_journey() -> None:
     assert "Discovery" in content
     assert "Search players" in content
     assert "Casey Midfielder added to interests." in content
-    assert "getByRole('dialog', { name: 'Casey Midfielder' })" in content
     assert "Interests" in content
     assert "Trades" in content
     assert "No proposed trades" in content
@@ -105,7 +104,7 @@ def test_interaction_script_exercises_squad_management_journey() -> None:
 
 def test_interaction_script_exercises_dashboard_and_fdr_at_two_widths() -> None:
     content = INTERACTION_SCRIPT.read_text(encoding="utf-8")
-    assert "/dashboard" in content
+    assert "/dashboard/analytics" in content
     assert "Castle FC drill-down" in content
     assert "Casey Midfielder" in content
     assert "/fdr" in content
@@ -123,8 +122,10 @@ def test_interaction_script_exercises_shell_navigation_and_history() -> None:
     assert "Primary navigation" in content
     assert "League navigation" in content
     assert "Account menu for Browser Manager" in content
-    assert "expectPath(page, '/dashboard')" in content
-    assert "aria-expanded" in content
+    assert "expectPath(page, '/')" in content
+    assert "Managers Desk" in content
+    assert "Global mobile navigation" in content
+    assert "must not expose a redundant top menu button" in content
     assert "expectPath(page, '/league/fixtures')" in content
     assert "expectPath(page, '/league/table')" in content
     assert "expectPath(page, '/league/knockout')" in content
@@ -166,11 +167,10 @@ def test_browser_journey_exercises_protected_session_boundary() -> None:
 def test_team_selection_consumes_api_lock_state() -> None:
     interactions = INTERACTION_SCRIPT.read_text(encoding="utf-8")
     api_client = TEAM_SELECTION_API.read_text(encoding="utf-8")
-    page = TEAM_SELECTION_PAGE.read_text(encoding="utf-8")
+    page = SQUAD_PAGE.read_text(encoding="utf-8")
     assert "/api/team-selection" in interactions
-    assert "/api/team-selection/fixtures-summary" in interactions
-    assert "Harbour Athletic vs Mountain United" in interactions
-    assert "Castle FC vs Rival Town" not in page
+    assert "Next deadline" in interactions
+    assert "Triple Captain, available" in interactions
     assert "teamSelectionLocked" in interactions
     assert "Team selection is locked for this gameweek." in interactions
     assert "testLockedTeamSelection(page)" in interactions
@@ -178,3 +178,4 @@ def test_team_selection_consumes_api_lock_state() -> None:
     assert "HttpTeamSelectionClient" in api_client
     assert "fixtureLock.locked" in page
     assert "Save lineup" in page
+    assert "squad-page__chip-toggle" in page

@@ -553,7 +553,7 @@ function MarketPlayerRow({ interested, managerTeam, onInterest, onOpen, pendingA
       <td><Metric hideLabel label="Pts" value={formatInteger(player.points)} /></td>
       <td><Metric dots hideLabel value={player.form} label="Form" /></td>
       <td className="market-page__metric--expected"><Metric hideLabel label="xG / xA" value={`${formatMetric(player.xg)} / ${formatMetric(player.xa)}`} /></td>
-      <td><div className="market-page__fixture"><span>{formatFixture(player)}</span>{player.nextDifficulty === null ? <small className="is-placeholder">FDR —</small> : <small className={`fdr-band-${player.nextDifficulty}`}>FDR {player.nextDifficulty}</small>}</div></td>
+      <td><div className="market-page__fixture"><span className="market-page__fixture-full">{formatFixture(player)}</span><span className="market-page__fixture-compact">{formatCompactFixture(player)}</span>{player.nextDifficulty === null ? <small className="is-placeholder">FDR —</small> : <small className={`fdr-band-${player.nextDifficulty}`}>FDR {player.nextDifficulty}</small>}</div></td>
       <td className="market-page__availability"><StatusBadge player={player} status={status} /></td>
       <td className="market-page__action-cell"><div className="market-page__row-action">
         {canInterest ? <Button aria-label={`Add ${player.displayName} to Interests`} disabled={pendingAction === player.id} onClick={() => void onInterest(player)} type="button" variant="secondary"><Star aria-hidden="true" size={14} />{pendingAction === player.id ? 'Adding…' : 'Interest'}</Button> : <button aria-label={`View ${player.displayName} details`} className="market-page__icon-button" onClick={() => onOpen(player)} type="button"><ChevronRight aria-hidden="true" size={18} /></button>}
@@ -603,8 +603,9 @@ function Metric({ className = '', dots = false, hideLabel = false, label, value 
 function StatusBadge({ player, status }: { player: MarketPlayer | null; status: string }) {
   const issue = player ? availabilityIssueLabel(toAvailabilityInput(player)) : null;
   const label = issue && status !== 'owned' ? issue : formatStatus(status, player);
+  const shortLabel = issue && status !== 'owned' ? 'Risk' : formatShortStatus(status, player);
   const icon = issue ? <CircleAlert aria-hidden="true" size={13} /> : status === 'available' ? <CircleCheck aria-hidden="true" size={13} /> : null;
-  return <span className={`market-page__status-badge status-${status}`}>{icon}{label}</span>;
+  return <span className={`market-page__status-badge status-${status}`}>{icon}<span className="market-page__status-full">{label}</span><span className="market-page__status-short">{shortLabel}</span></span>;
 }
 
 function FormDots({ value }: { value: number | null }) {
@@ -702,9 +703,25 @@ function formatStatus(status: string, player: MarketPlayer | null): string {
   return player?.draftTeamName ? `Owned by ${player.draftTeamName}` : 'Available';
 }
 
+function formatShortStatus(status: string, player: MarketPlayer | null): string {
+  if (status === 'owned') return 'Squad';
+  if (status === 'owned_by_other') return 'Owned';
+  if (status === 'interested') return 'Interest';
+  if (status === 'trade_target') return 'Trade';
+  if (status === 'proposed') return 'Review';
+  if (status === 'accepted') return 'Accepted';
+  if (status === 'rejected') return 'Rejected';
+  return player?.draftTeamName ? 'Owned' : 'Available';
+}
+
 function formatFixture(player: MarketPlayer): string {
   if (!player.nextOpponent) return 'Next fixture —';
   return `${player.nextOpponent} · ${player.nextFixtureIsHome === false ? 'A' : 'H'}`;
+}
+
+function formatCompactFixture(player: MarketPlayer): string {
+  if (!player.nextOpponent) return '—';
+  return `${player.nextOpponent} ${player.nextFixtureIsHome === false ? 'A' : 'H'}`;
 }
 
 function formatInteger(value: number | null): string {

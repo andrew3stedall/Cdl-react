@@ -1,17 +1,20 @@
 .squad-workspace {
-  --squad-accent: var(--primary);
-  --squad-accent-soft: var(--secondary);
-  --squad-background: var(--background);
-  --squad-panel: var(--card);
-  --squad-elevated: var(--surface);
-  --squad-border: var(--border);
-  --squad-border-strong: var(--primary);
-  --squad-foreground: var(--foreground);
-  --squad-muted: var(--muted-foreground);
-  --squad-subtle: var(--muted);
-  background: var(--squad-background);
-  border: 1px solid var(--squad-border);
-  border-radius: var(--radius);
+  --squad-accent: #22d3ee;
+  --squad-accent-soft: rgb(34 211 238 / 0.14);
+  --squad-background: #06111d;
+  --squad-panel: rgb(8 23 37 / 0.94);
+  --squad-elevated: #0d1d2d;
+  --squad-border: rgb(125 177 200 / 0.24);
+  --squad-border-strong: rgb(34 211 238 / 0.52);
+  --squad-foreground: #f3f8fc;
+  --squad-muted: #92a6ba;
+  --squad-subtle: #102235;
+  --squad-shadow: 0 24px 60px rgb(0 0 0 / 0.28);
+  background:
+    radial-gradient(circle at 12% 0%, rgb(34 211 238 / 0.11), transparent 28rem),
+    linear-gradient(160deg, #071625 0%, var(--squad-background) 62%, #030a12 100%);
+  border: 1px solid rgb(90 145 170 / 0.16);
+  border-radius: 1.25rem;
   color: var(--squad-foreground);
   display: grid;
   gap: 1rem;
@@ -25,20 +28,22 @@
 }
 
 .squad-workspace .ui-button {
+  box-shadow: none;
 }
 
 .squad-workspace .ui-button[data-variant='secondary'],
 .squad-workspace .ui-button.ui-button-secondary {
-  background: var(--secondary);
+  background: rgb(13 29 45 / 0.94);
   border-color: var(--squad-border);
   color: var(--squad-foreground);
 }
 
 .squad-page-header {
   align-items: center;
-  background: var(--surface);
+  background: linear-gradient(145deg, rgb(11 30 47 / 0.96), rgb(7 20 33 / 0.96));
   border: 1px solid var(--squad-border);
-  border-radius: var(--radius);
+  border-radius: 1rem;
+  box-shadow: var(--squad-shadow);
   display: flex;
   gap: 1rem;
   justify-content: space-between;
@@ -54,10 +59,10 @@
 
 .squad-title-mark {
   align-items: center;
-  background: var(--primary);
-  border: 1px solid var(--primary);
-  border-radius: var(--radius);
-  color: var(--primary-foreground);
+  background: linear-gradient(145deg, #1ce2f4, #0284c7);
+  border-radius: 0.9rem;
+  box-shadow: 0 0 28px rgb(34 211 238 / 0.22);
+  color: #03111c;
   display: inline-flex;
   flex: 0 0 auto;
   height: 3.2rem;
@@ -89,7 +94,7 @@
 .squad-action-count,
 .squad-count-badge {
   align-items: center;
-  background: var(--secondary);
+  background: rgb(255 255 255 / 0.12);
   border: 1px solid currentColor;
   border-radius: 999px;
   display: inline-flex;
@@ -108,7 +113,7 @@
 }
 
 .squad-metric-grid {
-  background: var(--surface);
+  background: rgb(8 23 37 / 0.88);
   border: 1px solid var(--squad-border);
   border-radius: 1rem;
   display: grid;
@@ -121,6 +126,7 @@
   background: transparent;
   border: 0;
   border-radius: 0;
+  box-shadow: none;
   color: var(--squad-foreground);
   display: flex;
   gap: 0.75rem;
@@ -163,7 +169,7 @@
 .squad-trade-icon {
   align-items: center;
   background: var(--squad-accent-soft);
-  border: 1px solid var(--squad-border);
+  border: 1px solid rgb(34 211 238 / 0.28);
   border-radius: 0.75rem;
   color: var(--squad-accent);
   display: inline-flex;
@@ -176,9 +182,22 @@
 .squad-content-card {
   background: var(--squad-panel);
   border: 1px solid var(--squad-border);
-  border-radius: var(--radius);
+  border-radius: 1rem;
+  box-shadow: var(--squad-shadow);
   min-width: 0;
   overflow: hidden;
+}
+
+.market-workspace .squad-content-card {
+  min-height: 28rem;
+}
+
+.market-tabs {
+  background: rgb(5 16 27 / 0.34);
+}
+
+.market-list-card {
+  width: 100%;
 }
 
 .squad-tabs {
@@ -206,9 +225,9 @@
 
 .squad-tab span {
   align-items: center;
-  background: var(--secondary);
+  background: rgb(148 163 184 / 0.13);
   border-radius: 999px;
-  color: var(--squad-muted);
+  color: #b9c8d7;
   display: inline-flex;
   font-size: 0.72rem;
   justify-content: center;
@@ -266,7 +285,7 @@
 
 .squad-view-toggle {
   align-items: center;
-  background: var(--surface);
+  background: rgb(5 16 27 / 0.86);
   border: 1px solid var(--squad-border);
   border-radius: 0.75rem;
   display: inline-flex;
@@ -291,8 +310,9 @@
 }
 
 .squad-view-toggle button[aria-pressed='true'] {
-  background: var(--secondary);
+  background: var(--squad-accent-soft);
   border-color: var(--squad-border-strong);
+  box-shadow: 0 0 18px rgb(34 211 238 / 0.11);
   color: var(--squad-accent);
 }
 
@@ -332,9 +352,12 @@
 }
 
 .squad-pitch {
-  background: var(--muted);
-  border: 1px solid var(--squad-border);
-  border-radius: var(--radius);
+  background:
+    radial-gradient(circle at 50% 50%, rgb(34 211 238 / 0.08), transparent 34%),
+    linear-gradient(180deg, rgb(9 48 57 / 0.72), rgb(5 30 42 / 0.92));
+  border: 1px solid rgb(34 211 238 / 0.25);
+  border-radius: 1rem;
+  box-shadow: inset 0 0 42px rgb(0 0 0 / 0.22);
   min-height: 42rem;
   overflow: hidden;
   padding: clamp(1rem, 3vw, 2rem);
@@ -342,7 +365,7 @@
 }
 
 .squad-pitch::before {
-  border: 2px solid var(--squad-border);
+  border: 2px solid rgb(34 211 238 / 0.2);
   border-radius: 0.35rem;
   content: '';
   inset: 1.2rem;
@@ -357,7 +380,7 @@
 }
 
 .pitch-halfway {
-  background: var(--squad-border);
+  background: rgb(34 211 238 / 0.18);
   height: 2px;
   left: 0;
   position: absolute;
@@ -366,7 +389,7 @@
 }
 
 .pitch-centre-circle {
-  border: 2px solid var(--squad-border);
+  border: 2px solid rgb(34 211 238 / 0.18);
   border-radius: 999px;
   height: 8rem;
   left: 50%;
@@ -377,7 +400,7 @@
 }
 
 .pitch-box {
-  border: 2px solid var(--squad-border);
+  border: 2px solid rgb(34 211 238 / 0.18);
   height: 7rem;
   left: 23%;
   position: absolute;
@@ -419,9 +442,11 @@
 
 .pitch-player-card {
   align-items: center;
-  background: var(--card);
-  border: 1px solid var(--squad-border);
-  border-radius: var(--radius);
+  backdrop-filter: blur(12px);
+  background: linear-gradient(160deg, rgb(11 30 47 / 0.96), rgb(5 17 29 / 0.93));
+  border: 1px solid rgb(113 171 196 / 0.35);
+  border-radius: 0.8rem;
+  box-shadow: 0 10px 24px rgb(0 0 0 / 0.24);
   color: var(--squad-foreground);
   cursor: pointer;
   display: grid;
@@ -431,17 +456,18 @@
   padding: 0.65rem 0.45rem 0.55rem;
   position: relative;
   text-align: center;
-  transition: border-color 150ms ease, background 150ms ease;
+  transition: border-color 150ms ease, transform 150ms ease, background 150ms ease;
   width: 100%;
 }
 
 .pitch-player-card:hover {
-  background: var(--secondary);
+  background: linear-gradient(160deg, rgb(15 39 59 / 0.98), rgb(7 23 37 / 0.96));
   border-color: var(--squad-border-strong);
+  transform: translateY(-2px);
 }
 
 .pitch-player-card:focus-visible {
-  outline: 2px solid var(--ring);
+  outline: 3px solid rgb(34 211 238 / 0.52);
   outline-offset: 3px;
 }
 
@@ -453,10 +479,10 @@
 
 .pitch-player-avatar {
   align-items: center;
-  background: var(--primary);
-  border: 1px solid var(--primary);
+  background: linear-gradient(145deg, #25d9ea, #037ead);
+  border: 2px solid rgb(255 255 255 / 0.18);
   border-radius: 999px;
-  color: var(--primary-foreground);
+  color: #03111c;
   display: inline-flex;
   font-size: 0.78rem;
   font-weight: 900;
@@ -482,7 +508,7 @@
 
 .pitch-player-metrics {
   align-items: center;
-  border-top: 1px solid var(--squad-border);
+  border-top: 1px solid rgb(125 177 200 / 0.18);
   color: var(--squad-muted);
   display: flex;
   font-size: 0.66rem;
@@ -501,7 +527,7 @@
   align-items: center;
   background: var(--squad-accent);
   border-radius: 999px;
-  color: var(--primary-foreground);
+  color: #03111c;
   display: inline-flex;
   font-size: 0.62rem;
   font-weight: 900;
@@ -514,7 +540,7 @@
 }
 
 .squad-bench {
-  background: var(--surface);
+  background: rgb(7 20 33 / 0.88);
   border: 1px solid var(--squad-border);
   border-radius: 0.9rem;
   padding: 0.85rem;
@@ -550,7 +576,7 @@
 
 .squad-filter-toolbar {
   align-items: center;
-  background: var(--surface);
+  background: rgb(6 18 30 / 0.82);
   border: 1px solid var(--squad-border);
   border-radius: 0.8rem;
   display: grid;
@@ -575,6 +601,7 @@
 .squad-search-field:focus-within,
 .squad-filter-field:focus-within {
   border-color: var(--squad-accent);
+  box-shadow: 0 0 0 3px rgb(34 211 238 / 0.12);
 }
 
 .squad-search-field input,
@@ -593,7 +620,7 @@
 }
 
 .squad-filter-field option {
-  background: var(--surface);
+  background: var(--squad-elevated);
   color: var(--squad-foreground);
 }
 
@@ -625,7 +652,7 @@
 }
 
 .squad-table th {
-  background: var(--surface);
+  background: rgb(6 18 30 / 0.92);
   color: var(--squad-muted);
   font-size: 0.7rem;
   font-weight: 750;
@@ -637,7 +664,7 @@
 
 .squad-table td {
   border-top: 1px solid var(--squad-border);
-  color: var(--squad-foreground);
+  color: #dbe7f0;
   padding: 0.75rem;
   vertical-align: middle;
 }
@@ -647,7 +674,7 @@
 }
 
 .squad-table tbody tr:hover {
-  background: var(--secondary);
+  background: rgb(34 211 238 / 0.055);
 }
 
 .squad-player-button,
@@ -687,10 +714,9 @@
 
 .squad-player-avatar {
   align-items: center;
-  background: var(--primary);
-  border: 1px solid var(--primary);
+  background: linear-gradient(145deg, #25d9ea, #037ead);
   border-radius: 999px;
-  color: var(--primary-foreground);
+  color: #03111c;
   display: inline-flex;
   flex: 0 0 auto;
   font-size: 0.72rem;
@@ -717,18 +743,14 @@
   white-space: nowrap;
 }
 
-.position-gkp,
-.position-def,
-.position-mid,
-.position-fwd,
-.status-owned,
-.status-available,
-.status-interested,
-.status-trade_target {
-  background: var(--secondary);
-  border-color: var(--border);
-  color: var(--foreground);
-}
+.position-gkp { background: rgb(34 211 238 / 0.13); border-color: rgb(34 211 238 / 0.28); color: #67e8f9; }
+.position-def { background: rgb(56 189 248 / 0.13); border-color: rgb(56 189 248 / 0.28); color: #7dd3fc; }
+.position-mid { background: rgb(45 212 191 / 0.13); border-color: rgb(45 212 191 / 0.28); color: #5eead4; }
+.position-fwd { background: rgb(251 113 133 / 0.13); border-color: rgb(251 113 133 / 0.28); color: #fda4af; }
+.status-owned { background: rgb(34 211 238 / 0.13); color: #67e8f9; }
+.status-available { background: rgb(74 222 128 / 0.13); color: #86efac; }
+.status-interested { background: rgb(251 191 36 / 0.13); color: #fcd34d; }
+.status-trade_target { background: rgb(244 114 182 / 0.13); color: #f9a8d4; }
 
 .squad-row-action {
   text-align: right;
@@ -757,13 +779,13 @@
 }
 
 .squad-icon-button:hover {
-  background: var(--secondary);
+  background: var(--squad-accent-soft);
   color: var(--squad-accent);
 }
 
 .squad-empty-state {
   align-items: center;
-  background: var(--surface);
+  background: rgb(6 18 30 / 0.72);
   border: 1px dashed var(--squad-border);
   border-radius: 0.8rem;
   color: var(--squad-muted);
@@ -786,7 +808,7 @@
 }
 
 .squad-activity-card {
-  background: var(--surface);
+  background: rgb(7 20 33 / 0.88);
   border-color: var(--squad-border);
   color: var(--squad-foreground);
   min-width: 0;
@@ -836,7 +858,7 @@
 }
 
 .squad-activity-item:hover {
-  background: var(--secondary);
+  background: rgb(34 211 238 / 0.055);
 }
 
 .squad-drawer-layer {
@@ -855,7 +877,8 @@
 }
 
 .squad-player-drawer {
-  background: var(--popover);
+  background: #081725;
+  box-shadow: -20px 0 45px rgb(0 0 0 / 0.38);
   color: var(--squad-foreground);
   display: grid;
   gap: 1.2rem;
@@ -1008,6 +1031,12 @@
     flex-direction: column;
   }
 
+  .market-tabs .squad-tab {
+    flex: 1 1 0;
+    justify-content: center;
+    min-width: 7rem;
+  }
+
   .squad-view-toggle {
     align-self: flex-start;
   }
@@ -1138,24 +1167,26 @@
 
 /* High-specificity dark surface contract */
 .feature-screen.squad-workspace {
-  background: var(--background);
-  color: var(--foreground);
+  background:
+    radial-gradient(circle at 12% 0%, rgb(34 211 238 / 0.11), transparent 28rem),
+    linear-gradient(160deg, #071625 0%, #06111d 62%, #030a12 100%);
+  color: #f8fafc;
 }
 
 .squad-workspace .squad-load-status {
-  color: var(--squad-muted);
+  color: #cbd5e1;
 }
 
 .squad-workspace .squad-metric-card.ui-card {
-  background: var(--surface);
-  border-color: var(--squad-border);
-  color: var(--squad-foreground);
+  background: #0b2032;
+  border-color: transparent;
+  color: #f8fafc;
 }
 
 .squad-workspace .squad-metric-card.ui-card div > span {
-  color: var(--squad-muted);
+  color: #cbd5e1;
 }
 
 .squad-workspace .squad-metric-card.ui-card div > strong {
-  color: var(--squad-foreground);
+  color: #ffffff;
 }

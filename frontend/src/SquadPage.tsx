@@ -1128,7 +1128,7 @@ function PitchCard({
       type="button"
     >
       <PositionMarker position={player.position} />
-      <TeamShirt team={player.team} />
+      <TeamShirt large team={player.team} />
       <strong className="squad-page__pitch-player-name">{shortPlayerName(player.displayName)}</strong>
       <span className="squad-page__pitch-player-form"><FormDots value={player.form} /></span>
       <small className={player.nextOpponent ? '' : 'is-placeholder'}>{formatFixtureLabel(player)}</small>

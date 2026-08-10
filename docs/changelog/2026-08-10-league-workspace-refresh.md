@@ -11,6 +11,9 @@
   fixtures, with explicit loading, error, empty, and unavailable-data states.
 - Added table-source messaging so calculated snapshots are not presented as
   persisted historical truth.
+- Tightened the Overview route so it stays a status and next-action landing
+  view; detailed fixtures, standings, knockout, and head-to-head content only
+  renders inside its selected contextual tab.
 
 ## Migration boundary
 

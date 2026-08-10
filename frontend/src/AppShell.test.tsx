@@ -168,7 +168,8 @@ describe('AppShell integration', () => {
     expect(container.textContent).toContain('League fixtures and results');
     expect(container.textContent).toContain('Gameweek 12');
     expect(container.textContent).toContain('Castle United');
-    expect(container.textContent).toContain('58 - 52');
+    expect(container.textContent).toContain('Review fixtures');
+    expect(container.textContent).not.toContain('Fixtures in play');
   });
 
   test('provides an account profile with persisted appearance controls', async () => {

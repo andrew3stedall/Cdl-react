@@ -84,11 +84,21 @@ async function renderPage(currentPath = '/league', client = new MemoryLeagueClie
 }
 
 describe('LeaguePage', () => {
-  test('keeps the overview focused and opens started fixture detail', async () => {
-    const { client, container, root } = await renderPage();
+  test('keeps the overview focused on status and the next action', async () => {
+    const { container, root } = await renderPage();
 
     expect(container.textContent).toContain('The current round is in play');
-    expect(container.textContent).toContain('Who is setting the pace');
+    expect(container.textContent).toContain('Overview stays lightweight');
+    expect(container.textContent).not.toContain('Fixtures in play');
+    expect(container.textContent).not.toContain('Who is setting the pace');
+    expect(container.textContent).not.toContain('Knockout path');
+    expect(container.textContent).not.toContain('Head-to-head records');
+    expect(container.querySelector('.league-fixture-card')).toBeNull();
+    act(() => root.unmount());
+  });
+
+  test('opens started fixture detail from the selected fixtures view', async () => {
+    const { client, container, root } = await renderPage('/league/fixtures');
 
     await act(async () => {
       container.querySelector<HTMLButtonElement>('button[aria-label*="View details"]')?.click();
@@ -99,6 +109,24 @@ describe('LeaguePage', () => {
     expect(client.detailRequests).toEqual(['fixture-1201']);
     expect(container.querySelector('[role="dialog"]')?.textContent).toContain('Scoring detail is available.');
     act(() => root.unmount());
+  });
+
+  test('renders only the content for the selected competition tab', async () => {
+    const views = [
+      { path: '/league/fixtures', visible: 'Current fixtures', hidden: ['League table', 'Knockout bracket', 'Head-to-head records'] },
+      { path: '/league/table', visible: 'League table', hidden: ['Current fixtures', 'Knockout bracket', 'Head-to-head records'] },
+      { path: '/league/knockout', visible: 'Knockout bracket', hidden: ['Current fixtures', 'League table', 'Head-to-head records'] },
+      { path: '/league/head-to-head', visible: 'Head-to-head records', hidden: ['Current fixtures', 'League table', 'Knockout bracket'] },
+    ] as const;
+
+    for (const view of views) {
+      const { container, root } = await renderPage(view.path);
+      expect(container.textContent).toContain(view.visible);
+      for (const hiddenSection of view.hidden) {
+        expect(container.textContent).not.toContain(hiddenSection);
+      }
+      act(() => root.unmount());
+    }
   });
 
   test('filters the all-fixtures list without changing the API snapshot', async () => {

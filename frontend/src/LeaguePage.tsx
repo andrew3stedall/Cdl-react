@@ -10,7 +10,6 @@ import {
   RefreshCw,
   Swords,
   Table2,
-  Trophy,
   X,
 } from 'lucide-react';
 
@@ -199,16 +198,14 @@ function LeagueContent({
   if (view === 'head-to-head') {
     return <HeadToHeadView snapshot={snapshot} />;
   }
-    return <OverviewView onNavigate={onNavigate} onOpenFixture={onOpenFixture} snapshot={snapshot} />;
+  return <OverviewView onNavigate={onNavigate} snapshot={snapshot} />;
 }
 
 function OverviewView({
   onNavigate,
-  onOpenFixture,
   snapshot,
 }: {
   onNavigate: (href: string) => void;
-  onOpenFixture: (fixture: LeagueFixture) => void;
   snapshot: LeagueSnapshot;
 }) {
   const currentFixtures = snapshot.currentFixtures.fixtures;
@@ -216,23 +213,39 @@ function OverviewView({
   const leader = snapshot.table.rows[0];
   const completedFixtures = snapshot.allFixtures.fixtures.filter((fixture) => fixture.status === 'complete').length;
   const detailCount = snapshot.allFixtures.fixtures.filter((fixture) => fixture.detailAvailable).length;
+  const focus = currentFixtures.length
+    ? {
+      action: 'Review fixtures',
+      detail: `${currentFixtures.length} fixture${currentFixtures.length === 1 ? '' : 's'} are in play. Open the Fixtures tab when you want the round-by-round detail.`,
+      href: '/league/fixtures',
+      title: 'The current round is in play',
+    }
+    : nextFixtures.length
+      ? {
+        action: 'View upcoming fixtures',
+        detail: 'The next round is set. Open the Fixtures tab to review the schedule and previous results.',
+        href: '/league/fixtures',
+        title: 'Your next league round is set',
+      }
+      : {
+        action: 'Open league table',
+        detail: 'There is no active schedule to review. Open the Table tab to see the current standings.',
+        href: '/league/table',
+        title: 'The competition is between rounds',
+      };
 
   return (
     <div className="league-page__content">
       <Card className="league-hero">
         <div className="league-hero__copy">
           <p className="league-hero__kicker"><span className="league-pulse-dot" /> League pulse</p>
-          <h2>{currentFixtures.length ? 'The current round is in play' : 'Your next league round is set'}</h2>
-          <p>
-            {currentFixtures.length
-              ? `${currentFixtures.length} fixture${currentFixtures.length === 1 ? '' : 's'} in the current round. Check a started result for the scoring detail behind it.`
-              : 'Use the fixture view to see the next round and review how the competition is moving.'}
-          </p>
+          <h2>{focus.title}</h2>
+          <p>{focus.detail}</p>
         </div>
         <div className="league-hero__action">
           <span className="league-hero__meta"><CalendarDays aria-hidden="true" size={15} /> {gameweekLabel(snapshot.currentFixtures, 'Current gameweek')}</span>
-          <LeagueNavLink className="ui-button ui-button-primary" href="/league/fixtures" onNavigate={onNavigate}>
-            Review fixtures <ArrowRight aria-hidden="true" size={16} />
+          <LeagueNavLink className="ui-button ui-button-primary" href={focus.href} onNavigate={onNavigate}>
+            {focus.action} <ArrowRight aria-hidden="true" size={16} />
           </LeagueNavLink>
         </div>
       </Card>
@@ -243,50 +256,16 @@ function OverviewView({
         <MetricCard icon={<Swords aria-hidden="true" size={17} />} label="Results recorded" value={`${completedFixtures}`} detail={`${detailCount} fixture detail${detailCount === 1 ? '' : 's'} available`} />
       </section>
 
-      <div className="league-page__columns">
-        <section aria-labelledby="league-current-title" className="league-section">
-          <SectionHeading
-            action={<LeagueNavLink className="league-text-link" href="/league/fixtures" onNavigate={onNavigate}>All fixtures <ChevronRight aria-hidden="true" size={15} /></LeagueNavLink>}
-            eyebrow={gameweekLabel(snapshot.currentFixtures, 'Current round')}
-            id="league-current-title"
-            title="Fixtures in play"
-          />
-          <div className="league-fixture-stack">
-            {currentFixtures.length ? currentFixtures.map((fixture) => <FixtureCard fixture={fixture} key={fixture.id} onOpen={onOpenFixture} />) : <EmptyState message="No current fixtures are available." />}
-          </div>
-        </section>
-
-        <section aria-labelledby="league-table-preview-title" className="league-section">
-          <SectionHeading
-            action={<LeagueNavLink className="league-text-link" href="/league/table" onNavigate={onNavigate}>Full table <ChevronRight aria-hidden="true" size={15} /></LeagueNavLink>}
-            eyebrow="Standings"
-            id="league-table-preview-title"
-            title="Who is setting the pace"
-          />
-          <TablePreview rows={snapshot.table.rows.slice(0, 4)} />
-        </section>
-      </div>
-
-      <div className="league-page__columns league-page__columns--secondary">
-        <CompetitionSummary
-          icon={<Trophy aria-hidden="true" size={18} />}
-          linkHref="/league/knockout"
-          linkLabel="View knockout"
-          onNavigate={onNavigate}
-          title="Knockout path"
-        >
-          {snapshot.knockout.matches.length ? `${snapshot.knockout.matches.length} match${snapshot.knockout.matches.length === 1 ? '' : 'es'} in the bracket.` : 'No knockout fixtures are available yet.'}
-        </CompetitionSummary>
-        <CompetitionSummary
-          icon={<Swords aria-hidden="true" size={18} />}
-          linkHref="/league/head-to-head"
-          linkLabel="Compare records"
-          onNavigate={onNavigate}
-          title="Head-to-head"
-        >
-          {snapshot.headToHead.records.length ? `${snapshot.headToHead.records.length} matchup record${snapshot.headToHead.records.length === 1 ? '' : 's'} are ready to review.` : 'Head-to-head records will appear after results are recorded.'}
-        </CompetitionSummary>
-      </div>
+      <Card className="league-focus-card">
+        <div>
+          <p className="eyebrow">Choose a competition view</p>
+          <h2>Open a tab when you are ready to go deeper</h2>
+          <p>Overview stays lightweight; fixtures, standings, knockout and head-to-head details appear only in their selected views.</p>
+        </div>
+        <LeagueNavLink className="league-text-link" href={focus.href} onNavigate={onNavigate}>
+          {focus.action} <ChevronRight aria-hidden="true" size={15} />
+        </LeagueNavLink>
+      </Card>
     </div>
   );
 }
@@ -442,14 +421,6 @@ function FixtureTeams({ compact = false, fixture }: { compact?: boolean; fixture
   );
 }
 
-function TablePreview({ rows }: { rows: LeagueTableRow[] }) {
-  return (
-    <div className="league-table-preview">
-      {rows.length ? rows.map((row) => <div className="league-table-preview__row" key={row.team.id}><span className="league-table-preview__position">{row.position}</span><span className="league-table-preview__team"><strong>{row.team.name}</strong><small>{row.wins}W · {row.draws}D · {row.losses}L</small></span><strong>{row.leaguePoints}<small> pts</small></strong></div>) : <EmptyState message="No standings available." />}
-    </div>
-  );
-}
-
 function TableRow({ row }: { row: LeagueTableRow }) {
   return <tr><th scope="row"><span className={`league-rank league-rank--${row.position <= 3 ? row.position : 'other'}`}>{row.position}</span></th><th scope="row" className="league-table__team">{row.team.name}</th><td>{row.played}</td><td>{row.wins}-{row.draws}-{row.losses}</td><td>{row.pointsFor}</td><td>{row.pointsAgainst}</td><td>{row.pointsDifference > 0 ? '+' : ''}{row.pointsDifference}</td><td><strong>{row.leaguePoints}</strong></td></tr>;
 }
@@ -474,10 +445,6 @@ function LeaguePulse({ snapshot }: { snapshot: LeagueSnapshot }) {
 
 function MetricCard({ detail, icon, label, value }: { detail: string; icon: ReactNode; label: string; value: string }) {
   return <Card className="league-metric-card"><span className="league-metric-card__icon">{icon}</span><span className="league-metric-card__label">{label}</span><strong>{value}</strong><span className="league-metric-card__detail">{detail}</span></Card>;
-}
-
-function CompetitionSummary({ children, icon, linkHref, linkLabel, onNavigate, title }: { children: ReactNode; icon: ReactNode; linkHref: string; linkLabel: string; onNavigate: (href: string) => void; title: string }) {
-  return <Card className="league-competition-card"><span className="league-competition-card__icon">{icon}</span><div><h2>{title}</h2><p>{children}</p><LeagueNavLink className="league-text-link" href={linkHref} onNavigate={onNavigate}>{linkLabel} <ArrowRight aria-hidden="true" size={15} /></LeagueNavLink></div></Card>;
 }
 
 function LeagueNavLink({ children, className, href, onNavigate }: { children: ReactNode; className: string; href: string; onNavigate: (href: string) => void }) {

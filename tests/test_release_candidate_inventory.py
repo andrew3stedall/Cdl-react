@@ -134,7 +134,7 @@ def test_authenticated_squad_and_market_evidence_is_focused_and_truthful() -> No
         "Submit Squad Changes",
         "Add 1 draw-won player before confirming.",
         "Restore to Squad",
-        "Casey Midfielder added to interests.",
+        "Casey Midfielder added to Interests.",
         "page.reload({ waitUntil: 'networkidle' })",
         "{ width: 390, height: 844 }",
         "{ width: 1440, height: 900 }",

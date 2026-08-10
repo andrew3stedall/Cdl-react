@@ -28,7 +28,7 @@ This inventory describes repository-backed release evidence after PR #108. It is
 
 ## Release navigation decision
 
-Primary navigation is limited to product-facing workflows: squad management, team selection, league, rules, dashboard, FDR and scouting. The five `/modernisation/checkpoint-*` screens are engineering previews, not release-candidate destinations. Their direct routes remain available for contract development, but navigation tests prevent them from being presented to testers as supported product features.
+Primary navigation is limited to product-facing workflows: Desk, Squad, Market and League, with Rules and Fixture Difficulty available contextually. The five `/modernisation/checkpoint-*` screens are engineering previews, not release-candidate destinations. Their direct routes remain available for contract development, but navigation tests prevent them from being presented to testers as supported product features.
 
 ## Workflow evidence inventory
 

@@ -97,6 +97,7 @@ interface PlayerView {
   xg: number | null;
   xa: number | null;
   nextOpponent: string | null;
+  nextFixtureIsHome: boolean | null;
   nextFixtureDifficulty: number | null;
   nextFixtureKickoff: string | null;
   availability: string | null;
@@ -131,6 +132,7 @@ interface PlayerApiResponse {
   next_fixture?: {
     opponent: { id: string; name: string; short_name?: string | null };
     difficulty?: number | null;
+    is_home: boolean;
     kickoff_at?: string | null;
   } | null;
 }
@@ -188,6 +190,7 @@ function mapPlayer(player: PlayerApiResponse): PlayerView {
     xg: firstNumber(player.xg, player.expected_goals),
     xa: firstNumber(player.xa, player.expected_assists),
     nextOpponent: nextFixture?.opponent.short_name ?? nextFixture?.opponent.name ?? player.next_opponent ?? null,
+    nextFixtureIsHome: nextFixture?.is_home ?? null,
     nextFixtureDifficulty: typeof nextFixture?.difficulty === 'number' ? nextFixture.difficulty : null,
     nextFixtureKickoff: nextFixture?.kickoff_at ?? null,
     availability: player.availability ?? player.availability_status ?? null,
@@ -213,6 +216,7 @@ function mapTeamSelectionPlayer(player: TeamSelectionPlayer): PlayerView {
     xg: null,
     xa: null,
     nextOpponent: null,
+    nextFixtureIsHome: null,
     nextFixtureDifficulty: null,
     nextFixtureKickoff: null,
     availability: null,
@@ -246,6 +250,7 @@ function mergeLineupPlayers(roster: PlayerView[], lineup: TeamSelectionPlayer[] 
       xg: existing?.xg ?? null,
       xa: existing?.xa ?? null,
       nextOpponent: existing?.nextOpponent ?? null,
+      nextFixtureIsHome: existing?.nextFixtureIsHome ?? null,
       nextFixtureDifficulty: existing?.nextFixtureDifficulty ?? null,
       nextFixtureKickoff: existing?.nextFixtureKickoff ?? null,
       availability: existing?.availability ?? null,
@@ -1117,16 +1122,16 @@ function PitchCard({
     <button
       aria-label={label}
       aria-pressed={substitutionMode && isCandidate ? isTarget : undefined}
-      className={`squad-page__pitch-player position-${player.position.toLowerCase()} ${compact ? 'compact' : ''} ${substitutionMode ? 'is-substitution-mode' : ''} ${isSource ? 'is-substitution-source' : ''} ${isCandidate ? 'is-substitution-candidate' : ''} ${isTarget ? 'is-substitution-target' : ''} ${substitutionMode && !isCandidate ? 'is-substitution-unavailable' : ''}`}
+      className={`squad-page__pitch-player position-${player.position.toLowerCase()} form-band-${formBand(player.form)} ${compact ? 'compact' : ''} ${substitutionMode ? 'is-substitution-mode' : ''} ${isSource ? 'is-substitution-source' : ''} ${isCandidate ? 'is-substitution-candidate' : ''} ${isTarget ? 'is-substitution-target' : ''} ${substitutionMode && !isCandidate ? 'is-substitution-unavailable' : ''}`}
       disabled={substitutionMode && !isCandidate}
       onClick={handleClick}
       type="button"
     >
       <PositionMarker position={player.position} />
       <TeamShirt team={player.team} />
-      <strong>{shortPlayerName(player.displayName)}</strong>
-      <small className={player.nextOpponent ? '' : 'is-placeholder'}>{player.nextOpponent ? `vs ${player.nextOpponent}` : 'Next —'}</small>
-      <div className="squad-page__player-form"><FormDots value={player.form} /><b>{formatMetric(player.form)}</b></div>
+      <strong className="squad-page__pitch-player-name">{shortPlayerName(player.displayName)}</strong>
+      <span className="squad-page__pitch-player-form"><FormDots value={player.form} /></span>
+      <small className={player.nextOpponent ? '' : 'is-placeholder'}>{formatFixtureLabel(player)}</small>
       {player.captain ? <span className="squad-page__captain">C</span> : null}
       {player.viceCaptain ? <span className="squad-page__captain vice">VC</span> : null}
       <AvailabilityFlag player={player} />
@@ -1260,12 +1265,11 @@ function SquadList({
                   <col className="player" />
                   <col className="next" />
                   <col className="points" />
-                  <col className="form" />
                   <col className="expected" />
                   <col className="availability" />
                   <col className="action" />
                 </colgroup>
-                <thead><tr><th>Player</th><th>Next</th><th className="sorted">Pts <ArrowDown size={11} /></th><th>Form</th><th>xG / xA</th><th><span className="sr-only">Availability</span><CircleCheck aria-hidden="true" size={13} /></th><th><span className="sr-only">Actions</span></th></tr></thead>
+                <thead><tr><th>Player</th><th>Next</th><th className="sorted">Pts <ArrowDown size={11} /></th><th>xG / xA</th><th><span className="sr-only">Availability</span><CircleCheck aria-hidden="true" size={13} /></th><th><span className="sr-only">Actions</span></th></tr></thead>
                 <tbody>
                   {group.players.map((player) => (
                     <tr
@@ -1285,14 +1289,13 @@ function SquadList({
                           onClick={() => selectPlayer(player)}
                           type="button"
                         >
-                          <PlayerIdentity player={player} showMeta={false} />
+                          <PlayerIdentity player={player} showForm showMeta={false} />
                           {player.captain ? <span className="squad-page__row-badge">C</span> : null}
                           {player.viceCaptain ? <span className="squad-page__row-badge vice">VC</span> : null}
                         </button>
                       </td>
-                      <td><span className={`squad-page__next-opponent ${player.nextOpponent ? '' : 'is-placeholder'}`}>{player.nextOpponent ? `vs ${player.nextOpponent}` : 'Next —'}</span></td>
+                      <td><span className={`squad-page__next-opponent ${player.nextOpponent ? '' : 'is-placeholder'}`}>{formatFixtureLabel(player)}</span></td>
                       <td><strong>{formatInteger(player.points)}</strong></td>
-                      <td className="metric-accent">{formatMetric(player.form)}</td>
                       <td><span className="squad-page__expected"><span>{formatMetric(player.xg)}</span><span>{formatMetric(player.xa)}</span></span></td>
                       <td><AvailabilityFlag inline player={player} /></td>
                       <td>
@@ -1332,7 +1335,7 @@ function DrawerHeader({ onClose, player, title }: { onClose: () => void; player?
   return (
     <header className="squad-page__drawer-header">
       {player ? <TeamShirt large team={player.team} /> : <span className="squad-page__brand-mark"><Shield size={22} /></span>}
-      <div><h2>{title}</h2>{player ? <p><PositionMarker position={player.position} /> · <span className={player.nextOpponent ? '' : 'is-placeholder'}>{player.nextOpponent ? `vs ${player.nextOpponent}` : 'Next fixture —'}</span>{player.nextFixtureDifficulty !== null ? ` · FDR ${player.nextFixtureDifficulty}` : ''}</p> : null}</div>
+      <div><h2>{title}</h2>{player ? <p><PositionMarker position={player.position} /> · <span className={player.nextOpponent ? '' : 'is-placeholder'}>{formatFixtureLabel(player)}</span>{player.nextFixtureDifficulty !== null ? ` · FDR ${player.nextFixtureDifficulty}` : ''}</p> : null}</div>
       <button aria-label="Close drawer" className="squad-page__icon-button" onClick={onClose} type="button"><X size={19} /></button>
     </header>
   );
@@ -1597,12 +1600,12 @@ function TradeDrawer({
   );
 }
 
-function PlayerIdentity({ large = false, player, showMeta = true }: { large?: boolean; player: PlayerView; showMeta?: boolean }) {
+function PlayerIdentity({ large = false, player, showForm = false, showMeta = true }: { large?: boolean; player: PlayerView; showForm?: boolean; showMeta?: boolean }) {
   return (
     <span className={`squad-page__identity ${large ? 'large' : ''}`}>
       <PositionMarker position={player.position} />
       <TeamShirt large={large} team={player.team} />
-      <span><strong>{player.displayName}</strong>{showMeta ? <small><span className={player.nextOpponent ? '' : 'is-placeholder'}>{player.nextOpponent ? `vs ${player.nextOpponent}` : 'Next —'}</span></small> : null}</span>
+      <span><strong>{player.displayName}</strong>{showForm ? <span className="squad-page__list-form"><FormDots value={player.form} /></span> : null}{showMeta ? <small><span className={player.nextOpponent ? '' : 'is-placeholder'}>{formatFixtureLabel(player)}</span></small> : null}</span>
     </span>
   );
 }
@@ -1644,8 +1647,13 @@ function Metric({ dots = false, label, placeholder = false, value }: { dots?: bo
 }
 
 function FormDots({ value }: { value: number | null }) {
-  const active = value === null || Number.isNaN(value) ? 0 : Math.max(0, Math.min(5, Math.round(value / 2)));
-  return <span aria-hidden="true" className="squad-page__form-dots">{Array.from({ length: 5 }, (_, index) => <i className={index < active ? 'active' : ''} key={index} />)}</span>;
+  const active = value === null || Number.isNaN(value)
+    ? 0
+    : value < 0
+      ? 1
+      : Math.max(0, Math.min(5, Math.round(value / 2)));
+  const band = formBand(value);
+  return <span aria-hidden="true" className={`squad-page__form-dots form-band-${band}`}>{Array.from({ length: 5 }, (_, index) => <i className={index < active ? 'active' : ''} key={index} />)}</span>;
 }
 
 function ChangeReview({ label, players }: { label: string; players: PlayerView[] }) {
@@ -1993,6 +2001,21 @@ function formatMetric(value: number | null): string {
 
 function formatInteger(value: number | null): string {
   return value === null || Number.isNaN(value) ? '—' : String(value);
+}
+
+function formBand(value: number | null): 'negative' | 'low' | 'steady' | 'high' | 'unknown' {
+  if (value === null || Number.isNaN(value)) return 'unknown';
+  if (value < 0) return 'negative';
+  if (value < 4) return 'low';
+  if (value < 10) return 'steady';
+  return 'high';
+}
+
+function formatFixtureLabel(player: Pick<PlayerView, 'nextOpponent' | 'nextFixtureIsHome'>): string {
+  if (!player.nextOpponent) return 'Next —';
+  return player.nextFixtureIsHome === true
+    ? player.nextOpponent.toUpperCase()
+    : player.nextOpponent.toLowerCase();
 }
 
 function formatFetchedAt(value: string): string {

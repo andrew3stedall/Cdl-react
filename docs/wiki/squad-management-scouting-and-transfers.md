@@ -86,15 +86,17 @@ Content-Type: application/json
 
 ## UI
 
-`/squad-management` renders inside the shared application shell and includes:
+The old `/squad-management` screen is now a migration reference. The shared shell routes the modern experience across focused workspaces:
 
-- Squad summary cards.
-- Dense current squad and scouting tables.
-- Scouting search.
-- Interest creation.
-- Proposed trade action and rule link.
-- Shared player detail dialog.
-- Compact visual preset compatibility via `data-density`.
+- `/squad` owns season-long squad health, lineup, and squad actions.
+- `/scouting` is the user-facing Market discovery workspace.
+- `/scouting/interests` owns draw-specific preference review.
+- `/scouting/trades` owns trade activity.
+- `/fdr` remains the contextual fixture-difficulty tool.
+
+Market discovery includes search, evidence-led player rows, official FPL metrics, ownership and availability labels, next-fixture context, Interest actions, and a shared player detail drawer. Squad and Market keep their action boundaries explicit: a discovery action can create an Interest, while season-long squad changes stay in Squad.
+
+Compact visual preset compatibility remains available via `data-density`.
 
 ## Data Access
 

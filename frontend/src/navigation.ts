@@ -58,6 +58,16 @@ export const contextualNavigationSections: NavigationSection[] = [
         supportsScouting: true,
       },
       {
+        label: 'Interests',
+        href: '/scouting/interests',
+        featureKey: 'interests',
+      },
+      {
+        label: 'Trades',
+        href: '/scouting/trades',
+        featureKey: 'trades',
+      },
+      {
         label: 'Fixture difficulty',
         href: '/fdr',
         featureKey: 'fdr',

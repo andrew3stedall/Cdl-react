@@ -45,6 +45,7 @@ def test_screenshot_script_captures_core_routes() -> None:
         "/dashboard",
         "/fdr",
         "/squad-management",
+        "/scouting",
         "/team-selection",
     ]
     for route in routes:

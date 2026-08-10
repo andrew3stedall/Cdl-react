@@ -63,13 +63,21 @@ The normal runtime maps the backend's snake-case `/api/auth/session` contract in
 9. Repeat at both widths with the API returning a fixture lock.
 10. Confirm the lock reason renders in a labelled view-only notice and every lineup, chip, substitution, and save control is disabled.
 
-### Squad management
+### Squad workspace
 
 1. Open `/squad-management` and confirm the squad-loaded status.
 2. Search for Casey Midfielder and add the player to interests.
 3. Confirm the interest list and open the player's detail dialog.
 4. Verify the player summary, then close the dialog.
 5. Propose a sample trade and confirm its Trade Window rules link.
+
+### Market discovery
+
+1. Open `/scouting` and confirm the Market heading, action cards, and official-data note.
+2. Search for Casey Midfielder and add the player to Interests.
+3. Open Interests from the Market context navigation and confirm the player appears with the draw-preference explanation.
+4. Open the player details drawer, verify the evidence metrics and availability section, then close it.
+5. Open Trades and confirm the empty state explains where trade proposals will appear.
 
 ### Dashboard
 
@@ -105,6 +113,7 @@ These journeys verify that the session boundary, rendered controls, React state 
 - `/dashboard`
 - `/fdr`
 - `/squad-management`
+- `/scouting`
 - `/team-selection`
 
 ## Viewports

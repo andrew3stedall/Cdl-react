@@ -20,6 +20,11 @@
   --squad-position-def: #3e927f;
   --squad-position-mid: #397d9b;
   --squad-position-fwd: #a2784c;
+  --squad-form-negative: #a8777e;
+  --squad-form-low: #71889a;
+  --squad-form-steady: #a9966e;
+  --squad-form-high: #78a39a;
+  --squad-form-empty: color-mix(in srgb, var(--squad-text) 16%, transparent);
   background: var(--squad-bg);
   color: var(--squad-text);
   display: grid;
@@ -443,21 +448,41 @@
 .squad-page__form-dots {
   align-items: center;
   display: inline-flex;
-  gap: 0.2rem;
+  gap: 0.13rem;
   justify-content: center;
   min-height: 0.85rem;
 }
 
 .squad-page__form-dots i {
-  background: var(--border);
-  border-radius: 999px;
+  background: var(--squad-form-empty);
+  border-radius: 50%;
   display: block;
-  height: 0.42rem;
-  width: 0.42rem;
+  height: 0.34rem;
+  width: 0.34rem;
 }
 
 .squad-page__form-dots i.active {
-  background: var(--squad-success);
+  background: var(--squad-form-tone, var(--squad-form-low));
+}
+
+.squad-page__form-dots.form-band-negative {
+  --squad-form-tone: var(--squad-form-negative);
+}
+
+.squad-page__form-dots.form-band-low {
+  --squad-form-tone: var(--squad-form-low);
+}
+
+.squad-page__form-dots.form-band-steady {
+  --squad-form-tone: var(--squad-form-steady);
+}
+
+.squad-page__form-dots.form-band-high {
+  --squad-form-tone: var(--squad-form-high);
+}
+
+.squad-page__form-dots.form-band-unknown {
+  --squad-form-tone: var(--squad-form-low);
 }
 
 .squad-page__attention {
@@ -589,6 +614,7 @@
 }
 
 .squad-page__pitch-shell {
+  --squad-pitch-token-size: clamp(3.45rem, 17vw, 6rem);
   display: grid;
   gap: 0.65rem;
 }
@@ -688,27 +714,33 @@
 
 .squad-page__pitch-player {
   align-items: center;
-  background: transparent;
-  border: 1px solid var(--squad-position-accent, var(--squad-border));
-  border-radius: var(--radius);
+  aspect-ratio: 1;
+  background: var(--squad-form-surface, color-mix(in srgb, var(--squad-pitch) 88%, var(--squad-form-tone) 12%));
+  border: 0;
+  border-radius: 50%;
   color: var(--squad-text);
   cursor: pointer;
   display: grid;
-  flex: 1 1 0;
-  gap: 0.15rem;
+  flex: 0 0 var(--squad-pitch-token-size);
+  gap: 0;
+  height: var(--squad-pitch-token-size);
   justify-items: center;
-  max-width: 7.4rem;
-  min-height: 7.2rem;
   min-width: 0;
-  padding: 0.45rem 0.22rem 0.38rem;
+  overflow: hidden;
+  padding: 0.3rem 0.18rem;
   position: relative;
   text-align: center;
+  --squad-form-tone: var(--squad-form-low);
 }
 
 .squad-page__pitch-player:hover,
 .squad-page__pitch-player:focus-visible {
-  background: transparent;
-  border-color: var(--squad-border-strong);
+  background: color-mix(in srgb, var(--squad-form-surface) 84%, var(--squad-text) 16%);
+}
+
+.squad-page__pitch-player:focus-visible {
+  outline: 2px solid var(--squad-accent);
+  outline-offset: 2px;
 }
 
 .squad-page__pitch-player:disabled {
@@ -716,36 +748,62 @@
 }
 
 .squad-page__pitch-player.is-substitution-source {
-  border-style: dashed;
-  border-color: var(--squad-accent);
+  outline: 2px dashed var(--squad-accent);
+  outline-offset: 2px;
 }
 
 .squad-page__pitch-player.is-substitution-candidate {
-  border-color: var(--squad-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--squad-accent) 70%, transparent);
 }
 
 .squad-page__pitch-player.is-substitution-target {
-  border-width: 2px;
+  box-shadow: 0 0 0 3px var(--squad-accent);
 }
 
 .squad-page__pitch-player.is-substitution-unavailable {
-  border-color: var(--squad-border);
   opacity: 0.38;
 }
 
-.squad-page__pitch-player strong {
+.squad-page__pitch-player.form-band-negative {
+  --squad-form-tone: var(--squad-form-negative);
+}
+
+.squad-page__pitch-player.form-band-low {
+  --squad-form-tone: var(--squad-form-low);
+}
+
+.squad-page__pitch-player.form-band-steady {
+  --squad-form-tone: var(--squad-form-steady);
+}
+
+.squad-page__pitch-player.form-band-high {
+  --squad-form-tone: var(--squad-form-high);
+}
+
+.squad-page__pitch-player.form-band-unknown {
+  --squad-form-tone: var(--squad-form-low);
+  --squad-form-surface: color-mix(in srgb, var(--squad-pitch) 94%, var(--squad-form-tone) 6%);
+}
+
+.squad-page__pitch-player-name {
+  align-self: center;
   font-size: clamp(0.62rem, 1.6vw, 0.78rem);
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
+  transform: translateY(0.12rem);
   white-space: nowrap;
+  z-index: 2;
 }
 
 .squad-page__pitch-player > small {
+  align-self: end;
+  bottom: 0.52rem;
   color: var(--squad-muted);
   font-size: clamp(0.54rem, 1.3vw, 0.66rem);
   max-width: 100%;
   overflow: hidden;
+  position: absolute;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -756,6 +814,29 @@
 
 .squad-page__pitch-player > small.is-placeholder {
   color: var(--squad-text);
+}
+
+.squad-page__pitch-player > .squad-page__position-marker {
+  left: 50%;
+  position: absolute;
+  top: 0.55rem;
+  transform: translateX(-50%);
+  z-index: 3;
+}
+
+.squad-page__pitch-player > .squad-page__shirt {
+  align-self: start;
+  height: clamp(2.25rem, 8vw, 3.45rem);
+  margin-top: 0.25rem;
+  object-fit: contain;
+  width: clamp(2.7rem, 9vw, 3.85rem);
+}
+
+.squad-page__pitch-player-form {
+  align-self: center;
+  position: absolute;
+  top: calc(50% + 0.82rem);
+  z-index: 2;
 }
 
 .squad-page__shirt {
@@ -797,26 +878,6 @@
 .squad-page__position-marker.position-fwd,
 .squad-page__pitch-player.position-fwd {
   --squad-position-accent: var(--squad-position-fwd);
-}
-
-.squad-page__player-form {
-  align-items: center;
-  display: flex;
-  gap: 0.25rem;
-}
-
-.squad-page__player-form .squad-page__form-dots {
-  gap: 0.13rem;
-}
-
-.squad-page__player-form .squad-page__form-dots i {
-  height: 0.34rem;
-  width: 0.34rem;
-}
-
-.squad-page__player-form b {
-  color: var(--squad-accent);
-  font-size: 0.64rem;
 }
 
 .squad-page__captain {
@@ -900,12 +961,43 @@
   display: grid;
   gap: 0.4rem;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+  justify-items: center;
+}
+
+.squad-page__reserves {
+  background: var(--surface);
+  border: 1px solid var(--squad-border);
+  border-radius: 0.82rem;
+  padding: 0.7rem;
+}
+
+.squad-page__reserves > header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.55rem;
+}
+
+.squad-page__reserves h3 {
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+.squad-page__reserves header span {
+  color: var(--squad-muted);
+  font-size: 0.62rem;
+}
+
+.squad-page__reserves > div {
+  display: grid;
+  gap: 0.4rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  justify-items: center;
 }
 
 .squad-page__pitch-player.compact {
   max-width: none;
-  min-height: 5.8rem;
-  padding-bottom: 0.72rem;
+  min-height: 0;
 }
 
 .squad-page__bench-order {
@@ -1136,20 +1228,19 @@
 }
 
 .squad-page__list-table col.player {
-  width: 31%;
+  width: 39%;
 }
 
 .squad-page__list-table col.next {
   width: 16%;
 }
 
-.squad-page__list-table col.points,
-.squad-page__list-table col.form {
-  width: 9%;
+.squad-page__list-table col.points {
+  width: 11%;
 }
 
 .squad-page__list-table col.expected {
-  width: 15%;
+  width: 16%;
 }
 
 .squad-page__list-table col.availability {
@@ -1167,6 +1258,11 @@
 
 .squad-page__list-table th:not(:first-child),
 .squad-page__list-table td:not(:first-child) {
+  text-align: right;
+}
+
+.squad-page__list-table th:nth-last-child(-n + 2),
+.squad-page__list-table td:nth-last-child(-n + 2) {
   text-align: center;
 }
 
@@ -1199,10 +1295,25 @@
   font-size: 0.68rem;
 }
 
+.squad-page__list-table .squad-page__identity > span:last-child {
+  gap: 0.2rem;
+}
+
 .squad-page__list-table .squad-page__shirt {
   flex: 0 0 auto;
   height: 1.75rem;
   width: 2rem;
+}
+
+.squad-page__list-form {
+  align-items: center;
+  display: inline-flex;
+  min-height: 0.45rem;
+}
+
+.squad-page__list-form .squad-page__form-dots i {
+  height: 0.3rem;
+  width: 0.3rem;
 }
 
 .squad-page__row-badge {
@@ -2239,10 +2350,8 @@
   }
 
   .squad-page__pitch-player {
-    border-radius: 0.55rem;
-    max-width: 5.9rem;
-    min-height: 6.25rem;
-    padding: 0.35rem 0.12rem 0.3rem;
+    --squad-pitch-token-size: clamp(3.45rem, 17vw, 5.15rem);
+    padding: 0.25rem 0.1rem;
   }
 
   .squad-page__pitch-player strong {
@@ -2253,21 +2362,11 @@
     font-size: 0.5rem;
   }
 
-  .squad-page__shirt {
-    height: 2rem;
-    width: 2.3rem;
-  }
-
-  .squad-page__player-form b {
-    font-size: 0.54rem;
-  }
-
-  .squad-page__player-form .squad-page__form-dots i {
-    height: 0.28rem;
-    width: 0.28rem;
-  }
-
   .squad-page__bench {
+    padding: 0.55rem 0.4rem;
+  }
+
+  .squad-page__reserves {
     padding: 0.55rem 0.4rem;
   }
 
@@ -2276,7 +2375,7 @@
   }
 
   .squad-page__pitch-player.compact {
-    min-height: 5.25rem;
+    min-height: 0;
   }
 
   .squad-page__substitution-mode-selection,
@@ -2438,13 +2537,9 @@
   }
 
   .squad-page__pitch-player {
-    max-width: 5.2rem;
-    min-height: 6rem;
-  }
-
-  .squad-page__shirt {
-    height: 1.8rem;
-    width: 2.05rem;
+    --squad-pitch-token-size: 3.45rem;
+    max-width: none;
+    min-height: 0;
   }
 
   .squad-page__summary-card small {

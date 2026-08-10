@@ -13,6 +13,22 @@ Market is adaptive.
 - If a draw or trade has urgent action, surface that first.
 - Otherwise, open on player discovery.
 
+The current route is `/scouting` (the user-facing destination is **Market**). `/scouting/interests` and `/scouting/trades` are contextual Market views; `/fdr` remains a Market-context fixture tool.
+
+## Current implementation slice
+
+The first modern Market slice deliberately replaces the legacy all-in-one squad/scouting page with three focused tasks. The current entry opens Discovery and keeps the other two actions visible with live counts; urgent-entry promotion remains a later adaptive-shell refinement.
+
+- **Discovery** — search, position/ownership/availability/fixture filters, sortable official FPL metrics, next fixture context, and a player evidence drawer;
+- **Interests** — draw-specific private preferences with explicit removal and a clear explanation that an Interest is not ownership or a general watchlist;
+- **Trades** — a truthful activity surface that shows proposals when returned by the API and an empty state until trade activity exists.
+
+Actions remain contextual: discovery can add an Interest, an owned player links back to Squad, and a player drawer exposes evidence before the next action. Fixture Difficulty is reached through Market context navigation rather than being mixed into the player pool.
+
+The existing backend contracts are used without synthetic ranking or missing-data substitution: `/api/squad/summary`, `/api/scouting/players`, `/api/interests`, `/api/trades`, and the official FPL player-history endpoint. The page exposes partial-data messaging when one of those sources is unavailable.
+
+The following remain explicit follow-up work rather than being presented as complete: a separate bookmark Watchlist API/UI, ranked Interest reordering and direct priority entry, full Trade Builder negotiation actions, and advanced threshold filters.
+
 ## Discovery
 
 Use one unified discovery view with:

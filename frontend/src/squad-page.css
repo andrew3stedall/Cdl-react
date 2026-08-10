@@ -785,7 +785,7 @@
 }
 
 .squad-page__pitch-player-name {
-  font-size: clamp(0.62rem, 1.7vw, 0.78rem);
+  font-size: clamp(0.6rem, 1.65vw, 0.76rem);
   left: 0.12rem;
   line-height: 1;
   max-width: calc(100% - 0.24rem);
@@ -793,8 +793,7 @@
   position: absolute;
   right: 0.12rem;
   text-overflow: ellipsis;
-  text-shadow: 0 1px 2px rgba(3, 18, 17, 0.96), 0 0 4px rgba(3, 18, 17, 0.72);
-  top: 50%;
+  top: 59%;
   transform: translateY(-50%);
   white-space: nowrap;
   z-index: 3;
@@ -812,8 +811,7 @@
   position: absolute;
   right: 0.2rem;
   text-overflow: ellipsis;
-  text-shadow: 0 1px 2px rgba(3, 18, 17, 0.95);
-  top: calc(50% + 0.72rem);
+  top: calc(59% + 0.72rem);
   white-space: nowrap;
   z-index: 3;
 }
@@ -834,17 +832,26 @@
   z-index: 3;
 }
 
-.squad-page__pitch-player > .squad-page__shirt {
-  height: 78%;
+.squad-page__pitch-shirt-crop {
+  height: 36%;
   left: 50%;
-  margin: 0;
-  object-fit: contain;
-  pointer-events: none;
+  overflow: hidden;
   position: absolute;
-  top: 50%;
-  transform: translate(-50%, -57%);
-  width: 78%;
+  top: 0.25rem;
+  transform: translateX(-50%);
+  width: 88%;
   z-index: 1;
+}
+
+.squad-page__pitch-shirt-crop > .squad-page__shirt.large {
+  height: 200%;
+  left: 50%;
+  max-width: none;
+  object-fit: contain;
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  width: 88%;
 }
 
 .squad-page__pitch-player-form {

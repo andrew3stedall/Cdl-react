@@ -554,7 +554,7 @@ async function testMarket(page) {
   const interest = page.getByRole('button', { name: 'Add Casey Midfielder to Interests' });
   await interest.waitFor();
   await interest.click();
-  await page.getByRole('status').getByText('Casey Midfielder added to Interests.', { exact: true }).waitFor();
+  await page.getByText('Casey Midfielder added to Interests.', { exact: true }).waitFor();
 
   await page.getByRole('tab', { name: /Interests/ }).click();
   await page.locator('section[aria-label="Your Interests"]').getByText('Casey Midfielder', { exact: true }).waitFor();

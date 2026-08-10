@@ -99,7 +99,7 @@ def test_interaction_script_exercises_squad_management_journey() -> None:
     assert "Casey Midfielder added to Interests." in content
     assert "Interests" in content
     assert "Trades" in content
-    assert "No proposed trades" in content
+    assert "Trade activity" in content
 
 
 def test_interaction_script_exercises_dashboard_and_fdr_at_two_widths() -> None:

@@ -121,9 +121,16 @@ export function ManagerDeskPage({
   return (
     <main aria-labelledby="manager-desk-title" className="feature-screen manager-desk">
       <header className="manager-desk__header">
-        <div>
+        <div className="manager-desk__heading">
           <p className="eyebrow">Manager workspace</p>
-          <h1 id="manager-desk-title">Managers Desk</h1>
+          <div className="manager-desk__title-row">
+            <h1 id="manager-desk-title">Managers Desk</h1>
+            <ManagerAccountSection
+              onNavigate={onNavigate}
+              onSignOut={onSignOut}
+              session={session}
+            />
+          </div>
           <p className="manager-desk__intro">
             Good to see you, {displayName}. Here is what needs your attention.
           </p>
@@ -260,11 +267,6 @@ export function ManagerDeskPage({
         </section>
       </div>
 
-      <ManagerAccountSection
-        onNavigate={onNavigate}
-        onSignOut={onSignOut}
-        session={session}
-      />
     </main>
   );
 }

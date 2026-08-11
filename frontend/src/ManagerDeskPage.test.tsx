@@ -132,6 +132,7 @@ class MemorySquadClient implements SquadClient {
 function renderPage(
   onNavigate: (href: string) => void = () => undefined,
   squadClient: SquadClient = new MemorySquadClient(),
+  onSignOut: () => void = () => undefined,
 ) {
   const container = document.createElement('div');
   document.body.append(container);
@@ -142,7 +143,7 @@ function renderPage(
         <ManagerDeskPage
         leagueClient={new MemoryLeagueClient()}
         onNavigate={onNavigate}
-        onSignOut={() => undefined}
+        onSignOut={onSignOut}
         session={session}
         squadClient={squadClient}
         teamSelectionClient={new MemoryTeamSelectionClient()}
@@ -171,9 +172,9 @@ describe('ManagerDeskPage', () => {
     expect(container.textContent).not.toContain('Quick actions');
     expect(container.textContent).not.toContain('Shortcuts');
     expect(container.textContent).not.toContain('Refresh data');
-    expect(container.querySelector('[aria-label="Account settings"]')).not.toBeNull();
-    expect(container.querySelector('[aria-label="Account settings"] select')).toBeNull();
-    expect(container.querySelector('[aria-label="Account settings"]')?.textContent).toContain('Account');
+    expect(container.querySelector('[aria-label="Account settings"]')).toBeNull();
+    expect(container.querySelector('[aria-label="Account menu for Alex Manager"]')).not.toBeNull();
+    expect(container.querySelector('[aria-label="Account menu"]')?.textContent).toContain('Account');
 
     const teamButton = [...container.querySelectorAll<HTMLButtonElement>('button')]
       .find((button) => button.textContent?.includes('Set your team'));
@@ -181,6 +182,47 @@ describe('ManagerDeskPage', () => {
       teamButton?.click();
     });
     expect(destinations).toContain('/team-selection');
+  });
+
+  test('keeps account actions behind the compact header profile menu', async () => {
+    const destinations: string[] = [];
+    let signOutCount = 0;
+    const { container } = renderPage(
+      (href) => destinations.push(href),
+      new MemorySquadClient(),
+      () => {
+        signOutCount += 1;
+      },
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    const accountMenu = container.querySelector<HTMLDetailsElement>('.manager-account-menu');
+    const profileButton = accountMenu?.querySelector<HTMLElement>('summary');
+    expect(accountMenu).not.toBeNull();
+    expect(profileButton?.textContent).toBe('AM');
+
+    await act(async () => {
+      profileButton?.click();
+    });
+
+    expect(accountMenu?.open).toBe(true);
+    expect(accountMenu?.querySelector('button')?.textContent).toContain('Account');
+    expect(accountMenu?.textContent).toContain('Sign out');
+
+    await act(async () => {
+      accountMenu?.querySelector<HTMLButtonElement>('button')?.click();
+    });
+    expect(destinations).toContain('/account');
+
+    await act(async () => {
+      [...(accountMenu?.querySelectorAll<HTMLButtonElement>('button') ?? [])]
+        .find((button) => button.textContent?.includes('Sign out'))
+        ?.click();
+    });
+    expect(signOutCount).toBe(1);
   });
 
   test('changes the primary action when the fixture lock is active', async () => {

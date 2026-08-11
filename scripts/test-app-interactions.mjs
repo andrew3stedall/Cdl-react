@@ -703,12 +703,10 @@ async function testLoginAndLogout(page, api, viewportName) {
   await page.getByLabel('Password', { exact: true }).fill('browser-login-secret');
   await page.getByRole('button', { name: 'Sign in' }).click();
   await expectPath(page, '/');
-  if (viewportName === 'mobile') {
-    await page.getByRole('region', { name: 'Account settings' }).waitFor();
-  } else {
-    await page.getByLabel('Account menu for Browser Manager').click();
-  }
-  await page.getByRole('button', { name: 'Sign out' }).click();
+  const managerAccountMenu = page.locator('.manager-account-menu');
+  await managerAccountMenu.waitFor({ state: 'visible' });
+  await managerAccountMenu.locator('summary').click();
+  await managerAccountMenu.getByRole('button', { name: 'Sign out' }).click();
   await expectPath(page, '/login');
   api.restoreSession();
 }

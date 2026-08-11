@@ -121,7 +121,7 @@ function renderApp(initialPath: string, session?: SessionState) {
 }
 
 describe('manager desk shell integration', () => {
-  test('routes authenticated managers to Managers Desk from the legacy dashboard path', async () => {
+  test('routes authenticated managers to Gaffers Desk from the legacy dashboard path', async () => {
     const { container } = renderApp('/dashboard', authenticatedSession);
 
     await act(async () => {
@@ -130,11 +130,11 @@ describe('manager desk shell integration', () => {
     });
 
     expect(container.querySelector('[aria-current="page"]')?.textContent).toContain('Home');
-    expect(container.textContent).toContain('Managers Desk');
+    expect(container.textContent).toContain('Gaffers Desk');
     expect(container.querySelector('[aria-label="Account menu for CDL Manager"]')).not.toBeNull();
   });
 
-  test('uses the root path as the canonical Managers Desk landing page', async () => {
+  test('uses the root path as the canonical Gaffers Desk landing page', async () => {
     const { container } = renderApp('/', authenticatedSession);
 
     await act(async () => {
@@ -142,7 +142,7 @@ describe('manager desk shell integration', () => {
       await Promise.resolve();
     });
 
-    expect(container.querySelector('#manager-desk-title')?.textContent).toBe('Managers Desk');
+    expect(container.querySelector('#manager-desk-title')?.textContent).toBe('Gaffers Desk');
     expect(container.querySelector('[aria-current="page"]')?.textContent).toContain('Home');
   });
 
@@ -156,6 +156,6 @@ describe('manager desk shell integration', () => {
     const { container } = renderApp('/dashboard', session);
 
     expect(container.textContent).toContain('Sign in to access');
-    expect(container.textContent).not.toContain('Managers Desk');
+    expect(container.textContent).not.toContain('Gaffers Desk');
   });
 });

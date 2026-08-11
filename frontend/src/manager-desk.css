@@ -4,12 +4,10 @@
 }
 
 .manager-desk__header,
-.manager-desk__title-row,
 .manager-desk__section-heading,
 .manager-desk__hero,
 .manager-desk__fixture-meta,
 .manager-desk__fixture-teams,
-.manager-desk__identity,
 .manager-desk__deadline {
   align-items: center;
   display: flex;
@@ -18,19 +16,10 @@
 .manager-desk__header {
   gap: 1rem;
   justify-content: space-between;
-}
-
-.manager-desk__heading {
-  min-width: 0;
-}
-
-.manager-desk__title-row {
-  gap: 0.75rem;
-  justify-content: space-between;
+  min-height: 3.8rem;
 }
 
 .manager-desk__header h1,
-.manager-desk__header p,
 .manager-desk__section-heading h2,
 .manager-desk__section-heading p,
 .manager-desk__hero h2,
@@ -42,37 +31,6 @@
   font-size: clamp(1.65rem, 3vw, 2.15rem);
   letter-spacing: -0.035em;
 }
-
-.manager-desk__intro {
-  color: var(--muted-foreground);
-  margin-top: 0.38rem !important;
-}
-
-.manager-desk__identity {
-  flex: 0 0 auto;
-  gap: 0.65rem;
-  min-width: 0;
-}
-
-.manager-desk__identity > div {
-  display: grid;
-  gap: 0.12rem;
-  min-width: 0;
-}
-
-.manager-desk__identity strong,
-.manager-desk__identity span:last-child {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.manager-desk__identity span:last-child {
-  color: var(--muted-foreground);
-  font-size: 0.78rem;
-}
-
-.manager-desk__team-mark,
 .manager-desk__fixture-badge {
   align-items: center;
   background: var(--secondary);
@@ -568,15 +526,7 @@
   }
 
   .manager-desk__header {
-    align-items: stretch;
-  }
-
-  .manager-desk__title-row {
     align-items: center;
-  }
-
-  .manager-desk__identity {
-    width: 100%;
   }
 
   .manager-desk__hero {

@@ -191,10 +191,13 @@ async function testSquadWorkspace(browser, viewport) {
     throw new Error('Attack upwards should place the goalkeeper at the bottom of the pitch');
   }
   const upwardsFieldPosition = await pitch.locator('.squad-page__pitch-field').evaluate((element) => {
-    const styles = getComputedStyle(element);
-    return { bottom: styles.bottom, top: styles.top, transform: styles.transform };
+    const field = element.getBoundingClientRect();
+    const pitchElement = element.closest('.squad-page__pitch')?.getBoundingClientRect();
+    return pitchElement
+      ? { fieldBottom: field.bottom, fieldTop: field.top, pitchBottom: pitchElement.bottom, pitchTop: pitchElement.top, transform: getComputedStyle(element).transform }
+      : null;
   });
-  if (upwardsFieldPosition.transform !== 'none' || upwardsFieldPosition.top !== 'auto' || upwardsFieldPosition.bottom === 'auto') {
+  if (!upwardsFieldPosition || upwardsFieldPosition.transform !== 'none' || Math.abs(upwardsFieldPosition.fieldBottom - upwardsFieldPosition.pitchBottom) > 1 || upwardsFieldPosition.fieldTop >= upwardsFieldPosition.pitchTop) {
     throw new Error(`Attack upwards should anchor the untransformed pitch field at the bottom (received ${JSON.stringify(upwardsFieldPosition)})`);
   }
   const upwardsGoalBoxPositions = await pitch.locator('.squad-page__pitch-markings span:nth-child(3), .squad-page__pitch-markings span:nth-child(4)').evaluateAll((elements) => elements.map((element) => element.getBoundingClientRect().top));
@@ -221,10 +224,13 @@ async function testSquadWorkspace(browser, viewport) {
     throw new Error('Attack downwards should place forwards at the bottom of the pitch');
   }
   const downwardsFieldPosition = await downPitch.locator('.squad-page__pitch-field').evaluate((element) => {
-    const styles = getComputedStyle(element);
-    return { bottom: styles.bottom, top: styles.top, transform: styles.transform };
+    const field = element.getBoundingClientRect();
+    const pitchElement = element.closest('.squad-page__pitch')?.getBoundingClientRect();
+    return pitchElement
+      ? { fieldBottom: field.bottom, fieldTop: field.top, pitchBottom: pitchElement.bottom, pitchTop: pitchElement.top, transform: getComputedStyle(element).transform }
+      : null;
   });
-  if (downwardsFieldPosition.transform !== 'none' || downwardsFieldPosition.top === 'auto' || downwardsFieldPosition.bottom !== 'auto') {
+  if (!downwardsFieldPosition || downwardsFieldPosition.transform !== 'none' || Math.abs(downwardsFieldPosition.fieldTop - downwardsFieldPosition.pitchTop) > 1 || downwardsFieldPosition.fieldBottom <= downwardsFieldPosition.pitchBottom) {
     throw new Error(`Attack downwards should anchor the untransformed pitch field at the top (received ${JSON.stringify(downwardsFieldPosition)})`);
   }
   const downwardsGoalBoxPositions = await downPitch.locator('.squad-page__pitch-markings span:nth-child(3), .squad-page__pitch-markings span:nth-child(4)').evaluateAll((elements) => elements.map((element) => element.getBoundingClientRect().top));

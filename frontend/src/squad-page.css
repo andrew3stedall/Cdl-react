@@ -688,7 +688,7 @@
   left: 50%;
   position: absolute;
   top: 50%;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -100%);
   width: 7.5rem;
 }
 
@@ -708,7 +708,7 @@
 
 .squad-page__pitch-markings span:nth-child(4) {
   border-bottom: 0;
-  bottom: 0;
+  bottom: -0.75rem;
 }
 
 .squad-page__pitch-lineup {

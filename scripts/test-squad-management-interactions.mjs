@@ -209,7 +209,9 @@ async function testSquadWorkspace(browser, viewport) {
     throw new Error('Attack downwards should place forwards at the bottom of the pitch');
   }
   const downwardsFieldTransform = await downPitch.locator('.squad-page__pitch-field').evaluate((element) => getComputedStyle(element).transform);
-  if (downwardsFieldTransform === 'none') throw new Error('Attack downwards should show the bottom pitch slice');
+  if (!/^matrix\(-1,\s*0,\s*0,\s*-1,\s*0,\s*0\)$/.test(downwardsFieldTransform)) {
+    throw new Error(`Attack downwards should rotate the pitch background 180 degrees (received ${downwardsFieldTransform})`);
+  }
 
   await captureReviewState(page, viewport, 'squad-reference-pitch');
   await pitch.getByRole('button', { name: 'View Alex Keeper details' }).click();

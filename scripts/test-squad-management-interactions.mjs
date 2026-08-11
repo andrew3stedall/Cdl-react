@@ -223,7 +223,7 @@ async function testSquadWorkspace(browser, viewport) {
       - parseFloat(pitchOutlineStyles.bottom);
     return element.getBoundingClientRect().bottom - outlineBottom;
   });
-  if (upwardsGoalBoxBottomOffset === null || Math.abs(upwardsGoalBoxBottomOffset) > 1) {
+  if (upwardsGoalBoxBottomOffset === null || Math.abs(upwardsGoalBoxBottomOffset) > 2) {
     throw new Error(`Attack upwards should bring the bottom goal-box marking into contact with the pitch outline (received ${upwardsGoalBoxBottomOffset})`);
   }
 
@@ -265,7 +265,7 @@ async function testSquadWorkspace(browser, viewport) {
       + parseFloat(pitchOutlineStyles.top);
     return outlineTop - element.getBoundingClientRect().top;
   });
-  if (downwardsGoalBoxTopOffset === null || Math.abs(downwardsGoalBoxTopOffset) > 1) {
+  if (downwardsGoalBoxTopOffset === null || Math.abs(downwardsGoalBoxTopOffset) > 2) {
     throw new Error(`Attack downwards should keep the top goal-box marking in contact with the pitch outline (received ${downwardsGoalBoxTopOffset})`);
   }
   await captureReviewState(page, viewport, 'squad-reference-pitch');

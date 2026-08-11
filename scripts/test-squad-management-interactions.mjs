@@ -205,10 +205,27 @@ async function testSquadWorkspace(browser, viewport) {
   if (!(upwardsCircleTop < upwardsGoalBoxPositions[1])) {
     throw new Error('Attack upwards should place the centre circle above the bottom goal-box marking');
   }
-  const upwardsGoalBoxTopOffset = await pitch.locator('.squad-page__pitch-markings span:nth-child(4)').evaluate((element) => {
-    const pitchElement = element.closest('.squad-page__pitch');
-    return pitchElement ? element.getBoundingClientRect().top - pitchElement.getBoundingClientRect().top : null;
+  const upwardsCircleGeometry = await pitch.locator('.squad-page__pitch-markings span:nth-child(2)').evaluate((element) => {
+    const circle = element.getBoundingClientRect();
+    const pitchElement = element.closest('.squad-page__pitch')?.getBoundingClientRect();
+    return pitchElement ? { circleBottom: circle.bottom, circleTop: circle.top, pitchTop: pitchElement.top } : null;
   });
+  if (!upwardsCircleGeometry || upwardsCircleGeometry.circleTop >= upwardsCircleGeometry.pitchTop || upwardsCircleGeometry.circleBottom <= upwardsCircleGeometry.pitchTop) {
+    throw new Error(`Attack upwards should clip only the north edge of the centre circle (received ${JSON.stringify(upwardsCircleGeometry)})`);
+  }
+  const upwardsGoalBoxBottomOffset = await pitch.locator('.squad-page__pitch-markings span:nth-child(4)').evaluate((element) => {
+    const pitchElement = element.closest('.squad-page__pitch');
+    if (!pitchElement) return null;
+    const pitchStyles = getComputedStyle(pitchElement);
+    const pitchOutlineStyles = getComputedStyle(pitchElement, '::before');
+    const outlineBottom = pitchElement.getBoundingClientRect().bottom
+      - parseFloat(pitchStyles.borderBottomWidth)
+      - parseFloat(pitchOutlineStyles.bottom);
+    return element.getBoundingClientRect().bottom - outlineBottom;
+  });
+  if (upwardsGoalBoxBottomOffset === null || Math.abs(upwardsGoalBoxBottomOffset) > 1) {
+    throw new Error(`Attack upwards should bring the bottom goal-box marking into contact with the pitch outline (received ${upwardsGoalBoxBottomOffset})`);
+  }
 
   await page.goto(`${baseUrl}/account`, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: /Attack downwards/ }).click();
@@ -237,6 +254,19 @@ async function testSquadWorkspace(browser, viewport) {
   const downwardsCircleTop = await downPitch.locator('.squad-page__pitch-markings span:nth-child(2)').evaluate((element) => element.getBoundingClientRect().top);
   if (!(downwardsGoalBoxPositions[0] < downwardsCircleTop)) {
     throw new Error('Attack downwards should place the top goal-box marking above the centre circle');
+  }
+  const downwardsGoalBoxTopOffset = await downPitch.locator('.squad-page__pitch-markings span:nth-child(3)').evaluate((element) => {
+    const pitchElement = element.closest('.squad-page__pitch');
+    if (!pitchElement) return null;
+    const pitchStyles = getComputedStyle(pitchElement);
+    const pitchOutlineStyles = getComputedStyle(pitchElement, '::before');
+    const outlineTop = pitchElement.getBoundingClientRect().top
+      + parseFloat(pitchStyles.borderTopWidth)
+      + parseFloat(pitchOutlineStyles.top);
+    return outlineTop - element.getBoundingClientRect().top;
+  });
+  if (downwardsGoalBoxTopOffset === null || Math.abs(downwardsGoalBoxTopOffset) > 1) {
+    throw new Error(`Attack downwards should keep the top goal-box marking in contact with the pitch outline (received ${downwardsGoalBoxTopOffset})`);
   }
   await captureReviewState(page, viewport, 'squad-reference-pitch');
   await pitch.getByRole('button', { name: 'View Alex Keeper details' }).click();

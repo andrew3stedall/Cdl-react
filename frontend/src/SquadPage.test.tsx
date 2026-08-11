@@ -319,7 +319,7 @@ describe('SquadPage', () => {
     expect(container.textContent).not.toContain('Total Points');
     expect(container.querySelector('[aria-label="Squad pitch"]')).not.toBeNull();
     expect(container.querySelector('.squad-page__pitch[data-attack-direction="up"]')).not.toBeNull();
-    expect(container.querySelector('.squad-page__pitch-field[data-background-orientation="rotated"]')).not.toBeNull();
+    expect(container.querySelector('.squad-page__pitch-field[data-background-orientation="flipped"]')).not.toBeNull();
     expect(container.querySelector('.squad-page__pitch-icon')).not.toBeNull();
     expect(Array.from(container.querySelectorAll('.squad-page__chip-toggle')).map((chip) => chip.getAttribute('aria-label'))).toEqual([
       'Triple Captain, available',

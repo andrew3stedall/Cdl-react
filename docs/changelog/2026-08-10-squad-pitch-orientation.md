@@ -7,4 +7,6 @@ Date: 2026-08-10
 - Added a profile control for changing the attacking direction.
 - Updated Squad pitch view to show the corresponding 60% pitch slice and order
   forwards toward the selected attacking end.
+- Corrected the orientation mapping so attacking upwards uses the reversed pitch
+  view, while attacking downwards retains the existing pitch view.
 - Added responsive and API regression coverage for both orientations.

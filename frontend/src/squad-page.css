@@ -665,7 +665,7 @@
 }
 
 .squad-page__pitch-markings {
-  inset: 1.4rem 0.75rem 0.75rem;
+  inset: 1.4rem 0.75rem;
   pointer-events: none;
   position: absolute;
 }

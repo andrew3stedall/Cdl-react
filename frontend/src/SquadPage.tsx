@@ -1164,7 +1164,12 @@ function PitchCard({
       <span aria-hidden="true" className="squad-page__pitch-shirt-crop"><TeamShirt large team={player.team} /></span>
       <strong className="squad-page__pitch-player-name">{shortPlayerName(player.displayName)}</strong>
       <span className="squad-page__pitch-player-form"><FormDots value={player.form} /></span>
-      <small className={player.nextOpponent ? '' : 'is-placeholder'}>{formatFixtureLabel(player)}</small>
+      <small
+        className={`${fixtureOpponentClassName(player.nextFixtureDifficulty)} ${player.nextOpponent ? '' : 'is-placeholder'}`.trim()}
+        title={fixtureDifficultyTitle(player.nextFixtureDifficulty)}
+      >
+        {formatFixtureLabel(player)}
+      </small>
       {player.captain ? <span className="squad-page__captain">C</span> : null}
       {player.viceCaptain ? <span className="squad-page__captain vice">VC</span> : null}
       <AvailabilityFlag player={player} />
@@ -1340,7 +1345,7 @@ function SquadList({
                           {player.viceCaptain ? <span className="squad-page__row-badge vice">VC</span> : null}
                         </button>
                       </td>
-                      <td><span className={`squad-page__next-opponent ${player.nextOpponent ? '' : 'is-placeholder'}`}>{formatFixtureLabel(player)}</span></td>
+                      <td><span className={`${fixtureOpponentClassName(player.nextFixtureDifficulty)} squad-page__next-opponent ${player.nextOpponent ? '' : 'is-placeholder'}`.trim()} title={fixtureDifficultyTitle(player.nextFixtureDifficulty)}>{formatFixtureLabel(player)}</span></td>
                       <td><strong>{formatInteger(player.points)}</strong></td>
                       <td><span className="squad-page__expected"><span>{formatMetric(player.xg)}</span><span>{formatMetric(player.xa)}</span></span></td>
                       <td><AvailabilityFlag inline player={player} /></td>
@@ -1381,7 +1386,7 @@ function DrawerHeader({ onClose, player, title }: { onClose: () => void; player?
   return (
     <header className="squad-page__drawer-header">
       {player ? <TeamShirt large team={player.team} /> : <span className="squad-page__brand-mark"><Shield size={22} /></span>}
-      <div><h2>{title}</h2>{player ? <p><PositionMarker position={player.position} /> · <span className={player.nextOpponent ? '' : 'is-placeholder'}>{formatFixtureLabel(player)}</span>{player.nextFixtureDifficulty !== null ? ` · FDR ${player.nextFixtureDifficulty}` : ''}</p> : null}</div>
+      <div><h2>{title}</h2>{player ? <p><PositionMarker position={player.position} /> · <span className={`${fixtureOpponentClassName(player.nextFixtureDifficulty)} ${player.nextOpponent ? '' : 'is-placeholder'}`.trim()} title={fixtureDifficultyTitle(player.nextFixtureDifficulty)}>{formatFixtureLabel(player)}</span>{player.nextFixtureDifficulty !== null ? ` · FDR ${player.nextFixtureDifficulty}` : ''}</p> : null}</div>
       <button aria-label="Close drawer" className="squad-page__icon-button" onClick={onClose} type="button"><X size={19} /></button>
     </header>
   );
@@ -1548,7 +1553,7 @@ function ProfileDrawer({
         {historyError ? <p className="squad-page__error-copy">FPL history unavailable: {historyError}</p> : null}
         {!historyLoading && !historyError && history ? (
           <>
-            {history.fixtures.length > 0 ? <div className="squad-page__profile-fixtures"><strong>Upcoming</strong>{history.fixtures.slice(0, 3).map((fixture) => <span key={fixture.fixture_id}>{formatFixtureOpponent(fixture.opponent_team_id)} · FDR {fixture.difficulty} · {fixture.is_home ? 'H' : 'A'}</span>)}</div> : <p className="squad-page__empty-copy">No upcoming FPL fixtures in the cache.</p>}
+            {history.fixtures.length > 0 ? <div className="squad-page__profile-fixtures"><strong>Upcoming</strong>{history.fixtures.slice(0, 3).map((fixture) => <span className={fixtureOpponentClassName(fixture.difficulty)} key={fixture.fixture_id} title={fixtureDifficultyTitle(fixture.difficulty)}>{formatFixtureOpponent(fixture.opponent_team_id)} · FDR {fixture.difficulty} · {fixture.is_home ? 'H' : 'A'}</span>)}</div> : <p className="squad-page__empty-copy">No upcoming FPL fixtures in the cache.</p>}
             {history.history.length > 0 ? (
               <div className="squad-page__profile-history-scroll">
                 <table className="squad-page__profile-history"><thead><tr><th>GW</th><th>Opponent</th><th>Pts</th><th>Min</th><th>xG</th><th>xA</th></tr></thead><tbody>{history.history.slice(-5).reverse().map((row) => <tr key={`${row.fixture_id}-${row.gameweek}`}><td>{row.gameweek}</td><td>{formatFixtureOpponent(row.opponent_team_id)}</td><td>{row.total_points}</td><td>{row.minutes}</td><td>{row.expected_goals.toFixed(1)}</td><td>{row.expected_assists.toFixed(1)}</td></tr>)}</tbody></table>
@@ -1651,7 +1656,7 @@ function PlayerIdentity({ large = false, player, showForm = false, showMeta = tr
     <span className={`squad-page__identity ${large ? 'large' : ''}`}>
       <PositionMarker position={player.position} />
       <TeamShirt large={large} team={player.team} />
-      <span><strong>{player.displayName}</strong>{showForm ? <span className="squad-page__list-form"><FormDots value={player.form} /></span> : null}{showMeta ? <small><span className={player.nextOpponent ? '' : 'is-placeholder'}>{formatFixtureLabel(player)}</span></small> : null}</span>
+      <span><strong>{player.displayName}</strong>{showForm ? <span className="squad-page__list-form"><FormDots value={player.form} /></span> : null}{showMeta ? <small><span className={`${fixtureOpponentClassName(player.nextFixtureDifficulty)} ${player.nextOpponent ? '' : 'is-placeholder'}`.trim()} title={fixtureDifficultyTitle(player.nextFixtureDifficulty)}>{formatFixtureLabel(player)}</span></small> : null}</span>
     </span>
   );
 }
@@ -2062,6 +2067,23 @@ function formatFixtureLabel(player: Pick<PlayerView, 'nextOpponent' | 'nextFixtu
   return player.nextFixtureIsHome === true
     ? player.nextOpponent.toUpperCase()
     : player.nextOpponent.toLowerCase();
+}
+
+const fixtureDifficultyLabels = ['Very easy', 'Easy', 'Balanced', 'Hard', 'Very challenging'] as const;
+
+function normalizedFixtureDifficulty(value: number | null | undefined): number | null {
+  if (typeof value !== 'number' || Number.isNaN(value)) return null;
+  return Math.min(5, Math.max(1, Math.round(value)));
+}
+
+export function fixtureOpponentClassName(value: number | null | undefined): string {
+  const rating = normalizedFixtureDifficulty(value);
+  return rating === null ? 'squad-page__opponent' : `squad-page__opponent squad-page__opponent--fdr-${rating}`;
+}
+
+function fixtureDifficultyTitle(value: number | null | undefined): string | undefined {
+  const rating = normalizedFixtureDifficulty(value);
+  return rating === null ? undefined : `FDR ${rating} · ${fixtureDifficultyLabels[rating - 1]}`;
 }
 
 function formatFetchedAt(value: string): string {

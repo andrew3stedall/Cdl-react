@@ -123,7 +123,7 @@ def test_interaction_script_exercises_shell_navigation_and_history() -> None:
     assert "League navigation" in content
     assert "manager-account-menu" in content
     assert "expectPath(page, '/')" in content
-    assert "Managers Desk" in content
+    assert "Gaffers Desk" in content
     assert "Global mobile navigation" in content
     assert "must not expose a redundant top menu button" in content
     assert "expectPath(page, '/league/fixtures')" in content

@@ -365,7 +365,7 @@ describe('SquadPage', () => {
     expect(table?.textContent).not.toContain('Pickford');
   });
 
-  test('reverses the pitch rows when the manager attacks downwards', async () => {
+  test('keeps the current pitch orientation when the manager attacks downwards', async () => {
     const { container } = await renderPage(undefined, 'down');
 
     const pitchRows = Array.from(container.querySelectorAll('.squad-page__pitch-row'));

@@ -121,7 +121,7 @@ def test_interaction_script_exercises_shell_navigation_and_history() -> None:
     assert "/rules" in content
     assert "Primary navigation" in content
     assert "League navigation" in content
-    assert "Account menu for Browser Manager" in content
+    assert "manager-account-menu" in content
     assert "expectPath(page, '/')" in content
     assert "Managers Desk" in content
     assert "Global mobile navigation" in content

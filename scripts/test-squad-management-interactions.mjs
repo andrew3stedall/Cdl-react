@@ -191,8 +191,12 @@ async function testSquadWorkspace(browser, viewport) {
     throw new Error('Attack upwards should place the goalkeeper at the bottom of the pitch');
   }
   const upwardsFieldTransform = await pitch.locator('.squad-page__pitch-field').evaluate((element) => getComputedStyle(element).transform);
-  if (!/^matrix\(-1,\s*0,\s*0,\s*-1,\s*0,\s*0\)$/.test(upwardsFieldTransform)) {
-    throw new Error(`Attack upwards should rotate the pitch background 180 degrees (received ${upwardsFieldTransform})`);
+  if (!/^matrix\(1,\s*0,\s*0,\s*-1,\s*0,\s*0\)$/.test(upwardsFieldTransform)) {
+    throw new Error(`Attack upwards should vertically flip the pitch background (received ${upwardsFieldTransform})`);
+  }
+  const upwardsGoalBoxPositions = await pitch.locator('.squad-page__pitch-markings span:nth-child(3), .squad-page__pitch-markings span:nth-child(4)').evaluateAll((elements) => elements.map((element) => element.getBoundingClientRect().top));
+  if (!(upwardsGoalBoxPositions[1] < upwardsGoalBoxPositions[0])) {
+    throw new Error('Attack upwards should move the bottom goal-box marking into the visible top field slice');
   }
 
   await page.goto(`${baseUrl}/account`, { waitUntil: 'networkidle' });
@@ -211,6 +215,10 @@ async function testSquadWorkspace(browser, viewport) {
   const downwardsFieldTransform = await downPitch.locator('.squad-page__pitch-field').evaluate((element) => getComputedStyle(element).transform);
   if (downwardsFieldTransform !== 'none' && downwardsFieldTransform !== 'matrix(1, 0, 0, 1, 0, 0)') {
     throw new Error(`Attack downwards should keep the existing pitch background orientation (received ${downwardsFieldTransform})`);
+  }
+  const downwardsGoalBoxPositions = await downPitch.locator('.squad-page__pitch-markings span:nth-child(3), .squad-page__pitch-markings span:nth-child(4)').evaluateAll((elements) => elements.map((element) => element.getBoundingClientRect().top));
+  if (!(downwardsGoalBoxPositions[0] < downwardsGoalBoxPositions[1])) {
+    throw new Error('Attack downwards should keep the existing top goal-box marking at the visible top field slice');
   }
 
   await captureReviewState(page, viewport, 'squad-reference-pitch');

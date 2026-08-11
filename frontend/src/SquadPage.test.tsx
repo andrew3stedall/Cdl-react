@@ -328,8 +328,8 @@ describe('SquadPage', () => {
       'Best XI, available',
     ]);
     const pitchRows = Array.from(container.querySelectorAll('.squad-page__pitch-row'));
-    expect(pitchRows[0]?.className).toContain('position-gkp');
-    expect(pitchRows.at(-1)?.className).toContain('position-fwd');
+    expect(pitchRows[0]?.className).toContain('position-fwd');
+    expect(pitchRows.at(-1)?.className).toContain('position-gkp');
     expect(container.querySelector('img[src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_43-110.webp"]')).not.toBeNull();
     const pitchHaaland = container.querySelector('button[aria-label="View Haaland details"]');
     expect(pitchHaaland?.className).toContain('form-band-steady');
@@ -365,13 +365,13 @@ describe('SquadPage', () => {
     expect(table?.textContent).not.toContain('Pickford');
   });
 
-  test('keeps the current pitch orientation when the manager attacks downwards', async () => {
+  test('reverses the pitch rows when the manager attacks downwards', async () => {
     const { container } = await renderPage(undefined, 'down');
 
     const pitchRows = Array.from(container.querySelectorAll('.squad-page__pitch-row'));
     expect(container.querySelector('[aria-label="Squad pitch"][data-attack-direction="down"]')).not.toBeNull();
-    expect(pitchRows[0]?.className).toContain('position-fwd');
-    expect(pitchRows.at(-1)?.className).toContain('position-gkp');
+    expect(pitchRows[0]?.className).toContain('position-gkp');
+    expect(pitchRows.at(-1)?.className).toContain('position-fwd');
     expect(container.querySelector('.squad-page__pitch.attack-down .squad-page__pitch-field')).not.toBeNull();
   });
 

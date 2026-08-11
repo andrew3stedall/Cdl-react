@@ -190,13 +190,17 @@ async function testSquadWorkspace(browser, viewport) {
   if (!await upwardsRows.last().getAttribute('class').then((value) => value?.includes('position-gkp'))) {
     throw new Error('Attack upwards should place the goalkeeper at the bottom of the pitch');
   }
-  const upwardsFieldTransform = await pitch.locator('.squad-page__pitch-field').evaluate((element) => getComputedStyle(element).transform);
-  if (!/^matrix\(1,\s*0,\s*0,\s*-1,\s*0,\s*0\)$/.test(upwardsFieldTransform)) {
-    throw new Error(`Attack upwards should vertically flip the pitch background (received ${upwardsFieldTransform})`);
+  const upwardsFieldPosition = await pitch.locator('.squad-page__pitch-field').evaluate((element) => {
+    const styles = getComputedStyle(element);
+    return { bottom: styles.bottom, top: styles.top, transform: styles.transform };
+  });
+  if (upwardsFieldPosition.transform !== 'none' || upwardsFieldPosition.top !== 'auto' || upwardsFieldPosition.bottom === 'auto') {
+    throw new Error(`Attack upwards should anchor the untransformed pitch field at the bottom (received ${JSON.stringify(upwardsFieldPosition)})`);
   }
   const upwardsGoalBoxPositions = await pitch.locator('.squad-page__pitch-markings span:nth-child(3), .squad-page__pitch-markings span:nth-child(4)').evaluateAll((elements) => elements.map((element) => element.getBoundingClientRect().top));
-  if (!(upwardsGoalBoxPositions[1] < upwardsGoalBoxPositions[0])) {
-    throw new Error('Attack upwards should move the bottom goal-box marking into the visible top field slice');
+  const upwardsCircleTop = await pitch.locator('.squad-page__pitch-markings span:nth-child(2)').evaluate((element) => element.getBoundingClientRect().top);
+  if (!(upwardsCircleTop < upwardsGoalBoxPositions[1])) {
+    throw new Error('Attack upwards should place the centre circle above the bottom goal-box marking');
   }
   const upwardsGoalBoxTopOffset = await pitch.locator('.squad-page__pitch-markings span:nth-child(4)').evaluate((element) => {
     const pitchElement = element.closest('.squad-page__pitch');
@@ -216,22 +220,18 @@ async function testSquadWorkspace(browser, viewport) {
   if (!await downwardsRows.last().getAttribute('class').then((value) => value?.includes('position-fwd'))) {
     throw new Error('Attack downwards should place forwards at the bottom of the pitch');
   }
-  const downwardsFieldTransform = await downPitch.locator('.squad-page__pitch-field').evaluate((element) => getComputedStyle(element).transform);
-  if (downwardsFieldTransform !== 'none' && downwardsFieldTransform !== 'matrix(1, 0, 0, 1, 0, 0)') {
-    throw new Error(`Attack downwards should keep the existing pitch background orientation (received ${downwardsFieldTransform})`);
+  const downwardsFieldPosition = await downPitch.locator('.squad-page__pitch-field').evaluate((element) => {
+    const styles = getComputedStyle(element);
+    return { bottom: styles.bottom, top: styles.top, transform: styles.transform };
+  });
+  if (downwardsFieldPosition.transform !== 'none' || downwardsFieldPosition.top === 'auto' || downwardsFieldPosition.bottom !== 'auto') {
+    throw new Error(`Attack downwards should anchor the untransformed pitch field at the top (received ${JSON.stringify(downwardsFieldPosition)})`);
   }
   const downwardsGoalBoxPositions = await downPitch.locator('.squad-page__pitch-markings span:nth-child(3), .squad-page__pitch-markings span:nth-child(4)').evaluateAll((elements) => elements.map((element) => element.getBoundingClientRect().top));
-  if (!(downwardsGoalBoxPositions[0] < downwardsGoalBoxPositions[1])) {
-    throw new Error('Attack downwards should keep the existing top goal-box marking at the visible top field slice');
+  const downwardsCircleTop = await downPitch.locator('.squad-page__pitch-markings span:nth-child(2)').evaluate((element) => element.getBoundingClientRect().top);
+  if (!(downwardsGoalBoxPositions[0] < downwardsCircleTop)) {
+    throw new Error('Attack downwards should place the top goal-box marking above the centre circle');
   }
-  const downwardsGoalBoxTopOffset = await downPitch.locator('.squad-page__pitch-markings span:nth-child(3)').evaluate((element) => {
-    const pitchElement = element.closest('.squad-page__pitch');
-    return pitchElement ? element.getBoundingClientRect().top - pitchElement.getBoundingClientRect().top : null;
-  });
-  if (upwardsGoalBoxTopOffset === null || downwardsGoalBoxTopOffset === null || Math.abs(upwardsGoalBoxTopOffset - downwardsGoalBoxTopOffset) > 1) {
-    throw new Error(`Attack direction should keep the visible goal-box background offset stable (up ${upwardsGoalBoxTopOffset}, down ${downwardsGoalBoxTopOffset})`);
-  }
-
   await captureReviewState(page, viewport, 'squad-reference-pitch');
   await pitch.getByRole('button', { name: 'View Alex Keeper details' }).click();
 

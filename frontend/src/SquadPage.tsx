@@ -1052,7 +1052,7 @@ function SquadPitch({
         <div
           aria-hidden="true"
           className="squad-page__pitch-field"
-          data-background-orientation={attackDirection === 'up' ? 'flipped' : 'normal'}
+          data-visible-pitch-slice={attackDirection === 'up' ? 'bottom' : 'top'}
         >
           <div className="squad-page__pitch-markings"><span /><span /><span /><span /></div>
         </div>

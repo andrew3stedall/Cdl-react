@@ -69,7 +69,7 @@ const teamSelection = {
       display_name: 'Dev Forward',
       position: 'FWD',
       epl_team: { id: 'mci', name: 'Manchester City', short_name: 'MCI' },
-      slot: 'bench',
+      slot: 'starter',
       slot_order: 1,
       is_captain: false,
       is_vice_captain: true,
@@ -119,12 +119,20 @@ const scoutingPlayers = {
 async function mockApi(page) {
   const interests = [];
   const trades = [];
+  let attackDirection = 'up';
 
   await page.route('**/api/**', async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
 
     if (path === '/api/auth/session') return route.fulfill({ json: authenticatedSession });
+    if (path === '/api/me/preferences' && request.method() === 'GET') {
+      return route.fulfill({ json: { theme_preset: 'teal-light', attack_direction: attackDirection } });
+    }
+    if (path === '/api/me/preferences' && request.method() === 'PUT') {
+      attackDirection = request.postDataJSON().attack_direction;
+      return route.fulfill({ json: { theme_preset: 'teal-light', attack_direction: attackDirection } });
+    }
     if (path === '/api/squad/summary') return route.fulfill({ json: squadSummary });
     if (path === '/api/team-selection') return route.fulfill({ json: teamSelection });
     if (path === '/api/scouting/players') return route.fulfill({ json: scoutingPlayers });
@@ -175,6 +183,34 @@ async function testSquadWorkspace(browser, viewport) {
   await page.getByRole('status').getByText('Exeter Gently squad ready for review.', { exact: true }).waitFor();
   const pitch = page.locator('section[aria-label="Squad pitch"]');
   await pitch.waitFor();
+  const upwardsRows = pitch.locator('.squad-page__pitch-row');
+  if (!await upwardsRows.first().getAttribute('class').then((value) => value?.includes('position-fwd'))) {
+    throw new Error('Attack upwards should place forwards at the top of the pitch');
+  }
+  if (!await upwardsRows.last().getAttribute('class').then((value) => value?.includes('position-gkp'))) {
+    throw new Error('Attack upwards should place the goalkeeper at the bottom of the pitch');
+  }
+  const upwardsFieldTransform = await pitch.locator('.squad-page__pitch-field').evaluate((element) => getComputedStyle(element).transform);
+  if (upwardsFieldTransform !== 'none' && upwardsFieldTransform !== 'matrix(1, 0, 0, 1, 0, 0)') {
+    throw new Error('Attack upwards should show the top pitch slice');
+  }
+
+  await page.goto(`${baseUrl}/account`, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: /Attack downwards/ }).click();
+  await page.getByRole('status').getByText('Appearance preference saved.', { exact: true }).waitFor();
+  await page.goto(`${baseUrl}/squad-management`, { waitUntil: 'networkidle' });
+  const downPitch = page.locator('section[aria-label="Squad pitch"]');
+  await downPitch.waitFor();
+  const downwardsRows = downPitch.locator('.squad-page__pitch-row');
+  if (!await downwardsRows.first().getAttribute('class').then((value) => value?.includes('position-gkp'))) {
+    throw new Error('Attack downwards should place the goalkeeper at the top of the pitch');
+  }
+  if (!await downwardsRows.last().getAttribute('class').then((value) => value?.includes('position-fwd'))) {
+    throw new Error('Attack downwards should place forwards at the bottom of the pitch');
+  }
+  const downwardsFieldTransform = await downPitch.locator('.squad-page__pitch-field').evaluate((element) => getComputedStyle(element).transform);
+  if (downwardsFieldTransform === 'none') throw new Error('Attack downwards should show the bottom pitch slice');
+
   await captureReviewState(page, viewport, 'squad-reference-pitch');
   await pitch.getByRole('button', { name: 'View Alex Keeper details' }).click();
 

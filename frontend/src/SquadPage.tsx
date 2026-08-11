@@ -1036,7 +1036,7 @@ function SquadPitch({
   const starters = players.filter((player) => player.slot === 'starter').sort(sortBySlot);
   const bench = players.filter((player) => player.slot === 'bench').sort(sortBySlot);
   const reserves = players.filter((player) => player.slot === 'reserve').sort(sortBySlot);
-  const orientedPositionOrder = attackDirection === 'up'
+  const orientedPositionOrder = attackDirection === 'down'
     ? [...pitchPositionOrder].reverse()
     : pitchPositionOrder;
   const rows = orientedPositionOrder

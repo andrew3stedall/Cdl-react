@@ -350,7 +350,8 @@ describe('SquadPage', () => {
     expect(pitchHaaland?.querySelector('.squad-page__pitch-player-name')?.textContent).toBe('Haaland');
     expect(pitchHaaland?.textContent).toContain('CHE');
     expect(pitchHaaland?.querySelector('small')?.className).toContain('squad-page__opponent--fdr-3');
-    expect(pitchHaaland?.querySelector('small')?.getAttribute('title')).toBe('FDR 3 · Balanced');
+    expect(pitchHaaland?.querySelector('small')?.getAttribute('title')).toBe('Balanced fixture');
+    expect(pitchHaaland?.textContent).not.toContain('FDR');
     const pitchPickford = container.querySelector('button[aria-label="View Pickford details"]');
     expect(pitchPickford?.querySelector('small')?.className).toContain('squad-page__opponent--fdr-4');
     expect(pitchHaaland?.querySelector('.squad-page__form-dots')).not.toBeNull();

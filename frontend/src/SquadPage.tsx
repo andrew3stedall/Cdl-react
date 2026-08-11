@@ -1291,7 +1291,7 @@ function SquadList({
         <div className="squad-page__filter-controls">
           <SlidersHorizontal size={17} />
           <label><span>Availability</span><select aria-label="Filter by availability" onChange={(event) => onAvailabilityFilterChange(event.target.value as 'all' | 'risk')} value={availabilityFilter}><option value="all">All players</option><option value="risk">Reduced chance</option></select></label>
-          <label><span>Next fixture</span><select aria-label="Filter by next fixture difficulty" onChange={(event) => onFixtureFilterChange(event.target.value as 'all' | 'easy')} value={fixtureFilter}><option value="all">Any difficulty</option><option value="easy">FDR 1–3</option></select></label>
+          <label><span>Next fixture</span><select aria-label="Filter by next fixture difficulty" onChange={(event) => onFixtureFilterChange(event.target.value as 'all' | 'easy')} value={fixtureFilter}><option value="all">Any difficulty</option><option value="easy">Easy or balanced</option></select></label>
         </div>
       ) : null}
 
@@ -1386,7 +1386,7 @@ function DrawerHeader({ onClose, player, title }: { onClose: () => void; player?
   return (
     <header className="squad-page__drawer-header">
       {player ? <TeamShirt large team={player.team} /> : <span className="squad-page__brand-mark"><Shield size={22} /></span>}
-      <div><h2>{title}</h2>{player ? <p><PositionMarker position={player.position} /> · <span className={`${fixtureOpponentClassName(player.nextFixtureDifficulty)} ${player.nextOpponent ? '' : 'is-placeholder'}`.trim()} title={fixtureDifficultyTitle(player.nextFixtureDifficulty)}>{formatFixtureLabel(player)}</span>{player.nextFixtureDifficulty !== null ? ` · FDR ${player.nextFixtureDifficulty}` : ''}</p> : null}</div>
+      <div><h2>{title}</h2>{player ? <p><PositionMarker position={player.position} /> · <span className={`${fixtureOpponentClassName(player.nextFixtureDifficulty)} ${player.nextOpponent ? '' : 'is-placeholder'}`.trim()} title={fixtureDifficultyTitle(player.nextFixtureDifficulty)}>{formatFixtureLabel(player)}</span></p> : null}</div>
       <button aria-label="Close drawer" className="squad-page__icon-button" onClick={onClose} type="button"><X size={19} /></button>
     </header>
   );
@@ -1553,7 +1553,7 @@ function ProfileDrawer({
         {historyError ? <p className="squad-page__error-copy">FPL history unavailable: {historyError}</p> : null}
         {!historyLoading && !historyError && history ? (
           <>
-            {history.fixtures.length > 0 ? <div className="squad-page__profile-fixtures"><strong>Upcoming</strong>{history.fixtures.slice(0, 3).map((fixture) => <span className={fixtureOpponentClassName(fixture.difficulty)} key={fixture.fixture_id} title={fixtureDifficultyTitle(fixture.difficulty)}>{formatFixtureOpponent(fixture.opponent_team_id)} · FDR {fixture.difficulty} · {fixture.is_home ? 'H' : 'A'}</span>)}</div> : <p className="squad-page__empty-copy">No upcoming FPL fixtures in the cache.</p>}
+            {history.fixtures.length > 0 ? <div className="squad-page__profile-fixtures"><strong>Upcoming</strong>{history.fixtures.slice(0, 3).map((fixture) => <span className={fixtureOpponentClassName(fixture.difficulty)} key={fixture.fixture_id} title={fixtureDifficultyTitle(fixture.difficulty)}>{formatFixtureOpponent(fixture.opponent_team_id)} · {fixture.is_home ? 'H' : 'A'}</span>)}</div> : <p className="squad-page__empty-copy">No upcoming FPL fixtures in the cache.</p>}
             {history.history.length > 0 ? (
               <div className="squad-page__profile-history-scroll">
                 <table className="squad-page__profile-history"><thead><tr><th>GW</th><th>Opponent</th><th>Pts</th><th>Min</th><th>xG</th><th>xA</th></tr></thead><tbody>{history.history.slice(-5).reverse().map((row) => <tr key={`${row.fixture_id}-${row.gameweek}`}><td>{row.gameweek}</td><td>{formatFixtureOpponent(row.opponent_team_id)}</td><td>{row.total_points}</td><td>{row.minutes}</td><td>{row.expected_goals.toFixed(1)}</td><td>{row.expected_assists.toFixed(1)}</td></tr>)}</tbody></table>
@@ -2083,7 +2083,7 @@ export function fixtureOpponentClassName(value: number | null | undefined): stri
 
 function fixtureDifficultyTitle(value: number | null | undefined): string | undefined {
   const rating = normalizedFixtureDifficulty(value);
-  return rating === null ? undefined : `FDR ${rating} · ${fixtureDifficultyLabels[rating - 1]}`;
+  return rating === null ? undefined : `${fixtureDifficultyLabels[rating - 1]} fixture`;
 }
 
 function formatFetchedAt(value: string): string {

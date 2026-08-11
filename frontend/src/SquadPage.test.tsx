@@ -2,7 +2,7 @@ import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
-import { SquadPage } from './SquadPage';
+import { fixtureOpponentClassName, SquadPage } from './SquadPage';
 import { getDefaultThemePreset } from './theme-presets';
 import type {
   TeamSelectionClient,
@@ -309,6 +309,17 @@ function setInputValue(input: HTMLInputElement, value: string) {
 }
 
 describe('SquadPage', () => {
+  test('maps FDR values to a restrained centred opponent colour scale', () => {
+    expect(fixtureOpponentClassName(1)).toContain('squad-page__opponent--fdr-1');
+    expect(fixtureOpponentClassName(2)).toContain('squad-page__opponent--fdr-2');
+    expect(fixtureOpponentClassName(3)).toContain('squad-page__opponent--fdr-3');
+    expect(fixtureOpponentClassName(4)).toContain('squad-page__opponent--fdr-4');
+    expect(fixtureOpponentClassName(5)).toContain('squad-page__opponent--fdr-5');
+    expect(fixtureOpponentClassName(null)).toBe('squad-page__opponent');
+    expect(fixtureOpponentClassName(0)).toContain('squad-page__opponent--fdr-1');
+    expect(fixtureOpponentClassName(6)).toContain('squad-page__opponent--fdr-5');
+  });
+
   test('opens as a season squad workspace and remembers pitch/list choice', async () => {
     const { container } = await renderPage();
 
@@ -338,6 +349,10 @@ describe('SquadPage', () => {
     expect(pitchHaaland?.querySelector('.squad-page__pitch-shirt-crop > .squad-page__shirt.large')).not.toBeNull();
     expect(pitchHaaland?.querySelector('.squad-page__pitch-player-name')?.textContent).toBe('Haaland');
     expect(pitchHaaland?.textContent).toContain('CHE');
+    expect(pitchHaaland?.querySelector('small')?.className).toContain('squad-page__opponent--fdr-3');
+    expect(pitchHaaland?.querySelector('small')?.getAttribute('title')).toBe('FDR 3 · Balanced');
+    const pitchPickford = container.querySelector('button[aria-label="View Pickford details"]');
+    expect(pitchPickford?.querySelector('small')?.className).toContain('squad-page__opponent--fdr-4');
     expect(pitchHaaland?.querySelector('.squad-page__form-dots')).not.toBeNull();
     expect(pitchHaaland?.textContent).not.toContain('7.4');
     expect(container.textContent).not.toContain('PostgreSQL');

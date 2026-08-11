@@ -649,7 +649,7 @@
   z-index: 0;
 }
 
-.squad-page__pitch.attack-down .squad-page__pitch-field {
+.squad-page__pitch.attack-up .squad-page__pitch-field {
   transform: translateY(-66.6667%);
 }
 

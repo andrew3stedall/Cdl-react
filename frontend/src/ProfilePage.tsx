@@ -153,7 +153,7 @@ function DirectionOption({
       <span aria-hidden="true" className="profile-direction-icon"><Icon size={22} /></span>
       <span className="profile-direction-copy">
         <strong>{isUp ? 'Attack upwards' : 'Attack downwards'}</strong>
-        <small>{isUp ? 'Forwards at the top of the pitch' : 'Forwards at the bottom of the pitch'}</small>
+        <small>{isUp ? 'Forwards at the bottom of the pitch view' : 'Forwards at the top of the pitch view'}</small>
       </span>
       <span aria-hidden="true" className="profile-preset-check">
         {isSelected ? <Check size={15} /> : <Circle size={15} />}

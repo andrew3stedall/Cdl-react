@@ -191,8 +191,8 @@ async function testSquadWorkspace(browser, viewport) {
     throw new Error('Attack upwards should place the goalkeeper at the bottom of the pitch');
   }
   const upwardsFieldTransform = await pitch.locator('.squad-page__pitch-field').evaluate((element) => getComputedStyle(element).transform);
-  if (upwardsFieldTransform !== 'none' && upwardsFieldTransform !== 'matrix(1, 0, 0, 1, 0, 0)') {
-    throw new Error('Attack upwards should show the top pitch slice');
+  if (!/^matrix\(-1,\s*0,\s*0,\s*-1,\s*0,\s*0\)$/.test(upwardsFieldTransform)) {
+    throw new Error(`Attack upwards should rotate the pitch background 180 degrees (received ${upwardsFieldTransform})`);
   }
 
   await page.goto(`${baseUrl}/account`, { waitUntil: 'networkidle' });
@@ -209,8 +209,8 @@ async function testSquadWorkspace(browser, viewport) {
     throw new Error('Attack downwards should place forwards at the bottom of the pitch');
   }
   const downwardsFieldTransform = await downPitch.locator('.squad-page__pitch-field').evaluate((element) => getComputedStyle(element).transform);
-  if (!/^matrix\(-1,\s*0,\s*0,\s*-1,\s*0,\s*0\)$/.test(downwardsFieldTransform)) {
-    throw new Error(`Attack downwards should rotate the pitch background 180 degrees (received ${downwardsFieldTransform})`);
+  if (downwardsFieldTransform !== 'none' && downwardsFieldTransform !== 'matrix(1, 0, 0, 1, 0, 0)') {
+    throw new Error(`Attack downwards should keep the existing pitch background orientation (received ${downwardsFieldTransform})`);
   }
 
   await captureReviewState(page, viewport, 'squad-reference-pitch');

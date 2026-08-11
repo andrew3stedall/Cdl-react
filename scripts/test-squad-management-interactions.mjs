@@ -191,7 +191,9 @@ async function testSquadWorkspace(browser, viewport) {
     throw new Error('Attack upwards should place the goalkeeper at the bottom of the pitch');
   }
   const upwardsFieldTransform = await pitch.locator('.squad-page__pitch-field').evaluate((element) => getComputedStyle(element).transform);
-  if (upwardsFieldTransform !== 'none') throw new Error('Attack upwards should show the top pitch slice');
+  if (upwardsFieldTransform !== 'none' && upwardsFieldTransform !== 'matrix(1, 0, 0, 1, 0, 0)') {
+    throw new Error('Attack upwards should show the top pitch slice');
+  }
 
   await page.goto(`${baseUrl}/account`, { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: /Attack downwards/ }).click();

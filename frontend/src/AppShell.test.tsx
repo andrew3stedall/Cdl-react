@@ -165,7 +165,8 @@ describe('AppShell integration', () => {
       await Promise.resolve();
     });
 
-    expect(container.querySelector('[aria-label="Account settings"]')).not.toBeNull();
+    expect(container.querySelector('[aria-label="Account settings"]')).toBeNull();
+    expect(container.querySelector('[aria-label="Account menu for Test Manager"]')).not.toBeNull();
     expect(container.querySelector('#manager-desk-visual-preset')).toBeNull();
     expect(container.textContent).toContain('Account');
     expect(container.textContent).not.toContain('Profile & preferences');
@@ -173,7 +174,9 @@ describe('AppShell integration', () => {
     expect(container.textContent).toContain('Sign out');
     expect(container.querySelector('nav[aria-label="Global mobile navigation"]')).not.toBeNull();
 
-    const accountButton = container.querySelector<HTMLButtonElement>('[aria-label="Account settings"] button');
+    const accountMenu = container.querySelector<HTMLElement>('.manager-account-menu');
+    expect(accountMenu).not.toBeNull();
+    const accountButton = accountMenu?.querySelector<HTMLButtonElement>('button');
     await act(async () => {
       accountButton?.click();
       await Promise.resolve();

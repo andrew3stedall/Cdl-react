@@ -24,25 +24,26 @@ export function ManagerAccountSection({
     .join('') || 'CD';
 
   return (
-    <Card aria-label="Account settings" className="manager-account-section">
-      <div className="manager-account-section__summary">
-        <span aria-hidden="true" className="manager-account-section__avatar">{initials}</span>
-        <div>
+    <details className="manager-account-menu">
+      <summary aria-label={`Account menu for ${displayName}`}>
+        <span aria-hidden="true" className="manager-account-menu__avatar">{initials}</span>
+      </summary>
+      <Card aria-label="Account menu" className="manager-account-menu__popover">
+        <div className="manager-account-menu__header">
           <strong>{displayName}</strong>
           <span>Signed in</span>
         </div>
-      </div>
-
-      <div className="manager-account-section__actions">
-        <Button onClick={() => onNavigate('/account')} type="button" variant="secondary">
-          <UserRound aria-hidden="true" size={18} />
-          Account
-        </Button>
-        <Button onClick={onSignOut} type="button" variant="ghost">
-          <LogOut aria-hidden="true" size={18} />
-          Sign out
-        </Button>
-      </div>
-    </Card>
+        <div className="manager-account-menu__actions">
+          <Button onClick={() => onNavigate('/account')} type="button" variant="secondary">
+            <UserRound aria-hidden="true" size={17} />
+            Account
+          </Button>
+          <Button onClick={onSignOut} type="button" variant="ghost">
+            <LogOut aria-hidden="true" size={17} />
+            Sign out
+          </Button>
+        </div>
+      </Card>
+    </details>
   );
 }

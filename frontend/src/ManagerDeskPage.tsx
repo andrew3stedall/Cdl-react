@@ -106,7 +106,6 @@ export function ManagerDeskPage({
   }, [leagueClient, reloadRequest, squadClient, teamSelectionClient]);
 
   const { data, errors, loading } = loadState;
-  const displayName = session.user?.displayName?.split(' ')[0] || 'Manager';
   const teamName = data.selection?.managerTeam.name ?? data.squad?.manager_team.name ?? 'Your team';
   const gameweek = data.selection?.gameweek ?? mapSquadGameweek(data.squad);
   const starters = data.selection?.players.filter((player) => player.slot === 'starter') ?? [];
@@ -121,27 +120,12 @@ export function ManagerDeskPage({
   return (
     <main aria-labelledby="manager-desk-title" className="feature-screen manager-desk">
       <header className="manager-desk__header">
-        <div className="manager-desk__heading">
-          <p className="eyebrow">Manager workspace</p>
-          <div className="manager-desk__title-row">
-            <h1 id="manager-desk-title">Managers Desk</h1>
-            <ManagerAccountSection
-              onNavigate={onNavigate}
-              onSignOut={onSignOut}
-              session={session}
-            />
-          </div>
-          <p className="manager-desk__intro">
-            Good to see you, {displayName}. Here is what needs your attention.
-          </p>
-        </div>
-        <div className="manager-desk__identity" aria-label="Current team and gameweek">
-          <span className="manager-desk__team-mark" aria-hidden="true">{getInitials(teamName)}</span>
-          <div>
-            <strong>{teamName}</strong>
-            <span>{gameweek?.name ?? 'Current gameweek'}</span>
-          </div>
-        </div>
+        <h1 id="manager-desk-title">Gaffers Desk</h1>
+        <ManagerAccountSection
+          onNavigate={onNavigate}
+          onSignOut={onSignOut}
+          session={session}
+        />
       </header>
 
       {errors.length > 0 ? (

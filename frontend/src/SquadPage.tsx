@@ -1049,7 +1049,11 @@ function SquadPitch({
   return (
     <section aria-label="Squad pitch" className="squad-page__pitch-shell" data-attack-direction={attackDirection}>
       <div className={`squad-page__pitch attack-${attackDirection}`} data-attack-direction={attackDirection}>
-        <div aria-hidden="true" className="squad-page__pitch-field">
+        <div
+          aria-hidden="true"
+          className="squad-page__pitch-field"
+          data-background-orientation={attackDirection === 'down' ? 'rotated' : 'normal'}
+        >
           <div className="squad-page__pitch-markings"><span /><span /><span /><span /></div>
         </div>
         <div className="squad-page__formation">{formation}</div>

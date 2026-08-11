@@ -319,6 +319,7 @@ describe('SquadPage', () => {
     expect(container.textContent).not.toContain('Total Points');
     expect(container.querySelector('[aria-label="Squad pitch"]')).not.toBeNull();
     expect(container.querySelector('.squad-page__pitch[data-attack-direction="up"]')).not.toBeNull();
+    expect(container.querySelector('.squad-page__pitch-field[data-background-orientation="normal"]')).not.toBeNull();
     expect(container.querySelector('.squad-page__pitch-icon')).not.toBeNull();
     expect(Array.from(container.querySelectorAll('.squad-page__chip-toggle')).map((chip) => chip.getAttribute('aria-label'))).toEqual([
       'Triple Captain, available',
@@ -372,7 +373,7 @@ describe('SquadPage', () => {
     expect(container.querySelector('[aria-label="Squad pitch"][data-attack-direction="down"]')).not.toBeNull();
     expect(pitchRows[0]?.className).toContain('position-gkp');
     expect(pitchRows.at(-1)?.className).toContain('position-fwd');
-    expect(container.querySelector('.squad-page__pitch.attack-down .squad-page__pitch-field')).not.toBeNull();
+    expect(container.querySelector('.squad-page__pitch-field[data-background-orientation="rotated"]')).not.toBeNull();
   });
 
   test('selects a legal replacement directly from pitch view', async () => {

@@ -207,11 +207,28 @@ async function testSquadWorkspace(browser, viewport) {
   }
   const upwardsCircleGeometry = await pitch.locator('.squad-page__pitch-markings span:nth-child(2)').evaluate((element) => {
     const circle = element.getBoundingClientRect();
+    const halfwayLine = element.parentElement?.querySelector('span:nth-child(1)')?.getBoundingClientRect();
     const pitchElement = element.closest('.squad-page__pitch')?.getBoundingClientRect();
-    return pitchElement ? { circleBottom: circle.bottom, circleTop: circle.top, pitchTop: pitchElement.top } : null;
+    return pitchElement && halfwayLine
+      ? {
+        circleBottom: circle.bottom,
+        circleCenter: (circle.top + circle.bottom) / 2,
+        circleTop: circle.top,
+        halfwayLineCenter: (halfwayLine.top + halfwayLine.bottom) / 2,
+        pitchBottom: pitchElement.bottom,
+        pitchTop: pitchElement.top,
+      }
+      : null;
   });
-  if (!upwardsCircleGeometry || upwardsCircleGeometry.circleTop >= upwardsCircleGeometry.pitchTop || upwardsCircleGeometry.circleBottom <= upwardsCircleGeometry.pitchTop) {
-    throw new Error(`Attack upwards should clip only the north edge of the centre circle (received ${JSON.stringify(upwardsCircleGeometry)})`);
+  if (!upwardsCircleGeometry
+    || upwardsCircleGeometry.circleTop < upwardsCircleGeometry.pitchTop
+    || upwardsCircleGeometry.circleBottom > upwardsCircleGeometry.pitchBottom
+    || Math.abs(upwardsCircleGeometry.circleCenter - upwardsCircleGeometry.halfwayLineCenter) > 1) {
+    throw new Error(`Attack upwards should keep the centre circle fully visible and bisected by the halfway line (received ${JSON.stringify(upwardsCircleGeometry)})`);
+  }
+  const upwardsPitchOutlineTop = await pitch.locator('.squad-page__pitch').evaluate((element) => Number.parseFloat(getComputedStyle(element, '::before').top));
+  if (!(upwardsPitchOutlineTop < 0)) {
+    throw new Error(`Attack upwards should extend the pitch perimeter beyond the top of the pitch container (received ${upwardsPitchOutlineTop})`);
   }
   const upwardsGoalBoxBottomOffset = await pitch.locator('.squad-page__pitch-markings span:nth-child(4)').evaluate((element) => {
     const pitchElement = element.closest('.squad-page__pitch');
@@ -251,9 +268,33 @@ async function testSquadWorkspace(browser, viewport) {
     throw new Error(`Attack downwards should anchor the untransformed pitch field at the top (received ${JSON.stringify(downwardsFieldPosition)})`);
   }
   const downwardsGoalBoxPositions = await downPitch.locator('.squad-page__pitch-markings span:nth-child(3), .squad-page__pitch-markings span:nth-child(4)').evaluateAll((elements) => elements.map((element) => element.getBoundingClientRect().top));
-  const downwardsCircleTop = await downPitch.locator('.squad-page__pitch-markings span:nth-child(2)').evaluate((element) => element.getBoundingClientRect().top);
-  if (!(downwardsGoalBoxPositions[0] < downwardsCircleTop)) {
+  const downwardsCircleGeometry = await downPitch.locator('.squad-page__pitch-markings span:nth-child(2)').evaluate((element) => {
+    const circle = element.getBoundingClientRect();
+    const halfwayLine = element.parentElement?.querySelector('span:nth-child(1)')?.getBoundingClientRect();
+    const pitchElement = element.closest('.squad-page__pitch')?.getBoundingClientRect();
+    return pitchElement && halfwayLine
+      ? {
+        circleBottom: circle.bottom,
+        circleCenter: (circle.top + circle.bottom) / 2,
+        circleTop: circle.top,
+        halfwayLineCenter: (halfwayLine.top + halfwayLine.bottom) / 2,
+        pitchBottom: pitchElement.bottom,
+        pitchTop: pitchElement.top,
+      }
+      : null;
+  });
+  if (!(downwardsGoalBoxPositions[0] < downwardsCircleGeometry?.circleTop)) {
     throw new Error('Attack downwards should place the top goal-box marking above the centre circle');
+  }
+  if (!downwardsCircleGeometry
+    || downwardsCircleGeometry.circleTop < downwardsCircleGeometry.pitchTop
+    || downwardsCircleGeometry.circleBottom > downwardsCircleGeometry.pitchBottom
+    || Math.abs(downwardsCircleGeometry.circleCenter - downwardsCircleGeometry.halfwayLineCenter) > 1) {
+    throw new Error(`Attack downwards should keep the centre circle fully visible and bisected by the halfway line (received ${JSON.stringify(downwardsCircleGeometry)})`);
+  }
+  const downwardsPitchOutlineTop = await downPitch.locator('.squad-page__pitch').evaluate((element) => Number.parseFloat(getComputedStyle(element, '::before').top));
+  if (!(downwardsPitchOutlineTop < 0)) {
+    throw new Error(`Attack downwards should extend the pitch perimeter beyond the top of the pitch container (received ${downwardsPitchOutlineTop})`);
   }
   const downwardsGoalBoxTopOffset = await downPitch.locator('.squad-page__pitch-markings span:nth-child(3)').evaluate((element) => {
     const pitchElement = element.closest('.squad-page__pitch');

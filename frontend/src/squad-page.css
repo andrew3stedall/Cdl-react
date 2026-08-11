@@ -633,7 +633,7 @@
   border: 2px solid var(--squad-pitch-line);
   border-radius: 0.4rem;
   content: '';
-  inset: 1.4rem 0.75rem 0.75rem;
+  inset: -0.75rem 0.75rem 0.75rem;
   pointer-events: none;
   position: absolute;
   z-index: 0;
@@ -688,7 +688,7 @@
   left: 50%;
   position: absolute;
   top: 50%;
-  transform: translate(-50%, -100%);
+  transform: translate(-50%, -50%);
   width: 7.5rem;
 }
 
@@ -703,7 +703,7 @@
 
 .squad-page__pitch-markings span:nth-child(3) {
   border-top: 0;
-  top: 0;
+  top: -2.15rem;
 }
 
 .squad-page__pitch-markings span:nth-child(4) {

@@ -86,6 +86,7 @@ def test_database_jobs_are_separate_guarded_terraform_resources() -> None:
         'value = "true"',
         "google_service_account.migration.email",
         'module.runtime_secrets.secret_names["cdl-database-url"]',
+        'module.runtime_secrets.secret_names["cdl-google-allowed-emails"]',
         "max_retries     = 0",
         'timeout         = "900s"',
         "deletion_protection = true",

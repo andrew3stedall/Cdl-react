@@ -139,8 +139,13 @@ resource "google_secret_manager_secret_iam_member" "runtime_secret_access" {
 }
 
 resource "google_secret_manager_secret_iam_member" "migration_secret_access" {
+  for_each = toset([
+    "cdl-database-url",
+    "cdl-google-allowed-emails",
+  ])
+
   project   = var.project_id
-  secret_id = module.runtime_secrets.secret_names["cdl-database-url"]
+  secret_id = module.runtime_secrets.secret_names[each.value]
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.migration.email}"
 }

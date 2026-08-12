@@ -2,7 +2,12 @@ from sqlalchemy import create_engine, func, select, text
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from cdl_api.repositories.postgres_league_fpl import draft_teams_table, fpl_players_table
+from cdl_api.repositories.postgres_auth import users_table
+from cdl_api.repositories.postgres_league_fpl import (
+    draft_teams_table,
+    fpl_players_table,
+    managers_table,
+)
 from cdl_api.repositories.postgres_squad import squad_ownerships_table
 from cdl_api.repositories.postgres_squad_repository import PostgreSQLSquadRepository
 from cdl_api.repositories.postgres_team_selection import PostgreSQLTeamSelectionRepository
@@ -131,13 +136,20 @@ def test_seed_is_idempotent_and_persists_valid_position_counts() -> None:
         connection.execute(
             text(
                 "INSERT INTO users (id, email, display_name, roles) "
-                "VALUES ('google:test', 'andrew3stedall@gmail.com', 'Andrew', '[]')"
+                "VALUES ('google:test', 'reviewer.one@example.com', 'Reviewer One', '[]')"
             )
         )
     session_factory = sessionmaker(bind=engine, class_=Session)
 
-    first = seed_staging_snake_draft(session_factory)
-    second = seed_staging_snake_draft(session_factory)
+    reviewer_allowlist = "reviewer.one@example.com,reviewer.two@example.com"
+    first = seed_staging_snake_draft(
+        session_factory,
+        google_allowed_emails=reviewer_allowlist,
+    )
+    second = seed_staging_snake_draft(
+        session_factory,
+        google_allowed_emails=reviewer_allowlist,
+    )
 
     assert first == second
     assert first.players == 160
@@ -151,6 +163,23 @@ def test_seed_is_idempotent_and_persists_valid_position_counts() -> None:
         assert (
             session.execute(select(func.count()).select_from(fpl_players_table)).scalar_one() == 163
         )
+        manager_assignments = dict(
+            session.execute(
+                select(
+                    draft_teams_table.c.name,
+                    users_table.c.email,
+                )
+                .join(
+                    managers_table,
+                    draft_teams_table.c.manager_id == managers_table.c.id,
+                )
+                .join(users_table, managers_table.c.user_id == users_table.c.id)
+            ).all()
+        )
+        assert manager_assignments == {
+            "Stan Still Sells Tik": "reviewer.one@example.com",
+            "Wilde Boars": "reviewer.two@example.com",
+        }
         team_counts = dict(
             session.execute(
                 select(
@@ -176,6 +205,21 @@ def test_seed_is_idempotent_and_persists_valid_position_counts() -> None:
         ).all()
 
     assert team_counts == {team_id: 20 for team_id in TEAM_IDS}
+
+    andrew_squad = PostgreSQLSquadRepository(session_factory, user_id="google:test")
+    dj_squad = PostgreSQLSquadRepository(
+        session_factory,
+        user_id="staging:reviewer.two@example.com",
+    )
+    andrew_selection = PostgreSQLTeamSelectionRepository(session_factory, user_id="google:test")
+    dj_selection = PostgreSQLTeamSelectionRepository(
+        session_factory,
+        user_id="staging:reviewer.two@example.com",
+    )
+    assert andrew_squad.manager_team.name == "Stan Still Sells Tik"
+    assert dj_squad.manager_team.name == "Wilde Boars"
+    assert andrew_selection.manager_team.name == "Stan Still Sells Tik"
+    assert dj_selection.manager_team.name == "Wilde Boars"
     persisted_counts = {
         team_id: {position: 0 for position in POSITION_LIMITS} for team_id in TEAM_IDS
     }

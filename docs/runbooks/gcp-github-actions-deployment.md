@@ -138,8 +138,8 @@ Required runtime values are:
 - `cdl-database-url`: a SQLAlchemy PostgreSQL URL using the `/cloudsql/<connection-name>` Unix socket;
 - `cdl-development-login-secret`: a staging-only review password until the real identity design replaces it.
 - `cdl-google-client-id`: the Web OAuth client ID used by Google Identity Services;
-- `cdl-google-allowed-emails`: a comma-separated exact email allowlist, initially
-  `andrew3stedall@gmail.com`.
+- `cdl-google-allowed-emails`: a comma-separated exact email allowlist maintained outside the
+  repository in Secret Manager.
 
 The Google browser credential flow does not use an OAuth client secret. Do not create or store
 one for this integration. Configure the Web OAuth client with the exact authorized JavaScript

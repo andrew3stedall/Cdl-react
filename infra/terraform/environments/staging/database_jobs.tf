@@ -68,6 +68,7 @@ resource "google_cloud_run_v2_job" "database_migration" {
     module.cloud_sql,
     google_project_iam_member.cloud_sql_client,
     google_secret_manager_secret_iam_member.migration_secret_access,
+    google_secret_manager_secret_iam_member.migration_google_allowed_emails_access,
   ]
 }
 

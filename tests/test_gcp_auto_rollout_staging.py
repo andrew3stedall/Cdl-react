@@ -3,6 +3,7 @@ from pathlib import Path
 WORKFLOW = Path(".github/workflows/gcp-auto-rollout-staging.yml")
 DATABASE_JOB_WORKFLOW = Path(".github/workflows/gcp-run-staging-database-job.yml")
 DATABASE_JOBS = Path("infra/terraform/environments/staging/database_jobs.tf")
+STAGING_MAIN = Path("infra/terraform/environments/staging/main.tf")
 OUTPUTS = Path("infra/terraform/environments/staging/outputs.tf")
 
 
@@ -23,6 +24,7 @@ def test_auto_rollout_is_staging_only_and_failure_closed() -> None:
         '"google_cloud_run_v2_job.synthetic_seed[0]"',
         '"google_cloud_run_v2_job.fpl_refresh[0]"',
         '"module.cloud_run_api[0].google_cloud_run_v2_service.this"',
+        '"google_secret_manager_secret_iam_member.migration_google_allowed_emails_access"',
         "terraform apply -input=false",
         "Post-rollout Terraform plan was not a clean no-change result.",
         'gcloud run jobs execute "${MIGRATION_JOB}"',
@@ -36,6 +38,17 @@ def test_auto_rollout_is_staging_only_and_failure_closed() -> None:
     assert "cdl-react-prod" not in content
     assert "terraform destroy" not in content
     assert "-auto-approve" not in content
+
+
+def test_staging_migration_keeps_existing_secret_binding_address() -> None:
+    content = STAGING_MAIN.read_text(encoding="utf-8")
+
+    assert 'resource "google_secret_manager_secret_iam_member" "migration_secret_access"' in content
+    assert 'secret_id = module.runtime_secrets.secret_names["cdl-database-url"]' in content
+    assert (
+        'resource "google_secret_manager_secret_iam_member" '
+        '"migration_google_allowed_emails_access"'
+    ) in content
 
 
 def test_official_fpl_refresh_job_uses_the_migration_identity_and_database_only() -> None:

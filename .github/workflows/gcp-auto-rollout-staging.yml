@@ -312,6 +312,9 @@ jobs:
               "google_cloud_run_v2_job.synthetic_seed[0]": {("update",)},
               "google_cloud_run_v2_job.fpl_refresh[0]": {("create",), ("update",)},
               "module.cloud_run_api[0].google_cloud_run_v2_service.this": {("update",)},
+              "google_secret_manager_secret_iam_member.migration_google_allowed_emails_access": {
+                  ("create",),
+              },
           }
           unexpected = []
           for resource in plan.get("resource_changes", []):

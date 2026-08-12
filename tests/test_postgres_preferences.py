@@ -113,10 +113,7 @@ def test_authenticated_preferences_persist_and_remain_isolated() -> None:
     assert reloaded_repository.get_for_user("preferences-manager-1").attack_direction == "down"
     assert reloaded_repository.get_for_user("preferences-manager-1").fdr_scale == "Viridis"
     assert reloaded_repository.get_for_user("preferences-manager-1").fdr_scale_reversed is False
-    assert (
-        reloaded_repository.get_for_user("preferences-manager-2").theme_preset
-        == "teal-dark"
-    )
+    assert reloaded_repository.get_for_user("preferences-manager-2").theme_preset == "teal-dark"
     assert reloaded_repository.get_for_user("preferences-manager-2").attack_direction == "up"
     assert reloaded_repository.get_for_user("preferences-manager-2").fdr_scale == "Rainbow"
     assert reloaded_repository.get_for_user("preferences-manager-2").fdr_scale_reversed is True

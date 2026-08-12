@@ -22,6 +22,8 @@ class SeedResult:
     domains: tuple[str, ...]
 
 
+# The controlled post-rollout reset is requested by the [reset-staging-draft]
+# marker in the main-branch rollout commit message.
 def seed_synthetic_staging_data(settings: Settings | None = None) -> SeedResult:
     """Idempotently load the explicitly synthetic staging fixture set."""
     resolved = settings or Settings()

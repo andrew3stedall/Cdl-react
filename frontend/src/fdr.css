@@ -95,14 +95,11 @@
   color: var(--muted-foreground);
 }
 
-.fdr-rating-1,
-.fdr-rating-2,
-.fdr-rating-3,
-.fdr-rating-4,
-.fdr-rating-5 {
-  background: var(--secondary);
-  color: var(--foreground);
-}
+.fdr-rating-1 { background: color-mix(in srgb, var(--cdl-fdr-1) 14%, var(--card)); color: var(--cdl-fdr-1); border-color: var(--cdl-fdr-1); }
+.fdr-rating-2 { background: color-mix(in srgb, var(--cdl-fdr-2) 14%, var(--card)); color: var(--cdl-fdr-2); border-color: var(--cdl-fdr-2); }
+.fdr-rating-3 { background: color-mix(in srgb, var(--cdl-fdr-3) 14%, var(--card)); color: var(--cdl-fdr-3); border-color: var(--cdl-fdr-3); }
+.fdr-rating-4 { background: color-mix(in srgb, var(--cdl-fdr-4) 14%, var(--card)); color: var(--cdl-fdr-4); border-color: var(--cdl-fdr-4); }
+.fdr-rating-5 { background: color-mix(in srgb, var(--cdl-fdr-5) 14%, var(--card)); color: var(--cdl-fdr-5); border-color: var(--cdl-fdr-5); }
 
 [data-theme-preset='teal-light-compact'] .fdr-table th,
 [data-theme-preset='teal-light-compact'] .fdr-table td,

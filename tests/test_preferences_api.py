@@ -35,32 +35,58 @@ def test_preferences_use_authenticated_user_identity() -> None:
 
     response = client.put(
         "/api/me/preferences",
-        json={"theme_preset": "teal-dark", "attack_direction": "down"},
+        json={
+            "theme_preset": "teal-dark",
+            "attack_direction": "down",
+            "fdr_scale": "Spectral",
+            "fdr_scale_reversed": False,
+        },
     )
 
     assert response.status_code == 200
-    assert response.json() == {"theme_preset": "teal-dark", "attack_direction": "down"}
+    assert response.json() == {
+        "theme_preset": "teal-dark",
+        "attack_direction": "down",
+        "fdr_scale": "Spectral",
+        "fdr_scale_reversed": False,
+    }
     assert client.get("/api/me/preferences").json() == {
         "theme_preset": "teal-dark",
         "attack_direction": "down",
+        "fdr_scale": "Spectral",
+        "fdr_scale_reversed": False,
     }
 
     app.dependency_overrides[require_authenticated_session] = lambda: _user("manager-2")
     assert client.get("/api/me/preferences").json() == {
         "theme_preset": "teal-light",
         "attack_direction": "up",
+        "fdr_scale": "RdYlGn",
+        "fdr_scale_reversed": True,
     }
 
     response = client.put(
         "/api/me/preferences",
-        json={"theme_preset": "teal-light-compact", "attack_direction": "up"},
+        json={
+            "theme_preset": "teal-light-compact",
+            "attack_direction": "up",
+            "fdr_scale": "Greys",
+            "fdr_scale_reversed": True,
+        },
     )
 
     assert response.status_code == 200
-    assert response.json() == {"theme_preset": "teal-light-compact", "attack_direction": "up"}
+    assert response.json() == {
+        "theme_preset": "teal-light-compact",
+        "attack_direction": "up",
+        "fdr_scale": "Greys",
+        "fdr_scale_reversed": True,
+    }
 
     app.dependency_overrides[require_authenticated_session] = lambda: _user("manager-1")
     assert client.get("/api/me/preferences").json() == {
         "theme_preset": "teal-dark",
         "attack_direction": "down",
+        "fdr_scale": "Spectral",
+        "fdr_scale_reversed": False,
     }

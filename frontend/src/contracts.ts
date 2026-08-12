@@ -1,3 +1,5 @@
+import type { FdrScaleName } from './fdr-colour-scales';
+
 export interface ApiErrorResponse {
   code: 'validation_error' | 'unauthenticated' | 'forbidden' | 'not_found' | 'conflict' | 'server_error';
   message: string;
@@ -69,6 +71,8 @@ export interface UserPreferences {
   // appearance choices to users.
   themePreset: ThemePresetName;
   attackDirection: AttackDirection;
+  fdrScale: FdrScaleName;
+  fdrScaleReversed: boolean;
 }
 
 export interface TeamSummary {

@@ -25,11 +25,11 @@
   --squad-form-steady: #a9966e;
   --squad-form-high: #78a39a;
   --squad-form-empty: color-mix(in srgb, var(--squad-text) 16%, transparent);
-  --squad-fdr-very-easy: #78b9ac;
-  --squad-fdr-easy: #8eafa0;
-  --squad-fdr-balanced: #9aa7a5;
-  --squad-fdr-hard: #c2a06d;
-  --squad-fdr-very-hard: #ca8f8b;
+  --squad-fdr-very-easy: var(--cdl-fdr-1);
+  --squad-fdr-easy: var(--cdl-fdr-2);
+  --squad-fdr-balanced: var(--cdl-fdr-3);
+  --squad-fdr-hard: var(--cdl-fdr-4);
+  --squad-fdr-very-hard: var(--cdl-fdr-5);
   background: var(--squad-bg);
   color: var(--squad-text);
   display: grid;
@@ -1419,15 +1419,6 @@
 
 .squad-page__opponent--fdr-5 {
   color: var(--squad-fdr-very-hard);
-}
-
-[data-theme-preset='teal-light'] .squad-page,
-[data-theme-preset='teal-light-compact'] .squad-page {
-  --squad-fdr-very-easy: #147c71;
-  --squad-fdr-easy: #3b7467;
-  --squad-fdr-balanced: #475e5a;
-  --squad-fdr-hard: #8a5c1d;
-  --squad-fdr-very-hard: #a44943;
 }
 
 .squad-page__expected {

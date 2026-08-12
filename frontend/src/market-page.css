@@ -485,11 +485,11 @@
   font-size: 0.68rem;
 }
 
-.market-page__fixture small.fdr-band-1,
-.market-page__fixture small.fdr-band-2 { color: var(--color-success, #27816e); }
-.market-page__fixture small.fdr-band-3 { color: var(--color-warning, #9b7426); }
-.market-page__fixture small.fdr-band-4,
-.market-page__fixture small.fdr-band-5 { color: var(--color-danger, #ad4b4b); }
+.market-page__fixture small.fdr-band-1 { color: var(--cdl-fdr-1); }
+.market-page__fixture small.fdr-band-2 { color: var(--cdl-fdr-2); }
+.market-page__fixture small.fdr-band-3 { color: var(--cdl-fdr-3); }
+.market-page__fixture small.fdr-band-4 { color: var(--cdl-fdr-4); }
+.market-page__fixture small.fdr-band-5 { color: var(--cdl-fdr-5); }
 
 .market-page__status-badge {
   align-items: center;

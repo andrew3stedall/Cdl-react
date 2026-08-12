@@ -30,6 +30,11 @@
   --cdl-accent: var(--accent);
   --cdl-muted-foreground: var(--muted-foreground);
   --cdl-radius: var(--radius);
+  --cdl-fdr-1: #147c71;
+  --cdl-fdr-2: #3b7467;
+  --cdl-fdr-3: #475e5a;
+  --cdl-fdr-4: #8a5c1d;
+  --cdl-fdr-5: #a44943;
 
   background: var(--background);
   color: var(--foreground);

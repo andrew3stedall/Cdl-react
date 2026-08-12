@@ -41,20 +41,34 @@ def test_user_preferences_endpoint_round_trip() -> None:
     initial_response = client.get("/api/me/preferences")
     update_response = client.put(
         "/api/me/preferences",
-        json={"theme_preset": "teal-dark-compact", "attack_direction": "down"},
+        json={
+            "theme_preset": "teal-dark-compact",
+            "attack_direction": "down",
+            "fdr_scale": "Viridis",
+            "fdr_scale_reversed": False,
+        },
     )
     final_response = client.get("/api/me/preferences")
 
     assert login_response.status_code == 200
     assert reset_response.status_code == 200
     assert initial_response.status_code == 200
-    assert initial_response.json() == {"theme_preset": "teal-light", "attack_direction": "up"}
+    assert initial_response.json() == {
+        "theme_preset": "teal-light",
+        "attack_direction": "up",
+        "fdr_scale": "RdYlGn",
+        "fdr_scale_reversed": True,
+    }
     assert update_response.status_code == 200
     assert update_response.json() == {
         "theme_preset": "teal-dark-compact",
         "attack_direction": "down",
+        "fdr_scale": "Viridis",
+        "fdr_scale_reversed": False,
     }
     assert final_response.json() == {
         "theme_preset": "teal-dark-compact",
         "attack_direction": "down",
+        "fdr_scale": "Viridis",
+        "fdr_scale_reversed": False,
     }

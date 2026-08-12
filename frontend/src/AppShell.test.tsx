@@ -24,7 +24,12 @@ const authenticatedSession: SessionState = {
 };
 
 class MemoryPreferenceClient implements PreferenceClient {
-  preferences: UserPreferences = { themePreset: 'teal-light', attackDirection: 'up' };
+  preferences: UserPreferences = {
+    themePreset: 'teal-light',
+    attackDirection: 'up',
+    fdrScale: 'RdYlGn',
+    fdrScaleReversed: true,
+  };
 
   async getPreferences(): Promise<UserPreferences> {
     return this.preferences;
@@ -229,6 +234,30 @@ describe('AppShell integration', () => {
     expect(preferenceClient.preferences.themePreset).toBe('teal-dark-compact');
     expect(document.documentElement.dataset.themeMode).toBe('dark');
 
+    const fdrScaleTrigger = container.querySelector<HTMLButtonElement>('.profile-fdr-scale-trigger');
+    await act(async () => {
+      fdrScaleTrigger?.click();
+      await Promise.resolve();
+    });
+    expect(container.querySelector('#fdr-scale-sheet')?.hasAttribute('hidden')).toBe(false);
+    expect(container.querySelectorAll('.profile-fdr-scale-option')).toHaveLength(38);
+
+    const viridisOption = [...container.querySelectorAll<HTMLButtonElement>('.profile-fdr-scale-option')]
+      .find((option) => option.textContent?.includes('Viridis'));
+    await act(async () => {
+      viridisOption?.click();
+      await Promise.resolve();
+    });
+    expect(preferenceClient.preferences.fdrScale).toBe('Viridis');
+    expect(document.documentElement.dataset.fdrScale).toBe('Viridis');
+
+    const reverseOrder = container.querySelector<HTMLInputElement>('.profile-fdr-reverse-toggle input');
+    await act(async () => {
+      reverseOrder?.click();
+      await Promise.resolve();
+    });
+    expect(preferenceClient.preferences.fdrScaleReversed).toBe(false);
+
     const attackDownOption = container.querySelector<HTMLButtonElement>('.profile-direction-option[aria-pressed="false"]');
     expect(attackDownOption?.textContent).toContain('Attack downwards');
     await act(async () => {
@@ -240,7 +269,12 @@ describe('AppShell integration', () => {
 
   test('passes the persisted preset into page-level density consumers', async () => {
     const preferenceClient = new MemoryPreferenceClient();
-    preferenceClient.preferences = { themePreset: 'teal-dark-compact', attackDirection: 'up' };
+    preferenceClient.preferences = {
+      themePreset: 'teal-dark-compact',
+      attackDirection: 'up',
+      fdrScale: 'RdYlGn',
+      fdrScaleReversed: true,
+    };
     const { container } = renderApp({ initialPath: '/rules', preferenceClient });
 
     await act(async () => {

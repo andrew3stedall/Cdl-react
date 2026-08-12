@@ -4,9 +4,10 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from sqlalchemy import exists, func, insert, literal, or_, select, update
+from sqlalchemy import Integer, cast, exists, func, insert, literal, or_, select, update
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
+from sqlalchemy.sql.selectable import Subquery
 
 from cdl_api.contracts.domain import GameweekSummary, TeamSummary
 from cdl_api.contracts.squad import (
@@ -21,6 +22,7 @@ from cdl_api.contracts.squad import (
 )
 from cdl_api.repositories.postgres_fpl_data import (
     fpl_fixtures_table,
+    fpl_gameweeks_table,
     fpl_player_current_metrics_table,
 )
 from cdl_api.repositories.postgres_league_fpl import (
@@ -50,6 +52,42 @@ from cdl_api.staging_draft_seed import (
 DEMO_SEASON_ID = SEASON_ID
 DEMO_MANAGER_ID = PRIMARY_MANAGER_ID
 DEMO_RIVAL_MANAGER_ID = "manager-2"
+
+
+def _active_gameweek_player_values_subquery() -> Subquery:
+    """Select player prices for the current FPL season/gameweek.
+
+    Player values are retained by gameweek for auditability. A plain maximum
+    gameweek lookup is incorrect at a season rollover because the new season
+    starts at gameweek 1 while last season's gameweek 38 rows still exist.
+    Prefer the official current gameweek, falling back to the official next
+    gameweek during the pre-season window.
+    """
+    active_gameweek = (
+        select(cast(fpl_gameweeks_table.c.id, Integer))
+        .where(
+            or_(
+                fpl_gameweeks_table.c.is_current.is_(True),
+                fpl_gameweeks_table.c.is_next.is_(True),
+            )
+        )
+        .order_by(
+            fpl_gameweeks_table.c.is_current.desc(),
+            fpl_gameweeks_table.c.is_next.desc(),
+            fpl_gameweeks_table.c.deadline_time.asc().nulls_last(),
+        )
+        .limit(1)
+        .scalar_subquery()
+    )
+    return (
+        select(
+            fpl_player_values_table.c.player_id,
+            func.max(fpl_player_values_table.c.gameweek).label("gameweek"),
+        )
+        .where(fpl_player_values_table.c.gameweek == active_gameweek)
+        .group_by(fpl_player_values_table.c.player_id)
+        .subquery("active_gameweek_player_values")
+    )
 
 
 class PostgreSQLSquadRepository(InMemorySquadRepository):
@@ -82,14 +120,7 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
     def _database_players(self) -> list[PlayerDetail]:
         active_ownerships = squad_ownerships_table.alias("active_ownerships")
         canonical_players = fpl_players_table.alias("canonical_players")
-        latest_values = (
-            select(
-                fpl_player_values_table.c.player_id,
-                func.max(fpl_player_values_table.c.gameweek).label("gameweek"),
-            )
-            .group_by(fpl_player_values_table.c.player_id)
-            .subquery("latest_player_values")
-        )
+        latest_values = _active_gameweek_player_values_subquery()
         legacy_without_canonical_counterpart = ~exists(
             select(1)
             .select_from(canonical_players)

@@ -22,7 +22,10 @@ from cdl_api.repositories.postgres_league_fpl import (
     fpl_players_table,
     fpl_positions_table,
 )
-from cdl_api.repositories.postgres_squad_repository import PostgreSQLSquadRepository
+from cdl_api.repositories.postgres_squad_repository import (
+    PostgreSQLSquadRepository,
+    _active_gameweek_player_values_subquery,
+)
 from cdl_api.services.fpl_data_service import FplDataService
 
 BOOTSTRAP = {
@@ -281,6 +284,44 @@ def test_bootstrap_refresh_enriches_existing_canonical_draft_player_in_place() -
         assert players[0]["first_name"] == "Test"
         assert players[0]["web_name"] == "Keeper"
         assert players[0]["team_id"] == "1"
+
+
+def test_player_values_follow_active_gameweek_after_season_rollover() -> None:
+    sessions = _session_factory()
+    with sessions() as session:
+        session.execute(
+            insert(fpl_gameweeks_table).values(
+                id="1",
+                name="Gameweek 1",
+                deadline_time=datetime(2026, 8, 21, 17, 30, tzinfo=UTC),
+                is_previous=False,
+                is_current=False,
+                is_next=True,
+                finished=False,
+                data_checked=False,
+            )
+        )
+        session.execute(
+            insert(fpl_player_values_table),
+            [
+                {"id": "fpl-10:38", "player_id": "fpl-10", "gameweek": 38, "value": 999},
+                {"id": "fpl-10:1", "player_id": "fpl-10", "gameweek": 1, "value": 55},
+            ],
+        )
+        session.commit()
+
+        active_values = _active_gameweek_player_values_subquery()
+        value = session.execute(
+            select(fpl_player_values_table.c.value)
+            .join(
+                active_values,
+                (active_values.c.player_id == fpl_player_values_table.c.player_id)
+                & (active_values.c.gameweek == fpl_player_values_table.c.gameweek),
+            )
+            .where(fpl_player_values_table.c.player_id == "fpl-10")
+        ).scalar_one()
+
+    assert value == 55
 
 
 def test_player_history_fetches_once_then_uses_postgres_cache() -> None:

@@ -1,6 +1,6 @@
 """persist manager FDR colour scale preferences
 
-Revision ID: 0012_fdr_colour_scale_preferences
+Revision ID: 0012_fdr_scale_prefs
 Revises: 0011_pitch_attack_direction
 Create Date: 2026-08-12 00:00:00.000000
 """
@@ -10,7 +10,7 @@ from collections.abc import Sequence
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "0012_fdr_colour_scale_preferences"
+revision: str = "0012_fdr_scale_prefs"
 down_revision: str | None = "0011_pitch_attack_direction"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None

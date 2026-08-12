@@ -120,6 +120,8 @@ async function mockApi(page) {
   const interests = [];
   const trades = [];
   let attackDirection = 'up';
+  let fdrScale = 'RdYlGn';
+  let fdrScaleReversed = true;
 
   await page.route('**/api/**', async (route) => {
     const request = route.request();
@@ -127,11 +129,28 @@ async function mockApi(page) {
 
     if (path === '/api/auth/session') return route.fulfill({ json: authenticatedSession });
     if (path === '/api/me/preferences' && request.method() === 'GET') {
-      return route.fulfill({ json: { theme_preset: 'teal-light', attack_direction: attackDirection } });
+      return route.fulfill({
+        json: {
+          theme_preset: 'teal-light',
+          attack_direction: attackDirection,
+          fdr_scale: fdrScale,
+          fdr_scale_reversed: fdrScaleReversed,
+        },
+      });
     }
     if (path === '/api/me/preferences' && request.method() === 'PUT') {
-      attackDirection = request.postDataJSON().attack_direction;
-      return route.fulfill({ json: { theme_preset: 'teal-light', attack_direction: attackDirection } });
+      const preferences = request.postDataJSON();
+      attackDirection = preferences.attack_direction;
+      fdrScale = preferences.fdr_scale;
+      fdrScaleReversed = preferences.fdr_scale_reversed;
+      return route.fulfill({
+        json: {
+          theme_preset: 'teal-light',
+          attack_direction: attackDirection,
+          fdr_scale: fdrScale,
+          fdr_scale_reversed: fdrScaleReversed,
+        },
+      });
     }
     if (path === '/api/squad/summary') return route.fulfill({ json: squadSummary });
     if (path === '/api/team-selection') return route.fulfill({ json: teamSelection });
@@ -245,6 +264,11 @@ async function testSquadWorkspace(browser, viewport) {
   }
 
   await page.goto(`${baseUrl}/account`, { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: /RdYlGn/ }).click();
+  await page.locator('.profile-fdr-scale-option').filter({ hasText: 'Viridis' }).click();
+  await page.getByRole('status').getByText('Appearance preference saved.', { exact: true }).waitFor();
+  await page.locator('.profile-fdr-reverse-toggle input').click();
+  await page.getByRole('status').getByText('Appearance preference saved.', { exact: true }).waitFor();
   await page.getByRole('button', { name: /Attack downwards/ }).click();
   await page.getByRole('status').getByText('Appearance preference saved.', { exact: true }).waitFor();
   await page.goto(`${baseUrl}/squad-management`, { waitUntil: 'networkidle' });

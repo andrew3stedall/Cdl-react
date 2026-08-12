@@ -68,33 +68,53 @@ def test_authenticated_preferences_persist_and_remain_isolated() -> None:
 
     assert client.put(
         "/api/me/preferences",
-        json={"theme_preset": "teal-dark", "attack_direction": "down"},
+        json={
+            "theme_preset": "teal-dark",
+            "attack_direction": "down",
+            "fdr_scale": "Viridis",
+            "fdr_scale_reversed": False,
+        },
     ).json() == {
         "theme_preset": "teal-dark",
         "attack_direction": "down",
+        "fdr_scale": "Viridis",
+        "fdr_scale_reversed": False,
     }
 
     app.dependency_overrides[require_authenticated_session] = lambda: _user("preferences-manager-2")
     assert client.get("/api/me/preferences").json() == {
         "theme_preset": "teal-light",
         "attack_direction": "up",
+        "fdr_scale": "RdYlGn",
+        "fdr_scale_reversed": True,
     }
     assert client.put(
         "/api/me/preferences",
-        json={"theme_preset": "teal-dark-compact", "attack_direction": "up"},
+        json={
+            "theme_preset": "teal-dark-compact",
+            "attack_direction": "up",
+            "fdr_scale": "Rainbow",
+            "fdr_scale_reversed": True,
+        },
     ).json() == {
         "theme_preset": "teal-dark-compact",
         "attack_direction": "up",
+        "fdr_scale": "Rainbow",
+        "fdr_scale_reversed": True,
     }
 
     reloaded_repository = PostgreSQLUserPreferenceRepository(session_factory)
     assert reloaded_repository.get_for_user("preferences-manager-1").theme_preset == "teal-dark"
     assert reloaded_repository.get_for_user("preferences-manager-1").attack_direction == "down"
+    assert reloaded_repository.get_for_user("preferences-manager-1").fdr_scale == "Viridis"
+    assert reloaded_repository.get_for_user("preferences-manager-1").fdr_scale_reversed is False
     assert (
         reloaded_repository.get_for_user("preferences-manager-2").theme_preset
         == "teal-dark-compact"
     )
     assert reloaded_repository.get_for_user("preferences-manager-2").attack_direction == "up"
+    assert reloaded_repository.get_for_user("preferences-manager-2").fdr_scale == "Rainbow"
+    assert reloaded_repository.get_for_user("preferences-manager-2").fdr_scale_reversed is True
 
     with engine.begin() as connection:
         connection.execute(

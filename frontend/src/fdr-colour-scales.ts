@@ -2,10 +2,10 @@
  * FDR colour scales derived from d3-scale-chromatic 3.1.0 continuous
  * interpolators. Each scale is sampled at five FDR levels (1–5).
  *
- * The light and dark values are deliberately separate: interpolator endpoints
- * that were too close to the app background were adjusted towards black or
- * white until they reached a readable contrast. Cyclical scales sample t from
- * 0 to 0.7 so the scale does not complete a full colour cycle.
+ * The light and dark values are deliberately separate. Display values are
+ * adjusted towards black or white when the tinted FDR chip background would
+ * otherwise make the label too faint. Cyclical scales sample t from 0 to 0.7
+ * so the scale does not complete a full colour cycle.
  */
 
 export type FdrScaleGroup = 'Diverging' | 'Sequential' | 'Cyclical';
@@ -59,6 +59,61 @@ export const fdrColourScales: readonly FdrColourScale[] = fdrScaleRows;
 export const defaultFdrScaleName: FdrScaleName = 'RdYlGn';
 export const defaultFdrScaleReversed = true;
 
+const fdrContrastTarget = 4.6;
+const fdrTintStrength = 0.14;
+const fdrThemeSurface = {
+  dark: '#111c1b',
+  light: '#ffffff',
+} as const;
+
+type Rgb = [number, number, number];
+
+function hexToRgb(hex: string): Rgb {
+  return [1, 3, 5].map((index) => Number.parseInt(hex.slice(index, index + 2), 16)) as Rgb;
+}
+
+function rgbToHex(rgb: Rgb): string {
+  return `#${rgb.map((channel) => Math.round(channel).toString(16).padStart(2, '0')).join('')}`.toUpperCase();
+}
+
+function mixRgb(first: Rgb, second: Rgb, firstWeight: number): Rgb {
+  return first.map((channel, index) => channel * firstWeight + second[index] * (1 - firstWeight)) as Rgb;
+}
+
+function relativeLuminance(rgb: Rgb): number {
+  return rgb.reduce((total, channel, index) => {
+    const normalized = channel / 255;
+    const linear = normalized <= 0.03928 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4;
+    return total + linear * [0.2126, 0.7152, 0.0722][index];
+  }, 0);
+}
+
+function contrastRatio(first: Rgb, second: Rgb): number {
+  const firstLuminance = relativeLuminance(first);
+  const secondLuminance = relativeLuminance(second);
+  const lighter = Math.max(firstLuminance, secondLuminance);
+  const darker = Math.min(firstLuminance, secondLuminance);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+function adjustForFdrChipContrast(hex: string, mode: 'light' | 'dark'): string {
+  const original = hexToRgb(hex);
+  const surface = hexToRgb(fdrThemeSurface[mode]);
+  const background = mixRgb(original, surface, fdrTintStrength);
+  if (contrastRatio(original, background) >= fdrContrastTarget) return hex;
+
+  const target = mode === 'light' ? [0, 0, 0] as Rgb : [255, 255, 255] as Rgb;
+  for (let step = 1; step <= 256; step += 1) {
+    const candidate = mixRgb(original, target, 1 - step / 256);
+    const candidateBackground = mixRgb(candidate, surface, fdrTintStrength);
+    if (contrastRatio(candidate, candidateBackground) >= fdrContrastTarget) {
+      return rgbToHex(candidate);
+    }
+  }
+
+  return rgbToHex(target);
+}
+
 export function resolveFdrScaleName(name: string | null | undefined): FdrScaleName {
   return fdrColourScales.some((scale) => scale.name === name)
     ? name as FdrScaleName
@@ -74,7 +129,7 @@ export function getFdrPalette(
   mode: 'light' | 'dark',
   reversed: boolean,
 ): FdrPalette {
-  const palette = [...getFdrColourScale(name)[mode]] as string[];
+  const palette = getFdrColourScale(name)[mode].map((colour) => adjustForFdrChipContrast(colour, mode));
   if (reversed) palette.reverse();
   return palette as unknown as FdrPalette;
 }

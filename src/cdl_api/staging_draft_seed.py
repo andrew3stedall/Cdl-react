@@ -1,12 +1,4 @@
-"""Deterministic staging league and position-constrained snake-draft seed.
-
-The primary ranking is copied from ``andrew3stedall/-static--cdl`` at commit
-``711455f4dac079810fd4d4d71f707f1c6c7a92b6``. The original top-160 pool
-contains only 13 goalkeepers, which cannot satisfy eight squads requiring at
-least two goalkeepers each. Three later reviewed goalkeeper candidates are
-therefore appended as a staging-only eligibility buffer; the mock draft still
-selects exactly 160 players across eight 20-player squads.
-"""
+"""Seed the completed 160-pick CDL draft captured from the draft board."""
 
 from collections import Counter
 from dataclasses import dataclass
@@ -82,9 +74,12 @@ EPL_TEAM_NAMES = {
     "BOU": "Bournemouth",
     "BRE": "Brentford",
     "CHE": "Chelsea",
+    "COV": "Coventry City",
     "CRY": "Crystal Palace",
     "EVE": "Everton",
     "FUL": "Fulham",
+    "HUL": "Hull City",
+    "IPS": "Ipswich Town",
     "LEE": "Leeds United",
     "LIV": "Liverpool",
     "MCI": "Manchester City",
@@ -95,7 +90,9 @@ EPL_TEAM_NAMES = {
     "TOT": "Tottenham Hotspur",
 }
 
-_DRAFT_BOARD_TEXT = """
+# Historical ranked seed retained for reference; captured ownership below is
+# the active staging source of truth.
+_LEGACY_DRAFT_BOARD_TEXT = """
 1|Haaland|FWD|MCI|411
 2|Palmer|MID|CHE|154
 3|Saka|MID|ARS|12
@@ -258,13 +255,178 @@ _DRAFT_BOARD_TEXT = """
 160|Struijk|DEF|BHA|328
 """.strip()
 
-# Staging-only eligibility buffer. These are reviewed goalkeeper candidates from
-# the current static-CDL goalkeeper ordering; their artificial pool ranks preserve
-# the original top-160 order while making a legal eight-team mock draft possible.
-_SUPPLEMENTAL_GOALKEEPERS_TEXT = """
+# Historical goalkeeper buffer for the retired generated seed.
+_LEGACY_SUPPLEMENTAL_GOALKEEPERS_TEXT = """
 161|Henderson|GKP|CRY|198
 162|Sels|GKP|NFO|467
 163|Martinez|GKP|AVL|28
+""".strip()
+
+# The draft board is the source of truth for ownership. Each line is an
+# overall pick, followed by the player data needed when the staging database
+# has not yet received its first official FPL refresh. The team index for a
+# pick is derived from the board's eight-team snake order.
+_CAPTURED_DRAFT_TEXT = """
+1|Haaland|FWD|MCI|411
+2|B.Fernandes|MID|MUN|426
+3|Saka|MID|ARS|12
+4|Semenyo|MID|MCI|397
+5|Watkins|FWD|AVL|55
+6|Mbeumo|MID|MUN|427
+7|Thiago|FWD|BRE|106
+8|João Pedro|FWD|CHE|165
+9|Palmer|MID|CHE|154
+10|Isak|FWD|LIV|379
+11|Rogers|MID|CHE|40
+12|Gyökeres|FWD|ARS|25
+13|Calvert-Lewin|FWD|LEE|346
+14|Šeško|FWD|MUN|439
+15|Cunha|MID|MUN|428
+16|Gabriel|DEF|ARS|4
+17|Rice|MID|ARS|13
+18|Richarlison|FWD|TOT|527
+19|O'Reilly|DEF|MCI|387
+20|Szoboszlai|MID|LIV|368
+21|Wirtz|MID|LIV|366
+22|Gibbs-White|MID|NFO|480
+23|Mateta|FWD|CRY|223
+24|Anderson|MID|MCI|481
+25|Igor Jesus|FWD|NFO|491
+26|Bruno G.|MID|NEW|452
+27|Evanilson|FWD|BOU|79
+28|Foden|MID|MCI|398
+29|Wissa|FWD|NEW|464
+30|Woltemade|FWD|NEW|463
+31|Cherki|MID|MCI|399
+32|Guéhi|DEF|MCI|388
+33|Wilson|MID|LEE|260
+34|Pedro Porro|DEF|TOT|499
+35|Enzo|MID|CHE|155
+36|Munoz|MID|LIV|377
+37|Gakpo|MID|LIV|367
+38|Virgil|DEF|LIV|356
+39|Maddison|MID|TOT|515
+40|Gvardiol|DEF|MCI|391
+41|Groß|MID|BHA|124
+42|James|DEF|CHE|142
+43|J.Timber|DEF|ARS|5
+44|Eze|MID|ARS|14
+45|Saliba|DEF|ARS|6
+46|Raya|GKP|ARS|1
+47|Doku|MID|MCI|400
+48|E.Le Fée|MID|SUN|542
+49|Lacroix|DEF|CHE|200
+50|Tarkowski|DEF|EVE|229
+51|Dewsbury-Hall|MID|EVE|236
+52|Matheus N.|DEF|MCI|389
+53|Ødegaard|MID|ARS|15
+54|Fernandes|MID|TOT|525
+55|Ndiaye|MID|EVE|237
+56|Sarr|MID|CRY|208
+57|Colwill|DEF|CHE|149
+58|Tavernier|MID|BOU|68
+59|Palestra|DEF|CHE|152
+60|Marmoush|FWD|MCI|401
+61|Garner|MID|EVE|239
+62|Senesi|DEF|TOT|498
+63|N.Williams|DEF|NFO|469
+64|Havertz|FWD|ARS|26
+65|Donnarumma|GKP|MCI|384
+66|McBurnie|FWD|HUL|295
+67|Emersonn|FWD|IPS|316
+68|Manzambi|MID|AVL|53
+69|Frimpong|DEF|LIV|357
+70|Truffert|DEF|BOU|61
+71|Mukiele|DEF|SUN|533
+72|Garcia|FWD|FUL|569
+73|Kerkez|DEF|LIV|358
+74|Cash|DEF|AVL|32
+75|Savinho|MID|MCI|403
+76|Calafiori|DEF|ARS|8
+77|Van Hecke|DEF|TOT|112
+78|Muñoz|DEF|CRY|201
+79|Pickford|GKP|EVE|226
+80|Lammens|GKP|MUN|412
+81|Brobbey|FWD|SUN|552
+82|Hill|DEF|BOU|60
+83|Tielemans|MID|MUN|43
+84|Tzolis|MID|ARS|557
+85|Hall|DEF|NEW|449
+86|Solanke|FWD|TOT|526
+87|O.Dango|MID|BRE|95
+88|Rayan|MID|BOU|67
+89|Vuskovic|DEF|BHA|504
+90|Amad|MID|MUN|431
+91|A.Becker|GKP|LIV|350
+92|Aït-Nouri|DEF|MCI|392
+93|Rúben|DEF|MCI|390
+94|Van de Ven|DEF|TOT|503
+95|Minteh|MID|BHA|122
+96|Tonali|MID|TOT|455
+97|Jacquet|DEF|LIV|362
+98|Martinez|GKP|AVL|28
+99|Kelleher|GKP|BRE|82
+100|Roefs|GKP|SUN|529
+101|Horníček|GKP|NEW|567
+102|F.Kadıoğlu|DEF|BHA|113
+103|Wieffer|DEF|BHA|130
+104|Sánchez|GKP|CHE|140
+105|Barnes|MID|NEW|453
+106|Thiaw|DEF|NEW|445
+107|Strand Larsen|FWD|CRY|222
+108|Aina|DEF|NFO|473
+109|Wright|FWD|COV|193
+110|Mainoo|MID|MUN|432
+111|Kudus|MID|TOT|512
+112|Kroupi.Jr|MID|BOU|78
+113|Neto|MID|CHE|156
+114|Ballard|DEF|SUN|532
+115|Mitchell|DEF|CRY|204
+116|Konsa|DEF|AVL|31
+117|Kluivert|MID|BOU|70
+118|Welbeck|FWD|CHE|136
+119|Dalot|DEF|MUN|417
+120|Milenković|DEF|NFO|471
+121|O'Brien|DEF|EVE|232
+122|Gravenberch|MID|LIV|371
+123|Stach|MID|LEE|335
+124|Henderson|GKP|CRY|198
+125|Scott|MID|BOU|69
+126|Schade|MID|BRE|94
+127|Beto|FWD|EVE|248
+128|Buendía|MID|AVL|41
+129|Maguire|DEF|MUN|418
+130|Richards|DEF|CRY|202
+131|Wood|FWD|NFO|490
+132|Collins|DEF|BRE|84
+133|Muniz|FWD|FUL|271
+134|Hincapie|DEF|ARS|9
+135|Verbruggen|GKP|BHA|109
+136|Estêvão|MID|CHE|157
+137|Kinsky|GKP|TOT|496
+138|Torp|MID|COV|188
+139|Petrović|GKP|BOU|57
+140|Damsgaard|MID|BRE|96
+141|Shaw|DEF|MUN|423
+142|Keane|DEF|EVE|231
+143|Leno|GKP|FUL|250
+144|George|MID|EVE|242
+145|Muharemović|DEF|LEE|334
+146|Ekitiké|FWD|LIV|380
+147|Aaronson|MID|LEE|337
+148|Sels|GKP|NFO|467
+149|Dorgu|MID|MUN|415
+150|Robertson|DEF|TOT|502
+151|Trafford|GKP|LEE|385
+152|Mosquera|DEF|ARS|11
+153|Xhaka|MID|SUN|544
+154|Georginio|FWD|BHA|125
+155|Kulusevski|MID|SUN|521
+156|Mitoma|MID|BHA|121
+157|Tel|MID|TOT|514
+158|Chalobah|DEF|CHE|143
+159|Botman|DEF|NEW|447
+160|Hume|DEF|SUN|534
 """.strip()
 
 
@@ -293,17 +455,18 @@ class DraftSeedResult:
 
 
 def draft_board() -> tuple[DraftBoardPlayer, ...]:
-    pool_text = _DRAFT_BOARD_TEXT + "\n" + _SUPPLEMENTAL_GOALKEEPERS_TEXT
     players = tuple(
         DraftBoardPlayer(int(rank), name, position, team, int(fpl_id))
         for rank, name, position, team, fpl_id in (
-            line.split("|") for line in pool_text.splitlines()
+            line.split("|") for line in _CAPTURED_DRAFT_TEXT.splitlines()
         )
     )
-    if len(players) != 163 or len({player.fpl_id for player in players}) != 163:
-        raise ValueError("The staging draft pool must contain 163 unique players.")
-    if [player.rank for player in players] != list(range(1, 164)):
-        raise ValueError("The staging draft pool ranks must be contiguous from 1 to 163.")
+    if len(players) != TOTAL_DRAFT_PICKS or len({player.fpl_id for player in players}) != len(
+        players
+    ):
+        raise ValueError("The captured staging draft must contain 160 unique players.")
+    if [player.rank for player in players] != list(range(1, TOTAL_DRAFT_PICKS + 1)):
+        raise ValueError("The captured staging draft picks must be contiguous from 1 to 160.")
     goalkeeper_count = Counter(player.position for player in players)["GKP"]
     required_goalkeepers = POSITION_LIMITS["GKP"][0] * len(TEAM_IDS)
     if goalkeeper_count < required_goalkeepers:
@@ -370,45 +533,14 @@ def _candidate_keeps_draft_feasible(
 def constrained_snake_allocation(
     players: tuple[DraftBoardPlayer, ...] | None = None,
 ) -> tuple[DraftAllocation, ...]:
-    """Draft the highest-ranked eligible player at each snake pick.
-
-    Eligibility enforces each team's positional maximum while preserving enough
-    remaining slots and players for every team to reach every positional minimum.
-    """
-    remaining_players = list(players or draft_board())
-    team_counts = [Counter() for _ in TEAM_IDS]
-    team_pick_counts = [0] * len(TEAM_IDS)
-    allocations: list[DraftAllocation] = []
-
-    for overall_pick in range(1, TOTAL_DRAFT_PICKS + 1):
-        team_index = snake_team_index(overall_pick, len(TEAM_IDS))
-        candidate_index = next(
-            (
-                index
-                for index, candidate in enumerate(remaining_players)
-                if _candidate_keeps_draft_feasible(
-                    candidate,
-                    team_index,
-                    team_counts,
-                    team_pick_counts,
-                    remaining_players,
-                    overall_pick,
-                )
-            ),
-            None,
-        )
-        if candidate_index is None:
-            raise ValueError(
-                f"No legal player remains for mock-draft pick {overall_pick} "
-                f"({TEAM_NAMES[team_index]})."
-            )
-        player = remaining_players.pop(candidate_index)
-        team_counts[team_index][player.position] += 1
-        team_pick_counts[team_index] += 1
-        allocations.append(DraftAllocation(overall_pick, team_index, player))
-
-    validate_draft_allocations(tuple(allocations))
-    return tuple(allocations)
+    """Return the captured draft in the board's actual snake-draft order."""
+    captured_players = tuple(players or draft_board())
+    allocations = tuple(
+        DraftAllocation(player.rank, snake_team_index(player.rank, len(TEAM_IDS)), player)
+        for player in captured_players
+    )
+    validate_draft_allocations(allocations)
+    return allocations
 
 
 def allocation_position_counts(
@@ -647,18 +779,22 @@ def seed_staging_snake_draft(
                 },
             )
         for player in players:
-            _upsert(
-                session,
-                fpl_players_table,
-                {
-                    "id": f"fpl-{player.fpl_id}",
-                    "first_name": "",
-                    "second_name": player.name,
-                    "web_name": player.name,
-                    "position_id": player.position,
-                    "team_id": f"epl-{player.epl_team.lower()}",
-                },
-            )
+            player_id = f"fpl-{player.fpl_id}"
+            if session.execute(
+                select(fpl_players_table.c.id).where(fpl_players_table.c.id == player_id)
+            ).scalar_one_or_none() is None:
+                _upsert(
+                    session,
+                    fpl_players_table,
+                    {
+                        "id": player_id,
+                        "first_name": "",
+                        "second_name": player.name,
+                        "web_name": player.name,
+                        "position_id": player.position,
+                        "team_id": f"epl-{player.epl_team.lower()}",
+                    },
+                )
 
         # The reset and replacement happen in one transaction so staging never
         # exposes a partially drafted league if validation or insertion fails.

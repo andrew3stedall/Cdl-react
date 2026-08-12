@@ -780,9 +780,12 @@ def seed_staging_snake_draft(
             )
         for player in players:
             player_id = f"fpl-{player.fpl_id}"
-            if session.execute(
-                select(fpl_players_table.c.id).where(fpl_players_table.c.id == player_id)
-            ).scalar_one_or_none() is None:
+            if (
+                session.execute(
+                    select(fpl_players_table.c.id).where(fpl_players_table.c.id == player_id)
+                ).scalar_one_or_none()
+                is None
+            ):
                 _upsert(
                     session,
                     fpl_players_table,

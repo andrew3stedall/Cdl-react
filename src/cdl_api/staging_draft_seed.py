@@ -508,11 +508,7 @@ def resolve_staging_manager_context(
 
 def staging_manager_assignments(allowed_emails: str) -> dict[str, str]:
     """Map the two protected staging reviewer entries to their draft teams."""
-    emails = tuple(
-        email.strip().lower()
-        for email in allowed_emails.split(",")
-        if email.strip()
-    )
+    emails = tuple(email.strip().lower() for email in allowed_emails.split(",") if email.strip())
     if len(emails) != len(STAGING_MANAGER_TEAM_IDS):
         raise RuntimeError(
             "Staging reviewer allowlist must contain exactly two email addresses "

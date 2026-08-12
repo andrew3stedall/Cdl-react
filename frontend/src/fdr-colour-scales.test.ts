@@ -1,20 +1,26 @@
 import { describe, expect, test } from 'vitest';
 
 import {
+  defaultFdrDisplayMode,
   fdrColourScales,
+  getFdrFillForeground,
+  getFdrFillPalette,
   getFdrPalette,
   getFdrColourScale,
 } from './fdr-colour-scales';
 
 describe('FDR colour scales', () => {
   test('contains every non-categorical D3 interpolator as five hex steps', () => {
-    expect(fdrColourScales).toHaveLength(38);
+    expect(fdrColourScales).toHaveLength(32);
     expect(fdrColourScales.every((scale) => scale.light.length === 5 && scale.dark.length === 5)).toBe(true);
     expect(fdrColourScales.flatMap((scale) => [...scale.light, ...scale.dark]).every((colour) => /^#[0-9A-F]{6}$/.test(colour))).toBe(true);
     expect(fdrColourScales.filter((scale) => scale.group === 'Cyclical').map((scale) => scale.name)).toEqual([
       'Rainbow',
       'Sinebow',
     ]);
+    expect(fdrColourScales.map((scale) => scale.name)).not.toEqual(expect.arrayContaining([
+      'Blues', 'Greens', 'Greys', 'Oranges', 'Purples', 'Reds',
+    ]));
   });
 
   test('reverses the selected FDR order without changing the scale colours', () => {
@@ -23,6 +29,15 @@ describe('FDR colour scales', () => {
 
     expect(reversed).toEqual([...normal].reverse());
     expect(getFdrColourScale('RdYlGn').isCyclical).toBe(false);
+  });
+
+  test('supports contrast-safe fill palettes and keeps font mode as the default', () => {
+    expect(defaultFdrDisplayMode).toBe('font');
+    const palette = getFdrFillPalette('RdYlGn', 'dark', false);
+
+    expect(palette).toEqual(getFdrColourScale('RdYlGn').dark);
+    expect(getFdrFillForeground('#000000')).toBe('#FFFFFF');
+    expect(getFdrFillForeground('#FFFFFF')).toBe('#000000');
   });
 
   test('keeps every light and dark FDR chip label at readable contrast', () => {

@@ -9,10 +9,9 @@ SUPPORTED_THEME_PRESETS = {
     "compact",
     "teal-light",
     "teal-dark",
-    "teal-light-compact",
-    "teal-dark-compact",
 }
 SUPPORTED_ATTACK_DIRECTIONS = {"up", "down"}
+SUPPORTED_FDR_DISPLAY_MODES = {"font", "fill"}
 SUPPORTED_FDR_SCALES = {
     "BrBG",
     "PRGn",
@@ -23,12 +22,6 @@ SUPPORTED_FDR_SCALES = {
     "RdYlBu",
     "RdYlGn",
     "Spectral",
-    "Blues",
-    "Greens",
-    "Greys",
-    "Oranges",
-    "Purples",
-    "Reds",
     "Turbo",
     "Viridis",
     "Inferno",
@@ -67,6 +60,7 @@ class UserPreferenceService:
             preferences.theme_preset not in SUPPORTED_THEME_PRESETS
             or preferences.attack_direction not in SUPPORTED_ATTACK_DIRECTIONS
             or preferences.fdr_scale not in SUPPORTED_FDR_SCALES
+            or preferences.fdr_display_mode not in SUPPORTED_FDR_DISPLAY_MODES
         ):
             return self._repository.get_for_user(user_id)
 

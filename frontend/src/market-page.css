@@ -491,6 +491,22 @@
 .market-page__fixture small.fdr-band-4 { color: var(--cdl-fdr-4); }
 .market-page__fixture small.fdr-band-5 { color: var(--cdl-fdr-5); }
 
+[data-fdr-display-mode='fill'] .market-page__fixture small.fdr-band-1,
+[data-fdr-display-mode='fill'] .market-page__fixture small.fdr-band-2,
+[data-fdr-display-mode='fill'] .market-page__fixture small.fdr-band-3,
+[data-fdr-display-mode='fill'] .market-page__fixture small.fdr-band-4,
+[data-fdr-display-mode='fill'] .market-page__fixture small.fdr-band-5 {
+  border-radius: 0.25rem;
+  display: inline-block;
+  padding: 0.08rem 0.25rem;
+}
+
+[data-fdr-display-mode='fill'] .market-page__fixture small.fdr-band-1 { background: var(--cdl-fdr-fill-1); color: var(--cdl-fdr-fill-foreground-1); }
+[data-fdr-display-mode='fill'] .market-page__fixture small.fdr-band-2 { background: var(--cdl-fdr-fill-2); color: var(--cdl-fdr-fill-foreground-2); }
+[data-fdr-display-mode='fill'] .market-page__fixture small.fdr-band-3 { background: var(--cdl-fdr-fill-3); color: var(--cdl-fdr-fill-foreground-3); }
+[data-fdr-display-mode='fill'] .market-page__fixture small.fdr-band-4 { background: var(--cdl-fdr-fill-4); color: var(--cdl-fdr-fill-foreground-4); }
+[data-fdr-display-mode='fill'] .market-page__fixture small.fdr-band-5 { background: var(--cdl-fdr-fill-5); color: var(--cdl-fdr-fill-foreground-5); }
+
 .market-page__status-badge {
   align-items: center;
   border: 1px solid var(--border);

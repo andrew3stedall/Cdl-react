@@ -1,7 +1,9 @@
 import type { AttackDirection, UserPreferences } from './contracts';
 import {
+  defaultFdrDisplayMode,
   defaultFdrScaleReversed,
   resolveFdrScaleName,
+  type FdrDisplayMode,
 } from './fdr-colour-scales';
 import { resolveThemePreset } from './theme-presets';
 
@@ -10,6 +12,7 @@ interface ApiUserPreferences {
   attack_direction?: string;
   fdr_scale?: string;
   fdr_scale_reversed?: boolean;
+  fdr_display_mode?: string;
 }
 
 export interface PreferenceClient {
@@ -23,6 +26,7 @@ function fromApiPreferences(preferences: ApiUserPreferences): UserPreferences {
     attackDirection: resolveAttackDirection(preferences.attack_direction),
     fdrScale: resolveFdrScaleName(preferences.fdr_scale),
     fdrScaleReversed: preferences.fdr_scale_reversed ?? defaultFdrScaleReversed,
+    fdrDisplayMode: resolveFdrDisplayMode(preferences.fdr_display_mode),
   };
 }
 
@@ -32,7 +36,12 @@ function toApiPreferences(preferences: UserPreferences): ApiUserPreferences {
     attack_direction: preferences.attackDirection,
     fdr_scale: preferences.fdrScale,
     fdr_scale_reversed: preferences.fdrScaleReversed,
+    fdr_display_mode: preferences.fdrDisplayMode ?? defaultFdrDisplayMode,
   };
+}
+
+function resolveFdrDisplayMode(value: string | undefined): FdrDisplayMode {
+  return value === 'fill' ? 'fill' : defaultFdrDisplayMode;
 }
 
 function resolveAttackDirection(value: string | undefined): AttackDirection {
@@ -81,6 +90,7 @@ export class LocalStoragePreferenceClient implements PreferenceClient {
   private readonly attackDirectionStorageKey = 'cdl-attack-direction';
   private readonly fdrScaleStorageKey = 'cdl-fdr-scale';
   private readonly fdrScaleReversedStorageKey = 'cdl-fdr-scale-reversed';
+  private readonly fdrDisplayModeStorageKey = 'cdl-fdr-display-mode';
 
   async getPreferences(): Promise<UserPreferences> {
     const storedPreset = localStorage.getItem(this.storageKey);
@@ -92,6 +102,7 @@ export class LocalStoragePreferenceClient implements PreferenceClient {
       fdrScaleReversed: localStorage.getItem(this.fdrScaleReversedStorageKey)
         ? localStorage.getItem(this.fdrScaleReversedStorageKey) === 'true'
         : defaultFdrScaleReversed,
+      fdrDisplayMode: resolveFdrDisplayMode(localStorage.getItem(this.fdrDisplayModeStorageKey) ?? undefined),
     };
   }
 
@@ -100,6 +111,7 @@ export class LocalStoragePreferenceClient implements PreferenceClient {
     localStorage.setItem(this.attackDirectionStorageKey, preferences.attackDirection);
     localStorage.setItem(this.fdrScaleStorageKey, preferences.fdrScale);
     localStorage.setItem(this.fdrScaleReversedStorageKey, String(preferences.fdrScaleReversed));
+    localStorage.setItem(this.fdrDisplayModeStorageKey, preferences.fdrDisplayMode ?? defaultFdrDisplayMode);
 
     return preferences;
   }

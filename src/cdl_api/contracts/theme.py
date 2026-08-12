@@ -16,3 +16,4 @@ class UserPreferences(BaseModel):
     attack_direction: str = "up"
     fdr_scale: str = "RdYlGn"
     fdr_scale_reversed: bool = True
+    fdr_display_mode: str = "font"

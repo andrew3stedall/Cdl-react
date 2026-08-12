@@ -356,11 +356,6 @@ textarea:focus-visible {
   width: 1px;
 }
 
-[data-theme-preset='teal-light-compact'] .feature-screen,
-[data-theme-preset='teal-dark-compact'] .feature-screen {
-  padding: 0.85rem;
-}
-
 @media (max-width: 900px) {
   .shell-actions {
     justify-content: flex-start;

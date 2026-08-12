@@ -74,18 +74,6 @@ def create_app() -> FastAPI:
                 "description": "A deep, low-contrast workspace for evening sessions.",
                 "is_default": False,
             },
-            {
-                "name": "teal-light-compact",
-                "label": "Teal · Light Compact",
-                "description": "The light theme with tighter tables and controls.",
-                "is_default": False,
-            },
-            {
-                "name": "teal-dark-compact",
-                "label": "Teal · Dark Compact",
-                "description": "The dark theme with tighter tables and controls.",
-                "is_default": False,
-            },
         ]
 
     mount_static_frontend(

@@ -94,6 +94,11 @@ def test_seed_is_idempotent_and_persists_valid_position_counts() -> None:
         )""",
         "CREATE TABLE fpl_positions (id TEXT PRIMARY KEY, singular_name TEXT, plural_name TEXT)",
         "CREATE TABLE epl_teams (id TEXT PRIMARY KEY, short_name TEXT, name TEXT)",
+        """CREATE TABLE fpl_gameweeks (
+                id TEXT PRIMARY KEY, name TEXT, deadline_time DATETIME,
+                is_previous BOOLEAN, is_current BOOLEAN, is_next BOOLEAN,
+                finished BOOLEAN, data_checked BOOLEAN
+            )""",
         """CREATE TABLE fpl_players (
             id TEXT PRIMARY KEY, first_name TEXT, second_name TEXT, web_name TEXT,
             position_id TEXT, team_id TEXT

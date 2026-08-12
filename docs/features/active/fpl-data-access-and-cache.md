@@ -156,6 +156,9 @@ Completed for the current player-data slice:
 - only authenticated manager-level users can trigger a bulk refresh;
 - drafted `fpl-*` players are enriched in place by official bootstrap refreshes;
 - Squad/scouting expose current official FPL metrics rather than zero-value placeholders;
+- player prices are selected from the official current gameweek, or the official next
+  gameweek during pre-season, so a new season cannot surface the previous season's
+  gameweek 38 price;
 - element-summary history is fetched lazily, normalized, hashed and cached;
 - repeat player detail reads reuse fresh PostgreSQL history cache.
 

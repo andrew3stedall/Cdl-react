@@ -50,6 +50,11 @@ TEAM_IDS = (
     "team-class-of-84",
 )
 
+# The screenshots show the first-round manager order, which differs from the
+# display order above: Exeter, Dicks, Bayer, Sporting, Stan, Class, Koden,
+# Wilde. Values are zero-based indexes into TEAM_IDS.
+DRAFT_ORDER_TEAM_INDICES = (0, 3, 5, 4, 1, 7, 2, 6)
+
 # The staging league is a controlled review fixture. The two reviewer emails
 # are read from the protected Google sign-in allowlist at seed time; they are
 # intentionally not committed to this public repository.
@@ -482,6 +487,12 @@ def snake_team_index(overall_pick: int, manager_count: int = 8) -> int:
     return offset if round_number % 2 == 0 else manager_count - 1 - offset
 
 
+def captured_draft_team_index(overall_pick: int) -> int:
+    """Return the code team index for the screenshot's manager pick order."""
+    draft_slot = snake_team_index(overall_pick, len(DRAFT_ORDER_TEAM_INDICES))
+    return DRAFT_ORDER_TEAM_INDICES[draft_slot]
+
+
 def _minimum_deficit(counts: Counter[str]) -> int:
     return sum(
         max(0, minimum - counts[position]) for position, (minimum, _) in POSITION_LIMITS.items()
@@ -536,7 +547,7 @@ def constrained_snake_allocation(
     """Return the captured draft in the board's actual snake-draft order."""
     captured_players = tuple(players or draft_board())
     allocations = tuple(
-        DraftAllocation(player.rank, snake_team_index(player.rank, len(TEAM_IDS)), player)
+        DraftAllocation(player.rank, captured_draft_team_index(player.rank), player)
         for player in captured_players
     )
     validate_draft_allocations(allocations)

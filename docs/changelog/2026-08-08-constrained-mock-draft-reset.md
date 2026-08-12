@@ -15,33 +15,26 @@ Every squad contains exactly 20 unique players and must remain within:
 
 The seed validates all eight completed squads before the transaction commits.
 
-## Draft-pool correction
+## Captured draft board
 
-The previous embedded top-160 staging board contains only 13 goalkeepers, but eight legal squads require at least 16. The existing top-160 order is therefore retained and three reviewed goalkeeper candidates are appended to the staging eligibility pool: Henderson, Sels and Martinez. Exactly 160 of the 163 eligible players are drafted.
-
-The added goalkeeper candidates are sourced from the current goalkeeper review in `andrew3stedall/-static--cdl`; their staging pool ranks are deliberately placed after the existing 160 so this reset does not otherwise reorder the established mock board.
+The active staging source of truth is the completed 160-pick board captured from the draft screenshots. Player identity and pick rank are preserved, with official FPL records refreshed separately before the seed runs.
 
 ## Allocation
 
-The draft retains the eight-team, 20-round snake turn order. At each pick the allocator takes the highest-ranked remaining candidate that:
-
-1. does not exceed that team's positional maximum;
-2. leaves enough roster slots for that team to satisfy every remaining minimum;
-3. leaves enough players of each position for all eight teams to satisfy their remaining minimums; and
-4. does not force the remaining player pool beyond the aggregate positional maximum capacity.
+The draft retains the eight-team, 20-round snake turn order. The screenshot's first-round manager order is Exeter Gently, Dicks Dribbling XI, Bayer Neverlusen, Sporting Lesbians, Stan Still Sells Tik, Class of 84, Koden All Stars, and Wilde Boars. That order is explicitly mapped to the application's team IDs before ownerships are written.
 
 The deterministic position totals are:
 
 | Team | GKP | DEF | MID | FWD | Total |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | Exeter Gently | 2 | 5 | 10 | 3 | 20 |
-| Stan Still Sells Tik | 2 | 6 | 10 | 2 | 20 |
-| Koden All Stars | 2 | 5 | 9 | 4 | 20 |
-| Dicks Dribbling XI | 2 | 6 | 10 | 2 | 20 |
-| Sporting Lesbians | 2 | 7 | 7 | 4 | 20 |
-| Bayer Neverlusen | 2 | 5 | 9 | 4 | 20 |
-| Wilde Boars | 2 | 6 | 8 | 4 | 20 |
-| Class of 84 | 2 | 4 | 10 | 4 | 20 |
+| Stan Still Sells Tik | 2 | 5 | 9 | 4 | 20 |
+| Koden All Stars | 2 | 6 | 8 | 4 | 20 |
+| Dicks Dribbling XI | 3 | 7 | 6 | 4 | 20 |
+| Sporting Lesbians | 2 | 7 | 8 | 3 | 20 |
+| Bayer Neverlusen | 2 | 7 | 7 | 4 | 20 |
+| Wilde Boars | 2 | 7 | 8 | 3 | 20 |
+| Class of 84 | 2 | 7 | 7 | 4 | 20 |
 
 ## Staging execution
 

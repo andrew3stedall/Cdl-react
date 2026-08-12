@@ -17,6 +17,7 @@ from cdl_api.staging_draft_seed import (
     SQUAD_SIZE,
     TEAM_IDS,
     allocation_position_counts,
+    captured_draft_team_index,
     constrained_snake_allocation,
     draft_board,
     seed_staging_snake_draft,
@@ -25,13 +26,13 @@ from cdl_api.staging_draft_seed import (
 
 EXPECTED_POSITION_COUNTS = (
     (2, 7, 8, 3),
-    (3, 7, 6, 4),
-    (2, 7, 7, 4),
-    (2, 7, 8, 3),
     (2, 5, 9, 4),
-    (2, 7, 7, 4),
     (2, 6, 8, 4),
+    (3, 7, 6, 4),
     (2, 7, 8, 3),
+    (2, 7, 7, 4),
+    (2, 7, 8, 3),
+    (2, 7, 7, 4),
 )
 
 
@@ -52,6 +53,46 @@ def test_snake_turn_order_gives_every_team_20_picks() -> None:
     assert team_indexes[8:16] == list(reversed(range(8)))
     assert team_indexes[16:24] == list(range(8))
     assert [team_indexes.count(index) for index in range(len(TEAM_IDS))] == [20] * 8
+
+
+def test_captured_manager_order_matches_the_draft_board_headers() -> None:
+    first_round = [captured_draft_team_index(pick) for pick in range(1, 9)]
+    second_round = [captured_draft_team_index(pick) for pick in range(9, 17)]
+
+    assert first_round == [0, 3, 5, 4, 1, 7, 2, 6]
+    assert second_round == list(reversed(first_round))
+
+
+def test_stan_still_sells_tik_receives_the_fifth_manager_column() -> None:
+    allocations = constrained_snake_allocation()
+    stan_players = [
+        allocation.player.name
+        for allocation in allocations
+        if allocation.team_index == TEAM_IDS.index("team-stan-still-sells-tik")
+    ]
+
+    assert stan_players == [
+        "Watkins",
+        "Gyökeres",
+        "Wirtz",
+        "Foden",
+        "Gakpo",
+        "Eze",
+        "Ødegaard",
+        "Marmoush",
+        "Frimpong",
+        "Calafiori",
+        "Hall",
+        "Aït-Nouri",
+        "Horníček",
+        "Aina",
+        "Kluivert",
+        "Henderson",
+        "Muniz",
+        "Damsgaard",
+        "Dorgu",
+        "Mitoma",
+    ]
 
 
 def test_constrained_snake_allocation_meets_every_position_limit() -> None:

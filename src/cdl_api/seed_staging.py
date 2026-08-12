@@ -8,7 +8,6 @@ from cdl_api.repositories.postgres_auth import PostgreSQLUserRepository
 from cdl_api.repositories.postgres_league_fixtures import PostgreSQLLeagueRepository
 from cdl_api.repositories.postgres_squad_repository import PostgreSQLSquadRepository
 from cdl_api.settings import Settings
-from cdl_api.staging_draft_reroll import reroll_staging_draft_assignments
 from cdl_api.staging_draft_seed import seed_staging_snake_draft
 from cdl_api.staging_team_selection_seed import seed_staging_team_selections
 
@@ -48,7 +47,6 @@ def seed_synthetic_staging_data(settings: Settings | None = None) -> SeedResult:
         session_factory,
         google_allowed_emails=resolved.google_allowed_emails,
     )
-    reroll_result = reroll_staging_draft_assignments(session_factory)
     lineup_result = seed_staging_team_selections(session_factory)
     PostgreSQLLeagueRepository(session_factory).seed_synthetic_data()
 
@@ -57,7 +55,7 @@ def seed_synthetic_staging_data(settings: Settings | None = None) -> SeedResult:
         synthetic=True,
         domains=(
             "identity",
-            f"draft:{draft_result.teams}-teams/{reroll_result.ownerships}-ownerships",
+            f"draft:{draft_result.teams}-teams/{draft_result.ownerships}-ownerships",
             f"lineups:{lineup_result.teams}-teams/{lineup_result.rows}-rows",
             "league",
         ),

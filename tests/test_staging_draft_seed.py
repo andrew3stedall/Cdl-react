@@ -24,26 +24,25 @@ from cdl_api.staging_draft_seed import (
 )
 
 EXPECTED_POSITION_COUNTS = (
-    (2, 5, 10, 3),
-    (2, 6, 10, 2),
-    (2, 5, 9, 4),
-    (2, 6, 10, 2),
+    (2, 7, 8, 3),
+    (3, 7, 6, 4),
     (2, 7, 7, 4),
+    (2, 7, 8, 3),
     (2, 5, 9, 4),
+    (2, 7, 7, 4),
     (2, 6, 8, 4),
-    (2, 4, 10, 4),
+    (2, 7, 8, 3),
 )
 
 
-def test_draft_pool_has_ranked_top_160_and_goalkeeper_buffer() -> None:
+def test_draft_pool_matches_the_captured_160_pick_board() -> None:
     players = draft_board()
 
-    assert len(players) == 163
-    assert [player.rank for player in players] == list(range(1, 164))
-    assert len({player.fpl_id for player in players}) == 163
+    assert len(players) == 160
+    assert [player.rank for player in players] == list(range(1, 161))
+    assert len({player.fpl_id for player in players}) == 160
     assert players[0].name == "Haaland"
-    assert players[159].name == "Struijk"
-    assert [player.name for player in players[160:]] == ["Henderson", "Sels", "Martinez"]
+    assert players[159].name == "Hume"
 
 
 def test_snake_turn_order_gives_every_team_20_picks() -> None:
@@ -166,7 +165,7 @@ def test_seed_is_idempotent_and_persists_valid_position_counts() -> None:
             session.execute(select(func.count()).select_from(draft_teams_table)).scalar_one() == 8
         )
         assert (
-            session.execute(select(func.count()).select_from(fpl_players_table)).scalar_one() == 163
+            session.execute(select(func.count()).select_from(fpl_players_table)).scalar_one() == 160
         )
         manager_assignments = dict(
             session.execute(

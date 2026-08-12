@@ -51,6 +51,7 @@ resource "google_cloud_run_v2_job" "database_migration" {
             }
           }
         }
+
       }
     }
   }
@@ -124,6 +125,17 @@ resource "google_cloud_run_v2_job" "synthetic_seed" {
           value_source {
             secret_key_ref {
               secret  = module.runtime_secrets.secret_names["cdl-database-url"]
+              version = "latest"
+            }
+          }
+        }
+
+        env {
+          name = "CDL_GOOGLE_ALLOWED_EMAILS"
+
+          value_source {
+            secret_key_ref {
+              secret  = module.runtime_secrets.secret_names["cdl-google-allowed-emails"]
               version = "latest"
             }
           }

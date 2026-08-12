@@ -19,7 +19,7 @@ Staging uses Google Identity Services for an optional primary sign-in path:
 - FastAPI verifies the Google signature, issuer, expiry and exact OAuth client audience with
   Google's maintained `google-auth` verifier;
 - only verified email addresses in `CDL_GOOGLE_ALLOWED_EMAILS` may create a session;
-- the initial staging allowlist contains only `andrew3stedall@gmail.com`;
+- the staging allowlist is maintained as a protected Secret Manager value and is not committed;
 - the verified Google subject and email create or reuse a manager in the existing `users` table;
 - the existing PostgreSQL session repository issues the same secure, HTTP-only session cookie;
 - a custom same-origin request header protects the credential endpoint from cross-site posts;

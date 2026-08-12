@@ -88,6 +88,28 @@ def require_authenticated_session(
     return session.user
 
 
+def get_optional_authenticated_session(
+    request: Request,
+    settings: Settings = Depends(get_settings),
+    service: AuthenticationService = Depends(get_auth_service),
+) -> SessionUser | None:
+    """Return the current user when present without changing public dev routes.
+
+    Staging's middleware already rejects anonymous API requests. Keeping this
+    dependency optional preserves the unauthenticated in-memory preview while
+    allowing PostgreSQL-backed repositories to select the signed-in manager's
+    team in staging.
+    """
+    try:
+        session = service.get_session(_session_id_from_request(request, settings))
+    except OperationalError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Session verification is temporarily unavailable.",
+        ) from exc
+    return session.user if session.is_authenticated else None
+
+
 @router.post("/login", response_model=LoginResponse)
 def login(
     payload: LoginRequest,

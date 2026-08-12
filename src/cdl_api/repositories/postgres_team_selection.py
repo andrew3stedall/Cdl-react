@@ -37,7 +37,13 @@ from cdl_api.repositories.postgres_squad import (
     squad_roster_slots_table,
 )
 from cdl_api.repositories.team_selection import InMemoryTeamSelectionRepository
-from cdl_api.staging_draft_seed import PRIMARY_TEAM_ID, SEASON_ID, TEAM_NAMES
+from cdl_api.staging_draft_seed import (
+    PRIMARY_MANAGER_ID,
+    PRIMARY_TEAM_ID,
+    SEASON_ID,
+    TEAM_NAMES,
+    resolve_staging_manager_context,
+)
 
 metadata = MetaData()
 
@@ -124,10 +130,27 @@ def _mapping_rows(result: object) -> list[Mapping[str, object]]:
 class PostgreSQLTeamSelectionRepository(InMemoryTeamSelectionRepository):
     """Persist team selection mutations while retaining seeded demo read models."""
 
-    def __init__(self, session_factory: Callable[[], Session]) -> None:
+    def __init__(
+        self,
+        session_factory: Callable[[], Session],
+        user_id: str | None = None,
+    ) -> None:
         super().__init__()
         self._session_factory = session_factory
         self.manager_team = TeamSummary(id=PRIMARY_TEAM_ID, name=TEAM_NAMES[0])
+        self._manager_id = PRIMARY_MANAGER_ID
+
+        context = resolve_staging_manager_context(session_factory, user_id)
+        if context is not None:
+            (
+                self._manager_id,
+                manager_team_id,
+                manager_team_name,
+                _rival_team_id,
+                _rival_team_name,
+            ) = context
+            self.manager_team = TeamSummary(id=manager_team_id, name=manager_team_name)
+
         self.gameweek = GameweekSummary(
             id="gw-1",
             name="Gameweek 1",

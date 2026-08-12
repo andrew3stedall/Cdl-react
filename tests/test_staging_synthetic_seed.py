@@ -79,7 +79,8 @@ def test_seed_loads_each_idempotent_domain_once(monkeypatch: pytest.MonkeyPatch)
     def _league_repository(_factory: object) -> _Seeder:
         return _Seeder(calls, "league")
 
-    def _draft_seed(_factory: object) -> DraftSeedResult:
+    def _draft_seed(_factory: object, *, google_allowed_emails: str) -> DraftSeedResult:
+        assert google_allowed_emails == ""
         calls.append("draft")
         return DraftSeedResult(
             teams=8,

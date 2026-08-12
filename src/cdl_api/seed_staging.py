@@ -44,7 +44,10 @@ def seed_synthetic_staging_data(settings: Settings | None = None) -> SeedResult:
     session_factory = build_session_factory(resolved)
     PostgreSQLUserRepository(session_factory).seed_demo_user()
     PostgreSQLSquadRepository(session_factory).seed_demo_data()
-    draft_result = seed_staging_snake_draft(session_factory)
+    draft_result = seed_staging_snake_draft(
+        session_factory,
+        google_allowed_emails=resolved.google_allowed_emails,
+    )
     reroll_result = reroll_staging_draft_assignments(session_factory)
     lineup_result = seed_staging_team_selections(session_factory)
     PostgreSQLLeagueRepository(session_factory).seed_synthetic_data()

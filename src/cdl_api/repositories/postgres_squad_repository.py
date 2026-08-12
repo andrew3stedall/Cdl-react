@@ -44,6 +44,7 @@ from cdl_api.staging_draft_seed import (
     SEASON_ID,
     TEAM_IDS,
     TEAM_NAMES,
+    resolve_staging_manager_context,
 )
 
 DEMO_SEASON_ID = SEASON_ID
@@ -52,11 +53,28 @@ DEMO_RIVAL_MANAGER_ID = "manager-2"
 
 
 class PostgreSQLSquadRepository(InMemorySquadRepository):
-    def __init__(self, session_factory: Callable[[], Session]) -> None:
+    def __init__(
+        self,
+        session_factory: Callable[[], Session],
+        user_id: str | None = None,
+    ) -> None:
         super().__init__()
         self._session_factory = session_factory
         self.manager_team = TeamSummary(id=PRIMARY_TEAM_ID, name=TEAM_NAMES[0])
         self.rival_team = TeamSummary(id=TEAM_IDS[1], name=TEAM_NAMES[1])
+        self._manager_id = DEMO_MANAGER_ID
+
+        context = resolve_staging_manager_context(session_factory, user_id)
+        if context is not None:
+            (
+                self._manager_id,
+                manager_team_id,
+                manager_team_name,
+                rival_team_id,
+                rival_team_name,
+            ) = context
+            self.manager_team = TeamSummary(id=manager_team_id, name=manager_team_name)
+            self.rival_team = TeamSummary(id=rival_team_id, name=rival_team_name)
 
     def seed_demo_data(self) -> None:
         """Seed hooks are owned by imports in #69; runtime writes are persisted here."""
@@ -404,7 +422,7 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
                         squad_interests_table.c.note,
                     )
                     .where(
-                        squad_interests_table.c.manager_id == DEMO_MANAGER_ID,
+                        squad_interests_table.c.manager_id == self._manager_id,
                         squad_interests_table.c.status == "active",
                     )
                     .order_by(squad_interests_table.c.created_at)
@@ -422,7 +440,7 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
                         squad_interests_table.c.gameweek,
                         squad_interests_table.c.note,
                     ).where(
-                        squad_interests_table.c.manager_id == DEMO_MANAGER_ID,
+                        squad_interests_table.c.manager_id == self._manager_id,
                         squad_interests_table.c.player_id == player_id,
                         squad_interests_table.c.status == "active",
                     )
@@ -460,7 +478,7 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
                     id=interest.id,
                     season_id=DEMO_SEASON_ID,
                     draft_team_id=self.manager_team.id,
-                    manager_id=DEMO_MANAGER_ID,
+                    manager_id=self._manager_id,
                     player_id=interest.player.id,
                     gameweek=self.gameweek.number,
                     status="active",

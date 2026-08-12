@@ -35,7 +35,6 @@ LEAGUE_ID = "league-cdl-2026-27"
 SEASON_ID = "season-cdl-2026-27"
 PRIMARY_MANAGER_ID = "manager-1"
 PRIMARY_TEAM_ID = "team-exeter-gently"
-PRIMARY_MANAGER_EMAIL = "andrew3stedall@gmail.com"
 
 TEAM_NAMES = (
     "Exeter Gently",
@@ -57,6 +56,14 @@ TEAM_IDS = (
     "team-bayer-neverlusen",
     "team-wilde-boars",
     "team-class-of-84",
+)
+
+# The staging league is a controlled review fixture. The two reviewer emails
+# are read from the protected Google sign-in allowlist at seed time; they are
+# intentionally not committed to this public repository.
+STAGING_MANAGER_TEAM_IDS = (
+    "team-stan-still-sells-tik",
+    "team-wilde-boars",
 )
 
 SQUAD_SIZE = 20
@@ -441,6 +448,79 @@ def validate_draft_allocations(allocations: tuple[DraftAllocation, ...]) -> None
                 )
 
 
+def resolve_staging_manager_context(
+    session_factory: object,
+    user_id: str | None,
+) -> tuple[str, str, str, str, str] | None:
+    """Resolve a signed-in staging user to their manager and rival teams.
+
+    The tuple contains manager ID, manager team ID, manager team name, rival
+    team ID, and rival team name. A missing user or unassigned user returns
+    ``None`` so development-mode defaults remain unchanged.
+    """
+    if user_id is None:
+        return None
+
+    with session_factory() as session:
+        manager_row = (
+            session.execute(
+                select(
+                    managers_table.c.id,
+                    draft_teams_table.c.id.label("team_id"),
+                    draft_teams_table.c.name.label("team_name"),
+                )
+                .join(draft_teams_table, draft_teams_table.c.manager_id == managers_table.c.id)
+                .where(
+                    managers_table.c.user_id == user_id,
+                    draft_teams_table.c.league_id == LEAGUE_ID,
+                )
+            )
+            .mappings()
+            .first()
+        )
+        if manager_row is None:
+            return None
+
+        rival_row = (
+            session.execute(
+                select(draft_teams_table.c.id, draft_teams_table.c.name)
+                .where(
+                    draft_teams_table.c.league_id == LEAGUE_ID,
+                    draft_teams_table.c.id != manager_row["team_id"],
+                )
+                .order_by(draft_teams_table.c.id)
+                .limit(1)
+            )
+            .mappings()
+            .first()
+        )
+
+    if rival_row is None:
+        return None
+    return (
+        str(manager_row["id"]),
+        str(manager_row["team_id"]),
+        str(manager_row["team_name"]),
+        str(rival_row["id"]),
+        str(rival_row["name"]),
+    )
+
+
+def staging_manager_assignments(allowed_emails: str) -> dict[str, str]:
+    """Map the two protected staging reviewer entries to their draft teams."""
+    emails = tuple(
+        email.strip().lower()
+        for email in allowed_emails.split(",")
+        if email.strip()
+    )
+    if len(emails) != len(STAGING_MANAGER_TEAM_IDS):
+        raise RuntimeError(
+            "Staging reviewer allowlist must contain exactly two email addresses "
+            "for the controlled two-team reviewer fixture."
+        )
+    return dict(zip(STAGING_MANAGER_TEAM_IDS, emails, strict=True))
+
+
 def _upsert(session: Session, table: object, values: dict[str, object]) -> None:
     row_id = values["id"]
     exists = session.execute(select(table.c.id).where(table.c.id == row_id)).scalar_one_or_none()
@@ -450,7 +530,11 @@ def _upsert(session: Session, table: object, values: dict[str, object]) -> None:
         session.execute(update(table).where(table.c.id == row_id).values(**values))
 
 
-def seed_staging_snake_draft(session_factory: object) -> DraftSeedResult:
+def seed_staging_snake_draft(
+    session_factory: object,
+    *,
+    google_allowed_emails: str,
+) -> DraftSeedResult:
     """Atomically empty and repopulate the controlled 2026/27 staging squads."""
     players = draft_board()
     allocations = constrained_snake_allocation(players)
@@ -470,28 +554,57 @@ def seed_staging_snake_draft(session_factory: object) -> DraftSeedResult:
             },
         )
 
-        primary_user = (
-            session.execute(
-                select(users_table.c.id, users_table.c.display_name).where(
-                    users_table.c.email == PRIMARY_MANAGER_EMAIL
+        assigned_users = {}
+        manager_assignments = staging_manager_assignments(google_allowed_emails)
+        for email in manager_assignments.values():
+            preferred_name = email.split("@", maxsplit=1)[0].replace(".", " ").title()
+            user_row = (
+                session.execute(
+                    select(users_table.c.id, users_table.c.display_name).where(
+                        users_table.c.email == email
+                    )
                 )
+                .mappings()
+                .one_or_none()
             )
-            .mappings()
-            .one_or_none()
-        )
+            if user_row is None:
+                user_id = f"staging:{email}"
+                session.execute(
+                    insert(users_table).values(
+                        id=user_id,
+                        email=email,
+                        display_name=preferred_name,
+                        roles=["manager"],
+                    )
+                )
+                assigned_users[email] = {
+                    "id": user_id,
+                    "display_name": preferred_name,
+                }
+            else:
+                user_id = str(user_row["id"])
+                display_name = str(user_row["display_name"] or preferred_name)
+                session.execute(
+                    update(users_table)
+                    .where(users_table.c.id == user_id)
+                    .values(display_name=display_name, roles=["manager"])
+                )
+                assigned_users[email] = {
+                    "id": user_id,
+                    "display_name": display_name,
+                }
+
         for index, (team_id, team_name) in enumerate(zip(TEAM_IDS, TEAM_NAMES, strict=True), 1):
             manager_id = f"manager-{index}"
-            manager_name = (
-                primary_user["display_name"]
-                if index == 1 and primary_user is not None
-                else f"Manager {index}"
-            )
+            assigned_email = manager_assignments.get(team_id)
+            assigned_user = assigned_users.get(assigned_email) if assigned_email else None
+            manager_name = assigned_user["display_name"] if assigned_user else f"Manager {index}"
             _upsert(
                 session,
                 managers_table,
                 {
                     "id": manager_id,
-                    "user_id": primary_user["id"] if index == 1 and primary_user else None,
+                    "user_id": assigned_user["id"] if assigned_user else None,
                     "display_name": manager_name,
                 },
             )

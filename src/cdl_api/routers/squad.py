@@ -22,8 +22,10 @@ from cdl_api.contracts.squad import (
     TradesResponse,
     TradeUpdateRequest,
 )
+from cdl_api.database import build_session_factory
 from cdl_api.repositories.factory import build_repositories
-from cdl_api.routers.auth import get_auth_service
+from cdl_api.repositories.postgres_squad_repository import PostgreSQLSquadRepository
+from cdl_api.routers.auth import get_auth_service, get_optional_authenticated_session
 from cdl_api.services.auth import AuthenticationService
 from cdl_api.services.squad import SquadManagementService, SquadValidationError
 from cdl_api.settings import Settings, get_settings
@@ -31,7 +33,17 @@ from cdl_api.settings import Settings, get_settings
 router = APIRouter(tags=["squad-management"])
 
 
-def get_squad_service(settings: Settings = Depends(get_settings)) -> SquadManagementService:
+def get_squad_service(
+    settings: Settings = Depends(get_settings),
+    user: SessionUser | None = Depends(get_optional_authenticated_session),
+) -> SquadManagementService:
+    if settings.repository_mode == "postgres":
+        return SquadManagementService(
+            PostgreSQLSquadRepository(
+                build_session_factory(settings),
+                user_id=user.id if user is not None else None,
+            )
+        )
     repositories = build_repositories(settings)
     return SquadManagementService(repositories.squad)
 

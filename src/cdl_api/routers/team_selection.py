@@ -4,14 +4,18 @@ from fastapi import APIRouter, Depends, status
 from fastapi.responses import JSONResponse
 
 from cdl_api.contracts.common import ApiErrorResponse, ErrorCode, ValidationErrorResponse
+from cdl_api.contracts.session import SessionUser
 from cdl_api.contracts.team_selection import (
     ChipUpdateRequest,
     FixtureSummaryPanel,
     LineupUpdateRequest,
     TeamSelectionResponse,
 )
+from cdl_api.database import build_session_factory
 from cdl_api.repositories.factory import build_repositories
+from cdl_api.repositories.postgres_team_selection import PostgreSQLTeamSelectionRepository
 from cdl_api.repositories.team_selection import InMemoryTeamSelectionRepository
+from cdl_api.routers.auth import get_optional_authenticated_session
 from cdl_api.services.team_selection import (
     ChipService,
     FixtureSummaryService,
@@ -26,7 +30,13 @@ router = APIRouter(tags=["team-selection"])
 
 def get_team_selection_repository(
     settings: Settings = Depends(get_settings),
+    user: SessionUser | None = Depends(get_optional_authenticated_session),
 ) -> InMemoryTeamSelectionRepository:
+    if settings.repository_mode == "postgres":
+        return PostgreSQLTeamSelectionRepository(
+            build_session_factory(settings),
+            user_id=user.id if user is not None else None,
+        )
     repositories = build_repositories(settings)
     return repositories.team_selection
 

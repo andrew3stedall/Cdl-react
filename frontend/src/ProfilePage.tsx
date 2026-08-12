@@ -11,6 +11,8 @@ import {
   RefreshCw,
   Search,
   Sun,
+  Type,
+  PaintBucket,
   X,
 } from 'lucide-react';
 
@@ -20,9 +22,12 @@ import { Sheet } from './components/ui/sheet';
 import type { AttackDirection, SessionState, ThemePreset } from './contracts';
 import {
   fdrColourScales,
+  getFdrFillForeground,
+  getFdrFillPalette,
   getFdrPalette,
   getFdrColourScale,
   type FdrColourScale,
+  type FdrDisplayMode,
   type FdrScaleGroup,
 } from './fdr-colour-scales';
 import { getThemeMode, themePresets } from './theme-presets';
@@ -38,11 +43,13 @@ interface ProfilePageProps {
 export function ProfilePage({ onRefresh, onSignOut, session }: ProfilePageProps) {
   const {
     attackDirection,
+    fdrDisplayMode,
     fdrScale,
     fdrScaleReversed,
     preset,
     saveStatus,
     setAttackDirection,
+    setFdrDisplayMode,
     setFdrScale,
     setFdrScaleReversed,
     setPresetName,
@@ -51,6 +58,7 @@ export function ProfilePage({ onRefresh, onSignOut, session }: ProfilePageProps)
   const [fdrScaleSearch, setFdrScaleSearch] = useState('');
   const user = session.user;
   const selectedFdrScale = getFdrColourScale(fdrScale);
+  const themeMode = getThemeMode(preset);
   const filteredFdrScales = useMemo(() => {
     const query = fdrScaleSearch.trim().toLowerCase();
     if (!query) return fdrColourScales;
@@ -103,8 +111,7 @@ export function ProfilePage({ onRefresh, onSignOut, session }: ProfilePageProps)
             <AppearanceIcon preset={preset} />
           </div>
           <p className="profile-card__copy">
-            All options use the shared Teal token set. Pick light or dark, then choose the compact
-            density when you want more information on screen.
+            Choose the shared Teal light or dark workspace appearance.
           </p>
           <div aria-label="Visual preset" className="profile-preset-grid" role="group">
             {themePresets.map((themePreset) => (
@@ -150,9 +157,25 @@ export function ProfilePage({ onRefresh, onSignOut, session }: ProfilePageProps)
           </span>
           <ChevronRight aria-hidden="true" size={18} />
         </Button>
-        <div aria-label="Selected FDR colour scale preview" className="profile-fdr-preview-pair">
-          <FdrPalettePreview mode="light" reversed={fdrScaleReversed} scale={selectedFdrScale} />
-          <FdrPalettePreview mode="dark" reversed={fdrScaleReversed} scale={selectedFdrScale} />
+        <div aria-label="Selected FDR colour scale preview" className="profile-fdr-preview-container">
+          <FdrPalettePreview
+            displayMode={fdrDisplayMode}
+            mode={themeMode}
+            reversed={fdrScaleReversed}
+            scale={selectedFdrScale}
+          />
+        </div>
+        <div aria-label="FDR display style" className="profile-fdr-display-mode" role="group">
+          <DisplayModeOption
+            displayMode="font"
+            isSelected={fdrDisplayMode === 'font'}
+            onSelect={() => setFdrDisplayMode('font')}
+          />
+          <DisplayModeOption
+            displayMode="fill"
+            isSelected={fdrDisplayMode === 'fill'}
+            onSelect={() => setFdrDisplayMode('fill')}
+          />
         </div>
         <label className="profile-fdr-reverse-toggle">
           <input
@@ -193,8 +216,9 @@ export function ProfilePage({ onRefresh, onSignOut, session }: ProfilePageProps)
             </Button>
           </header>
           <p className="profile-card__copy">
-            Each option is shown for both themes. Cyclical scales stop at 70% of their colour cycle
-            so level 5 does not wrap back towards level 1.
+            Choose from the multi-colour D3 scales. Options use the current {themeMode} theme and
+            cyclical scales stop at 70% of their colour cycle so level 5 does not wrap back towards
+            level 1.
           </p>
           <label className="profile-fdr-search">
             <Search aria-hidden="true" size={16} />
@@ -230,8 +254,12 @@ export function ProfilePage({ onRefresh, onSignOut, session }: ProfilePageProps)
                           <small>{scale.name}</small>
                         </span>
                         <span className="profile-fdr-scale-option__previews">
-                          <FdrPaletteBar mode="light" reversed={fdrScaleReversed} scale={scale} />
-                          <FdrPaletteBar mode="dark" reversed={fdrScaleReversed} scale={scale} />
+                          <FdrPaletteBar
+                            displayMode={fdrDisplayMode}
+                            mode={themeMode}
+                            reversed={fdrScaleReversed}
+                            scale={scale}
+                          />
                         </span>
                         <span aria-hidden="true" className="profile-preset-check">
                           {scale.name === fdrScale ? <Check size={15} /> : <Circle size={15} />}
@@ -330,48 +358,115 @@ function AppearanceIcon({ preset }: { preset: ThemePreset }) {
 }
 
 function FdrPalettePreview({
+  displayMode,
   mode,
   reversed,
   scale,
 }: {
+  displayMode: FdrDisplayMode;
   mode: 'light' | 'dark';
   reversed: boolean;
   scale: FdrColourScale;
 }) {
+  const palette = getFdrPalette(scale.name, mode, reversed);
   return (
     <div className="profile-fdr-preview" data-mode={mode}>
       <div className="profile-fdr-preview__header">
         <strong>{mode === 'light' ? 'Light theme' : 'Dark theme'}</strong>
-        <small>1 easy · 5 difficult</small>
+        <small>{displayMode === 'font' ? 'Coloured font' : 'Coloured fill'}</small>
       </div>
-      <FdrPaletteBar mode={mode} reversed={reversed} scale={scale} />
-      <div aria-hidden="true" className="profile-fdr-preview__levels">
-        {[1, 2, 3, 4, 5].map((level) => <span key={level}>{level}</span>)}
+      <FdrPaletteBar displayMode={displayMode} mode={mode} reversed={reversed} scale={scale} />
+      <div className="profile-fdr-preview__labels">
+        {palette.map((colour, index) => (
+          <span key={`${scale.name}-${mode}-${index}`} style={{ color: colour }}>
+            <strong>{index + 1}</strong>
+            <small>{fdrDifficultyLabels[index]}</small>
+          </span>
+        ))}
       </div>
     </div>
   );
 }
 
 function FdrPaletteBar({
+  displayMode,
   mode,
   reversed,
   scale,
 }: {
+  displayMode: FdrDisplayMode;
   mode: 'light' | 'dark';
   reversed: boolean;
   scale: FdrColourScale;
 }) {
+  const palette = getFdrDisplayPalette(scale.name, mode, reversed, displayMode);
   return (
-    <span aria-label={`${scale.label} ${mode} theme colour steps`} className="profile-fdr-palette-bar">
-      {getFdrPalette(scale.name, mode, reversed).map((colour, index) => (
+    <span aria-label={`${scale.label} ${mode} theme colour steps`} className="profile-fdr-palette-bar" data-display-mode={displayMode}>
+      {palette.map((colour, index) => (
         <span
-          aria-label={`FDR ${index + 1}: ${colour}`}
+          aria-label={`FDR ${index + 1}, ${fdrDifficultyLabels[index]}: ${colour}`}
           key={`${scale.name}-${mode}-${index}`}
-          style={{ backgroundColor: colour }}
-          title={`FDR ${index + 1} · ${colour}`}
-        />
+          style={{
+            backgroundColor: getFdrDisplayBackground(colour, displayMode),
+            color: getFdrDisplayForeground(colour, displayMode),
+          }}
+          title={`FDR ${index + 1} · ${fdrDifficultyLabels[index]} · ${colour}`}
+        >
+          {index + 1}
+        </span>
       ))}
     </span>
+  );
+}
+
+const fdrDifficultyLabels = ['Very easy', 'Easy', 'Balanced', 'Hard', 'Very hard'] as const;
+
+function getFdrDisplayPalette(
+  name: FdrColourScale['name'],
+  mode: 'light' | 'dark',
+  reversed: boolean,
+  displayMode: FdrDisplayMode,
+) {
+  return displayMode === 'fill'
+    ? getFdrFillPalette(name, mode, reversed)
+    : getFdrPalette(name, mode, reversed);
+}
+
+function getFdrDisplayBackground(colour: string, displayMode: FdrDisplayMode): string {
+  return displayMode === 'fill' ? colour : `color-mix(in srgb, ${colour} 16%, var(--surface))`;
+}
+
+function getFdrDisplayForeground(colour: string, displayMode: FdrDisplayMode): string {
+  return displayMode === 'fill' ? getFdrFillForeground(colour) : colour;
+}
+
+function DisplayModeOption({
+  displayMode,
+  isSelected,
+  onSelect,
+}: {
+  displayMode: FdrDisplayMode;
+  isSelected: boolean;
+  onSelect: () => void;
+}) {
+  const isFill = displayMode === 'fill';
+  const Icon = isFill ? PaintBucket : Type;
+  return (
+    <button
+      aria-pressed={isSelected}
+      className={`profile-fdr-display-option${isSelected ? ' is-selected' : ''}`}
+      onClick={onSelect}
+      type="button"
+    >
+      <span aria-hidden="true" className="profile-direction-icon"><Icon size={18} /></span>
+      <span className="profile-direction-copy">
+        <strong>{isFill ? 'Coloured fill' : 'Coloured font'}</strong>
+        <small>{isFill ? 'Black or white text chosen for contrast' : 'Use the scale on the opponent text'}</small>
+      </span>
+      <span aria-hidden="true" className="profile-preset-check">
+        {isSelected ? <Check size={15} /> : <Circle size={15} />}
+      </span>
+    </button>
   );
 }
 

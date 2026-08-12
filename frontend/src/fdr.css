@@ -101,12 +101,11 @@
 .fdr-rating-4 { background: color-mix(in srgb, var(--cdl-fdr-4) 14%, var(--card)); color: var(--cdl-fdr-4); border-color: var(--cdl-fdr-4); }
 .fdr-rating-5 { background: color-mix(in srgb, var(--cdl-fdr-5) 14%, var(--card)); color: var(--cdl-fdr-5); border-color: var(--cdl-fdr-5); }
 
-[data-theme-preset='teal-light-compact'] .fdr-table th,
-[data-theme-preset='teal-light-compact'] .fdr-table td,
-[data-theme-preset='teal-dark-compact'] .fdr-table th,
-[data-theme-preset='teal-dark-compact'] .fdr-table td {
-  padding: 0.3rem;
-}
+[data-fdr-display-mode='fill'] .fdr-rating-1 { background: var(--cdl-fdr-fill-1); color: var(--cdl-fdr-fill-foreground-1); }
+[data-fdr-display-mode='fill'] .fdr-rating-2 { background: var(--cdl-fdr-fill-2); color: var(--cdl-fdr-fill-foreground-2); }
+[data-fdr-display-mode='fill'] .fdr-rating-3 { background: var(--cdl-fdr-fill-3); color: var(--cdl-fdr-fill-foreground-3); }
+[data-fdr-display-mode='fill'] .fdr-rating-4 { background: var(--cdl-fdr-fill-4); color: var(--cdl-fdr-fill-foreground-4); }
+[data-fdr-display-mode='fill'] .fdr-rating-5 { background: var(--cdl-fdr-fill-5); color: var(--cdl-fdr-fill-foreground-5); }
 
 @media (max-width: 900px) {
   .fdr-table {

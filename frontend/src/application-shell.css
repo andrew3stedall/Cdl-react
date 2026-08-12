@@ -345,16 +345,6 @@
   padding: clamp(0.85rem, 2vw, 1.5rem) clamp(0.85rem, 2.4vw, 2rem) 2rem;
 }
 
-[data-theme-preset='teal-light-compact'] .app-sidebar,
-[data-theme-preset='teal-dark-compact'] .app-sidebar {
-  padding: 0.7rem;
-}
-
-[data-theme-preset='teal-light-compact'] .shell-content,
-[data-theme-preset='teal-dark-compact'] .shell-content {
-  padding: 0.75rem 1rem 1.5rem;
-}
-
 @media (max-width: 1100px) {
   .app-shell {
     grid-template-columns: 13.5rem minmax(0, 1fr);

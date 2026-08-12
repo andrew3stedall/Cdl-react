@@ -10,6 +10,7 @@
 
 export type FdrScaleGroup = 'Diverging' | 'Sequential' | 'Cyclical';
 export type FdrPalette = readonly [string, string, string, string, string];
+export type FdrDisplayMode = 'font' | 'fill';
 
 const fdrScaleRows = [
   { name: 'BrBG', label: 'Brown–Blue–Green', group: 'Diverging', isCyclical: false, light: ['#543005', '#946D2B', '#687951', '#3B7E77', '#003C30'], dark: ['#B6680B', '#CEA156', '#EEF1EA', '#5BB2A8', '#008C70'] },
@@ -21,12 +22,6 @@ const fdrScaleRows = [
   { name: 'RdYlBu', label: 'Red–Yellow–Blue', group: 'Diverging', isCyclical: false, light: ['#A50026', '#C74C08', '#7B770A', '#327AA2', '#313695'], dark: ['#F60039', '#F88D52', '#FAF8C1', '#90C2DD', '#6D72CF'] },
   { name: 'RdYlGn', label: 'Red–Yellow–Green', group: 'Diverging', isCyclical: false, light: ['#A50026', '#C74C08', '#7A7709', '#46812C', '#006837'], dark: ['#F60039', '#F88D52', '#F9F7AE', '#85CB67', '#008E4B'] },
   { name: 'Spectral', label: 'Spectral', group: 'Diverging', isCyclical: false, light: ['#9E0142', '#C74C08', '#7B7606', '#358254', '#5E4FA2'], dark: ['#F20265', '#F88E53', '#FBF8B0', '#89CFA5', '#7E71BA'] },
-  { name: 'Blues', label: 'Blues', group: 'Sequential', isCyclical: false, light: ['#0071E2', '#3278B0', '#307AA6', '#2271B4', '#08306B'], dark: ['#F7FBFF', '#C3DBEE', '#6DAED5', '#267FCA', '#2677EF'] },
-  { name: 'Greens', label: 'Greens', group: 'Sequential', isCyclical: false, light: ['#418227', '#3D832F', '#38833D', '#208442', '#00441B'], dark: ['#F7FCF5', '#C6E8BF', '#73C378', '#228D46', '#008F39'] },
-  { name: 'Greys', label: 'Greys', group: 'Sequential', isCyclical: false, light: ['#737373', '#737373', '#737373', '#505050', '#000000'], dark: ['#FFFFFF', '#D8D8D8', '#979797', '#7B7B7B', '#7B7B7B'] },
-  { name: 'Oranges', label: 'Oranges', group: 'Sequential', isCyclical: false, light: ['#B55B00', '#B55B04', '#BF5304', '#CB4804', '#7F2704'], dark: ['#FFF5EB', '#FDCEA0', '#FB8D3D', '#D84C04', '#DF4407'] },
-  { name: 'Purples', label: 'Purples', group: 'Sequential', isCyclical: false, light: ['#8962B1', '#706CB0', '#706CB0', '#6A51A4', '#3F007D'], dark: ['#FCFBFD', '#D9D8EA', '#9E9BC9', '#856FB8', '#A448FF'] },
-  { name: 'Reds', label: 'Reds', group: 'Sequential', isCyclical: false, light: ['#CE4500', '#D23F07', '#DE2B07', '#CB1C1E', '#67000D'], dark: ['#FFF5F0', '#FCBAA1', '#F9694C', '#E43A3C', '#F7001F'] },
   { name: 'Turbo', label: 'Turbo', group: 'Sequential', isCyclical: false, light: ['#23171B', '#157E98', '#378403', '#BD5500', '#900C00'], dark: ['#9F6D7E', '#26BCE1', '#95FB51', '#FF821D', '#F41400'] },
   { name: 'Viridis', label: 'Viridis', group: 'Sequential', isCyclical: false, light: ['#440154', '#3B528B', '#1D817C', '#2C8430', '#827401'], dark: ['#CB03FB', '#5F79BB', '#21918C', '#5EC962', '#FDE725'] },
   { name: 'Inferno', label: 'Inferno', group: 'Sequential', isCyclical: false, light: ['#000004', '#57106E', '#BC3754', '#AC6104', '#757800'], dark: ['#6767FF', '#BB40E3', '#CC516C', '#F98E09', '#FCFFA4'] },
@@ -58,6 +53,7 @@ export type FdrColourScale = (typeof fdrScaleRows)[number];
 export const fdrColourScales: readonly FdrColourScale[] = fdrScaleRows;
 export const defaultFdrScaleName: FdrScaleName = 'RdYlGn';
 export const defaultFdrScaleReversed = true;
+export const defaultFdrDisplayMode: FdrDisplayMode = 'font';
 
 const fdrContrastTarget = 4.6;
 const fdrTintStrength = 0.14;
@@ -132,4 +128,21 @@ export function getFdrPalette(
   const palette = getFdrColourScale(name)[mode].map((colour) => adjustForFdrChipContrast(colour, mode));
   if (reversed) palette.reverse();
   return palette as unknown as FdrPalette;
+}
+
+export function getFdrFillPalette(
+  name: FdrScaleName,
+  mode: 'light' | 'dark',
+  reversed: boolean,
+): FdrPalette {
+  const palette = [...getFdrColourScale(name)[mode]];
+  if (reversed) palette.reverse();
+  return palette as unknown as FdrPalette;
+}
+
+export function getFdrFillForeground(colour: string): '#000000' | '#FFFFFF' {
+  const background = hexToRgb(colour);
+  const blackContrast = contrastRatio(background, [0, 0, 0]);
+  const whiteContrast = contrastRatio(background, [255, 255, 255]);
+  return blackContrast >= whiteContrast ? '#000000' : '#FFFFFF';
 }

@@ -23,8 +23,6 @@ def test_theme_contract_endpoint() -> None:
     assert [preset["name"] for preset in presets] == [
         "teal-light",
         "teal-dark",
-        "teal-light-compact",
-        "teal-dark-compact",
     ]
 
 
@@ -42,10 +40,11 @@ def test_user_preferences_endpoint_round_trip() -> None:
     update_response = client.put(
         "/api/me/preferences",
         json={
-            "theme_preset": "teal-dark-compact",
+            "theme_preset": "teal-dark",
             "attack_direction": "down",
             "fdr_scale": "Viridis",
             "fdr_scale_reversed": False,
+            "fdr_display_mode": "fill",
         },
     )
     final_response = client.get("/api/me/preferences")
@@ -58,17 +57,20 @@ def test_user_preferences_endpoint_round_trip() -> None:
         "attack_direction": "up",
         "fdr_scale": "RdYlGn",
         "fdr_scale_reversed": True,
+        "fdr_display_mode": "font",
     }
     assert update_response.status_code == 200
     assert update_response.json() == {
-        "theme_preset": "teal-dark-compact",
+        "theme_preset": "teal-dark",
         "attack_direction": "down",
         "fdr_scale": "Viridis",
         "fdr_scale_reversed": False,
+        "fdr_display_mode": "fill",
     }
     assert final_response.json() == {
-        "theme_preset": "teal-dark-compact",
+        "theme_preset": "teal-dark",
         "attack_direction": "down",
         "fdr_scale": "Viridis",
         "fdr_scale_reversed": False,
+        "fdr_display_mode": "fill",
     }

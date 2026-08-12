@@ -3,9 +3,13 @@ import { createContext, useContext, useEffect, useMemo, useState, type ReactNode
 import type { AttackDirection, ThemePreset, UserPreferences } from './contracts';
 import {
   defaultFdrScaleName,
+  defaultFdrDisplayMode,
   defaultFdrScaleReversed,
+  getFdrFillForeground,
+  getFdrFillPalette,
   getFdrPalette,
   resolveFdrScaleName,
+  type FdrDisplayMode,
   type FdrScaleName,
 } from './fdr-colour-scales';
 import { FallbackPreferenceClient, type PreferenceClient } from './preferences-api';
@@ -13,10 +17,12 @@ import { getThemeMode, getThemePresetClassName, resolveThemePreset } from './the
 
 interface ThemePresetContextValue {
   attackDirection: AttackDirection;
+  fdrDisplayMode: FdrDisplayMode;
   fdrScale: FdrScaleName;
   fdrScaleReversed: boolean;
   preset: ThemePreset;
   setAttackDirection: (direction: AttackDirection) => void;
+  setFdrDisplayMode: (mode: FdrDisplayMode) => void;
   setFdrScale: (scale: FdrScaleName) => void;
   setFdrScaleReversed: (reversed: boolean) => void;
   setPresetName: (presetName: ThemePreset['name']) => void;
@@ -43,6 +49,7 @@ export function ThemePresetProvider({
   const [attackDirection, setAttackDirectionState] = useState<AttackDirection>('up');
   const [fdrScale, setFdrScaleState] = useState<FdrScaleName>(defaultFdrScaleName);
   const [fdrScaleReversed, setFdrScaleReversedState] = useState(defaultFdrScaleReversed);
+  const [fdrDisplayMode, setFdrDisplayModeState] = useState<FdrDisplayMode>(defaultFdrDisplayMode);
   const [saveStatus, setSaveStatus] = useState<ThemePresetContextValue['saveStatus']>('idle');
   const preset = resolveThemePreset(presetName);
 
@@ -57,6 +64,7 @@ export function ThemePresetProvider({
           setAttackDirectionState(preferences.attackDirection === 'down' ? 'down' : 'up');
           setFdrScaleState(resolveFdrScaleName(preferences.fdrScale));
           setFdrScaleReversedState(preferences.fdrScaleReversed ?? defaultFdrScaleReversed);
+          setFdrDisplayModeState(preferences.fdrDisplayMode ?? defaultFdrDisplayMode);
         }
       })
       .catch(() => {
@@ -73,7 +81,9 @@ export function ThemePresetProvider({
   useEffect(() => {
     const root = document.documentElement;
     const colors = preset.tokens.colors;
-    const fdrPalette = getFdrPalette(fdrScale, getThemeMode(preset), fdrScaleReversed);
+    const themeMode = getThemeMode(preset);
+    const fdrPalette = getFdrPalette(fdrScale, themeMode, fdrScaleReversed);
+    const fdrFillPalette = getFdrFillPalette(fdrScale, themeMode, fdrScaleReversed);
     const tokenValues: Record<string, string> = {
       background: colors.background,
       foreground: colors.foreground,
@@ -110,10 +120,13 @@ export function ThemePresetProvider({
     root.style.setProperty('--radius', preset.tokens.radius);
     fdrPalette.forEach((color, index) => {
       root.style.setProperty(`--cdl-fdr-${index + 1}`, color);
+      root.style.setProperty(`--cdl-fdr-fill-${index + 1}`, fdrFillPalette[index]);
+      root.style.setProperty(`--cdl-fdr-fill-foreground-${index + 1}`, getFdrFillForeground(fdrFillPalette[index]));
     });
     root.dataset.fdrScale = fdrScale;
     root.dataset.fdrScaleReversed = String(fdrScaleReversed);
-  }, [fdrScale, fdrScaleReversed, preset]);
+    root.dataset.fdrDisplayMode = fdrDisplayMode;
+  }, [fdrDisplayMode, fdrScale, fdrScaleReversed, preset]);
 
   const savePreference = (preferences: UserPreferences) => {
     setSaveStatus('saving');
@@ -131,6 +144,7 @@ export function ThemePresetProvider({
   const value = useMemo<ThemePresetContextValue>(
     () => ({
       attackDirection,
+      fdrDisplayMode,
       fdrScale,
       fdrScaleReversed,
       preset,
@@ -141,6 +155,17 @@ export function ThemePresetProvider({
           attackDirection: nextAttackDirection,
           fdrScale,
           fdrScaleReversed,
+          fdrDisplayMode,
+        });
+      },
+      setFdrDisplayMode: (nextFdrDisplayMode) => {
+        setFdrDisplayModeState(nextFdrDisplayMode);
+        savePreference({
+          themePreset: preset.name,
+          attackDirection,
+          fdrScale,
+          fdrScaleReversed,
+          fdrDisplayMode: nextFdrDisplayMode,
         });
       },
       setFdrScale: (nextFdrScale) => {
@@ -150,6 +175,7 @@ export function ThemePresetProvider({
           attackDirection,
           fdrScale: nextFdrScale,
           fdrScaleReversed,
+          fdrDisplayMode,
         });
       },
       setFdrScaleReversed: (nextFdrScaleReversed) => {
@@ -159,6 +185,7 @@ export function ThemePresetProvider({
           attackDirection,
           fdrScale,
           fdrScaleReversed: nextFdrScaleReversed,
+          fdrDisplayMode,
         });
       },
       setPresetName: (nextPresetName) => {
@@ -170,11 +197,12 @@ export function ThemePresetProvider({
           attackDirection,
           fdrScale,
           fdrScaleReversed,
+          fdrDisplayMode,
         });
       },
       saveStatus,
     }),
-    [attackDirection, fdrScale, fdrScaleReversed, preset, saveStatus],
+    [attackDirection, fdrDisplayMode, fdrScale, fdrScaleReversed, preset, saveStatus],
   );
 
   return <ThemePresetContext.Provider value={value}>{children}</ThemePresetContext.Provider>;

@@ -40,6 +40,7 @@ def test_preferences_use_authenticated_user_identity() -> None:
             "attack_direction": "down",
             "fdr_scale": "Spectral",
             "fdr_scale_reversed": False,
+            "fdr_display_mode": "fill",
         },
     )
 
@@ -49,12 +50,14 @@ def test_preferences_use_authenticated_user_identity() -> None:
         "attack_direction": "down",
         "fdr_scale": "Spectral",
         "fdr_scale_reversed": False,
+        "fdr_display_mode": "fill",
     }
     assert client.get("/api/me/preferences").json() == {
         "theme_preset": "teal-dark",
         "attack_direction": "down",
         "fdr_scale": "Spectral",
         "fdr_scale_reversed": False,
+        "fdr_display_mode": "fill",
     }
 
     app.dependency_overrides[require_authenticated_session] = lambda: _user("manager-2")
@@ -63,24 +66,27 @@ def test_preferences_use_authenticated_user_identity() -> None:
         "attack_direction": "up",
         "fdr_scale": "RdYlGn",
         "fdr_scale_reversed": True,
+        "fdr_display_mode": "font",
     }
 
     response = client.put(
         "/api/me/preferences",
         json={
-            "theme_preset": "teal-light-compact",
+            "theme_preset": "teal-light",
             "attack_direction": "up",
-            "fdr_scale": "Greys",
+            "fdr_scale": "Warm",
             "fdr_scale_reversed": True,
+            "fdr_display_mode": "font",
         },
     )
 
     assert response.status_code == 200
     assert response.json() == {
-        "theme_preset": "teal-light-compact",
+        "theme_preset": "teal-light",
         "attack_direction": "up",
-        "fdr_scale": "Greys",
+        "fdr_scale": "Warm",
         "fdr_scale_reversed": True,
+        "fdr_display_mode": "font",
     }
 
     app.dependency_overrides[require_authenticated_session] = lambda: _user("manager-1")
@@ -89,4 +95,5 @@ def test_preferences_use_authenticated_user_identity() -> None:
         "attack_direction": "down",
         "fdr_scale": "Spectral",
         "fdr_scale_reversed": False,
+        "fdr_display_mode": "fill",
     }

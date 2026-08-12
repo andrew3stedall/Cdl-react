@@ -222,16 +222,16 @@ describe('AppShell integration', () => {
     expect(container.textContent).toContain('Sign out');
     expect(container.querySelector('.profile-direction-option[aria-pressed="true"]')?.textContent).toContain('Attack upwards');
 
-    const darkCompactOption = [...container.querySelectorAll<HTMLButtonElement>('.profile-preset-option')]
-      .find((option) => option.textContent?.includes('Teal · Dark Compact'));
-    expect(darkCompactOption).toBeDefined();
+    const darkOption = [...container.querySelectorAll<HTMLButtonElement>('.profile-preset-option')]
+      .find((option) => option.textContent?.includes('Teal · Dark'));
+    expect(darkOption).toBeDefined();
 
     await act(async () => {
-      darkCompactOption?.click();
+      darkOption?.click();
       await Promise.resolve();
     });
 
-    expect(preferenceClient.preferences.themePreset).toBe('teal-dark-compact');
+    expect(preferenceClient.preferences.themePreset).toBe('teal-dark');
     expect(document.documentElement.dataset.themeMode).toBe('dark');
 
     const fdrScaleTrigger = container.querySelector<HTMLButtonElement>('.profile-fdr-scale-trigger');
@@ -240,7 +240,10 @@ describe('AppShell integration', () => {
       await Promise.resolve();
     });
     expect(container.querySelector('#fdr-scale-sheet')?.hasAttribute('hidden')).toBe(false);
-    expect(container.querySelectorAll('.profile-fdr-scale-option')).toHaveLength(38);
+    expect(container.querySelectorAll('.profile-fdr-scale-option')).toHaveLength(32);
+    expect(container.querySelector('.profile-fdr-preview__labels')?.textContent).toContain('Very easy');
+    expect(container.querySelector('.profile-fdr-preview .profile-fdr-palette-bar')?.textContent).toBe('12345');
+    expect(container.textContent).not.toContain('Light theme');
 
     const viridisOption = [...container.querySelectorAll<HTMLButtonElement>('.profile-fdr-scale-option')]
       .find((option) => option.textContent?.includes('Viridis'));
@@ -258,6 +261,16 @@ describe('AppShell integration', () => {
     });
     expect(preferenceClient.preferences.fdrScaleReversed).toBe(false);
 
+    const fillMode = container.querySelector<HTMLButtonElement>('.profile-fdr-display-option[aria-pressed="false"]');
+    expect(fillMode?.textContent).toContain('Coloured fill');
+    await act(async () => {
+      fillMode?.click();
+      await Promise.resolve();
+    });
+    expect(preferenceClient.preferences.fdrDisplayMode).toBe('fill');
+    expect(document.documentElement.dataset.fdrDisplayMode).toBe('fill');
+    expect(document.documentElement.style.getPropertyValue('--cdl-fdr-fill-foreground-1')).toMatch(/^#(000000|FFFFFF)$/);
+
     const attackDownOption = container.querySelector<HTMLButtonElement>('.profile-direction-option[aria-pressed="false"]');
     expect(attackDownOption?.textContent).toContain('Attack downwards');
     await act(async () => {
@@ -270,7 +283,7 @@ describe('AppShell integration', () => {
   test('passes the persisted preset into page-level density consumers', async () => {
     const preferenceClient = new MemoryPreferenceClient();
     preferenceClient.preferences = {
-      themePreset: 'teal-dark-compact',
+      themePreset: 'teal-dark',
       attackDirection: 'up',
       fdrScale: 'RdYlGn',
       fdrScaleReversed: true,
@@ -282,7 +295,7 @@ describe('AppShell integration', () => {
       await Promise.resolve();
     });
 
-    expect(container.querySelector('[data-preset="teal-dark-compact"]')).not.toBeNull();
-    expect(document.documentElement.dataset.themePreset).toBe('teal-dark-compact');
+    expect(container.querySelector('[data-preset="teal-dark"]')).not.toBeNull();
+    expect(document.documentElement.dataset.themePreset).toBe('teal-dark');
   });
 });

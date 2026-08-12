@@ -18,6 +18,7 @@ user_preferences_table = Table(
     Column("attack_direction", String(16), nullable=False),
     Column("fdr_scale", String(64), nullable=False),
     Column("fdr_scale_reversed", Boolean, nullable=False),
+    Column("fdr_display_mode", String(16), nullable=False),
 )
 
 
@@ -33,6 +34,7 @@ class PostgreSQLUserPreferenceRepository:
                     user_preferences_table.c.attack_direction,
                     user_preferences_table.c.fdr_scale,
                     user_preferences_table.c.fdr_scale_reversed,
+                    user_preferences_table.c.fdr_display_mode,
                 ).where(user_preferences_table.c.user_id == user_id)
             ).one_or_none()
 
@@ -44,6 +46,7 @@ class PostgreSQLUserPreferenceRepository:
             attack_direction=preference_row.attack_direction,
             fdr_scale=preference_row.fdr_scale,
             fdr_scale_reversed=preference_row.fdr_scale_reversed,
+            fdr_display_mode=preference_row.fdr_display_mode,
         )
 
     def save_for_user(self, user_id: str, preferences: UserPreferences) -> UserPreferences:
@@ -53,6 +56,7 @@ class PostgreSQLUserPreferenceRepository:
             attack_direction=preferences.attack_direction,
             fdr_scale=preferences.fdr_scale,
             fdr_scale_reversed=preferences.fdr_scale_reversed,
+            fdr_display_mode=preferences.fdr_display_mode,
         )
         statement = statement.on_conflict_do_update(
             index_elements=[user_preferences_table.c.user_id],
@@ -61,6 +65,7 @@ class PostgreSQLUserPreferenceRepository:
                 "attack_direction": preferences.attack_direction,
                 "fdr_scale": preferences.fdr_scale,
                 "fdr_scale_reversed": preferences.fdr_scale_reversed,
+                "fdr_display_mode": preferences.fdr_display_mode,
             },
         )
 

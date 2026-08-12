@@ -78,38 +78,14 @@ export const themePresets: ThemePreset[] = [
       chartPaletteHooks: darkPalette,
     },
   },
-  {
-    name: 'teal-light-compact',
-    label: 'Teal · Light Compact',
-    description: 'The light theme with tighter tables and controls.',
-    isDefault: false,
-    tokens: {
-      colors: lightColors,
-      density: 'compact',
-      radius: '0.45rem',
-      typographyScale: 'condensed',
-      chartPaletteHooks: lightPalette,
-    },
-  },
-  {
-    name: 'teal-dark-compact',
-    label: 'Teal · Dark Compact',
-    description: 'The dark theme with tighter tables and controls.',
-    isDefault: false,
-    tokens: {
-      colors: darkColors,
-      density: 'compact',
-      radius: '0.45rem',
-      typographyScale: 'condensed',
-      chartPaletteHooks: darkPalette,
-    },
-  },
 ];
 
 const legacyPresetAliases: Record<string, ThemePresetName> = {
   classic: 'teal-light',
   dark: 'teal-dark',
-  compact: 'teal-light-compact',
+  compact: 'teal-light',
+  'teal-light-compact': 'teal-light',
+  'teal-dark-compact': 'teal-dark',
 };
 
 export function getDefaultThemePreset(): ThemePreset {

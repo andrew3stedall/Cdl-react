@@ -1,4 +1,4 @@
-import type { FdrScaleName } from './fdr-colour-scales';
+import type { FdrDisplayMode, FdrScaleName } from './fdr-colour-scales';
 
 export interface ApiErrorResponse {
   code: 'validation_error' | 'unauthenticated' | 'forbidden' | 'not_found' | 'conflict' | 'server_error';
@@ -43,7 +43,7 @@ export interface ThemePresetTokens {
     destructiveForeground: string;
     accent: string;
   };
-  density: 'comfortable' | 'compact';
+  density: 'comfortable';
   radius: string;
   typographyScale: 'standard' | 'condensed';
   chartPaletteHooks: string[];
@@ -51,9 +51,7 @@ export interface ThemePresetTokens {
 
 export type ThemePresetName =
   | 'teal-light'
-  | 'teal-dark'
-  | 'teal-light-compact'
-  | 'teal-dark-compact';
+  | 'teal-dark';
 
 export interface ThemePreset {
   name: ThemePresetName;
@@ -66,13 +64,13 @@ export interface ThemePreset {
 export type AttackDirection = 'up' | 'down';
 
 export interface UserPreferences {
-  // Kept as a single persisted value so existing staging databases and the
-  // current preferences API remain compatible while still exposing complete
-  // appearance choices to users.
+  // Keep appearance choices in the existing preference contract so they can
+  // be persisted together without changing the account workflow.
   themePreset: ThemePresetName;
   attackDirection: AttackDirection;
   fdrScale: FdrScaleName;
   fdrScaleReversed: boolean;
+  fdrDisplayMode?: FdrDisplayMode;
 }
 
 export interface TeamSummary {

@@ -73,12 +73,14 @@ def test_authenticated_preferences_persist_and_remain_isolated() -> None:
             "attack_direction": "down",
             "fdr_scale": "Viridis",
             "fdr_scale_reversed": False,
+            "fdr_display_mode": "fill",
         },
     ).json() == {
         "theme_preset": "teal-dark",
         "attack_direction": "down",
         "fdr_scale": "Viridis",
         "fdr_scale_reversed": False,
+        "fdr_display_mode": "fill",
     }
 
     app.dependency_overrides[require_authenticated_session] = lambda: _user("preferences-manager-2")
@@ -87,20 +89,23 @@ def test_authenticated_preferences_persist_and_remain_isolated() -> None:
         "attack_direction": "up",
         "fdr_scale": "RdYlGn",
         "fdr_scale_reversed": True,
+        "fdr_display_mode": "font",
     }
     assert client.put(
         "/api/me/preferences",
         json={
-            "theme_preset": "teal-dark-compact",
+            "theme_preset": "teal-dark",
             "attack_direction": "up",
             "fdr_scale": "Rainbow",
             "fdr_scale_reversed": True,
+            "fdr_display_mode": "font",
         },
     ).json() == {
-        "theme_preset": "teal-dark-compact",
+        "theme_preset": "teal-dark",
         "attack_direction": "up",
         "fdr_scale": "Rainbow",
         "fdr_scale_reversed": True,
+        "fdr_display_mode": "font",
     }
 
     reloaded_repository = PostgreSQLUserPreferenceRepository(session_factory)
@@ -110,7 +115,7 @@ def test_authenticated_preferences_persist_and_remain_isolated() -> None:
     assert reloaded_repository.get_for_user("preferences-manager-1").fdr_scale_reversed is False
     assert (
         reloaded_repository.get_for_user("preferences-manager-2").theme_preset
-        == "teal-dark-compact"
+        == "teal-dark"
     )
     assert reloaded_repository.get_for_user("preferences-manager-2").attack_direction == "up"
     assert reloaded_repository.get_for_user("preferences-manager-2").fdr_scale == "Rainbow"

@@ -12,3 +12,12 @@ def test_fdr_colour_scale_preferences_migration_is_append_only() -> None:
     assert '"fdr_scale_reversed"' in content
     assert 'server_default="RdYlGn"' in content
     assert "server_default=sa.true()" in content
+
+
+def test_fdr_display_mode_migration_is_append_only() -> None:
+    content = Path("migrations/versions/0013_fdr_display_mode.py").read_text(encoding="utf-8")
+
+    assert "Revision ID: 0013_fdr_display_mode" in content
+    assert "Revises: 0012_fdr_scale_prefs" in content
+    assert '"fdr_display_mode"' in content
+    assert 'server_default="font"' in content

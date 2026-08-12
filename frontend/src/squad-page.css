@@ -1421,6 +1421,22 @@
   color: var(--squad-fdr-very-hard);
 }
 
+[data-fdr-display-mode='fill'] .squad-page__opponent--fdr-1,
+[data-fdr-display-mode='fill'] .squad-page__opponent--fdr-2,
+[data-fdr-display-mode='fill'] .squad-page__opponent--fdr-3,
+[data-fdr-display-mode='fill'] .squad-page__opponent--fdr-4,
+[data-fdr-display-mode='fill'] .squad-page__opponent--fdr-5 {
+  border-radius: 0.25rem;
+  display: inline-block;
+  padding: 0.05rem 0.22rem;
+}
+
+[data-fdr-display-mode='fill'] .squad-page__opponent--fdr-1 { background: var(--cdl-fdr-fill-1); color: var(--cdl-fdr-fill-foreground-1); }
+[data-fdr-display-mode='fill'] .squad-page__opponent--fdr-2 { background: var(--cdl-fdr-fill-2); color: var(--cdl-fdr-fill-foreground-2); }
+[data-fdr-display-mode='fill'] .squad-page__opponent--fdr-3 { background: var(--cdl-fdr-fill-3); color: var(--cdl-fdr-fill-foreground-3); }
+[data-fdr-display-mode='fill'] .squad-page__opponent--fdr-4 { background: var(--cdl-fdr-fill-4); color: var(--cdl-fdr-fill-foreground-4); }
+[data-fdr-display-mode='fill'] .squad-page__opponent--fdr-5 { background: var(--cdl-fdr-fill-5); color: var(--cdl-fdr-fill-foreground-5); }
+
 .squad-page__expected {
   color: var(--squad-muted);
   display: inline-flex;

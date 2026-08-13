@@ -17,7 +17,7 @@ import { Button } from './components/ui/button';
 import { Card } from './components/ui/card';
 import { Select } from './components/ui/select';
 import type { AttackDirection } from './contracts';
-import { FormDots, formBand, shortPlayerName, TeamShirt } from './SquadPage';
+import { fixtureDifficultyTitle, fixtureOpponentClassName, FormDots, formBand, shortPlayerName, TeamShirt } from './SquadPage';
 import {
   HttpLeagueClient,
   type FixtureDetailResponse,
@@ -531,12 +531,26 @@ function FixturePitchPlayer({ player }: { player: FixtureSquad['starters'][numbe
       ? (player.nextOpponent.shortName ?? player.nextOpponent.name).toUpperCase()
       : (player.nextOpponent.shortName ?? player.nextOpponent.name).toLowerCase()
     : 'Next —';
-  return <div className={`squad-page__pitch-player fixture-squad-pitch__player position-${player.position.toLowerCase()} form-band-${formBand(player.form)}`} data-player-id={player.id} title={`${player.displayName} · ${player.points} pts`}><span aria-hidden="true" className={`squad-page__position-marker position-${player.position.toLowerCase()}`} /><span aria-hidden="true" className="squad-page__pitch-shirt-crop"><TeamShirt large team={shirtTeam} /></span><strong className="squad-page__pitch-player-name">{shortPlayerName(player.displayName)}</strong><span className="squad-page__pitch-player-form"><FormDots value={player.form} /></span><small>{fixtureLabel}</small>{player.isCaptain ? <span className="squad-page__captain">C</span> : null}{player.isViceCaptain ? <span className="squad-page__captain vice">VC</span> : null}</div>;
+  return <FixturePlayerToken fixtureLabel={fixtureLabel} player={player} shirtTeam={shirtTeam} />;
+}
+
+function FixturePlayerToken({ fixtureLabel, player, shirtTeam }: { fixtureLabel: string; player: FixtureSquad['starters'][number]; shirtTeam: string }) {
+  const difficultyClass = fixtureOpponentClassName(player.nextFixtureDifficulty);
+  return <div className={`squad-page__pitch-player fixture-squad-pitch__player position-${player.position.toLowerCase()} form-band-${formBand(player.form)}`} data-player-id={player.id} title={`${player.displayName} · ${player.points} pts`}><span aria-hidden="true" className={`squad-page__position-marker position-${player.position.toLowerCase()}`} /><span aria-hidden="true" className="squad-page__pitch-shirt-crop"><TeamShirt large team={shirtTeam} /></span><strong className="squad-page__pitch-player-name">{shortPlayerName(player.displayName)}</strong><span className="squad-page__pitch-player-form"><FormDots value={player.form} /></span><small className={difficultyClass} title={fixtureDifficultyTitle(player.nextFixtureDifficulty)}>{fixtureLabel}</small>{player.isCaptain ? <span className="squad-page__captain">C</span> : null}{player.isViceCaptain ? <span className="squad-page__captain vice">VC</span> : null}</div>;
 }
 
 function FixtureRosterColumn({ label, players, squad }: { label: 'Substitutes' | 'Reserves'; players: FixtureSquad['bench']; squad: FixtureSquad }) {
   const rowCount = label === 'Substitutes' ? 5 : 4;
-  return <section aria-label={`${squad.team.name} ${label.toLowerCase()}`} className="fixture-squad-roster"><header><strong>{squad.team.name}</strong><span>{label}</span></header><ol>{Array.from({ length: rowCount }, (_, index) => { const player = players[index]; return <li className={player ? '' : 'is-empty'} key={player?.id ?? `${squad.team.id}-${label}-${index}`}><span className="fixture-squad-roster__number">{index + 1}</span>{player ? <><TeamShirt team={player.club?.shortName ?? player.club?.name ?? 'unknown'} /><span className="fixture-squad-roster__identity"><strong>{shortPlayerName(player.displayName)}</strong><small>{player.nextOpponent?.shortName ?? player.nextOpponent?.name ?? 'Next —'}</small></span><FormDots value={player.form} /></> : <span className="fixture-squad-roster__empty">Empty slot</span>}</li>; })}</ol></section>;
+  return <section aria-label={`${squad.team.name} ${label.toLowerCase()}`} className="fixture-squad-roster"><header><strong>{squad.team.name}</strong><span>{label}</span></header><ol>{Array.from({ length: rowCount }, (_, index) => { const player = players[index]; return <li className={player ? '' : 'is-empty'} key={player?.id ?? `${squad.team.id}-${label}-${index}`}><span className="fixture-squad-roster__number">{index + 1}</span>{player ? <FixtureRosterPlayer player={player} /> : <span className="fixture-squad-roster__empty">Empty slot</span>}</li>; })}</ol></section>;
+}
+
+function FixtureRosterPlayer({ player }: { player: FixtureSquad['bench'][number] }) {
+  const fixtureLabel = player.nextOpponent
+    ? player.nextFixtureIsHome === true
+      ? (player.nextOpponent.shortName ?? player.nextOpponent.name).toUpperCase()
+      : (player.nextOpponent.shortName ?? player.nextOpponent.name).toLowerCase()
+    : 'Next —';
+  return <FixturePlayerToken fixtureLabel={fixtureLabel} player={player} shirtTeam={player.club?.shortName ?? player.club?.name ?? 'unknown'} />;
 }
 
 function OpponentPrediction({ onToggle, players, predictedIds, squad }: { onToggle: (player: FixtureSquad['starters'][number]) => void; players: FixtureSquad['players']; predictedIds: Set<string>; squad: FixtureSquad }) {

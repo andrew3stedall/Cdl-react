@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 
 import { App } from './App';
+import { registerPwaServiceWorker } from './pwa';
 import type { SessionState } from './contracts';
 import {
   staticPreviewDashboardClient,
@@ -27,6 +28,8 @@ function getInitialPath() {
 
   return pathname;
 }
+
+registerPwaServiceWorker();
 
 const staticPreviewSession: SessionState = {
   isAuthenticated: true,

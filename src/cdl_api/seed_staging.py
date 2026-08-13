@@ -9,6 +9,7 @@ from cdl_api.repositories.postgres_league_fixtures import PostgreSQLLeagueReposi
 from cdl_api.repositories.postgres_squad_repository import PostgreSQLSquadRepository
 from cdl_api.settings import Settings
 from cdl_api.staging_draft_seed import seed_staging_snake_draft
+from cdl_api.staging_fixture_seed import seed_staging_fixture_schedule
 from cdl_api.staging_team_selection_seed import seed_staging_team_selections
 
 SEED_CONFIRMATION_ENV = "CDL_ALLOW_SYNTHETIC_STAGING_SEED"
@@ -52,6 +53,7 @@ def seed_synthetic_staging_data(settings: Settings | None = None) -> SeedResult:
     )
     lineup_result = seed_staging_team_selections(session_factory)
     PostgreSQLLeagueRepository(session_factory).seed_synthetic_data()
+    fixture_result = seed_staging_fixture_schedule(session_factory)
 
     return SeedResult(
         environment=resolved.environment,
@@ -60,7 +62,7 @@ def seed_synthetic_staging_data(settings: Settings | None = None) -> SeedResult:
             "identity",
             f"draft:{draft_result.teams}-teams/{draft_result.ownerships}-ownerships",
             f"lineups:{lineup_result.teams}-teams/{lineup_result.rows}-rows",
-            "league",
+            f"league:{fixture_result.gameweeks}-gameweeks/{fixture_result.fixtures}-fixtures",
         ),
     )
 

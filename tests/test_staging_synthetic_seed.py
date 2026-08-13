@@ -7,6 +7,7 @@ import pytest
 from cdl_api.seed_staging import seed_synthetic_staging_data
 from cdl_api.settings import Settings
 from cdl_api.staging_draft_seed import DraftSeedResult
+from cdl_api.staging_fixture_seed import StagingFixtureSeedResult
 from cdl_api.staging_team_selection_seed import StagingLineupSeedResult
 
 
@@ -96,6 +97,10 @@ def test_seed_loads_each_idempotent_domain_once(monkeypatch: pytest.MonkeyPatch)
             formations=("3-5-2",) * 8,
         )
 
+    def _fixture_seed(_factory: object) -> StagingFixtureSeedResult:
+        calls.append("fixtures")
+        return StagingFixtureSeedResult(gameweeks=35, fixtures=140, teams=8)
+
     monkeypatch.setenv("CDL_ALLOW_SYNTHETIC_STAGING_SEED", "true")
     monkeypatch.setattr(module, "build_session_factory", _build_session_factory)
     monkeypatch.setattr(module, "PostgreSQLUserRepository", _user_repository)
@@ -103,14 +108,15 @@ def test_seed_loads_each_idempotent_domain_once(monkeypatch: pytest.MonkeyPatch)
     monkeypatch.setattr(module, "PostgreSQLLeagueRepository", _league_repository)
     monkeypatch.setattr(module, "seed_staging_snake_draft", _draft_seed)
     monkeypatch.setattr(module, "seed_staging_team_selections", _lineup_seed)
+    monkeypatch.setattr(module, "seed_staging_fixture_schedule", _fixture_seed)
 
     result = seed_synthetic_staging_data(_settings())
 
-    assert calls == ["identity", "squad", "draft", "lineups", "league"]
+    assert calls == ["identity", "squad", "draft", "lineups", "league", "fixtures"]
     assert result.synthetic is True
     assert result.domains == (
         "identity",
         "draft:8-teams/160-ownerships",
         "lineups:8-teams/160-rows",
-        "league",
+        "league:35-gameweeks/140-fixtures",
     )

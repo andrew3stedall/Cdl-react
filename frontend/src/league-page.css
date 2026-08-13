@@ -821,7 +821,7 @@
   background: var(--squad-pitch);
   border: 1px solid color-mix(in srgb, var(--primary) 40%, transparent);
   border-radius: 1rem;
-  height: clamp(40rem, 128vw, 50rem);
+  height: clamp(44rem, 140.8vw, 55rem);
   margin: .55rem 0;
   overflow: hidden;
   position: relative;
@@ -842,7 +842,7 @@
 .fixture-squad-pitch__lineup--top { inset-block: 0 50%; padding-bottom: 1.5rem; row-gap: clamp(.9rem, 2.5vw, 1.2rem); }
 .fixture-squad-pitch__lineup--bottom { inset-block: 50% 3.5rem; padding-top: 1.5rem; transform: translateY(-.55rem); }
 .fixture-squad-pitch__row { align-items: center; background: transparent; display: flex; gap: clamp(.28rem, 1.1vw, .7rem); justify-content: center; min-width: 0; }
-.fixture-squad-pitch__player { aspect-ratio: 1; cursor: default; flex: 0 0 var(--squad-pitch-token-size); height: var(--squad-pitch-token-size); min-height: var(--squad-pitch-token-size); min-width: var(--squad-pitch-token-size); width: var(--squad-pitch-token-size); }
+.fixture-squad-pitch__player { aspect-ratio: 1; cursor: default; flex: 0 0 var(--squad-pitch-token-size); height: var(--squad-pitch-token-size); margin: .25rem; min-height: var(--squad-pitch-token-size); min-width: var(--squad-pitch-token-size); width: var(--squad-pitch-token-size); }
 .fixture-squad-pitch__player small { font-size: clamp(.54rem, 1.3vw, .66rem); font-weight: 800; }
 .fixture-squad-pitch--opponent .fixture-squad-pitch__player { --squad-form-surface: color-mix(in srgb, var(--squad-pitch, var(--background)) 92%, var(--primary) 8%); }
 .fixture-squad-rosters { border-top: 1px solid var(--border); display: grid; gap: 1rem; margin-top: .9rem; padding-top: 1rem; }

@@ -160,13 +160,17 @@ def fixture_squads(
         starter_ids = {player.id for player in starters}
 
         def as_fixture_player(player: object, slot: str) -> FixtureSquadPlayer:
+            selection = selection_by_id.get(player.id)
             return FixtureSquadPlayer(
                 id=player.id,
                 display_name=player.display_name,
                 position=player.position or "",
+                club=player.epl_team,
                 points=player.points,
                 form=player.form,
                 slot=slot,
+                is_captain=bool(selection and selection.is_captain),
+                is_vice_captain=bool(selection and selection.is_vice_captain),
             )
 
         squads.append(

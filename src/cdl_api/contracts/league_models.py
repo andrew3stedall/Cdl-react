@@ -57,6 +57,8 @@ class FixtureSquadPlayer(BaseModel):
     display_name: str
     position: str
     club: TeamSummary | None = None
+    next_opponent: TeamSummary | None = None
+    next_fixture_is_home: bool | None = None
     points: int = 0
     form: float = 0
     slot: str

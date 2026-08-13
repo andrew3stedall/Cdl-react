@@ -21,32 +21,25 @@ League events can create urgency on Home when they require a manager decision or
 
 ## Navigation
 
-League may retain contextual sub-navigation for:
-
-- Overview;
-- Fixtures;
-- Table;
-- Knockout;
-- Head-to-head.
+League is a single contextual page. Its page header contains the Castle Draft
+League logo, a Fixtures/Table toggle, and notifications. Competition views do
+not add a second navigation strip above the page.
 
 ## Current interaction model
 
-The overview is the decision-first entry point. It surfaces the current round,
-next round, leading team, and recorded results, then recommends the most useful
-next view. Detailed competition content is not duplicated on Overview: fixtures,
-standings, knockout, and head-to-head information render only inside their
-selected contextual tab.
+The default view is the current competition context rather than an overview
+landing page. Fixtures are grouped into compact gameweek sections: the current
+gameweek first, followed by upcoming gameweeks. Each fixture is a single row.
 
-- **Fixtures & results** groups current and upcoming fixtures, then provides an
-  all-fixtures browser with lightweight status filters.
-- Started fixtures can open a scoring-detail drawer; pending fixtures remain
-  visibly pending rather than presenting guessed detail.
+- **Fixtures** shows whether each gameweek is not started, underway, or
+  finished. Selecting a row opens a drawer whose content is a squad preview for
+  an upcoming fixture, live scoring context for an active fixture, or final
+  scoring context for a completed fixture.
 - **Table** presents the current standings and identifies whether the response
   is a calculated result snapshot or a persisted snapshot. Movement is shown
   only when the API supplies a previous-table comparison.
-- **Knockout** uses round columns and tie cards rather than reproducing the
-  legacy table layout.
-- **Head-to-head** keeps matchup records in compact comparison cards.
+- Knockout and head-to-head data remain API/domain capabilities, but are not
+  exposed as competing top-level options in the manager-facing League page.
 
 The League UI does not expose migration operations. Legacy data is brought into
 the competition views only through the migration rules: clean records map into

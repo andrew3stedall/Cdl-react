@@ -397,7 +397,7 @@ function AppRouteContent({
   }
 
   if (currentPath.startsWith('/league')) {
-    routeContent = <LeaguePage attackDirection={attackDirection} currentPath={currentPath} leagueClient={leagueClient} onNavigate={onNavigate} />;
+    routeContent = <LeaguePage attackDirection={attackDirection} currentPath={currentPath} leagueClient={leagueClient} onNavigate={onNavigate} squadClient={squadClient} />;
   }
 
   if (currentPath.startsWith('/modernisation/checkpoint-1')) {

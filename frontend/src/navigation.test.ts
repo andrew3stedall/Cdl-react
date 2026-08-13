@@ -22,18 +22,12 @@ describe('navigation configuration', () => {
     ]);
   });
 
-  test('keeps specialist routes inside their owning feature context', () => {
+  test('keeps the League page as a single contextual destination', () => {
     const market = contextualNavigationSections.find((section) => section.key === 'market');
     const league = contextualNavigationSections.find((section) => section.key === 'league');
 
     expect(market).toBeUndefined();
-    expect(league?.items.map((item) => item.label)).toEqual([
-      'Overview',
-      'Fixtures',
-      'Table',
-      'Knockout',
-      'Head-to-head',
-    ]);
+    expect(league).toBeUndefined();
     expect(utilityNavigationItems.map((item) => item.label)).toEqual(['Rules']);
   });
 
@@ -64,21 +58,20 @@ describe('navigation configuration', () => {
     expect(getContextNavigation('/scouting')).toBeUndefined();
     expect(getContextNavigation('/fdr')).toBeUndefined();
     expect(getContextNavigation('/squad')).toBeUndefined();
-    expect(getContextNavigation('/league/table')?.key).toBe('league');
+    expect(getContextNavigation('/league/table')).toBeUndefined();
     expect(marketItem && isPrimaryNavigationItemActive('/scouting', marketItem)).toBe(true);
     expect(marketItem && isPrimaryNavigationItemActive('/fdr', marketItem)).toBe(true);
     expect(squadItem && isPrimaryNavigationItemActive('/team-selection', squadItem)).toBe(true);
     expect(leagueItem && isPrimaryNavigationItemActive('/league/fixtures', leagueItem)).toBe(true);
   });
 
-  test('selects the most specific contextual route', () => {
-    const league = getContextNavigation('/league/head-to-head');
-    expect(league && getActiveContextItem('/league/head-to-head', league)?.label).toBe('Head-to-head');
+  test('does not expose a second League navigation surface', () => {
+    expect(getActiveContextItem('/league/table', { key: 'league', label: 'League', primaryHref: '/league', matchPrefixes: ['/league'], items: [] })).toBeUndefined();
   });
 
   test('resolves product navigation items by path', () => {
     expect(getNavigationItemByPath('/fdr/team-1')?.label).toBe('Market');
-    expect(getNavigationItemByPath('/league/table')?.label).toBe('Table');
+    expect(getNavigationItemByPath('/league/table')?.label).toBe('League');
     expect(getNavigationItemByPath('/squad')?.label).toBe('Squad');
     expect(getNavigationItemByPath('/squad-management')?.label).toBe('Squad');
     expect(getNavigationItemByPath('/team-selection')?.label).toBe('Squad');

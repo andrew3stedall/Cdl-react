@@ -19,11 +19,14 @@ remain pending.
 
 ## Current Behaviour
 
-Users view current and upcoming CDL fixtures, league table, all fixtures, knockout context, and head-to-head data.
+Users enter a single League workspace. The header provides a Fixtures/Table
+toggle and notifications; fixture rows are grouped by current and upcoming
+gameweek instead of being split across a contextual navigation menu.
 
 ## Business Rules
 
-- Current fixtures and next fixtures are separated.
+- Current fixtures appear first, followed by upcoming gameweeks.
+- Fixture rows are compact and open a state-aware drawer.
 - Started fixtures can expose detail views.
 - Bonus points, chips, win, draw, and fixture ownership states affect display.
 - Knockout and table-round data must be preserved.
@@ -53,12 +56,10 @@ Users view current and upcoming CDL fixtures, league table, all fixtures, knocko
 
 ## React Requirements
 
-- Current gameweek fixture table.
-- Upcoming fixture table.
+- Current and upcoming gameweek fixture sections.
+- Upcoming squad preview, live fixture detail, and finished fixture detail.
 - League standings.
-- All fixtures browser.
-- Fixture detail dialog or route.
-- Knockout and head-to-head sections.
+- Fixture detail drawer.
 
 ## UI Requirements
 

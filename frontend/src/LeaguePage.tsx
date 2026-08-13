@@ -1,21 +1,19 @@
 import { type ReactNode, type RefObject, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ArrowRight,
+  Bell,
   CalendarDays,
   ChevronRight,
   CircleAlert,
   Clock3,
   Info,
-  Medal,
   RefreshCw,
-  Swords,
+  Shield,
   Table2,
   X,
 } from 'lucide-react';
 
 import { Button } from './components/ui/button';
 import { Card } from './components/ui/card';
-import { Select } from './components/ui/select';
 import type { AttackDirection } from './contracts';
 import { fixtureDifficultyTitle, fixtureOpponentClassName, FormDots, formBand, shortPlayerName, TeamShirt } from './SquadPage';
 import {
@@ -27,30 +25,39 @@ import {
   type LeagueSnapshot,
   type LeagueTableRow,
 } from './league-api';
+import { HttpSquadClient, type SquadApiNotification, type SquadClient } from './squad-api';
 import './league-page.css';
 
 const defaultLeagueClient = new HttpLeagueClient();
+const defaultSquadClient = new HttpSquadClient();
 
-type LeagueView = 'overview' | 'fixtures' | 'table' | 'knockout' | 'head-to-head';
-type FixtureFilter = 'all' | 'current' | 'complete' | 'pending';
+type LeagueView = 'fixtures' | 'table';
+type GameweekState = 'not-started' | 'underway' | 'finished';
 
 interface LeaguePageProps {
   attackDirection?: AttackDirection;
   currentPath?: string;
   leagueClient?: LeagueClient;
   onNavigate: (href: string) => void;
+  squadClient?: Pick<SquadClient, 'getNotifications'>;
 }
 
-export function LeaguePage({ attackDirection = 'up', currentPath = window.location.pathname, leagueClient = defaultLeagueClient, onNavigate = () => undefined }: LeaguePageProps) {
+export function LeaguePage({ attackDirection = 'up', currentPath = window.location.pathname, leagueClient = defaultLeagueClient, onNavigate = () => undefined, squadClient = defaultSquadClient }: LeaguePageProps) {
   const [snapshot, setSnapshot] = useState<LeagueSnapshot | null>(null);
   const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
   const [reloadKey, setReloadKey] = useState(0);
+  const [view, setView] = useState<LeagueView>(() => leagueViewFromPath(currentPath));
+  const [notifications, setNotifications] = useState<SquadApiNotification[]>([]);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [selectedFixture, setSelectedFixture] = useState<LeagueFixture | null>(null);
   const [fixtureDetail, setFixtureDetail] = useState<FixtureDetailResponse | null>(null);
   const [detailStatus, setDetailStatus] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
   const [fixtureSquads, setFixtureSquads] = useState<FixtureSquad[]>([]);
   const drawerRef = useRef<HTMLElement | null>(null);
-  const view = leagueViewFromPath(currentPath);
+
+  useEffect(() => {
+    setView(leagueViewFromPath(currentPath));
+  }, [currentPath]);
 
   useEffect(() => {
     let isActive = true;
@@ -76,6 +83,20 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
   }, [leagueClient, reloadKey]);
 
   useEffect(() => {
+    let isActive = true;
+    void squadClient.getNotifications()
+      .then((response) => {
+        if (isActive) setNotifications(response.notifications);
+      })
+      .catch(() => {
+        if (isActive) setNotifications([]);
+      });
+    return () => {
+      isActive = false;
+    };
+  }, [squadClient, reloadKey]);
+
+  useEffect(() => {
     if (!selectedFixture) {
       setFixtureDetail(null);
       setFixtureSquads([]);
@@ -87,7 +108,7 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
     setDetailStatus('loading');
     setFixtureSquads([]);
 
-    const detailPromise = selectedFixture.status !== 'pending' && leagueClient.getFixtureDetail
+    const detailPromise = selectedFixture.status !== 'pending' && selectedFixture.detailAvailable && leagueClient.getFixtureDetail
       ? leagueClient.getFixtureDetail(selectedFixture.id)
       : Promise.resolve({ fixture: selectedFixture, events: [], notes: [] });
     const squadsPromise = selectedFixture.status === 'pending' && leagueClient.getFixtureSquads
@@ -122,18 +143,36 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
     if (selectedFixture) drawerRef.current?.focus();
   }, [selectedFixture]);
 
-  const title = leagueViewTitle(view);
-  const subtitle = leagueViewSubtitle(view);
-
   return (
     <main aria-labelledby="league-title" className="feature-screen league-page">
-      <header className="league-page__header">
-        <div>
-          <p className="eyebrow">Competition workspace</p>
-          <h1 id="league-title">{title}</h1>
-          <p className="league-page__intro">{subtitle}</p>
+      <header className="league-page__hero">
+        <div className="league-page__brand-lockup">
+          <span aria-hidden="true" className="league-page__brand-mark"><Shield size={25} /></span>
+          <div>
+            <p className="league-page__brand-name">Castle Draft League</p>
+            <h1 id="league-title">League</h1>
+            <p className="league-page__context-name">{snapshot?.currentFixtures.gameweek?.name ?? 'Competition workspace'}</p>
+          </div>
         </div>
-        {snapshot ? <LeaguePulse snapshot={snapshot} /> : null}
+        <div aria-label="League utilities" className="league-page__hero-icons">
+          <div aria-label="League view" className="league-page__view-toggle" role="group">
+            <button aria-label="View fixtures" aria-pressed={view === 'fixtures'} onClick={() => setView('fixtures')} title="Fixtures" type="button">
+              <CalendarDays aria-hidden="true" size={18} />
+              <span>Fixtures</span>
+            </button>
+            <button aria-label="View table" aria-pressed={view === 'table'} onClick={() => setView('table')} title="Table" type="button">
+              <Table2 aria-hidden="true" size={18} />
+              <span>Table</span>
+            </button>
+          </div>
+          <div className="league-page__notifications">
+            <button aria-expanded={notificationsOpen} aria-label={`Notifications${notifications.length ? `, ${notifications.length} unread` : ''}`} className="league-page__icon-button" onClick={() => setNotificationsOpen((open) => !open)} title="Notifications" type="button">
+              <Bell aria-hidden="true" size={20} />
+              {notifications.length ? <span className="league-page__notification-count">{notifications.length}</span> : null}
+            </button>
+            {notificationsOpen ? <NotificationPopover notifications={notifications} onNavigate={onNavigate} /> : null}
+          </div>
+        </div>
       </header>
 
       {status === 'loading' ? <LeagueLoadingState /> : null}
@@ -154,7 +193,6 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
       {snapshot ? (
         <LeagueContent
           onOpenFixture={setSelectedFixture}
-          onNavigate={onNavigate}
           onReload={() => setReloadKey((key) => key + 1)}
           snapshot={snapshot}
           view={view}
@@ -167,6 +205,7 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
           detailStatus={detailStatus}
           fixture={selectedFixture}
           attackDirection={attackDirection}
+          gameweekState={gameweekStateForFixture(selectedFixture, snapshot)}
           squads={fixtureSquads}
           onClose={() => setSelectedFixture(null)}
           drawerRef={drawerRef}
@@ -178,141 +217,80 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
 
 function LeagueContent({
   onOpenFixture,
-  onNavigate,
   onReload,
   snapshot,
   view,
 }: {
   onOpenFixture: (fixture: LeagueFixture) => void;
-  onNavigate: (href: string) => void;
   onReload: () => void;
   snapshot: LeagueSnapshot;
   view: LeagueView;
 }) {
-  if (view === 'fixtures') {
-    return <FixturesView onOpenFixture={onOpenFixture} snapshot={snapshot} />;
-  }
-  if (view === 'table') {
-    return <TableView onReload={onReload} snapshot={snapshot} />;
-  }
-  if (view === 'knockout') {
-    return <KnockoutView onOpenFixture={onOpenFixture} snapshot={snapshot} />;
-  }
-  if (view === 'head-to-head') {
-    return <HeadToHeadView snapshot={snapshot} />;
-  }
-  return <OverviewView onNavigate={onNavigate} snapshot={snapshot} />;
-}
-
-function OverviewView({
-  onNavigate,
-  snapshot,
-}: {
-  onNavigate: (href: string) => void;
-  snapshot: LeagueSnapshot;
-}) {
-  const currentFixtures = snapshot.currentFixtures.fixtures;
-  const nextFixtures = snapshot.nextFixtures.fixtures;
-  const leader = snapshot.table.rows[0];
-  const completedFixtures = snapshot.allFixtures.fixtures.filter((fixture) => fixture.status === 'complete').length;
-  const detailCount = snapshot.allFixtures.fixtures.filter((fixture) => fixture.detailAvailable).length;
-  const focus = currentFixtures.length
-    ? {
-      action: 'Review fixtures',
-      detail: `${currentFixtures.length} fixture${currentFixtures.length === 1 ? '' : 's'} are in play. Open the Fixtures tab when you want the round-by-round detail.`,
-      href: '/league/fixtures',
-      title: 'The current round is in play',
-    }
-    : nextFixtures.length
-      ? {
-        action: 'View upcoming fixtures',
-        detail: 'The next round is set. Open the Fixtures tab to review the schedule and previous results.',
-        href: '/league/fixtures',
-        title: 'Your next league round is set',
-      }
-      : {
-        action: 'Open league table',
-        detail: 'There is no active schedule to review. Open the Table tab to see the current standings.',
-        href: '/league/table',
-        title: 'The competition is between rounds',
-      };
-
-  return (
-    <div className="league-page__content">
-      <Card className="league-hero">
-        <div className="league-hero__copy">
-          <p className="league-hero__kicker"><span className="league-pulse-dot" /> League pulse</p>
-          <h2>{focus.title}</h2>
-          <p>{focus.detail}</p>
-        </div>
-        <div className="league-hero__action">
-          <span className="league-hero__meta"><CalendarDays aria-hidden="true" size={15} /> {gameweekLabel(snapshot.currentFixtures, 'Current gameweek')}</span>
-          <LeagueNavLink className="ui-button ui-button-primary" href={focus.href} onNavigate={onNavigate}>
-            {focus.action} <ArrowRight aria-hidden="true" size={16} />
-          </LeagueNavLink>
-        </div>
-      </Card>
-
-      <section aria-label="League snapshot" className="league-stat-grid">
-        <MetricCard icon={<CalendarDays aria-hidden="true" size={17} />} label="Next round" value={gameweekLabel(snapshot.nextFixtures, 'Not scheduled')} detail={`${nextFixtures.length} fixture${nextFixtures.length === 1 ? '' : 's'} listed`} />
-        <MetricCard icon={<Medal aria-hidden="true" size={17} />} label="Table leader" value={leader?.team.name ?? 'No table yet'} detail={leader ? `${leader.leaguePoints} league points` : 'Awaiting results'} />
-        <MetricCard icon={<Swords aria-hidden="true" size={17} />} label="Results recorded" value={`${completedFixtures}`} detail={`${detailCount} fixture detail${detailCount === 1 ? '' : 's'} available`} />
-      </section>
-
-      <Card className="league-focus-card">
-        <div>
-          <p className="eyebrow">Choose a competition view</p>
-          <h2>Open a tab when you are ready to go deeper</h2>
-          <p>Overview stays lightweight; fixtures, standings, knockout and head-to-head details appear only in their selected views.</p>
-        </div>
-        <LeagueNavLink className="league-text-link" href={focus.href} onNavigate={onNavigate}>
-          {focus.action} <ChevronRight aria-hidden="true" size={15} />
-        </LeagueNavLink>
-      </Card>
-    </div>
-  );
+  return view === 'table'
+    ? <TableView onReload={onReload} snapshot={snapshot} />
+    : <FixturesView onOpenFixture={onOpenFixture} snapshot={snapshot} />;
 }
 
 function FixturesView({ onOpenFixture, snapshot }: { onOpenFixture: (fixture: LeagueFixture) => void; snapshot: LeagueSnapshot }) {
-  const [filter, setFilter] = useState<FixtureFilter>('all');
-  const filteredFixtures = useMemo(
-    () => snapshot.allFixtures.fixtures.filter((fixture) => {
-      if (filter === 'current') return fixture.isCurrent;
-      if (filter === 'complete') return fixture.status === 'complete' || fixture.status === 'started';
-      if (filter === 'pending') return fixture.status === 'pending';
-      return true;
-    }),
-    [filter, snapshot.allFixtures.fixtures],
-  );
+  const groups = useMemo(() => groupFixturesByGameweek(snapshot), [snapshot]);
 
   return (
     <div className="league-page__content">
-      <div className="league-page__columns">
-        <FixtureGroup fixtures={snapshot.currentFixtures.fixtures} gameweek={snapshot.currentFixtures.gameweek?.name ?? 'Current gameweek'} onOpenFixture={onOpenFixture} title="Current fixtures" />
-        <FixtureGroup fixtures={snapshot.nextFixtures.fixtures} gameweek={snapshot.nextFixtures.gameweek?.name ?? 'Next gameweek'} onOpenFixture={onOpenFixture} title="Upcoming fixtures" />
-      </div>
-
-      <Card className="league-panel">
-        <div className="league-panel__header">
-          <SectionHeading eyebrow="Competition history" id="all-fixtures-title" title="All fixtures" />
-          <Select
-            aria-label="Filter fixtures"
-            label="Show"
-            onChange={(event) => setFilter(event.target.value as FixtureFilter)}
-            options={[
-              { label: 'All fixtures', value: 'all' },
-              { label: 'Current round', value: 'current' },
-              { label: 'Results', value: 'complete' },
-              { label: 'Upcoming', value: 'pending' },
-            ]}
-            value={filter}
-          />
-        </div>
-        <div aria-label="All fixtures" className="league-fixture-list">
-          {filteredFixtures.length ? filteredFixtures.map((fixture) => <FixtureListRow fixture={fixture} key={fixture.id} onOpen={onOpenFixture} />) : <EmptyState message="No fixtures match this filter." />}
-        </div>
-      </Card>
+      <section aria-label="League fixtures" className="league-gameweek-list">
+        {groups.length ? groups.map((group) => <GameweekSection group={group} key={group.gameweek.id} onOpenFixture={onOpenFixture} />) : <EmptyState message="No league fixtures are available yet." />}
+      </section>
     </div>
+  );
+}
+
+interface GameweekGroup {
+  gameweek: LeagueFixture['gameweek'];
+  fixtures: LeagueFixture[];
+  isCurrent: boolean;
+  state: GameweekState;
+}
+
+function groupFixturesByGameweek(snapshot: LeagueSnapshot): GameweekGroup[] {
+  const currentGameweek = snapshot.currentFixtures.gameweek;
+  const suppliedFixtures = [...snapshot.allFixtures.fixtures, ...snapshot.currentFixtures.fixtures, ...snapshot.nextFixtures.fixtures]
+    .filter((fixture, index, fixtures) => fixtures.findIndex((candidate) => candidate.id === fixture.id) === index);
+  const fixturesByGameweek = new Map<string, LeagueFixture[]>();
+
+  for (const fixture of suppliedFixtures) {
+    const fixtures = fixturesByGameweek.get(fixture.gameweek.id) ?? [];
+    if (!fixtures.some((existing) => existing.id === fixture.id)) fixtures.push(fixture);
+    fixturesByGameweek.set(fixture.gameweek.id, fixtures);
+  }
+
+  const currentId = currentGameweek?.id ?? null;
+  return [...fixturesByGameweek.entries()]
+    .map(([gameweekId, fixtures]) => ({
+      gameweek: fixtures[0].gameweek,
+      fixtures: [...fixtures].sort((left, right) => left.id.localeCompare(right.id)),
+      isCurrent: gameweekId === currentId || fixtures.some((fixture) => fixture.isCurrent),
+      state: getGameweekState(fixtures),
+    }))
+    .filter((group) => group.isCurrent || group.fixtures.some((fixture) => fixture.status === 'pending'))
+    .sort((left, right) => {
+      if (left.isCurrent !== right.isCurrent) return left.isCurrent ? -1 : 1;
+      return left.gameweek.number - right.gameweek.number;
+    });
+}
+
+function GameweekSection({ group, onOpenFixture }: { group: GameweekGroup; onOpenFixture: (fixture: LeagueFixture) => void }) {
+  return (
+    <section aria-labelledby={`league-gameweek-${group.gameweek.id}`} className="league-gameweek-section">
+      <header className="league-gameweek-section__header">
+        <div>
+          <p className="eyebrow">{group.isCurrent ? 'Current gameweek' : 'Upcoming gameweek'}</p>
+          <h2 id={`league-gameweek-${group.gameweek.id}`}>{group.gameweek.name}</h2>
+        </div>
+        <GameweekStateBadge state={group.state} />
+      </header>
+      <div className="league-fixture-list">
+        {group.fixtures.map((fixture) => <FixtureListRow fixture={fixture} key={fixture.id} onOpen={onOpenFixture} />)}
+      </div>
+    </section>
   );
 }
 
@@ -346,71 +324,15 @@ function TableView({ onReload, snapshot }: { onReload: () => void; snapshot: Lea
   );
 }
 
-function KnockoutView({ onOpenFixture, snapshot }: { onOpenFixture: (fixture: LeagueFixture) => void; snapshot: LeagueSnapshot }) {
-  const rounds = snapshot.knockout.rounds.length ? snapshot.knockout.rounds : ['Upcoming bracket'];
-  return (
-    <div className="league-page__content">
-      <Card className="league-panel">
-        <SectionHeading eyebrow="Competition route" id="knockout-title" title="Knockout bracket" />
-        <p className="league-panel__description">Follow each tie from its round fixture to the winner path. Aggregate and tiebreaker detail will be shown when the competition feed supplies it.</p>
-        {snapshot.knockout.matches.length ? (
-          <div className="league-bracket" aria-label="Knockout bracket">
-            {rounds.map((round) => {
-              const matches = snapshot.knockout.matches.filter((match) => match.roundLabel === round);
-              return <div className="league-bracket__round" key={round}><p className="eyebrow">{round}</p>{matches.length ? matches.map((match) => <KnockoutMatchCard key={match.id} match={match} onOpenFixture={onOpenFixture} />) : <EmptyState message="No match recorded in this round." />}</div>;
-            })}
-          </div>
-        ) : <EmptyState message="No knockout matches are available yet." />}
-      </Card>
-    </div>
-  );
-}
-
-function HeadToHeadView({ snapshot }: { snapshot: LeagueSnapshot }) {
-  return (
-    <div className="league-page__content">
-      <Card className="league-panel">
-        <SectionHeading eyebrow="Matchup history" id="head-to-head-title" title="Head-to-head records" />
-        <p className="league-panel__description">Review the results and scoring margins between teams across recorded fixtures.</p>
-        {snapshot.headToHead.records.length ? (
-          <div className="league-h2h-grid">
-            {snapshot.headToHead.records.map((record) => <HeadToHeadCard key={`${record.team.id}-${record.opponent.id}`} record={record} />)}
-          </div>
-        ) : <EmptyState message="Head-to-head records will appear after results are recorded." />}
-      </Card>
-    </div>
-  );
-}
-
-function FixtureGroup({ fixtures, gameweek, onOpenFixture, title }: { fixtures: LeagueFixture[]; gameweek: string; onOpenFixture: (fixture: LeagueFixture) => void; title: string }) {
-  return (
-    <section aria-labelledby={`${title.toLowerCase().replaceAll(' ', '-')}-title`} className="league-section">
-      <SectionHeading eyebrow={gameweek} id={`${title.toLowerCase().replaceAll(' ', '-')}-title`} title={title} />
-      <div className="league-fixture-stack">
-        {fixtures.length ? fixtures.map((fixture) => <FixtureCard fixture={fixture} key={fixture.id} onOpen={onOpenFixture} />) : <EmptyState message={`No ${title.toLowerCase()} available.`} />}
-      </div>
-    </section>
-  );
-}
-
-function FixtureCard({ fixture, onOpen }: { fixture: LeagueFixture; onOpen: (fixture: LeagueFixture) => void }) {
-  return (
-    <Card className="league-fixture-card">
-      <div className="league-fixture-card__meta"><span>{fixture.roundLabel}</span><span>{fixture.kickoffLabel}</span></div>
-      <FixtureTeams fixture={fixture} />
-      <div className="league-fixture-card__footer"><StatusBadge status={fixture.status} /><span className="league-fixture-card__outcome">{outcomeLabel(fixture)}</span><Button aria-label={`${fixture.status === 'pending' ? 'Compare squads' : 'View details'} for ${fixture.homeTeam.name} versus ${fixture.awayTeam.name}`} onClick={() => onOpen(fixture)} type="button" variant="ghost">{fixture.status === 'pending' ? 'Compare squads' : 'View detail'} <ChevronRight aria-hidden="true" size={15} /></Button></div>
-    </Card>
-  );
-}
-
 function FixtureListRow({ fixture, onOpen }: { fixture: LeagueFixture; onOpen: (fixture: LeagueFixture) => void }) {
+  const action = fixture.status === 'pending' ? 'Open preview' : fixture.status === 'started' ? 'Open live fixture' : 'Open finished fixture';
   return (
-    <article className="league-fixture-row">
+    <button aria-label={`${action} for ${fixture.homeTeam.name} versus ${fixture.awayTeam.name}`} className="league-fixture-row" onClick={() => onOpen(fixture)} type="button">
       <div className="league-fixture-row__round"><strong>{fixture.gameweek.name}</strong><span>{fixture.roundLabel}</span></div>
       <FixtureTeams fixture={fixture} compact />
       <div className="league-fixture-row__result"><strong>{formatScore(fixture)}</strong><StatusBadge status={fixture.status} /></div>
-      <Button aria-label={`${fixture.status === 'pending' ? 'Compare squads' : 'View details'} for ${fixture.homeTeam.name} versus ${fixture.awayTeam.name}`} onClick={() => onOpen(fixture)} type="button" variant="ghost"><ChevronRight aria-hidden="true" size={17} /></Button>
-    </article>
+      <ChevronRight aria-hidden="true" className="league-fixture-row__arrow" size={17} />
+    </button>
   );
 }
 
@@ -428,17 +350,16 @@ function TableRow({ row }: { row: LeagueTableRow }) {
   return <tr><th scope="row"><span className={`league-rank league-rank--${row.position <= 3 ? row.position : 'other'}`}>{row.position}</span></th><th scope="row" className="league-table__team">{row.team.name}</th><td>{row.played}</td><td>{row.wins}-{row.draws}-{row.losses}</td><td>{row.pointsFor}</td><td>{row.pointsAgainst}</td><td>{row.pointsDifference > 0 ? '+' : ''}{row.pointsDifference}</td><td><strong>{row.leaguePoints}</strong></td></tr>;
 }
 
-function KnockoutMatchCard({ match, onOpenFixture }: { match: LeagueSnapshot['knockout']['matches'][number]; onOpenFixture: (fixture: LeagueFixture) => void }) {
-  const { fixture } = match;
-  return <article className="league-knockout-match"><div className="league-knockout-match__teams"><div><span>{fixture.homeTeam.shortName ?? fixture.homeTeam.name}</span><strong>{fixture.score.homeScore ?? '—'}</strong></div><div><span>{fixture.awayTeam.shortName ?? fixture.awayTeam.name}</span><strong>{fixture.score.awayScore ?? '—'}</strong></div></div><div className="league-knockout-match__footer"><span>{match.winner ? `Winner: ${match.winner.shortName ?? match.winner.name}` : 'Tie not decided'}</span>{fixture.detailAvailable ? <Button aria-label={`View knockout fixture ${fixture.id}`} onClick={() => onOpenFixture(fixture)} type="button" variant="ghost"><ChevronRight aria-hidden="true" size={15} /></Button> : null}</div></article>;
+function FixtureDetailDrawer({ attackDirection, detail, detailStatus, drawerRef, fixture, gameweekState, onClose, squads }: { attackDirection: AttackDirection; detail: FixtureDetailResponse | null; detailStatus: 'idle' | 'loading' | 'loaded' | 'error'; drawerRef: RefObject<HTMLElement | null>; fixture: LeagueFixture; gameweekState: GameweekState; onClose: () => void; squads: FixtureSquad[] }) {
+  const isPreview = fixture.status === 'pending';
+  const drawerLabel = isPreview ? (gameweekState === 'underway' ? 'Fixture preview' : 'Upcoming fixture') : fixture.status === 'started' ? 'Live fixture' : 'Finished fixture';
+  return <><button aria-label="Close fixture detail" className="league-drawer-backdrop" onClick={onClose} type="button" /><aside ref={drawerRef} aria-labelledby="fixture-detail-title" aria-modal="true" className="league-drawer league-drawer--comparison" data-gameweek-state={gameweekState} role="dialog" tabIndex={-1}><header className="league-drawer__header"><div><p className="eyebrow">{drawerLabel}</p><h2 id="fixture-detail-title">{fixture.homeTeam.name} vs {fixture.awayTeam.name}</h2></div><Button aria-label="Close fixture detail" className="shell-icon-button" onClick={onClose} type="button" variant="ghost"><X aria-hidden="true" size={19} /></Button></header><div className="league-drawer__body"><div className="league-drawer__score"><span>{fixture.gameweek.name}</span><strong>{formatScore(fixture)}</strong><StatusBadge status={fixture.status} /></div>{gameweekState === 'underway' && isPreview ? <div className="league-drawer__context"><strong>Gameweek underway</strong><span>This fixture has not started yet. Review both squads before kick-off.</span></div> : null}{gameweekState === 'finished' && isPreview ? <div className="league-drawer__context"><strong>Gameweek finished</strong><span>This fixture did not produce a recorded result.</span></div> : null}{detailStatus === 'loading' ? <p role="status">{isPreview ? 'Loading squad comparison…' : 'Loading fixture detail…'}</p> : null}{detailStatus === 'error' ? <p className="league-inline-error" role="alert">Fixture detail is temporarily unavailable.</p> : null}{detailStatus === 'loaded' && isPreview && squads.length === 2 ? <SquadComparison attackDirection={attackDirection} squads={squads} /> : null}{detailStatus === 'loaded' && !isPreview && detail ? <FixtureScoringSummary detail={detail} fixture={fixture} gameweekState={gameweekState} /> : null}</div></aside></>;
 }
 
-function HeadToHeadCard({ record }: { record: LeagueSnapshot['headToHead']['records'][number] }) {
-  return <article className="league-h2h-card"><div className="league-h2h-card__header"><div><strong>{record.team.shortName ?? record.team.name}</strong><span>vs</span><strong>{record.opponent.shortName ?? record.opponent.name}</strong></div><Swords aria-hidden="true" size={17} /></div><div className="league-h2h-card__score"><strong>{record.pointsFor}</strong><span>points for</span><strong>{record.pointsAgainst}</strong><span>against</span></div><div className="league-h2h-card__footer"><span>{record.played} played</span><span>{record.wins}W · {record.draws}D · {record.losses}L</span></div></article>;
-}
-
-function FixtureDetailDrawer({ attackDirection, detail, detailStatus, drawerRef, fixture, onClose, squads }: { attackDirection: AttackDirection; detail: FixtureDetailResponse | null; detailStatus: 'idle' | 'loading' | 'loaded' | 'error'; drawerRef: RefObject<HTMLElement | null>; fixture: LeagueFixture; onClose: () => void; squads: FixtureSquad[] }) {
-  return <><button aria-label="Close fixture detail" className="league-drawer-backdrop" onClick={onClose} type="button" /><aside ref={drawerRef} aria-labelledby="fixture-detail-title" aria-modal="true" className="league-drawer league-drawer--comparison" role="dialog" tabIndex={-1}><header className="league-drawer__header"><div><p className="eyebrow">{fixture.status === 'pending' ? 'Upcoming fixture' : 'Fixture detail'}</p><h2 id="fixture-detail-title">{fixture.homeTeam.name} vs {fixture.awayTeam.name}</h2></div><Button aria-label="Close fixture detail" className="shell-icon-button" onClick={onClose} type="button" variant="ghost"><X aria-hidden="true" size={19} /></Button></header><div className="league-drawer__body"><div className="league-drawer__score"><span>{fixture.gameweek.name}</span><strong>{formatScore(fixture)}</strong><StatusBadge status={fixture.status} /></div>{detailStatus === 'loading' ? <p role="status">Loading squad comparison…</p> : null}{detailStatus === 'error' ? <p className="league-inline-error" role="alert">Squad comparison is temporarily unavailable.</p> : null}{detailStatus === 'loaded' && fixture.status === 'pending' && squads.length === 2 ? <SquadComparison attackDirection={attackDirection} squads={squads} /> : null}{detailStatus === 'loaded' && fixture.status !== 'pending' && detail ? <><section><h3>Scoring notes</h3><p>{detail.notes[0] ?? 'No notes were supplied for this fixture.'}</p></section><section><h3>Recorded events</h3>{detail.events.length ? <ul className="league-event-list">{detail.events.map((event, index) => <li key={`${event.label}-${event.team.id}-${index}`}><span><strong>{event.label}</strong><small>{event.team.name}</small></span><strong>{event.points > 0 ? '+' : ''}{event.points}</strong></li>)}</ul> : <p>No scoring events were supplied.</p>}</section></> : null}</div></aside></>;
+function FixtureScoringSummary({ detail, fixture, gameweekState }: { detail: FixtureDetailResponse; fixture: LeagueFixture; gameweekState: GameweekState }) {
+  const isLive = fixture.status === 'started';
+  const roundFinished = gameweekState === 'finished';
+  return <><div className="league-drawer__context"><strong>{roundFinished ? 'Gameweek finished' : 'Gameweek underway'}</strong><span>{roundFinished ? 'The final score and recorded scoring events are shown below.' : isLive ? 'Scores and scoring events can still change before the round is complete.' : 'This fixture has finished, but other gameweek fixtures are still being played.'}</span></div><section><h3>{isLive ? 'Live scoring' : 'Final result'}</h3><p>{detail.notes[0] ?? (isLive ? 'Live scoring detail is available for this fixture.' : 'No additional notes were supplied for this fixture.')}</p></section><section><h3>Recorded events</h3>{detail.events.length ? <ul className="league-event-list">{detail.events.map((event, index) => <li key={`${event.label}-${event.team.id}-${index}`}><span><strong>{event.label}</strong><small>{event.team.name}</small></span><strong>{event.points > 0 ? '+' : ''}{event.points}</strong></li>)}</ul> : <p>No scoring events were supplied.</p>}</section></>;
 }
 
 function SquadComparison({ attackDirection, squads }: { attackDirection: AttackDirection; squads: FixtureSquad[] }) {
@@ -578,21 +499,12 @@ function positionLabel(position: string): string {
   return { GKP: 'Goalkeeper', DEF: 'Defender', MID: 'Midfielder', FWD: 'Forward' }[position] ?? position;
 }
 
-function LeaguePulse({ snapshot }: { snapshot: LeagueSnapshot }) {
-  const current = snapshot.currentFixtures.gameweek;
-  return <div className="league-page__pulse"><span className="league-page__pulse-label">Live context</span><strong>{current?.name ?? 'No active gameweek'}</strong><span>{snapshot.currentFixtures.fixtures.length ? `${snapshot.currentFixtures.fixtures.length} fixture${snapshot.currentFixtures.fixtures.length === 1 ? '' : 's'} in view` : 'No current fixtures'}</span></div>;
-}
-
-function MetricCard({ detail, icon, label, value }: { detail: string; icon: ReactNode; label: string; value: string }) {
-  return <Card className="league-metric-card"><span className="league-metric-card__icon">{icon}</span><span className="league-metric-card__label">{label}</span><strong>{value}</strong><span className="league-metric-card__detail">{detail}</span></Card>;
-}
-
-function LeagueNavLink({ children, className, href, onNavigate }: { children: ReactNode; className: string; href: string; onNavigate: (href: string) => void }) {
-  return <a className={className} href={href} onClick={(event) => { event.preventDefault(); onNavigate(href); }}>{children}</a>;
-}
-
 function SectionHeading({ action, eyebrow, id, title }: { action?: ReactNode; eyebrow: string; id?: string; title: string }) {
   return <header className="league-section-heading"><div><p className="eyebrow">{eyebrow}</p><h2 id={id}>{title}</h2></div>{action ? <div>{action}</div> : null}</header>;
+}
+
+function NotificationPopover({ notifications, onNavigate }: { notifications: SquadApiNotification[]; onNavigate: (href: string) => void }) {
+  return <div aria-label="Notifications" className="league-page__notifications-popover" role="dialog"><div className="league-page__notifications-heading"><strong>Notifications</strong><span>{notifications.length}</span></div>{notifications.length === 0 ? <p className="league-page__empty-copy">You are all caught up.</p> : notifications.map((notification) => <a href={notification.action_href} key={notification.id} className="league-page__notification" onClick={(event) => { event.preventDefault(); onNavigate(notification.action_href); }}><strong>{notification.title}</strong><span>{notification.message}</span></a>)}</div>;
 }
 
 function StatusBadge({ status }: { status: LeagueFixture['status'] }) {
@@ -609,43 +521,32 @@ function LeagueLoadingState() {
 }
 
 function leagueViewFromPath(pathname: string): LeagueView {
-  if (pathname === '/league/fixtures') return 'fixtures';
   if (pathname === '/league/table') return 'table';
-  if (pathname === '/league/knockout') return 'knockout';
-  if (pathname === '/league/head-to-head') return 'head-to-head';
-  return 'overview';
+  return 'fixtures';
 }
 
-function leagueViewTitle(view: LeagueView): string {
-  if (view === 'fixtures') return 'Fixtures & results';
-  if (view === 'table') return 'League table';
-  if (view === 'knockout') return 'Knockout competition';
-  if (view === 'head-to-head') return 'Head-to-head records';
-  return 'League fixtures and results';
+function getGameweekState(fixtures: LeagueFixture[]): GameweekState {
+  if (!fixtures.some((fixture) => fixture.status !== 'pending')) return 'not-started';
+  if (fixtures.every((fixture) => fixture.status === 'complete')) return 'finished';
+  return 'underway';
 }
 
-function leagueViewSubtitle(view: LeagueView): string {
-  if (view === 'fixtures') return 'Move from the current round to the next one, then open any started fixture for its scoring context.';
-  if (view === 'table') return 'See who is leading, how the standings are ordered, and what the current result snapshot represents.';
-  if (view === 'knockout') return 'Follow the competition route, tie by tie, as results and winners are confirmed.';
-  if (view === 'head-to-head') return 'Compare the recorded results and scoring margins behind each manager matchup.';
-  return 'Understand what is happening in the competition and where to look next.';
+function gameweekStateForFixture(fixture: LeagueFixture, snapshot: LeagueSnapshot | null): GameweekState {
+  if (!snapshot) return fixture.status === 'complete' ? 'finished' : fixture.status === 'started' ? 'underway' : 'not-started';
+  const fixtures = [...snapshot.allFixtures.fixtures, ...snapshot.currentFixtures.fixtures, ...snapshot.nextFixtures.fixtures]
+    .filter((candidate, index, candidates) => candidates.findIndex((item) => item.id === candidate.id) === index)
+    .filter((candidate) => candidate.gameweek.id === fixture.gameweek.id);
+  return getGameweekState(fixtures.length ? fixtures : [fixture]);
 }
 
-function gameweekLabel(response: LeagueSnapshot['currentFixtures'], fallback: string): string {
-  return response.gameweek?.name ?? fallback;
+function GameweekStateBadge({ state }: { state: GameweekState }) {
+  const label = state === 'finished' ? 'Finished' : state === 'underway' ? 'In progress' : 'Not started';
+  return <span className={`league-gameweek-state league-gameweek-state--${state}`}><span aria-hidden="true" />{label}</span>;
 }
 
 function formatScore(fixture: LeagueFixture): string {
   if (fixture.score.homeScore === null || fixture.score.awayScore === null) return 'Pending';
   return `${fixture.score.homeScore} - ${fixture.score.awayScore}`;
-}
-
-function outcomeLabel(fixture: LeagueFixture): string {
-  if (fixture.score.outcome === 'draw') return 'Draw';
-  if (fixture.score.outcome === 'home_win') return `${fixture.homeTeam.shortName ?? fixture.homeTeam.name} lead`;
-  if (fixture.score.outcome === 'away_win') return `${fixture.awayTeam.shortName ?? fixture.awayTeam.name} lead`;
-  return 'Awaiting result';
 }
 
 function tableSourceLabel(source: string): string {

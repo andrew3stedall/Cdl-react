@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-08-13 - Make the app installable on Android
+
+- Added an Android-installable web app manifest with standalone display mode,
+  theme metadata, relative paths for root and GitHub Pages deployments, and
+  maskable app icons.
+- Added a production-only service worker that caches the app shell while
+  deliberately bypassing API routes so league data is not served from a stale
+  cache.
+- Added mobile viewport and dynamic-height handling for standalone app windows.
+
 ## 2026-08-10 - Refresh the League competition workspace
 
 - Reworked the League route into an overview-first competition workspace with

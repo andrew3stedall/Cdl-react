@@ -792,6 +792,20 @@
   padding: 1rem;
 }
 
+.fixture-squad-comparison__pitches { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+.fixture-squad-pitch { min-width: 0; }
+.fixture-squad-pitch header, .fixture-squad-pitch footer { display: flex; justify-content: space-between; gap: .5rem; align-items: baseline; font-size: .75rem; }
+.fixture-squad-pitch header strong { font-size: .8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fixture-squad-pitch header span, .fixture-squad-pitch footer { color: var(--muted-foreground); }
+.fixture-squad-pitch__field { position: relative; aspect-ratio: 16 / 9; margin: .5rem 0; padding: .5rem .35rem; border: 1px solid color-mix(in srgb, var(--primary) 40%, transparent); border-radius: 1rem; background: color-mix(in srgb, var(--primary) 8%, var(--background)); display: flex; flex-direction: row; justify-content: space-around; overflow: hidden; }
+.fixture-squad-pitch__field::before { position: absolute; inset: 8% 50%; border-inline: 1px solid color-mix(in srgb, var(--primary) 35%, transparent); content: ''; }
+.fixture-squad-pitch__field::after { position: absolute; top: 18%; bottom: 18%; left: 50%; width: 18%; border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent); transform: translateX(-50%); content: ''; }
+.fixture-squad-pitch__row { z-index: 1; display: flex; flex: 1; flex-direction: column; justify-content: space-around; align-items: center; gap: .1rem; min-width: 0; }
+.fixture-squad-pitch__player { display: grid; justify-items: center; max-width: 3.5rem; text-align: center; }
+.fixture-squad-pitch__player b { display: grid; place-items: center; width: 2rem; height: 2rem; border-radius: 50%; background: var(--card); border: 1px solid var(--primary); color: var(--foreground); font-size: .65rem; }
+.fixture-squad-pitch__player small { width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .58rem; margin-top: .15rem; }
+@media (max-width: 560px) { .fixture-squad-comparison__pitches { gap: .45rem; } .fixture-squad-pitch__player { max-width: 2.8rem; } .fixture-squad-pitch__player small { font-size: .48rem; } }
+
 .league-drawer__body section {
   display: grid;
   gap: 0.55rem;

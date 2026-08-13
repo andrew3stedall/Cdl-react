@@ -56,6 +56,8 @@ export interface FixtureSquadPlayer {
 
 export interface FixtureSquad {
   team: LeagueTeam;
+  isUserTeam: boolean;
+  players: FixtureSquadPlayer[];
   starters: FixtureSquadPlayer[];
   bench: FixtureSquadPlayer[];
 }
@@ -267,6 +269,8 @@ export class HttpLeagueClient implements LeagueClient {
     const response = await this.get<ApiFixtureSquad[]>(`/league/fixtures/${encodeURIComponent(fixtureId)}/squads`);
     return response.map((squad) => ({
       team: mapTeam(squad.team),
+      isUserTeam: squad.is_user_team === true,
+      players: (squad.players ?? squad.starters.concat(squad.bench)).map(mapFixtureSquadPlayer),
       starters: squad.starters.map(mapFixtureSquadPlayer),
       bench: squad.bench.map(mapFixtureSquadPlayer),
     }));
@@ -297,6 +301,8 @@ interface ApiFixtureSquadPlayer {
 
 interface ApiFixtureSquad {
   team: ApiTeam;
+  is_user_team?: boolean;
+  players?: ApiFixtureSquadPlayer[];
   starters: ApiFixtureSquadPlayer[];
   bench: ApiFixtureSquadPlayer[];
 }

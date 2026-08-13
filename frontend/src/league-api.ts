@@ -8,6 +8,7 @@ export interface LeagueGameweek {
   id: string;
   name: string;
   number: number;
+  deadlineAt?: string | null;
 }
 
 export interface LeagueFixtureScore {
@@ -144,6 +145,7 @@ interface ApiGameweek {
   id: string;
   name: string;
   number: number;
+  deadline_at?: string | null;
 }
 
 interface ApiFixtureScore {
@@ -352,6 +354,7 @@ function mapGameweek(gameweek: ApiGameweek): LeagueGameweek {
     id: gameweek.id,
     name: gameweek.name,
     number: gameweek.number,
+    deadlineAt: gameweek.deadline_at ?? null,
   };
 }
 

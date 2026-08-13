@@ -1,5 +1,7 @@
 """In-memory league data repository for the modern API foundation."""
 
+from datetime import UTC, datetime
+
 from cdl_api.contracts.domain import GameweekSummary, TeamSummary
 from cdl_api.contracts.league_models import (
     FixtureOutcome,
@@ -21,8 +23,18 @@ class LeagueRepository:
             "wildcards": TeamSummary(id="wildcards", name="Wildcard Athletic", short_name="WCA"),
         }
         self._gameweeks = {
-            "gw-12": GameweekSummary(id="gw-12", name="Gameweek 12", number=12),
-            "gw-13": GameweekSummary(id="gw-13", name="Gameweek 13", number=13),
+            "gw-12": GameweekSummary(
+                id="gw-12",
+                name="Gameweek 12",
+                number=12,
+                deadline_at=datetime(2026, 8, 14, 17, 30, tzinfo=UTC),
+            ),
+            "gw-13": GameweekSummary(
+                id="gw-13",
+                name="Gameweek 13",
+                number=13,
+                deadline_at=datetime(2026, 8, 21, 17, 30, tzinfo=UTC),
+            ),
             "sf": GameweekSummary(id="sf", name="Semi Finals", number=99),
         }
         self._fixtures = [

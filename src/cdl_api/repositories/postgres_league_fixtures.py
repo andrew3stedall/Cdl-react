@@ -2,7 +2,7 @@
 
 from collections.abc import Callable, Iterable, Mapping
 
-from sqlalchemy import JSON, Column, DateTime, MetaData, String, Table, insert, select
+from sqlalchemy import JSON, Column, DateTime, MetaData, String, Table, insert, inspect, select
 from sqlalchemy.orm import Session
 
 from cdl_api.contracts.domain import GameweekSummary, TeamSummary
@@ -20,6 +20,7 @@ from cdl_api.contracts.league_models import (
     LeagueTableRow,
 )
 from cdl_api.repositories.league_repository import LeagueRepository
+from cdl_api.repositories.postgres_fpl_data import fpl_gameweeks_table
 from cdl_api.repositories.postgres_league_fpl import draft_teams_table
 from cdl_api.staging_draft_seed import LEAGUE_ID
 
@@ -284,6 +285,7 @@ class PostgreSQLLeagueRepository:
                 str(payload["id"]): payload
                 for payload in self._payloads(session, epl_fixtures_table)
             }
+            gameweek_deadlines = self._fpl_gameweek_deadlines(session)
 
         fixtures = []
         for payload in fixture_payloads:
@@ -315,8 +317,35 @@ class PostgreSQLLeagueRepository:
                 chips_played=snapshot.get("chips_played", {}),
                 epl_fixtures=linked_epl_fixtures,
             )
-            fixtures.append(LeagueFixture.model_validate({**payload, "score": score}))
+            gameweek = payload.get("gameweek", {})
+            if isinstance(gameweek, Mapping):
+                gameweek = dict(gameweek)
+                if not gameweek.get("deadline_at"):
+                    gameweek_number = gameweek.get("number")
+                    if isinstance(gameweek_number, int):
+                        gameweek["deadline_at"] = gameweek_deadlines.get(gameweek_number)
+            fixtures.append(
+                LeagueFixture.model_validate({**payload, "gameweek": gameweek, "score": score})
+            )
         return fixtures
+
+    @staticmethod
+    def _fpl_gameweek_deadlines(session: Session) -> dict[int, object]:
+        """Use the official FPL deadline when the cache is available."""
+        if not inspect(session.get_bind()).has_table(fpl_gameweeks_table.name):
+            return {}
+        rows = session.execute(
+            select(fpl_gameweeks_table.c.id, fpl_gameweeks_table.c.deadline_time)
+        ).mappings()
+        deadlines: dict[int, object] = {}
+        for row in rows:
+            try:
+                gameweek_number = int(str(row["id"]))
+            except (TypeError, ValueError):
+                continue
+            if row["deadline_time"] is not None:
+                deadlines[gameweek_number] = row["deadline_time"]
+        return deadlines
 
     def get_fixture(self, fixture_id: str) -> LeagueFixture | None:
         return next(

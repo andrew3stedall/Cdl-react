@@ -10,7 +10,9 @@ testGlobal.IS_REACT_ACT_ENVIRONMENT = true;
 
 const castle = { id: 'castle', name: 'Castle United', shortName: 'CAS' };
 const drafton = { id: 'drafton', name: 'Drafton Rovers', shortName: 'DRA' };
-const gameweek = { id: 'gw-12', name: 'Gameweek 12', number: 12 };
+const keepers = { id: 'keepers', name: 'Keeper City', shortName: 'KPR' };
+const wildcards = { id: 'wildcards', name: 'Wildcard Athletic', shortName: 'WCA' };
+const gameweek = { id: 'gw-12', name: 'Gameweek 12', number: 12, deadlineAt: '2026-08-14T17:30:00Z' };
 const fixture = {
   id: 'fixture-1201',
   gameweek,
@@ -51,10 +53,17 @@ const nextFixture = {
   score: { homeScore: null, awayScore: null, bonusPoints: {}, chipsPlayed: {}, outcome: 'pending' as const },
 };
 
+const secondNextFixture = {
+  ...nextFixture,
+  id: 'fixture-1302',
+  homeTeam: keepers,
+  awayTeam: wildcards,
+};
+
 const snapshot: LeagueSnapshot = {
   currentFixtures: { gameweek, fixtures: [fixture, finishedFixture] },
-  nextFixtures: { gameweek: nextFixture.gameweek, fixtures: [nextFixture] },
-  allFixtures: { gameweek: null, fixtures: [fixture, finishedFixture, nextFixture] },
+  nextFixtures: { gameweek: { ...nextFixture.gameweek, deadlineAt: '2026-08-21T17:30:00Z' }, fixtures: [nextFixture, secondNextFixture] },
+  allFixtures: { gameweek: null, fixtures: [fixture, finishedFixture, nextFixture, secondNextFixture] },
   table: {
     source: 'service-calculated',
     rows: [{ position: 1, team: castle, played: 1, wins: 1, draws: 0, losses: 0, pointsFor: 58, pointsAgainst: 52, pointsDifference: 6, leaguePoints: 3 }],
@@ -95,6 +104,17 @@ class MemoryLeagueClient implements LeagueClient {
   }
 }
 
+class FinishedLeagueClient extends MemoryLeagueClient {
+  async getLeagueSnapshot() {
+    return {
+      ...snapshot,
+      currentFixtures: { gameweek, fixtures: [finishedFixture] },
+      nextFixtures: { gameweek: null, fixtures: [] },
+      allFixtures: { gameweek: null, fixtures: [finishedFixture] },
+    };
+  }
+}
+
 async function renderPage(currentPath = '/league', client = new MemoryLeagueClient(), attackDirection: 'up' | 'down' = 'up') {
   const container = document.createElement('div');
   document.body.append(container);
@@ -114,13 +134,34 @@ describe('LeaguePage', () => {
     expect(container.textContent).toContain('Castle Draft League');
     expect(container.textContent).toContain('Fixtures');
     expect(container.textContent).toContain('Table');
-    expect(container.textContent).toContain('Current gameweek');
     expect(container.textContent).toContain('Gameweek 12');
     expect(container.textContent).toContain('Gameweek 13');
     expect(container.querySelectorAll('.league-gameweek-section')).toHaveLength(2);
     expect(container.querySelectorAll('.league-fixture-row')).toHaveLength(3);
+    expect(container.querySelector('main.league-page.feature-screen')).toBeNull();
+    expect(container.querySelectorAll('time.league-gameweek-state')).toHaveLength(1);
+    expect(container.querySelector('time.league-gameweek-state')?.getAttribute('dateTime')).toBe('2026-08-21T17:30:00Z');
+    expect(container.querySelector('.league-gameweek-state--underway')).not.toBeNull();
+    expect(container.querySelector('.league-gameweek-state--not-started')).not.toBeNull();
+    expect(container.textContent).not.toContain('Current gameweek');
+    expect(container.textContent).not.toContain('Upcoming gameweek');
+    expect(container.textContent).not.toContain('Regular season');
+    expect(container.textContent).not.toContain('Pending');
+    expect(container.textContent).not.toContain('Upcoming');
+    expect(container.textContent).not.toContain('Not started');
+    expect(container.textContent).not.toContain('In progress');
+    expect(container.textContent).not.toContain('Finished');
+    expect(container.textContent).not.toContain('Keeper City');
     expect(container.querySelector('nav[aria-label="League navigation"]')).toBeNull();
     expect(container.textContent).not.toContain('Overview stays lightweight');
+    act(() => root.unmount());
+  });
+
+  test('marks a completed gameweek as finalised', async () => {
+    const { container, root } = await renderPage('/league', new FinishedLeagueClient());
+
+    expect(container.querySelector('.league-gameweek-state--finished')?.textContent).toContain('Finalised');
+    expect(container.textContent).not.toContain('Finished');
     act(() => root.unmount());
   });
 

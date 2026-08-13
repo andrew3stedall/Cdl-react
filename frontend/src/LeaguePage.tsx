@@ -478,7 +478,6 @@ function SquadComparison({ attackDirection, squads }: { attackDirection: AttackD
   }
 
   return <section aria-label="Squad comparison" className="fixture-squad-comparison">
-    <p className="league-panel__description">Your saved Starting XI faces their squad. Select the eleven players you think they will start.</p>
     <div className="fixture-squad-comparison__pitches">
       <FixtureComparisonPitch bottomSquad={bottomSquad} bottomStarters={bottomStarters} topSquad={topSquad} topStarters={topStarters} />
     </div>
@@ -505,15 +504,13 @@ function SquadComparison({ attackDirection, squads }: { attackDirection: AttackD
 function FixtureComparisonPitch({ bottomSquad, bottomStarters, topSquad, topStarters }: { bottomSquad: FixtureSquad; bottomStarters: FixtureSquad['starters']; topSquad: FixtureSquad; topStarters: FixtureSquad['starters'] }) {
   return (
     <article className="fixture-squad-pitch" data-bottom-attack-direction="up" data-bottom-team-role={bottomSquad.isUserTeam ? 'user' : 'opponent'} data-top-attack-direction="down" data-top-team-role={topSquad.isUserTeam ? 'user' : 'opponent'}>
-      <header><strong>Starting XIs</strong><span>{topSquad.isUserTeam ? 'Your team attacks down' : 'Their team attacks down'}</span></header>
       <div aria-label={`${topSquad.team.name} and ${bottomSquad.team.name} pitch`} className="fixture-squad-pitch__field">
         <div aria-hidden="true" className="fixture-squad-pitch__markings"><span /><span /><span /><span /></div>
-        <div className="fixture-squad-pitch__team-label fixture-squad-pitch__team-label--top"><strong>{topSquad.team.name}</strong><span>{topSquad.isUserTeam ? 'Your Starting XI' : 'Predicted XI'} · Attacking down</span></div>
-        <div className="fixture-squad-pitch__team-label fixture-squad-pitch__team-label--bottom"><strong>{bottomSquad.team.name}</strong><span>{bottomSquad.isUserTeam ? 'Your Starting XI' : 'Predicted XI'} · Attacking up</span></div>
+        <div className="fixture-squad-pitch__team-label fixture-squad-pitch__team-label--top"><strong>{topSquad.team.name}</strong></div>
+        <div className="fixture-squad-pitch__team-label fixture-squad-pitch__team-label--bottom"><strong>{bottomSquad.team.name}</strong></div>
         <FixturePitchLineup players={topStarters} side="top" />
         <FixturePitchLineup players={bottomStarters} side="bottom" />
       </div>
-      <footer><strong>{topStarters.length + bottomStarters.length} players on pitch</strong><span>Compare both Starting XIs</span></footer>
     </article>
   );
 }
@@ -541,7 +538,7 @@ function FixturePlayerToken({ fixtureLabel, player, shirtTeam }: { fixtureLabel:
 
 function FixtureRosterColumn({ label, players, squad }: { label: 'Substitutes' | 'Reserves'; players: FixtureSquad['bench']; squad: FixtureSquad }) {
   const rowCount = label === 'Substitutes' ? 5 : 4;
-  return <section aria-label={`${squad.team.name} ${label.toLowerCase()}`} className="fixture-squad-roster"><header><strong>{squad.team.name}</strong><span>{label}</span></header><ol>{Array.from({ length: rowCount }, (_, index) => { const player = players[index]; return <li className={player ? '' : 'is-empty'} key={player?.id ?? `${squad.team.id}-${label}-${index}`}><span className="fixture-squad-roster__number">{index + 1}</span>{player ? <FixtureRosterPlayer player={player} /> : <span className="fixture-squad-roster__empty">Empty slot</span>}</li>; })}</ol></section>;
+  return <section aria-label={`${squad.team.name} ${label.toLowerCase()}`} className="fixture-squad-roster"><header><strong>{squad.team.name}</strong></header><ol>{Array.from({ length: rowCount }, (_, index) => { const player = players[index]; return <li className={player ? '' : 'is-empty'} key={player?.id ?? `${squad.team.id}-${label}-${index}`}><span className="fixture-squad-roster__number">{index + 1}</span>{player ? <FixtureRosterPlayer player={player} /> : <span className="fixture-squad-roster__empty">Empty slot</span>}</li>; })}</ol></section>;
 }
 
 function FixtureRosterPlayer({ player }: { player: FixtureSquad['bench'][number] }) {

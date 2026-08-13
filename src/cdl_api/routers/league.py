@@ -152,12 +152,37 @@ def fixture_squads(
             for player in selection_by_id.values()
             if getattr(player.slot, "value", player.slot) == "starter" and player.id in owned_by_id
         ]
+        saved_lineup = sorted(
+            (player for player in selection_by_id.values() if player.id in owned_by_id),
+            key=lambda player: player.slot_order,
+        )
+        has_saved_lineup = is_user_team and len(saved_starters) == 11
         starters = (
-            [owned_by_id[player.id] for player in saved_starters]
-            if is_user_team and len(saved_starters) == 11
+            [
+                owned_by_id[player.id]
+                for player in saved_lineup
+                if getattr(player.slot, "value", player.slot) == "starter"
+            ]
+            if has_saved_lineup
             else best_starters
         )
         starter_ids = {player.id for player in starters}
+        if has_saved_lineup:
+            bench_players = [
+                owned_by_id[player.id]
+                for player in saved_lineup
+                if getattr(player.slot, "value", player.slot) == "bench"
+            ][:5]
+            reserve_players = [
+                owned_by_id[player.id]
+                for player in saved_lineup
+                if getattr(player.slot, "value", player.slot) == "reserve"
+            ]
+        else:
+            remaining_players = [player for player in owned if player.id not in starter_ids]
+            bench_players = remaining_players[:5]
+            reserve_players = remaining_players[5:]
+        bench_ids = {player.id for player in bench_players}
 
         def as_fixture_player(player: object, slot: str) -> FixtureSquadPlayer:
             selection = selection_by_id.get(player.id)
@@ -180,15 +205,19 @@ def fixture_squads(
                 team=team,
                 is_user_team=is_user_team,
                 players=[
-                    as_fixture_player(player, "starter" if player.id in starter_ids else "bench")
+                    as_fixture_player(
+                        player,
+                        "starter"
+                        if player.id in starter_ids
+                        else "bench"
+                        if player.id in bench_ids
+                        else "reserve",
+                    )
                     for player in owned
                 ],
                 starters=[as_fixture_player(player, "starter") for player in starters],
-                bench=[
-                    as_fixture_player(player, "bench")
-                    for player in owned
-                    if player.id not in starter_ids
-                ],
+                bench=[as_fixture_player(player, "bench") for player in bench_players],
+                reserves=[as_fixture_player(player, "reserve") for player in reserve_players],
             )
         )
     return squads

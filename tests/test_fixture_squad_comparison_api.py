@@ -8,7 +8,7 @@ from cdl_api.contracts.league_models import (
     FixtureStatus,
     LeagueFixture,
 )
-from cdl_api.contracts.squad import PlayerDetail, PlayerOwnershipStatus
+from cdl_api.contracts.squad import PlayerDetail, PlayerNextFixture, PlayerOwnershipStatus
 from cdl_api.routers.league import get_fixture_squad_repository, get_league_repository
 
 
@@ -38,6 +38,11 @@ def _player(team: TeamSummary, index: int, position: str) -> PlayerDetail:
         epl_team=player_team,
         draft_team=team,
         status=PlayerOwnershipStatus.OWNED,
+        next_fixture=PlayerNextFixture(
+            fixture_id=f"epl-fixture-{index}",
+            opponent=TeamSummary(id="epl-next", name="Next Club", short_name="NXT"),
+            is_home=index % 2 == 0,
+        ),
     )
 
 
@@ -87,6 +92,8 @@ def test_upcoming_fixture_returns_both_squads_with_best_valid_xis() -> None:
     assert [squad["team"]["name"] for squad in payload] == ["Home Team", "Away Team"]
     assert all(len(squad["starters"]) == 11 for squad in payload)
     assert payload[0]["starters"][0]["club"]["name"] == "Club"
+    assert payload[0]["starters"][0]["next_opponent"]["short_name"] == "NXT"
+    assert payload[0]["starters"][0]["next_fixture_is_home"] is False
     assert payload[0]["starters"][0]["is_captain"] is False
     assert all(
         sum(player["position"] == position for player in squad["starters"]) == count

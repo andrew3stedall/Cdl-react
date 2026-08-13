@@ -74,7 +74,7 @@ class MemoryLeagueClient implements LeagueClient {
   async getFixtureSquads(fixtureId: string): Promise<FixtureSquad[]> {
     this.squadRequests.push(fixtureId);
     return [
-      { team: castle, isUserTeam: true, players: [{ id: 'castle-1', displayName: 'Castle Keeper', position: 'GKP', points: 80, form: 7, slot: 'starter', club: { id: 'liv', name: 'Liverpool', shortName: 'LIV' }, isCaptain: true }], starters: [{ id: 'castle-1', displayName: 'Castle Keeper', position: 'GKP', points: 80, form: 7, slot: 'starter', club: { id: 'liv', name: 'Liverpool', shortName: 'LIV' }, isCaptain: true }], bench: [], reserves: [] },
+      { team: castle, isUserTeam: true, players: [{ id: 'castle-1', displayName: 'Castle Keeper', position: 'GKP', points: 80, form: 7, nextFixtureDifficulty: 3, slot: 'starter', club: { id: 'liv', name: 'Liverpool', shortName: 'LIV' }, isCaptain: true }], starters: [{ id: 'castle-1', displayName: 'Castle Keeper', position: 'GKP', points: 80, form: 7, nextFixtureDifficulty: 3, slot: 'starter', club: { id: 'liv', name: 'Liverpool', shortName: 'LIV' }, isCaptain: true }], bench: [], reserves: [] },
       { team: drafton, isUserTeam: false, players: [{ id: 'drafton-1', displayName: 'Drafton Keeper', position: 'GKP', points: 70, form: 6, slot: 'starter', club: { id: 'ars', name: 'Arsenal', shortName: 'ARS' } }, { id: 'drafton-2', displayName: 'Drafton Defender', position: 'DEF', points: 65, form: 6, slot: 'bench', club: { id: 'ars', name: 'Arsenal', shortName: 'ARS' } }], starters: [{ id: 'drafton-1', displayName: 'Drafton Keeper', position: 'GKP', points: 70, form: 6, slot: 'starter', club: { id: 'ars', name: 'Arsenal', shortName: 'ARS' } }], bench: [{ id: 'drafton-2', displayName: 'Drafton Defender', position: 'DEF', points: 65, form: 6, slot: 'bench', club: { id: 'ars', name: 'Arsenal', shortName: 'ARS' } }], reserves: [] },
     ];
   }
@@ -135,6 +135,7 @@ describe('LeaguePage', () => {
     expect(container.querySelectorAll('.fixture-squad-pitch .squad-page__pitch-shirt-crop img')).toHaveLength(2);
     expect(container.querySelectorAll('.fixture-squad-pitch .squad-page__form-dots')).toHaveLength(2);
     expect(container.querySelector('.fixture-squad-pitch .squad-page__captain')?.textContent).toBe('C');
+    expect(container.querySelector('.fixture-squad-pitch .squad-page__opponent--fdr-3')).not.toBeNull();
     expect(container.querySelectorAll('.fixture-squad-roster')).toHaveLength(4);
     expect(container.querySelectorAll('.fixture-squad-roster[aria-label*="substitutes"] ol li')).toHaveLength(10);
     expect(container.querySelectorAll('.fixture-squad-roster[aria-label*="reserves"] ol li')).toHaveLength(8);

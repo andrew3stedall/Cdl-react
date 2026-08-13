@@ -254,11 +254,11 @@ def seed_staging_fixture_schedule(
         for row in rows:
             home_team = TeamSummary(
                 id=source_to_team_id[row.home_team],
-                name=row.home_team,
+                name=SOURCE_TO_CANONICAL_NAME[row.home_team],
             )
             away_team = TeamSummary(
                 id=source_to_team_id[row.away_team],
-                name=row.away_team,
+                name=SOURCE_TO_CANONICAL_NAME[row.away_team],
             )
             fixture = LeagueFixture(
                 id=row.id,

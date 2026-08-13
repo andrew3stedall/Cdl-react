@@ -190,7 +190,7 @@ describe('AppShell integration', () => {
     expect(container.textContent).toContain('Refresh data');
   });
 
-  test('renders league context from the league API client through the shared shell', async () => {
+  test('renders the single League page through the shared shell', async () => {
     const { container } = renderApp({ initialPath: '/league' });
 
     await act(async () => {
@@ -198,13 +198,13 @@ describe('AppShell integration', () => {
     });
 
     expect(container.querySelector('[aria-current="page"]')?.textContent).toContain('League');
-    expect(container.querySelector('nav[aria-label="League navigation"]')?.textContent).toContain('Fixtures');
-    expect(container.querySelector('nav[aria-label="League navigation"]')?.textContent).toContain('Table');
-    expect(container.textContent).toContain('League fixtures and results');
+    expect(container.querySelector('nav[aria-label="League navigation"]')).toBeNull();
+    expect(container.textContent).toContain('Castle Draft League');
+    expect(container.textContent).toContain('Fixtures');
+    expect(container.textContent).toContain('Table');
     expect(container.textContent).toContain('Gameweek 12');
-    expect(container.textContent).toContain('Castle United');
-    expect(container.textContent).toContain('Review fixtures');
-    expect(container.textContent).not.toContain('Fixtures in play');
+    expect(container.textContent).toContain('CAS');
+    expect(container.textContent).not.toContain('Overview stays lightweight');
   });
 
   test('provides an account profile with persisted appearance controls', async () => {

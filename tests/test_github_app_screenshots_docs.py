@@ -120,16 +120,13 @@ def test_interaction_script_exercises_shell_navigation_and_history() -> None:
     content = INTERACTION_SCRIPT.read_text(encoding="utf-8")
     assert "/rules" in content
     assert "Primary navigation" in content
-    assert "League navigation" in content
+    assert "View table" in content
     assert "manager-account-menu" in content
     assert "expectPath(page, '/')" in content
     assert "Gaffers Desk" in content
     assert "Global mobile navigation" in content
     assert "must not expose a redundant top menu button" in content
-    assert "expectPath(page, '/league/fixtures')" in content
-    assert "expectPath(page, '/league/table')" in content
-    assert "expectPath(page, '/league/knockout')" in content
-    assert "expectPath(page, '/league/head-to-head')" in content
+    assert "View fixtures" in content
 
 
 def test_browser_journey_exercises_protected_session_boundary() -> None:

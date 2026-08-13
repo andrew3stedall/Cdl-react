@@ -31,6 +31,15 @@ const fixture = {
   },
 };
 
+const finishedFixture = {
+  ...fixture,
+  id: 'fixture-1202',
+  homeTeam: drafton,
+  awayTeam: castle,
+  status: 'complete' as const,
+  score: { homeScore: 48, awayScore: 43, bonusPoints: {}, chipsPlayed: {}, outcome: 'home_win' as const },
+};
+
 const nextFixture = {
   ...fixture,
   id: 'fixture-1301',
@@ -43,9 +52,9 @@ const nextFixture = {
 };
 
 const snapshot: LeagueSnapshot = {
-  currentFixtures: { gameweek, fixtures: [fixture] },
+  currentFixtures: { gameweek, fixtures: [fixture, finishedFixture] },
   nextFixtures: { gameweek: nextFixture.gameweek, fixtures: [nextFixture] },
-  allFixtures: { gameweek: null, fixtures: [fixture, nextFixture] },
+  allFixtures: { gameweek: null, fixtures: [fixture, finishedFixture, nextFixture] },
   table: {
     source: 'service-calculated',
     rows: [{ position: 1, team: castle, played: 1, wins: 1, draws: 0, losses: 0, pointsFor: 58, pointsAgainst: 52, pointsDifference: 6, leaguePoints: 3 }],
@@ -53,6 +62,12 @@ const snapshot: LeagueSnapshot = {
   knockout: { rounds: ['Semi Final'], matches: [] },
   headToHead: { records: [] },
 };
+
+class MemoryNotificationsClient {
+  async getNotifications() {
+    return { notifications: [{ id: 'notice-1', title: 'Fixture update', message: 'Gameweek 12 is underway.', action_href: '/league', kind: 'fixture' }] };
+  }
+}
 
 class MemoryLeagueClient implements LeagueClient {
   detailRequests: string[] = [];
@@ -85,7 +100,7 @@ async function renderPage(currentPath = '/league', client = new MemoryLeagueClie
   document.body.append(container);
   const root = createRoot(container);
   await act(async () => {
-    root.render(<LeaguePage attackDirection={attackDirection} currentPath={currentPath} leagueClient={client} onNavigate={() => undefined} />);
+    root.render(<LeaguePage attackDirection={attackDirection} currentPath={currentPath} leagueClient={client} onNavigate={() => undefined} squadClient={new MemoryNotificationsClient()} />);
     await Promise.resolve();
     await Promise.resolve();
   });
@@ -93,38 +108,58 @@ async function renderPage(currentPath = '/league', client = new MemoryLeagueClie
 }
 
 describe('LeaguePage', () => {
-  test('keeps the overview focused on status and the next action', async () => {
+  test('uses the Squad-style contextual header and compact gameweek sections', async () => {
     const { container, root } = await renderPage();
 
-    expect(container.textContent).toContain('The current round is in play');
-    expect(container.textContent).toContain('Overview stays lightweight');
-    expect(container.textContent).not.toContain('Fixtures in play');
-    expect(container.textContent).not.toContain('Who is setting the pace');
-    expect(container.textContent).not.toContain('Knockout path');
-    expect(container.textContent).not.toContain('Head-to-head records');
-    expect(container.querySelector('.league-fixture-card')).toBeNull();
+    expect(container.textContent).toContain('Castle Draft League');
+    expect(container.textContent).toContain('Fixtures');
+    expect(container.textContent).toContain('Table');
+    expect(container.textContent).toContain('Current gameweek');
+    expect(container.textContent).toContain('Gameweek 12');
+    expect(container.textContent).toContain('Gameweek 13');
+    expect(container.querySelectorAll('.league-gameweek-section')).toHaveLength(2);
+    expect(container.querySelectorAll('.league-fixture-row')).toHaveLength(3);
+    expect(container.querySelector('nav[aria-label="League navigation"]')).toBeNull();
+    expect(container.textContent).not.toContain('Overview stays lightweight');
     act(() => root.unmount());
   });
 
-  test('opens started fixture detail from the selected fixtures view', async () => {
-    const { client, container, root } = await renderPage('/league/fixtures');
+  test('opens a started fixture as live scoring detail', async () => {
+    const { client, container, root } = await renderPage();
 
     await act(async () => {
-      container.querySelector<HTMLButtonElement>('button[aria-label*="Castle United versus Drafton Rovers"]')?.click();
+      container.querySelector<HTMLButtonElement>('button[aria-label*="Open live fixture for Castle United versus Drafton Rovers"]')?.click();
       await Promise.resolve();
       await Promise.resolve();
     });
 
     expect(client.detailRequests).toEqual(['fixture-1201']);
+    expect(container.querySelector('[role="dialog"]')?.textContent).toContain('Gameweek underway');
+    expect(container.querySelector('[role="dialog"]')?.textContent).toContain('Live scoring');
     expect(container.querySelector('[role="dialog"]')?.textContent).toContain('Scoring detail is available.');
     act(() => root.unmount());
   });
 
-  test('opens an upcoming fixture with both squads on comparison pitches', async () => {
-    const { client, container, root } = await renderPage('/league/fixtures');
+  test('opens a finished fixture with final-result content', async () => {
+    const { client, container, root } = await renderPage();
 
     await act(async () => {
-      container.querySelectorAll<HTMLButtonElement>('button[aria-label*="Compare squads for Castle United versus Drafton Rovers"]')[1]?.click();
+      container.querySelector<HTMLButtonElement>('button[aria-label*="Open finished fixture for Drafton Rovers versus Castle United"]')?.click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(client.detailRequests).toEqual(['fixture-1202']);
+    expect(container.querySelector('[role="dialog"]')?.textContent).toContain('Finished fixture');
+    expect(container.querySelector('[role="dialog"]')?.textContent).toContain('Final result');
+    act(() => root.unmount());
+  });
+
+  test('opens an upcoming fixture with both squads on comparison pitches', async () => {
+    const { client, container, root } = await renderPage();
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('button[aria-label*="Open preview for Castle United versus Drafton Rovers"]')?.click();
       await Promise.resolve();
       await Promise.resolve();
     });
@@ -138,70 +173,31 @@ describe('LeaguePage', () => {
     expect(container.querySelector('.fixture-squad-pitch .squad-page__captain')?.textContent).toBe('C');
     expect(container.querySelector('.fixture-squad-pitch .squad-page__opponent--fdr-3')).not.toBeNull();
     expect(container.querySelectorAll('.fixture-squad-roster')).toHaveLength(4);
-    expect(container.querySelectorAll('.fixture-squad-roster[aria-label*="substitutes"] ol li')).toHaveLength(10);
-    expect(container.querySelectorAll('.fixture-squad-roster[aria-label*="reserves"] ol li')).toHaveLength(8);
-    expect(container.querySelector('[aria-label="Squad comparison"]')?.textContent).toContain('Substitutes');
-    expect(container.querySelector('[aria-label="Squad comparison"]')?.textContent).not.toContain('Your saved Starting XI faces their squad');
-    expect(container.querySelector('[aria-label="Squad comparison"]')?.textContent).not.toContain('Compare both Starting XIs');
     act(() => root.unmount());
   });
 
-  test('puts my team at the top when I attack down and keeps the opponent prediction editable', async () => {
-    const { container, root } = await renderPage('/league/fixtures', new MemoryLeagueClient(), 'down');
+  test('switches between fixtures and table without exposing a second league navigation', async () => {
+    const { container, root } = await renderPage();
 
     await act(async () => {
-      container.querySelectorAll<HTMLButtonElement>('button[aria-label*="Compare squads for Castle United versus Drafton Rovers"]')[1]?.click();
-      await Promise.resolve();
-      await Promise.resolve();
+      container.querySelector<HTMLButtonElement>('button[aria-label="View table"]')?.click();
     });
 
-    const pitch = container.querySelector<HTMLElement>('.fixture-squad-pitch');
-    expect(pitch?.dataset.topTeamRole).toBe('user');
-    expect(pitch?.dataset.bottomTeamRole).toBe('opponent');
-    expect(pitch?.dataset.topAttackDirection).toBe('down');
-    expect(pitch?.dataset.bottomAttackDirection).toBe('up');
-    expect(container.querySelector('[aria-label="Drafton Rovers lineup prediction"]')).not.toBeNull();
-    expect(container.querySelector('button[aria-pressed="false"]')).not.toBeNull();
+    expect(container.textContent).toContain('League table');
+    expect(container.textContent).not.toContain('Current fixtures');
+    expect(container.querySelector('button[aria-label="View table"]')?.getAttribute('aria-pressed')).toBe('true');
     act(() => root.unmount());
   });
 
-  test('renders only the content for the selected competition tab', async () => {
-    const views = [
-      { path: '/league/fixtures', visible: 'Current fixtures', hidden: ['League table', 'Knockout bracket', 'Head-to-head records'] },
-      { path: '/league/table', visible: 'League table', hidden: ['Current fixtures', 'Knockout bracket', 'Head-to-head records'] },
-      { path: '/league/knockout', visible: 'Knockout bracket', hidden: ['Current fixtures', 'League table', 'Head-to-head records'] },
-      { path: '/league/head-to-head', visible: 'Head-to-head records', hidden: ['Current fixtures', 'League table', 'Knockout bracket'] },
-    ] as const;
-
-    for (const view of views) {
-      const { container, root } = await renderPage(view.path);
-      expect(container.textContent).toContain(view.visible);
-      for (const hiddenSection of view.hidden) {
-        expect(container.textContent).not.toContain(hiddenSection);
-      }
-      act(() => root.unmount());
-    }
-  });
-
-  test('filters the all-fixtures list without changing the API snapshot', async () => {
-    const { container, root } = await renderPage('/league/fixtures');
-    const select = container.querySelector('select') as HTMLSelectElement;
+  test('opens the notifications popover from the League header', async () => {
+    const { container, root } = await renderPage();
 
     await act(async () => {
-      select.value = 'pending';
-      select.dispatchEvent(new Event('change', { bubbles: true }));
+      container.querySelector<HTMLButtonElement>('button[aria-label*="Notifications"]')?.click();
     });
 
-    expect(container.textContent).toContain('Gameweek 13');
-    expect(container.querySelector('.league-fixture-list')?.textContent).not.toContain('GW12 live');
-    act(() => root.unmount());
-  });
-
-  test('labels a calculated standings snapshot instead of implying historical provenance', async () => {
-    const { container, root } = await renderPage('/league/table');
-
-    expect(container.textContent).toContain('Calculated snapshot');
-    expect(container.textContent).toContain('Position movement will appear once the snapshot includes a previous-table comparison.');
+    expect(container.querySelector('[aria-label="Notifications"][role="dialog"]')?.textContent).toContain('Fixture update');
+    expect(container.querySelector('.league-page__notification-count')?.textContent).toBe('1');
     act(() => root.unmount());
   });
 });

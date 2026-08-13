@@ -628,22 +628,11 @@ async function testShellAndLeagueNavigation(page, viewportName) {
   await primaryNavigation.getByRole('link', { name: 'League', exact: true }).click();
   await expectPath(page, '/league');
 
-  const leagueNavigation = page.getByRole('navigation', { name: 'League navigation' });
-  await leagueNavigation.getByRole('link', { name: 'Fixtures', exact: true }).click();
-  await expectPath(page, '/league/fixtures');
-  await page.locator('#league-title').filter({ hasText: 'Fixtures & results' }).waitFor();
-
-  await leagueNavigation.getByRole('link', { name: 'Table', exact: true }).click();
-  await expectPath(page, '/league/table');
-  await page.locator('#league-title').filter({ hasText: 'League table' }).waitFor();
-
-  await leagueNavigation.getByRole('link', { name: 'Knockout', exact: true }).click();
-  await expectPath(page, '/league/knockout');
-  await page.locator('#league-title').filter({ hasText: 'Knockout competition' }).waitFor();
-
-  await leagueNavigation.getByRole('link', { name: 'Head-to-head', exact: true }).click();
-  await expectPath(page, '/league/head-to-head');
-  await page.locator('#league-title').filter({ hasText: 'Head-to-head records' }).waitFor();
+  await page.getByRole('button', { name: 'View fixtures' }).waitFor();
+  await page.getByRole('button', { name: 'View table' }).click();
+  await page.getByRole('heading', { name: 'League table' }).waitFor();
+  await page.getByRole('button', { name: 'View fixtures' }).click();
+  await page.getByRole('heading', { name: gameweeks[0].name }).waitFor();
 }
 
 async function testMobileNavigationClearance(page) {

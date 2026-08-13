@@ -323,7 +323,7 @@ function FixtureCard({
           <strong>Fixture details are not available yet</strong>
           <span>Open the league view when the next schedule is published.</span>
         </div>
-        <Button onClick={() => onNavigate('/league/fixtures')} type="button" variant="secondary">
+        <Button onClick={() => onNavigate('/league')} type="button" variant="secondary">
           View fixtures
           <ArrowRight aria-hidden="true" size={16} />
         </Button>
@@ -352,7 +352,7 @@ function FixtureCard({
           <strong>{opponent.name}</strong>
         </span>
       </div>
-      <Button onClick={() => onNavigate('/league/fixtures')} type="button" variant="ghost">
+      <Button onClick={() => onNavigate('/league')} type="button" variant="ghost">
         Fixture details
         <ArrowRight aria-hidden="true" size={16} />
       </Button>

@@ -51,41 +51,7 @@ export const primaryNavigationItems: NavigationItem[] = [
   },
 ];
 
-export const contextualNavigationSections: NavigationSection[] = [
-  {
-    key: 'league',
-    label: 'League navigation',
-    primaryHref: '/league',
-    matchPrefixes: ['/league'],
-    items: [
-      {
-        label: 'Overview',
-        href: '/league',
-        featureKey: 'league',
-      },
-      {
-        label: 'Fixtures',
-        href: '/league/fixtures',
-        featureKey: 'league-fixtures',
-      },
-      {
-        label: 'Table',
-        href: '/league/table',
-        featureKey: 'league-table',
-      },
-      {
-        label: 'Knockout',
-        href: '/league/knockout',
-        featureKey: 'league-knockout',
-      },
-      {
-        label: 'Head-to-head',
-        href: '/league/head-to-head',
-        featureKey: 'league-head-to-head',
-      },
-    ],
-  },
-];
+export const contextualNavigationSections: NavigationSection[] = [];
 
 export const utilityNavigationItems: NavigationItem[] = [
   {

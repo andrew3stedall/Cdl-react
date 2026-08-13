@@ -1,0 +1,53 @@
+name: One-time staging fixture verification
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/one-time-staging-fixture-verify.yml"
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  verify:
+    name: Verify seeded staging fixtures
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Validate staging identity
+        env:
+          EXPECTED_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          EXPECTED_WIF_PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          EXPECTED_SERVICE_ACCOUNT: ${{ vars.GCP_SERVICE_ACCOUNT }}
+        run: |
+          set -euo pipefail
+          test "${EXPECTED_PROJECT_ID}" = "cdl-react-staging-ast"
+          test -n "${EXPECTED_WIF_PROVIDER}"
+          test -n "${EXPECTED_SERVICE_ACCOUNT}"
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Verify fixture seed output
+        env:
+          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 12); do
+            output="$(gcloud logging read 'resource.type="cloud_run_job" AND resource.labels.job_name="cdl-react-staging-synthetic-seed" AND textPayload:"Seeded explicitly synthetic staging domains"' --project "${PROJECT_ID}" --freshness=2h --limit=20 --format='value(textPayload)' || true)"
+            if printf '%s\n' "${output}" | grep -Fq 'league:35-gameweeks/140-fixtures'; then
+              printf '%s\n' "${output}"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Expected 35 gameweeks / 140 fixtures seed output was not found" >&2
+          exit 1

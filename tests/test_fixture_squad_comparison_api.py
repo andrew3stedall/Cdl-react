@@ -41,6 +41,7 @@ def _player(team: TeamSummary, index: int, position: str) -> PlayerDetail:
         next_fixture=PlayerNextFixture(
             fixture_id=f"epl-fixture-{index}",
             opponent=TeamSummary(id="epl-next", name="Next Club", short_name="NXT"),
+            difficulty=3,
             is_home=index % 2 == 0,
         ),
     )
@@ -94,6 +95,7 @@ def test_upcoming_fixture_returns_both_squads_with_best_valid_xis() -> None:
     assert payload[0]["starters"][0]["club"]["name"] == "Club"
     assert payload[0]["starters"][0]["next_opponent"]["short_name"] == "NXT"
     assert payload[0]["starters"][0]["next_fixture_is_home"] is False
+    assert payload[0]["starters"][0]["next_fixture_difficulty"] == 3
     assert payload[0]["starters"][0]["is_captain"] is False
     assert all(
         sum(player["position"] == position for player in squad["starters"]) == count

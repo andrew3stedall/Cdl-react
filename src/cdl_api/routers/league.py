@@ -193,6 +193,9 @@ def fixture_squads(
                 club=player.epl_team,
                 next_opponent=player.next_fixture.opponent if player.next_fixture else None,
                 next_fixture_is_home=player.next_fixture.is_home if player.next_fixture else None,
+                next_fixture_difficulty=(
+                    player.next_fixture.difficulty if player.next_fixture else None
+                ),
                 points=player.points,
                 form=player.form,
                 slot=slot,

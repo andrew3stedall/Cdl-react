@@ -126,9 +126,7 @@ def fixture_squads(
     players = squad_repository.list_squad_players()
     manager_team = getattr(squad_repository, "manager_team", None)
     user_team_id = manager_team.id if manager_team is not None else None
-    selection_by_id = {
-        player.id: player for player in team_selection_repository.get_players()
-    }
+    selection_by_id = {player.id: player for player in team_selection_repository.get_players()}
     squads = []
     for team in (fixture.home_team, fixture.away_team):
         owned = [
@@ -152,8 +150,7 @@ def fixture_squads(
         saved_starters = [
             player
             for player in selection_by_id.values()
-            if getattr(player.slot, "value", player.slot) == "starter"
-            and player.id in owned_by_id
+            if getattr(player.slot, "value", player.slot) == "starter" and player.id in owned_by_id
         ]
         starters = (
             [owned_by_id[player.id] for player in saved_starters]
@@ -177,9 +174,7 @@ def fixture_squads(
                 team=team,
                 is_user_team=is_user_team,
                 players=[
-                    as_fixture_player(
-                        player, "starter" if player.id in starter_ids else "bench"
-                    )
+                    as_fixture_player(player, "starter" if player.id in starter_ids else "bench")
                     for player in owned
                 ],
                 starters=[as_fixture_player(player, "starter") for player in starters],

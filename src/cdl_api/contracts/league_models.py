@@ -56,9 +56,12 @@ class FixtureSquadPlayer(BaseModel):
     id: str
     display_name: str
     position: str
+    club: TeamSummary | None = None
     points: int = 0
     form: float = 0
     slot: str
+    is_captain: bool = False
+    is_vice_captain: bool = False
 
 
 class FixtureSquad(BaseModel):

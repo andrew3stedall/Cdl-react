@@ -63,6 +63,8 @@ class FixtureSquadPlayer(BaseModel):
 
 class FixtureSquad(BaseModel):
     team: TeamSummary
+    is_user_team: bool = False
+    players: list[FixtureSquadPlayer] = Field(default_factory=list)
     starters: list[FixtureSquadPlayer] = Field(default_factory=list)
     bench: list[FixtureSquadPlayer] = Field(default_factory=list)
 

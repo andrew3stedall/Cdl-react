@@ -72,6 +72,7 @@ class FixtureSquad(BaseModel):
     players: list[FixtureSquadPlayer] = Field(default_factory=list)
     starters: list[FixtureSquadPlayer] = Field(default_factory=list)
     bench: list[FixtureSquadPlayer] = Field(default_factory=list)
+    reserves: list[FixtureSquadPlayer] = Field(default_factory=list)
 
 
 class FixtureDetailResponse(BaseModel):

@@ -74,18 +74,18 @@ class MemoryLeagueClient implements LeagueClient {
   async getFixtureSquads(fixtureId: string): Promise<FixtureSquad[]> {
     this.squadRequests.push(fixtureId);
     return [
-      { team: castle, starters: [{ id: 'castle-1', displayName: 'Castle Keeper', position: 'GKP', points: 80, form: 7, slot: 'starter' }], bench: [] },
-      { team: drafton, starters: [{ id: 'drafton-1', displayName: 'Drafton Keeper', position: 'GKP', points: 70, form: 6, slot: 'starter' }], bench: [] },
+      { team: castle, isUserTeam: true, players: [{ id: 'castle-1', displayName: 'Castle Keeper', position: 'GKP', points: 80, form: 7, slot: 'starter' }], starters: [{ id: 'castle-1', displayName: 'Castle Keeper', position: 'GKP', points: 80, form: 7, slot: 'starter' }], bench: [] },
+      { team: drafton, isUserTeam: false, players: [{ id: 'drafton-1', displayName: 'Drafton Keeper', position: 'GKP', points: 70, form: 6, slot: 'starter' }, { id: 'drafton-2', displayName: 'Drafton Defender', position: 'DEF', points: 65, form: 6, slot: 'bench' }], starters: [{ id: 'drafton-1', displayName: 'Drafton Keeper', position: 'GKP', points: 70, form: 6, slot: 'starter' }], bench: [{ id: 'drafton-2', displayName: 'Drafton Defender', position: 'DEF', points: 65, form: 6, slot: 'bench' }] },
     ];
   }
 }
 
-async function renderPage(currentPath = '/league', client = new MemoryLeagueClient()) {
+async function renderPage(currentPath = '/league', client = new MemoryLeagueClient(), attackDirection: 'up' | 'down' = 'up') {
   const container = document.createElement('div');
   document.body.append(container);
   const root = createRoot(container);
   await act(async () => {
-    root.render(<LeaguePage currentPath={currentPath} leagueClient={client} onNavigate={() => undefined} />);
+    root.render(<LeaguePage attackDirection={attackDirection} currentPath={currentPath} leagueClient={client} onNavigate={() => undefined} />);
     await Promise.resolve();
     await Promise.resolve();
   });
@@ -132,6 +132,26 @@ describe('LeaguePage', () => {
     expect(client.squadRequests).toEqual(['fixture-1301']);
     expect(container.querySelector('[aria-label="Squad comparison"]')?.textContent).toContain('Castle Keeper');
     expect(container.querySelectorAll('.fixture-squad-pitch')).toHaveLength(2);
+    expect(container.querySelector('[aria-label="Squad comparison"]')?.textContent).not.toContain('Bench');
+    act(() => root.unmount());
+  });
+
+  test('puts my team at the top when I attack down and keeps the opponent prediction editable', async () => {
+    const { container, root } = await renderPage('/league/fixtures', new MemoryLeagueClient(), 'down');
+
+    await act(async () => {
+      container.querySelectorAll<HTMLButtonElement>('button[aria-label*="Compare squads for Castle United versus Drafton Rovers"]')[1]?.click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    const pitches = container.querySelectorAll<HTMLElement>('.fixture-squad-pitch');
+    expect(pitches[0]?.dataset.teamRole).toBe('user');
+    expect(pitches[0]?.dataset.attackDirection).toBe('down');
+    expect(pitches[1]?.dataset.teamRole).toBe('opponent');
+    expect(pitches[1]?.dataset.attackDirection).toBe('up');
+    expect(container.querySelector('[aria-label="Drafton Rovers lineup prediction"]')).not.toBeNull();
+    expect(container.querySelector('button[aria-pressed="false"]')).not.toBeNull();
     act(() => root.unmount());
   });
 

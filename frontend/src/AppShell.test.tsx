@@ -203,7 +203,7 @@ describe('AppShell integration', () => {
     expect(container.textContent).toContain('Fixtures');
     expect(container.textContent).toContain('Table');
     expect(container.textContent).toContain('Gameweek 12');
-    expect(container.textContent).toContain('Castle United');
+    expect(container.textContent).toContain('CAS');
     expect(container.textContent).not.toContain('Overview stays lightweight');
   });
 

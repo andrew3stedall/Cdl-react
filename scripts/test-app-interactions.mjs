@@ -630,9 +630,9 @@ async function testShellAndLeagueNavigation(page, viewportName) {
 
   await page.getByRole('button', { name: 'View fixtures' }).waitFor();
   await page.getByRole('button', { name: 'View table' }).click();
-  await expect(page.getByRole('heading', { name: 'League table' })).toBeVisible();
+  await page.getByRole('heading', { name: 'League table' }).waitFor();
   await page.getByRole('button', { name: 'View fixtures' }).click();
-  await expect(page.getByRole('heading', { name: gameweeks[0].name })).toBeVisible();
+  await page.getByRole('heading', { name: gameweeks[0].name }).waitFor();
 }
 
 async function testMobileNavigationClearance(page) {

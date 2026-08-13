@@ -490,13 +490,18 @@ function FixtureComparisonPitch({ attackDirection, isUserTeam, squad, starters }
             <div className={`fixture-squad-pitch__row position-${position.toLowerCase()}`} data-position={position} key={position}>
               {starters.filter((player) => player.position === position).map((player) => {
                 const shirtTeam = player.club?.shortName ?? player.club?.name ?? squad.team.shortName ?? squad.team.name;
-                const clubCode = player.club?.shortName ?? player.club?.name ?? squad.team.shortName ?? squad.team.name;
+                const fixtureLabel = player.nextOpponent
+                  ? player.nextFixtureIsHome === true
+                    ? (player.nextOpponent.shortName ?? player.nextOpponent.name).toUpperCase()
+                    : (player.nextOpponent.shortName ?? player.nextOpponent.name).toLowerCase()
+                  : 'Next —';
                 return (
                   <div className={`squad-page__pitch-player fixture-squad-pitch__player position-${player.position.toLowerCase()} form-band-${formBand(player.form)}`} data-player-id={player.id} key={player.id} title={`${player.displayName} · ${player.points} pts`}>
+                    <span aria-hidden="true" className={`squad-page__position-marker position-${player.position.toLowerCase()}`} />
                     <span aria-hidden="true" className="squad-page__pitch-shirt-crop"><TeamShirt large team={shirtTeam} /></span>
                     <strong className="squad-page__pitch-player-name">{shortPlayerName(player.displayName)}</strong>
                     <span className="squad-page__pitch-player-form"><FormDots value={player.form} /></span>
-                    <small>{clubCode}</small>
+                    <small>{fixtureLabel}</small>
                     {player.isCaptain ? <span className="squad-page__captain">C</span> : null}
                     {player.isViceCaptain ? <span className="squad-page__captain vice">VC</span> : null}
                   </div>

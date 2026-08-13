@@ -74,8 +74,8 @@ class MemoryLeagueClient implements LeagueClient {
   async getFixtureSquads(fixtureId: string): Promise<FixtureSquad[]> {
     this.squadRequests.push(fixtureId);
     return [
-      { team: castle, isUserTeam: true, players: [{ id: 'castle-1', displayName: 'Castle Keeper', position: 'GKP', points: 80, form: 7, slot: 'starter' }], starters: [{ id: 'castle-1', displayName: 'Castle Keeper', position: 'GKP', points: 80, form: 7, slot: 'starter' }], bench: [] },
-      { team: drafton, isUserTeam: false, players: [{ id: 'drafton-1', displayName: 'Drafton Keeper', position: 'GKP', points: 70, form: 6, slot: 'starter' }, { id: 'drafton-2', displayName: 'Drafton Defender', position: 'DEF', points: 65, form: 6, slot: 'bench' }], starters: [{ id: 'drafton-1', displayName: 'Drafton Keeper', position: 'GKP', points: 70, form: 6, slot: 'starter' }], bench: [{ id: 'drafton-2', displayName: 'Drafton Defender', position: 'DEF', points: 65, form: 6, slot: 'bench' }] },
+      { team: castle, isUserTeam: true, players: [{ id: 'castle-1', displayName: 'Castle Keeper', position: 'GKP', points: 80, form: 7, slot: 'starter', club: { id: 'liv', name: 'Liverpool', shortName: 'LIV' }, isCaptain: true }], starters: [{ id: 'castle-1', displayName: 'Castle Keeper', position: 'GKP', points: 80, form: 7, slot: 'starter', club: { id: 'liv', name: 'Liverpool', shortName: 'LIV' }, isCaptain: true }], bench: [] },
+      { team: drafton, isUserTeam: false, players: [{ id: 'drafton-1', displayName: 'Drafton Keeper', position: 'GKP', points: 70, form: 6, slot: 'starter', club: { id: 'ars', name: 'Arsenal', shortName: 'ARS' } }, { id: 'drafton-2', displayName: 'Drafton Defender', position: 'DEF', points: 65, form: 6, slot: 'bench', club: { id: 'ars', name: 'Arsenal', shortName: 'ARS' } }], starters: [{ id: 'drafton-1', displayName: 'Drafton Keeper', position: 'GKP', points: 70, form: 6, slot: 'starter', club: { id: 'ars', name: 'Arsenal', shortName: 'ARS' } }], bench: [{ id: 'drafton-2', displayName: 'Drafton Defender', position: 'DEF', points: 65, form: 6, slot: 'bench', club: { id: 'ars', name: 'Arsenal', shortName: 'ARS' } }] },
     ];
   }
 }
@@ -132,6 +132,9 @@ describe('LeaguePage', () => {
     expect(client.squadRequests).toEqual(['fixture-1301']);
     expect(container.querySelector('[aria-label="Squad comparison"]')?.textContent).toContain('Castle Keeper');
     expect(container.querySelectorAll('.fixture-squad-pitch')).toHaveLength(2);
+    expect(container.querySelectorAll('.fixture-squad-pitch .squad-page__pitch-shirt-crop img')).toHaveLength(2);
+    expect(container.querySelectorAll('.fixture-squad-pitch .squad-page__form-dots')).toHaveLength(2);
+    expect(container.querySelector('.fixture-squad-pitch .squad-page__captain')?.textContent).toBe('C');
     expect(container.querySelector('[aria-label="Squad comparison"]')?.textContent).not.toContain('Bench');
     act(() => root.unmount());
   });

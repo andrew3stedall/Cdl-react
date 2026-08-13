@@ -818,10 +818,11 @@
   --squad-form-high: #78a39a;
   --squad-form-empty: color-mix(in srgb, var(--foreground) 16%, transparent);
   --squad-pitch-token-size: clamp(3.45rem, 17vw, 6rem);
+  --fixture-lineup-divider-gap: clamp(1rem, 3vw, 1.5rem);
   background: var(--squad-pitch);
   border: 1px solid color-mix(in srgb, var(--primary) 40%, transparent);
   border-radius: 1rem;
-  height: clamp(44rem, 140.8vw, 55rem);
+  height: clamp(52rem, 170vw, 64rem);
   margin: .55rem 0;
   overflow: hidden;
   position: relative;
@@ -839,8 +840,8 @@
 .fixture-squad-pitch__team-label--top { top: 1.15rem; }
 .fixture-squad-pitch__team-label--bottom { bottom: 1.8rem; text-align: right; }
 .fixture-squad-pitch__lineup { display: grid; gap: .4rem; grid-template-rows: repeat(4, auto); left: .65rem; min-height: 0; position: absolute; right: .65rem; z-index: 1; }
-.fixture-squad-pitch__lineup--top { inset-block: 0 50%; padding-bottom: 1.5rem; row-gap: clamp(.9rem, 2.5vw, 1.2rem); }
-.fixture-squad-pitch__lineup--bottom { inset-block: 50% 3.5rem; padding-top: 1.5rem; transform: translateY(-.55rem); }
+.fixture-squad-pitch__lineup--top { inset-block: 0 calc(50% + var(--fixture-lineup-divider-gap) / 2); padding-bottom: 1.5rem; row-gap: clamp(.9rem, 2.5vw, 1.2rem); }
+.fixture-squad-pitch__lineup--bottom { inset-block: calc(50% + var(--fixture-lineup-divider-gap) / 2) 3.5rem; padding-top: 1.5rem; transform: translateY(-.55rem); }
 .fixture-squad-pitch__row { align-items: center; background: transparent; display: flex; gap: clamp(.28rem, 1.1vw, .7rem); justify-content: center; min-width: 0; }
 .fixture-squad-pitch__player { aspect-ratio: 1; cursor: default; flex: 0 0 var(--squad-pitch-token-size); height: var(--squad-pitch-token-size); margin: .25rem; min-height: var(--squad-pitch-token-size); min-width: var(--squad-pitch-token-size); width: var(--squad-pitch-token-size); }
 .fixture-squad-pitch__player small { font-size: clamp(.54rem, 1.3vw, .66rem); font-weight: 800; }

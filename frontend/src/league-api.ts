@@ -50,6 +50,8 @@ export interface FixtureSquadPlayer {
   displayName: string;
   position: string;
   club?: LeagueTeam;
+  nextOpponent?: LeagueTeam;
+  nextFixtureIsHome?: boolean;
   points: number;
   form: number;
   slot: 'starter' | 'bench';
@@ -298,6 +300,8 @@ interface ApiFixtureSquadPlayer {
   display_name: string;
   position: string;
   club?: ApiTeam | null;
+  next_opponent?: ApiTeam | null;
+  next_fixture_is_home?: boolean | null;
   points: number;
   form: number;
   slot: 'starter' | 'bench';
@@ -319,6 +323,8 @@ function mapFixtureSquadPlayer(player: ApiFixtureSquadPlayer): FixtureSquadPlaye
     displayName: player.display_name,
     position: player.position,
     club: player.club ? mapTeam(player.club) : undefined,
+    nextOpponent: player.next_opponent ? mapTeam(player.next_opponent) : undefined,
+    nextFixtureIsHome: player.next_fixture_is_home ?? undefined,
     points: player.points,
     form: player.form,
     slot: player.slot,

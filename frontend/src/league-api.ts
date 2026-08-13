@@ -54,7 +54,7 @@ export interface FixtureSquadPlayer {
   nextFixtureIsHome?: boolean;
   points: number;
   form: number;
-  slot: 'starter' | 'bench';
+  slot: 'starter' | 'bench' | 'reserve';
   isCaptain?: boolean;
   isViceCaptain?: boolean;
 }
@@ -65,6 +65,7 @@ export interface FixtureSquad {
   players: FixtureSquadPlayer[];
   starters: FixtureSquadPlayer[];
   bench: FixtureSquadPlayer[];
+  reserves: FixtureSquadPlayer[];
 }
 
 export interface LeagueFixturesResponse {
@@ -275,9 +276,10 @@ export class HttpLeagueClient implements LeagueClient {
     return response.map((squad) => ({
       team: mapTeam(squad.team),
       isUserTeam: squad.is_user_team === true,
-      players: (squad.players ?? squad.starters.concat(squad.bench)).map(mapFixtureSquadPlayer),
+      players: (squad.players ?? squad.starters.concat(squad.bench, squad.reserves ?? [])).map(mapFixtureSquadPlayer),
       starters: squad.starters.map(mapFixtureSquadPlayer),
       bench: squad.bench.map(mapFixtureSquadPlayer),
+      reserves: (squad.reserves ?? []).map(mapFixtureSquadPlayer),
     }));
   }
 
@@ -304,7 +306,7 @@ interface ApiFixtureSquadPlayer {
   next_fixture_is_home?: boolean | null;
   points: number;
   form: number;
-  slot: 'starter' | 'bench';
+  slot: 'starter' | 'bench' | 'reserve';
   is_captain?: boolean;
   is_vice_captain?: boolean;
 }
@@ -315,6 +317,7 @@ interface ApiFixtureSquad {
   players?: ApiFixtureSquadPlayer[];
   starters: ApiFixtureSquadPlayer[];
   bench: ApiFixtureSquadPlayer[];
+  reserves?: ApiFixtureSquadPlayer[];
 }
 
 function mapFixtureSquadPlayer(player: ApiFixtureSquadPlayer): FixtureSquadPlayer {

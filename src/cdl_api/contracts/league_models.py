@@ -52,10 +52,26 @@ class FixtureEvent(BaseModel):
     rule_reference: str | None = None
 
 
+class FixtureSquadPlayer(BaseModel):
+    id: str
+    display_name: str
+    position: str
+    points: int = 0
+    form: float = 0
+    slot: str
+
+
+class FixtureSquad(BaseModel):
+    team: TeamSummary
+    starters: list[FixtureSquadPlayer] = Field(default_factory=list)
+    bench: list[FixtureSquadPlayer] = Field(default_factory=list)
+
+
 class FixtureDetailResponse(BaseModel):
     fixture: LeagueFixture
     events: list[FixtureEvent] = Field(default_factory=list)
     notes: list[str] = Field(default_factory=list)
+    squads: list[FixtureSquad] = Field(default_factory=list)
 
 
 class LeagueFixturesResponse(BaseModel):

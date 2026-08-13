@@ -102,3 +102,16 @@ def test_fixture_schedule_seed_is_idempotent_and_exposes_week_one_as_next() -> N
     assert [fixture.gameweek.number for fixture in fixtures[:4]] == [1, 1, 1, 1]
     assert sum(fixture.is_next for fixture in fixtures) == 4
     assert all(fixture.score.outcome == "pending" for fixture in fixtures)
+    dicks_fixtures = [
+        fixture
+        for fixture in fixtures
+        if fixture.home_team.id == "team-dicks-dribbling-xi"
+        or fixture.away_team.id == "team-dicks-dribbling-xi"
+    ]
+    assert dicks_fixtures
+    assert all(
+        team.name == "Dicks Dribbling XI"
+        for fixture in dicks_fixtures
+        for team in (fixture.home_team, fixture.away_team)
+        if team.id == "team-dicks-dribbling-xi"
+    )

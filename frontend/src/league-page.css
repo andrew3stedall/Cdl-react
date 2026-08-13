@@ -1,6 +1,24 @@
 .league-page {
+  background: var(--background);
+  color: var(--foreground);
+  display: grid;
   gap: 1.2rem;
+  min-height: 100%;
+  min-width: 0;
   padding: clamp(1rem, 2.4vw, 1.65rem);
+}
+
+.league-page h1,
+.league-page h2,
+.league-page h3,
+.league-page p {
+  margin-top: 0;
+}
+
+.league-page button,
+.league-page input,
+.league-page select {
+  font: inherit;
 }
 
 .league-page__hero {
@@ -212,7 +230,7 @@
 .league-gameweek-section__header h2 {
   font-size: 1.05rem;
   letter-spacing: -0.015em;
-  margin: 0.16rem 0 0;
+  margin: 0;
 }
 
 .league-gameweek-state {
@@ -237,17 +255,31 @@
 }
 
 .league-gameweek-state--underway {
-  border-color: var(--primary);
-  color: var(--primary);
+  border-color: var(--ring);
+  color: var(--ring);
 }
 
 .league-gameweek-state--underway > span {
   animation: league-pulse 1.8s ease-in-out infinite;
-  background: var(--primary);
+  background: var(--ring);
+}
+
+.league-gameweek-state--not-started {
+  border-color: var(--cdl-fdr-4);
+  color: var(--cdl-fdr-4);
+}
+
+.league-gameweek-state--not-started > span {
+  background: var(--cdl-fdr-4);
+}
+
+.league-gameweek-state--finished {
+  border-color: var(--cdl-fdr-2);
+  color: var(--cdl-fdr-2);
 }
 
 .league-gameweek-state--finished > span {
-  background: var(--muted-foreground);
+  background: var(--cdl-fdr-2);
 }
 
 .league-page__header,
@@ -691,8 +723,8 @@
   cursor: pointer;
   gap: 0.75rem;
   font: inherit;
-  min-height: 4.15rem;
-  padding: 0.65rem 0;
+  min-height: 3.7rem;
+  padding: 0.7rem 0;
   text-align: left;
   width: 100%;
 }
@@ -1262,7 +1294,11 @@
 
 @media (max-width: 700px) {
   .league-page {
-    padding: 1rem;
+    border: 0;
+    border-radius: 0;
+    gap: 0.72rem;
+    min-height: 100dvh;
+    padding: 0.75rem 0.72rem 5rem;
   }
 
   .league-page__hero {
@@ -1327,12 +1363,7 @@
   .league-fixture-row {
     align-items: stretch;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) auto auto;
-  }
-
-  .league-fixture-row__round {
-    grid-column: 1 / -1;
-    min-height: 2rem;
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 
   .league-fixture-row > .league-fixture-teams {
@@ -1345,18 +1376,13 @@
 
   .league-fixture-row > .league-fixture-teams {
     grid-column: 1;
-    grid-row: 2;
-  }
-
-  .league-fixture-row__result {
-    grid-column: 2;
-    grid-row: 2;
+    grid-row: 1;
   }
 
   .league-fixture-row__arrow {
     align-self: center;
-    grid-column: 3;
-    grid-row: 2;
+    grid-column: 2;
+    grid-row: 1;
     justify-self: end;
   }
 

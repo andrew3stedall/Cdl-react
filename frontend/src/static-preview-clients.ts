@@ -20,8 +20,8 @@ const teams: LeagueTeam[] = [
   { id: 'harbour-athletic', name: 'Harbour Athletic', shortName: 'HAR' },
 ];
 
-const currentGameweek = { id: 'gw-12', name: 'Gameweek 12', number: 12 };
-const nextGameweek = { id: 'gw-13', name: 'Gameweek 13', number: 13 };
+const currentGameweek = { id: 'gw-12', name: 'Gameweek 12', number: 12, deadlineAt: '2026-08-14T17:30:00Z' };
+const nextGameweek = { id: 'gw-13', name: 'Gameweek 13', number: 13, deadlineAt: '2026-08-21T17:30:00Z' };
 
 const currentFixture: LeagueFixture = {
   id: 'fixture-12-1',

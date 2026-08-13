@@ -15,30 +15,35 @@ jobs:
     name: Verify seeded staging fixtures
     runs-on: ubuntu-latest
     environment: staging
+    env:
+      PROJECT_ID: ${{ vars.GCP_STAGING_PROJECT_ID }}
+      PROJECT_NUMBER: ${{ vars.GCP_STAGING_PROJECT_NUMBER }}
+      WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_STAGING_WORKLOAD_IDENTITY_PROVIDER }}
+      DEPLOY_SERVICE_ACCOUNT: ${{ vars.GCP_STAGING_DEPLOY_SERVICE_ACCOUNT }}
+      REGION: australia-southeast1
+      JOB_NAME: cdl-react-staging-synthetic-seed
     steps:
       - name: Validate staging identity
-        env:
-          EXPECTED_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
-          EXPECTED_WIF_PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          EXPECTED_SERVICE_ACCOUNT: ${{ vars.GCP_SERVICE_ACCOUNT }}
         run: |
           set -euo pipefail
-          test "${EXPECTED_PROJECT_ID}" = "cdl-react-staging-ast"
-          test -n "${EXPECTED_WIF_PROVIDER}"
-          test -n "${EXPECTED_SERVICE_ACCOUNT}"
+          test "${PROJECT_ID}" = "cdl-react-staging-ast"
+          test -n "${PROJECT_NUMBER}"
+          test "${WORKLOAD_IDENTITY_PROVIDER}" = "projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
+          test "${DEPLOY_SERVICE_ACCOUNT}" = "github-deploy@${PROJECT_ID}.iam.gserviceaccount.com"
 
       - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
+        uses: google-github-actions/auth@v3
         with:
-          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+          project_id: ${{ env.PROJECT_ID }}
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.DEPLOY_SERVICE_ACCOUNT }}
 
       - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
+        uses: google-github-actions/setup-gcloud@v3
+        with:
+          version: ">= 416.0.0"
 
       - name: Verify fixture seed output
-        env:
-          PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
         run: |
           set -euo pipefail
           for attempt in $(seq 1 12); do

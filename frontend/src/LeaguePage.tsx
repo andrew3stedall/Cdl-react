@@ -517,8 +517,7 @@ function FixtureComparisonPitch({ bottomSquad, bottomStarters, topSquad, topStar
 
 function FixturePitchLineup({ players, side }: { players: FixtureSquad['starters']; side: 'top' | 'bottom' }) {
   const positions = side === 'top' ? ['GKP', 'DEF', 'MID', 'FWD'] : ['FWD', 'MID', 'DEF', 'GKP'];
-  const formation = ['DEF', 'MID', 'FWD'].map((position) => players.filter((player) => player.position === position).length).join('-');
-  return <div className={`fixture-squad-pitch__lineup fixture-squad-pitch__lineup--${side}`}><div className="fixture-squad-pitch__formation">{formation}</div>{positions.map((position) => <div className={`fixture-squad-pitch__row position-${position.toLowerCase()}`} data-position={position} key={position}>{players.filter((player) => player.position === position).map((player) => <FixturePitchPlayer key={player.id} player={player} />)}</div>)}</div>;
+  return <div className={`fixture-squad-pitch__lineup fixture-squad-pitch__lineup--${side}`}>{positions.map((position) => <div className={`fixture-squad-pitch__row position-${position.toLowerCase()}`} data-position={position} key={position}>{players.filter((player) => player.position === position).map((player) => <FixturePitchPlayer key={player.id} player={player} />)}</div>)}</div>;
 }
 
 function FixturePitchPlayer({ player }: { player: FixtureSquad['starters'][number] }) {

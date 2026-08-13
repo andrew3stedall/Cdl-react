@@ -2081,7 +2081,7 @@ export function fixtureOpponentClassName(value: number | null | undefined): stri
   return rating === null ? 'squad-page__opponent' : `squad-page__opponent squad-page__opponent--fdr-${rating}`;
 }
 
-function fixtureDifficultyTitle(value: number | null | undefined): string | undefined {
+export function fixtureDifficultyTitle(value: number | null | undefined): string | undefined {
   const rating = normalizedFixtureDifficulty(value);
   return rating === null ? undefined : `${fixtureDifficultyLabels[rating - 1]} fixture`;
 }

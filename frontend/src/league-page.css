@@ -792,6 +792,39 @@
   padding: 1rem;
 }
 
+.fixture-squad-comparison__pitches { display: grid; gap: 0; }
+.fixture-squad-pitch { min-width: 0; }
+.fixture-squad-pitch + .fixture-squad-pitch { border-top: 1px solid var(--border); margin-top: .9rem; padding-top: .9rem; }
+.fixture-squad-pitch header, .fixture-squad-pitch footer { align-items: baseline; display: flex; font-size: .75rem; gap: .5rem; justify-content: space-between; }
+.fixture-squad-pitch header strong { font-size: .86rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fixture-squad-pitch header span, .fixture-squad-pitch footer { color: var(--muted-foreground); }
+.fixture-squad-pitch__field { aspect-ratio: 4 / 5; background: color-mix(in srgb, var(--primary) 8%, var(--background)); border: 1px solid color-mix(in srgb, var(--primary) 40%, transparent); border-radius: 1rem; display: flex; flex-direction: column; justify-content: space-around; margin: .55rem 0; max-height: 28rem; min-height: 20rem; overflow: hidden; padding: .55rem .35rem; position: relative; }
+.fixture-squad-pitch__field::before { border: 1px solid color-mix(in srgb, var(--primary) 28%, transparent); border-radius: 50%; content: ''; height: 20%; left: 50%; position: absolute; top: 40%; transform: translateX(-50%); width: 30%; }
+.fixture-squad-pitch__field::after { border-top: 1px solid color-mix(in srgb, var(--primary) 35%, transparent); content: ''; left: 7%; position: absolute; right: 7%; top: 50%; }
+.fixture-squad-pitch__row { align-items: center; display: flex; flex: 1; gap: .2rem; justify-content: space-around; min-height: 0; position: relative; z-index: 1; }
+.fixture-squad-pitch__player { display: grid; justify-items: center; max-width: 4.2rem; min-width: 0; text-align: center; }
+.fixture-squad-pitch__player b { align-items: center; background: var(--card); border: 1px solid var(--primary); border-radius: 50%; color: var(--foreground); display: grid; font-size: .65rem; height: 2.1rem; justify-content: center; width: 2.1rem; }
+.fixture-squad-pitch__player small { font-size: .59rem; margin-top: .15rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fixture-squad-pitch--opponent .fixture-squad-pitch__player b { border-style: dashed; }
+.fixture-lineup-prediction { border-top: 1px solid var(--border); display: grid; gap: .7rem; padding-top: 1rem; }
+.fixture-lineup-prediction > header { align-items: center; display: flex; justify-content: space-between; }
+.fixture-lineup-prediction h3 { font-size: .95rem; margin-top: .15rem; }
+.fixture-lineup-prediction > header > strong { color: var(--primary); font-size: 1rem; }
+.fixture-lineup-prediction__hint { color: var(--muted-foreground); font-size: .78rem; line-height: 1.45; }
+.fixture-lineup-prediction__status { border: 1px solid var(--border); border-radius: .45rem; color: var(--muted-foreground); font-size: .72rem; padding: .5rem .6rem; }
+.fixture-lineup-prediction__status[data-valid='true'] { border-color: var(--primary); color: var(--primary); }
+.fixture-lineup-prediction__players { display: grid; gap: .65rem; }
+.fixture-lineup-prediction__group { display: grid; gap: .35rem; }
+.fixture-lineup-prediction__group > strong { color: var(--muted-foreground); font-size: .68rem; letter-spacing: .05em; text-transform: uppercase; }
+.fixture-lineup-prediction__group > div { display: grid; gap: .35rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.fixture-lineup-prediction__player { align-items: center; background: var(--secondary); border: 1px solid var(--border); border-radius: .45rem; color: var(--foreground); display: flex; font: inherit; justify-content: space-between; min-height: 2.3rem; padding: .35rem .45rem; text-align: left; }
+.fixture-lineup-prediction__player:hover:not(:disabled), .fixture-lineup-prediction__player.is-selected { border-color: var(--primary); }
+.fixture-lineup-prediction__player.is-selected { background: color-mix(in srgb, var(--primary) 12%, var(--secondary)); }
+.fixture-lineup-prediction__player:disabled { cursor: not-allowed; opacity: .45; }
+.fixture-lineup-prediction__player span { font-size: .72rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fixture-lineup-prediction__player small { color: var(--muted-foreground); font-size: .61rem; margin-left: .35rem; white-space: nowrap; }
+@media (max-width: 560px) { .fixture-squad-pitch__field { min-height: 18rem; } .fixture-squad-pitch__player { max-width: 3.3rem; } .fixture-squad-pitch__player small { font-size: .52rem; } .fixture-lineup-prediction__group > div { grid-template-columns: 1fr; } }
+
 .league-drawer__body section {
   display: grid;
   gap: 0.55rem;

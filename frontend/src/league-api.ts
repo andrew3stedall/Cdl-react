@@ -45,6 +45,23 @@ export interface FixtureDetailResponse {
   notes: string[];
 }
 
+export interface FixtureSquadPlayer {
+  id: string;
+  displayName: string;
+  position: string;
+  points: number;
+  form: number;
+  slot: 'starter' | 'bench';
+}
+
+export interface FixtureSquad {
+  team: LeagueTeam;
+  isUserTeam: boolean;
+  players: FixtureSquadPlayer[];
+  starters: FixtureSquadPlayer[];
+  bench: FixtureSquadPlayer[];
+}
+
 export interface LeagueFixturesResponse {
   gameweek: LeagueGameweek | null;
   fixtures: LeagueFixture[];
@@ -107,6 +124,7 @@ export interface LeagueSnapshot {
 export interface LeagueClient {
   getLeagueSnapshot(): Promise<LeagueSnapshot>;
   getFixtureDetail?(fixtureId: string): Promise<FixtureDetailResponse>;
+  getFixtureSquads?(fixtureId: string): Promise<FixtureSquad[]>;
 }
 
 interface ApiTeam {
@@ -247,6 +265,17 @@ export class HttpLeagueClient implements LeagueClient {
     };
   }
 
+  async getFixtureSquads(fixtureId: string): Promise<FixtureSquad[]> {
+    const response = await this.get<ApiFixtureSquad[]>(`/league/fixtures/${encodeURIComponent(fixtureId)}/squads`);
+    return response.map((squad) => ({
+      team: mapTeam(squad.team),
+      isUserTeam: squad.is_user_team === true,
+      players: (squad.players ?? squad.starters.concat(squad.bench)).map(mapFixtureSquadPlayer),
+      starters: squad.starters.map(mapFixtureSquadPlayer),
+      bench: squad.bench.map(mapFixtureSquadPlayer),
+    }));
+  }
+
   private async get<T>(path: string): Promise<T> {
     const response = await fetch(`${this.baseUrl}${path}`, {
       headers: { Accept: 'application/json' },
@@ -259,6 +288,27 @@ export class HttpLeagueClient implements LeagueClient {
 
     return (await response.json()) as T;
   }
+}
+
+interface ApiFixtureSquadPlayer {
+  id: string;
+  display_name: string;
+  position: string;
+  points: number;
+  form: number;
+  slot: 'starter' | 'bench';
+}
+
+interface ApiFixtureSquad {
+  team: ApiTeam;
+  is_user_team?: boolean;
+  players?: ApiFixtureSquadPlayer[];
+  starters: ApiFixtureSquadPlayer[];
+  bench: ApiFixtureSquadPlayer[];
+}
+
+function mapFixtureSquadPlayer(player: ApiFixtureSquadPlayer): FixtureSquadPlayer {
+  return { id: player.id, displayName: player.display_name, position: player.position, points: player.points, form: player.form, slot: player.slot };
 }
 
 function mapTeam(team: ApiTeam): LeagueTeam {

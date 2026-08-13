@@ -798,14 +798,36 @@
 .fixture-squad-pitch header, .fixture-squad-pitch footer { align-items: baseline; display: flex; font-size: .75rem; gap: .5rem; justify-content: space-between; }
 .fixture-squad-pitch header strong { font-size: .86rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .fixture-squad-pitch header span, .fixture-squad-pitch footer { color: var(--muted-foreground); }
-.fixture-squad-pitch__field { aspect-ratio: 4 / 5; background: color-mix(in srgb, var(--primary) 8%, var(--background)); border: 1px solid color-mix(in srgb, var(--primary) 40%, transparent); border-radius: 1rem; display: flex; flex-direction: column; justify-content: space-around; margin: .55rem 0; max-height: 28rem; min-height: 20rem; overflow: hidden; padding: .55rem .35rem; position: relative; }
-.fixture-squad-pitch__field::before { border: 1px solid color-mix(in srgb, var(--primary) 28%, transparent); border-radius: 50%; content: ''; height: 20%; left: 50%; position: absolute; top: 40%; transform: translateX(-50%); width: 30%; }
-.fixture-squad-pitch__field::after { border-top: 1px solid color-mix(in srgb, var(--primary) 35%, transparent); content: ''; left: 7%; position: absolute; right: 7%; top: 50%; }
-.fixture-squad-pitch__row { align-items: center; display: flex; flex: 1; gap: .2rem; justify-content: space-around; min-height: 0; position: relative; z-index: 1; }
-.fixture-squad-pitch__player { display: grid; justify-items: center; max-width: 4.2rem; min-width: 0; text-align: center; }
-.fixture-squad-pitch__player b { align-items: center; background: var(--card); border: 1px solid var(--primary); border-radius: 50%; color: var(--foreground); display: grid; font-size: .65rem; height: 2.1rem; justify-content: center; width: 2.1rem; }
-.fixture-squad-pitch__player small { font-size: .59rem; margin-top: .15rem; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.fixture-squad-pitch--opponent .fixture-squad-pitch__player b { border-style: dashed; }
+.fixture-squad-pitch__field {
+  --squad-text: var(--foreground);
+  --squad-pitch: color-mix(in srgb, var(--primary) 8%, var(--background));
+  --squad-form-negative: #a8777e;
+  --squad-form-low: #71889a;
+  --squad-form-steady: #a9966e;
+  --squad-form-high: #78a39a;
+  --squad-form-empty: color-mix(in srgb, var(--foreground) 16%, transparent);
+  --squad-pitch-token-size: clamp(3.2rem, 15vw, 5.1rem);
+  background: var(--squad-pitch);
+  border: 1px solid color-mix(in srgb, var(--primary) 40%, transparent);
+  border-radius: 1rem;
+  height: clamp(26rem, 76vw, 34rem);
+  margin: .55rem 0;
+  overflow: hidden;
+  position: relative;
+}
+.fixture-squad-pitch__field::before { border: 2px solid color-mix(in srgb, var(--foreground) 24%, transparent); border-radius: .4rem; content: ''; inset: -.75rem .75rem .75rem; pointer-events: none; position: absolute; z-index: 0; }
+.fixture-squad-pitch__formation { color: var(--foreground); font-size: .76rem; font-weight: 800; left: .8rem; position: absolute; top: .7rem; z-index: 2; }
+.fixture-squad-pitch__markings { inset: 1.4rem .75rem; pointer-events: none; position: absolute; }
+.fixture-squad-pitch__markings span:nth-child(1) { background: color-mix(in srgb, var(--foreground) 24%, transparent); height: 2px; left: 0; position: absolute; right: 0; top: 50%; }
+.fixture-squad-pitch__markings span:nth-child(2) { border: 2px solid color-mix(in srgb, var(--foreground) 24%, transparent); border-radius: 999px; height: 7.5rem; left: 50%; position: absolute; top: 50%; transform: translate(-50%, -50%); width: 7.5rem; }
+.fixture-squad-pitch__markings span:nth-child(3), .fixture-squad-pitch__markings span:nth-child(4) { border: 2px solid color-mix(in srgb, var(--foreground) 24%, transparent); height: 5.8rem; left: 26%; position: absolute; width: 48%; }
+.fixture-squad-pitch__markings span:nth-child(3) { border-top: 0; top: -2.15rem; }
+.fixture-squad-pitch__markings span:nth-child(4) { border-bottom: 0; bottom: -.75rem; }
+.fixture-squad-pitch__lineup { align-content: space-evenly; display: grid; gap: 1.15rem; grid-template-rows: repeat(4, auto); inset: 2.1rem .65rem 1.45rem; min-height: 0; position: absolute; z-index: 1; }
+.fixture-squad-pitch__row { align-items: center; background: transparent; display: flex; gap: clamp(.28rem, 1.1vw, .7rem); justify-content: center; min-width: 0; }
+.fixture-squad-pitch__player { cursor: default; }
+.fixture-squad-pitch__player small { color: var(--foreground); font-size: clamp(.54rem, 1.3vw, .66rem); font-weight: 800; }
+.fixture-squad-pitch--opponent .fixture-squad-pitch__player { --squad-form-surface: color-mix(in srgb, var(--squad-pitch, var(--background)) 92%, var(--primary) 8%); }
 .fixture-lineup-prediction { border-top: 1px solid var(--border); display: grid; gap: .7rem; padding-top: 1rem; }
 .fixture-lineup-prediction > header { align-items: center; display: flex; justify-content: space-between; }
 .fixture-lineup-prediction h3 { font-size: .95rem; margin-top: .15rem; }

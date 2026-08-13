@@ -17,6 +17,7 @@ import { Button } from './components/ui/button';
 import { Card } from './components/ui/card';
 import { Select } from './components/ui/select';
 import type { AttackDirection } from './contracts';
+import { FormDots, formBand, shortPlayerName, TeamShirt } from './SquadPage';
 import {
   HttpLeagueClient,
   type FixtureDetailResponse,
@@ -477,7 +478,37 @@ function SquadComparison({ attackDirection, squads }: { attackDirection: AttackD
 
 function FixtureComparisonPitch({ attackDirection, isUserTeam, squad, starters }: { attackDirection: AttackDirection; isUserTeam: boolean; squad: FixtureSquad; starters: FixtureSquad['starters'] }) {
   const positions = attackDirection === 'down' ? ['GKP', 'DEF', 'MID', 'FWD'] : ['FWD', 'MID', 'DEF', 'GKP'];
-  return <article className={`fixture-squad-pitch fixture-squad-pitch--${isUserTeam ? 'user' : 'opponent'}`} data-attack-direction={attackDirection} data-team-role={isUserTeam ? 'user' : 'opponent'}><header><strong>{squad.team.name}</strong><span>{isUserTeam ? 'Your Starting XI' : 'Predicted XI'}</span></header><div aria-label={`${squad.team.name} pitch`} className="fixture-squad-pitch__field">{positions.map((position) => <div className="fixture-squad-pitch__row" data-position={position} key={position}>{starters.filter((player) => player.position === position).map((player) => <span className="fixture-squad-pitch__player" key={player.id} title={`${player.displayName} · ${player.points} pts`}><b>{playerInitials(player.displayName)}</b><small>{player.displayName}</small></span>)}</div>)}</div><footer><strong>{isUserTeam ? '11 selected' : `${starters.length} of 11 predicted`}</strong><span>{attackDirection === 'up' ? 'Attacking up' : 'Attacking down'}</span></footer></article>;
+  const formation = ['DEF', 'MID', 'FWD'].map((position) => starters.filter((player) => player.position === position).length).join('-');
+  return (
+    <article className={`fixture-squad-pitch fixture-squad-pitch--${isUserTeam ? 'user' : 'opponent'}`} data-attack-direction={attackDirection} data-team-role={isUserTeam ? 'user' : 'opponent'}>
+      <header><strong>{squad.team.name}</strong><span>{isUserTeam ? 'Your Starting XI' : 'Predicted XI'}</span></header>
+      <div aria-label={`${squad.team.name} pitch`} className={`fixture-squad-pitch__field attack-${attackDirection}`}>
+        <div aria-hidden="true" className="fixture-squad-pitch__markings"><span /><span /><span /><span /></div>
+        <div className="fixture-squad-pitch__formation">{formation}</div>
+        <div className="fixture-squad-pitch__lineup">
+          {positions.map((position) => (
+            <div className={`fixture-squad-pitch__row position-${position.toLowerCase()}`} data-position={position} key={position}>
+              {starters.filter((player) => player.position === position).map((player) => {
+                const shirtTeam = player.club?.shortName ?? player.club?.name ?? squad.team.shortName ?? squad.team.name;
+                const clubCode = player.club?.shortName ?? player.club?.name ?? squad.team.shortName ?? squad.team.name;
+                return (
+                  <div className={`squad-page__pitch-player fixture-squad-pitch__player position-${player.position.toLowerCase()} form-band-${formBand(player.form)}`} data-player-id={player.id} key={player.id} title={`${player.displayName} · ${player.points} pts`}>
+                    <span aria-hidden="true" className="squad-page__pitch-shirt-crop"><TeamShirt large team={shirtTeam} /></span>
+                    <strong className="squad-page__pitch-player-name">{shortPlayerName(player.displayName)}</strong>
+                    <span className="squad-page__pitch-player-form"><FormDots value={player.form} /></span>
+                    <small>{clubCode}</small>
+                    {player.isCaptain ? <span className="squad-page__captain">C</span> : null}
+                    {player.isViceCaptain ? <span className="squad-page__captain vice">VC</span> : null}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      </div>
+      <footer><strong>{isUserTeam ? '11 selected' : `${starters.length} of 11 predicted`}</strong><span>{attackDirection === 'up' ? 'Attacking up' : 'Attacking down'}</span></footer>
+    </article>
+  );
 }
 
 function OpponentPrediction({ onToggle, players, predictedIds, squad }: { onToggle: (player: FixtureSquad['starters'][number]) => void; players: FixtureSquad['players']; predictedIds: Set<string>; squad: FixtureSquad }) {
@@ -507,10 +538,6 @@ function positionMaximum(position: string): number {
 
 function positionLabel(position: string): string {
   return { GKP: 'Goalkeeper', DEF: 'Defender', MID: 'Midfielder', FWD: 'Forward' }[position] ?? position;
-}
-
-function playerInitials(displayName: string): string {
-  return displayName.split(/\s+/).map((part) => part[0]).join('').slice(0, 3).toUpperCase();
 }
 
 function LeaguePulse({ snapshot }: { snapshot: LeagueSnapshot }) {

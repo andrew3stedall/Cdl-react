@@ -49,9 +49,12 @@ export interface FixtureSquadPlayer {
   id: string;
   displayName: string;
   position: string;
+  club?: LeagueTeam;
   points: number;
   form: number;
   slot: 'starter' | 'bench';
+  isCaptain?: boolean;
+  isViceCaptain?: boolean;
 }
 
 export interface FixtureSquad {
@@ -294,9 +297,12 @@ interface ApiFixtureSquadPlayer {
   id: string;
   display_name: string;
   position: string;
+  club?: ApiTeam | null;
   points: number;
   form: number;
   slot: 'starter' | 'bench';
+  is_captain?: boolean;
+  is_vice_captain?: boolean;
 }
 
 interface ApiFixtureSquad {
@@ -308,7 +314,17 @@ interface ApiFixtureSquad {
 }
 
 function mapFixtureSquadPlayer(player: ApiFixtureSquadPlayer): FixtureSquadPlayer {
-  return { id: player.id, displayName: player.display_name, position: player.position, points: player.points, form: player.form, slot: player.slot };
+  return {
+    id: player.id,
+    displayName: player.display_name,
+    position: player.position,
+    club: player.club ? mapTeam(player.club) : undefined,
+    points: player.points,
+    form: player.form,
+    slot: player.slot,
+    isCaptain: player.is_captain === true,
+    isViceCaptain: player.is_vice_captain === true,
+  };
 }
 
 function mapTeam(team: ApiTeam): LeagueTeam {

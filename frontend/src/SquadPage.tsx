@@ -1665,7 +1665,7 @@ function PositionMarker({ position }: { position: string }) {
   return <span aria-hidden="true" className={`squad-page__position-marker position-${normalizePosition(position).toLowerCase()}`} title={`${positionLabel(position)} player`} />;
 }
 
-function TeamShirt({ large = false, team }: { large?: boolean; team: string }) {
+export function TeamShirt({ large = false, team }: { large?: boolean; team: string }) {
   const normalized = team.trim().toLowerCase();
   const officialSrc = officialFplShirtUrl(team, large);
   const fallbackSrc = `/team-shirts/${normalized}.svg`;
@@ -1697,7 +1697,7 @@ function Metric({ dots = false, label, placeholder = false, value }: { dots?: bo
   return <div className={`squad-page__metric ${placeholder ? 'is-placeholder' : ''}`}><span>{label}</span><strong>{value}</strong>{dots ? <FormDots value={Number(value)} /> : null}{placeholder ? <small>Not in source</small> : null}</div>;
 }
 
-function FormDots({ value }: { value: number | null }) {
+export function FormDots({ value }: { value: number | null }) {
   const active = value === null || Number.isNaN(value)
     ? 0
     : value < 0
@@ -2054,7 +2054,7 @@ function formatInteger(value: number | null): string {
   return value === null || Number.isNaN(value) ? '—' : String(value);
 }
 
-function formBand(value: number | null): 'negative' | 'low' | 'steady' | 'high' | 'unknown' {
+export function formBand(value: number | null): 'negative' | 'low' | 'steady' | 'high' | 'unknown' {
   if (value === null || Number.isNaN(value)) return 'unknown';
   if (value < 0) return 'negative';
   if (value < 4) return 'low';
@@ -2109,7 +2109,7 @@ function statusDescription(player: PlayerView): string {
   return 'Currently targeted in trade activity.';
 }
 
-function shortPlayerName(name: string): string {
+export function shortPlayerName(name: string): string {
   const parts = name.trim().split(/\s+/);
   if (parts.length <= 2) return name;
   return `${parts[0][0]}. ${parts.at(-1)}`;

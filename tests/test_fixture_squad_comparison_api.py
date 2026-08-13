@@ -86,6 +86,8 @@ def test_upcoming_fixture_returns_both_squads_with_best_valid_xis() -> None:
     payload = response.json()
     assert [squad["team"]["name"] for squad in payload] == ["Home Team", "Away Team"]
     assert all(len(squad["starters"]) == 11 for squad in payload)
+    assert payload[0]["starters"][0]["club"]["name"] == "Club"
+    assert payload[0]["starters"][0]["is_captain"] is False
     assert all(
         sum(player["position"] == position for player in squad["starters"]) == count
         for squad in payload

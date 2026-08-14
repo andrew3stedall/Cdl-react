@@ -25,6 +25,8 @@ resource "google_cloud_run_v2_service" "this" {
       max_instance_count = var.max_instance_count
     }
 
+    max_instance_request_concurrency = var.max_instance_request_concurrency
+
     containers {
       image = var.image
 

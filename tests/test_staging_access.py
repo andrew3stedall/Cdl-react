@@ -1,7 +1,14 @@
+import asyncio
+
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy.exc import TimeoutError as SQLAlchemyTimeoutError
+from starlette.requests import Request
+from starlette.responses import PlainTextResponse
 
 from cdl_api.app import create_app
+from cdl_api.settings import Settings
+from cdl_api.staging_access import build_staging_access_middleware
 
 
 @pytest.fixture
@@ -89,3 +96,37 @@ def test_staging_rejects_partial_google_configuration(
 
     with pytest.raises(RuntimeError, match="both a client ID and an email allowlist"):
         create_app()
+
+
+def test_staging_access_converts_pool_timeout_to_503() -> None:
+    class PoolTimeoutAuthService:
+        @staticmethod
+        def get_session(session_id: str | None) -> None:
+            raise SQLAlchemyTimeoutError("connection pool exhausted")
+
+    settings = Settings(
+        environment="staging",
+        development_login_secret="staging-test-secret",
+    )
+    middleware = build_staging_access_middleware(settings, PoolTimeoutAuthService())
+    request = Request(
+        {
+            "type": "http",
+            "method": "GET",
+            "path": "/api/contracts/theme-presets",
+            "raw_path": b"/api/contracts/theme-presets",
+            "query_string": b"",
+            "headers": [],
+            "client": ("testclient", 123),
+            "server": ("testserver", 80),
+            "scheme": "http",
+            "http_version": "1.1",
+        }
+    )
+
+    async def call_next(_: Request) -> PlainTextResponse:
+        return PlainTextResponse("ok")
+
+    response = asyncio.run(middleware(request, call_next))
+
+    assert response.status_code == 503

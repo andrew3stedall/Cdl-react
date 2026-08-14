@@ -152,9 +152,23 @@ async function mockApi(page) {
         },
       });
     }
+    if (path === '/api/squad/workspace') {
+      return route.fulfill({
+        json: {
+          summary: squadSummary,
+          notifications: { notifications: [], proposed_trade_count: trades.filter((trade) => trade.status === 'proposed').length },
+        },
+      });
+    }
     if (path === '/api/squad/summary') return route.fulfill({ json: squadSummary });
     if (path === '/api/team-selection') return route.fulfill({ json: teamSelection });
     if (path === '/api/scouting/players') return route.fulfill({ json: scoutingPlayers });
+    if (path === '/api/squad/changes' && request.method() === 'GET') {
+      return route.fulfill({ json: { available_to_add: scoutingPlayers.players.filter((player) => player.status === 'available') } });
+    }
+    if (path === '/api/squad/changes' && request.method() === 'POST') {
+      return route.fulfill({ json: squadSummary });
+    }
 
     if (path === '/api/interests' && request.method() === 'GET') {
       return route.fulfill({ json: interests });
@@ -339,10 +353,14 @@ async function testSquadWorkspace(browser, viewport) {
   const playerDrawer = page.locator('.squad-page__drawer');
   await playerDrawer.getByText(/Release to free agency/i).waitFor();
   await captureReviewState(page, viewport, 'squad-reference-player-drawer');
-  await playerDrawer.getByRole('button', { name: /^Compare/ }).click();
+  await Promise.all([
+    page.waitForResponse((response) => new URL(response.url()).pathname === '/api/scouting/players'),
+    playerDrawer.getByRole('button', { name: /^Compare/ }).click(),
+  ]);
 
   const comparisonSearch = page.getByRole('textbox', { name: 'Search comparison players' });
   await comparisonSearch.fill('Rival Winger');
+  await page.getByText('Rival Winger', { exact: true }).waitFor();
   await page.getByRole('button').filter({ hasText: 'Rival Winger' }).last().click();
   const comparisonCards = page.locator('.squad-page__compare-card');
   if (await comparisonCards.count() !== 2) throw new Error('Expected two comparison cards');

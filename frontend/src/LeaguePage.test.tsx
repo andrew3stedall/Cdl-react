@@ -74,7 +74,10 @@ const snapshot: LeagueSnapshot = {
 
 class MemoryNotificationsClient {
   async getNotifications() {
-    return { notifications: [{ id: 'notice-1', title: 'Fixture update', message: 'Gameweek 12 is underway.', action_href: '/league', kind: 'fixture' }] };
+    return {
+      notifications: [{ id: 'notice-1', title: 'Fixture update', message: 'Gameweek 12 is underway.', action_href: '/league', kind: 'fixture' }],
+      proposed_trade_count: 0,
+    };
   }
 }
 

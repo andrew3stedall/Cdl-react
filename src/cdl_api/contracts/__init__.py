@@ -91,6 +91,7 @@ from cdl_api.contracts.squad import (
     TradeUpdateRequest,
     TradesResponse,
 )
+from cdl_api.contracts.squad_workspace import SquadWorkspaceResponse
 from cdl_api.contracts.team_selection import (
     ChipState,
     ChipStatus,
@@ -177,6 +178,7 @@ __all__ = [
     "SessionState",
     "SessionUser",
     "SquadSummaryResponse",
+    "SquadWorkspaceResponse",
     "TeamSelectionPlayer",
     "TeamSelectionResponse",
     "TeamSelectionValidationResponse",

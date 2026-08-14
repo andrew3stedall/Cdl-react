@@ -78,6 +78,57 @@ beforeEach(() => {
     'fetch',
     vi.fn(async (input: RequestInfo | URL) => {
       const path = String(input);
+      if (path === '/api/squad/workspace') {
+        return new Response(JSON.stringify({
+          summary: {
+            manager_team: { id: 'team-1', name: 'Exeter Gently', short_name: 'EXE' },
+            gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1, deadline_at: '2026-08-14T17:30:00Z' },
+            players: [
+              {
+                id: 'fpl-411',
+                display_name: 'Haaland',
+                position: 'FWD',
+                epl_team: { id: 'mci', name: 'Manchester City', short_name: 'MCI' },
+                draft_team: { id: 'team-1', name: 'Exeter Gently', short_name: 'EXE' },
+                status: 'owned',
+                points: 52,
+                form: 7.4,
+                value: 14.0,
+                selected_by_percent: 62.1,
+                availability_status: 'a',
+                chance_of_playing_next_round: null,
+                next_fixture: {
+                  fixture_id: 'fixture-haaland',
+                  opponent: { id: 'che', name: 'Chelsea', short_name: 'CHE' },
+                  difficulty: 3,
+                  is_home: true,
+                },
+              },
+              {
+                id: 'fpl-235',
+                display_name: 'Pickford',
+                position: 'GKP',
+                epl_team: { id: 'eve', name: 'Everton', short_name: 'EVE' },
+                draft_team: { id: 'team-1', name: 'Exeter Gently', short_name: 'EXE' },
+                status: 'owned',
+                points: 31,
+                form: 4.8,
+                value: 5.0,
+                selected_by_percent: 18.0,
+                availability_status: 'available',
+                chance_of_playing_next_round: 100,
+                next_fixture: {
+                  fixture_id: 'fixture-pickford',
+                  opponent: { id: 'ars', name: 'Arsenal', short_name: 'ARS' },
+                  difficulty: 4,
+                  is_home: false,
+                },
+              },
+            ],
+          },
+          notifications: { notifications: [], proposed_trade_count: 0 },
+        }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
       if (path === '/api/squad/summary') {
         return new Response(JSON.stringify({
           manager_team: { id: 'team-1', name: 'Exeter Gently', short_name: 'EXE' },
@@ -313,6 +364,18 @@ function setInputValue(input: HTMLInputElement, value: string) {
 }
 
 describe('SquadPage', () => {
+  test('loads the consolidated workspace and team-selection reads first', async () => {
+    await renderPage();
+
+    const paths = vi.mocked(fetch).mock.calls.map(([input]) => String(input));
+    expect(paths).toContain('/api/squad/workspace');
+    expect(paths).toContain('/api/team-selection');
+    expect(paths).not.toContain('/api/scouting/players');
+    expect(paths).not.toContain('/api/squad/changes');
+    expect(paths).not.toContain('/api/trades');
+    expect(paths).not.toContain('/api/squad/notifications');
+  });
+
   test('uses the application navigation handler for page links', async () => {
     const onNavigate = vi.fn();
     const { container } = await renderPage(undefined, 'up', onNavigate);
@@ -516,12 +579,18 @@ describe('SquadPage', () => {
     await act(async () => {
       buttonByText(container, 'Compare').click();
       await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+      await new Promise((resolve) => setTimeout(resolve, 0));
     });
 
     const search = container.querySelector('input[aria-label="Search comparison players"]') as HTMLInputElement;
     await act(async () => {
       setInputValue(search, 'Palmer');
       await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+      await new Promise((resolve) => setTimeout(resolve, 0));
     });
 
     await act(async () => {

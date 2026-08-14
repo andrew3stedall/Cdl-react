@@ -206,7 +206,10 @@ class SquadManagementService:
                     kind="availability",
                 )
             )
-        return SquadNotificationsResponse(notifications=notifications)
+        return SquadNotificationsResponse(
+            notifications=notifications,
+            proposed_trade_count=len(proposed_trades),
+        )
 
     def list_interests(self) -> list[InterestResponse]:
         return self._repository.list_interests()

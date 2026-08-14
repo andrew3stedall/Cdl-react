@@ -92,16 +92,32 @@ export interface SquadApiNotification {
   kind: string;
 }
 
+export interface SquadApiNotificationsResponse {
+  notifications: SquadApiNotification[];
+  proposed_trade_count: number;
+}
+
+export interface SquadApiWorkspaceResponse {
+  summary: SquadApiSummary;
+  notifications: SquadApiNotificationsResponse;
+}
+
+export interface SquadWorkspace {
+  summary: SquadApiSummary;
+  notifications: SquadApiNotificationsResponse;
+}
+
 export interface SquadApiChangesResponse {
   available_to_add: SquadApiPlayer[];
 }
 
 export interface SquadClient {
+  getWorkspace(): Promise<SquadWorkspace>;
   getSummary(): Promise<SquadApiSummary>;
   getScoutingPlayers(): Promise<SquadApiScoutingResponse>;
   getTrades(): Promise<{ trades: SquadApiTrade[] }>;
   getChanges(): Promise<SquadApiChangesResponse>;
-  getNotifications(): Promise<{ notifications: SquadApiNotification[] }>;
+  getNotifications(): Promise<SquadApiNotificationsResponse>;
   getPlayerHistory(playerId: string): Promise<SquadApiHistoryResponse>;
   createTrade(
     offeredToTeamId: string,
@@ -124,6 +140,14 @@ export class SquadApiError extends Error {
 export class HttpSquadClient implements SquadClient {
   constructor(private readonly baseUrl = '/api') {}
 
+  async getWorkspace(): Promise<SquadWorkspace> {
+    const response = await this.request<SquadApiWorkspaceResponse>('/squad/workspace');
+    return {
+      summary: response.summary,
+      notifications: response.notifications,
+    };
+  }
+
   getSummary(): Promise<SquadApiSummary> {
     return this.request<SquadApiSummary>('/squad/summary');
   }
@@ -140,8 +164,8 @@ export class HttpSquadClient implements SquadClient {
     return this.request<SquadApiChangesResponse>('/squad/changes');
   }
 
-  getNotifications(): Promise<{ notifications: SquadApiNotification[] }> {
-    return this.request<{ notifications: SquadApiNotification[] }>('/squad/notifications');
+  getNotifications(): Promise<SquadApiNotificationsResponse> {
+    return this.request<SquadApiNotificationsResponse>('/squad/notifications');
   }
 
   getPlayerHistory(playerId: string): Promise<SquadApiHistoryResponse> {

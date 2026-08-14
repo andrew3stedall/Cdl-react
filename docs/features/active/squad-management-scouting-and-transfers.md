@@ -52,6 +52,8 @@ The legacy page remains a behavioural reference. It must not be recreated as one
 
 ## API Requirements
 
+- `GET /api/squad/workspace` for the initial Squad-management read model and
+  lightweight attention data.
 - `GET /api/squad/summary`
 - `GET /api/scouting/players`
 - `POST /api/interests`
@@ -59,6 +61,11 @@ The legacy page remains a behavioural reference. It must not be recreated as one
 - `GET /api/trades`
 - `POST /api/trades`
 - `PUT /api/trades/{trade_id}`
+
+The canonical `/squad` page uses the workspace read model together with the
+independent `GET /api/team-selection` read. Scouting players and available
+squad-change rights are loaded when their drawers or panels are opened rather
+than during first paint.
 
 ## React Requirements
 

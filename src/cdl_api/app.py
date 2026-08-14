@@ -17,6 +17,7 @@ from cdl_api.routers.preferences import router as preferences_router
 from cdl_api.routers.rules import router as rules_router
 from cdl_api.routers.squad import router as squad_router
 from cdl_api.routers.team_selection import router as team_selection_router
+from cdl_api.routers.workspace import router as workspace_router
 from cdl_api.services.auth import AuthenticationService
 from cdl_api.settings import DEFAULT_DEVELOPMENT_LOGIN_SECRET, get_settings
 from cdl_api.staging_access import build_staging_access_middleware
@@ -54,6 +55,7 @@ def create_app() -> FastAPI:
     app.include_router(history_router, prefix=settings.api_prefix)
     app.include_router(squad_router, prefix=settings.api_prefix)
     app.include_router(team_selection_router, prefix=settings.api_prefix)
+    app.include_router(workspace_router, prefix=settings.api_prefix)
 
     @app.get("/health")
     def health() -> dict[str, str]:

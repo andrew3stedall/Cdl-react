@@ -32,6 +32,7 @@ def test_inventory_covers_every_mounted_product_router() -> None:
         "history_router",
         "squad_router",
         "team_selection_router",
+        "workspace_router",
     }
     assert mounted_routers == documented_boundaries
     for router in documented_boundaries:

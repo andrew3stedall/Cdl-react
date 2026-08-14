@@ -459,6 +459,21 @@ const staticPreviewSquadSummary: SquadApiSummary = {
 };
 
 export const staticPreviewSquadClient: SquadClient = {
+  async getWorkspace() {
+    return {
+      summary: structuredClone(staticPreviewSquadSummary),
+      notifications: {
+        notifications: [{
+          id: 'preview-notification-1',
+          title: 'Fixture difficulty updated',
+          message: 'Review the upcoming fixture run before making your next transfer.',
+          action_href: '/fdr',
+          kind: 'fixture_difficulty',
+        }],
+        proposed_trade_count: 0,
+      },
+    };
+  },
   async getSummary() {
     return structuredClone(staticPreviewSquadSummary);
   },
@@ -480,6 +495,7 @@ export const staticPreviewSquadClient: SquadClient = {
         action_href: '/fdr',
         kind: 'fixture_difficulty',
       }],
+      proposed_trade_count: 0,
     };
   },
   async getPlayerHistory(): Promise<SquadApiHistoryResponse> {

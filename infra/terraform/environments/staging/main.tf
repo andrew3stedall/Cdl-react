@@ -201,9 +201,9 @@ module "cloud_run_api" {
       secret = module.runtime_secrets.secret_names["cdl-google-client-id"]
     }
   } : {})
-  allow_public_invoker = var.allow_public_invoker
-  min_instance_count              = 0
-  max_instance_count              = 2
+  allow_public_invoker             = var.allow_public_invoker
+  min_instance_count               = 0
+  max_instance_count               = 2
   max_instance_request_concurrency = 10
 
   depends_on = [

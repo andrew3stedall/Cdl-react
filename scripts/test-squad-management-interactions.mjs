@@ -152,9 +152,23 @@ async function mockApi(page) {
         },
       });
     }
+    if (path === '/api/squad/workspace') {
+      return route.fulfill({
+        json: {
+          summary: squadSummary,
+          notifications: { notifications: [], proposed_trade_count: trades.filter((trade) => trade.status === 'proposed').length },
+        },
+      });
+    }
     if (path === '/api/squad/summary') return route.fulfill({ json: squadSummary });
     if (path === '/api/team-selection') return route.fulfill({ json: teamSelection });
     if (path === '/api/scouting/players') return route.fulfill({ json: scoutingPlayers });
+    if (path === '/api/squad/changes' && request.method() === 'GET') {
+      return route.fulfill({ json: { available_to_add: scoutingPlayers.players.filter((player) => player.status === 'available') } });
+    }
+    if (path === '/api/squad/changes' && request.method() === 'POST') {
+      return route.fulfill({ json: squadSummary });
+    }
 
     if (path === '/api/interests' && request.method() === 'GET') {
       return route.fulfill({ json: interests });

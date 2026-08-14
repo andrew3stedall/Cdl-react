@@ -29,6 +29,7 @@ def test_settings_expose_database_and_repository_controls() -> None:
         database_url="postgresql+psycopg://example/db",
         database_pool_size=7,
         database_max_overflow=3,
+        database_pool_timeout_seconds=12,
         database_pool_recycle_seconds=240,
         environment="test",
         repository_mode="memory",
@@ -37,6 +38,7 @@ def test_settings_expose_database_and_repository_controls() -> None:
     assert settings.database_url == "postgresql+psycopg://example/db"
     assert settings.database_pool_size == 7
     assert settings.database_max_overflow == 3
+    assert settings.database_pool_timeout_seconds == 12
     assert settings.database_pool_recycle_seconds == 240
     assert settings.environment == "test"
     assert settings.repository_mode == "memory"
@@ -59,6 +61,7 @@ def test_database_engine_is_shared_and_uses_resilient_pool_options(
         database_url="postgresql+psycopg://shared-pool-test/db",
         database_pool_size=2,
         database_max_overflow=1,
+        database_pool_timeout_seconds=12,
         database_pool_recycle_seconds=300,
     )
 
@@ -72,6 +75,7 @@ def test_database_engine_is_shared_and_uses_resilient_pool_options(
             "url": "postgresql+psycopg://shared-pool-test/db",
             "pool_size": 2,
             "max_overflow": 1,
+            "pool_timeout": 12,
             "pool_pre_ping": True,
             "pool_recycle": 300,
         }

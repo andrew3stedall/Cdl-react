@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { type MouseEvent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowDown,
   ArrowDownUp,
@@ -56,6 +56,7 @@ import './squad-lineup-groups.css';
 
 interface SquadPageProps {
   attackDirection?: AttackDirection;
+  onNavigate?: (href: string) => void;
   preset: ThemePreset;
   teamSelectionClient?: TeamSelectionClient;
   squadClient?: SquadClient;
@@ -286,6 +287,7 @@ function mergeLineupPlayers(roster: PlayerView[], lineup: TeamSelectionPlayer[] 
 
 export function SquadPage({
   attackDirection = 'up',
+  onNavigate,
   preset,
   squadClient = defaultSquadClient,
   teamSelectionClient = defaultTeamSelectionClient,
@@ -331,6 +333,12 @@ export function SquadPage({
   const [availabilityFilter, setAvailabilityFilter] = useState<'all' | 'risk'>('all');
   const [fixtureFilter, setFixtureFilter] = useState<'all' | 'easy'>('all');
   const drawerRef = useRef<HTMLElement | null>(null);
+
+  const navigateInternally = (event: MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (!onNavigate) return;
+    event.preventDefault();
+    onNavigate(href);
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -762,7 +770,12 @@ export function SquadPage({
               <div aria-label="Notifications" className="squad-page__notifications-popover" role="dialog">
                 <div className="squad-page__notifications-heading"><strong>Notifications</strong><span>{notifications.length}</span></div>
                 {notifications.length === 0 ? <p className="squad-page__empty-copy">You are all caught up.</p> : notifications.map((notification) => (
-                  <a href={notification.action_href} key={notification.id} className="squad-page__notification">
+                  <a
+                    href={notification.action_href}
+                    key={notification.id}
+                    className="squad-page__notification"
+                    onClick={(event) => navigateInternally(event, notification.action_href)}
+                  >
                     <strong>{notification.title}</strong><span>{notification.message}</span>
                   </a>
                 ))}
@@ -805,7 +818,7 @@ export function SquadPage({
         <section aria-label="Squad attention" className="squad-page__attention">
           <CircleAlert aria-hidden="true" size={18} />
           <div><strong>{proposedTradeCount} proposed {proposedTradeCount === 1 ? 'trade' : 'trades'} need review</strong><span>Trade activity is managed in Market.</span></div>
-          <a href="/scouting">Review</a>
+          <a href="/scouting" onClick={(event) => navigateInternally(event, '/scouting')}>Review</a>
         </section>
       ) : null}
 
@@ -1004,11 +1017,11 @@ export function SquadPage({
       ) : null}
 
       <nav aria-label="Squad mobile navigation" className="squad-page__mobile-nav">
-        <a href="/"><Home size={19} /><span>Desk</span></a>
-        <a aria-current="page" href="/squad-management"><Shield size={19} /><span>Squad</span></a>
-        <a href="/scouting"><Search size={19} /><span>Market</span></a>
-        <a href="/team-selection"><CalendarDays size={19} /><span>Matchweek</span></a>
-        <a href="/league"><Trophy size={19} /><span>League</span></a>
+        <a href="/" onClick={(event) => navigateInternally(event, '/')}><Home size={19} /><span>Desk</span></a>
+        <a aria-current="page" href="/squad-management" onClick={(event) => navigateInternally(event, '/squad-management')}><Shield size={19} /><span>Squad</span></a>
+        <a href="/scouting" onClick={(event) => navigateInternally(event, '/scouting')}><Search size={19} /><span>Market</span></a>
+        <a href="/team-selection" onClick={(event) => navigateInternally(event, '/team-selection')}><CalendarDays size={19} /><span>Matchweek</span></a>
+        <a href="/league" onClick={(event) => navigateInternally(event, '/league')}><Trophy size={19} /><span>League</span></a>
       </nav>
     </main>
   );

@@ -284,12 +284,16 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
-async function renderPage(teamSelectionClient?: TeamSelectionClient, attackDirection: 'up' | 'down' = 'up') {
+async function renderPage(
+  teamSelectionClient?: TeamSelectionClient,
+  attackDirection: 'up' | 'down' = 'up',
+  onNavigate?: (href: string) => void,
+) {
   const container = document.createElement('div');
   document.body.append(container);
   const root = createRoot(container);
   await act(async () => {
-    root.render(<SquadPage attackDirection={attackDirection} preset={getDefaultThemePreset()} teamSelectionClient={teamSelectionClient} />);
+    root.render(<SquadPage attackDirection={attackDirection} onNavigate={onNavigate} preset={getDefaultThemePreset()} teamSelectionClient={teamSelectionClient} />);
     await Promise.resolve();
     await Promise.resolve();
   });
@@ -309,6 +313,20 @@ function setInputValue(input: HTMLInputElement, value: string) {
 }
 
 describe('SquadPage', () => {
+  test('uses the application navigation handler for page links', async () => {
+    const onNavigate = vi.fn();
+    const { container } = await renderPage(undefined, 'up', onNavigate);
+    const leagueLink = container.querySelector<HTMLAnchorElement>('nav[aria-label="Squad mobile navigation"] a[href="/league"]');
+
+    expect(leagueLink).not.toBeNull();
+    await act(async () => {
+      leagueLink?.click();
+      await Promise.resolve();
+    });
+
+    expect(onNavigate).toHaveBeenCalledWith('/league');
+  });
+
   test('maps FDR values to a restrained centred opponent colour scale', () => {
     expect(fixtureOpponentClassName(1)).toContain('squad-page__opponent--fdr-1');
     expect(fixtureOpponentClassName(2)).toContain('squad-page__opponent--fdr-2');

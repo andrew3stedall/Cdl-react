@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     database_url: str = ""
     database_pool_size: int = Field(default=5, ge=1)
     database_max_overflow: int = Field(default=5, ge=0)
+    database_pool_timeout_seconds: int = Field(default=10, ge=1)
     database_pool_recycle_seconds: int = Field(default=300, ge=30)
     repository_mode: RepositoryMode = "memory"
     frontend_dist_dir: Path | None = None

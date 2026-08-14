@@ -15,6 +15,7 @@ def _build_cached_engine(
     database_url: str,
     pool_size: int,
     max_overflow: int,
+    pool_timeout_seconds: int,
     pool_recycle_seconds: int,
 ) -> Engine:
     """Build one resilient connection pool per runtime database configuration."""
@@ -22,6 +23,7 @@ def _build_cached_engine(
         database_url,
         pool_size=pool_size,
         max_overflow=max_overflow,
+        pool_timeout=pool_timeout_seconds,
         pool_pre_ping=True,
         pool_recycle=pool_recycle_seconds,
     )
@@ -36,6 +38,7 @@ def build_engine(settings: Settings) -> Engine:
         settings.database_url,
         settings.database_pool_size,
         settings.database_max_overflow,
+        settings.database_pool_timeout_seconds,
         settings.database_pool_recycle_seconds,
     )
 

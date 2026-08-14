@@ -62,7 +62,7 @@ const secondNextFixture = {
 
 const snapshot: LeagueSnapshot = {
   currentFixtures: { gameweek, fixtures: [fixture, finishedFixture] },
-  nextFixtures: { gameweek: { ...nextFixture.gameweek, deadlineAt: '2026-08-21T17:30:00Z' }, fixtures: [nextFixture, secondNextFixture] },
+  nextFixtures: { gameweek: { ...nextFixture.gameweek, deadlineAt: '2026-08-21T17:30:00Z' }, fixtures: [nextFixture] },
   allFixtures: { gameweek: null, fixtures: [fixture, finishedFixture, nextFixture, secondNextFixture] },
   table: {
     source: 'service-calculated',
@@ -137,7 +137,7 @@ describe('LeaguePage', () => {
     expect(container.textContent).toContain('Gameweek 12');
     expect(container.textContent).toContain('Gameweek 13');
     expect(container.querySelectorAll('.league-gameweek-section')).toHaveLength(2);
-    expect(container.querySelectorAll('.league-fixture-row')).toHaveLength(3);
+    expect(container.querySelectorAll('.league-fixture-row')).toHaveLength(4);
     expect(container.querySelector('main.league-page.feature-screen')).toBeNull();
     expect(container.querySelectorAll('time.league-gameweek-state')).toHaveLength(1);
     expect(container.querySelector('time.league-gameweek-state')?.getAttribute('dateTime')).toBe('2026-08-21T17:30:00Z');
@@ -151,7 +151,8 @@ describe('LeaguePage', () => {
     expect(container.textContent).not.toContain('Not started');
     expect(container.textContent).not.toContain('In progress');
     expect(container.textContent).not.toContain('Finished');
-    expect(container.textContent).not.toContain('Keeper City');
+    expect(container.textContent).toContain('KPR');
+    expect(container.textContent).toContain('WCA');
     expect(container.querySelector('nav[aria-label="League navigation"]')).toBeNull();
     expect(container.textContent).not.toContain('Overview stays lightweight');
     act(() => root.unmount());

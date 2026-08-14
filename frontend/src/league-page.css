@@ -1,6 +1,7 @@
 .league-page {
   background: var(--background);
   color: var(--foreground);
+  align-content: start;
   display: grid;
   gap: 1.2rem;
   min-height: 100%;

@@ -62,6 +62,27 @@ const nextFixture: LeagueFixture = {
   },
 };
 
+const additionalCurrentFixture: LeagueFixture = {
+  ...currentFixture,
+  id: 'fixture-12-2',
+  homeTeam: teams[2],
+  awayTeam: teams[0],
+  score: {
+    homeScore: 58,
+    awayScore: 61,
+    bonusPoints: { 'castle-fc': 1 },
+    chipsPlayed: {},
+    outcome: 'away_win',
+  },
+};
+
+const additionalNextFixture: LeagueFixture = {
+  ...nextFixture,
+  id: 'fixture-13-2',
+  homeTeam: teams[1],
+  awayTeam: teams[2],
+};
+
 const dashboardConfig: DashboardConfig = {
   id: 'pages-preview-dashboard',
   title: 'Manager Analytics Dashboard',
@@ -160,9 +181,9 @@ export const staticPreviewDashboardClient: DashboardClient = {
 export const staticPreviewLeagueClient: LeagueClient = {
   async getLeagueSnapshot(): Promise<LeagueSnapshot> {
     return {
-      currentFixtures: { gameweek: currentGameweek, fixtures: [currentFixture] },
-      nextFixtures: { gameweek: nextGameweek, fixtures: [nextFixture] },
-      allFixtures: { gameweek: currentGameweek, fixtures: [currentFixture, nextFixture] },
+      currentFixtures: { gameweek: currentGameweek, fixtures: [currentFixture, additionalCurrentFixture] },
+      nextFixtures: { gameweek: nextGameweek, fixtures: [nextFixture, additionalNextFixture] },
+      allFixtures: { gameweek: currentGameweek, fixtures: [currentFixture, additionalCurrentFixture, nextFixture, additionalNextFixture] },
       table: {
         source: 'GitHub Pages static preview',
         rows: [

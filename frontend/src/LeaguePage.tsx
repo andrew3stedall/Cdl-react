@@ -249,13 +249,25 @@ interface GameweekGroup {
 }
 
 function groupFixturesByGameweek(snapshot: LeagueSnapshot): GameweekGroup[] {
-  const currentFixtures = uniqueFixtures(snapshot.currentFixtures.fixtures.length
-    ? snapshot.currentFixtures.fixtures
-    : snapshot.allFixtures.fixtures.filter((fixture) => fixture.isCurrent));
-  const currentGameweek = snapshot.currentFixtures.gameweek ?? currentFixtures[0]?.gameweek ?? null;
-  const upcomingFixture = uniqueFixtures(snapshot.nextFixtures.fixtures)[0]
-    ?? snapshot.allFixtures.fixtures.find((fixture) => fixture.isNext && fixture.status === 'pending')
+  const allFixtures = uniqueFixtures(snapshot.allFixtures.fixtures);
+  const currentGameweek = snapshot.currentFixtures.gameweek
+    ?? snapshot.currentFixtures.fixtures[0]?.gameweek
+    ?? allFixtures.find((fixture) => fixture.isCurrent)?.gameweek
     ?? null;
+  const currentFixtures = fixturesForGameweek(
+    allFixtures,
+    currentGameweek,
+    snapshot.currentFixtures.fixtures,
+  );
+  const nextGameweek = snapshot.nextFixtures.gameweek
+    ?? snapshot.nextFixtures.fixtures[0]?.gameweek
+    ?? allFixtures.find((fixture) => fixture.isNext)?.gameweek
+    ?? null;
+  const upcomingFixtures = fixturesForGameweek(
+    allFixtures,
+    nextGameweek,
+    snapshot.nextFixtures.fixtures,
+  );
   const groups: GameweekGroup[] = [];
 
   if (currentGameweek && currentFixtures.length) {
@@ -267,16 +279,27 @@ function groupFixturesByGameweek(snapshot: LeagueSnapshot): GameweekGroup[] {
     });
   }
 
-  if (upcomingFixture && upcomingFixture.gameweek.id !== currentGameweek?.id) {
+  if (nextGameweek && upcomingFixtures.length && nextGameweek.id !== currentGameweek?.id) {
     groups.push({
-      gameweek: snapshot.nextFixtures.gameweek ?? upcomingFixture.gameweek,
-      fixtures: [upcomingFixture],
+      gameweek: nextGameweek,
+      fixtures: sortFixtures(upcomingFixtures),
       isCurrent: false,
       state: 'not-started',
     });
   }
 
   return groups;
+}
+
+function fixturesForGameweek(
+  allFixtures: LeagueFixture[],
+  gameweek: LeagueFixture['gameweek'] | null,
+  fallback: LeagueFixture[],
+): LeagueFixture[] {
+  const matchingFixtures = gameweek
+    ? allFixtures.filter((fixture) => fixture.gameweek.id === gameweek.id)
+    : [];
+  return matchingFixtures.length ? matchingFixtures : uniqueFixtures(fallback);
 }
 
 function GameweekSection({ group, onOpenFixture }: { group: GameweekGroup; onOpenFixture: (fixture: LeagueFixture) => void }) {

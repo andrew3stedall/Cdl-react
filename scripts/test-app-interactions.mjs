@@ -236,6 +236,15 @@ async function mockApi(page, { authenticated = true, teamSelectionLocked = false
       return route.fulfill({ json: { session: unauthenticatedSession } });
     }
 
+    if (path === '/api/squad/workspace') {
+      return route.fulfill({
+        json: {
+          summary: squadSummary,
+          notifications: { notifications: [], proposed_trade_count: trades.filter((trade) => trade.status === 'proposed').length },
+        },
+      });
+    }
+
     if (path === '/api/squad/summary') {
       return route.fulfill({ json: squadSummary });
     }
@@ -253,7 +262,7 @@ async function mockApi(page, { authenticated = true, teamSelectionLocked = false
     }
 
     if (path === '/api/squad/notifications') {
-      return route.fulfill({ json: { notifications: [] } });
+      return route.fulfill({ json: { notifications: [], proposed_trade_count: trades.filter((trade) => trade.status === 'proposed').length } });
     }
 
     if (path.startsWith('/api/fpl/players/') && path.endsWith('/history')) {

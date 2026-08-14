@@ -178,8 +178,12 @@ module "cloud_run_api" {
   repository_mode               = var.runtime_repository_mode
   environment_variables = {
     CDL_SESSION_COOKIE_SECURE         = "true"
-    CDL_DATABASE_POOL_SIZE            = "2"
-    CDL_DATABASE_MAX_OVERFLOW         = "1"
+    # Cloud Run can serve multiple requests concurrently. Keep enough
+    # connections for normal page fan-out while bounding the total across the
+    # two-instance staging service.
+    CDL_DATABASE_POOL_SIZE            = "4"
+    CDL_DATABASE_MAX_OVERFLOW         = "4"
+    CDL_DATABASE_POOL_TIMEOUT_SECONDS = "10"
     CDL_DATABASE_POOL_RECYCLE_SECONDS = "300"
   }
   secret_environment_variables = merge({
@@ -198,8 +202,9 @@ module "cloud_run_api" {
     }
   } : {})
   allow_public_invoker = var.allow_public_invoker
-  min_instance_count   = 0
-  max_instance_count   = 2
+  min_instance_count              = 0
+  max_instance_count              = 2
+  max_instance_request_concurrency = 10
 
   depends_on = [
     google_project_service.required,

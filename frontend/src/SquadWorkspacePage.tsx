@@ -5,14 +5,15 @@ import './squad-workspace-page.css';
 
 interface SquadWorkspacePageProps {
   attackDirection?: AttackDirection;
+  onNavigate?: (href: string) => void;
   preset: ThemePreset;
   teamSelectionClient?: TeamSelectionClient;
 }
 
-export function SquadWorkspacePage({ attackDirection = 'up', preset, teamSelectionClient }: SquadWorkspacePageProps) {
+export function SquadWorkspacePage({ attackDirection = 'up', onNavigate, preset, teamSelectionClient }: SquadWorkspacePageProps) {
   return (
     <div className="squad-workspace-page">
-      <SquadPage attackDirection={attackDirection} preset={preset} teamSelectionClient={teamSelectionClient} />
+      <SquadPage attackDirection={attackDirection} onNavigate={onNavigate} preset={preset} teamSelectionClient={teamSelectionClient} />
     </div>
   );
 }

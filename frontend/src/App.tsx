@@ -446,7 +446,7 @@ function AppRouteContent({
   }
 
   if (isSquadRoute(currentPath)) {
-    routeContent = <SquadWorkspacePage attackDirection={attackDirection} preset={preset} teamSelectionClient={teamSelectionClient} />;
+    routeContent = <SquadWorkspacePage attackDirection={attackDirection} onNavigate={onNavigate} preset={preset} teamSelectionClient={teamSelectionClient} />;
   }
 
   return routeContent;

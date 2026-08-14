@@ -176,11 +176,11 @@ module "cloud_run_api" {
   environment                   = var.environment
   labels                        = merge(local.common_labels, { component = "api" })
   repository_mode               = var.runtime_repository_mode
+  # Cloud Run can serve multiple requests concurrently. Keep enough
+  # connections for normal page fan-out while bounding the total across the
+  # two-instance staging service.
   environment_variables = {
     CDL_SESSION_COOKIE_SECURE         = "true"
-    # Cloud Run can serve multiple requests concurrently. Keep enough
-    # connections for normal page fan-out while bounding the total across the
-    # two-instance staging service.
     CDL_DATABASE_POOL_SIZE            = "4"
     CDL_DATABASE_MAX_OVERFLOW         = "4"
     CDL_DATABASE_POOL_TIMEOUT_SECONDS = "10"

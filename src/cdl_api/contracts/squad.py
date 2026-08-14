@@ -95,6 +95,7 @@ class SquadNotification(BaseModel):
 
 class SquadNotificationsResponse(BaseModel):
     notifications: list[SquadNotification] = Field(default_factory=list)
+    proposed_trade_count: int = 0
 
 
 class ScoutingPlayersResponse(BaseModel):

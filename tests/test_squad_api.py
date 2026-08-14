@@ -42,6 +42,19 @@ def test_scouting_endpoint_filters_by_query_and_metric() -> None:
     assert names == ["Casey Midfielder"]
 
 
+def test_squad_workspace_combines_summary_and_attention_reads() -> None:
+    client = _authenticated_client()
+
+    response = client.get("/api/squad/workspace")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["summary"]["manager_team"]["id"] == "team-castle"
+    assert payload["summary"]["total_players"] == 2
+    assert payload["notifications"]["notifications"] == []
+    assert payload["notifications"]["proposed_trade_count"] == 0
+
+
 def test_interest_and_trade_routes_require_authentication() -> None:
     client = TestClient(create_app())
     assert client.get("/api/interests").status_code == 401
@@ -70,7 +83,7 @@ def test_squad_changes_and_notifications_are_manager_scoped() -> None:
     assert changes.status_code == 200
     assert changes.json() == {"available_to_add": []}
     assert notifications.status_code == 200
-    assert notifications.json() == {"notifications": []}
+    assert notifications.json() == {"notifications": [], "proposed_trade_count": 0}
 
 
 def test_interest_create_reload_duplicate_delete_and_validation_flow() -> None:

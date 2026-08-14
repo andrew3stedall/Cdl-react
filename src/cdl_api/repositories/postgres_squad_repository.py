@@ -101,6 +101,7 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
         self.manager_team = TeamSummary(id=PRIMARY_TEAM_ID, name=TEAM_NAMES[0])
         self.rival_team = TeamSummary(id=TEAM_IDS[1], name=TEAM_NAMES[1])
         self._manager_id = DEMO_MANAGER_ID
+        self._players_cache: list[PlayerDetail] | None = None
 
         context = resolve_staging_manager_context(session_factory, user_id)
         if context is not None:
@@ -118,6 +119,9 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
         """Seed hooks are owned by imports in #69; runtime writes are persisted here."""
 
     def _database_players(self) -> list[PlayerDetail]:
+        if self._players_cache is not None:
+            return self._players_cache
+
         active_ownerships = squad_ownerships_table.alias("active_ownerships")
         canonical_players = fpl_players_table.alias("canonical_players")
         latest_values = _active_gameweek_player_values_subquery()
@@ -191,10 +195,14 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
                 ).mappings()
             )
             next_fixtures = self._next_fixtures_by_team(session)
-        return [
+        self._players_cache = [
             self._player_from_database_row(row, next_fixtures.get(row["epl_team_id"]))
             for row in rows
         ]
+        return self._players_cache
+
+    def _invalidate_players_cache(self) -> None:
+        self._players_cache = None
 
     @staticmethod
     def _next_fixtures_by_team(session: Session) -> dict[str, PlayerNextFixture]:
@@ -435,6 +443,7 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
                     .values(released_at=now)
                 )
             session.commit()
+        self._invalidate_players_cache()
 
     def get_player(self, player_id: str) -> PlayerDetail | None:
         return next(

@@ -1,5 +1,24 @@
 # Changelog
 
+## 2026-08-14 - Consolidate the Squad workspace read path
+
+### Changed
+
+- Replaced the Squad page's six-request initial load with a combined Squad
+  workspace read plus the independent team-selection read.
+- Deferred scouting-player and available-rights requests until their UI
+  surfaces are opened.
+- Reused the PostgreSQL player snapshot during a request so summary and
+  attention reads do not repeat the full player/fixture query.
+- Added a structured proposed-trade count to the notifications response so
+  the Squad page no longer fetches the full trade list just to render its
+  attention banner.
+
+### Validation
+
+- Added API and browser regression coverage for the workspace contract,
+  request reduction, and lazy secondary data loading.
+
 ## 2026-08-13 - Make the app installable on Android
 
 - Added an Android-installable web app manifest with standalone display mode,

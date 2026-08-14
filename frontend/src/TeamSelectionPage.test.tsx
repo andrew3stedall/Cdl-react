@@ -92,6 +92,16 @@ beforeEach(() => {
       form: 5,
       value: 5,
     }));
+    if (path === '/api/squad/workspace') {
+      return new Response(JSON.stringify({
+        summary: {
+          manager_team: { id: 'team-castle', name: 'Castle FC', short_name: 'CFC' },
+          gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1 },
+          players,
+        },
+        notifications: { notifications: [], proposed_trade_count: 0 },
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }
     if (path === '/api/squad/summary' || path === '/api/scouting/players') {
       return new Response(JSON.stringify({
         manager_team: { id: 'team-castle', name: 'Castle FC', short_name: 'CFC' },

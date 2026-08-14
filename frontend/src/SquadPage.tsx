@@ -138,11 +138,6 @@ interface PlayerApiResponse {
   } | null;
 }
 
-interface TradeApiResponse {
-  id: string;
-  status: string;
-}
-
 const pitchPositionOrder = ['FWD', 'MID', 'DEF', 'GKP'];
 const positionOptions: Array<{ shortLabel: string; value: PositionFilter }> = [
   { shortLabel: 'All', value: 'all' },
@@ -299,8 +294,8 @@ export function SquadPage({
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [squadPlayers, setSquadPlayers] = useState<PlayerView[]>([]);
   const [scoutingPool, setScoutingPool] = useState<PlayerView[]>([]);
-  const [trades, setTrades] = useState<TradeApiResponse[]>([]);
   const [notifications, setNotifications] = useState<SquadApiNotification[]>([]);
+  const [proposedTradeCount, setProposedTradeCount] = useState(0);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [managerTeam, setManagerTeam] = useState<TeamRef>({ id: '', name: 'Current team', shortName: '' });
   const [gameweek, setGameweek] = useState('Gameweek');
@@ -325,6 +320,12 @@ export function SquadPage({
   const [stagedAdditionIds, setStagedAdditionIds] = useState<Set<string>>(() => new Set());
   const [drawWins, setDrawWins] = useState<PlayerView[]>([]);
   const [changesPanelOpen, setChangesPanelOpen] = useState(false);
+  const [changesLoaded, setChangesLoaded] = useState(false);
+  const [changesLoading, setChangesLoading] = useState(false);
+  const [changesError, setChangesError] = useState<string | null>(null);
+  const [scoutingLoaded, setScoutingLoaded] = useState(false);
+  const [scoutingLoading, setScoutingLoading] = useState(false);
+  const [scoutingError, setScoutingError] = useState<string | null>(null);
   const [confirmationOpen, setConfirmationOpen] = useState(false);
   const [changesSaving, setChangesSaving] = useState(false);
   const [profileHistory, setProfileHistory] = useState<SquadApiHistoryResponse | null>(null);
@@ -343,30 +344,22 @@ export function SquadPage({
   useEffect(() => {
     let mounted = true;
     void Promise.allSettled([
-      squadClient.getSummary(),
-      squadClient.getScoutingPlayers(),
-      squadClient.getTrades(),
-      squadClient.getChanges(),
-      squadClient.getNotifications(),
+      squadClient.getWorkspace(),
       teamSelectionClient.getTeamSelection(),
     ])
-      .then(([summaryResult, scoutingResult, tradesResult, changesResult, notificationsResult, lineupResult]) => {
+      .then(([workspaceResult, lineupResult]) => {
         if (!mounted) return;
-        const summary = settledValue(summaryResult);
-        const scouting = settledValue(scoutingResult);
-        const persistedTrades = settledValue(tradesResult);
-        const changes = settledValue(changesResult);
-        const notificationResponse = settledValue(notificationsResult);
+        const workspace = settledValue(workspaceResult);
         const lineup = settledValue(lineupResult);
+        const summary = workspace?.summary;
         const normalizedLineup = lineup ? normalizeTeamSelection(lineup) : null;
-        if (!summary && !lineup) throw new Error('Unable to load your squad.');
+        if (!summary && !normalizedLineup) throw new Error('Unable to load your squad.');
         const roster = summary?.players.map(mapPlayer)
           ?? normalizedLineup?.players.map(mapTeamSelectionPlayer)
           ?? [];
         const hasLineup = Boolean(normalizedLineup?.players.length);
         setTeamSelection(normalizedLineup);
         setSquadPlayers(mergeLineupPlayers(roster, normalizedLineup?.players ?? null));
-        setScoutingPool(scouting?.players.map(mapPlayer) ?? []);
         setManagerTeam({
           id: summary?.manager_team.id ?? normalizedLineup?.managerTeam.id ?? '',
           name: summary?.manager_team.name ?? normalizedLineup?.managerTeam.name ?? 'Current team',
@@ -376,9 +369,8 @@ export function SquadPage({
             ?? '',
         });
         setGameweek(normalizedLineup?.gameweek.name ?? summary?.gameweek.name ?? 'Gameweek');
-        setTrades(persistedTrades?.trades ?? []);
-        setDrawWins((changes?.available_to_add ?? []).map(mapPlayer));
-        setNotifications(notificationResponse?.notifications ?? []);
+        setProposedTradeCount(workspace?.notifications.proposed_trade_count ?? 0);
+        setNotifications(workspace?.notifications.notifications ?? []);
         setStagedAdditionIds(new Set());
         setLineupAvailable(hasLineup);
         setLineupDirty(false);
@@ -388,14 +380,8 @@ export function SquadPage({
             ? `${summary?.manager_team.name ?? normalizedLineup?.managerTeam.name ?? 'Your'} squad ready for review.`
             : `${summary?.manager_team.name ?? normalizedLineup?.managerTeam.name ?? 'Your'} squad loaded.`,
         );
-        const failures = [
-          summaryResult,
-          scoutingResult,
-          tradesResult,
-          changesResult,
-          notificationsResult,
-          lineupResult,
-        ].filter((result): result is PromiseRejectedResult => result.status === 'rejected');
+        const failures = [workspaceResult, lineupResult]
+          .filter((result): result is PromiseRejectedResult => result.status === 'rejected');
         if (failures.length > 0) {
           const reason = failures[0].reason instanceof Error ? failures[0].reason.message : 'one or more data sources failed';
           setStatus(`Squad loaded with partial data. ${reason}`);
@@ -408,6 +394,29 @@ export function SquadPage({
       mounted = false;
     };
   }, [squadClient, teamSelectionClient]);
+
+  useEffect(() => {
+    if (drawerMode !== 'compare' && drawerMode !== 'trade') return;
+    if (scoutingLoaded || scoutingLoading) return;
+    let mounted = true;
+    setScoutingLoading(true);
+    setScoutingError(null);
+    void squadClient.getScoutingPlayers()
+      .then((response) => {
+        if (!mounted) return;
+        setScoutingPool(response.players.map(mapPlayer));
+        setScoutingLoaded(true);
+      })
+      .catch((error: Error) => {
+        if (mounted) setScoutingError(error.message);
+      })
+      .finally(() => {
+        if (mounted) setScoutingLoading(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [drawerMode, scoutingLoaded, scoutingLoading, squadClient]);
 
   useEffect(() => {
     if (drawerMode !== 'profile' || !selectedPlayer) {
@@ -487,7 +496,6 @@ export function SquadPage({
     MID: visibleSquadPlayers.filter((player) => player.position === 'MID').length,
     FWD: visibleSquadPlayers.filter((player) => player.position === 'FWD').length,
   }), [visibleSquadPlayers]);
-  const proposedTradeCount = trades.filter((trade) => trade.status === 'proposed').length;
   const stagedChangeCount = pendingRemovalPlayers.length + stagedAdditionPlayers.length;
   const validationMessages = buildSquadChangeValidation(stagedAdditionPlayers, pendingRemovalPlayers);
   const comparisonCandidates = scoutingPool
@@ -517,6 +525,27 @@ export function SquadPage({
   const selectedSubstitutionOption = substitutionOptions.find(
     (option) => option.target.id === substitutionTargetId,
   ) ?? null;
+
+  async function loadChanges() {
+    if (changesLoaded || changesLoading) return;
+    setChangesLoading(true);
+    setChangesError(null);
+    try {
+      const response = await squadClient.getChanges();
+      setDrawWins(response.available_to_add.map(mapPlayer));
+      setChangesLoaded(true);
+    } catch (error) {
+      setChangesError(error instanceof Error ? error.message : 'Unable to load available players.');
+    } finally {
+      setChangesLoading(false);
+    }
+  }
+
+  function toggleChangesPanel() {
+    const nextOpen = !changesPanelOpen;
+    setChangesPanelOpen(nextOpen);
+    if (nextOpen) void loadChanges();
+  }
   function closeDrawer() {
     setDrawerMode(null);
     setSelectedPlayer(null);
@@ -687,7 +716,7 @@ export function SquadPage({
     if (!tradeSource || !tradeTarget || !tradeTeamId) return;
     try {
       const trade = await squadClient.createTrade(tradeTeamId, [tradeSource.id], [tradeTarget.id]);
-      setTrades((current) => [...current, trade]);
+      if (trade.status === 'proposed') setProposedTradeCount((current) => current + 1);
       closeDrawer();
       setStatus(`Trade proposal for ${tradeSource.displayName} sent to ${tradeTarget.draftTeam?.name ?? 'the selected manager'}.`);
     } catch (error) {
@@ -708,6 +737,7 @@ export function SquadPage({
       setTeamSelection(normalizedLineup);
       setSquadPlayers(mergeLineupPlayers(summary.players.map(mapPlayer), normalizedLineup.players));
       setDrawWins((await squadClient.getChanges()).available_to_add.map(mapPlayer));
+      setChangesLoaded(true);
       setStagedRemovalIds(new Set());
       setStagedAdditionIds(new Set());
       setConfirmationOpen(false);
@@ -875,7 +905,7 @@ export function SquadPage({
       </section>
 
       <aside aria-label="Squad changes" className={`squad-page__changes-panel ${changesPanelOpen ? 'is-open' : ''}`}>
-        <button className="squad-page__changes-toggle" onClick={() => setChangesPanelOpen((open) => !open)} type="button">
+        <button className="squad-page__changes-toggle" onClick={toggleChangesPanel} type="button">
           <span className="squad-page__changes-icon"><ArrowRightLeft size={19} /></span>
           <span><strong>Squad Changes</strong><small>{stagedChangeCount > 0 ? `${stagedChangeCount} pending changes` : 'No pending changes'}</small></span>
           <ChevronDown aria-hidden="true" className={changesPanelOpen ? 'is-open' : ''} size={20} />
@@ -883,6 +913,8 @@ export function SquadPage({
 
         {changesPanelOpen ? (
           <div className="squad-page__changes-body">
+            {changesLoading ? <p className="squad-page__empty-copy">Loading available players…</p> : null}
+            {changesError ? <p className="squad-page__error-copy">Available players unavailable: {changesError}</p> : null}
             <section className="squad-page__change-section">
               <div className="squad-page__change-heading"><h3>Available to Add</h3><span>{drawWins.length}</span></div>
               {drawWins.length === 0 ? (
@@ -952,6 +984,8 @@ export function SquadPage({
             {drawerMode === 'compare' ? (
               <CompareDrawer
                 candidates={comparisonCandidates}
+                error={scoutingError}
+                loading={scoutingLoading}
                 onAdd={addComparisonPlayer}
                 onClose={closeDrawer}
                 onQueryChange={setCompareQuery}
@@ -963,6 +997,8 @@ export function SquadPage({
             {drawerMode === 'trade' && tradeSource ? (
               <TradeDrawer
                 candidates={tradeCandidates}
+                error={scoutingError}
+                loading={scoutingLoading}
                 onClose={closeDrawer}
                 onQueryChange={setTradeQuery}
                 onTargetChange={setTradeTarget}
@@ -1581,6 +1617,8 @@ function ProfileDrawer({
 
 function CompareDrawer({
   candidates,
+  error,
+  loading,
   onAdd,
   onClose,
   onQueryChange,
@@ -1589,6 +1627,8 @@ function CompareDrawer({
   query,
 }: {
   candidates: PlayerView[];
+  error: string | null;
+  loading: boolean;
   onAdd: (player: PlayerView) => void;
   onClose: () => void;
   onQueryChange: (query: string) => void;
@@ -1614,6 +1654,8 @@ function CompareDrawer({
       {players.length < 3 ? (
         <section className="squad-page__search-add">
           <label><Search size={16} /><span className="sr-only">Search comparison players</span><input aria-label="Search comparison players" onChange={(event) => onQueryChange(event.target.value)} placeholder="Search player or club" value={query} /></label>
+          {loading ? <p className="squad-page__empty-copy">Loading comparison players…</p> : null}
+          {error ? <p className="squad-page__error-copy">Comparison players unavailable: {error}</p> : null}
           {query.trim() ? <div className="squad-page__search-results">{candidates.map((player) => <button key={player.id} onClick={() => onAdd(player)} type="button"><PlayerIdentity player={player} /><span>Add</span></button>)}</div> : null}
         </section>
       ) : null}
@@ -1623,6 +1665,8 @@ function CompareDrawer({
 
 function TradeDrawer({
   candidates,
+  error,
+  loading,
   onClose,
   onQueryChange,
   onSubmit,
@@ -1635,6 +1679,8 @@ function TradeDrawer({
   teamId,
 }: {
   candidates: PlayerView[];
+  error: string | null;
+  loading: boolean;
   onClose: () => void;
   onQueryChange: (query: string) => void;
   onSubmit: () => void;
@@ -1650,6 +1696,8 @@ function TradeDrawer({
     <>
       <span aria-hidden="true" className="squad-page__sheet-handle" />
       <DrawerHeader onClose={onClose} title="Start a trade" />
+      {loading ? <p className="squad-page__empty-copy">Loading trade players…</p> : null}
+      {error ? <p className="squad-page__error-copy">Trade players unavailable: {error}</p> : null}
       <section className="squad-page__drawer-section"><h3>You would offer</h3><PlayerIdentity large player={source} /></section>
       <label className="squad-page__field"><span>Other manager</span><select onChange={(event) => onTeamChange(event.target.value)} value={teamId}><option value="">Choose a team</option>{teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}</select></label>
       {teamId ? (

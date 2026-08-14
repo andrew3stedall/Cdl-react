@@ -107,6 +107,21 @@ class MemoryLeagueClient implements LeagueClient {
 class MemorySquadClient implements SquadClient {
   constructor(private readonly summary: SquadApiSummary = squad) {}
 
+  async getWorkspace() {
+    return {
+      summary: this.summary,
+      notifications: {
+        notifications: [{
+          id: 'notification-1',
+          title: 'Review fixture difficulty',
+          message: 'Your next run has changed.',
+          action_href: '/fdr',
+          kind: 'fixture_difficulty',
+        }],
+        proposed_trade_count: 0,
+      },
+    };
+  }
   async getSummary() { return this.summary; }
   async getScoutingPlayers() { return { players: this.summary.players }; }
   async getTrades() { return { trades: [] }; }
@@ -120,6 +135,7 @@ class MemorySquadClient implements SquadClient {
         action_href: '/fdr',
         kind: 'fixture_difficulty',
       }],
+      proposed_trade_count: 0,
     };
   }
   async getPlayerHistory(): Promise<SquadApiHistoryResponse> {

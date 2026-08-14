@@ -2,6 +2,8 @@
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from fastapi.responses import JSONResponse
+from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import TimeoutError as SQLAlchemyTimeoutError
 
 from cdl_api.contracts.common import ErrorCode, ValidationErrorResponse
 from cdl_api.contracts.session import SessionUser
@@ -25,7 +27,11 @@ from cdl_api.contracts.squad import (
 from cdl_api.database import build_session_factory
 from cdl_api.repositories.factory import build_repositories
 from cdl_api.repositories.postgres_squad_repository import PostgreSQLSquadRepository
-from cdl_api.routers.auth import get_auth_service, get_optional_authenticated_session
+from cdl_api.routers.auth import (
+    get_auth_service,
+    get_optional_authenticated_session,
+    get_session_for_request,
+)
 from cdl_api.services.auth import AuthenticationService
 from cdl_api.services.squad import SquadManagementService, SquadValidationError
 from cdl_api.settings import Settings, get_settings
@@ -53,7 +59,13 @@ def require_manager_session(
     settings: Settings = Depends(get_settings),
     auth_service: AuthenticationService = Depends(get_auth_service),
 ) -> SessionUser:
-    session = auth_service.get_session(request.cookies.get(settings.session_cookie_name))
+    try:
+        session = get_session_for_request(request, settings, auth_service)
+    except (OperationalError, SQLAlchemyTimeoutError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Session verification is temporarily unavailable.",
+        ) from exc
     if not session.is_authenticated or session.user is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

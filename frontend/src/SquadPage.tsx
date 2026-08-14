@@ -416,7 +416,7 @@ export function SquadPage({
     return () => {
       mounted = false;
     };
-  }, [drawerMode, scoutingLoaded, scoutingLoading, squadClient]);
+  }, [drawerMode, scoutingLoaded, squadClient]);
 
   useEffect(() => {
     if (drawerMode !== 'profile' || !selectedPlayer) {

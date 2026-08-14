@@ -84,3 +84,9 @@ variable "max_instance_count" {
   type        = number
   default     = 2
 }
+
+variable "max_instance_request_concurrency" {
+  description = "Maximum number of concurrent requests handled by one Cloud Run instance."
+  type        = number
+  default     = 80
+}

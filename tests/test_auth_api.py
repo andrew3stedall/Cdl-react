@@ -1,10 +1,19 @@
+from types import SimpleNamespace
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import TimeoutError as SQLAlchemyTimeoutError
 
 from cdl_api.app import create_app
+from cdl_api.contracts.session import SessionState
 from cdl_api.google_identity import GoogleIdentity
-from cdl_api.routers.auth import get_auth_service, get_google_identity_verifier
+from cdl_api.routers.auth import (
+    get_auth_service,
+    get_google_identity_verifier,
+    get_session_for_request,
+)
+from cdl_api.settings import Settings
 
 
 def test_login_session_and_logout_flow() -> None:
@@ -89,6 +98,39 @@ class DatabaseOutageAuthService:
 
     def login_google(self, identity: GoogleIdentity) -> None:
         self._raise()
+
+
+class DatabasePoolTimeoutAuthService:
+    @staticmethod
+    def get_session(session_id: str | None) -> None:
+        raise SQLAlchemyTimeoutError("connection pool exhausted")
+
+
+def test_session_database_pool_timeout_returns_structured_503() -> None:
+    app = create_app()
+    app.dependency_overrides[get_auth_service] = DatabasePoolTimeoutAuthService
+    client = TestClient(app)
+
+    response = client.get("/api/auth/session")
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "code": "server_error",
+        "message": "Session verification is temporarily unavailable. Retry.",
+        "details": {},
+    }
+
+
+def test_request_session_reuses_staging_middleware_lookup() -> None:
+    session = SessionState(is_authenticated=False, user=None)
+    request = SimpleNamespace(state=SimpleNamespace(authenticated_session=session))
+
+    class UnexpectedDatabaseLookup:
+        @staticmethod
+        def get_session(session_id: str | None) -> None:
+            raise AssertionError("middleware session should be reused")
+
+    assert get_session_for_request(request, Settings(), UnexpectedDatabaseLookup()) is session
 
 
 def test_google_login_creates_application_session(monkeypatch: pytest.MonkeyPatch) -> None:

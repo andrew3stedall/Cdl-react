@@ -347,11 +347,7 @@ class PostgreSQLLeagueRepository:
             .outerjoin(managers_table, draft_teams_table.c.manager_id == managers_table.c.id)
             .where(draft_teams_table.c.league_id == LEAGUE_ID)
         ).mappings()
-        return {
-            str(row["id"]): str(row["display_name"])
-            for row in rows
-            if row["display_name"]
-        }
+        return {str(row["id"]): str(row["display_name"]) for row in rows if row["display_name"]}
 
     @staticmethod
     def _with_manager_name(

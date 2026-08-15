@@ -139,9 +139,7 @@ def test_sqlite_repository_enriches_fixture_teams_with_current_manager_names() -
     metadata.create_all(engine)
     with engine.begin() as connection:
         connection.execute(
-            text(
-                "CREATE TABLE managers (id TEXT PRIMARY KEY, display_name TEXT NOT NULL)"
-            )
+            text("CREATE TABLE managers (id TEXT PRIMARY KEY, display_name TEXT NOT NULL)")
         )
         connection.execute(
             text(

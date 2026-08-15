@@ -134,7 +134,7 @@ describe('manager desk shell integration', () => {
       await Promise.resolve();
     });
 
-    expect(container.querySelector('[aria-current="page"]')?.textContent).toContain('Home');
+    expect(container.querySelector('[aria-current="page"]')?.textContent).toContain('Desk');
     expect(container.textContent).toContain('Gaffers Desk');
     expect(container.querySelector('[aria-label="Account menu for CDL Manager"]')).not.toBeNull();
   });
@@ -148,7 +148,7 @@ describe('manager desk shell integration', () => {
     });
 
     expect(container.querySelector('#manager-desk-title')?.textContent).toBe('Gaffers Desk');
-    expect(container.querySelector('[aria-current="page"]')?.textContent).toContain('Home');
+    expect(container.querySelector('[aria-current="page"]')?.textContent).toContain('Desk');
   });
 
   test('blocks unauthenticated dashboard route before rendering dashboard UI', () => {

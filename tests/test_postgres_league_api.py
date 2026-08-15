@@ -134,6 +134,44 @@ def test_sqlite_repository_round_trip_uses_persisted_results_and_scoring() -> No
         repository.get_head_to_head_snapshot()
 
 
+def test_sqlite_repository_enriches_fixture_teams_with_current_manager_names() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    metadata.create_all(engine)
+    with engine.begin() as connection:
+        connection.execute(
+            text("CREATE TABLE managers (id TEXT PRIMARY KEY, display_name TEXT NOT NULL)")
+        )
+        connection.execute(
+            text(
+                "CREATE TABLE draft_teams ("
+                "id TEXT PRIMARY KEY, league_id TEXT, manager_id TEXT, name TEXT)"
+            )
+        )
+        connection.execute(
+            text(
+                "INSERT INTO managers (id, display_name) VALUES "
+                "('manager-castle', 'Andrew'), ('manager-drafton', 'DJ')"
+            )
+        )
+        connection.execute(
+            text(
+                "INSERT INTO draft_teams (id, league_id, manager_id, name) VALUES "
+                "('castle', 'league-cdl-2026-27', 'manager-castle', 'Castle United'), "
+                "('drafton', 'league-cdl-2026-27', 'manager-drafton', 'Drafton Rovers')"
+            )
+        )
+
+    session_factory = sessionmaker(bind=engine, class_=Session)
+    repository = PostgreSQLLeagueRepository(session_factory)
+    repository.seed_synthetic_data()
+
+    fixture = repository.get_fixture("fixture-1201")
+
+    assert fixture is not None
+    assert fixture.home_team.manager_name == "Andrew"
+    assert fixture.away_team.manager_name == "DJ"
+
+
 def test_sqlite_repository_rejects_broken_epl_scoring_context() -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:")
     metadata.create_all(engine)

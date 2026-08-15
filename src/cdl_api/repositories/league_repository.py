@@ -17,10 +17,24 @@ from cdl_api.contracts.league_models import (
 class LeagueRepository:
     def __init__(self) -> None:
         self._teams = {
-            "castle": TeamSummary(id="castle", name="Castle United", short_name="CAS"),
-            "drafton": TeamSummary(id="drafton", name="Drafton Rovers", short_name="DRA"),
-            "keepers": TeamSummary(id="keepers", name="Keeper City", short_name="KPR"),
-            "wildcards": TeamSummary(id="wildcards", name="Wildcard Athletic", short_name="WCA"),
+            "castle": TeamSummary(
+                id="castle", name="Castle United", short_name="CAS", manager_name="Castle Manager"
+            ),
+            "drafton": TeamSummary(
+                id="drafton",
+                name="Drafton Rovers",
+                short_name="DRA",
+                manager_name="Drafton Manager",
+            ),
+            "keepers": TeamSummary(
+                id="keepers", name="Keeper City", short_name="KPR", manager_name="Keeper Manager"
+            ),
+            "wildcards": TeamSummary(
+                id="wildcards",
+                name="Wildcard Athletic",
+                short_name="WCA",
+                manager_name="Wildcard Manager",
+            ),
         }
         self._gameweeks = {
             "gw-12": GameweekSummary(

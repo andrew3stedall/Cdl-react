@@ -21,7 +21,7 @@ from cdl_api.contracts.league_models import (
 )
 from cdl_api.repositories.league_repository import LeagueRepository
 from cdl_api.repositories.postgres_fpl_data import fpl_gameweeks_table
-from cdl_api.repositories.postgres_league_fpl import draft_teams_table
+from cdl_api.repositories.postgres_league_fpl import draft_teams_table, managers_table
 from cdl_api.staging_draft_seed import LEAGUE_ID
 
 metadata = MetaData()
@@ -275,6 +275,7 @@ class PostgreSQLLeagueRepository:
                     select(draft_teams_table.c.id).where(draft_teams_table.c.league_id == LEAGUE_ID)
                 ).scalars()
             )
+            manager_names = self._manager_names(session)
             fixture_payloads = self._payloads(session, cdl_fixtures_table)
             result_payloads = self._payloads_by_fixture(session, fixture_results_table)
             snapshot_payloads = self._payloads_by_fixture(
@@ -298,6 +299,11 @@ class PostgreSQLLeagueRepository:
                 or away_team.get("id") not in active_team_ids
             ):
                 continue
+            enriched_payload = {
+                **payload,
+                "home_team": self._with_manager_name(home_team, manager_names),
+                "away_team": self._with_manager_name(away_team, manager_names),
+            }
             fixture_id = str(payload["id"])
             result = result_payloads.get(fixture_id, {})
             snapshot = snapshot_payloads.get(fixture_id, {})
@@ -325,9 +331,36 @@ class PostgreSQLLeagueRepository:
                     if isinstance(gameweek_number, int):
                         gameweek["deadline_at"] = gameweek_deadlines.get(gameweek_number)
             fixtures.append(
-                LeagueFixture.model_validate({**payload, "gameweek": gameweek, "score": score})
+                LeagueFixture.model_validate(
+                    {**enriched_payload, "gameweek": gameweek, "score": score}
+                )
             )
         return fixtures
+
+    @staticmethod
+    def _manager_names(session: Session) -> dict[str, str]:
+        """Read current manager labels without requiring them in old fixture payloads."""
+        if not inspect(session.get_bind()).has_table(managers_table.name):
+            return {}
+        rows = session.execute(
+            select(draft_teams_table.c.id, managers_table.c.display_name)
+            .outerjoin(managers_table, draft_teams_table.c.manager_id == managers_table.c.id)
+            .where(draft_teams_table.c.league_id == LEAGUE_ID)
+        ).mappings()
+        return {str(row["id"]): str(row["display_name"]) for row in rows if row["display_name"]}
+
+    @staticmethod
+    def _with_manager_name(
+        team: object,
+        manager_names: dict[str, str],
+    ) -> object:
+        if not isinstance(team, Mapping):
+            return team
+        enriched = dict(team)
+        team_id = str(enriched.get("id", ""))
+        if team_id in manager_names:
+            enriched["manager_name"] = manager_names[team_id]
+        return enriched
 
     @staticmethod
     def _fpl_gameweek_deadlines(session: Session) -> dict[int, object]:

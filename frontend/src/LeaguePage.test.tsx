@@ -8,10 +8,10 @@ import type { FixtureDetailResponse, FixtureSquad, LeagueClient, LeagueSnapshot 
 const testGlobal = globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean };
 testGlobal.IS_REACT_ACT_ENVIRONMENT = true;
 
-const castle = { id: 'castle', name: 'Castle United', shortName: 'CAS' };
-const drafton = { id: 'drafton', name: 'Drafton Rovers', shortName: 'DRA' };
-const keepers = { id: 'keepers', name: 'Keeper City', shortName: 'KPR' };
-const wildcards = { id: 'wildcards', name: 'Wildcard Athletic', shortName: 'WCA' };
+const castle = { id: 'castle', name: 'Castle United', shortName: 'CAS', managerName: 'Andrew' };
+const drafton = { id: 'drafton', name: 'Drafton Rovers', shortName: 'DRA', managerName: 'DJ' };
+const keepers = { id: 'keepers', name: 'Keeper City', shortName: 'KPR', managerName: 'Warren' };
+const wildcards = { id: 'wildcards', name: 'Wildcard Athletic', shortName: 'WCA', managerName: 'Kevin' };
 const gameweek = { id: 'gw-12', name: 'Gameweek 12', number: 12, deadlineAt: '2026-08-14T17:30:00Z' };
 const fixture = {
   id: 'fixture-1201',
@@ -154,8 +154,8 @@ describe('LeaguePage', () => {
     expect(container.textContent).not.toContain('Not started');
     expect(container.textContent).not.toContain('In progress');
     expect(container.textContent).not.toContain('Finished');
-    expect(container.textContent).toContain('KPR');
-    expect(container.textContent).toContain('WCA');
+    expect(container.textContent).toContain('Warren');
+    expect(container.textContent).toContain('Kevin');
     expect(container.querySelector('nav[aria-label="League navigation"]')).toBeNull();
     expect(container.textContent).not.toContain('Overview stays lightweight');
     act(() => root.unmount());
@@ -173,7 +173,7 @@ describe('LeaguePage', () => {
     const { client, container, root } = await renderPage();
 
     await act(async () => {
-      container.querySelector<HTMLButtonElement>('button[aria-label*="Open live fixture for Castle United versus Drafton Rovers"]')?.click();
+      container.querySelector<HTMLButtonElement>('button[aria-label*="Open live fixture for Andrew versus DJ"]')?.click();
       await Promise.resolve();
       await Promise.resolve();
     });
@@ -189,7 +189,7 @@ describe('LeaguePage', () => {
     const { client, container, root } = await renderPage();
 
     await act(async () => {
-      container.querySelector<HTMLButtonElement>('button[aria-label*="Open finished fixture for Drafton Rovers versus Castle United"]')?.click();
+      container.querySelector<HTMLButtonElement>('button[aria-label*="Open finished fixture for DJ versus Andrew"]')?.click();
       await Promise.resolve();
       await Promise.resolve();
     });
@@ -204,7 +204,7 @@ describe('LeaguePage', () => {
     const { client, container, root } = await renderPage();
 
     await act(async () => {
-      container.querySelector<HTMLButtonElement>('button[aria-label*="Open preview for Castle United versus Drafton Rovers"]')?.click();
+      container.querySelector<HTMLButtonElement>('button[aria-label*="Open preview for Andrew versus DJ"]')?.click();
       await Promise.resolve();
       await Promise.resolve();
     });
@@ -218,6 +218,10 @@ describe('LeaguePage', () => {
     expect(container.querySelector('.fixture-squad-pitch .squad-page__captain')?.textContent).toBe('C');
     expect(container.querySelector('.fixture-squad-pitch .squad-page__opponent--fdr-3')).not.toBeNull();
     expect(container.querySelectorAll('.fixture-squad-roster')).toHaveLength(4);
+    expect(container.textContent).toContain('Andrew');
+    expect(container.textContent).toContain('DJ');
+    expect(container.textContent).not.toContain('Castle United');
+    expect(container.textContent).not.toContain('Drafton Rovers');
     act(() => root.unmount());
   });
 

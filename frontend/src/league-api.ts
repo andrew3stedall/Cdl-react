@@ -2,6 +2,7 @@ export interface LeagueTeam {
   id: string;
   name: string;
   shortName?: string;
+  managerName?: string;
 }
 
 export interface LeagueGameweek {
@@ -139,6 +140,7 @@ interface ApiTeam {
   id: string;
   name: string;
   short_name?: string | null;
+  manager_name?: string | null;
 }
 
 interface ApiGameweek {
@@ -346,6 +348,7 @@ function mapTeam(team: ApiTeam): LeagueTeam {
     id: team.id,
     name: team.name,
     shortName: team.short_name ?? undefined,
+    managerName: team.manager_name ?? undefined,
   };
 }
 

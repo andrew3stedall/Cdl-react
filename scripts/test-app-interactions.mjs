@@ -575,8 +575,8 @@ async function testTeamSelection(page) {
 async function testManagerDesk(page) {
   await page.goto(baseUrl + '/', { waitUntil: 'networkidle' });
   await page.getByRole('heading', { name: 'Gaffers Desk' }).waitFor();
-  await page.getByText('Action centre', { exact: true }).waitFor();
-  await page.getByRole('button', { name: 'Set your team' }).click();
+  await page.getByRole('heading', { name: 'What needs your attention' }).waitFor();
+  await page.getByRole('button', { name: 'Review team' }).first().click();
   await expectPath(page, '/team-selection');
 }
 

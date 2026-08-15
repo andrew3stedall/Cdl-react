@@ -245,6 +245,33 @@ async function mockApi(page, { authenticated = true, teamSelectionLocked = false
       });
     }
 
+    if (path === '/api/desk') {
+      return route.fulfill({
+        json: {
+          context: 'pre_deadline',
+          gameweek: gameweeks[0],
+          selection: teamSelectionResponse(false),
+          squad: {
+            summary: squadSummary,
+            notifications: { notifications: [], proposed_trade_count: trades.filter((trade) => trade.status === 'proposed').length },
+          },
+          current_fixture: leagueFixture,
+          next_fixture: leagueFixture,
+          current_fixtures: [leagueFixture],
+          next_fixtures: [leagueFixture],
+          recent_fixtures: [leagueFixture],
+          league_table: {
+            source: 'interaction fixture',
+            rows: [
+              { position: 1, team: teams[0], played: 1, wins: 1, draws: 0, losses: 0, points_for: 72, points_against: 64, points_difference: 8, league_points: 3 },
+              { position: 2, team: teams[1], played: 1, wins: 0, draws: 0, losses: 1, points_for: 64, points_against: 72, points_difference: -8, league_points: 0 },
+            ],
+          },
+          available_players: scoutingPlayers.players,
+        },
+      });
+    }
+
     if (path === '/api/squad/summary') {
       return route.fulfill({ json: squadSummary });
     }

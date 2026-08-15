@@ -18,6 +18,7 @@ import type { LeagueClient } from './league-api';
 import { LoginPage } from './LoginPage';
 import { MarketPage } from './MarketPage';
 import { ManagerDeskPage } from './ManagerDeskPage';
+import type { ManagerDeskClient } from './manager-desk-api';
 import { ModernisationCheckpointPage } from './ModernisationCheckpointPage';
 import { isSquadRoute } from './navigation';
 import type { PreferenceClient } from './preferences-api';
@@ -87,6 +88,7 @@ interface AppProps {
   fdrClient?: FdrClient;
   initialPath?: string;
   leagueClient?: LeagueClient;
+  managerDeskClient?: ManagerDeskClient;
   preferenceClient?: PreferenceClient;
   session?: SessionState;
   sessionClient?: SessionClient;
@@ -99,6 +101,7 @@ export function App({
   fdrClient,
   initialPath = window.location.pathname,
   leagueClient,
+  managerDeskClient,
   preferenceClient,
   session,
   sessionClient = defaultSessionClient,
@@ -338,6 +341,7 @@ export function App({
             dashboardClient={dashboardClient}
             fdrClient={fdrClient}
             leagueClient={leagueClient}
+            managerDeskClient={managerDeskClient}
             onNavigate={handleNavigate}
             onRefresh={handleRefresh}
             onSignOut={() => void handleSignOut()}
@@ -357,6 +361,7 @@ interface AppRouteContentProps {
   dashboardClient?: DashboardClient;
   fdrClient?: FdrClient;
   leagueClient?: LeagueClient;
+  managerDeskClient?: ManagerDeskClient;
   onNavigate: (href: string) => void;
   onRefresh: () => void;
   onSignOut: () => void;
@@ -370,6 +375,7 @@ function AppRouteContent({
   dashboardClient,
   fdrClient,
   leagueClient,
+  managerDeskClient,
   onNavigate,
   onRefresh,
   onSignOut,
@@ -379,6 +385,7 @@ function AppRouteContent({
   const { attackDirection, preset } = useThemePreset();
   let routeContent = (
     <ManagerDeskPage
+      deskClient={managerDeskClient}
       leagueClient={leagueClient}
       onNavigate={onNavigate}
       onSignOut={onSignOut}
@@ -427,6 +434,7 @@ function AppRouteContent({
   if (currentPath === '/dashboard' || currentPath === '/') {
     routeContent = (
       <ManagerDeskPage
+        deskClient={managerDeskClient}
         leagueClient={leagueClient}
         onNavigate={onNavigate}
         onSignOut={onSignOut}

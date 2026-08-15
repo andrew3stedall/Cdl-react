@@ -25,7 +25,7 @@ const squadRouteAliases = ['/squad', '/squad-management', '/team-selection'];
 
 export const primaryNavigationItems: NavigationItem[] = [
   {
-    label: 'Home',
+    label: 'Desk',
     href: '/dashboard',
     featureKey: 'dashboard',
     description: 'Priorities, deadlines and actions that need attention',

@@ -182,7 +182,7 @@ describe('ManagerDeskPage', () => {
     expect(container.querySelector('h1')?.textContent).toBe('Gaffers Desk');
     expect(container.textContent).not.toContain('Manager workspace');
     expect(container.textContent).not.toContain('Good to see you, Alex');
-    expect(container.querySelector('.manager-desk__header > h1')?.textContent).toBe('Gaffers Desk');
+    expect(container.querySelector('.manager-desk__header h1')?.textContent).toBe('Gaffers Desk');
     expect(container.querySelector('.manager-desk__header > .manager-account-menu')).not.toBeNull();
     expect(container.textContent).toContain('Review your starting XI');
     expect(container.textContent).toContain('Check squad availability');
@@ -196,7 +196,7 @@ describe('ManagerDeskPage', () => {
     expect(container.querySelector('[aria-label="Account menu"]')?.textContent).toContain('Account');
 
     const teamButton = [...container.querySelectorAll<HTMLButtonElement>('button')]
-      .find((button) => button.textContent?.includes('Set your team'));
+      .find((button) => button.textContent?.includes('Review team'));
     await act(async () => {
       teamButton?.click();
     });
@@ -274,7 +274,7 @@ describe('ManagerDeskPage', () => {
       await Promise.resolve();
     });
 
-    expect(container.textContent).toContain('Your team is locked in.');
+    expect(container.textContent).toContain('Locked in');
     expect(container.textContent).toContain('View your team');
     expect(container.textContent).not.toContain('Choose a captain');
   });

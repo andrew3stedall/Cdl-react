@@ -849,3 +849,184 @@
     max-width: 5rem;
   }
 }
+
+/* Context-first desk surfaces. */
+.manager-desk__fixture-focus,
+.manager-desk__priority-stack,
+.manager-desk__support-grid {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.manager-desk__fixture-spotlight,
+.manager-desk__fixture-others,
+.manager-desk__priority-card,
+.manager-desk__support-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  min-width: 0;
+}
+
+.manager-desk__fixture-spotlight {
+  border-left: 3px solid var(--primary);
+  display: grid;
+  gap: 1rem;
+  padding: clamp(1rem, 3vw, 1.55rem);
+}
+
+.manager-desk__fixture-spotlight--finalised { border-left-color: var(--muted-foreground); }
+.manager-desk__fixture-spotlight--empty { align-items: center; grid-template-columns: auto 1fr auto; }
+.manager-desk__fixture-spotlight--empty > svg { color: var(--primary); }
+.manager-desk__fixture-spotlight--empty h2,
+.manager-desk__fixture-spotlight--empty p { margin: 0; }
+.manager-desk__fixture-spotlight--empty p { color: var(--muted-foreground); font-size: 0.82rem; margin-top: 0.2rem; }
+
+.manager-desk__fixture-spotlight-topline,
+.manager-desk__fixture-others-heading,
+.manager-desk__priority-heading,
+.manager-desk__priority-card-heading,
+.manager-desk__fixture-spotlight-footer,
+.manager-desk__fixture-planning,
+.manager-desk__fixture-insights {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.manager-desk__fixture-kicker {
+  align-items: center;
+  color: var(--primary);
+  display: inline-flex;
+  font-size: 0.72rem;
+  font-weight: 800;
+  gap: 0.4rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.manager-desk__fixture-gameweek { color: var(--muted-foreground); font-size: 0.72rem; letter-spacing: 0.07em; text-transform: uppercase; }
+.manager-desk__status-dot--finalised { background: var(--muted-foreground); }
+.manager-desk__status-dot--pre_deadline { background: var(--primary); }
+
+.manager-desk__fixture-spotlight-teams {
+  align-items: center;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr) minmax(5rem, 0.45fr) minmax(0, 1fr);
+}
+
+.manager-desk__fixture-spotlight-team { align-items: center; display: grid; gap: 0.25rem; min-width: 0; }
+.manager-desk__fixture-spotlight-team--opponent { justify-items: end; text-align: right; }
+.manager-desk__fixture-spotlight-team strong { font-size: clamp(1rem, 2vw, 1.35rem); letter-spacing: -0.025em; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.manager-desk__fixture-spotlight-team small { color: var(--muted-foreground); font-size: 0.72rem; }
+.manager-desk__fixture-spotlight-team--own .manager-desk__fixture-badge { border-width: 2px; height: 3rem; width: 3rem; }
+.manager-desk__fixture-spotlight-team--opponent .manager-desk__fixture-badge { height: 2.6rem; width: 2.6rem; }
+.manager-desk__fixture-centre { align-items: center; display: flex; justify-content: center; }
+.manager-desk__fixture-centre .manager-desk__fixture-vs { font-size: 1.05rem; }
+.manager-desk__fixture-score { align-items: baseline; display: flex; gap: 0.5rem; }
+.manager-desk__fixture-score strong { color: var(--primary); font-size: clamp(2.4rem, 6vw, 4.2rem); letter-spacing: -0.08em; line-height: 0.9; }
+.manager-desk__fixture-score strong:last-child { color: var(--foreground); }
+.manager-desk__fixture-score span { color: var(--muted-foreground); font-size: 1.4rem; }
+
+.manager-desk__fixture-insights { border-top: 1px solid var(--border); justify-content: stretch; padding-top: 0.8rem; }
+.manager-desk__fixture-insight { display: grid; flex: 1; gap: 0.2rem; min-width: 0; }
+.manager-desk__fixture-insight + .manager-desk__fixture-insight { border-left: 1px solid var(--border); padding-left: 0.8rem; }
+.manager-desk__fixture-insight span,
+.manager-desk__fixture-planning-label,
+.manager-desk__fixture-form-block > span,
+.manager-desk__draw-countdown span { color: var(--muted-foreground); font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; }
+.manager-desk__fixture-insight strong { font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.manager-desk__fixture-planning { border-top: 1px solid var(--border); padding-top: 0.8rem; }
+.manager-desk__fixture-planning > div:first-child { display: grid; gap: 0.16rem; }
+.manager-desk__fixture-planning-label { align-items: center; display: inline-flex; gap: 0.3rem; }
+.manager-desk__fixture-planning-label svg { color: var(--primary); }
+.manager-desk__fixture-planning strong { color: var(--primary); font-size: clamp(1.35rem, 3vw, 2.05rem); letter-spacing: -0.05em; }
+.manager-desk__fixture-planning small { color: var(--muted-foreground); font-size: 0.75rem; }
+.manager-desk__fixture-form-block { display: grid; gap: 0.45rem; justify-items: end; }
+.manager-desk__form-blocks { display: flex; gap: 0.35rem; }
+.manager-desk__form-block { align-items: center; border: 1px solid var(--border); border-radius: 0.45rem; display: inline-flex; font-size: 0.74rem; font-weight: 800; height: 2rem; justify-content: center; min-width: 2.4rem; padding: 0 0.3rem; }
+.manager-desk__form-block--w, .manager-desk__form-dot--w { background: color-mix(in srgb, var(--primary) 14%, transparent); border-color: var(--primary); color: var(--primary); }
+.manager-desk__form-block--d, .manager-desk__form-dot--d { background: color-mix(in srgb, var(--muted-foreground) 12%, transparent); border-color: var(--muted-foreground); }
+.manager-desk__form-block--l, .manager-desk__form-dot--l { background: color-mix(in srgb, var(--destructive) 12%, transparent); border-color: var(--destructive); color: var(--destructive); }
+.manager-desk__form-block--p { color: var(--muted-foreground); }
+
+.manager-desk__fixture-spotlight-footer { border-top: 1px solid var(--border); padding-top: 0.75rem; }
+.manager-desk__fixture-spotlight-footer > span { color: var(--muted-foreground); font-size: 0.77rem; }
+.manager-desk__fixture-others { display: grid; gap: 0.55rem; padding: 0.9rem 1rem 0.7rem; }
+.manager-desk__fixture-others h2, .manager-desk__priority-heading h2 { font-size: 1rem; letter-spacing: -0.02em; margin: 0.2rem 0 0; }
+.manager-desk__fixture-others-heading .ui-button { min-height: 1.9rem; padding: 0.2rem 0.25rem; }
+.manager-desk__fixture-row-list { display: grid; }
+.manager-desk__fixture-row { align-items: center; background: transparent; border: 0; border-top: 1px solid var(--border); color: var(--foreground); cursor: pointer; display: grid; gap: 0.7rem; grid-template-columns: minmax(4.2rem, 1fr) minmax(12rem, 1.5fr) minmax(4.2rem, 1fr) auto; min-height: 3.1rem; padding: 0.55rem 0; text-align: left; }
+.manager-desk__fixture-row:hover, .manager-desk__fixture-row:focus-visible { background: var(--secondary); outline: none; }
+.manager-desk__fixture-row-team { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.manager-desk__fixture-row-team--away { text-align: right; }
+.manager-desk__fixture-row-form { align-items: center; display: flex; gap: 0.65rem; justify-content: center; }
+.manager-desk__fixture-row-vs { color: var(--muted-foreground); font-size: 0.72rem; text-transform: uppercase; }
+.manager-desk__form-dots { display: inline-flex; gap: 0.25rem; }
+.manager-desk__form-dot { background: var(--secondary); border: 1px solid var(--border); border-radius: 50%; display: inline-block; height: 0.58rem; width: 0.58rem; }
+.manager-desk__fixture-row-score { color: var(--primary); font-size: 0.9rem; text-align: center; }
+
+.manager-desk__priority-heading { padding: 0 0.1rem; }
+.manager-desk__priority-heading > span { align-items: center; background: var(--secondary); border: 1px solid var(--border); border-radius: 999px; color: var(--muted-foreground); display: inline-flex; font-size: 0.75rem; font-weight: 800; height: 1.7rem; justify-content: center; min-width: 1.7rem; padding: 0 0.45rem; }
+.manager-desk__priority-list { display: grid; gap: 0.7rem; }
+.manager-desk__priority-item { min-width: 0; }
+.manager-desk__priority-card { display: grid; gap: 0.7rem; padding: 1rem; }
+.manager-desk__priority-item--critical .manager-desk__priority-card, .manager-desk__priority-card--critical { border-color: var(--destructive); border-left: 3px solid var(--destructive); }
+.manager-desk__priority-card--injury { border-left: 3px solid color-mix(in srgb, var(--destructive) 66%, var(--border)); }
+.manager-desk__priority-icon { align-items: center; background: var(--secondary); border-radius: 0.5rem; color: var(--primary); display: inline-flex; flex: 0 0 auto; height: 2.25rem; justify-content: center; width: 2.25rem; }
+.manager-desk__priority-card--critical .manager-desk__priority-icon, .manager-desk__priority-card--injury .manager-desk__priority-icon { color: var(--destructive); }
+.manager-desk__priority-card-heading { align-items: flex-start; justify-content: flex-start; }
+.manager-desk__priority-card-heading h3 { font-size: 1rem; letter-spacing: -0.02em; margin: 0.2rem 0 0; }
+.manager-desk__priority-card p, .manager-desk__support-card p { color: var(--muted-foreground); font-size: 0.82rem; line-height: 1.45; margin: 0; }
+.manager-desk__priority-card > .ui-button, .manager-desk__support-card > .ui-button { justify-self: start; }
+.manager-desk__priority-player-list { border: 1px solid color-mix(in srgb, var(--destructive) 40%, var(--border)); border-radius: calc(var(--radius) - 0.2rem); display: grid; overflow: hidden; }
+.manager-desk__priority-player-list button { align-items: center; background: transparent; border: 0; color: var(--foreground); cursor: pointer; display: flex; gap: 0.6rem; padding: 0.6rem 0.7rem; text-align: left; }
+.manager-desk__priority-player-list button + button { border-top: 1px solid var(--border); }
+.manager-desk__priority-player-list button:hover, .manager-desk__priority-player-list button:focus-visible { background: var(--secondary); outline: none; }
+.manager-desk__priority-player-list button > span:nth-child(2) { display: grid; flex: 1; gap: 0.15rem; min-width: 0; }
+.manager-desk__priority-player-list small, .manager-desk__available-row small { color: var(--muted-foreground); font-size: 0.72rem; }
+
+.manager-desk__draw-card { grid-template-columns: minmax(0, 1fr) minmax(15rem, 1fr); }
+.manager-desk__draw-card--urgent { border-color: var(--primary); border-left: 3px solid var(--primary); }
+.manager-desk__draw-copy, .manager-desk__draw-players { display: grid; gap: 0.7rem; min-width: 0; }
+.manager-desk__draw-countdown { align-items: baseline; display: flex; gap: 0.5rem; }
+.manager-desk__draw-countdown strong { color: var(--primary); font-size: clamp(1.6rem, 4vw, 2.35rem); letter-spacing: -0.06em; }
+.manager-desk__draw-players { border-left: 1px solid var(--border); padding-left: 1rem; }
+.manager-desk__draw-players .manager-desk__panel-heading h2 { font-size: 0.95rem; }
+.manager-desk__available-list { display: grid; }
+.manager-desk__available-row { align-items: center; background: transparent; border: 0; border-top: 1px solid var(--border); color: var(--foreground); cursor: pointer; display: flex; gap: 0.6rem; padding: 0.55rem 0; text-align: left; }
+.manager-desk__available-row:hover, .manager-desk__available-row:focus-visible { background: var(--secondary); outline: none; }
+.manager-desk__available-row > span:nth-child(2) { display: grid; flex: 1; gap: 0.1rem; min-width: 0; }
+.manager-desk__player-icon, .manager-desk__add-icon { align-items: center; background: var(--secondary); border: 1px solid var(--border); border-radius: 0.5rem; color: var(--primary); display: inline-flex; flex: 0 0 auto; height: 2rem; justify-content: center; width: 2rem; }
+.manager-desk__add-icon { background: transparent; border-color: var(--primary); font-size: 1.25rem; }
+.manager-desk__support-grid { align-items: start; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.manager-desk__support-card { display: grid; gap: 0.65rem; padding: 0.95rem 1rem; }
+.manager-desk__support-card .manager-desk__panel-heading h2 { font-size: 0.95rem; }
+.manager-desk__status-value { font-size: 1.25rem; letter-spacing: -0.035em; }
+.manager-desk__priority-stack--clear { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0.95rem 1rem; }
+
+@media (max-width: 760px) {
+  .manager-desk__fixture-spotlight--empty, .manager-desk__draw-card, .manager-desk__support-grid { grid-template-columns: 1fr; }
+  .manager-desk__fixture-spotlight--empty > .ui-button { grid-column: auto; justify-self: start; }
+  .manager-desk__draw-players { border-left: 0; border-top: 1px solid var(--border); padding-left: 0; padding-top: 0.8rem; }
+  .manager-desk__fixture-row { gap: 0.35rem; grid-template-columns: minmax(3.4rem, 1fr) minmax(8.6rem, 1.5fr) minmax(3.4rem, 1fr) auto; }
+  .manager-desk__fixture-row-form { gap: 0.3rem; }
+  .manager-desk__fixture-row-team { font-size: 0.78rem; }
+}
+
+@media (max-width: 520px) {
+  .manager-desk__fixture-spotlight-teams { gap: 0.45rem; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); }
+  .manager-desk__fixture-spotlight-team strong { font-size: 0.9rem; }
+  .manager-desk__fixture-score { gap: 0.25rem; }
+  .manager-desk__fixture-score strong { font-size: 2.25rem; }
+  .manager-desk__fixture-insights, .manager-desk__fixture-planning { align-items: stretch; flex-direction: column; }
+  .manager-desk__fixture-insight + .manager-desk__fixture-insight { border-left: 0; border-top: 1px solid var(--border); padding-left: 0; padding-top: 0.55rem; }
+  .manager-desk__fixture-form-block { justify-items: start; }
+  .manager-desk__fixture-spotlight-footer { align-items: flex-start; flex-direction: column; }
+  .manager-desk__fixture-row { grid-template-columns: minmax(3rem, 1fr) minmax(6.8rem, 1.4fr) minmax(3rem, 1fr) auto; }
+  .manager-desk__form-dot { height: 0.5rem; width: 0.5rem; }
+  .manager-desk__fixture-row-team { font-size: 0.7rem; }
+}

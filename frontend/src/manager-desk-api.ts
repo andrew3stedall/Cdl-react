@@ -15,8 +15,11 @@ export interface ManagerDeskSnapshot {
   currentFixtures: LeagueFixture[];
   nextFixtures: LeagueFixture[];
   recentFixtures: LeagueFixture[];
+  formFixtures: LeagueFixture[];
   leagueTable: LeagueTableResponse;
   availablePlayers: SquadApiPlayer[];
+  drawDeadlineAt: string | null;
+  interestCount: number;
 }
 
 export interface ManagerDeskClient {
@@ -111,8 +114,11 @@ interface ApiDeskResponse {
   current_fixtures: ApiFixture[];
   next_fixtures: ApiFixture[];
   recent_fixtures: ApiFixture[];
+  form_fixtures?: ApiFixture[];
   league_table: ApiLeagueTableResponse;
   available_players: SquadApiPlayer[];
+  draw_deadline_at?: string | null;
+  interest_count?: number;
 }
 
 export class HttpManagerDeskClient implements ManagerDeskClient {
@@ -130,6 +136,7 @@ export class HttpManagerDeskClient implements ManagerDeskClient {
       currentFixtures: response.current_fixtures.map(mapFixture).filter(isFixture),
       nextFixtures: response.next_fixtures.map(mapFixture).filter(isFixture),
       recentFixtures: response.recent_fixtures.map(mapFixture).filter(isFixture),
+      formFixtures: (response.form_fixtures ?? response.recent_fixtures).map(mapFixture).filter(isFixture),
       leagueTable: {
         source: response.league_table.source,
         rows: response.league_table.rows.map((row) => ({
@@ -146,6 +153,8 @@ export class HttpManagerDeskClient implements ManagerDeskClient {
         })),
       },
       availablePlayers: response.available_players,
+      drawDeadlineAt: response.draw_deadline_at ?? null,
+      interestCount: response.interest_count ?? 0,
     };
   }
 

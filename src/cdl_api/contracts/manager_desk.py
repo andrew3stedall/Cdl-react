@@ -1,5 +1,6 @@
 """Read model contracts for the context-aware Manager's Desk."""
 
+from datetime import datetime
 from enum import StrEnum
 
 from pydantic import BaseModel, Field
@@ -32,5 +33,8 @@ class ManagerDeskResponse(BaseModel):
     current_fixtures: list[LeagueFixture] = Field(default_factory=list)
     next_fixtures: list[LeagueFixture] = Field(default_factory=list)
     recent_fixtures: list[LeagueFixture] = Field(default_factory=list)
+    form_fixtures: list[LeagueFixture] = Field(default_factory=list)
     league_table: LeagueTableResponse
     available_players: list[PlayerDetail] = Field(default_factory=list)
+    draw_deadline_at: datetime | None = None
+    interest_count: int = 0

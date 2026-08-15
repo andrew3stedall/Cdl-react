@@ -1,5 +1,7 @@
 """Application service for the context-aware Manager's Desk read model."""
 
+from datetime import UTC, datetime, timedelta
+
 from cdl_api.contracts.league_models import FixtureStatus, LeagueFixture
 from cdl_api.contracts.manager_desk import ManagerDeskContext, ManagerDeskResponse
 from cdl_api.repositories.league_repository import LeagueRepository
@@ -44,10 +46,17 @@ class ManagerDeskService:
             selection.manager_team.name,
             current_fixture,
         )
+        form_fixtures = self._recent_fixtures()
         available_players = self._squad_service.get_changes().available_to_add[:3]
+        interests = self._squad_service.list_interests()
+        draw_deadline_at = (
+            next_fixture.gameweek.deadline_at
+            if next_fixture is not None and next_fixture.gameweek.deadline_at is not None
+            else selection.gameweek.deadline_at
+        )
 
         return ManagerDeskResponse(
-            context=self._context_for(current_fixture),
+            context=self._context_for(current_fixture, next_fixture),
             gameweek=selection.gameweek,
             selection=selection,
             squad=squad,
@@ -56,8 +65,11 @@ class ManagerDeskService:
             current_fixtures=current_fixtures,
             next_fixtures=next_fixtures,
             recent_fixtures=recent_fixtures,
+            form_fixtures=form_fixtures,
             league_table=LeagueTableService(self._league_repository).get_table(),
             available_players=available_players,
+            draw_deadline_at=draw_deadline_at,
+            interest_count=len(interests),
         )
 
     def _recent_manager_fixtures(
@@ -76,13 +88,33 @@ class ManagerDeskService:
             fixtures = [current_fixture]
         return fixtures[-5:]
 
+    def _recent_fixtures(self) -> list[LeagueFixture]:
+        """Return all scored fixtures in the five most recent gameweeks."""
+        fixtures = [
+            fixture
+            for fixture in self._league_repository.list_fixtures()
+            if fixture.status in {FixtureStatus.STARTED, FixtureStatus.COMPLETE}
+        ]
+        gameweeks = sorted({fixture.gameweek.number for fixture in fixtures})[-5:]
+        return [fixture for fixture in fixtures if fixture.gameweek.number in gameweeks]
+
     @staticmethod
-    def _context_for(fixture: LeagueFixture | None) -> ManagerDeskContext:
+    def _context_for(
+        fixture: LeagueFixture | None,
+        next_fixture: LeagueFixture | None = None,
+    ) -> ManagerDeskContext:
         if fixture is None or fixture.status == FixtureStatus.PENDING:
             return ManagerDeskContext.PRE_DEADLINE
         if fixture.status == FixtureStatus.STARTED:
             return ManagerDeskContext.LIVE
-        return ManagerDeskContext.FINALISED
+        deadline = fixture.gameweek.deadline_at
+        if deadline is None or datetime.now(UTC) - deadline <= timedelta(hours=24):
+            return ManagerDeskContext.FINALISED
+        return (
+            ManagerDeskContext.PRE_DEADLINE
+            if next_fixture is not None
+            else ManagerDeskContext.FINALISED
+        )
 
     @classmethod
     def _manager_fixture(

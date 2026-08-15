@@ -14,5 +14,8 @@ def test_manager_desk_returns_one_context_aware_read_model() -> None:
     assert payload["squad"]["summary"]["manager_team"]["id"] == "team-castle"
     assert payload["current_fixture"]["status"] == "started"
     assert payload["current_fixtures"]
+    assert "form_fixtures" in payload
     assert "league_table" in payload
     assert "available_players" in payload
+    assert "draw_deadline_at" in payload
+    assert payload["interest_count"] == 0

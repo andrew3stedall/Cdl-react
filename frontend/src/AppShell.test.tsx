@@ -149,7 +149,7 @@ describe('AppShell integration', () => {
 
     expect(container.querySelector('[aria-current="page"]')?.textContent).toContain('Rules');
     expect(container.textContent).toContain('Rules Knowledge Base');
-    expect(primaryNavigation?.textContent).toContain('Home');
+    expect(primaryNavigation?.textContent).toContain('Desk');
     expect(primaryNavigation?.textContent).toContain('Squad');
     expect(primaryNavigation?.textContent).toContain('Market');
     expect(primaryNavigation?.textContent).toContain('League');

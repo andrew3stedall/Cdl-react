@@ -9,6 +9,7 @@ class TeamSummary(BaseModel):
     id: str
     name: str
     short_name: str | None = None
+    manager_name: str | None = None
 
 
 class PlayerSummary(BaseModel):

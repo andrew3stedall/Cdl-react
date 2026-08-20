@@ -21,6 +21,7 @@ import { ManagerDeskPage } from './ManagerDeskPage';
 import type { ManagerDeskClient } from './manager-desk-api';
 import { ModernisationCheckpointPage } from './ModernisationCheckpointPage';
 import { isSquadRoute } from './navigation';
+import { PlayerProfilePage } from './PlayerProfilePage';
 import type { PreferenceClient } from './preferences-api';
 import { ProfilePage } from './ProfilePage';
 import { RulesPage } from './RulesPage';
@@ -453,8 +454,20 @@ function AppRouteContent({
     routeContent = <MarketPage currentPath={currentPath} onNavigate={onNavigate} preset={preset} />;
   }
 
+  const playerProfileMatch = currentPath.match(/^\/players\/([^/]+)$/);
+  if (playerProfileMatch) {
+    routeContent = (
+      <PlayerProfilePage
+        onNavigate={onNavigate}
+        playerId={decodeURIComponent(playerProfileMatch[1])}
+        squadClient={squadClient}
+        teamSelectionClient={teamSelectionClient}
+      />
+    );
+  }
+
   if (isSquadRoute(currentPath)) {
-    routeContent = <SquadWorkspacePage attackDirection={attackDirection} onNavigate={onNavigate} preset={preset} teamSelectionClient={teamSelectionClient} />;
+    routeContent = <SquadWorkspacePage attackDirection={attackDirection} onNavigate={onNavigate} preset={preset} squadClient={squadClient} teamSelectionClient={teamSelectionClient} />;
   }
 
   return routeContent;

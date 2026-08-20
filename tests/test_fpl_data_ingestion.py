@@ -4,7 +4,7 @@ from sqlalchemy import create_engine, func, insert, select
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from cdl_api.contracts.fpl_data import FplRefreshResource
+from cdl_api.contracts.fpl_data import FplPlayerHistoryResponse, FplRefreshResource
 from cdl_api.fpl_client import FplApiResponse
 from cdl_api.repositories.postgres_fpl_data import (
     PostgreSQLFplDataRepository,
@@ -243,6 +243,77 @@ def test_refresh_persists_official_bootstrap_and_fixtures_idempotently() -> None
     }
     assert all(resource.last_fetch_status == 200 for resource in status.resources)
     assert all(resource.last_updated_at is not None for resource in status.resources)
+
+
+def test_player_history_enriches_fixture_context_and_conceded_points_from_cached_data() -> None:
+    sessions = _session_factory()
+    repository = PostgreSQLFplDataRepository(sessions)
+    service = FplDataService(FakeClient(), repository)
+    service.refresh(list(FplRefreshResource))
+    repository.persist_fixtures(
+        [
+            {
+                "id": 98,
+                "event": 0,
+                "team_h": 2,
+                "team_a": 1,
+                "kickoff_time": "2026-08-08T14:00:00Z",
+                "started": True,
+                "finished": True,
+                "team_h_difficulty": 3,
+                "team_a_difficulty": 2,
+                "team_h_score": 1,
+                "team_a_score": 0,
+                "stats": [
+                    {
+                        "identifier": "goals_scored",
+                        "h": [],
+                        "a": [{"element": 901, "points": 2, "total_points": 2}],
+                    },
+                    {
+                        "identifier": "assists",
+                        "h": [],
+                        "a": [{"element": 902, "points": 3, "total_points": 3}],
+                    },
+                    {
+                        "identifier": "clean_sheets",
+                        "h": [],
+                        "a": [{"element": 903, "points": 1, "total_points": 1}],
+                    },
+                ],
+            },
+            {
+                "id": 101,
+                "event": 2,
+                "team_h": 2,
+                "team_a": 1,
+                "kickoff_time": "2026-08-22T14:00:00Z",
+                "started": False,
+                "finished": False,
+                "team_h_difficulty": 2,
+                "team_a_difficulty": 4,
+                "team_h_score": None,
+                "team_a_score": None,
+            },
+        ],
+        endpoint="https://fantasy.premierleague.com/api/fixtures/",
+        status_code=200,
+        response_sha256="fixture-context-sha",
+        fetched_at=datetime(2026, 8, 20, tzinfo=UTC),
+    )
+
+    response = service.player_history("fpl-10")
+
+    assert isinstance(response, FplPlayerHistoryResponse)
+    assert response.history[0].opponent_short_name == "AVL"
+    assert response.history[0].difficulty == 2
+    assert response.fixtures[0].opponent_short_name == "AVL"
+    assert response.fixtures[0].difficulty == 4
+    assert response.fixtures[0].opponent_difficulty == 2
+    assert response.opponent_defensive_history[0].opponent_short_name == "ARS"
+    assert response.opponent_defensive_history[0].total_points_conceded == 6
+    assert response.opponent_defensive_history[0].attacking_asset_points == 5
+    assert response.opponent_defensive_history[0].defensive_asset_points == 1
 
 
 def test_bootstrap_refresh_enriches_existing_canonical_draft_player_in_place() -> None:

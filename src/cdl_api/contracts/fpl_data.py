@@ -72,6 +72,10 @@ class FplPlayerGameweekHistory(BaseModel):
     value: float = 0
     was_home: bool
     kickoff_time: datetime | None = None
+    opponent_name: str | None = None
+    opponent_short_name: str | None = None
+    difficulty: int | None = Field(default=None, ge=1, le=5)
+    defensive_contributions: int = 0
 
 
 class FplPlayerUpcomingFixture(BaseModel):
@@ -81,6 +85,21 @@ class FplPlayerUpcomingFixture(BaseModel):
     difficulty: int
     is_home: bool
     kickoff_time: datetime | None = None
+    opponent_name: str | None = None
+    opponent_short_name: str | None = None
+    opponent_difficulty: int | None = Field(default=None, ge=1, le=5)
+
+
+class FplOpponentDefensiveHistory(BaseModel):
+    fixture_id: int
+    gameweek: int | None = None
+    opponent_name: str | None = None
+    opponent_short_name: str | None = None
+    is_home: bool
+    difficulty: int | None = Field(default=None, ge=1, le=5)
+    total_points_conceded: int | None = None
+    attacking_asset_points: int | None = None
+    defensive_asset_points: int | None = None
 
 
 class FplPlayerHistoryResponse(BaseModel):
@@ -89,3 +108,4 @@ class FplPlayerHistoryResponse(BaseModel):
     response_sha256: str
     history: list[FplPlayerGameweekHistory]
     fixtures: list[FplPlayerUpcomingFixture]
+    opponent_defensive_history: list[FplOpponentDefensiveHistory] = Field(default_factory=list)

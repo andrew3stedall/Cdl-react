@@ -87,11 +87,13 @@ class FplDataService:
         if cached is not None:
             payload, fetched_at, response_sha256 = cached
             if _cache_is_fresh(fetched_at, now):
-                return _player_history_response(
-                    player_id,
-                    payload,
-                    fetched_at=fetched_at,
-                    response_sha256=response_sha256,
+                return self._enrich_player_history(
+                    _player_history_response(
+                        player_id,
+                        payload,
+                        fetched_at=fetched_at,
+                        response_sha256=response_sha256,
+                    )
                 )
 
         external_player_id = _external_player_id(player_id)
@@ -110,11 +112,13 @@ class FplDataService:
                 response_sha256=response_sha256,
                 fetched_at=fetched_at,
             )
-            return _player_history_response(
-                player_id,
-                response.payload,
-                fetched_at=fetched_at,
-                response_sha256=response_sha256,
+            return self._enrich_player_history(
+                _player_history_response(
+                    player_id,
+                    response.payload,
+                    fetched_at=fetched_at,
+                    response_sha256=response_sha256,
+                )
             )
         except Exception as exc:
             self._repository.record_failure(
@@ -124,6 +128,13 @@ class FplDataService:
                 error=str(exc),
             )
             raise
+
+    def _enrich_player_history(
+        self,
+        response: FplPlayerHistoryResponse,
+    ) -> FplPlayerHistoryResponse:
+        enrich = getattr(self._repository, "enrich_player_history", None)
+        return enrich(response) if callable(enrich) else response
 
     def status(self) -> FplCacheStatusResponse:
         return self._repository.status()
@@ -195,6 +206,7 @@ def _player_history_response(
             value=_as_float(row.get("value")) / 10,
             was_home=bool(row.get("was_home", False)),
             kickoff_time=_as_datetime(row.get("kickoff_time")),
+            defensive_contributions=_as_int(row.get("defensive_contribution")),
         )
         for row in raw_history
     ]
@@ -209,6 +221,13 @@ def _player_history_response(
         )
         for row in raw_fixtures
     ]
+    history.sort(
+        key=lambda row: (
+            row.kickoff_time or datetime.min.replace(tzinfo=UTC),
+            row.gameweek,
+            row.fixture_id,
+        )
+    )
     return FplPlayerHistoryResponse(
         player_id=player_id,
         fetched_at=normalized_fetched_at,

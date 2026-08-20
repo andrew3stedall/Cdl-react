@@ -374,7 +374,7 @@ async function testSquadWorkspace(browser, viewport) {
   await profileAfterCompare.getByRole('button', { name: 'Remove' }).click();
   await profileAfterCompare.getByRole('heading', { name: 'Remove player' }).waitFor();
   await captureReviewState(page, viewport, 'squad-reference-remove-action');
-  await profileAfterCompare.getByRole('button', { name: 'Close action dialog' }).click();
+  await profileAfterCompare.getByRole('dialog', { name: 'Remove player' }).getByRole('button', { name: 'Close action dialog' }).click();
 
   await page.getByRole('button', { name: 'View as list' }).click();
   await page.locator('[aria-label="Starting XI players table"]').waitFor();

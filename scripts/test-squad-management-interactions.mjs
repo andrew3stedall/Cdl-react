@@ -353,6 +353,9 @@ async function testSquadWorkspace(browser, viewport) {
   const playerDrawer = page.locator('.squad-page__drawer--profile');
   await playerDrawer.getByRole('toolbar', { name: 'Squad-management actions' }).waitFor();
   await playerDrawer.locator('.player-profile__shirt-token').waitFor();
+  await playerDrawer.evaluate(async (element) => {
+    await Promise.all(element.getAnimations().map((animation) => animation.finished));
+  });
   const profileCoverage = await playerDrawer.evaluate((element) => {
     const rect = element.getBoundingClientRect();
     const navigation = document.querySelector('.global-mobile-navigation');

@@ -78,8 +78,8 @@ The current implementation now uses the weekly role boundaries directly in the S
 Unless later questions explicitly change them, retain the existing decisions for:
 
 - Pitch and List representations;
-- owned-player quick-detail drawer;
-- Compare, Release to Free Agency, Draft Trade and Full Profile contextual actions;
+- owned-player full profile bottom drawer;
+- Move, Compare, Remove, Draft Trade and Close Profile contextual actions;
 - compare up to three players in manual selection order;
 - staged draw additions/removals;
 - Available to Add / Pending Removal workflow;

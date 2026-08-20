@@ -217,3 +217,7 @@ export function useThemePreset(): ThemePresetContextValue {
 
   return context;
 }
+
+export function useOptionalThemePreset(): ThemePresetContextValue | null {
+  return useContext(ThemePresetContext);
+}

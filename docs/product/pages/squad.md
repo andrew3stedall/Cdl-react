@@ -57,33 +57,33 @@ Columns are customisable. The default analytical set should include:
 
 Only render metrics that have a trustworthy product data source. Missing joins should be documented rather than filled with synthetic values.
 
-## Player quick-detail drawer
+## Player profile drawer
 
-Selecting a squad player opens a contextual drawer. It prioritises:
+Selecting a squad player opens the full player profile in a bottom sheet that starts at the bottom of the screen. The profile keeps its squad-management action toolbar visible while the profile content scrolls. It prioritises:
 
 1. current status and availability;
 2. performance evidence;
 3. upcoming fixtures;
 4. actions.
 
-The owned-player actions are:
+The profile actions are:
 
-- **Substitute player**;
+- **Move to bench** or **Move to Starting XI**;
 - **Compare**;
-- **Release to free agency**;
+- **Remove**;
 - **Draft trade**;
-- **Full profile**.
+- **Close player profile**.
 
 ### Substitute player
 
 Substitution is an in-place swap between Starting XI, Bench and Reserves.
 
-- Choosing **Substitute player** closes the player drawer and enters a page-level substitution mode.
-- The current pitch or list surface remains visible; legal candidates are marked there and can be selected directly.
+- Choosing **Move to bench** or **Move to Starting XI** opens the legal replacement choices inside the player profile drawer.
+- The current pitch or list surface remains visible behind the bottom sheet.
 - Candidates are limited to swaps that preserve the configured Starting XI formation and bench composition.
 - Starting XI eligibility uses the authoritative formation limits: 1 goalkeeper, 3–5 defenders, 2–5 midfielders and 1–3 forwards.
 - When a player enters the bench, the page-level mode exposes the legal bench slot: goalkeeper or outfield positions 1–4.
-- The swap is staged locally until **Save lineup** is selected; the existing backend lineup validation remains authoritative.
+- The swap is persisted through the existing lineup endpoint; backend lineup validation remains authoritative.
 - A locked gameweek exposes the context but disables substitution.
 
 Pitch players use a restrained position marker colour rather than a visible position label. Position rows remain transparent so the pitch markings stay visible, and the pitch uses compact vertical spacing.
@@ -99,14 +99,12 @@ Compare stays on the Squad page in a drawer.
 - Use side-by-side cards.
 - Advanced metrics expand within each comparison card.
 
-### Release to free agency
+### Remove player
 
-Release is never an immediate player-by-player mutation.
+Removal is confirmed inside the player profile action dialog.
 
-- Selecting Release stages the player for removal.
-- The player leaves the active squad representation and moves to the side panel's **Pending Removal** section.
-- Pending removal has a **Removed** badge and a distinct treatment parallel to the **Added** treatment.
-- The user can **Restore to Squad** explicitly. Drag-and-drop may be an optional convenience but is never required.
+- Selecting **Remove** opens a confirmation dialog with the available replacement players.
+- Confirming removal applies the squad change atomically through the squad changes endpoint and closes the profile drawer.
 
 ## Draw-won additions and staged squad changes
 

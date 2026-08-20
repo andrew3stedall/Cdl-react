@@ -94,7 +94,7 @@ League information may create urgency items on Home, but the detailed competitio
 
 Simple, reversible actions should stay contextual. Multi-step, consequential or comparison-heavy actions use a dedicated flow.
 
-A player selected from Squad opens the full player profile in a bottom sheet. The sheet prioritises:
+A player selected from Squad opens the full player profile in a full-width, full-height replacement layer above the main navigation. The layer prioritises:
 
 1. current status;
 2. performance evidence;

@@ -143,20 +143,56 @@
   min-width: 0;
 }
 
-.player-profile__portrait {
+.player-profile__shirt-token {
   align-items: center;
   background: color-mix(in srgb, var(--profile-accent) 18%, var(--profile-panel));
   border: 1px solid color-mix(in srgb, var(--profile-accent) 55%, var(--profile-border));
   border-radius: 50%;
-  color: var(--profile-accent);
-  display: inline-flex;
-  flex: 0 0 auto;
-  font-size: 1.05rem;
-  font-weight: 900;
-  height: 4.25rem;
+  display: flex;
+  flex: 0 0 5.25rem;
+  height: 5.25rem;
   justify-content: center;
-  letter-spacing: 0.03em;
-  width: 4.25rem;
+  overflow: hidden;
+  position: relative;
+  text-align: center;
+  width: 5.25rem;
+}
+
+.player-profile__shirt-crop {
+  height: 54%;
+  left: 50%;
+  overflow: hidden;
+  position: absolute;
+  top: 0.12rem;
+  transform: translateX(-50%);
+  width: 92%;
+  z-index: 1;
+}
+
+.player-profile__shirt-crop > .squad-page__shirt.large {
+  height: 200%;
+  left: 50%;
+  max-width: none;
+  object-fit: contain;
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  width: 96%;
+}
+
+.player-profile__shirt-name {
+  font-size: 0.7rem;
+  left: 0.15rem;
+  line-height: 1;
+  max-width: calc(100% - 0.3rem);
+  overflow: hidden;
+  position: absolute;
+  right: 0.15rem;
+  text-overflow: ellipsis;
+  top: 66%;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  z-index: 2;
 }
 
 .player-profile__identity-copy {
@@ -171,7 +207,8 @@
   justify-content: space-between;
 }
 
-.player-profile__identity-heading h2 {
+.player-profile__identity-heading h2,
+.player-profile__identity-heading p {
   font-size: 1.05rem;
   letter-spacing: -0.02em;
   margin: 0;
@@ -182,8 +219,7 @@
 
 .player-profile__identity-heading p {
   color: var(--profile-muted);
-  font-size: 0.75rem;
-  margin: 0.2rem 0 0;
+  font-size: 0.8rem;
 }
 
 .player-profile__favourite {

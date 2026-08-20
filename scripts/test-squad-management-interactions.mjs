@@ -352,6 +352,25 @@ async function testSquadWorkspace(browser, viewport) {
 
   const playerDrawer = page.locator('.squad-page__drawer--profile');
   await playerDrawer.getByRole('toolbar', { name: 'Squad-management actions' }).waitFor();
+  await playerDrawer.locator('.player-profile__shirt-token').waitFor();
+  const profileCoverage = await playerDrawer.evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    const navigation = document.querySelector('.global-mobile-navigation');
+    const navigationRect = navigation?.getBoundingClientRect();
+    const bottomElement = document.elementFromPoint(window.innerWidth / 2, window.innerHeight - 2);
+    return {
+      bottom: rect.bottom,
+      bottomElementInsideDrawer: bottomElement instanceof Element && Boolean(bottomElement.closest('.squad-page__drawer--profile')),
+      height: rect.height,
+      left: rect.left,
+      navigationTop: navigationRect?.top ?? null,
+      top: rect.top,
+      width: rect.width,
+    };
+  });
+  if (profileCoverage.left > 1 || profileCoverage.top > 1 || profileCoverage.width < viewport.width - 1 || profileCoverage.height < viewport.height - 1 || !profileCoverage.bottomElementInsideDrawer) {
+    throw new Error(`Expected the player profile to replace the full viewport and cover mobile navigation (received ${JSON.stringify(profileCoverage)})`);
+  }
   await captureReviewState(page, viewport, 'squad-reference-player-drawer');
   await playerDrawer.getByRole('button', { name: 'Open player actions' }).click();
   await Promise.all([

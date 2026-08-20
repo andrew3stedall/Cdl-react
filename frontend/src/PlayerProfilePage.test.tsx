@@ -196,6 +196,18 @@ afterEach(() => {
 });
 
 describe('PlayerProfilePage', () => {
+  test('uses the squad shirt token treatment instead of an initials portrait', async () => {
+    const { container, root } = renderPage();
+    await settle();
+
+    expect(container.querySelector('.player-profile__shirt-token')).not.toBeNull();
+    expect(container.querySelector('.player-profile__shirt-token')?.getAttribute('aria-label')).toBe('Shirt for M. Santos');
+    expect(container.querySelector('.player-profile__shirt-crop .squad-page__shirt.large')).not.toBeNull();
+    expect(container.querySelector('.player-profile__shirt-name')?.textContent).toBe('M. Santos');
+    expect(container.querySelector('.player-profile__portrait')).toBeNull();
+    root.unmount();
+  });
+
   test('renders ten chronological fixtures, home/away casing, FDR colours, stat icons, and compact minutes chart', async () => {
     const { container, root } = renderPage();
     await settle();

@@ -342,15 +342,15 @@ export function PlayerProfilePage({
       <div className="player-profile__content">
       <section aria-label="Player identity" className="player-profile__card player-profile__identity-card">
         <div className="player-profile__identity-main">
-          <div aria-label={`Portrait for ${player.display_name}`} className="player-profile__portrait" role="img">
-            {initials(player.display_name)}
+          <div aria-label={`Shirt for ${player.display_name}`} className="player-profile__shirt-token" role="img">
+            <span aria-hidden="true" className="player-profile__shirt-crop">
+              <TeamShirt large team={player.epl_team.short_name ?? player.epl_team.name} />
+            </span>
+            <strong className="player-profile__shirt-name">{shortPlayerName(player.display_name)}</strong>
           </div>
           <div className="player-profile__identity-copy">
             <div className="player-profile__identity-heading">
-              <div>
-                <h2>{player.display_name}</h2>
-                <p>{player.position} <span aria-hidden="true">·</span> {player.epl_team.short_name ?? player.epl_team.name}</p>
-              </div>
+              <p>{player.position} <span aria-hidden="true">·</span> {player.epl_team.short_name ?? player.epl_team.name}</p>
               <button
                 aria-label={favourite ? `Remove ${player.display_name} from favourites` : `Add ${player.display_name} to favourites`}
                 aria-pressed={favourite}
@@ -638,10 +638,6 @@ function fdrStyleFor(value: number | null, displayMode: 'font' | 'fill'): CSSPro
 
 function formatNullableNumber(value: number | null | undefined): string {
   return value === null || value === undefined || Number.isNaN(value) ? '—' : String(value);
-}
-
-function initials(name: string): string {
-  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || 'PL';
 }
 
 function readFavourite(playerId: string): boolean {

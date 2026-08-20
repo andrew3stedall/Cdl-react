@@ -27,6 +27,7 @@
   max-width: none;
   overflow: hidden;
   padding: 0.55rem 0.75rem 0.75rem;
+  position: relative;
   grid-template-rows: auto auto minmax(0, 1fr) auto;
 }
 
@@ -36,6 +37,7 @@
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
+  padding-bottom: 4.5rem;
 }
 
 .player-profile__sheet-handle {
@@ -629,12 +631,16 @@
   border-radius: 0;
   border-top: 1px solid var(--cdl-border);
   bottom: 0;
+  box-sizing: border-box;
   gap: 0;
-  margin: 0 -0.75rem -0.75rem;
   padding: 0.45rem max(0.45rem, env(safe-area-inset-right))
     calc(0.45rem + env(safe-area-inset-bottom))
     max(0.45rem, env(safe-area-inset-left));
-  width: calc(100% + 1.5rem);
+  position: fixed;
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 12;
 }
 
 .player-profile--drawer .player-profile__action {
@@ -832,8 +838,7 @@
   }
 
   .player-profile--drawer .player-profile__action-bar {
-    margin: 0 -1.5rem -2rem;
-    width: calc(100% + 3rem);
+    margin: 0;
   }
 }
 
@@ -853,6 +858,12 @@
   .player-profile__stat-icon {
     height: 1rem;
     width: 1rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .player-profile--drawer .player-profile__action-bar {
+    min-height: var(--cdl-mobile-navigation-clearance);
   }
 }
 

@@ -27,6 +27,7 @@
   max-width: none;
   overflow: hidden;
   padding: 0.55rem 0.75rem 0.75rem;
+  position: relative;
   grid-template-rows: auto auto minmax(0, 1fr) auto;
 }
 
@@ -36,6 +37,7 @@
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
+  padding-bottom: 4.5rem;
 }
 
 .player-profile__sheet-handle {
@@ -624,8 +626,49 @@
 }
 
 .player-profile--drawer .player-profile__action-bar {
+  background: var(--surface);
+  border: 0;
+  border-radius: 0;
+  border-top: 1px solid var(--cdl-border);
   bottom: 0;
-  margin-inline: -0.1rem;
+  box-sizing: border-box;
+  gap: 0;
+  padding: 0.45rem max(0.45rem, env(safe-area-inset-right))
+    calc(0.45rem + env(safe-area-inset-bottom))
+    max(0.45rem, env(safe-area-inset-left));
+  position: fixed;
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 12;
+}
+
+.player-profile--drawer .player-profile__action {
+  border-radius: 0.7rem;
+  color: var(--cdl-foreground);
+  font-size: 0.7rem;
+  font-weight: 700;
+  gap: 0.2rem;
+  min-height: 3.35rem;
+  padding: 0.35rem 0.25rem;
+}
+
+.player-profile--drawer .player-profile__action:hover,
+.player-profile--drawer .player-profile__action:focus-visible,
+.player-profile--drawer .player-profile__action.is-active {
+  background: transparent;
+  border-color: transparent;
+  color: var(--cdl-primary);
+}
+
+.player-profile--drawer .player-profile__action.is-active {
+  border-top: 2px solid var(--primary);
+}
+
+.player-profile--drawer .player-profile__action.is-danger:hover,
+.player-profile--drawer .player-profile__action.is-danger:focus-visible {
+  border-color: transparent;
+  color: var(--profile-danger);
 }
 
 .player-profile__action {
@@ -793,6 +836,10 @@
   .player-profile__action-bar {
     bottom: 1rem;
   }
+
+  .player-profile--drawer .player-profile__action-bar {
+    margin: 0;
+  }
 }
 
 @media (max-width: 370px) {
@@ -811,6 +858,12 @@
   .player-profile__stat-icon {
     height: 1rem;
     width: 1rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .player-profile--drawer .player-profile__action-bar {
+    min-height: var(--cdl-mobile-navigation-clearance);
   }
 }
 

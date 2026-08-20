@@ -374,6 +374,21 @@ async function testSquadWorkspace(browser, viewport) {
   if (profileCoverage.left > 1 || profileCoverage.top > 1 || profileCoverage.width < viewport.width - 1 || profileCoverage.height < viewport.height - 1 || !profileCoverage.bottomElementInsideDrawer) {
     throw new Error(`Expected the player profile to replace the full viewport and cover mobile navigation (received ${JSON.stringify(profileCoverage)})`);
   }
+  const actionBarCoverage = await playerDrawer.locator('.player-profile__action-bar').evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    const styles = getComputedStyle(element);
+    return {
+      bottom: rect.bottom,
+      borderRadius: styles.borderRadius,
+      left: rect.left,
+      right: rect.right,
+      top: rect.top,
+      width: rect.width,
+    };
+  });
+  if (actionBarCoverage.left > 1 || actionBarCoverage.right < viewport.width - 1 || Math.abs(actionBarCoverage.bottom - viewport.height) > 1 || actionBarCoverage.borderRadius !== '0px') {
+    throw new Error(`Expected player actions to match the locked full-width navigation (received ${JSON.stringify(actionBarCoverage)})`);
+  }
   await captureReviewState(page, viewport, 'squad-reference-player-drawer');
   await playerDrawer.getByRole('button', { name: 'Open player actions' }).click();
   await Promise.all([

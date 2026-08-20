@@ -59,7 +59,7 @@ Only render metrics that have a trustworthy product data source. Missing joins s
 
 ## Player profile drawer
 
-Selecting a squad player opens the full player profile in a bottom sheet that starts at the bottom of the screen. The profile keeps its squad-management action toolbar visible while the profile content scrolls. It prioritises:
+Selecting a squad player opens the full player profile as a full-width, full-height replacement layer above the main navigation. It uses the same dark Squad surface styling, keeps its squad-management action toolbar visible, and scrolls the profile content independently. The identity treatment uses the Squad shirt token: the shirt is cropped inside a circular token with the player name across its lower edge. It prioritises:
 
 1. current status and availability;
 2. performance evidence;
@@ -79,7 +79,7 @@ The profile actions are:
 Substitution is an in-place swap between Starting XI, Bench and Reserves.
 
 - Choosing **Move to bench** or **Move to Starting XI** opens the legal replacement choices inside the player profile drawer.
-- The current pitch or list surface remains visible behind the bottom sheet.
+- The current pitch or list surface and main navigation are covered by the profile layer.
 - Candidates are limited to swaps that preserve the configured Starting XI formation and bench composition.
 - Starting XI eligibility uses the authoritative formation limits: 1 goalkeeper, 3–5 defenders, 2–5 midfielders and 1–3 forwards.
 - When a player enters the bench, the page-level mode exposes the legal bench slot: goalkeeper or outfield positions 1–4.

@@ -539,23 +539,13 @@ async function testTeamSelection(page) {
   }
 
   await page.getByRole('button', { name: 'Player actions for Alex Keeper' }).click();
-  await page.getByRole('button', { name: /Substitute player/ }).click();
-  await page.getByRole('button', { name: 'Substitute with Riley Forward' }).first().click();
-  await page.getByRole('button', { name: 'Bench position goalkeeper' }).click();
-  await page.getByRole('button', { name: /Confirm substitution/ }).click();
-  await expectStatus(page, 'Alex Keeper swapped with Riley Forward.');
-
-  await page.getByRole('button', { name: 'Save lineup' }).click();
-  await expectStatus(page, 'Lineup saved and validated.');
-
-  await page.getByRole('button', { name: 'Player actions for Ben Defender' }).click();
-  await page.getByRole('button', { name: /Substitute player/ }).click();
-  await page.getByRole('button', { name: 'Substitute with Alex Keeper' }).first().click();
-  await page.getByRole('button', { name: 'Bench position 2' }).click();
-  await page.getByRole('button', { name: /Confirm substitution/ }).click();
-  await expectStatus(page, 'Ben Defender swapped with Alex Keeper.');
-  await page.getByRole('button', { name: 'Save lineup' }).click();
-  await expectStatus(page, 'Lineup saved and validated.');
+  const profileDrawer = page.locator('.squad-page__drawer--profile');
+  await profileDrawer.getByRole('toolbar', { name: 'Squad-management actions' }).waitFor();
+  await profileDrawer.getByRole('button', { name: 'Move to bench' }).click();
+  await profileDrawer.locator('.player-profile__action-option').filter({ hasText: 'Riley Forward' }).click();
+  await profileDrawer.getByRole('button', { name: 'Confirm move' }).click();
+  await profileDrawer.getByRole('status').getByText('Alex Keeper moved to the bench.', { exact: true }).waitFor();
+  await profileDrawer.getByRole('button', { name: 'Close player profile' }).click();
 
   await page.getByRole('button', { name: 'Triple Captain, available' }).click();
   await expectStatus(page, 'Triple Captain chip state updated.');
@@ -750,7 +740,7 @@ async function testLockedTeamSelection(page) {
     throw new Error('Expected chip controls to be disabled after fixture lock');
   }
   await page.getByRole('button', { name: 'Player actions for Alex Keeper' }).click();
-  if (!(await page.getByRole('button', { name: /Substitute player/ }).isDisabled())) {
+  if (!(await page.locator('.squad-page__drawer--profile').getByRole('button', { name: 'Move to bench' }).isDisabled())) {
     throw new Error('Expected substitution to be disabled after fixture lock');
   }
 }

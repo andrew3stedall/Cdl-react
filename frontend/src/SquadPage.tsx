@@ -7,7 +7,6 @@ import {
   CalendarClock,
   CalendarDays,
   ChevronDown,
-  ChevronRight,
   CircleAlert,
   CircleCheck,
   CircleX,
@@ -34,12 +33,13 @@ import {
 import { Button } from './components/ui/button';
 import type { AttackDirection, ThemePreset } from './contracts';
 import { officialFplShirtUrl } from './fpl-shirt-assets';
-import { availabilityIssueLabel, getAvailabilityIssue, hasAvailabilityIssue } from './player-availability';
+import { getAvailabilityIssue, hasAvailabilityIssue } from './player-availability';
 import {
   HttpSquadClient,
   SquadApiError,
-  type SquadApiHistoryResponse,
   type SquadApiNotification,
+  type SquadApiPlayer,
+  type SquadApiSummary,
   type SquadClient,
 } from './squad-api';
 import {
@@ -53,6 +53,7 @@ import {
 } from './team-selection-api';
 import './squad-page.css';
 import './squad-lineup-groups.css';
+import { PlayerProfilePage } from './PlayerProfilePage';
 
 interface SquadPageProps {
   attackDirection?: AttackDirection;
@@ -64,7 +65,7 @@ interface SquadPageProps {
 
 type SquadView = 'pitch' | 'list';
 type PositionFilter = 'all' | 'GKP' | 'DEF' | 'MID' | 'FWD';
-type DrawerMode = 'player' | 'compare' | 'trade' | 'profile' | null;
+type DrawerMode = 'compare' | 'trade' | 'profile' | null;
 type PlayerStatus = 'owned' | 'available' | 'interested' | 'trade_target';
 type SortKey = 'points' | 'form' | 'xg' | 'xa';
 type BenchSlotOrder = 0 | 1 | 2 | 3 | 4;
@@ -328,9 +329,6 @@ export function SquadPage({
   const [scoutingError, setScoutingError] = useState<string | null>(null);
   const [confirmationOpen, setConfirmationOpen] = useState(false);
   const [changesSaving, setChangesSaving] = useState(false);
-  const [profileHistory, setProfileHistory] = useState<SquadApiHistoryResponse | null>(null);
-  const [profileHistoryLoading, setProfileHistoryLoading] = useState(false);
-  const [profileHistoryError, setProfileHistoryError] = useState<string | null>(null);
   const [availabilityFilter, setAvailabilityFilter] = useState<'all' | 'risk'>('all');
   const [fixtureFilter, setFixtureFilter] = useState<'all' | 'easy'>('all');
   const drawerRef = useRef<HTMLElement | null>(null);
@@ -417,31 +415,6 @@ export function SquadPage({
       mounted = false;
     };
   }, [drawerMode, scoutingLoaded, squadClient]);
-
-  useEffect(() => {
-    if (drawerMode !== 'profile' || !selectedPlayer) {
-      setProfileHistory(null);
-      setProfileHistoryError(null);
-      return;
-    }
-    let mounted = true;
-    setProfileHistory(null);
-    setProfileHistoryError(null);
-    setProfileHistoryLoading(true);
-    void squadClient.getPlayerHistory(selectedPlayer.id)
-      .then((history) => {
-        if (mounted) setProfileHistory(history);
-      })
-      .catch((error: Error) => {
-        if (mounted) setProfileHistoryError(error.message);
-      })
-      .finally(() => {
-        if (mounted) setProfileHistoryLoading(false);
-      });
-    return () => {
-      mounted = false;
-    };
-  }, [drawerMode, selectedPlayer, squadClient]);
 
   useEffect(() => {
     try {
@@ -563,30 +536,51 @@ export function SquadPage({
 
   function openPlayer(player: PlayerView) {
     setSelectedPlayer(player);
-    setDrawerMode('player');
-  }
-
-  function openProfile(player: PlayerView) {
-    if (onNavigate) {
-      closeDrawer();
-      onNavigate(`/players/${encodeURIComponent(player.id)}`);
-      return;
-    }
-    setSelectedPlayer(player);
     setDrawerMode('profile');
   }
 
-  function startSubstitution(player: PlayerView) {
-    if (!teamSelection || lineupLocked || !player.slot) return;
-    const source = teamSelection.players.find((candidate) => candidate.id === player.id);
-    if (!source) return;
-    setSubstitutionTargetId(null);
-    setSubstitutionBenchOrder(null);
-    setPositionFilter('all');
-    setQuery('');
+  function handleProfileSelectionChange(updated: TeamSelectionSnapshot) {
+    const normalized = normalizeTeamSelection(updated);
+    setTeamSelection(normalized);
+    setSquadPlayers((current) => mergeLineupPlayers(current, normalized.players));
+    setLineupDirty(false);
+  }
+
+  function handleProfileSquadChange(updatedSummary: SquadApiSummary) {
+    setSquadPlayers(mergeLineupPlayers(updatedSummary.players.map(mapPlayer), teamSelection?.players ?? null));
     closeDrawer();
-    setSubstitutionSource(source);
-    setStatus(`Choose a replacement for ${source.name} from the squad below.`);
+    setStatus('Squad updated from the player profile.');
+  }
+
+  function profilePlayer(player: PlayerView): SquadApiPlayer {
+    return {
+      id: player.id,
+      display_name: player.displayName,
+      position: player.position,
+      epl_team: { id: player.team, name: player.team, short_name: player.team },
+      draft_team: player.draftTeam
+        ? { id: player.draftTeam.id, name: player.draftTeam.name, short_name: player.draftTeam.shortName }
+        : null,
+      status: player.status,
+      points: player.points ?? 0,
+      form: player.form,
+      value: player.value ?? 0,
+      selected_by_percent: player.selectedByPercent,
+      expected_goals: player.xg,
+      expected_assists: player.xa,
+      availability_status: player.availability,
+      availability_news: player.availabilityNews,
+      chance_of_playing_next_round: player.chanceOfPlaying,
+      next_fixture: player.nextOpponent
+        ? {
+            fixture_id: `squad-${player.id}`,
+            opponent: { id: player.nextOpponent, name: player.nextOpponent, short_name: player.nextOpponent },
+            difficulty: player.nextFixtureDifficulty,
+            is_home: player.nextFixtureIsHome ?? true,
+            kickoff_at: player.nextFixtureKickoff,
+          }
+        : null,
+    };
   }
 
   function chooseSubstitutionTarget(option: SubstitutionOption) {
@@ -644,13 +638,6 @@ export function SquadPage({
     setTradeTarget(null);
     setTradeQuery('');
     setDrawerMode('trade');
-  }
-
-  function stageRemoval(player: PlayerView) {
-    setStagedRemovalIds((current) => new Set([...current, player.id]));
-    setChangesPanelOpen(true);
-    closeDrawer();
-    setStatus(`${player.displayName} staged for removal.`);
   }
 
   function stageAddition(player: PlayerView) {
@@ -964,28 +951,31 @@ export function SquadPage({
 
       {drawerMode ? (
         <DrawerLayer onClose={closeDrawer}>
-          <aside className="squad-page__drawer" ref={drawerRef} tabIndex={-1}>
-            {drawerMode === 'player' && selectedPlayer ? (
-              <PlayerDrawer
-                onClose={closeDrawer}
-                onCompare={() => startCompare(selectedPlayer)}
-                onProfile={() => openProfile(selectedPlayer)}
-                onRelease={() => stageRemoval(selectedPlayer)}
-                onSubstitute={selectedPlayer.slot ? () => startSubstitution(selectedPlayer) : undefined}
-                onTrade={() => startTrade(selectedPlayer)}
-                player={selectedPlayer}
-                substitutionDisabled={lineupLocked}
-              />
-            ) : null}
             {drawerMode === 'profile' && selectedPlayer ? (
-              <ProfileDrawer
-                history={profileHistory}
-                historyError={profileHistoryError}
-                historyLoading={profileHistoryLoading}
-                onClose={closeDrawer}
-                player={selectedPlayer}
-              />
+              <aside
+                aria-labelledby="player-profile-title"
+                aria-modal="true"
+                className="squad-page__drawer squad-page__drawer--profile"
+                ref={drawerRef}
+                role="dialog"
+                tabIndex={-1}
+              >
+                <PlayerProfilePage
+                  initialPlayer={profilePlayer(selectedPlayer)}
+                  initialSelection={teamSelection ?? undefined}
+                  onClose={closeDrawer}
+                  onCompare={() => startCompare(selectedPlayer)}
+                  onSquadChange={handleProfileSquadChange}
+                  onSelectionChange={handleProfileSelectionChange}
+                  onTrade={() => startTrade(selectedPlayer)}
+                  playerId={selectedPlayer.id}
+                  presentation="drawer"
+                  squadClient={squadClient}
+                  teamSelectionClient={teamSelectionClient}
+                />
+              </aside>
             ) : null}
+            {drawerMode !== 'profile' ? <aside className="squad-page__drawer" ref={drawerRef} tabIndex={-1}>
             {drawerMode === 'compare' ? (
               <CompareDrawer
                 candidates={comparisonCandidates}
@@ -1020,7 +1010,7 @@ export function SquadPage({
                 onSubmit={() => void submitTrade()}
               />
             ) : null}
-          </aside>
+            </aside> : null}
         </DrawerLayer>
       ) : null}
 
@@ -1446,51 +1436,6 @@ function DrawerHeader({ onClose, player, title }: { onClose: () => void; player?
   );
 }
 
-function PlayerDrawer({
-  onClose,
-  onCompare,
-  onProfile,
-  onRelease,
-  onSubstitute,
-  onTrade,
-  player,
-  substitutionDisabled,
-}: {
-  onClose: () => void;
-  onCompare: () => void;
-  onProfile: () => void;
-  onRelease: () => void;
-  onSubstitute?: () => void;
-  onTrade: () => void;
-  player: PlayerView;
-  substitutionDisabled: boolean;
-}) {
-  return (
-    <>
-      <span aria-hidden="true" className="squad-page__sheet-handle" />
-      <DrawerHeader onClose={onClose} player={player} title={player.displayName} />
-      <div className="squad-page__drawer-metrics">
-        <Metric label="Total Points" value={formatInteger(player.points)} />
-        <Metric dots label="Form (Last 5)" value={formatMetric(player.form)} />
-        <Metric placeholder={player.xg === null} label="xG" value={formatMetric(player.xg)} />
-        <Metric placeholder={player.xa === null} label="xA" value={formatMetric(player.xa)} />
-      </div>
-      <section className="squad-page__trade-guidance">
-        <div><strong>FPL evidence</strong><span className="squad-page__api-chip">Official data</span></div>
-        <p>Use current official FPL value and performance when reviewing a proposal. CDL demand and projections are intentionally not inferred.</p>
-        <div className="squad-page__guidance-evidence"><span>Value <b>{player.value === null ? '—' : `£${player.value.toFixed(1)}m`}</b></span><span>Recent form <b>{formatMetric(player.form)}</b></span><span>Selected <b>{player.selectedByPercent === null ? '—' : `${player.selectedByPercent.toFixed(1)}%`}</b></span></div>
-      </section>
-      <div className="squad-page__drawer-actions">
-        {onSubstitute ? <button disabled={substitutionDisabled} onClick={onSubstitute} type="button"><span className="action-icon"><Repeat2 size={18} /></span><span><strong>Substitute player</strong><small>{substitutionDisabled ? 'Lineup is locked for this gameweek' : 'Swap this player with an eligible squad player'}</small></span><ChevronRight size={19} /></button> : null}
-        <button onClick={onCompare} type="button"><span className="action-icon"><Search size={18} /></span><span><strong>Compare</strong><small>Compare {shortPlayerName(player.displayName)} with other players</small></span><ChevronRight size={19} /></button>
-        <button onClick={onRelease} type="button"><span className="action-icon danger"><CircleMinus size={18} /></span><span><strong>Release to Free Agency</strong><small>Stage removal from your squad</small></span><ChevronRight size={19} /></button>
-        <button onClick={onTrade} type="button"><span className="action-icon"><ArrowRightLeft size={18} /></span><span><strong>Draft Trade</strong><small>Start a proposal to another manager</small></span><ChevronRight size={19} /></button>
-        <button onClick={onProfile} type="button"><span className="action-icon"><Users size={18} /></span><span><strong>Full Profile</strong><small>View detailed stats and history</small></span><ChevronRight size={19} /></button>
-      </div>
-    </>
-  );
-}
-
 function SubstitutionModePanel({
   candidateCount,
   onBenchOrderChange,
@@ -1571,52 +1516,6 @@ function SubstitutionModePanel({
         </Button>
       ) : null}
     </section>
-  );
-}
-
-function ProfileDrawer({
-  history,
-  historyError,
-  historyLoading,
-  onClose,
-  player,
-}: {
-  history: SquadApiHistoryResponse | null;
-  historyError: string | null;
-  historyLoading: boolean;
-  onClose: () => void;
-  player: PlayerView;
-}) {
-  return (
-    <>
-      <span aria-hidden="true" className="squad-page__sheet-handle" />
-      <DrawerHeader onClose={onClose} player={player} title={player.displayName} />
-      <div className="squad-page__profile-grid">
-        <Metric label="Position" value={player.position} />
-        <Metric label="Club" value={player.team} />
-        <Metric label="Season points" value={formatInteger(player.points)} />
-        <Metric label="Form" value={formatMetric(player.form)} />
-        <Metric placeholder={player.xg === null} label="xG" value={formatMetric(player.xg)} />
-        <Metric placeholder={player.xa === null} label="xA" value={formatMetric(player.xa)} />
-      </div>
-      <section className="squad-page__drawer-section"><h3>Ownership</h3><p>{player.draftTeam ? `Owned by ${player.draftTeam.name}.` : statusDescription(player)}</p></section>
-      <section className="squad-page__drawer-section"><h3>Availability</h3><p>{availabilityIssueLabel({ availability: player.availability, chance_of_playing_next_round: player.chanceOfPlaying }) ?? 'No current availability flag from FPL.'}{player.availabilityNews ? ` ${player.availabilityNews}` : ''}</p></section>
-      <section className="squad-page__drawer-section">
-        <div className="squad-page__section-heading"><h3>Official FPL history</h3><span>{history ? `Fetched ${formatFetchedAt(history.fetched_at)}` : 'Live cache'}</span></div>
-        {historyLoading ? <p className="squad-page__empty-copy">Loading official FPL history…</p> : null}
-        {historyError ? <p className="squad-page__error-copy">FPL history unavailable: {historyError}</p> : null}
-        {!historyLoading && !historyError && history ? (
-          <>
-            {history.fixtures.length > 0 ? <div className="squad-page__profile-fixtures"><strong>Upcoming</strong>{history.fixtures.slice(0, 3).map((fixture) => <span className={fixtureOpponentClassName(fixture.difficulty)} key={fixture.fixture_id} title={fixtureDifficultyTitle(fixture.difficulty)}>{formatFixtureOpponent(fixture.opponent_team_id)} · {fixture.is_home ? 'H' : 'A'}</span>)}</div> : <p className="squad-page__empty-copy">No upcoming FPL fixtures in the cache.</p>}
-            {history.history.length > 0 ? (
-              <div className="squad-page__profile-history-scroll">
-                <table className="squad-page__profile-history"><thead><tr><th>GW</th><th>Opponent</th><th>Pts</th><th>Min</th><th>xG</th><th>xA</th></tr></thead><tbody>{history.history.slice(-5).reverse().map((row) => <tr key={`${row.fixture_id}-${row.gameweek}`}><td>{row.gameweek}</td><td>{formatFixtureOpponent(row.opponent_team_id)}</td><td>{row.total_points}</td><td>{row.minutes}</td><td>{row.expected_goals.toFixed(1)}</td><td>{row.expected_assists.toFixed(1)}</td></tr>)}</tbody></table>
-              </div>
-            ) : <p className="squad-page__empty-copy">No completed FPL history in the cache.</p>}
-          </>
-        ) : null}
-      </section>
-    </>
   );
 }
 
@@ -2152,15 +2051,6 @@ export function fixtureDifficultyTitle(value: number | null | undefined): string
   return rating === null ? undefined : `${fixtureDifficultyLabels[rating - 1]} fixture`;
 }
 
-function formatFetchedAt(value: string): string {
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? 'time unavailable' : new Intl.DateTimeFormat(undefined, { dateStyle: 'short', timeStyle: 'short' }).format(date);
-}
-
-function formatFixtureOpponent(teamId: number): string {
-  return FPL_TEAM_SHORT_NAMES_BY_ID[teamId] ?? `FPL team ${teamId}`;
-}
-
 function isAvailabilityRisk(player: PlayerView): boolean {
   return hasAvailabilityIssue({
     availability: player.availability,
@@ -2168,38 +2058,8 @@ function isAvailabilityRisk(player: PlayerView): boolean {
   });
 }
 
-function statusDescription(player: PlayerView): string {
-  if (player.status === 'owned') return 'In your season-long squad.';
-  if (player.status === 'available') return 'Available in the player pool.';
-  if (player.status === 'interested') return 'Registered as an Interest.';
-  return 'Currently targeted in trade activity.';
-}
-
 export function shortPlayerName(name: string): string {
   const parts = name.trim().split(/\s+/);
   if (parts.length <= 2) return name;
   return `${parts[0][0]}. ${parts.at(-1)}`;
 }
-
-const FPL_TEAM_SHORT_NAMES_BY_ID: Record<number, string> = {
-  1: 'MUN',
-  2: 'LEE',
-  3: 'ARS',
-  4: 'NEW',
-  6: 'TOT',
-  7: 'AVL',
-  8: 'CHE',
-  9: 'COV',
-  11: 'EVE',
-  14: 'LIV',
-  17: 'NFO',
-  31: 'CRY',
-  36: 'BHA',
-  40: 'IPS',
-  43: 'MCI',
-  54: 'FUL',
-  56: 'SUN',
-  88: 'HUL',
-  91: 'BOU',
-  94: 'BRE',
-};

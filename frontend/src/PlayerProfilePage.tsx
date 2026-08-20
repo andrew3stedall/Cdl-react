@@ -28,6 +28,7 @@ import {
   type SquadApiHistoryResponse,
   type SquadApiOpponentDefensiveHistory,
   type SquadApiPlayer,
+  type SquadApiSummary,
   type SquadClient,
 } from './squad-api';
 import {
@@ -36,7 +37,7 @@ import {
   type TeamSelectionPlayer,
   type TeamSelectionSnapshot,
 } from './team-selection-api';
-import { useThemePreset } from './theme-preset-provider';
+import { useOptionalThemePreset } from './theme-preset-provider';
 import './player-profile.css';
 
 const defaultSquadClient = new HttpSquadClient();
@@ -44,8 +45,16 @@ const defaultTeamSelectionClient = new HttpTeamSelectionClient();
 const FAVOURITES_STORAGE_KEY = 'cdl:favourite-players';
 
 interface PlayerProfilePageProps {
+  initialPlayer?: SquadApiPlayer;
+  initialSelection?: TeamSelectionSnapshot | null;
+  onClose?: () => void;
   onNavigate?: (href: string) => void;
+  onCompare?: () => void;
+  onSquadChange?: (summary: SquadApiSummary) => void;
+  onSelectionChange?: (selection: TeamSelectionSnapshot) => void;
+  onTrade?: () => void;
   playerId: string;
+  presentation?: 'page' | 'drawer';
   squadClient?: SquadClient;
   teamSelectionClient?: TeamSelectionClient;
 }
@@ -73,15 +82,24 @@ interface ProfileFixture {
 }
 
 export function PlayerProfilePage({
+  initialPlayer,
+  initialSelection,
+  onClose,
   onNavigate,
+  onCompare,
+  onSquadChange,
+  onSelectionChange,
+  onTrade,
   playerId,
+  presentation = 'page',
   squadClient = defaultSquadClient,
   teamSelectionClient = defaultTeamSelectionClient,
 }: PlayerProfilePageProps) {
-  const { fdrDisplayMode } = useThemePreset();
-  const [player, setPlayer] = useState<SquadApiPlayer | null>(null);
+  const themePreset = useOptionalThemePreset();
+  const fdrDisplayMode = themePreset?.fdrDisplayMode ?? 'font';
+  const [player, setPlayer] = useState<SquadApiPlayer | null>(initialPlayer ?? null);
   const [history, setHistory] = useState<SquadApiHistoryResponse | null>(null);
-  const [selection, setSelection] = useState<TeamSelectionSnapshot | null>(null);
+  const [selection, setSelection] = useState<TeamSelectionSnapshot | null>(initialSelection ?? null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [historyError, setHistoryError] = useState<string | null>(null);
@@ -103,9 +121,9 @@ export function PlayerProfilePage({
     setSelectionError(null);
     setNotice(null);
     void Promise.allSettled([
-      squadClient.getPlayer(playerId),
+      initialPlayer ? Promise.resolve(initialPlayer) : squadClient.getPlayer(playerId),
       squadClient.getPlayerHistory(playerId),
-      teamSelectionClient.getTeamSelection(),
+      initialSelection !== undefined ? Promise.resolve(initialSelection) : teamSelectionClient.getTeamSelection(),
     ]).then(([playerResult, historyResult, selectionResult]) => {
       if (!mounted) return;
       if (playerResult.status === 'fulfilled') {
@@ -158,6 +176,10 @@ export function PlayerProfilePage({
   const isLocked = selection?.fixtureLock.locked ?? true;
 
   function goBack() {
+    if (onClose) {
+      onClose();
+      return;
+    }
     if (onNavigate) {
       onNavigate('/squad');
       return;
@@ -183,6 +205,7 @@ export function PlayerProfilePage({
     try {
       const updated = await teamSelectionClient.saveLineup(nextPlayers);
       setSelection(updated);
+      onSelectionChange?.(updated);
       setActionSheet(null);
       setSelectedSubstitution(null);
       setNotice(successMessage);
@@ -229,8 +252,9 @@ export function PlayerProfilePage({
     setNotice(null);
     try {
       const changes = await squadClient.getChanges();
-      setReplacementPlayers(changes.available_to_add);
-      if (changes.available_to_add.length === 0) {
+      const availablePlayers = Array.isArray(changes.available_to_add) ? changes.available_to_add : [];
+      setReplacementPlayers(availablePlayers);
+      if (availablePlayers.length === 0) {
         setNotice('No active replacement rights are available. Squad removal requires a replacement.');
       }
     } catch (error) {
@@ -245,9 +269,11 @@ export function PlayerProfilePage({
     setPendingAction('remove');
     setNotice(null);
     try {
-      await squadClient.applyChanges([selectedReplacement.id], [player.id]);
+      const updatedSummary = await squadClient.applyChanges([selectedReplacement.id], [player.id]);
       const updatedSelection = await teamSelectionClient.getTeamSelection();
       setSelection(updatedSelection);
+      onSelectionChange?.(updatedSelection);
+      onSquadChange?.(updatedSummary);
       setActionSheet(null);
       setNotice(`${player.display_name} was removed and replaced by ${selectedReplacement.display_name}.`);
     } catch (error) {
@@ -281,10 +307,15 @@ export function PlayerProfilePage({
   const opponentShortName = nextFixture?.opponent_short_name ?? opponentName;
 
   return (
-    <main className="player-profile" aria-labelledby="player-profile-title">
+    <main
+      aria-labelledby="player-profile-title"
+      className={`player-profile${presentation === 'drawer' ? ' player-profile--drawer' : ''}`}
+      data-presentation={presentation}
+    >
+      {presentation === 'drawer' ? <span aria-hidden="true" className="player-profile__sheet-handle" /> : null}
       <header className="player-profile__mobile-header">
-        <button aria-label="Back to squad" className="player-profile__icon-button" onClick={goBack} type="button">
-          <ArrowLeft aria-hidden="true" size={20} />
+        <button aria-label={presentation === 'drawer' ? 'Close player profile' : 'Back to squad'} className="player-profile__icon-button" onClick={goBack} type="button">
+          {presentation === 'drawer' ? <X aria-hidden="true" size={20} /> : <ArrowLeft aria-hidden="true" size={20} />}
         </button>
         <h1 id="player-profile-title">{titleName}</h1>
         <div className="player-profile__overflow-wrap">
@@ -301,11 +332,14 @@ export function PlayerProfilePage({
             <div className="player-profile__overflow-menu" role="menu">
               <button onClick={goBack} role="menuitem" type="button">Return to squad</button>
               <button onClick={toggleFavourite} role="menuitem" type="button">{favourite ? 'Remove favourite' : 'Add favourite'}</button>
+              {onCompare ? <button onClick={onCompare} role="menuitem" type="button">Compare player</button> : null}
+              {onTrade ? <button onClick={onTrade} role="menuitem" type="button">Draft trade</button> : null}
             </div>
           ) : null}
         </div>
       </header>
 
+      <div className="player-profile__content">
       <section aria-label="Player identity" className="player-profile__card player-profile__identity-card">
         <div className="player-profile__identity-main">
           <div aria-label={`Portrait for ${player.display_name}`} className="player-profile__portrait" role="img">
@@ -375,6 +409,7 @@ export function PlayerProfilePage({
       </ChartCard>
 
       {notice ? <p className="player-profile__notice" role="status">{notice}</p> : null}
+      </div>
 
       <div aria-label="Squad-management actions" className="player-profile__action-bar" role="toolbar">
         <ActionButton

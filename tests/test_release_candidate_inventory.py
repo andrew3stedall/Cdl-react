@@ -82,8 +82,8 @@ def test_tester_guide_is_deterministic_and_truthful() -> None:
         "Invalid email or password.",
         "Interest already exists.",
         "Trade proposal created.",
-        "formation-valid substitutions",
-        "Lineup saved and validated.",
+        "only formation-valid substitutions are offered",
+        "Alex Keeper moved to the bench.",
         "deterministic API test doubles",
         "Live browser-to-PostgreSQL",
         "Real historical exports are unavailable",
@@ -98,9 +98,10 @@ def test_team_selection_release_evidence_is_focused_and_truthful() -> None:
     browser = BROWSER_INTERACTIONS.read_text(encoding="utf-8")
     required_browser_evidence = (
         "Player actions for Alex Keeper",
-        "Substitute with Riley Forward",
-        "Bench position 2",
-        "Lineup saved and validated.",
+        "Move to bench",
+        "Riley Forward",
+        "Confirm move",
+        "Alex Keeper moved to the bench.",
         "Expected the saved lineup to render its player action controls after reload",
         "Expected list view to remain free of player movement dropdowns after reload",
         "Triple Captain chip state updated.",
@@ -113,9 +114,9 @@ def test_team_selection_release_evidence_is_focused_and_truthful() -> None:
     for evidence in required_browser_evidence:
         assert evidence in browser
     required_inventory_claims = (
-        "formation-aware context-menu substitution",
-        "valid lineup save survives reload",
-        "lineup/chip/substitution controls are disabled when a fixture lock is active",
+        "formation-aware substitutions from that profile",
+        "profile substitution save survives reload",
+        "lineup/chip/profile substitution controls are disabled when a fixture lock is active",
         "Live PostgreSQL browser integration and staging identity remain separate gates",
     )
     for claim in required_inventory_claims:
@@ -129,12 +130,11 @@ def test_authenticated_squad_and_market_evidence_is_focused_and_truthful() -> No
     postgres_test = POSTGRES_SQUAD_TEST.read_text(encoding="utf-8")
 
     required_browser_evidence = (
-        "Release to free agency",
-        "Pending Removal",
-        "Removed",
-        "Submit Squad Changes",
-        "Add 1 draw-won player before confirming.",
-        "Restore to Squad",
+        "squad-page__drawer--profile",
+        "Squad-management actions",
+        "Compare player",
+        "Remove player",
+        "squad-reference-remove-action",
         "Casey Midfielder added to Interests.",
         "page.reload({ waitUntil: 'networkidle' })",
         "{ width: 390, height: 844 }",

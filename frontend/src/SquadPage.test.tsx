@@ -76,7 +76,7 @@ beforeEach(() => {
   window.localStorage.clear();
   vi.stubGlobal(
     'fetch',
-    vi.fn(async (input: RequestInfo | URL) => {
+    vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const path = String(input);
       if (path === '/api/squad/workspace') {
         return new Response(JSON.stringify({
@@ -233,6 +233,30 @@ beforeEach(() => {
               is_vice_captain: false,
             },
           ],
+          chips: [],
+          fixture_lock: { locked: false, fixture_id: null, fixture_type: null, lock_scope: null, locked_at: null, reason: null },
+        }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+      if (path === '/api/team-selection/lineup' && init?.method === 'PUT') {
+        const request = JSON.parse(String(init.body ?? '{}')) as { players?: Array<{ player_id: string; slot: string; slot_order: number; is_captain: boolean; is_vice_captain: boolean }> };
+        const playerDetails: Record<string, { display_name: string; position: string; epl_team: { id: string; name: string; short_name: string } }> = {
+          'fpl-411': { display_name: 'Haaland', position: 'FWD', epl_team: { id: 'mci', name: 'Manchester City', short_name: 'MCI' } },
+          'fpl-235': { display_name: 'Pickford', position: 'GKP', epl_team: { id: 'eve', name: 'Everton', short_name: 'EVE' } },
+          'fpl-300': { display_name: 'Ben Defender', position: 'DEF', epl_team: { id: 'ars', name: 'Arsenal', short_name: 'ARS' } },
+          'fpl-301': { display_name: 'Riley Forward', position: 'FWD', epl_team: { id: 'mci', name: 'Manchester City', short_name: 'MCI' } },
+          'fpl-302': { display_name: 'Morgan Reserve', position: 'MID', epl_team: { id: 'ars', name: 'Arsenal', short_name: 'ARS' } },
+        };
+        return new Response(JSON.stringify({
+          manager_team: { id: 'team-1', name: 'Exeter Gently', short_name: 'EXE' },
+          gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1, deadline_at: '2026-08-14T17:30:00Z' },
+          lineup: (request.players ?? []).map((selection) => ({
+            id: selection.player_id,
+            ...playerDetails[selection.player_id],
+            slot: selection.slot,
+            slot_order: selection.slot_order,
+            is_captain: selection.is_captain,
+            is_vice_captain: selection.is_vice_captain,
+          })),
           chips: [],
           fixture_lock: { locked: false, fixture_id: null, fixture_type: null, lock_scope: null, locked_at: null, reason: null },
         }), { status: 200, headers: { 'Content-Type': 'application/json' } });
@@ -481,19 +505,24 @@ describe('SquadPage', () => {
       await Promise.resolve();
     });
     await act(async () => {
-      buttonByText(container, 'Substitute player').click();
+      buttonByText(container, 'Move to bench').click();
       await Promise.resolve();
     });
 
-    expect(container.querySelector('.squad-page__drawer')).toBeNull();
-    expect(container.querySelector('[aria-label="Substitution mode"]')).not.toBeNull();
+    expect(container.querySelector('.player-profile__dialog')).not.toBeNull();
+    expect(container.querySelector('.player-profile__action-option')).not.toBeNull();
 
     await act(async () => {
-      (container.querySelector('button[aria-label="Substitute with Riley Forward"]') as HTMLButtonElement).click();
+      const replacement = Array.from(container.querySelectorAll<HTMLButtonElement>('.player-profile__action-option'))
+        .find((button) => button.textContent?.includes('Riley Forward'));
+      replacement?.click();
       await Promise.resolve();
     });
 
-    expect(container.querySelector('[aria-label="Bench position for Haaland"]')).not.toBeNull();
+    buttonByText(container, 'Confirm move').click();
+    await act(async () => {
+      await Promise.resolve();
+    });
     expect(container.querySelector('[aria-label="Squad pitch"]')?.textContent).toContain('Riley Forward');
   });
 
@@ -512,34 +541,29 @@ describe('SquadPage', () => {
       await Promise.resolve();
     });
     await act(async () => {
-      buttonByText(container, 'Substitute player').click();
+      buttonByText(container, 'Move to bench').click();
       await Promise.resolve();
     });
 
-    expect(container.querySelector('.squad-page__drawer')).toBeNull();
-    expect(container.querySelector('[aria-label="Substitution mode"]')).not.toBeNull();
-    expect(container.querySelector('button[aria-label="Substitute with Riley Forward"]')).not.toBeNull();
-    expect(container.querySelector('button[aria-label="Substitute with Morgan Reserve"]')).not.toBeNull();
-    expect(container.querySelector('button[aria-label="Substitute with Ben Defender"]')).toBeNull();
+    expect(container.querySelector('.player-profile__dialog')).not.toBeNull();
+    const options = Array.from(container.querySelectorAll('.player-profile__action-option')).map((option) => option.textContent);
+    expect(options.some((text) => text?.includes('Riley Forward'))).toBe(true);
+    expect(options.some((text) => text?.includes('Morgan Reserve'))).toBe(true);
+    expect(options.some((text) => text?.includes('Ben Defender'))).toBe(false);
 
     await act(async () => {
-      (container.querySelector('button[aria-label="Substitute with Riley Forward"]') as HTMLButtonElement).click();
+      const replacement = Array.from(container.querySelectorAll<HTMLButtonElement>('.player-profile__action-option'))
+        .find((button) => button.textContent?.includes('Riley Forward'));
+      replacement?.click();
       await Promise.resolve();
     });
-    expect(container.querySelector('[aria-label="Bench position for Haaland"]')).not.toBeNull();
 
     await act(async () => {
-      (container.querySelector('button[aria-label="Bench position 2"]') as HTMLButtonElement).click();
-      await Promise.resolve();
-    });
-    expect(container.querySelector('button[aria-label="Bench position 2"]')?.getAttribute('aria-pressed')).toBe('true');
-
-    await act(async () => {
-      buttonByText(container, 'Confirm substitution').click();
+      buttonByText(container, 'Confirm move').click();
       await Promise.resolve();
     });
 
-    expect(container.textContent).toContain('Haaland swapped with Riley Forward. Save lineup to apply this change.');
+    expect(container.textContent).toContain('Haaland moved to the bench.');
     expect(container.querySelector('[aria-label="Starting XI players table"]')?.textContent).toContain('Riley Forward');
     expect(container.querySelector('[aria-label="Bench players table"]')?.textContent).toContain('Haaland');
   });
@@ -556,14 +580,14 @@ describe('SquadPage', () => {
       await Promise.resolve();
     });
     await act(async () => {
-      buttonByText(container, 'Substitute player').click();
+      buttonByText(container, 'Move to bench').click();
       await Promise.resolve();
     });
 
-    expect(container.querySelector('button[aria-label="Substitute with Bench Defender"]')).not.toBeNull();
-    expect(container.querySelector('button[aria-label="Substitute with Reserve Forward"]')).not.toBeNull();
-    expect(container.querySelector('button[aria-label="Substitute with Bench Keeper"]')).toBeNull();
-    expect(container.querySelector('button[aria-label="Substitute with Reserve Keeper"]')).toBeNull();
+    expect(buttonByText(container, 'Bench Defender')).toBeDefined();
+    expect(buttonByText(container, 'Reserve Forward')).toBeDefined();
+    expect(container.querySelector('.player-profile__action-options')?.textContent).not.toContain('Bench Keeper');
+    expect(container.querySelector('.player-profile__action-options')?.textContent).not.toContain('Reserve Keeper');
   });
 
   test('compares manually selected players in selection order', async () => {
@@ -574,10 +598,14 @@ describe('SquadPage', () => {
       haaland.click();
       await Promise.resolve();
     });
-    expect(container.querySelector('.squad-page__drawer')?.textContent).toContain('Release to Free Agency');
+    expect(container.querySelector('.squad-page__drawer--profile')?.textContent).toContain('Move to bench');
 
     await act(async () => {
-      buttonByText(container, 'Compare').click();
+      (container.querySelector('button[aria-label="Open player actions"]') as HTMLButtonElement).click();
+      await Promise.resolve();
+    });
+    await act(async () => {
+      buttonByText(container, 'Compare player').click();
       await Promise.resolve();
       await Promise.resolve();
       await Promise.resolve();
@@ -604,25 +632,23 @@ describe('SquadPage', () => {
     expect(cards[1].textContent).toContain('Palmer');
   });
 
-  test('loads official FPL history inside the canonical profile drawer', async () => {
+  test('opens the full player profile directly from the squad selection', async () => {
     const { container } = await renderPage();
 
     await act(async () => {
       (container.querySelector('button[aria-label="View Haaland details"]') as HTMLButtonElement).click();
       await Promise.resolve();
     });
-    await act(async () => {
-      buttonByText(container, 'Full Profile').click();
-      await Promise.resolve();
-      await Promise.resolve();
-    });
-
-    expect(container.textContent).toContain('Official FPL history');
+    expect(container.querySelector('.squad-page__drawer--profile')).not.toBeNull();
+    expect(container.querySelector('[data-presentation="drawer"]')).not.toBeNull();
+    expect(container.querySelector('[aria-label="Squad-management actions"]')).not.toBeNull();
+    expect(container.textContent).toContain('Form');
+    expect(container.textContent).toContain('Minutes played');
+    expect(container.textContent).toContain('Next fixture');
     expect(container.textContent).toContain('9');
-    expect(container.textContent).toContain('EVE');
   });
 
-  test('stages removals and validates the complete change set only at submission', async () => {
+  test('keeps the profile action bar available for squad management', async () => {
     const { container } = await renderPage();
     const haaland = container.querySelector('button[aria-label="View Haaland details"]') as HTMLButtonElement;
 
@@ -631,33 +657,11 @@ describe('SquadPage', () => {
       await Promise.resolve();
     });
     await act(async () => {
-      buttonByText(container, 'Release to Free Agency').click();
+      buttonByText(container, 'Remove').click();
       await Promise.resolve();
     });
 
-    expect(container.textContent).toContain('Haaland staged for removal.');
-    const changes = container.querySelector('[aria-label="Squad changes"]');
-    expect(changes?.textContent).toContain('Pending Removal');
-    expect(changes?.textContent).toContain('Removed');
-    expect(changes?.textContent).toContain('Haaland');
-
-    await act(async () => {
-      buttonByText(container, 'Submit Squad Changes').click();
-      await Promise.resolve();
-    });
-
-    const dialog = container.querySelector('[role="dialog"]');
-    expect(dialog?.textContent).toContain('Add 1 draw-won player before confirming.');
-
-    await act(async () => {
-      buttonByText(container, 'Back').click();
-      await Promise.resolve();
-    });
-    await act(async () => {
-      buttonByText(container, 'Restore to Squad').click();
-      await Promise.resolve();
-    });
-
-    expect(container.textContent).toContain('Haaland restored to the squad.');
+    expect(container.querySelector('.player-profile__dialog')).not.toBeNull();
+    expect(container.querySelector('.player-profile__dialog')?.textContent).toContain('Remove player');
   });
 });

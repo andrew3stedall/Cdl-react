@@ -94,19 +94,20 @@ League information may create urgency items on Home, but the detailed competitio
 
 Simple, reversible actions should stay contextual. Multi-step, consequential or comparison-heavy actions use a dedicated flow.
 
-A player selected from Squad opens a quick-detail drawer. The drawer prioritises:
+A player selected from Squad opens the full player profile in a bottom sheet. The sheet prioritises:
 
 1. current status;
 2. performance evidence;
 3. upcoming fixtures when data is available;
 4. contextual actions.
 
-For an owned Squad player, the primary actions are:
+For an owned Squad player, the profile actions are:
 
+- **Move to bench** or **Move to Starting XI**;
 - **Compare**;
-- **Release to free agency** — stages a removal rather than executing immediately;
+- **Remove** — opens the confirmation action dialog;
 - **Draft trade** — only promoted when the player has credible trade value;
-- **Full profile**.
+- **Close player profile**.
 
 ## Comparison model
 

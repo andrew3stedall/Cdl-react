@@ -81,13 +81,12 @@ def test_interaction_script_exercises_team_selection_validation() -> None:
     content = INTERACTION_SCRIPT.read_text(encoding="utf-8")
     assert "/team-selection" in content
     assert "Player actions for Alex Keeper" in content
-    assert "Substitute with Riley Forward" in content
-    assert "Bench position 2" in content
-    assert "Lineup saved and validated." in content
-    assert "Confirm substitution" in content
+    assert "Move to bench" in content
+    assert "Riley Forward" in content
+    assert "Alex Keeper moved to the bench." in content
+    assert "Confirm move" in content
     assert "List view must not expose player movement dropdowns" in content
     assert "page.reload" in content
-    assert "Player actions for Ben Defender" in content
     assert "Triple Captain, active" in content
 
 

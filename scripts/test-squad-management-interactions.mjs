@@ -350,12 +350,13 @@ async function testSquadWorkspace(browser, viewport) {
   await captureReviewState(page, viewport, 'squad-reference-pitch');
   await pitch.getByRole('button', { name: 'View Alex Keeper details' }).click();
 
-  const playerDrawer = page.locator('.squad-page__drawer');
-  await playerDrawer.getByText(/Release to free agency/i).waitFor();
+  const playerDrawer = page.locator('.squad-page__drawer--profile');
+  await playerDrawer.getByRole('toolbar', { name: 'Squad-management actions' }).waitFor();
   await captureReviewState(page, viewport, 'squad-reference-player-drawer');
+  await playerDrawer.getByRole('button', { name: 'Open player actions' }).click();
   await Promise.all([
     page.waitForResponse((response) => new URL(response.url()).pathname === '/api/scouting/players'),
-    playerDrawer.getByRole('button', { name: /^Compare/ }).click(),
+    playerDrawer.getByRole('menuitem', { name: 'Compare player' }).click(),
   ]);
 
   const comparisonSearch = page.getByRole('textbox', { name: 'Search comparison players' });
@@ -369,20 +370,12 @@ async function testSquadWorkspace(browser, viewport) {
 
   await page.getByRole('button', { name: 'Close drawer', exact: true }).last().click();
   await pitch.getByRole('button', { name: 'View Alex Keeper details' }).click();
-  await page.getByRole('button', { name: /Release to free agency/i }).click();
-
-  const changes = page.locator('aside[aria-label="Squad changes"]');
-  await changes.getByText('Pending Removal', { exact: true }).waitFor();
-  await changes.getByText('Removed', { exact: true }).waitFor();
-  await changes.getByText('Alex Keeper', { exact: true }).waitFor();
-  await changes.getByRole('button', { name: 'Submit Squad Changes', exact: true }).click();
-  const review = page.getByRole('dialog');
-  await review.getByText('Add 1 draw-won player before confirming.', { exact: true }).waitFor();
-  await captureReviewState(page, viewport, 'squad-reference-changes');
-  await review.getByRole('button', { name: 'Back', exact: true }).click();
-  await changes.getByRole('button', { name: 'Restore to Squad', exact: true }).click();
-  await page.getByRole('status').getByText('Alex Keeper restored to the squad.', { exact: true }).waitFor();
-  await changes.locator('.squad-page__changes-toggle').click();
+  const profileAfterCompare = page.locator('.squad-page__drawer--profile');
+  await profileAfterCompare.getByRole('button', { name: 'Remove' }).click();
+  await profileAfterCompare.getByRole('heading', { name: 'Remove player' }).waitFor();
+  await captureReviewState(page, viewport, 'squad-reference-remove-action');
+  await profileAfterCompare.getByRole('dialog', { name: 'Remove player' }).getByRole('button', { name: 'Close action dialog' }).click();
+  await profileAfterCompare.getByRole('button', { name: 'Close player profile' }).click();
 
   await page.getByRole('button', { name: 'View as list' }).click();
   await page.locator('[aria-label="Starting XI players table"]').waitFor();

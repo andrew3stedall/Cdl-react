@@ -124,6 +124,7 @@ class MemorySquadClient implements SquadClient {
   }
   async getSummary() { return this.summary; }
   async getScoutingPlayers() { return { players: this.summary.players }; }
+  async getPlayer(playerId: string) { return this.summary.players.find((player) => player.id === playerId) ?? this.summary.players[0]; }
   async getTrades() { return { trades: [] }; }
   async getChanges() { return { available_to_add: [] }; }
   async getNotifications() {

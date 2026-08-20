@@ -1,0 +1,759 @@
+.player-profile {
+  --profile-panel: var(--card);
+  --profile-border: var(--border);
+  --profile-text: var(--foreground);
+  --profile-muted: var(--muted-foreground);
+  --profile-accent: var(--primary);
+  --profile-danger: var(--destructive);
+  --profile-chart-track: color-mix(in srgb, var(--profile-text) 8%, transparent);
+  --profile-chart-empty: color-mix(in srgb, var(--profile-text) 22%, transparent);
+  background: var(--background);
+  color: var(--profile-text);
+  display: grid;
+  gap: 0.75rem;
+  margin: 0 auto;
+  max-width: 48rem;
+  min-width: 0;
+  padding: 0.75rem 0.75rem calc(1rem + var(--cdl-mobile-navigation-clearance));
+}
+
+.player-profile__mobile-header {
+  align-items: center;
+  background: var(--background);
+  display: grid;
+  grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem;
+  min-height: 3.1rem;
+  padding: max(0.15rem, env(safe-area-inset-top)) 0 0.15rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.player-profile__mobile-header h1 {
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  margin: 0;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.player-profile__icon-button,
+.player-profile__favourite {
+  align-items: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: var(--profile-text);
+  cursor: pointer;
+  display: inline-flex;
+  justify-content: center;
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+  padding: 0.4rem;
+}
+
+.player-profile__icon-button:hover,
+.player-profile__icon-button:focus-visible,
+.player-profile__favourite:hover,
+.player-profile__favourite:focus-visible {
+  background: var(--secondary);
+  border-color: var(--profile-border);
+}
+
+.player-profile__overflow-wrap {
+  position: relative;
+}
+
+.player-profile__overflow-menu {
+  background: var(--popover);
+  border: 1px solid var(--profile-border);
+  border-radius: var(--radius);
+  display: grid;
+  gap: 0.2rem;
+  min-width: 10rem;
+  padding: 0.35rem;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.2rem);
+  z-index: 20;
+}
+
+.player-profile__overflow-menu button {
+  background: transparent;
+  border: 0;
+  border-radius: calc(var(--radius) - 0.15rem);
+  color: var(--popover-foreground);
+  cursor: pointer;
+  min-height: 2.35rem;
+  padding: 0.5rem 0.65rem;
+  text-align: left;
+}
+
+.player-profile__overflow-menu button:hover,
+.player-profile__overflow-menu button:focus-visible {
+  background: var(--secondary);
+}
+
+.player-profile__card {
+  background: var(--profile-panel);
+  border: 1px solid var(--profile-border);
+  border-radius: var(--radius);
+  min-width: 0;
+  padding: 0.9rem;
+}
+
+.player-profile__identity-main {
+  align-items: center;
+  display: flex;
+  gap: 0.8rem;
+  min-width: 0;
+}
+
+.player-profile__portrait {
+  align-items: center;
+  background: color-mix(in srgb, var(--profile-accent) 18%, var(--profile-panel));
+  border: 1px solid color-mix(in srgb, var(--profile-accent) 55%, var(--profile-border));
+  border-radius: 50%;
+  color: var(--profile-accent);
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 1.05rem;
+  font-weight: 900;
+  height: 4.25rem;
+  justify-content: center;
+  letter-spacing: 0.03em;
+  width: 4.25rem;
+}
+
+.player-profile__identity-copy {
+  min-width: 0;
+  width: 100%;
+}
+
+.player-profile__identity-heading {
+  align-items: flex-start;
+  display: flex;
+  gap: 0.25rem;
+  justify-content: space-between;
+}
+
+.player-profile__identity-heading h2 {
+  font-size: 1.05rem;
+  letter-spacing: -0.02em;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.player-profile__identity-heading p {
+  color: var(--profile-muted);
+  font-size: 0.75rem;
+  margin: 0.2rem 0 0;
+}
+
+.player-profile__favourite {
+  color: var(--profile-muted);
+  flex: 0 0 auto;
+  min-height: 2.35rem;
+  min-width: 2.35rem;
+}
+
+.player-profile__favourite.is-active {
+  color: #eab308;
+}
+
+.player-profile__identity-tags {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.55rem;
+}
+
+.player-profile__tag,
+.player-profile__fdr-badge {
+  align-items: center;
+  border: 1px solid var(--profile-border);
+  border-radius: 999px;
+  display: inline-flex;
+  font-size: 0.67rem;
+  font-weight: 800;
+  gap: 0.25rem;
+  line-height: 1;
+  min-height: 1.55rem;
+  padding: 0.28rem 0.5rem;
+  white-space: nowrap;
+}
+
+.player-profile__tag--status {
+  background: var(--secondary);
+  color: var(--foreground);
+}
+
+.player-profile__tag--captain {
+  background: color-mix(in srgb, var(--profile-accent) 14%, var(--profile-panel));
+  border-color: var(--profile-accent);
+  color: var(--profile-accent);
+}
+
+.player-profile__tag--vice {
+  background: color-mix(in srgb, #eab308 14%, var(--profile-panel));
+  border-color: #c58f05;
+  color: #c58f05;
+}
+
+.player-profile__tag--warning {
+  background: color-mix(in srgb, #d97706 15%, var(--profile-panel));
+  border-color: #d97706;
+  color: #d97706;
+}
+
+.player-profile__tag--critical {
+  background: color-mix(in srgb, var(--profile-danger) 15%, var(--profile-panel));
+  border-color: var(--profile-danger);
+  color: var(--profile-danger);
+}
+
+.player-profile__identity-tags .squad-page__shirt {
+  height: 1.6rem;
+  width: 1.6rem;
+}
+
+.player-profile__inline-error,
+.player-profile__notice {
+  border-left: 2px solid var(--profile-accent);
+  color: var(--profile-muted);
+  font-size: 0.75rem;
+  line-height: 1.4;
+  margin: 0.7rem 0 0;
+  padding-left: 0.55rem;
+}
+
+.player-profile__card-heading {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.7rem;
+}
+
+.player-profile__card-heading h2 {
+  font-size: 0.9rem;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.player-profile__muted-label {
+  color: var(--profile-muted);
+  font-size: 0.7rem;
+}
+
+.player-profile__chart-card--full {
+  min-height: 19rem;
+}
+
+.player-profile__chart-card--compact {
+  min-height: 9.75rem;
+  padding: 0.7rem 0.75rem;
+}
+
+.player-profile__chart-card--compact .player-profile__card-heading {
+  margin-bottom: 0.25rem;
+}
+
+.player-profile__chart {
+  min-width: 0;
+  width: 100%;
+}
+
+.player-profile__chart-columns {
+  align-items: stretch;
+  display: grid;
+  gap: clamp(0.15rem, 1.2vw, 0.5rem);
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  min-height: 15.25rem;
+}
+
+.player-profile__chart--minutes .player-profile__chart-columns {
+  gap: clamp(0.08rem, 0.8vw, 0.3rem);
+  min-height: 6.45rem;
+}
+
+.player-profile__chart--defensive .player-profile__chart-columns {
+  min-height: 15rem;
+}
+
+.player-profile__chart-column {
+  display: grid;
+  grid-template-rows: 1.2rem minmax(0, 1fr) 1.35rem;
+  min-width: 0;
+  text-align: center;
+}
+
+.player-profile__chart-column.is-compact {
+  grid-template-rows: 1rem minmax(0, 1fr) 1.1rem;
+}
+
+.player-profile__chart-value {
+  color: var(--profile-text);
+  font-size: clamp(0.62rem, 2.1vw, 0.75rem);
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.player-profile__chart-value.is-empty {
+  color: var(--profile-muted);
+}
+
+.player-profile__bar-track {
+  align-items: flex-end;
+  background: var(--profile-chart-track);
+  border-radius: 0.25rem 0.25rem 0.12rem 0.12rem;
+  display: flex;
+  min-height: 0;
+  position: relative;
+}
+
+.player-profile__bar {
+  align-items: center;
+  background: color-mix(in srgb, var(--profile-accent) 68%, var(--profile-panel));
+  border-radius: 0.25rem 0.25rem 0.1rem 0.1rem;
+  display: flex;
+  justify-content: center;
+  min-height: 0;
+  position: relative;
+  width: 100%;
+}
+
+.player-profile__bar--empty {
+  background: var(--profile-chart-empty);
+  min-height: 0;
+}
+
+.player-profile__bar--negative {
+  background: color-mix(in srgb, var(--profile-danger) 75%, var(--profile-panel));
+}
+
+.player-profile__bar--neutral {
+  background: color-mix(in srgb, var(--profile-muted) 62%, var(--profile-panel));
+}
+
+.player-profile__bar--low {
+  background: color-mix(in srgb, var(--profile-accent) 45%, var(--profile-panel));
+}
+
+.player-profile__bar--positive,
+.player-profile__bar--high {
+  background: color-mix(in srgb, #22c55e 68%, var(--profile-panel));
+}
+
+.player-profile__bar {
+  height: var(--bar-height);
+}
+
+.player-profile__stat-icons {
+  align-items: center;
+  bottom: 0.24rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.14rem;
+  justify-content: center;
+  max-width: calc(100% - 0.15rem);
+  position: absolute;
+}
+
+.player-profile__stat-icon {
+  align-items: center;
+  background: color-mix(in srgb, var(--profile-panel) 80%, transparent);
+  border: 1px solid color-mix(in srgb, var(--profile-text) 45%, transparent);
+  border-radius: 0.2rem;
+  color: var(--profile-text);
+  display: inline-flex;
+  height: 1.18rem;
+  justify-content: center;
+  position: relative;
+  width: 1.18rem;
+}
+
+.player-profile__stat-multiplier {
+  align-items: center;
+  background: var(--profile-accent);
+  border: 1px solid var(--profile-panel);
+  border-radius: 999px;
+  color: var(--primary-foreground);
+  display: inline-flex;
+  font-size: 0.48rem;
+  height: 0.72rem;
+  justify-content: center;
+  line-height: 1;
+  min-width: 0.72rem;
+  padding: 0 0.1rem;
+  position: absolute;
+  right: -0.28rem;
+  top: -0.32rem;
+  z-index: 2;
+}
+
+.player-profile__opponent-label {
+  align-self: end;
+  border-radius: 0.25rem;
+  display: block;
+  font-size: clamp(0.56rem, 1.9vw, 0.69rem);
+  font-weight: 900;
+  line-height: 1.1;
+  overflow: hidden;
+  padding: 0.16rem 0.08rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+[data-fdr-display-mode='fill'] .player-profile__opponent-label {
+  padding-inline: 0.18rem;
+}
+
+.player-profile__threshold-line {
+  border-top: 1px dashed #22d3ee;
+  left: -0.05rem;
+  pointer-events: none;
+  position: absolute;
+  right: -0.05rem;
+  top: 33.333%;
+  z-index: 2;
+}
+
+.player-profile__legend {
+  align-items: center;
+  color: var(--profile-muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.68rem;
+  gap: 0.7rem;
+  justify-content: center;
+  margin-top: 0.55rem;
+}
+
+.player-profile__legend span {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.28rem;
+}
+
+.player-profile__legend-swatch {
+  background: var(--profile-accent);
+  border-radius: 0.15rem;
+  display: inline-block;
+  height: 0.6rem;
+  width: 0.6rem;
+}
+
+.player-profile__legend-swatch--defence {
+  background: #64748b;
+}
+
+.player-profile__bar--stacked {
+  display: flex;
+  flex-direction: column-reverse;
+  height: var(--bar-height);
+  justify-content: flex-start;
+}
+
+.player-profile__bar-segment {
+  display: block;
+  min-height: 0;
+  width: 100%;
+}
+
+.player-profile__bar-segment--attack {
+  background: var(--profile-accent);
+  height: var(--segment-height);
+}
+
+.player-profile__bar-segment--defence {
+  background: #64748b;
+  height: var(--segment-height);
+}
+
+.player-profile__fixture-summary {
+  align-items: center;
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.player-profile__fixture-summary .squad-page__shirt {
+  height: 3rem;
+  width: 3rem;
+}
+
+.player-profile__fixture-summary strong {
+  display: block;
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+}
+
+.player-profile__fdr-pair {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.4rem;
+}
+
+.player-profile__fdr-badge {
+  border-radius: 0.35rem;
+  min-width: 2.15rem;
+  justify-content: center;
+}
+
+.player-profile__fixture-labels {
+  border-top: 1px solid var(--profile-border);
+  color: var(--profile-muted);
+  display: grid;
+  font-size: 0.7rem;
+  gap: 0.2rem;
+  grid-column: 1 / -1;
+  padding-top: 0.6rem;
+}
+
+.player-profile__chart-empty {
+  color: var(--profile-muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  margin: 0;
+  padding: 2rem 0.4rem;
+  text-align: center;
+}
+
+.player-profile__notice {
+  background: var(--profile-panel);
+  border: 1px solid var(--profile-border);
+  border-left: 3px solid var(--profile-accent);
+  border-radius: var(--radius);
+  margin: 0;
+  padding: 0.65rem 0.75rem;
+}
+
+.player-profile__action-bar {
+  align-items: stretch;
+  background: var(--profile-panel);
+  border: 1px solid var(--profile-border);
+  border-radius: var(--radius);
+  bottom: var(--cdl-mobile-navigation-clearance);
+  display: grid;
+  gap: 0.3rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  padding: 0.4rem;
+  position: sticky;
+  z-index: 9;
+}
+
+.player-profile__action {
+  align-items: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: calc(var(--radius) - 0.15rem);
+  color: var(--profile-muted);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  font-size: clamp(0.56rem, 1.8vw, 0.68rem);
+  font-weight: 800;
+  gap: 0.25rem;
+  justify-content: center;
+  min-height: 3.3rem;
+  min-width: 0;
+  padding: 0.35rem 0.15rem;
+  text-align: center;
+}
+
+.player-profile__action:hover,
+.player-profile__action:focus-visible,
+.player-profile__action.is-active {
+  background: var(--secondary);
+  border-color: var(--profile-accent);
+  color: var(--profile-accent);
+}
+
+.player-profile__action.is-danger:hover,
+.player-profile__action.is-danger:focus-visible {
+  border-color: var(--profile-danger);
+  color: var(--profile-danger);
+}
+
+.player-profile__action:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.player-profile__danger-button {
+  background: var(--profile-danger) !important;
+  color: var(--destructive-foreground) !important;
+}
+
+.player-profile__dialog-layer {
+  inset: 0;
+  position: fixed;
+  z-index: 40;
+}
+
+.player-profile__dialog-backdrop {
+  background: color-mix(in srgb, var(--background) 70%, transparent);
+  border: 0;
+  inset: 0;
+  position: absolute;
+}
+
+.player-profile__dialog {
+  background: var(--popover);
+  border: 1px solid var(--profile-border);
+  border-radius: var(--radius);
+  color: var(--popover-foreground);
+  left: 50%;
+  max-height: min(90dvh, 38rem);
+  max-width: min(30rem, calc(100vw - 1.5rem));
+  overflow: auto;
+  padding: 1rem;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+}
+
+.player-profile__dialog > header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.player-profile__dialog h2 {
+  font-size: 1rem;
+  margin: 0;
+}
+
+.player-profile__dialog p {
+  color: var(--profile-muted);
+  font-size: 0.8rem;
+  line-height: 1.45;
+  margin: 0 0 0.8rem;
+}
+
+.player-profile__action-options {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.player-profile__action-option {
+  align-items: center;
+  background: transparent;
+  border: 1px solid var(--profile-border);
+  border-radius: calc(var(--radius) - 0.12rem);
+  color: var(--profile-text);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  min-height: 3.2rem;
+  padding: 0.55rem 0.65rem;
+  text-align: left;
+}
+
+.player-profile__action-option:hover,
+.player-profile__action-option:focus-visible,
+.player-profile__action-option[aria-pressed='true'] {
+  background: var(--secondary);
+  border-color: var(--profile-accent);
+}
+
+.player-profile__action-option span:first-child {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.player-profile__action-option small,
+.player-profile__action-option > span:last-child {
+  color: var(--profile-muted);
+  font-size: 0.7rem;
+}
+
+.player-profile__dialog-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.player-profile__state {
+  align-content: center;
+  display: grid;
+  gap: 0.8rem;
+  justify-items: start;
+  min-height: 20rem;
+  padding: 1.5rem;
+}
+
+.player-profile__state h1,
+.player-profile__state p {
+  margin: 0;
+}
+
+.player-profile__state p {
+  color: var(--profile-muted);
+}
+
+@media (min-width: 901px) {
+  .player-profile {
+    padding: 1.25rem 1.5rem 2rem;
+  }
+
+  .player-profile__mobile-header {
+    position: static;
+  }
+
+  .player-profile__action-bar {
+    bottom: 1rem;
+  }
+}
+
+@media (max-width: 370px) {
+  .player-profile {
+    padding-inline: 0.5rem;
+  }
+
+  .player-profile__card {
+    padding-inline: 0.65rem;
+  }
+
+  .player-profile__chart-columns {
+    gap: 0.08rem;
+  }
+
+  .player-profile__stat-icon {
+    height: 1rem;
+    width: 1rem;
+  }
+}
+
+@media (min-width: 600px) {
+  .player-profile__fixture-summary {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .player-profile__fixture-labels {
+    border-top: 0;
+    grid-column: auto;
+    padding-top: 0;
+    text-align: right;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .player-profile *,
+  .player-profile *::before,
+  .player-profile *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}

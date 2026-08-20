@@ -65,6 +65,10 @@ export interface SquadApiHistoryRow {
   value: number;
   was_home: boolean;
   kickoff_time?: string | null;
+  opponent_name?: string | null;
+  opponent_short_name?: string | null;
+  difficulty?: number | null;
+  defensive_contributions?: number;
 }
 
 export interface SquadApiUpcomingFixture {
@@ -74,6 +78,21 @@ export interface SquadApiUpcomingFixture {
   difficulty: number;
   is_home: boolean;
   kickoff_time?: string | null;
+  opponent_name?: string | null;
+  opponent_short_name?: string | null;
+  opponent_difficulty?: number | null;
+}
+
+export interface SquadApiOpponentDefensiveHistory {
+  fixture_id: number;
+  gameweek?: number | null;
+  opponent_name?: string | null;
+  opponent_short_name?: string | null;
+  is_home: boolean;
+  difficulty?: number | null;
+  total_points_conceded?: number | null;
+  attacking_asset_points?: number | null;
+  defensive_asset_points?: number | null;
 }
 
 export interface SquadApiHistoryResponse {
@@ -82,6 +101,7 @@ export interface SquadApiHistoryResponse {
   response_sha256: string;
   history: SquadApiHistoryRow[];
   fixtures: SquadApiUpcomingFixture[];
+  opponent_defensive_history?: SquadApiOpponentDefensiveHistory[];
 }
 
 export interface SquadApiNotification {
@@ -118,6 +138,7 @@ export interface SquadClient {
   getTrades(): Promise<{ trades: SquadApiTrade[] }>;
   getChanges(): Promise<SquadApiChangesResponse>;
   getNotifications(): Promise<SquadApiNotificationsResponse>;
+  getPlayer(playerId: string): Promise<SquadApiPlayer>;
   getPlayerHistory(playerId: string): Promise<SquadApiHistoryResponse>;
   createTrade(
     offeredToTeamId: string,
@@ -166,6 +187,10 @@ export class HttpSquadClient implements SquadClient {
 
   getNotifications(): Promise<SquadApiNotificationsResponse> {
     return this.request<SquadApiNotificationsResponse>('/squad/notifications');
+  }
+
+  getPlayer(playerId: string): Promise<SquadApiPlayer> {
+    return this.request<SquadApiPlayer>(`/scouting/players/${encodeURIComponent(playerId)}`);
   }
 
   getPlayerHistory(playerId: string): Promise<SquadApiHistoryResponse> {

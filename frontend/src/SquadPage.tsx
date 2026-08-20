@@ -69,7 +69,7 @@ type PlayerStatus = 'owned' | 'available' | 'interested' | 'trade_target';
 type SortKey = 'points' | 'form' | 'xg' | 'xa';
 type BenchSlotOrder = 0 | 1 | 2 | 3 | 4;
 
-interface SubstitutionOption {
+export interface SubstitutionOption {
   target: TeamSelectionPlayer;
   benchOrders: BenchSlotOrder[];
   defaultBenchOrder: BenchSlotOrder | null;
@@ -567,6 +567,11 @@ export function SquadPage({
   }
 
   function openProfile(player: PlayerView) {
+    if (onNavigate) {
+      closeDrawer();
+      onNavigate(`/players/${encodeURIComponent(player.id)}`);
+      return;
+    }
     setSelectedPlayer(player);
     setDrawerMode('profile');
   }
@@ -1845,7 +1850,7 @@ function sortBySlot(left: PlayerView, right: PlayerView): number {
   return (left.slotOrder ?? Number.MAX_SAFE_INTEGER) - (right.slotOrder ?? Number.MAX_SAFE_INTEGER);
 }
 
-function selectionIsValid(players: TeamSelectionPlayer[]): boolean {
+export function selectionIsValid(players: TeamSelectionPlayer[]): boolean {
   const starters = players.filter((player) => player.slot === 'starter');
   const bench = players.filter((player) => player.slot === 'bench');
   const reserves = players.filter((player) => player.slot === 'reserve');
@@ -1875,7 +1880,7 @@ function selectionIsValid(players: TeamSelectionPlayer[]): boolean {
     && captain.id !== viceCaptain.id;
 }
 
-function getSubstitutionOptions(
+export function getSubstitutionOptions(
   players: TeamSelectionPlayer[],
   sourceId: string,
 ): SubstitutionOption[] {
@@ -1939,7 +1944,7 @@ function preferredBenchOrder(
     : allowedOrders[0];
 }
 
-function applySubstitution(
+export function applySubstitution(
   players: TeamSelectionPlayer[],
   sourceId: string,
   targetId: string,
@@ -2008,7 +2013,7 @@ function lineupAreaLabel(player: TeamSelectionPlayer): string {
   return player.slotOrder === 0 ? 'Bench · GK' : `Bench · ${player.slotOrder}`;
 }
 
-function normalizeLineupPlayers(players: TeamSelectionPlayer[]): TeamSelectionPlayer[] {
+export function normalizeLineupPlayers(players: TeamSelectionPlayer[]): TeamSelectionPlayer[] {
   const starters = players.filter((player) => player.slot === 'starter').sort(sortTeamSelectionPlayers);
   const bench = players.filter((player) => player.slot === 'bench').sort(sortTeamSelectionPlayers);
   const reserves = players.filter((player) => player.slot === 'reserve').sort(sortTeamSelectionPlayers);

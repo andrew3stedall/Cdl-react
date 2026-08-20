@@ -42,6 +42,24 @@ def test_scouting_endpoint_filters_by_query_and_metric() -> None:
     assert names == ["Casey Midfielder"]
 
 
+def test_scouting_player_detail_endpoint_returns_canonical_player() -> None:
+    client = TestClient(create_app())
+
+    response = client.get("/api/scouting/players/player-1")
+
+    assert response.status_code == 200
+    assert response.json()["id"] == "player-1"
+    assert response.json()["epl_team"]["id"] == "epl-ars"
+
+
+def test_scouting_player_detail_endpoint_returns_not_found_for_unknown_player() -> None:
+    client = TestClient(create_app())
+
+    response = client.get("/api/scouting/players/does-not-exist")
+
+    assert response.status_code == 404
+
+
 def test_squad_workspace_combines_summary_and_attention_reads() -> None:
     client = _authenticated_client()
 

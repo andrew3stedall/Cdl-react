@@ -65,6 +65,9 @@ class SquadManagementService:
             squad_value=round(sum(player.value for player in players), 1),
         )
 
+    def get_player(self, player_id: str) -> PlayerDetail | None:
+        return self._repository.get_player(player_id)
+
     def scout_players(self, filters: ScoutingFilters) -> ScoutingPlayersResponse:
         players = self._repository.list_players(filters)
         return ScoutingPlayersResponse(filters=filters, players=players)

@@ -11,6 +11,7 @@ from cdl_api.contracts.squad import (
     InterestCreateRequest,
     InterestDeleteResponse,
     InterestResponse,
+    PlayerDetail,
     PlayerMetric,
     PlayerPosition,
     ScoutingFilters,
@@ -143,6 +144,20 @@ def scouting_players(
             metric=metric,
         )
     )
+
+
+@router.get("/scouting/players/{player_id}", response_model=PlayerDetail)
+def scouting_player(
+    player_id: str,
+    service: SquadManagementService = Depends(get_squad_service),
+) -> PlayerDetail:
+    player = service.get_player(player_id)
+    if player is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Player could not be found.",
+        )
+    return player
 
 
 @router.get("/interests", response_model=list[InterestResponse])

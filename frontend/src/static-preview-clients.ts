@@ -480,6 +480,12 @@ export const staticPreviewSquadClient: SquadClient = {
   async getScoutingPlayers() {
     return { players: structuredClone(staticPreviewSquadSummary.players) };
   },
+  async getPlayer(playerId: string) {
+    return structuredClone(
+      staticPreviewSquadSummary.players.find((player) => player.id === playerId)
+      ?? staticPreviewSquadSummary.players[0],
+    );
+  },
   async getTrades() {
     return { trades: [] };
   },

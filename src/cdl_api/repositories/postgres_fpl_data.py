@@ -385,9 +385,7 @@ class PostgreSQLFplDataRepository:
             ]
 
             target_team_id = (
-                str(response.fixtures[0].opponent_team_id)
-                if response.fixtures
-                else None
+                str(response.fixtures[0].opponent_team_id) if response.fixtures else None
             )
             defensive_history = []
             if target_team_id is not None:
@@ -601,9 +599,7 @@ def _player_fixture_enrichment(
         return {}
     is_home = bool(history.was_home)
     return {
-        "opponent_name": context[
-            "away_team_name" if is_home else "home_team_name"
-        ],
+        "opponent_name": context["away_team_name" if is_home else "home_team_name"],
         "opponent_short_name": context[
             "away_team_short_name" if is_home else "home_team_short_name"
         ],
@@ -620,17 +616,13 @@ def _upcoming_fixture_enrichment(
         return {}
     is_home = bool(fixture.is_home)
     return {
-        "opponent_name": context[
-            "away_team_name" if is_home else "home_team_name"
-        ],
+        "opponent_name": context["away_team_name" if is_home else "home_team_name"],
         "opponent_short_name": context[
             "away_team_short_name" if is_home else "home_team_short_name"
         ],
         "difficulty": context["home_difficulty" if is_home else "away_difficulty"]
         or fixture.difficulty,
-        "opponent_difficulty": context[
-            "away_difficulty" if is_home else "home_difficulty"
-        ],
+        "opponent_difficulty": context["away_difficulty" if is_home else "home_difficulty"],
     }
 
 
@@ -648,16 +640,12 @@ def _defensive_history_from_fixture(
     return FplOpponentDefensiveHistory(
         fixture_id=int(row["fixture_id"]),
         gameweek=int(row["gameweek"]) if row["gameweek"] is not None else None,
-        opponent_name=str(
-            row["away_team_name"] if is_home else row["home_team_name"]
-        ),
+        opponent_name=str(row["away_team_name"] if is_home else row["home_team_name"]),
         opponent_short_name=str(
             row["away_team_short_name"] if is_home else row["home_team_short_name"]
         ),
         is_home=is_home,
-        difficulty=(
-            row["home_difficulty"] if is_home else row["away_difficulty"]
-        ),
+        difficulty=(row["home_difficulty"] if is_home else row["away_difficulty"]),
         total_points_conceded=total_points,
         attacking_asset_points=attacking_points,
         defensive_asset_points=defensive_points,
@@ -720,13 +708,15 @@ def _fixture_asset_points(
             elif identifier in defensive_identifiers:
                 defensive_points += stat_points
 
-    total_points = sum(total_by_element.values()) if total_by_element else (
-        total_from_stat_points if stat_points_found else None
+    total_points = (
+        sum(total_by_element.values())
+        if total_by_element
+        else (total_from_stat_points if stat_points_found else None)
     )
-    return total_points, (
-        attacking_points if stat_points_found else None
-    ), (
-        defensive_points if stat_points_found else None
+    return (
+        total_points,
+        (attacking_points if stat_points_found else None),
+        (defensive_points if stat_points_found else None),
     )
 
 

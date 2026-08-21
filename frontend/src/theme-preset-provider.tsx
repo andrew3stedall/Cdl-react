@@ -14,6 +14,7 @@ import {
 } from './fdr-colour-scales';
 import { FallbackPreferenceClient, type PreferenceClient } from './preferences-api';
 import { getThemeMode, getThemePresetClassName, resolveThemePreset } from './theme-presets';
+import { getStoredThemePreset, setThemePresetCookie } from './theme-cookie';
 
 interface ThemePresetContextValue {
   attackDirection: AttackDirection;
@@ -44,7 +45,7 @@ export function ThemePresetProvider({
   preferenceClient = defaultPreferenceClient,
 }: ThemePresetProviderProps) {
   const [presetName, setPresetNameState] = useState<ThemePreset['name']>(
-    resolveThemePreset(initialPresetName).name,
+    resolveThemePreset(initialPresetName ?? getStoredThemePreset()).name,
   );
   const [attackDirection, setAttackDirectionState] = useState<AttackDirection>('up');
   const [fdrScale, setFdrScaleState] = useState<FdrScaleName>(defaultFdrScaleName);
@@ -60,7 +61,9 @@ export function ThemePresetProvider({
       .getPreferences()
       .then((preferences) => {
         if (isMounted) {
-          setPresetNameState(resolveThemePreset(preferences.themePreset).name);
+          const nextPresetName = resolveThemePreset(preferences.themePreset).name;
+          setPresetNameState(nextPresetName);
+          setThemePresetCookie(nextPresetName);
           setAttackDirectionState(preferences.attackDirection === 'down' ? 'down' : 'up');
           setFdrScaleState(resolveFdrScaleName(preferences.fdrScale));
           setFdrScaleReversedState(preferences.fdrScaleReversed ?? defaultFdrScaleReversed);
@@ -192,6 +195,7 @@ export function ThemePresetProvider({
         const nextPreset = resolveThemePreset(nextPresetName);
 
         setPresetNameState(nextPreset.name);
+        setThemePresetCookie(nextPreset.name);
         savePreference({
           themePreset: nextPreset.name,
           attackDirection,

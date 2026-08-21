@@ -33,7 +33,7 @@ import {
 import { Button } from './components/ui/button';
 import type { AttackDirection, ThemePreset } from './contracts';
 import { officialFplShirtUrl } from './fpl-shirt-assets';
-import { getAvailabilityIssue, hasAvailabilityIssue } from './player-availability';
+import { availabilityChance, getAvailabilityIssue, hasAvailabilityIssue } from './player-availability';
 import {
   HttpSquadClient,
   SquadApiError,
@@ -1357,13 +1357,13 @@ function SquadList({
               <table className="squad-page__list-table">
                 <colgroup>
                   <col className="player" />
-                  <col className="next" />
                   <col className="points" />
+                  <col className="form" />
                   <col className="expected" />
                   <col className="availability" />
                   <col className="action" />
                 </colgroup>
-                <thead><tr><th>Player</th><th>Next</th><th className="sorted">Pts <ArrowDown size={11} /></th><th>xG / xA</th><th><span className="sr-only">Availability</span><CircleCheck aria-hidden="true" size={13} /></th><th><span className="sr-only">Actions</span></th></tr></thead>
+                <thead><tr><th>Player</th><th className="sorted">Pts <ArrowDown size={11} /></th><th>Form</th><th>xG / xA</th><th><span className="sr-only">Availability</span><CircleCheck aria-hidden="true" size={13} /></th><th><span className="sr-only">Actions</span></th></tr></thead>
                 <tbody>
                   {group.players.map((player) => (
                     <tr
@@ -1383,13 +1383,13 @@ function SquadList({
                           onClick={() => selectPlayer(player)}
                           type="button"
                         >
-                          <PlayerIdentity player={player} showForm showMeta={false} />
+                          <PlayerIdentity circle player={player} />
                           {player.captain ? <span className="squad-page__row-badge">C</span> : null}
                           {player.viceCaptain ? <span className="squad-page__row-badge vice">VC</span> : null}
                         </button>
                       </td>
-                      <td><span className={`${fixtureOpponentClassName(player.nextFixtureDifficulty)} squad-page__next-opponent ${player.nextOpponent ? '' : 'is-placeholder'}`.trim()} title={fixtureDifficultyTitle(player.nextFixtureDifficulty)}>{formatFixtureLabel(player)}</span></td>
                       <td><strong>{formatInteger(player.points)}</strong></td>
+                      <td><span className="squad-page__list-form-value"><strong>{formatMetric(player.form)}</strong><span className="squad-page__list-form"><FormDots value={player.form} /></span></span></td>
                       <td><span className="squad-page__expected"><span>{formatMetric(player.xg)}</span><span>{formatMetric(player.xa)}</span></span></td>
                       <td><AvailabilityFlag inline player={player} /></td>
                       <td>
@@ -1615,7 +1615,16 @@ function TradeDrawer({
   );
 }
 
-function PlayerIdentity({ large = false, player, showForm = false, showMeta = true }: { large?: boolean; player: PlayerView; showForm?: boolean; showMeta?: boolean }) {
+function PlayerIdentity({ circle = false, large = false, player, showForm = false, showMeta = true }: { circle?: boolean; large?: boolean; player: PlayerView; showForm?: boolean; showMeta?: boolean }) {
+  if (circle) {
+    return (
+      <span className="squad-page__identity squad-page__identity--circle">
+        <span aria-hidden="true" className="squad-page__identity-circle-shirt-crop"><TeamShirt large team={player.team} /></span>
+        <strong className="squad-page__identity-circle-name">{shortPlayerName(player.displayName)}</strong>
+        <small className={`${fixtureOpponentClassName(player.nextFixtureDifficulty)} squad-page__identity-circle-opponent ${player.nextOpponent ? '' : 'is-placeholder'}`.trim()} title={fixtureDifficultyTitle(player.nextFixtureDifficulty)}>{formatFixtureLabel(player)}</small>
+      </span>
+    );
+  }
   return (
     <span className={`squad-page__identity ${large ? 'large' : ''}`}>
       <PositionMarker position={player.position} />
@@ -1654,7 +1663,8 @@ function AvailabilityFlag({ inline = false, player }: { inline?: boolean; player
   });
   if (!issue) return null;
   const Icon = issue.severity === 'critical' ? CircleX : CircleAlert;
-  return <span aria-label={`Availability: ${issue.label}`} className={`squad-page__availability-flag ${issue.severity} ${inline ? 'inline' : ''}`} title={`Availability: ${issue.label}`}><Icon aria-hidden="true" size={13} /></span>;
+  const chance = availabilityChance(player.chanceOfPlaying);
+  return <span aria-label={`Availability: ${issue.label}`} className={`squad-page__availability-flag ${issue.severity} ${inline ? 'inline' : ''}`} title={`Availability: ${issue.label}`}>{chance !== null ? <span aria-hidden="true" className="squad-page__availability-chance">{chance}</span> : <Icon aria-hidden="true" size={13} />}</span>;
 }
 
 function Metric({ dots = false, label, placeholder = false, value }: { dots?: boolean; label: string; placeholder?: boolean; value: string }) {
@@ -2026,7 +2036,7 @@ export function formBand(value: number | null): 'negative' | 'low' | 'steady' | 
   return 'high';
 }
 
-function formatFixtureLabel(player: Pick<PlayerView, 'nextOpponent' | 'nextFixtureIsHome'>): string {
+export function formatFixtureLabel(player: Pick<PlayerView, 'nextOpponent' | 'nextFixtureIsHome'>): string {
   if (!player.nextOpponent) return 'Next —';
   return player.nextFixtureIsHome === true
     ? player.nextOpponent.toUpperCase()

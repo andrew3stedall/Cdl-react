@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { fixtureOpponentClassName, SquadPage } from './SquadPage';
+import { availabilityChance } from './player-availability';
 import { getDefaultThemePreset } from './theme-presets';
 import type {
   TeamSelectionClient,
@@ -72,8 +73,11 @@ class FullTeamSelectionClient implements TeamSelectionClient {
   }
 }
 
+let reducedChance = false;
+
 beforeEach(() => {
   window.localStorage.clear();
+  reducedChance = false;
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -95,8 +99,9 @@ beforeEach(() => {
                 form: 7.4,
                 value: 14.0,
                 selected_by_percent: 62.1,
-                availability_status: 'a',
-                chance_of_playing_next_round: null,
+                availability_status: reducedChance ? 'doubtful' : 'a',
+                availability_news: reducedChance ? 'Late fitness test' : null,
+                chance_of_playing_next_round: reducedChance ? 75 : null,
                 next_fixture: {
                   fixture_id: 'fixture-haaland',
                   opponent: { id: 'che', name: 'Chelsea', short_name: 'CHE' },
@@ -145,8 +150,9 @@ beforeEach(() => {
               form: 7.4,
               value: 14.0,
               selected_by_percent: 62.1,
-              availability_status: 'a',
-              chance_of_playing_next_round: null,
+              availability_status: reducedChance ? 'doubtful' : 'a',
+              availability_news: reducedChance ? 'Late fitness test' : null,
+              chance_of_playing_next_round: reducedChance ? 75 : null,
               next_fixture: {
                 fixture_id: 'fixture-haaland',
                 opponent: { id: 'che', name: 'Chelsea', short_name: 'CHE' },
@@ -425,6 +431,20 @@ describe('SquadPage', () => {
     expect(fixtureOpponentClassName(6)).toContain('squad-page__opponent--fdr-5');
   });
 
+  test('renders the FPL chance value inside reduced-availability flags', async () => {
+    reducedChance = true;
+    const { container } = await renderPage();
+
+    const flag = container.querySelector('.squad-page__availability-flag');
+    expect(flag?.textContent).toBe('75');
+    expect(flag?.getAttribute('aria-label')).toContain('75% chance');
+    expect(availabilityChance(0)).toBe(0);
+    expect(availabilityChance(25)).toBe(25);
+    expect(availabilityChance(50)).toBe(50);
+    expect(availabilityChance(75)).toBe(75);
+    expect(availabilityChance(100)).toBeNull();
+  });
+
   test('opens as a season squad workspace and remembers pitch/list choice', async () => {
     const { container } = await renderPage();
 
@@ -473,10 +493,11 @@ describe('SquadPage', () => {
     expect(window.localStorage.getItem('cdl:squad-view')).toBe('list');
     const startingTable = container.querySelector('[aria-label="Starting XI players table"]');
     expect(startingTable?.querySelector('.squad-page__list-form')).not.toBeNull();
+    expect(startingTable?.querySelector('.squad-page__identity--circle')).not.toBeNull();
     expect(startingTable?.textContent).toContain('CHE');
     expect(startingTable?.textContent).toContain('ars');
     expect(startingTable?.textContent).not.toContain('vs');
-    expect(Array.from(startingTable?.querySelectorAll('th') ?? []).some((header) => header.textContent?.includes('Form'))).toBe(false);
+    expect(Array.from(startingTable?.querySelectorAll('th') ?? []).some((header) => header.textContent?.includes('Form'))).toBe(true);
 
     await act(async () => {
       buttonByText(container, 'FWD').click();

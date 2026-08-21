@@ -979,6 +979,12 @@
   top: auto;
 }
 
+.squad-page__availability-chance {
+  font-size: 0.58rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
 .squad-page__bench {
   background: var(--surface);
   border: 1px solid var(--squad-border);
@@ -1283,15 +1289,15 @@
 }
 
 .squad-page__list-table col.player {
-  width: 39%;
-}
-
-.squad-page__list-table col.next {
-  width: 16%;
+  width: 42%;
 }
 
 .squad-page__list-table col.points {
-  width: 11%;
+  width: 12%;
+}
+
+.squad-page__list-table col.form {
+  width: 14%;
 }
 
 .squad-page__list-table col.expected {
@@ -1346,6 +1352,12 @@
   min-width: 0;
 }
 
+.squad-page__list-table .squad-page__identity--circle {
+  flex: 0 0 4.55rem;
+  height: 4.55rem;
+  min-width: 4.55rem;
+}
+
 .squad-page__list-table .squad-page__identity strong {
   font-size: 0.68rem;
 }
@@ -1364,6 +1376,17 @@
   align-items: center;
   display: inline-flex;
   min-height: 0.45rem;
+}
+
+.squad-page__list-form-value {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.25rem;
+  justify-content: flex-end;
+}
+
+.squad-page__list-form-value strong {
+  font-size: 0.68rem;
 }
 
 .squad-page__list-form .squad-page__form-dots i {
@@ -1550,6 +1573,74 @@
 
 .squad-page__identity.large small {
   font-size: 0.7rem;
+}
+
+.squad-page__identity--circle {
+  align-items: center;
+  aspect-ratio: 1;
+  background: color-mix(in srgb, var(--squad-pitch) 88%, var(--squad-form-steady) 12%);
+  border-radius: 50%;
+  display: flex;
+  flex: 0 0 4.55rem;
+  height: 4.55rem;
+  justify-content: center;
+  overflow: visible;
+  position: relative;
+  text-align: center;
+  width: 4.55rem;
+}
+
+.squad-page__identity--circle > span:last-child {
+  display: block;
+  min-width: 0;
+}
+
+.squad-page__identity-circle-shirt-crop {
+  height: 52%;
+  left: 50%;
+  overflow: hidden;
+  position: absolute;
+  top: 0.2rem;
+  transform: translateX(-50%);
+  width: 92%;
+  z-index: 1;
+}
+
+.squad-page__identity-circle-shirt-crop > .squad-page__shirt.large {
+  height: 200%;
+  left: 50%;
+  max-width: none;
+  object-fit: contain;
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  width: 96%;
+}
+
+.squad-page__identity-circle-name,
+.squad-page__identity-circle-opponent {
+  left: 0.2rem;
+  max-width: calc(100% - 0.4rem);
+  overflow: hidden;
+  position: absolute;
+  right: 0.2rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  z-index: 2;
+}
+
+.squad-page__identity-circle-name {
+  font-size: 0.64rem;
+  line-height: 1;
+  top: 66%;
+  transform: translateY(-50%);
+}
+
+.squad-page__identity-circle-opponent {
+  font-size: 0.56rem;
+  font-weight: 800;
+  line-height: 1;
+  top: calc(66% + 0.68rem);
 }
 
 .squad-page__position {

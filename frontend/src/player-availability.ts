@@ -52,6 +52,11 @@ export function availabilityIssueLabel(player: PlayerAvailabilityInput): string 
   return getAvailabilityIssue(player)?.label ?? null;
 }
 
+export function availabilityChance(value: number | null | undefined): number | null {
+  const chance = normaliseChance(value);
+  return chance !== null && chance < 100 ? chance : null;
+}
+
 function normaliseChance(value: number | null | undefined): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }

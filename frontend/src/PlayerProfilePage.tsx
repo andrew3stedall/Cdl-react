@@ -16,13 +16,15 @@ import {
 
 import { Button } from './components/ui/button';
 import {
+  fixtureDifficultyTitle,
+  fixtureOpponentClassName,
   applySubstitution,
   getSubstitutionOptions,
   shortPlayerName,
   TeamShirt,
   type SubstitutionOption,
 } from './SquadPage';
-import { getAvailabilityIssue, type AvailabilityIssue } from './player-availability';
+import { availabilityChance, getAvailabilityIssue, type AvailabilityIssue } from './player-availability';
 import {
   HttpSquadClient,
   type SquadApiHistoryResponse,
@@ -79,6 +81,16 @@ interface ProfileFixture {
     defensiveContributions: number;
     bonusPoints: number;
   };
+}
+
+interface ProfileNextFixture {
+  fixture_id: number | string;
+  gameweek?: number | null;
+  opponent_name?: string | null;
+  opponent_short_name?: string | null;
+  difficulty?: number | null;
+  is_home: boolean;
+  opponent_difficulty?: number | null;
 }
 
 export function PlayerProfilePage({
@@ -163,7 +175,15 @@ export function PlayerProfilePage({
     () => (history?.history ?? []).map(mapHistoryFixture).slice(-10),
     [history],
   );
-  const nextFixture = history?.fixtures[0] ?? null;
+  const nextFixture: ProfileNextFixture | null = history?.fixtures[0] ?? (player?.next_fixture ? {
+    fixture_id: player.next_fixture.fixture_id,
+    gameweek: player.next_fixture.gameweek?.number ?? null,
+    opponent_name: player.next_fixture.opponent.name,
+    opponent_short_name: player.next_fixture.opponent.short_name ?? player.next_fixture.opponent.name,
+    difficulty: player.next_fixture.difficulty ?? null,
+    is_home: player.next_fixture.is_home,
+    opponent_difficulty: null,
+  } : null);
   const defensiveHistory = history?.opponent_defensive_history ?? [];
   const substitutionOptions = useMemo(
     () => selection && selectedLineupPlayer
@@ -312,6 +332,9 @@ export function PlayerProfilePage({
   const titleName = shortPlayerName(player.display_name);
   const opponentName = nextFixture?.opponent_name ?? nextFixture?.opponent_short_name ?? 'Opponent';
   const opponentShortName = nextFixture?.opponent_short_name ?? opponentName;
+  const availabilityNews = (availability !== null || availabilityChance(player.chance_of_playing_next_round) !== null)
+    ? player.availability_news?.trim() || null
+    : null;
 
   return (
     <main
@@ -354,6 +377,7 @@ export function PlayerProfilePage({
               <TeamShirt large team={player.epl_team.short_name ?? player.epl_team.name} />
             </span>
             <strong className="player-profile__shirt-name">{shortPlayerName(player.display_name)}</strong>
+            {nextFixture ? <small className={`${fixtureOpponentClassName(nextFixture.difficulty)} player-profile__shirt-opponent`} title={fixtureDifficultyTitle(nextFixture.difficulty)}>{formatOpponentLabel(opponentShortName, nextFixture.is_home)}</small> : null}
           </div>
           <div className="player-profile__identity-copy">
             <div className="player-profile__identity-heading">
@@ -380,6 +404,16 @@ export function PlayerProfilePage({
         {selectionError ? <p className="player-profile__inline-error" role="alert">{selectionError}</p> : null}
       </section>
 
+      {availabilityNews ? (
+        <section aria-labelledby="player-availability-news-title" className="player-profile__card player-profile__availability-news">
+          <div className="player-profile__card-heading">
+            <h2 id="player-availability-news-title">FPL news</h2>
+            <span className="player-profile__muted-label">Chance {player.chance_of_playing_next_round}%</span>
+          </div>
+          <p>{availabilityNews}</p>
+        </section>
+      ) : null}
+
       <ChartCard title="Form" className="player-profile__chart-card--full">
         {historyError ? <ChartEmpty message={`Form history unavailable: ${historyError}`} /> : formFixtures.length > 0 ? <FormChart fixtures={formFixtures} fdrDisplayMode={fdrDisplayMode} /> : <ChartEmpty message="No completed FPL fixture history is available." />}
       </ChartCard>
@@ -399,7 +433,7 @@ export function PlayerProfilePage({
             <div>
               <strong>{opponentShortName.toUpperCase()} ({nextFixture.is_home ? 'H' : 'A'})</strong>
               <div className="player-profile__fdr-pair">
-                <FdrBadge label={`FDR for ${player.display_name}`} value={nextFixture.difficulty} displayMode={fdrDisplayMode} />
+                <FdrBadge label={`FDR for ${player.display_name}`} value={nextFixture.difficulty ?? null} displayMode={fdrDisplayMode} />
                 <FdrBadge label={`FDR for ${player.epl_team.short_name ?? player.epl_team.name}`} value={nextFixture.opponent_difficulty ?? null} displayMode={fdrDisplayMode} />
               </div>
             </div>

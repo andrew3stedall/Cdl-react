@@ -676,6 +676,49 @@ describe('SquadPage', () => {
     expect(container.textContent).toContain('9');
   });
 
+  test('stages captaincy changes until Save lineup is clicked', async () => {
+    const { container, root } = await renderPage();
+
+    await act(async () => {
+      (container.querySelector('button[aria-label="View Pickford details"]') as HTMLButtonElement).click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    const captainButton = [...container.querySelectorAll<HTMLButtonElement>('.player-profile__action')]
+      .find((button) => button.textContent?.trim() === 'Captain');
+    expect(captainButton).toBeTruthy();
+    expect(captainButton?.disabled).toBe(false);
+
+    await act(async () => {
+      captainButton?.click();
+      await Promise.resolve();
+    });
+
+    const putCallsBeforeSave = vi.mocked(fetch).mock.calls.filter(([, init]) => init?.method === 'PUT');
+    expect(putCallsBeforeSave).toHaveLength(0);
+    expect(container.textContent).toContain('Captaincy staged. Save lineup to apply this change.');
+
+    const saveButton = [...container.querySelectorAll<HTMLButtonElement>('button')]
+      .find((button) => button.textContent?.trim() === 'Save lineup');
+    expect(saveButton?.disabled).toBe(false);
+
+    await act(async () => {
+      saveButton?.click();
+      await Promise.resolve();
+      await Promise.resolve();
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      await Promise.resolve();
+    });
+
+    const putCallsAfterSave = vi.mocked(fetch).mock.calls.filter(([, init]) => init?.method === 'PUT');
+    expect(putCallsAfterSave).toHaveLength(1);
+    const body = JSON.parse(String(putCallsAfterSave[0]?.[1]?.body ?? '{}')) as { players?: Array<{ player_id: string; is_captain: boolean; is_vice_captain: boolean }> };
+    expect(body.players?.find((candidate) => candidate.player_id === 'fpl-235')).toMatchObject({ is_captain: true, is_vice_captain: false });
+    expect(body.players?.find((candidate) => candidate.player_id === 'fpl-411')).toMatchObject({ is_captain: false, is_vice_captain: false });
+    act(() => { root.unmount(); });
+  });
+
   test('keeps the profile action bar available for squad management', async () => {
     const { container } = await renderPage();
     const haaland = container.querySelector('button[aria-label="View Haaland details"]') as HTMLButtonElement;

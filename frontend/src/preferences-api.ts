@@ -6,6 +6,7 @@ import {
   type FdrDisplayMode,
 } from './fdr-colour-scales';
 import { resolveThemePreset } from './theme-presets';
+import { getStoredThemePreset, setThemePresetCookie } from './theme-cookie';
 
 interface ApiUserPreferences {
   theme_preset: string;
@@ -93,7 +94,7 @@ export class LocalStoragePreferenceClient implements PreferenceClient {
   private readonly fdrDisplayModeStorageKey = 'cdl-fdr-display-mode';
 
   async getPreferences(): Promise<UserPreferences> {
-    const storedPreset = localStorage.getItem(this.storageKey);
+    const storedPreset = getStoredThemePreset();
 
     return {
       themePreset: resolveThemePreset(storedPreset).name,
@@ -107,6 +108,7 @@ export class LocalStoragePreferenceClient implements PreferenceClient {
   }
 
   async updatePreferences(preferences: UserPreferences): Promise<UserPreferences> {
+    setThemePresetCookie(preferences.themePreset);
     localStorage.setItem(this.storageKey, preferences.themePreset);
     localStorage.setItem(this.attackDirectionStorageKey, preferences.attackDirection);
     localStorage.setItem(this.fdrScaleStorageKey, preferences.fdrScale);

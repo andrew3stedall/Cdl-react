@@ -2,7 +2,7 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, describe, expect, test } from 'vitest';
 
-import { PlayerProfilePage, SubstitutionReviewDrawer } from './PlayerProfilePage';
+import { earnedDefensiveContributionPoints, PlayerProfilePage, SubstitutionReviewDrawer } from './PlayerProfilePage';
 import type {
   SquadApiHistoryResponse,
   SquadApiPlayer,
@@ -222,7 +222,11 @@ describe('PlayerProfilePage', () => {
     ]);
     expect(container.querySelector('[data-chart-kind="form"]')?.textContent).toContain('—');
     expect(container.querySelector('[data-chart-kind="form"] .player-profile__opponent-label')?.getAttribute('style')).toContain('var(--cdl-fdr-1)');
+    expect(container.querySelector('[data-chart-kind="form"]')?.getAttribute('data-y-axis-min')).toBe('0');
+    expect(container.querySelector('[data-chart-kind="form"]')?.getAttribute('data-y-axis-max')).toBe('13');
+    expect(container.querySelector('[data-chart-kind="form"]')?.getAttribute('aria-label')).toContain('vertical scale 0 to 13 points');
     expect(container.querySelector('[data-chart-kind="form"] .player-profile__stat-icon')?.getAttribute('aria-label')).toContain('Goals scored');
+    expect(container.querySelector('[aria-label^="Defensive contributions"]')).toBeNull();
     expect(container.querySelector('.player-profile__stat-multiplier')?.textContent).toBe('×2');
     expect(container.querySelector('.player-profile__stat-multiplier')?.className).toContain('player-profile__stat-multiplier');
     expect(container.querySelector('.player-profile__chart-card--compact')).toBeTruthy();
@@ -233,6 +237,31 @@ describe('PlayerProfilePage', () => {
     expect(container.textContent).toContain('Attacking assets');
     expect(container.textContent).toContain('Defensive assets');
     root.unmount();
+  });
+
+  test('keeps the form chart scale at a minimum of ten points', async () => {
+    const lowScoringHistory: SquadApiHistoryResponse = {
+      ...history,
+      history: history.history.map((row) => ({ ...row, total_points: Math.min(row.total_points, 9) })),
+    };
+    const squadClient = new MemorySquadClient();
+    squadClient.getPlayerHistory = async () => lowScoringHistory;
+    const { container, root } = renderPage(squadClient);
+    await settle();
+
+    expect(container.querySelector('[data-chart-kind="form"]')?.getAttribute('data-y-axis-min')).toBe('0');
+    expect(container.querySelector('[data-chart-kind="form"]')?.getAttribute('data-y-axis-max')).toBe('10');
+    expect(container.querySelector('[data-chart-kind="form"]')?.getAttribute('aria-label')).toContain('vertical scale 0 to 10 points');
+    root.unmount();
+  });
+
+  test('only treats defensive contributions as a scoring return at the FPL position threshold', () => {
+    expect(earnedDefensiveContributionPoints(9, 'DEF')).toBe(false);
+    expect(earnedDefensiveContributionPoints(10, 'DEF')).toBe(true);
+    expect(earnedDefensiveContributionPoints(11, 'MID')).toBe(false);
+    expect(earnedDefensiveContributionPoints(12, 'MID')).toBe(true);
+    expect(earnedDefensiveContributionPoints(12, 'FWD')).toBe(true);
+    expect(earnedDefensiveContributionPoints(12, 'GKP')).toBe(false);
   });
 
   test('renders the substitution review as two player columns with only the latest four fixtures', async () => {

@@ -29,6 +29,10 @@ import { SquadWorkspacePage } from './SquadWorkspacePage';
 import type { SquadClient } from './squad-api';
 import type { TeamSelectionClient } from './team-selection-api';
 import { ThemePresetProvider, useThemePreset } from './theme-preset-provider';
+import { getStoredThemePreset } from './theme-cookie';
+import { LocalStoragePreferenceClient } from './preferences-api';
+
+const loginPreferenceClient = new LocalStoragePreferenceClient();
 
 const rulesVersion = {
   version: '2026.05',
@@ -311,19 +315,24 @@ export function App({
 
   if (!canAccessProtectedRoute(activeSession)) {
     return (
-      <LoginPage
-        email={loginEmail}
-        error={loginError}
-        googleClientId={googleClientId}
-        onEmailChange={setLoginEmail}
-        onGoogleCredential={handleGoogleCredential}
-        onPasswordChange={setLoginPassword}
-        onRetry={() => void refreshActiveSession()}
-        onSubmit={(event) => void handleLogin(event)}
-        password={loginPassword}
-        pending={loginPending}
-        showRetry={session === undefined}
-      />
+      <ThemePresetProvider
+        initialPresetName={getStoredThemePreset()}
+        preferenceClient={loginPreferenceClient}
+      >
+        <LoginPage
+          email={loginEmail}
+          error={loginError}
+          googleClientId={googleClientId}
+          onEmailChange={setLoginEmail}
+          onGoogleCredential={handleGoogleCredential}
+          onPasswordChange={setLoginPassword}
+          onRetry={() => void refreshActiveSession()}
+          onSubmit={(event) => void handleLogin(event)}
+          password={loginPassword}
+          pending={loginPending}
+          showRetry={session === undefined}
+        />
+      </ThemePresetProvider>
     );
   }
 

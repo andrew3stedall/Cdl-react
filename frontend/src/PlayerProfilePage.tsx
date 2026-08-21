@@ -5,6 +5,7 @@ import {
   CircleX,
   Ellipsis,
   Footprints,
+  Repeat2,
   Shield,
   ShieldCheck,
   Star,
@@ -52,6 +53,7 @@ interface PlayerProfilePageProps {
   onClose?: () => void;
   onNavigate?: (href: string) => void;
   onCompare?: () => void;
+  onStartSubstitution?: () => void;
   onSquadChange?: (summary: SquadApiSummary) => void;
   onSelectionChange?: (selection: TeamSelectionSnapshot, options?: { persisted?: boolean }) => void;
   onTrade?: () => void;
@@ -99,6 +101,7 @@ export function PlayerProfilePage({
   onClose,
   onNavigate,
   onCompare,
+  onStartSubstitution,
   onSquadChange,
   onSelectionChange,
   onTrade,
@@ -326,7 +329,7 @@ export function PlayerProfilePage({
       selectedSubstitution.target.id,
       benchOrder,
     );
-    await saveLineup(nextPlayers, `${player?.display_name ?? 'Player'} moved to the bench.`);
+    await saveLineup(nextPlayers, `${player?.display_name ?? 'Player'} swapped with ${selectedSubstitution.target.name}.`);
   }
 
   if (loading) {
@@ -461,10 +464,10 @@ export function PlayerProfilePage({
 
       <div aria-label="Squad-management actions" className="player-profile__action-bar" role="toolbar">
         <ActionButton
-          disabled={isLocked || squadStatus !== 'starter' || substitutionOptions.length === 0 || pendingAction !== null}
-          icon={Shield}
+          disabled={isLocked || selectedLineupPlayer === null || pendingAction !== null}
+          icon={Repeat2}
           label="Sub"
-          onClick={openBenchActions}
+          onClick={onStartSubstitution ?? openBenchActions}
         />
         <ActionButton
           danger
@@ -476,22 +479,22 @@ export function PlayerProfilePage({
         <ActionButton
           active={captaincy === 'captain'}
           disabled={isLocked || squadStatus !== 'starter' || captaincy === 'captain' || pendingAction !== null}
-          icon={Target}
+          visual={<PlayerRoleBadge role="captain" />}
           label="Captain"
           onClick={() => changeCaptaincy('captain')}
         />
         <ActionButton
           active={captaincy === 'vice_captain'}
           disabled={isLocked || squadStatus !== 'starter' || captaincy === 'vice_captain' || pendingAction !== null}
-          icon={Trophy}
+          visual={<PlayerRoleBadge role="vice" />}
           label="Vice"
           onClick={() => changeCaptaincy('vice_captain')}
         />
       </div>
 
       {actionSheet === 'bench' ? (
-        <ActionDialog labelledBy="player-profile-bench-title" onClose={() => setActionSheet(null)} title="Move to bench">
-          <p>Choose an eligible replacement for {player.display_name}. The current bench player will move into the Starting XI.</p>
+        <ActionDialog labelledBy="player-profile-substitution-title" onClose={() => setActionSheet(null)} title="Choose substitution">
+          <p>Choose an eligible player to swap with {player.display_name}. The formation will be validated before the change is applied.</p>
           <div className="player-profile__action-options">
             {substitutionOptions.length === 0 ? <ChartEmpty message="No legal replacements are available for this formation." /> : substitutionOptions.map((option) => (
               <button
@@ -508,7 +511,7 @@ export function PlayerProfilePage({
           </div>
           <div className="player-profile__dialog-actions">
             <Button onClick={() => setActionSheet(null)} type="button" variant="ghost">Cancel</Button>
-            <Button disabled={!selectedSubstitution || pendingAction !== null} onClick={() => void confirmSubstitution()} type="button">Confirm move</Button>
+            <Button disabled={!selectedSubstitution || pendingAction !== null} onClick={() => void confirmSubstitution()} type="button">Confirm sub</Button>
           </div>
         </ActionDialog>
       ) : null}
@@ -541,17 +544,151 @@ export function PlayerProfilePage({
   );
 }
 
-function ChartCard({ children, className = '', compact = false, title }: { children: ReactNode; className?: string; compact?: boolean; title: string }) {
-  return <section aria-labelledby={title.replace(/\s+/g, '-').toLowerCase()} className={`player-profile__card player-profile__chart-card${compact ? ' player-profile__chart-card--compact' : ''} ${className}`.trim()}><div className="player-profile__card-heading"><h2 id={title.replace(/\s+/g, '-').toLowerCase()}>{title}</h2></div>{children}</section>;
+export function SubstitutionReviewDrawer({
+  onCancel,
+  onConfirm,
+  pending = false,
+  sourceLabel,
+  sourcePlayer,
+  squadClient = defaultSquadClient,
+  targetLabel,
+  targetPlayer,
+}: {
+  onCancel: () => void;
+  onConfirm: () => void;
+  pending?: boolean;
+  sourceLabel?: string;
+  sourcePlayer: SquadApiPlayer;
+  squadClient?: SquadClient;
+  targetLabel?: string;
+  targetPlayer: SquadApiPlayer;
+}) {
+  const themePreset = useOptionalThemePreset();
+  const fdrDisplayMode = themePreset?.fdrDisplayMode ?? 'font';
+  const [histories, setHistories] = useState<{ source: SquadApiHistoryResponse | null; target: SquadApiHistoryResponse | null }>({ source: null, target: null });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    setLoading(true);
+    setError(null);
+    void Promise.allSettled([
+      squadClient.getPlayerHistory(sourcePlayer.id),
+      squadClient.getPlayerHistory(targetPlayer.id),
+    ]).then(([sourceResult, targetResult]) => {
+      if (!mounted) return;
+      const sourceHistory = sourceResult.status === 'fulfilled' ? sourceResult.value : null;
+      const targetHistory = targetResult.status === 'fulfilled' ? targetResult.value : null;
+      setHistories({ source: sourceHistory, target: targetHistory });
+      if (!sourceHistory || !targetHistory) {
+        setError('One or both player histories are unavailable.');
+      }
+      setLoading(false);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [sourcePlayer.id, squadClient, targetPlayer.id]);
+
+  const sourceFixtures = (histories.source?.history ?? []).map(mapHistoryFixture).slice(-4);
+  const targetFixtures = (histories.target?.history ?? []).map(mapHistoryFixture).slice(-4);
+
+  return (
+    <main aria-labelledby="substitution-review-title" className="player-profile player-profile--drawer player-profile--substitution-review" data-presentation="drawer">
+      <span aria-hidden="true" className="player-profile__sheet-handle" />
+      <header className="player-profile__mobile-header">
+        <button aria-label="Cancel substitution" className="player-profile__icon-button" onClick={onCancel} type="button"><X aria-hidden="true" size={20} /></button>
+        <h1 id="substitution-review-title">Review substitution</h1>
+        <span aria-hidden="true" />
+      </header>
+
+      <div className="player-profile__content">
+        <section aria-label="Substitution players" className="player-profile__card player-profile__comparison-card">
+          <div className="player-profile__comparison-heading">
+            <div>
+              <p className="player-profile__muted-label">Confirm the squad swap</p>
+              <h2>{shortPlayerName(sourcePlayer.display_name)} <span aria-hidden="true">↔</span> {shortPlayerName(targetPlayer.display_name)}</h2>
+            </div>
+            <Repeat2 aria-hidden="true" size={20} />
+          </div>
+          <div className="player-profile__comparison-grid">
+            <ReviewPlayerColumn
+              fdrDisplayMode={fdrDisplayMode}
+              fixtures={sourceFixtures}
+              idPrefix={`source-${sourcePlayer.id}`}
+              label="Original selection"
+              player={sourcePlayer}
+              slotLabel={sourceLabel}
+            />
+            <ReviewPlayerColumn
+              fdrDisplayMode={fdrDisplayMode}
+              fixtures={targetFixtures}
+              idPrefix={`target-${targetPlayer.id}`}
+              label="Selected replacement"
+              player={targetPlayer}
+              slotLabel={targetLabel}
+            />
+          </div>
+          {loading ? <ChartEmpty message="Loading the latest four fixtures…" /> : null}
+          {!loading && error ? <p className="player-profile__inline-error" role="status">{error} Form and minutes may be incomplete.</p> : null}
+        </section>
+      </div>
+
+      <div aria-label="Substitution review actions" className="player-profile__review-actions" role="toolbar">
+        <Button disabled={pending} onClick={onCancel} type="button" variant="ghost">Cancel</Button>
+        <Button disabled={pending || loading} onClick={onConfirm} type="button">
+          <Repeat2 aria-hidden="true" size={16} />
+          {pending ? 'Applying…' : 'Confirm sub'}
+        </Button>
+      </div>
+    </main>
+  );
 }
 
-function FormChart({ fixtures, fdrDisplayMode }: { fixtures: ProfileFixture[]; fdrDisplayMode: 'font' | 'fill' }) {
+function ReviewPlayerColumn({ fdrDisplayMode, fixtures, idPrefix, label, player, slotLabel }: { fdrDisplayMode: 'font' | 'fill'; fixtures: ProfileFixture[]; idPrefix: string; label: string; player: SquadApiPlayer; slotLabel?: string }) {
+  const nextFixture = player.next_fixture ?? null;
+  const opponent = nextFixture?.opponent.short_name ?? nextFixture?.opponent.name ?? null;
+  return (
+    <article aria-label={`${label}: ${player.display_name}`} className="player-profile__comparison-player">
+      <div className="player-profile__comparison-player-heading">
+        <span className="player-profile__muted-label">{label}</span>
+        <strong>{slotLabel ?? 'Squad'}</strong>
+      </div>
+      <div className="player-profile__comparison-identity">
+        <div aria-label={`Shirt for ${player.display_name}`} className="player-profile__shirt-token" role="img">
+          <span aria-hidden="true" className="player-profile__shirt-crop"><TeamShirt large team={player.epl_team.short_name ?? player.epl_team.name} /></span>
+          <strong className="player-profile__shirt-name">{shortPlayerName(player.display_name)}</strong>
+          {opponent ? <small className={`${fixtureOpponentClassName(nextFixture?.difficulty ?? null)} player-profile__shirt-opponent`}>{formatOpponentLabel(opponent, nextFixture?.is_home ?? true)}</small> : null}
+        </div>
+        <div>
+          <h3>{player.display_name}</h3>
+          <p>{player.position} <span aria-hidden="true">·</span> {player.epl_team.short_name ?? player.epl_team.name}</p>
+          <small>{opponent ? `Next: ${formatOpponentLabel(opponent, nextFixture?.is_home ?? true)}` : 'Next fixture unavailable'}</small>
+        </div>
+      </div>
+      <ChartCard idPrefix={`${idPrefix}-form`} title="Form">
+        {fixtures.length > 0 ? <FormChart fixtures={fixtures} fdrDisplayMode={fdrDisplayMode} windowLabel="latest four" /> : <ChartEmpty message="No recent form history." />}
+      </ChartCard>
+      <ChartCard compact idPrefix={`${idPrefix}-minutes`} title="Minutes played">
+        {fixtures.length > 0 ? <MinutesChart fixtures={fixtures} fdrDisplayMode={fdrDisplayMode} windowLabel="latest four" /> : <ChartEmpty message="No recent minutes history." />}
+      </ChartCard>
+    </article>
+  );
+}
+
+function ChartCard({ children, className = '', compact = false, idPrefix, title }: { children: ReactNode; className?: string; compact?: boolean; idPrefix?: string; title: string }) {
+  const headingId = idPrefix ?? title.replace(/\s+/g, '-').toLowerCase();
+  return <section aria-labelledby={headingId} className={`player-profile__card player-profile__chart-card${compact ? ' player-profile__chart-card--compact' : ''} ${className}`.trim()}><div className="player-profile__card-heading"><h2 id={headingId}>{title}</h2></div>{children}</section>;
+}
+
+function FormChart({ fixtures, fdrDisplayMode, windowLabel = 'latest ten' }: { fixtures: ProfileFixture[]; fdrDisplayMode: 'font' | 'fill'; windowLabel?: string }) {
   const maxValue = Math.max(1, ...fixtures.map((fixture) => Math.abs(fixture.fantasyPoints ?? 0)));
-  return <div aria-label="Fantasy points over the latest ten fixtures" className="player-profile__chart" data-chart-kind="form" role="img"><div className="player-profile__chart-columns">{fixtures.map((fixture) => <ChartColumn fixture={fixture} fdrDisplayMode={fdrDisplayMode} maxValue={maxValue} key={fixture.fixtureId} value={fixture.fantasyPoints} valueLabel={formatNullableNumber(fixture.fantasyPoints)} />)}</div></div>;
+  return <div aria-label={`Fantasy points over the ${windowLabel} fixtures`} className="player-profile__chart" data-chart-kind="form" role="img"><div className="player-profile__chart-columns">{fixtures.map((fixture) => <ChartColumn fixture={fixture} fdrDisplayMode={fdrDisplayMode} maxValue={maxValue} key={fixture.fixtureId} value={fixture.fantasyPoints} valueLabel={formatNullableNumber(fixture.fantasyPoints)} />)}</div></div>;
 }
 
-function MinutesChart({ fixtures, fdrDisplayMode }: { fixtures: ProfileFixture[]; fdrDisplayMode: 'font' | 'fill' }) {
-  return <div aria-label="Minutes played over the latest ten fixtures" className="player-profile__chart player-profile__chart--minutes" data-chart-kind="minutes" role="img"><div className="player-profile__chart-columns">{fixtures.map((fixture) => <ChartColumn compact fixture={fixture} fdrDisplayMode={fdrDisplayMode} maxValue={90} key={fixture.fixtureId} minutes value={fixture.minutesPlayed} valueLabel={formatNullableNumber(fixture.minutesPlayed)} />)}</div></div>;
+function MinutesChart({ fixtures, fdrDisplayMode, windowLabel = 'latest ten' }: { fixtures: ProfileFixture[]; fdrDisplayMode: 'font' | 'fill'; windowLabel?: string }) {
+  return <div aria-label={`Minutes played over the ${windowLabel} fixtures`} className="player-profile__chart player-profile__chart--minutes" data-chart-kind="minutes" role="img"><div className="player-profile__chart-columns">{fixtures.map((fixture) => <ChartColumn compact fixture={fixture} fdrDisplayMode={fdrDisplayMode} maxValue={90} key={fixture.fixtureId} minutes value={fixture.minutesPlayed} valueLabel={formatNullableNumber(fixture.minutesPlayed)} />)}</div></div>;
 }
 
 function DefensiveChart({ fixtures, fdrDisplayMode }: { fixtures: SquadApiOpponentDefensiveHistory[]; fdrDisplayMode: 'font' | 'fill' }) {
@@ -595,8 +732,12 @@ function AvailabilityTag({ issue, status }: { issue: AvailabilityIssue; status: 
   return <span className={`player-profile__tag player-profile__tag--availability player-profile__tag--${issue.severity}`} title={issue.label}><Icon aria-hidden="true" size={13} />{status}</span>;
 }
 
-function ActionButton({ active = false, danger = false, disabled, icon: Icon, label, onClick }: { active?: boolean; danger?: boolean; disabled: boolean; icon: LucideIcon; label: string; onClick: () => void }) {
-  return <button aria-pressed={active} className={`player-profile__action${active ? ' is-active' : ''}${danger ? ' is-danger' : ''}`} disabled={disabled} onClick={onClick} type="button"><Icon aria-hidden="true" size={17} /><span>{label}</span></button>;
+function ActionButton({ active = false, danger = false, disabled, icon: Icon, label, onClick, visual }: { active?: boolean; danger?: boolean; disabled: boolean; icon?: LucideIcon; label: string; onClick: () => void; visual?: ReactNode }) {
+  return <button aria-pressed={active} className={`player-profile__action${active ? ' is-active' : ''}${danger ? ' is-danger' : ''}`} disabled={disabled} onClick={onClick} type="button">{visual ?? (Icon ? <Icon aria-hidden="true" size={17} /> : null)}<span>{label}</span></button>;
+}
+
+function PlayerRoleBadge({ role }: { role: 'captain' | 'vice' }) {
+  return <i aria-hidden="true" className={`squad-page__captain player-profile__action-role-badge${role === 'vice' ? ' vice' : ''}`} />;
 }
 
 function ActionDialog({ children, labelledBy, onClose, title }: { children: ReactNode; labelledBy: string; onClose: () => void; title: string }) {

@@ -82,8 +82,8 @@ def test_tester_guide_is_deterministic_and_truthful() -> None:
         "Invalid email or password.",
         "Interest already exists.",
         "Trade proposal created.",
-        "only formation-valid substitutions are offered",
-        "Alex Keeper moved to the bench.",
+        "formation-valid candidates",
+        "latest-four-fixture review drawer",
         "deterministic API test doubles",
         "Live browser-to-PostgreSQL",
         "Real historical exports are unavailable",
@@ -98,10 +98,10 @@ def test_team_selection_release_evidence_is_focused_and_truthful() -> None:
     browser = BROWSER_INTERACTIONS.read_text(encoding="utf-8")
     required_browser_evidence = (
         "Player actions for Alex Keeper",
-        "Move to bench",
+        "Sub",
         "Riley Forward",
-        "Confirm move",
-        "Alex Keeper moved to the bench.",
+        "Confirm sub",
+        "Alex Keeper swapped with Riley Forward.",
         "Expected the saved lineup to render its player action controls after reload",
         "Expected list view to remain free of player movement dropdowns after reload",
         "Triple Captain chip state updated.",
@@ -114,8 +114,8 @@ def test_team_selection_release_evidence_is_focused_and_truthful() -> None:
     for evidence in required_browser_evidence:
         assert evidence in browser
     required_inventory_claims = (
-        "formation-aware substitutions from that profile",
-        "profile substitution save survives reload",
+        "formation-aware swaps from Starting XI/Bench/Reserves",
+        "the review drawer presents both players and confirm/cancel actions",
         "lineup/chip/profile substitution controls are disabled when a fixture lock is active",
         "Live PostgreSQL browser integration and staging identity remain separate gates",
     )

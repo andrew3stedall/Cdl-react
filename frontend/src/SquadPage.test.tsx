@@ -558,6 +558,42 @@ describe('SquadPage', () => {
     expect(container.querySelector('[aria-label="Squad pitch"]')?.textContent).toContain('Riley Forward');
   });
 
+  test('returns to candidate selection when review is cancelled and supports cancelling the substitution entirely', async () => {
+    const { container } = await renderPage();
+
+    await act(async () => {
+      (container.querySelector('button[aria-label="View Haaland details"]') as HTMLButtonElement).click();
+      await Promise.resolve();
+    });
+    await act(async () => {
+      buttonByText(container, 'Sub').click();
+      await Promise.resolve();
+    });
+    await act(async () => {
+      (container.querySelector('button[aria-label="Substitute with Riley Forward"]') as HTMLButtonElement).click();
+      await Promise.resolve();
+    });
+
+    expect(container.querySelector('.squad-page__drawer-layer')).not.toBeNull();
+    await act(async () => {
+      buttonByText(container, 'Cancel').click();
+      await Promise.resolve();
+    });
+
+    expect(container.querySelector('.squad-page__drawer--substitution')).toBeNull();
+    expect(container.querySelector('.squad-page__drawer-layer')).toBeNull();
+    expect(container.querySelector('[aria-label="Substitution mode"]')).not.toBeNull();
+    expect(container.querySelector('button[aria-label="Substitute with Riley Forward"]')).not.toBeNull();
+
+    await act(async () => {
+      (container.querySelector('button[aria-label="Cancel substitution"]') as HTMLButtonElement).click();
+      await Promise.resolve();
+    });
+
+    expect(container.querySelector('[aria-label="Substitution mode"]')).toBeNull();
+    expect(container.querySelector('.squad-page__drawer-layer')).toBeNull();
+  });
+
   test('starts a substitution from the list context menu and stages the selected swap', async () => {
     const { container } = await renderPage();
 

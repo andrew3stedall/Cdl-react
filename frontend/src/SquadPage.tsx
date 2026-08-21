@@ -427,7 +427,7 @@ export function SquadPage({
     drawerRef.current?.focus();
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        if (drawerMode === 'substitution') cancelSubstitution();
+        if (drawerMode === 'substitution') cancelSubstitutionReview();
         else closeDrawer();
       }
     };
@@ -532,7 +532,18 @@ export function SquadPage({
     setSubstitutionSource(null);
     setSubstitutionTargetId(null);
     setSubstitutionBenchOrder(null);
+    setDrawerMode(null);
+    setSelectedPlayer(null);
     if (sourceName) setStatus(`Substitution for ${sourceName} cancelled.`);
+  }
+
+  function cancelSubstitutionReview() {
+    const sourceName = substitutionSource?.name;
+    setSubstitutionTargetId(null);
+    setSubstitutionBenchOrder(null);
+    setDrawerMode(null);
+    setSelectedPlayer(null);
+    if (sourceName) setStatus(`${sourceName} remains selected. Choose a highlighted player to swap.`);
   }
 
   function openPlayer(player: PlayerView) {
@@ -970,7 +981,7 @@ export function SquadPage({
       </aside>
 
       {drawerMode ? (
-        <DrawerLayer onClose={drawerMode === 'substitution' ? cancelSubstitution : closeDrawer}>
+        <DrawerLayer onClose={drawerMode === 'substitution' ? cancelSubstitutionReview : closeDrawer}>
             {drawerMode === 'profile' && selectedPlayer ? (
               <aside
                 aria-labelledby="player-profile-title"
@@ -1006,7 +1017,7 @@ export function SquadPage({
                 tabIndex={-1}
               >
                 <SubstitutionReviewDrawer
-                  onCancel={cancelSubstitution}
+                  onCancel={cancelSubstitutionReview}
                   onConfirm={confirmSubstitution}
                   sourceLabel={substitutionSource ? lineupAreaLabel(substitutionSource) : undefined}
                   sourcePlayer={profilePlayer(substitutionSourceView)}

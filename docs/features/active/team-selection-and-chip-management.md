@@ -16,7 +16,7 @@ Implemented in the canonical Squad workspace. Fixture/table presentation is inte
 
 ## Current Behaviour
 
-Managers view their selected team, bench, reserves, next deadline, and compact chip controls in Squad. The pitch/list switch is icon-only, the list is split into Starting XI/Bench/Reserves tables, and players enter an in-place substitution mode from the player drawer rather than using per-row dropdowns. Legal candidates are selected directly from the current pitch or list, with bench order chosen inline. Available chips are actionable, active chips show a dot, and used chips remain visibly unavailable. Fixtures and tables remain available through the API but are not duplicated into this workspace yet.
+Managers view their selected team, bench, reserves, next deadline, and compact chip controls in Squad. The pitch/list switch is icon-only, the list is split into Starting XI/Bench/Reserves tables, and players enter an in-place substitution mode from the player drawer rather than using per-row dropdowns. The Sub action is available from every squad slot; legal candidates are highlighted directly on the current pitch or list, and selecting one opens a two-column review drawer with the latest four fixtures for both players. Available chips are actionable, active chips show a dot, and used chips remain visibly unavailable. Fixtures and tables remain available through the API but are not duplicated into this workspace yet.
 
 ## Business Rules
 
@@ -25,7 +25,8 @@ Managers view their selected team, bench, reserves, next deadline, and compact c
 - Only one unused chip can be active at a time.
 - Team, bench, and reserve constraints must be enforced server-side.
 - Substitution candidates must preserve the Starting XI formation and bench composition; the existing lineup save endpoint remains authoritative.
-- Substitution selection returns to the visible Squad pitch/list surface; the candidate drawer is not a separate context.
+- Substitution selection returns to the visible Squad pitch/list surface; the review drawer is only opened after a legal candidate is selected.
+- Review confirmation stages the swap locally; Save lineup remains the persistence boundary.
 
 ## Risks
 
@@ -51,7 +52,7 @@ Managers view their selected team, bench, reserves, next deadline, and compact c
 ## React Requirements
 
 - Team pitch and compact list layouts.
-- Bench and reserves sections with context-menu substitutions and numbered bench slots.
+- Bench and reserves sections with context-menu substitutions and explicit swap review.
 - Icon-only chip toggles with available, active, and used states.
 - Next deadline date and countdown context.
 - Validation messages for invalid lineup states.

@@ -53,7 +53,7 @@ interface PlayerProfilePageProps {
   onNavigate?: (href: string) => void;
   onCompare?: () => void;
   onSquadChange?: (summary: SquadApiSummary) => void;
-  onSelectionChange?: (selection: TeamSelectionSnapshot) => void;
+  onSelectionChange?: (selection: TeamSelectionSnapshot, options?: { persisted?: boolean }) => void;
   onTrade?: () => void;
   playerId: string;
   presentation?: 'page' | 'drawer';
@@ -268,6 +268,13 @@ export function PlayerProfilePage({
           : candidate.captain,
       };
     });
+    const nextSelection = { ...selection, players: nextPlayers };
+    if (onSelectionChange) {
+      setSelection(nextSelection);
+      onSelectionChange(nextSelection, { persisted: false });
+      setNotice(role === 'captain' ? 'Captaincy staged. Save lineup to apply this change.' : 'Vice-captaincy staged. Save lineup to apply this change.');
+      return;
+    }
     void saveLineup(nextPlayers, role === 'captain' ? 'Captaincy updated.' : 'Vice-captaincy updated.');
   }
 

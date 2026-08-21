@@ -539,11 +539,14 @@ export function SquadPage({
     setDrawerMode('profile');
   }
 
-  function handleProfileSelectionChange(updated: TeamSelectionSnapshot) {
+  function handleProfileSelectionChange(updated: TeamSelectionSnapshot, options?: { persisted?: boolean }) {
     const normalized = normalizeTeamSelection(updated);
     setTeamSelection(normalized);
     setSquadPlayers((current) => mergeLineupPlayers(current, normalized.players));
-    setLineupDirty(false);
+    setLineupDirty(options?.persisted === false);
+    if (options?.persisted === false) {
+      setStatus('Captaincy staged. Save lineup to apply this change.');
+    }
   }
 
   function handleProfileSquadChange(updatedSummary: SquadApiSummary) {

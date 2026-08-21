@@ -2,7 +2,7 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, describe, expect, test } from 'vitest';
 
-import { PlayerProfilePage } from './PlayerProfilePage';
+import { PlayerProfilePage, SubstitutionReviewDrawer } from './PlayerProfilePage';
 import type {
   SquadApiHistoryResponse,
   SquadApiPlayer,
@@ -235,6 +235,34 @@ describe('PlayerProfilePage', () => {
     root.unmount();
   });
 
+  test('renders the substitution review as two player columns with only the latest four fixtures', async () => {
+    const squadClient = new MemorySquadClient();
+    const target = { ...player, id: 'fpl-51', display_name: 'Replacement Player' };
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root: Root = createRoot(container);
+    act(() => {
+      root.render(
+        <ThemePresetProvider initialPresetName="teal-dark" preferenceClient={preferenceClient}>
+          <SubstitutionReviewDrawer
+            onCancel={() => undefined}
+            onConfirm={() => undefined}
+            sourcePlayer={player}
+            squadClient={squadClient}
+            targetPlayer={target}
+          />
+        </ThemePresetProvider>,
+      );
+    });
+    await settle();
+
+    expect(container.querySelectorAll('.player-profile__comparison-player')).toHaveLength(2);
+    expect(container.querySelectorAll('[data-chart-kind="form"] .player-profile__chart-column')).toHaveLength(8);
+    expect(container.querySelectorAll('[data-chart-kind="minutes"] .player-profile__chart-column')).toHaveLength(8);
+    expect(Array.from(container.querySelectorAll('[data-chart-kind="form"], [data-chart-kind="minutes"]')).every((chart) => chart.getAttribute('aria-label')?.includes('latest four'))).toBe(true);
+    root.unmount();
+  });
+
   test('renders captaincy and availability tags from current data', async () => {
     const doubtful = { ...player, availability_status: 'doubtful', availability_news: 'Late fitness test', chance_of_playing_next_round: 75 };
     const squadClient = new MemorySquadClient();
@@ -290,11 +318,11 @@ describe('PlayerProfilePage', () => {
     expect(benchButton).toBeTruthy();
     act(() => { benchButton?.click(); });
     await settle();
-    expect(benchContainer.textContent).toContain('Move to bench');
+    expect(benchContainer.textContent).toContain('Choose substitution');
     const benchOption = [...benchContainer.querySelectorAll('button')].find((button) => button.textContent?.includes('Bench Player'));
     expect(benchOption).toBeTruthy();
     act(() => { benchOption?.click(); });
-    const confirmButton = [...benchContainer.querySelectorAll('button')].find((button) => button.textContent?.includes('Confirm move'));
+    const confirmButton = [...benchContainer.querySelectorAll('button')].find((button) => button.textContent?.includes('Confirm sub'));
     expect(confirmButton).toBeTruthy();
     act(() => { confirmButton?.click(); });
     await settle();

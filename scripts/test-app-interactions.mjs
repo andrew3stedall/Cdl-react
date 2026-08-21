@@ -541,11 +541,13 @@ async function testTeamSelection(page) {
   await page.getByRole('button', { name: 'Player actions for Alex Keeper' }).click();
   const profileDrawer = page.locator('.squad-page__drawer--profile');
   await profileDrawer.getByRole('toolbar', { name: 'Squad-management actions' }).waitFor();
-  await profileDrawer.getByRole('button', { name: 'Move to bench' }).click();
-  await profileDrawer.locator('.player-profile__action-option').filter({ hasText: 'Riley Forward' }).click();
-  await profileDrawer.getByRole('button', { name: 'Confirm move' }).click();
-  await profileDrawer.getByRole('status').getByText('Alex Keeper moved to the bench.', { exact: true }).waitFor();
-  await profileDrawer.getByRole('button', { name: 'Close player profile' }).click();
+  await profileDrawer.getByRole('button', { name: 'Sub' }).click();
+  await page.getByRole('region', { name: 'Substitution mode' }).waitFor();
+  await page.getByRole('button', { name: 'Substitute with Riley Forward' }).click();
+  const substitutionDrawer = page.locator('.squad-page__drawer--substitution');
+  await substitutionDrawer.getByRole('heading', { name: 'Review substitution' }).waitFor();
+  await substitutionDrawer.getByRole('button', { name: 'Confirm sub' }).click();
+  await expectStatus('Alex Keeper swapped with Riley Forward.');
 
   await page.getByRole('button', { name: 'Triple Captain, available' }).click();
   await expectStatus(page, 'Triple Captain chip state updated.');
@@ -740,7 +742,7 @@ async function testLockedTeamSelection(page) {
     throw new Error('Expected chip controls to be disabled after fixture lock');
   }
   await page.getByRole('button', { name: 'Player actions for Alex Keeper' }).click();
-  if (!(await page.locator('.squad-page__drawer--profile').getByRole('button', { name: 'Move to bench' }).isDisabled())) {
+  if (!(await page.locator('.squad-page__drawer--profile').getByRole('button', { name: 'Sub' }).isDisabled())) {
     throw new Error('Expected substitution to be disabled after fixture lock');
   }
 }

@@ -68,7 +68,7 @@ Selecting a squad player opens the full player profile as a full-width, full-hei
 
 The profile actions are:
 
-- **Move to bench** or **Move to Starting XI**;
+- **Sub** — start a formation-valid swap with any player in the owned squad;
 - **Compare**;
 - **Remove**;
 - **Draft trade**;
@@ -78,12 +78,13 @@ The profile actions are:
 
 Substitution is an in-place swap between Starting XI, Bench and Reserves.
 
-- Choosing **Move to bench** or **Move to Starting XI** opens the legal replacement choices inside the player profile drawer.
-- The current pitch or list surface and main navigation are covered by the profile layer.
+- Choosing **Sub** is available for players in every squad slot. The profile layer closes and the pitch/list surface highlights every legal swap candidate.
+- Selecting a highlighted candidate opens a two-column review drawer showing the original player and replacement player.
+- The review drawer shows each player's form, minutes and opposition labels for the latest four fixtures, with explicit **Confirm sub** and **Cancel** actions.
 - Candidates are limited to swaps that preserve the configured Starting XI formation and bench composition.
 - Starting XI eligibility uses the authoritative formation limits: 1 goalkeeper, 3–5 defenders, 2–5 midfielders and 1–3 forwards.
-- When a player enters the bench, the page-level mode exposes the legal bench slot: goalkeeper or outfield positions 1–4.
-- The swap is persisted through the existing lineup endpoint; backend lineup validation remains authoritative.
+- Bench ordering is derived through the existing lineup rules when a swap changes the bench.
+- Confirmation stages the swap locally; **Save lineup** persists it through the existing lineup endpoint, with backend lineup validation remaining authoritative.
 - A locked gameweek exposes the context but disables substitution.
 
 Pitch players use a restrained position marker colour rather than a visible position label. Position rows remain transparent so the pitch markings stay visible, and the pitch uses compact vertical spacing.
@@ -186,7 +187,7 @@ A lightweight trade drawer starts with the owned player preselected. It lets the
 - The manager can review and save the current lineup without leaving Squad.
 - `/team-selection` and `/squad-management` do not create duplicate player panels.
 - Selecting a player exposes Substitute, Compare, Release, Draft Trade and Full Profile without hunting through menus.
-- A manager can see only formation-valid substitution candidates and choose a numbered bench slot when needed.
+- A manager can see only formation-valid swap candidates, review both players over the latest four fixtures, and confirm or cancel before saving the lineup.
 - List view does not use per-player movement dropdowns; its player action control starts the same in-place substitution mode as Pitch view.
 - A manager can stage and restore removals without mutating the server immediately.
 - Draw-won players are clearly distinct from ordinary free agents.

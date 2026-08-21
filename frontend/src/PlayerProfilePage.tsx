@@ -71,6 +71,7 @@ type PendingAction = 'history' | 'lineup' | 'remove' | 'favourite' | null;
 interface ProfileFixture {
   fixtureId: string;
   gameweek: number;
+  position: string | null;
   opponentShortName: string | null;
   isHome: boolean;
   fdr: number | null;
@@ -174,9 +175,10 @@ export function PlayerProfilePage({
     : selectedLineupPlayer?.viceCaptain
       ? 'vice_captain'
       : null;
+  const playerPosition = player?.position ?? null;
   const formFixtures = useMemo(
-    () => (history?.history ?? []).map(mapHistoryFixture).slice(-10),
-    [history],
+    () => (history?.history ?? []).map((row) => mapHistoryFixture(row, playerPosition)).slice(-10),
+    [history, playerPosition],
   );
   const nextFixture: ProfileNextFixture | null = history?.fixtures[0] ?? (player?.next_fixture ? {
     fixture_id: player.next_fixture.fixture_id,
@@ -591,8 +593,8 @@ export function SubstitutionReviewDrawer({
     };
   }, [sourcePlayer.id, squadClient, targetPlayer.id]);
 
-  const sourceFixtures = (histories.source?.history ?? []).map(mapHistoryFixture).slice(-4);
-  const targetFixtures = (histories.target?.history ?? []).map(mapHistoryFixture).slice(-4);
+  const sourceFixtures = (histories.source?.history ?? []).map((row) => mapHistoryFixture(row, sourcePlayer.position)).slice(-4);
+  const targetFixtures = (histories.target?.history ?? []).map((row) => mapHistoryFixture(row, targetPlayer.position)).slice(-4);
 
   return (
     <main aria-labelledby="substitution-review-title" className="player-profile player-profile--drawer player-profile--substitution-review" data-presentation="drawer">
@@ -683,8 +685,8 @@ function ChartCard({ children, className = '', compact = false, idPrefix, title 
 }
 
 function FormChart({ fixtures, fdrDisplayMode, windowLabel = 'latest ten' }: { fixtures: ProfileFixture[]; fdrDisplayMode: 'font' | 'fill'; windowLabel?: string }) {
-  const maxValue = Math.max(1, ...fixtures.map((fixture) => Math.abs(fixture.fantasyPoints ?? 0)));
-  return <div aria-label={`Fantasy points over the ${windowLabel} fixtures`} className="player-profile__chart" data-chart-kind="form" role="img"><div className="player-profile__chart-columns">{fixtures.map((fixture) => <ChartColumn fixture={fixture} fdrDisplayMode={fdrDisplayMode} maxValue={maxValue} key={fixture.fixtureId} value={fixture.fantasyPoints} valueLabel={formatNullableNumber(fixture.fantasyPoints)} />)}</div></div>;
+  const maxValue = formChartScaleMax(fixtures);
+  return <div aria-label={`Fantasy points over the ${windowLabel} fixtures, vertical scale 0 to ${maxValue} points`} className="player-profile__chart" data-chart-kind="form" data-y-axis-max={maxValue} data-y-axis-min="0" role="img"><div className="player-profile__chart-columns">{fixtures.map((fixture) => <ChartColumn fixture={fixture} fdrDisplayMode={fdrDisplayMode} maxValue={maxValue} key={fixture.fixtureId} value={fixture.fantasyPoints} valueLabel={formatNullableNumber(fixture.fantasyPoints)} />)}</div></div>;
 }
 
 function MinutesChart({ fixtures, fdrDisplayMode, windowLabel = 'latest ten' }: { fixtures: ProfileFixture[]; fdrDisplayMode: 'font' | 'fill'; windowLabel?: string }) {
@@ -700,6 +702,11 @@ function ChartColumn({ compact = false, fixture, fdrDisplayMode, maxValue, minut
   const fdrStyle = fdrStyleFor(fixture.fdr, fdrDisplayMode);
   const height = value === null ? 0 : Math.max(value === 0 ? 5 : 8, (Math.abs(value) / maxValue) * 100);
   return <div className={`player-profile__chart-column${compact ? ' is-compact' : ''}`}><span className={`player-profile__chart-value${value === null ? ' is-empty' : ''}`}>{valueLabel}</span><div className="player-profile__bar-track">{minutes ? <div aria-hidden="true" className="player-profile__threshold-line" /> : null}<div className={`player-profile__bar player-profile__bar--${barTone(value)}`} style={{ '--bar-height': `${height}%` } as CSSProperties}>{minutes ? null : <StatIcons fixture={fixture} />}</div></div><span className="player-profile__opponent-label" style={fdrStyle}>{formatOpponentLabel(fixture.opponentShortName, fixture.isHome)}</span></div>;
+}
+
+function formChartScaleMax(fixtures: ProfileFixture[]): number {
+  const largestScore = fixtures.reduce((largest, fixture) => Math.max(largest, fixture.fantasyPoints ?? 0), 0);
+  return Math.max(10, largestScore);
 }
 
 function DefensiveColumn({ fixture, fdrDisplayMode, maxValue }: { fixture: SquadApiOpponentDefensiveHistory; fdrDisplayMode: 'font' | 'fill'; maxValue: number }) {
@@ -720,7 +727,13 @@ function StatIcons({ fixture }: { fixture: ProfileFixture }) {
     { key: 'defensive-contributions', label: 'Defensive contributions', value: fixture.stats.defensiveContributions, icon: Shield },
     { key: 'bonus', label: 'Bonus points', value: fixture.stats.bonusPoints, icon: Trophy },
   ];
-  return <span className="player-profile__stat-icons">{stats.filter((stat) => stat.value > 0).map((stat) => <span aria-label={`${stat.label}: ${stat.value}`} className="player-profile__stat-icon" key={stat.key} role="img" title={`${stat.label}: ${stat.value}`}><stat.icon aria-hidden="true" size={11} />{stat.value > 1 ? <b className="player-profile__stat-multiplier">×{stat.value}</b> : null}</span>)}</span>;
+  return <span className="player-profile__stat-icons">{stats.filter((stat) => stat.key === 'defensive-contributions' ? earnedDefensiveContributionPoints(fixture.stats.defensiveContributions, fixture.position) : stat.value > 0).map((stat) => <span aria-label={`${stat.label}: ${stat.value}`} className="player-profile__stat-icon" key={stat.key} role="img" title={`${stat.label}: ${stat.value}`}><stat.icon aria-hidden="true" size={11} />{stat.value > 1 ? <b className="player-profile__stat-multiplier">×{stat.value}</b> : null}</span>)}</span>;
+}
+
+export function earnedDefensiveContributionPoints(value: number, position: string | null): boolean {
+  const normalizedPosition = position?.toUpperCase();
+  const threshold = normalizedPosition === 'DEF' ? 10 : normalizedPosition === 'MID' || normalizedPosition === 'FWD' ? 12 : null;
+  return threshold !== null && value >= threshold;
 }
 
 function FdrBadge({ displayMode, label, value }: { displayMode: 'font' | 'fill'; label: string; value: number | null }) {
@@ -756,10 +769,11 @@ function ChartEmpty({ message }: { message: string }) {
   return <p className="player-profile__chart-empty" role="status">{message}</p>;
 }
 
-function mapHistoryFixture(row: SquadApiHistoryResponse['history'][number]): ProfileFixture {
+function mapHistoryFixture(row: SquadApiHistoryResponse['history'][number], position: string | null = null): ProfileFixture {
   return {
     fixtureId: String(row.fixture_id),
     gameweek: row.gameweek,
+    position,
     opponentShortName: row.opponent_short_name ?? null,
     isHome: row.was_home,
     fdr: row.difficulty ?? null,

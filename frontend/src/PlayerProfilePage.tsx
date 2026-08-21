@@ -224,21 +224,28 @@ export function PlayerProfilePage({
     if (role === 'vice_captain' && currentVice?.id === playerId) return;
 
     const nextPlayers = selection.players.map((candidate) => {
+      if (candidate.id === playerId) {
+        return {
+          ...candidate,
+          captain: role === 'captain',
+          viceCaptain: role === 'vice_captain',
+        };
+      }
       if (role === 'captain') {
         return {
           ...candidate,
-          captain: candidate.id === playerId,
-          viceCaptain: candidate.id === playerId
-            ? false
-            : candidate.id === currentCaptain?.id,
+          captain: false,
+          viceCaptain: candidate.id === currentCaptain?.id && currentVice?.id === playerId
+            ? true
+            : candidate.viceCaptain,
         };
       }
       return {
         ...candidate,
-        viceCaptain: candidate.id === playerId,
-        captain: candidate.id === playerId
-          ? false
-          : candidate.id === currentVice?.id,
+        viceCaptain: false,
+        captain: candidate.id === currentVice?.id && currentCaptain?.id === playerId
+          ? true
+          : candidate.captain,
       };
     });
     void saveLineup(nextPlayers, role === 'captain' ? 'Captaincy updated.' : 'Vice-captaincy updated.');
@@ -415,7 +422,7 @@ export function PlayerProfilePage({
         <ActionButton
           disabled={isLocked || squadStatus !== 'starter' || substitutionOptions.length === 0 || pendingAction !== null}
           icon={Shield}
-          label="Move to bench"
+          label="Sub"
           onClick={openBenchActions}
         />
         <ActionButton
@@ -429,14 +436,14 @@ export function PlayerProfilePage({
           active={captaincy === 'captain'}
           disabled={isLocked || squadStatus !== 'starter' || captaincy === 'captain' || pendingAction !== null}
           icon={Target}
-          label="Make captain"
+          label="Captain"
           onClick={() => changeCaptaincy('captain')}
         />
         <ActionButton
           active={captaincy === 'vice_captain'}
           disabled={isLocked || squadStatus !== 'starter' || captaincy === 'vice_captain' || pendingAction !== null}
           icon={Trophy}
-          label="Vice-captain"
+          label="Vice"
           onClick={() => changeCaptaincy('vice_captain')}
         />
       </div>

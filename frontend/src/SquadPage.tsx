@@ -1204,7 +1204,6 @@ function PitchCard({
       onClick={handleClick}
       type="button"
     >
-      <PositionMarker position={player.position} />
       <span aria-hidden="true" className="squad-page__pitch-shirt-crop"><TeamShirt large team={player.team} /></span>
       <strong className="squad-page__pitch-player-name">{shortPlayerName(player.displayName)}</strong>
       <span className="squad-page__pitch-player-form"><FormDots value={player.form} /></span>

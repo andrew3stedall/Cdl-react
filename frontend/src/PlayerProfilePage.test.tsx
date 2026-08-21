@@ -256,17 +256,32 @@ describe('PlayerProfilePage', () => {
     const { container, root } = renderPage(new MemorySquadClient(), teamSelectionClient);
     await settle();
 
-    const captainButton = [...container.querySelectorAll('button')].find((button) => button.textContent?.includes('Make captain'));
+    const captainButton = [...container.querySelectorAll('button')].find((button) => button.textContent?.trim() === 'Captain');
     expect(captainButton).toBeTruthy();
     act(() => { captainButton?.click(); });
     await settle();
     expect(teamSelectionClient.saved.at(-1)?.find((candidate) => candidate.id === player.id)?.captain).toBe(true);
+    expect(teamSelectionClient.saved.at(-1)?.find((candidate) => candidate.id === 'fpl-11')?.captain).toBe(false);
+    expect(teamSelectionClient.saved.at(-1)?.find((candidate) => candidate.id === 'fpl-11')?.viceCaptain).toBe(false);
+    expect(teamSelectionClient.saved.at(-1)?.find((candidate) => candidate.id === 'fpl-12')?.viceCaptain).toBe(true);
     root.unmount();
+
+    const viceSelectionClient = new MemoryTeamSelectionClient();
+    const { container: viceContainer, root: viceRoot } = renderPage(new MemorySquadClient(), viceSelectionClient);
+    await settle();
+    const viceButton = [...viceContainer.querySelectorAll('button')].find((button) => button.textContent?.trim() === 'Vice');
+    expect(viceButton).toBeTruthy();
+    act(() => { viceButton?.click(); });
+    await settle();
+    expect(viceSelectionClient.saved.at(-1)?.find((candidate) => candidate.id === player.id)?.viceCaptain).toBe(true);
+    expect(viceSelectionClient.saved.at(-1)?.find((candidate) => candidate.id === 'fpl-11')?.captain).toBe(true);
+    expect(viceSelectionClient.saved.at(-1)?.find((candidate) => candidate.id === 'fpl-12')?.viceCaptain).toBe(false);
+    viceRoot.unmount();
 
     const benchSelectionClient = new MemoryTeamSelectionClient();
     const { container: benchContainer, root: benchRoot } = renderPage(new MemorySquadClient(), benchSelectionClient);
     await settle();
-    const benchButton = [...benchContainer.querySelectorAll('button')].find((button) => button.textContent?.includes('Move to bench'));
+    const benchButton = [...benchContainer.querySelectorAll('button')].find((button) => button.textContent?.trim() === 'Sub');
     expect(benchButton).toBeTruthy();
     act(() => { benchButton?.click(); });
     await settle();

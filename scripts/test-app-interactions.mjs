@@ -547,7 +547,7 @@ async function testTeamSelection(page) {
   const substitutionDrawer = page.locator('.squad-page__drawer--substitution');
   await substitutionDrawer.getByRole('heading', { name: 'Review substitution' }).waitFor();
   await substitutionDrawer.getByRole('button', { name: 'Confirm sub' }).click();
-  await expectStatus('Alex Keeper swapped with Riley Forward.');
+  await expectStatus(page, 'Alex Keeper swapped with Riley Forward.');
 
   await page.getByRole('button', { name: 'Triple Captain, available' }).click();
   await expectStatus(page, 'Triple Captain chip state updated.');

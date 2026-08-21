@@ -183,7 +183,7 @@ describe('TeamSelectionPage compatibility export', () => {
       await Promise.resolve();
     });
     await act(async () => {
-      (Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Move to bench')) as HTMLButtonElement).click();
+      (Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.trim() === 'Sub') as HTMLButtonElement).click();
       await Promise.resolve();
     });
     await act(async () => {
@@ -215,6 +215,6 @@ describe('TeamSelectionPage compatibility export', () => {
       (container.querySelector('button[aria-label="Player actions for Alex Keeper"]') as HTMLButtonElement).click();
       await Promise.resolve();
     });
-    expect(Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Move to bench'))).toHaveProperty('disabled', true);
+    expect(Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.trim() === 'Sub')).toHaveProperty('disabled', true);
   });
 });

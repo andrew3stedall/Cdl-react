@@ -434,6 +434,7 @@ describe('SquadPage', () => {
     expect(container.querySelector('[aria-label="Matchweek controls"]')).not.toBeNull();
     expect(container.textContent).not.toContain('Total Points');
     expect(container.querySelector('[aria-label="Squad pitch"]')).not.toBeNull();
+    expect(container.querySelectorAll('[aria-label="Squad pitch"] .squad-page__position-marker')).toHaveLength(0);
     expect(container.querySelector('.squad-page__pitch[data-attack-direction="up"]')).not.toBeNull();
     expect(container.querySelector('.squad-page__pitch-field[data-visible-pitch-slice="bottom"]')).not.toBeNull();
     expect(container.querySelector('.squad-page__pitch-icon')).not.toBeNull();
@@ -505,7 +506,7 @@ describe('SquadPage', () => {
       await Promise.resolve();
     });
     await act(async () => {
-      buttonByText(container, 'Move to bench').click();
+      buttonByText(container, 'Sub').click();
       await Promise.resolve();
     });
 
@@ -541,7 +542,7 @@ describe('SquadPage', () => {
       await Promise.resolve();
     });
     await act(async () => {
-      buttonByText(container, 'Move to bench').click();
+      buttonByText(container, 'Sub').click();
       await Promise.resolve();
     });
 
@@ -580,7 +581,7 @@ describe('SquadPage', () => {
       await Promise.resolve();
     });
     await act(async () => {
-      buttonByText(container, 'Move to bench').click();
+      buttonByText(container, 'Sub').click();
       await Promise.resolve();
     });
 
@@ -598,7 +599,7 @@ describe('SquadPage', () => {
       haaland.click();
       await Promise.resolve();
     });
-    expect(container.querySelector('.squad-page__drawer--profile')?.textContent).toContain('Move to bench');
+    expect(container.querySelector('.squad-page__drawer--profile')?.textContent).toContain('Sub');
 
     await act(async () => {
       (container.querySelector('button[aria-label="Open player actions"]') as HTMLButtonElement).click();
@@ -642,6 +643,12 @@ describe('SquadPage', () => {
     expect(container.querySelector('.squad-page__drawer--profile')).not.toBeNull();
     expect(container.querySelector('[data-presentation="drawer"]')).not.toBeNull();
     expect(container.querySelector('[aria-label="Squad-management actions"]')).not.toBeNull();
+    expect([...container.querySelectorAll('.player-profile__action > span')].map((node) => node.textContent)).toEqual([
+      'Sub',
+      'Remove',
+      'Captain',
+      'Vice',
+    ]);
     expect(container.textContent).toContain('Form');
     expect(container.textContent).toContain('Minutes played');
     expect(container.textContent).toContain('Next fixture');

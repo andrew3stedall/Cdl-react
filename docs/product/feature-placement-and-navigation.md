@@ -103,13 +103,11 @@ A player selected from Squad opens the full player profile in a full-width, full
 
 For an owned Squad player, the profile actions are:
 
-- **Sub** — starts a formation-valid swap from any squad slot;
+- **Move to bench** or **Move to Starting XI**;
 - **Compare**;
 - **Remove** — opens the confirmation action dialog;
 - **Draft trade** — only promoted when the player has credible trade value;
 - **Close player profile**.
-
-Substitution closes the profile layer and highlights valid players on the pitch or list. Selecting a candidate opens a two-column review drawer with the original and replacement players, their latest-four-fixture form/minutes/opposition evidence, and explicit confirmation or cancellation. Confirmation stages the swap until **Save lineup** is selected.
 
 ## Comparison model
 

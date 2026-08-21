@@ -187,21 +187,17 @@ describe('TeamSelectionPage compatibility export', () => {
       await Promise.resolve();
     });
     await act(async () => {
-      (container.querySelector('button[aria-label="Substitute with Riley Forward"]') as HTMLButtonElement).click();
+      (Array.from(container.querySelectorAll<HTMLButtonElement>('.player-profile__action-option')).find((button) => button.textContent?.includes('Riley Forward')) as HTMLButtonElement).click();
       await Promise.resolve();
     });
     await act(async () => {
-      (Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Confirm sub')) as HTMLButtonElement).click();
-      await Promise.resolve();
-    });
-    await act(async () => {
-      (Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.trim() === 'Save lineup') as HTMLButtonElement).click();
+      (Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Confirm move')) as HTMLButtonElement).click();
       await Promise.resolve();
     });
 
     expect(client.current.players.find((player) => player.id === 'player-1')?.slot).toBe('bench');
     expect(client.current.players.find((player) => player.id === 'player-4')?.slot).toBe('starter');
-    expect(container.textContent).toContain('Lineup saved and validated.');
+    expect(container.textContent).toContain('Alex Keeper moved to the bench.');
   });
 
   test('renders a locked lineup with mutation controls disabled', async () => {

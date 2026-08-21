@@ -543,7 +543,7 @@ async function testTeamSelection(page) {
   await profileDrawer.getByRole('toolbar', { name: 'Squad-management actions' }).waitFor();
   await profileDrawer.getByRole('button', { name: 'Sub' }).click();
   await page.getByRole('region', { name: 'Substitution mode' }).waitFor();
-  await page.getByRole('button', { name: 'Substitute with Riley Forward' }).click();
+  await page.locator('.squad-page__player-link[aria-label="Substitute with Riley Forward"]').click();
   const substitutionDrawer = page.locator('.squad-page__drawer--substitution');
   await substitutionDrawer.getByRole('heading', { name: 'Review substitution' }).waitFor();
   await substitutionDrawer.getByRole('button', { name: 'Confirm sub' }).click();

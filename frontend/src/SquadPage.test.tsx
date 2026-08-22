@@ -500,6 +500,9 @@ describe('SquadPage', () => {
     expect(Array.from(startingTable?.querySelectorAll('th') ?? []).some((header) => header.textContent?.includes('Form'))).toBe(false);
     expect(startingTable?.querySelectorAll('button[aria-label^="Player actions for "]').length).toBe(0);
     expect(startingTable?.querySelector('tr[role="button"][aria-label="View Haaland details"]')).not.toBeNull();
+    expect(startingTable?.querySelectorAll('tbody tr.is-position-start')).toHaveLength(2);
+    expect(container.querySelector('[aria-label="Bench players table"] tbody tr.is-position-start')).toBeNull();
+    expect(container.querySelector('[aria-label="Reserves players table"] tbody tr.is-position-start')).toBeNull();
 
     await act(async () => {
       buttonByText(container, 'FWD').click();
@@ -725,6 +728,8 @@ describe('SquadPage', () => {
     await act(async () => {
       (container.querySelector('button[aria-label="View Haaland details"]') as HTMLButtonElement).click();
       await Promise.resolve();
+      await Promise.resolve();
+      await new Promise((resolve) => setTimeout(resolve, 0));
     });
     expect(container.querySelector('.squad-page__drawer--profile')).not.toBeNull();
     expect(container.querySelector('[data-presentation="drawer"]')).not.toBeNull();

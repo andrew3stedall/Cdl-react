@@ -1430,7 +1430,9 @@ function SquadList({
                 <thead><tr><th>Player</th><th className="sorted">Pts <ArrowDown size={11} /></th><th>xG / xA</th><th><span className="sr-only">Availability</span><CircleCheck aria-hidden="true" size={13} /></th></tr></thead>
                 <tbody>
                   {group.players.map((player, index) => {
-                    const startsNewPosition = index > 0 && group.players[index - 1]?.position !== player.position;
+                    const startsNewPosition = group.slot === 'starter'
+                      && index > 0
+                      && group.players[index - 1]?.position !== player.position;
                     const rowIsInteractive = !substitutionMode || substitutionCandidateIds.has(player.id);
                     const rowLabel = substitutionMode
                       ? rowIsInteractive

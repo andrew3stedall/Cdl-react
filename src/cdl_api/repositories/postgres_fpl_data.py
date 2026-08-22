@@ -432,7 +432,7 @@ class PostgreSQLFplDataRepository:
             )
             defensive_histories = []
             live_payloads = event_live_payloads or {}
-            element_team_ids = _event_live_element_team_ids(session, live_payloads)
+            element_metadata = _event_live_element_metadata(session, live_payloads)
             for next_fixture in next_fixtures:
                 target_team_id = str(next_fixture.opponent_team_id)
                 defensive_rows = self._fixture_rows(
@@ -448,7 +448,7 @@ class PostgreSQLFplDataRepository:
                                 row,
                                 target_team_id,
                                 live_payloads.get(_optional_int_value(row.get("gameweek"))),
-                                element_team_ids,
+                                element_metadata,
                             )
                             for row in defensive_rows
                         ]
@@ -753,7 +753,7 @@ def _defensive_history_from_fixture(
     row: Mapping[str, object],
     target_team_id: str,
     event_live_payload: object = None,
-    element_team_ids: Mapping[str, str] | None = None,
+    element_metadata: Mapping[str, tuple[str, str]] | None = None,
 ) -> FplOpponentDefensiveHistory:
     is_home = str(row["home_team_id"]) == target_team_id
     total_points, attacking_points, defensive_points = _fixture_asset_points(
@@ -763,7 +763,7 @@ def _defensive_history_from_fixture(
         away_team_id=str(row["away_team_id"]),
         fixture_id=int(row["fixture_id"]),
         event_live_payload=event_live_payload,
-        element_team_ids=element_team_ids or {},
+        element_metadata=element_metadata or {},
     )
     return FplOpponentDefensiveHistory(
         fixture_id=int(row["fixture_id"]),
@@ -788,7 +788,7 @@ def _fixture_asset_points(
     away_team_id: str,
     fixture_id: int | None = None,
     event_live_payload: object = None,
-    element_team_ids: Mapping[str, str] | None = None,
+    element_metadata: Mapping[str, tuple[str, str]] | None = None,
 ) -> tuple[int | None, int | None, int | None]:
     live_points = _event_live_asset_points(
         event_live_payload,
@@ -797,7 +797,7 @@ def _fixture_asset_points(
         home_team_id=home_team_id,
         away_team_id=away_team_id,
         fixture_payload=payload,
-        element_team_ids=element_team_ids or {},
+        element_metadata=element_metadata or {},
     )
     if live_points is not None:
         return live_points
@@ -808,28 +808,10 @@ def _fixture_asset_points(
     total_by_element: dict[str, int] = {}
     total_from_stat_points = 0
     stat_points_found = False
-    attacking_points = 0
-    defensive_points = 0
-    attacking_identifiers = {
-        "goals_scored",
-        "assists",
-        "penalties_missed",
-        "own_goals",
-    }
-    defensive_identifiers = {
-        "clean_sheets",
-        "saves",
-        "defensive_contribution",
-        "defensive_contributions",
-        "clearances_blocks_interceptions",
-        "recoveries",
-        "tackles",
-        "bonus",
-    }
+    points_by_element: dict[str, int] = {}
     for group in payload["stats"]:
         if not isinstance(group, Mapping):
             continue
-        identifier = str(group.get("identifier") or "")
         entries = group.get(opposition_side)
         if not isinstance(entries, list):
             continue
@@ -845,16 +827,28 @@ def _fixture_asset_points(
                 continue
             stat_points_found = True
             total_from_stat_points += stat_points
-            if identifier in attacking_identifiers:
-                attacking_points += stat_points
-            elif identifier in defensive_identifiers:
-                defensive_points += stat_points
+            if element:
+                points_by_element[element] = points_by_element.get(element, 0) + stat_points
 
     total_points = (
         sum(total_by_element.values())
         if total_by_element
         else (total_from_stat_points if stat_points_found else None)
     )
+    attacking_points = 0
+    defensive_points = 0
+    if total_by_element:
+        points_by_element = total_by_element
+    for element, points in points_by_element.items():
+        position = (element_metadata or {}).get(element, ("", ""))[1].upper()
+        if position in {"MID", "FWD"}:
+            attacking_points += points
+        elif position in {"GKP", "DEF"}:
+            defensive_points += points
+        elif stat_points_found:
+            # Preserve a useful fallback for old fixture payloads that do
+            # not have player metadata available.
+            defensive_points += points
     return (
         total_points,
         (attacking_points if stat_points_found else None),
@@ -870,7 +864,7 @@ def _event_live_asset_points(
     home_team_id: str,
     away_team_id: str,
     fixture_payload: object,
-    element_team_ids: Mapping[str, str],
+    element_metadata: Mapping[str, tuple[str, str]],
 ) -> tuple[int, int, int] | None:
     if (
         fixture_id is None
@@ -884,38 +878,15 @@ def _event_live_asset_points(
         fixture_payload,
         target_team_id == home_team_id,
     )
-    total_points = 0
-    attacking_points = 0
-    defensive_points = 0
+    points_by_element: dict[str, int] = {}
     found_fixture = False
-    attacking_identifiers = {
-        "goals_scored",
-        "assists",
-        "penalties_missed",
-        "own_goals",
-    }
-    defensive_identifiers = {
-        "minutes",
-        "clean_sheets",
-        "goals_conceded",
-        "saves",
-        "penalties_saved",
-        "defensive_contribution",
-        "defensive_contributions",
-        "clearances_blocks_interceptions",
-        "recoveries",
-        "tackles",
-        "bonus",
-        "yellow_cards",
-        "red_cards",
-    }
 
     for element in payload["elements"]:
         if not isinstance(element, Mapping):
             continue
         element_id = str(element.get("id") or "")
         if (
-            element_team_ids.get(element_id) != opposition_team_id
+            element_metadata.get(element_id, ("", ""))[0] != opposition_team_id
             and element_id not in opposition_element_ids
         ):
             continue
@@ -940,14 +911,17 @@ def _event_live_asset_points(
                 points = _optional_int_value(stat.get("points"))
                 if points is None:
                     continue
-                total_points += points
-                identifier = str(stat.get("identifier") or "")
-                if identifier in attacking_identifiers:
-                    attacking_points += points
-                elif identifier in defensive_identifiers:
-                    defensive_points += points
-                else:
-                    defensive_points += points
+                points_by_element[element_id] = points_by_element.get(element_id, 0) + points
+
+    total_points = sum(points_by_element.values())
+    attacking_points = 0
+    defensive_points = 0
+    for element_id, points in points_by_element.items():
+        position = element_metadata.get(element_id, ("", ""))[1].upper()
+        if position in {"MID", "FWD"}:
+            attacking_points += points
+        else:
+            defensive_points += points
 
     return (total_points, attacking_points, defensive_points) if found_fixture else None
 
@@ -966,10 +940,10 @@ def _fixture_opposition_element_ids(payload: object, target_is_home: bool) -> se
     return element_ids
 
 
-def _event_live_element_team_ids(
+def _event_live_element_metadata(
     session: Session,
     payloads: Mapping[int, object],
-) -> dict[str, str]:
+) -> dict[str, tuple[str, str]]:
     element_ids = {
         str(element.get("id"))
         for payload in payloads.values()
@@ -981,11 +955,19 @@ def _event_live_element_team_ids(
         return {}
     player_ids = {f"fpl-{element_id}" for element_id in element_ids}
     rows = session.execute(
-        select(fpl_players_table.c.id, fpl_players_table.c.team_id).where(
-            fpl_players_table.c.id.in_(player_ids)
-        )
+        select(
+            fpl_players_table.c.id,
+            fpl_players_table.c.team_id,
+            fpl_players_table.c.position_id,
+        ).where(fpl_players_table.c.id.in_(player_ids))
     ).mappings()
-    return {str(row["id"]).removeprefix("fpl-"): str(row["team_id"]) for row in rows}
+    return {
+        str(row["id"]).removeprefix("fpl-"): (
+            str(row["team_id"]),
+            str(row["position_id"]),
+        )
+        for row in rows
+    }
 
 
 def _optional_int_value(value: object) -> int | None:

@@ -378,7 +378,7 @@
 }
 
 .player-profile__chart-card--full {
-  min-height: 19rem;
+  min-height: 0;
 }
 
 .player-profile__chart-card--compact {
@@ -579,27 +579,29 @@
   background: #64748b;
 }
 
-.player-profile__bar--stacked {
-  display: flex;
-  flex-direction: column-reverse;
-  height: var(--bar-height);
-  justify-content: flex-start;
+.player-profile__bar-track--grouped {
+  align-items: flex-end;
+  gap: 0.12rem;
+  justify-content: center;
+  padding-inline: 0.08rem;
 }
 
-.player-profile__bar-segment {
+.player-profile__grouped-bar {
+  align-self: flex-end;
+  border-radius: 0.25rem 0.25rem 0.1rem 0.1rem;
   display: block;
+  flex: 1 1 0;
+  height: var(--bar-height);
   min-height: 0;
-  width: 100%;
+  min-width: 0;
 }
 
-.player-profile__bar-segment--attack {
+.player-profile__grouped-bar--attack {
   background: var(--profile-accent);
-  height: var(--segment-height);
 }
 
-.player-profile__bar-segment--defence {
+.player-profile__grouped-bar--defence {
   background: #64748b;
-  height: var(--segment-height);
 }
 
 .player-profile__fixture-summary {

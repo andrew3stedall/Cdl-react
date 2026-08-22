@@ -138,20 +138,26 @@ class FplDataService:
         self,
         response: FplPlayerHistoryResponse,
     ) -> FplPlayerHistoryResponse:
-        event_live_payloads: dict[int, object] = {}
-        if response.fixtures:
-            target_team_id = str(response.fixtures[0].opponent_team_id)
-            gameweeks = self._repository.completed_fixture_gameweeks(
-                target_team_id,
-                limit=10,
-            )
-            for gameweek in set(gameweeks):
-                payload = self._event_live_payload(gameweek)
-                if payload is not None:
-                    event_live_payloads[gameweek] = payload
         enrich = getattr(self._repository, "enrich_player_history", None)
         if not callable(enrich):
             return response
+
+        # Resolve upcoming opponents from the fixture cache first. The FPL
+        # element-summary response leaves opponent_team null for upcoming
+        # fixtures, so the raw response cannot identify Arsenal (or any
+        # other opponent) until the fixture's home/away teams are joined.
+        resolved_response = enrich(response, event_live_payloads={})
+        event_live_payloads: dict[int, object] = {}
+        gameweeks = {
+            fixture.gameweek
+            for group in resolved_response.opponent_defensive_histories
+            for fixture in group.fixtures
+            if fixture.gameweek is not None
+        }
+        for gameweek in gameweeks:
+            payload = self._event_live_payload(gameweek)
+            if payload is not None:
+                event_live_payloads[gameweek] = payload
         return enrich(response, event_live_payloads=event_live_payloads)
 
     def _refresh_completed_event_live(self, payload: list[Mapping[str, object]]) -> None:

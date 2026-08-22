@@ -118,7 +118,7 @@ ELEMENT_SUMMARY = {
         {
             "id": 101,
             "event": 2,
-            "opponent_team": 2,
+            "opponent_team": None,
             "difficulty": 3,
             "is_home": False,
             "kickoff_time": "2026-08-22T14:00:00Z",
@@ -372,6 +372,7 @@ def test_player_history_enriches_fixture_context_and_conceded_points_from_cached
     assert response.history[0].opponent_short_name == "AVL"
     assert response.history[0].difficulty == 2
     assert response.fixtures[0].opponent_short_name == "AVL"
+    assert response.fixtures[0].opponent_team_id == 2
     assert response.fixtures[0].difficulty == 4
     assert response.fixtures[0].opponent_difficulty == 2
     assert response.opponent_defensive_history[0].opponent_short_name == "ARS"
@@ -379,7 +380,8 @@ def test_player_history_enriches_fixture_context_and_conceded_points_from_cached
     assert response.opponent_defensive_history[0].attacking_asset_points == 8
     assert response.opponent_defensive_history[0].defensive_asset_points == 7
     assert response.opponent_defensive_history[0].gameweek == 0
-    assert [fixture.fixture_id for fixture in response.opponent_defensive_history] == [98]
+    assert [fixture.fixture_id for fixture in response.opponent_defensive_history] == [98, 100]
+    assert response.opponent_defensive_history[1].total_points_conceded is None
 
 
 def test_bootstrap_refresh_enriches_existing_canonical_draft_player_in_place() -> None:

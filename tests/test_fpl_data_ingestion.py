@@ -165,6 +165,18 @@ EVENT_LIVE = {
                 }
             ],
         },
+        {
+            "id": 904,
+            "explain": [
+                {
+                    "fixture": 98,
+                    "stats": [
+                        {"identifier": "minutes", "points": 2, "value": 90},
+                        {"identifier": "assists", "points": 3, "value": 1},
+                    ],
+                }
+            ],
+        },
     ]
 }
 
@@ -302,6 +314,17 @@ def test_player_history_enriches_fixture_context_and_conceded_points_from_cached
     service.refresh(list(FplRefreshResource))
     with sessions() as session:
         session.execute(
+            insert(fpl_positions_table),
+            [
+                {
+                    "id": position_id,
+                    "singular_name": position_id,
+                    "plural_name": f"{position_id} players",
+                }
+                for position_id in ("DEF", "MID", "FWD")
+            ],
+        )
+        session.execute(
             insert(fpl_players_table),
             [
                 {
@@ -309,10 +332,15 @@ def test_player_history_enriches_fixture_context_and_conceded_points_from_cached
                     "first_name": "Opposition",
                     "second_name": f"Player {element_id}",
                     "web_name": f"Player {element_id}",
-                    "position_id": "GKP",
+                    "position_id": position_id,
                     "team_id": "1",
                 }
-                for element_id in (901, 902, 903)
+                for element_id, position_id in (
+                    (901, "GKP"),
+                    (902, "MID"),
+                    (903, "DEF"),
+                    (904, "FWD"),
+                )
             ],
         )
         session.commit()
@@ -376,9 +404,9 @@ def test_player_history_enriches_fixture_context_and_conceded_points_from_cached
     assert response.fixtures[0].difficulty == 4
     assert response.fixtures[0].opponent_difficulty == 2
     assert response.opponent_defensive_history[0].opponent_short_name == "ARS"
-    assert response.opponent_defensive_history[0].total_points_conceded == 15
-    assert response.opponent_defensive_history[0].attacking_asset_points == 8
-    assert response.opponent_defensive_history[0].defensive_asset_points == 7
+    assert response.opponent_defensive_history[0].total_points_conceded == 20
+    assert response.opponent_defensive_history[0].attacking_asset_points == 10
+    assert response.opponent_defensive_history[0].defensive_asset_points == 10
     assert response.opponent_defensive_history[0].gameweek == 0
     assert [fixture.fixture_id for fixture in response.opponent_defensive_history] == [98, 100]
     assert response.opponent_defensive_history[1].total_points_conceded is None

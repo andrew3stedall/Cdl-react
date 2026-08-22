@@ -428,6 +428,7 @@ class PostgreSQLFplDataRepository:
                     session,
                     team_id=target_team_id,
                     finished_only=True,
+                    before_gameweek=next_fixture.gameweek,
                     limit=10,
                 )
                 defensive_history = list(
@@ -470,6 +471,7 @@ class PostgreSQLFplDataRepository:
         fixture_ids: set[str] | None = None,
         team_id: str | None = None,
         finished_only: bool = False,
+        before_gameweek: int | None = None,
         limit: int | None = None,
     ) -> list[Mapping[str, object]]:
         home_team = epl_teams_table.alias("history_home_team")
@@ -507,8 +509,11 @@ class PostgreSQLFplDataRepository:
                 or_(
                     fpl_fixtures_table.c.finished.is_(True),
                     fpl_fixtures_table.c.finished_provisional.is_(True),
+                    fpl_fixtures_table.c.started.is_(True),
                 )
             )
+        if before_gameweek is not None:
+            conditions.append(fpl_fixtures_table.c.gameweek < before_gameweek)
         if conditions:
             statement = statement.where(*conditions)
         statement = statement.order_by(
@@ -519,12 +524,21 @@ class PostgreSQLFplDataRepository:
             statement = statement.limit(limit)
         return list(session.execute(statement).mappings())
 
-    def completed_fixture_gameweeks(self, team_id: str, *, limit: int = 10) -> list[int]:
+    def completed_fixture_gameweeks(
+        self,
+        team_id: str,
+        *,
+        before_gameweek: int | None = None,
+        limit: int = 10,
+    ) -> list[int]:
         with self._session_factory() as session:
+            if before_gameweek is None:
+                before_gameweek = next_upcoming_gameweek_number(session)
             rows = self._fixture_rows(
                 session,
                 team_id=team_id,
                 finished_only=True,
+                before_gameweek=before_gameweek,
                 limit=limit,
             )
         return [int(row["gameweek"]) for row in rows if row["gameweek"] is not None]
@@ -892,6 +906,9 @@ def _event_live_asset_points(
         for explanation in explanations:
             if not isinstance(explanation, Mapping):
                 continue
+            # The event-live response is the player gameweek figure source.
+            # Its fixture column is the authoritative join key because a
+            # gameweek can contain more than one fixture for a team.
             if _optional_int_value(explanation.get("fixture")) != fixture_id:
                 continue
             stats = explanation.get("stats")

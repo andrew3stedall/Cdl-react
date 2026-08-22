@@ -385,7 +385,10 @@ class PostgreSQLFplDataRepository:
                 for row in response.fixtures
             ]
 
-            next_fixtures = _next_gameweek_fixtures(fixtures)
+            next_fixtures = _next_gameweek_fixtures(
+                fixtures,
+                gameweek_number=next_upcoming_gameweek_number(session),
+            )
             defensive_histories = []
             for next_fixture in next_fixtures:
                 target_team_id = str(next_fixture.opponent_team_id)
@@ -637,12 +640,27 @@ def _upcoming_fixture_enrichment(
     }
 
 
-def _next_gameweek_fixtures(fixtures: list[object]) -> list[object]:
-    """Return every fixture in the earliest upcoming gameweek."""
+def next_upcoming_gameweek_number(session: Session) -> int | None:
+    """Return the official FPL event marked as the next gameweek."""
+    gameweek_id = session.execute(
+        select(fpl_gameweeks_table.c.id)
+        .where(fpl_gameweeks_table.c.is_next.is_(True))
+        .order_by(fpl_gameweeks_table.c.deadline_time.asc().nulls_last())
+        .limit(1)
+    ).scalar_one_or_none()
+    return int(gameweek_id) if gameweek_id is not None else None
+
+
+def _next_gameweek_fixtures(
+    fixtures: list[object],
+    *,
+    gameweek_number: int | None = None,
+) -> list[object]:
+    """Return every supplied fixture in one shared upcoming gameweek."""
     gameweeks = [fixture.gameweek for fixture in fixtures if fixture.gameweek is not None]
     if not gameweeks:
         return fixtures[:1]
-    next_gameweek = min(gameweeks)
+    next_gameweek = gameweek_number if gameweek_number is not None else min(gameweeks)
     return [fixture for fixture in fixtures if fixture.gameweek == next_gameweek]
 
 

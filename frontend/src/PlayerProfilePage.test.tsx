@@ -328,6 +328,9 @@ describe('PlayerProfilePage', () => {
     expect(container.querySelector('.player-profile__threshold-line')).toBeTruthy();
     expect(container.querySelector('[data-chart-kind="minutes"]')?.getAttribute('aria-label')).toBe('Minutes played over the latest ten fixtures');
     expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__chart-column')).toHaveLength(10);
+    expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__grouped-bar--attack')).toHaveLength(10);
+    expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__grouped-bar--defence')).toHaveLength(10);
+    expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__bar--stacked')).toHaveLength(0);
     expect(container.textContent).toContain('Attacking assets');
     expect(container.textContent).toContain('Defensive assets');
     root.unmount();

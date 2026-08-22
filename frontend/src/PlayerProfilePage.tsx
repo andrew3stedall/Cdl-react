@@ -739,13 +739,17 @@ function formChartScaleMax(fixtures: ProfileFixture[]): number {
 }
 
 function DefensiveColumn({ fixture, fdrDisplayMode, maxValue, style }: { fixture: SquadApiOpponentDefensiveHistory; fdrDisplayMode: 'font' | 'fill'; maxValue: number; style?: CSSProperties }) {
-  const total = fixture.total_points_conceded ?? ((fixture.attacking_asset_points ?? 0) + (fixture.defensive_asset_points ?? 0));
   const attack = fixture.attacking_asset_points ?? 0;
   const defence = fixture.defensive_asset_points ?? 0;
-  const totalHeight = total === 0 ? 5 : Math.max(8, (total / maxValue) * 100);
-  const attackHeight = total > 0 ? (attack / total) * 100 : 0;
-  const defenceHeight = total > 0 ? (defence / total) * 100 : 0;
-  return <div className="player-profile__chart-column" style={style}><span className={`player-profile__chart-value${fixture.total_points_conceded === null || fixture.total_points_conceded === undefined ? ' is-empty' : ''}`}>{formatNullableNumber(fixture.total_points_conceded)}</span><div className="player-profile__bar-track"><div className="player-profile__bar player-profile__bar--stacked" style={{ '--bar-height': `${totalHeight}%` } as CSSProperties}><span className="player-profile__bar-segment player-profile__bar-segment--attack" style={{ '--segment-height': `${attackHeight}%` } as CSSProperties} /><span className="player-profile__bar-segment player-profile__bar-segment--defence" style={{ '--segment-height': `${defenceHeight}%` } as CSSProperties} /></div></div><span className="player-profile__opponent-label" style={fdrStyleFor(fixture.difficulty ?? null, fdrDisplayMode)}>{formatOpponentLabel(fixture.opponent_short_name ?? null, fixture.is_home)}</span></div>;
+  const hasPoints = fixture.total_points_conceded !== null && fixture.total_points_conceded !== undefined;
+  const attackHeight = groupedAssetBarHeight(attack, maxValue, hasPoints);
+  const defenceHeight = groupedAssetBarHeight(defence, maxValue, hasPoints);
+  return <div className="player-profile__chart-column" style={style}><span className={`player-profile__chart-value${hasPoints ? '' : ' is-empty'}`}>{formatNullableNumber(fixture.total_points_conceded)}</span><div className="player-profile__bar-track player-profile__bar-track--grouped"><span aria-label={`Attacking assets: ${attack} points`} className="player-profile__grouped-bar player-profile__grouped-bar--attack" style={{ '--bar-height': `${attackHeight}%` } as CSSProperties} /><span aria-label={`Defensive assets: ${defence} points`} className="player-profile__grouped-bar player-profile__grouped-bar--defence" style={{ '--bar-height': `${defenceHeight}%` } as CSSProperties} /></div><span className="player-profile__opponent-label" style={fdrStyleFor(fixture.difficulty ?? null, fdrDisplayMode)}>{formatOpponentLabel(fixture.opponent_short_name ?? null, fixture.is_home)}</span></div>;
+}
+
+function groupedAssetBarHeight(points: number, maxValue: number, hasPoints: boolean): number {
+  if (!hasPoints || points <= 0) return 0;
+  return Math.max(8, (points / maxValue) * 100);
 }
 
 function StatIcons({ fixture }: { fixture: ProfileFixture }) {

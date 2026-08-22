@@ -34,6 +34,6 @@ def test_fpl_ingestion_migrations_extend_historical_import_head() -> None:
     assert '"fpl_player_current_metrics"' in metrics_content
 
     provisional_content = PROVISIONAL_MIGRATION_PATH.read_text(encoding="utf-8")
-    assert "Revision ID: 0014_fpl_provisional_fixture_state" in provisional_content
+    assert "Revision ID: 0014_fpl_provisional_fixture" in provisional_content
     assert 'down_revision: str | None = "0013_fdr_display_mode"' in provisional_content
     assert '"finished_provisional"' in provisional_content

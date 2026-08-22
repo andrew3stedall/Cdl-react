@@ -59,6 +59,8 @@ export interface SquadApiHistoryRow {
   goals_scored: number;
   assists: number;
   clean_sheets: number;
+  yellow_cards: number;
+  red_cards: number;
   bonus: number;
   bps: number;
   expected_goals: number;

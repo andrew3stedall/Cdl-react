@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-08-22 - Complete player profile chart details
+
+### Fixed
+
+- Reserved the full fixed action-bar clearance in the player profile drawer so the final content can be scrolled into view.
+- Added official FPL yellow-card and red-card history icons to the form chart.
+- Added attacking and defensive value labels to each opposition points-against bar and kept its vertical scale at a minimum of 0–80 points.
+
 ## 2026-08-14 - Consolidate the Squad workspace read path
 
 ### Changed

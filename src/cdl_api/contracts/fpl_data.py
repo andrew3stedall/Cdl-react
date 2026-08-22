@@ -65,6 +65,8 @@ class FplPlayerGameweekHistory(BaseModel):
     goals_scored: int = 0
     assists: int = 0
     clean_sheets: int = 0
+    yellow_cards: int = 0
+    red_cards: int = 0
     bonus: int = 0
     bps: int = 0
     expected_goals: float = 0

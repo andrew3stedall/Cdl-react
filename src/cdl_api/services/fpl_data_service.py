@@ -271,6 +271,8 @@ def _player_history_response(
             goals_scored=_as_int(row.get("goals_scored")),
             assists=_as_int(row.get("assists")),
             clean_sheets=_as_int(row.get("clean_sheets")),
+            yellow_cards=_as_int(row.get("yellow_cards")),
+            red_cards=_as_int(row.get("red_cards")),
             bonus=_as_int(row.get("bonus")),
             bps=_as_int(row.get("bps")),
             expected_goals=_as_float(row.get("expected_goals")),

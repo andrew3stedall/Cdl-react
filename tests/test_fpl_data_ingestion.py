@@ -105,6 +105,8 @@ ELEMENT_SUMMARY = {
             "goals_scored": 0,
             "assists": 1,
             "clean_sheets": 1,
+            "yellow_cards": 1,
+            "red_cards": 0,
             "bonus": 2,
             "bps": 28,
             "expected_goals": "0.05",
@@ -399,6 +401,8 @@ def test_player_history_enriches_fixture_context_and_conceded_points_from_cached
     assert isinstance(response, FplPlayerHistoryResponse)
     assert response.history[0].opponent_short_name == "AVL"
     assert response.history[0].difficulty == 2
+    assert response.history[0].yellow_cards == 1
+    assert response.history[0].red_cards == 0
     assert response.fixtures[0].opponent_short_name == "AVL"
     assert response.fixtures[0].opponent_team_id == 2
     assert response.fixtures[0].difficulty == 4

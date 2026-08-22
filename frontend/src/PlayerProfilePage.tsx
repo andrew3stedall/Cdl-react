@@ -185,13 +185,11 @@ export function PlayerProfilePage({
   );
   const nextFixtures = useMemo(
     () => selectNextGameweekFixtures(
-      history?.fixtures.length
-        ? history.fixtures
-        : player?.next_fixtures?.length
-          ? player.next_fixtures
-          : player?.next_fixture
-            ? [player.next_fixture]
-            : [],
+      player?.next_fixtures !== undefined && player.next_fixtures !== null
+        ? player.next_fixtures
+        : player?.next_fixture
+          ? [player.next_fixture]
+          : history?.fixtures ?? [],
     ),
     [history, player],
   );

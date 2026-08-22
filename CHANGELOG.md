@@ -1,5 +1,13 @@
 # Changelog
 
+## 2026-08-22 - Finish player profile drawer spacing
+
+### Fixed
+
+- Kept the player-profile action bar in the drawer layout so it cannot cover the final chart card.
+- Made grouped opposition bars thinner, separated, and left/right aligned within each fixture group.
+- Kept attacking and defensive value labels inside their matching bar colours with compact sizing.
+
 ## 2026-08-22 - Complete player profile chart details
 
 ### Fixed

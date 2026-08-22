@@ -292,8 +292,8 @@ describe('PlayerProfilePage', () => {
     const { container, root } = renderPage(squadClient);
     await settle();
 
-    expect(container.textContent).toContain('Next fixtures');
-    expect(container.querySelectorAll('.player-profile__fixture-summary')).toHaveLength(2);
+    expect(container.textContent).not.toContain('Next fixtures');
+    expect(container.querySelectorAll('.player-profile__fixture-summary')).toHaveLength(0);
     expect(container.textContent).toContain('bha');
     expect(container.textContent).toContain('ARS');
     expect(container.textContent).not.toContain('liv');
@@ -333,6 +333,7 @@ describe('PlayerProfilePage', () => {
     expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__bar--stacked')).toHaveLength(0);
     expect(container.textContent).toContain('Attacking assets');
     expect(container.textContent).toContain('Defensive assets');
+    expect(container.textContent).not.toContain('last 10 fixtures');
     root.unmount();
   });
 

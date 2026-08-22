@@ -728,6 +728,8 @@ describe('SquadPage', () => {
     await act(async () => {
       (container.querySelector('button[aria-label="View Haaland details"]') as HTMLButtonElement).click();
       await Promise.resolve();
+      await Promise.resolve();
+      await new Promise((resolve) => setTimeout(resolve, 0));
     });
     expect(container.querySelector('.squad-page__drawer--profile')).not.toBeNull();
     expect(container.querySelector('[data-presentation="drawer"]')).not.toBeNull();

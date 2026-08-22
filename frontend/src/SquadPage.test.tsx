@@ -500,6 +500,9 @@ describe('SquadPage', () => {
     expect(Array.from(startingTable?.querySelectorAll('th') ?? []).some((header) => header.textContent?.includes('Form'))).toBe(false);
     expect(startingTable?.querySelectorAll('button[aria-label^="Player actions for "]').length).toBe(0);
     expect(startingTable?.querySelector('tr[role="button"][aria-label="View Haaland details"]')).not.toBeNull();
+    expect(startingTable?.querySelectorAll('tbody tr.is-position-start')).toHaveLength(2);
+    expect(container.querySelector('[aria-label="Bench players table"] tbody tr.is-position-start')).toBeNull();
+    expect(container.querySelector('[aria-label="Reserves players table"] tbody tr.is-position-start')).toBeNull();
 
     await act(async () => {
       buttonByText(container, 'FWD').click();
@@ -740,7 +743,7 @@ describe('SquadPage', () => {
     expect(container.querySelector('.player-profile__action svg')).not.toBeNull();
     expect(container.textContent).toContain('Form');
     expect(container.textContent).toContain('Minutes played');
-    expect(container.querySelector('.player-profile__next-fixture')).toBeNull();
+    expect(container.textContent).toContain('Next fixture');
     expect(container.textContent).toContain('9');
   });
 

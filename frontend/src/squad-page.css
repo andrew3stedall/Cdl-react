@@ -1356,9 +1356,9 @@
 }
 
 .squad-page__list-table .squad-page__identity--circle {
-  flex: 0 0 4.55rem;
-  height: 4.55rem;
-  min-width: 4.55rem;
+  flex: 0 0 4.05rem;
+  height: 4.05rem;
+  min-width: 4.05rem;
 }
 
 .squad-page__list-table .squad-page__identity strong {
@@ -1484,7 +1484,7 @@
 .squad-page__table-scroll th,
 .squad-page__table-scroll td {
   border-bottom: 1px solid var(--squad-border);
-  padding: 0.55rem 0.52rem;
+  padding: 0.34rem 0.52rem;
   text-align: left;
   vertical-align: middle;
 }
@@ -1654,6 +1654,14 @@
   right: 0;
   top: calc(66% + 0.68rem);
   width: 100%;
+}
+
+.squad-page__list-table .squad-page__identity-circle-name {
+  top: 57%;
+}
+
+.squad-page__list-table .squad-page__identity-circle-opponent {
+  top: calc(57% + 0.62rem);
 }
 
 .squad-page__identity-circle-opponent > .squad-page__opponent {
@@ -2653,13 +2661,21 @@
     width: 1.8rem;
   }
 
+  .squad-page__list-table .squad-page__identity--circle {
+    flex-basis: 3.7rem;
+    height: 3.7rem;
+    min-width: 3.7rem;
+  }
+
   .squad-page__list-table .squad-page__identity strong {
     font-size: 0.62rem;
   }
 
   .squad-page__list-table td {
+    padding-bottom: 0.24rem;
     padding-left: 0.18rem;
     padding-right: 0.18rem;
+    padding-top: 0.24rem;
   }
 
   .squad-page__change-player {

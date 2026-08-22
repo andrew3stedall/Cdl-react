@@ -745,7 +745,7 @@ describe('SquadPage', () => {
     expect(container.querySelector('.player-profile__action svg')).not.toBeNull();
     expect(container.textContent).toContain('Form');
     expect(container.textContent).toContain('Minutes played');
-    expect(container.textContent).toContain('Next fixture');
+    expect(container.querySelector('.player-profile__next-fixture')).toBeNull();
     expect(container.textContent).toContain('9');
   });
 

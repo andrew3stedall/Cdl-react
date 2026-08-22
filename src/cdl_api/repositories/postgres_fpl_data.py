@@ -27,6 +27,7 @@ from sqlalchemy.orm import Session
 from cdl_api.contracts.fpl_data import (
     FplCacheStatusResponse,
     FplOpponentDefensiveHistory,
+    FplOpponentDefensiveHistoryGroup,
     FplPlayerHistoryResponse,
     FplRefreshResource,
     FplResourceRefreshResult,
@@ -384,11 +385,10 @@ class PostgreSQLFplDataRepository:
                 for row in response.fixtures
             ]
 
-            target_team_id = (
-                str(response.fixtures[0].opponent_team_id) if response.fixtures else None
-            )
-            defensive_history = []
-            if target_team_id is not None:
+            next_fixtures = _next_gameweek_fixtures(fixtures)
+            defensive_histories = []
+            for next_fixture in next_fixtures:
+                target_team_id = str(next_fixture.opponent_team_id)
                 defensive_rows = self._fixture_rows(
                     session,
                     team_id=target_team_id,
@@ -403,12 +403,23 @@ class PostgreSQLFplDataRepository:
                         ]
                     )
                 )
+                defensive_histories.append(
+                    FplOpponentDefensiveHistoryGroup(
+                        opponent_team_id=next_fixture.opponent_team_id,
+                        opponent_name=next_fixture.opponent_name,
+                        opponent_short_name=next_fixture.opponent_short_name,
+                        fixtures=defensive_history,
+                    )
+                )
 
         return response.model_copy(
             update={
                 "history": history,
                 "fixtures": fixtures,
-                "opponent_defensive_history": defensive_history,
+                "opponent_defensive_history": (
+                    defensive_histories[0].fixtures if defensive_histories else []
+                ),
+                "opponent_defensive_histories": defensive_histories,
             }
         )
 
@@ -624,6 +635,15 @@ def _upcoming_fixture_enrichment(
         or fixture.difficulty,
         "opponent_difficulty": context["away_difficulty" if is_home else "home_difficulty"],
     }
+
+
+def _next_gameweek_fixtures(fixtures: list[object]) -> list[object]:
+    """Return every fixture in the earliest upcoming gameweek."""
+    gameweeks = [fixture.gameweek for fixture in fixtures if fixture.gameweek is not None]
+    if not gameweeks:
+        return fixtures[:1]
+    next_gameweek = min(gameweeks)
+    return [fixture for fixture in fixtures if fixture.gameweek == next_gameweek]
 
 
 def _defensive_history_from_fixture(

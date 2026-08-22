@@ -179,7 +179,7 @@ describe('TeamSelectionPage compatibility export', () => {
     });
 
     await act(async () => {
-      (container.querySelector('button[aria-label="Player actions for Alex Keeper"]') as HTMLButtonElement).click();
+      (container.querySelector('tr[role="button"][aria-label="View Alex Keeper details"]') as HTMLElement).click();
       await Promise.resolve();
     });
     await act(async () => {
@@ -187,7 +187,7 @@ describe('TeamSelectionPage compatibility export', () => {
       await Promise.resolve();
     });
     await act(async () => {
-      (container.querySelector('button[aria-label="Substitute with Riley Forward"]') as HTMLButtonElement).click();
+      (container.querySelector('tr[role="button"][aria-label="Substitute with Riley Forward"]') as HTMLElement).click();
       await Promise.resolve();
     });
     await act(async () => {
@@ -216,7 +216,7 @@ describe('TeamSelectionPage compatibility export', () => {
     expect((container.querySelector('button[aria-label="Wildcard, available"]') as HTMLButtonElement).disabled).toBe(true);
     expect((container.querySelector('button.ui-button') as HTMLButtonElement).disabled).toBe(true);
     await act(async () => {
-      (container.querySelector('button[aria-label="Player actions for Alex Keeper"]') as HTMLButtonElement).click();
+      (container.querySelector('tr[role="button"][aria-label="View Alex Keeper details"]') as HTMLElement).click();
       await Promise.resolve();
     });
     expect(Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.trim() === 'Sub')).toHaveProperty('disabled', true);

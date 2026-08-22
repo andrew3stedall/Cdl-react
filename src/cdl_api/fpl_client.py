@@ -56,6 +56,14 @@ class FplApiClient:
                 raise FplApiError(f"FPL element-summary is missing list field {key!r}.")
         return response
 
+    def fetch_event_live(self, gameweek: int) -> FplApiResponse:
+        response = self._get(f"event/{gameweek}/live/")
+        if not isinstance(response.payload, dict):
+            raise FplApiError("FPL event live returned a non-object payload.")
+        if not isinstance(response.payload.get("elements"), list):
+            raise FplApiError("FPL event live is missing the elements list.")
+        return response
+
     def _get(self, path: str) -> FplApiResponse:
         endpoint = self.endpoint_for(path)
         try:

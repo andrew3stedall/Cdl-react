@@ -4,6 +4,7 @@ from cdl_api.repositories.postgres_fpl_data import FPL_INGESTION_TABLES
 
 BASE_MIGRATION_PATH = Path("migrations/versions/0009_fpl_ingestion.py")
 METRICS_MIGRATION_PATH = Path("migrations/versions/0010_fpl_player_metrics.py")
+PROVISIONAL_MIGRATION_PATH = Path("migrations/versions/0014_fpl_provisional_fixture_state.py")
 EXPECTED_TABLES = {
     "fpl_gameweeks",
     "fpl_fixtures",
@@ -31,3 +32,8 @@ def test_fpl_ingestion_migrations_extend_historical_import_head() -> None:
     assert "Revises: 0009_fpl_ingestion" in metrics_content
     assert 'down_revision: str | None = "0009_fpl_ingestion"' in metrics_content
     assert '"fpl_player_current_metrics"' in metrics_content
+
+    provisional_content = PROVISIONAL_MIGRATION_PATH.read_text(encoding="utf-8")
+    assert "Revision ID: 0014_fpl_provisional_fixture_state" in provisional_content
+    assert 'down_revision: str | None = "0013_fdr_display_mode"' in provisional_content
+    assert '"finished_provisional"' in provisional_content

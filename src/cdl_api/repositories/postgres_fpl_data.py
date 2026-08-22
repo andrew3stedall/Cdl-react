@@ -67,6 +67,7 @@ fpl_fixtures_table = Table(
     Column("kickoff_time", DateTime(timezone=True), nullable=True),
     Column("started", Boolean(), nullable=False),
     Column("finished", Boolean(), nullable=False),
+    Column("finished_provisional", Boolean(), nullable=False),
     Column("home_difficulty", Integer(), nullable=True),
     Column("away_difficulty", Integer(), nullable=True),
     Column("home_score", Integer(), nullable=True),
@@ -285,6 +286,7 @@ class PostgreSQLFplDataRepository:
                 "kickoff_time": _optional_datetime(row.get("kickoff_time")),
                 "started": bool(row.get("started", False)),
                 "finished": bool(row.get("finished", False)),
+                "finished_provisional": bool(row.get("finished_provisional", False)),
                 "home_difficulty": _optional_int(row.get("team_h_difficulty")),
                 "away_difficulty": _optional_int(row.get("team_a_difficulty")),
                 "home_score": _optional_int(row.get("team_h_score")),
@@ -343,6 +345,32 @@ class PostgreSQLFplDataRepository:
             )
             session.commit()
 
+    def persist_event_live(
+        self,
+        gameweek: int,
+        payload: Mapping[str, object],
+        *,
+        endpoint: str,
+        status_code: int,
+        response_sha256: str,
+        fetched_at: datetime,
+    ) -> None:
+        resource = f"event-live:{gameweek}"
+        elements = payload.get("elements")
+        record_count = len(elements) if isinstance(elements, list) else 0
+        with self._session_factory() as session:
+            self._record_success(
+                session,
+                resource=resource,
+                endpoint=endpoint,
+                status_code=status_code,
+                response_sha256=response_sha256,
+                payload=dict(payload),
+                fetched_at=fetched_at,
+                record_count=record_count,
+            )
+            session.commit()
+
     def cached_payload(
         self,
         resource: str,
@@ -366,6 +394,8 @@ class PostgreSQLFplDataRepository:
     def enrich_player_history(
         self,
         response: FplPlayerHistoryResponse,
+        *,
+        event_live_payloads: Mapping[int, object] | None = None,
     ) -> FplPlayerHistoryResponse:
         """Join cached fixture metadata without issuing another upstream request."""
         fixture_ids = {str(row.fixture_id) for row in [*response.history, *response.fixtures]}
@@ -390,6 +420,8 @@ class PostgreSQLFplDataRepository:
                 gameweek_number=next_upcoming_gameweek_number(session),
             )
             defensive_histories = []
+            live_payloads = event_live_payloads or {}
+            element_team_ids = _event_live_element_team_ids(session, live_payloads)
             for next_fixture in next_fixtures:
                 target_team_id = str(next_fixture.opponent_team_id)
                 defensive_rows = self._fixture_rows(
@@ -401,7 +433,12 @@ class PostgreSQLFplDataRepository:
                 defensive_history = list(
                     reversed(
                         [
-                            _defensive_history_from_fixture(row, target_team_id)
+                            _defensive_history_from_fixture(
+                                row,
+                                target_team_id,
+                                live_payloads.get(_optional_int_value(row.get("gameweek"))),
+                                element_team_ids,
+                            )
                             for row in defensive_rows
                         ]
                     )
@@ -466,7 +503,12 @@ class PostgreSQLFplDataRepository:
                 )
             )
         if finished_only:
-            conditions.append(fpl_fixtures_table.c.finished.is_(True))
+            conditions.append(
+                or_(
+                    fpl_fixtures_table.c.finished.is_(True),
+                    fpl_fixtures_table.c.finished_provisional.is_(True),
+                )
+            )
         if conditions:
             statement = statement.where(*conditions)
         statement = statement.order_by(
@@ -476,6 +518,16 @@ class PostgreSQLFplDataRepository:
         if limit is not None:
             statement = statement.limit(limit)
         return list(session.execute(statement).mappings())
+
+    def completed_fixture_gameweeks(self, team_id: str, *, limit: int = 10) -> list[int]:
+        with self._session_factory() as session:
+            rows = self._fixture_rows(
+                session,
+                team_id=team_id,
+                finished_only=True,
+                limit=limit,
+            )
+        return [int(row["gameweek"]) for row in rows if row["gameweek"] is not None]
 
     def record_failure(
         self,
@@ -667,6 +719,8 @@ def _next_gameweek_fixtures(
 def _defensive_history_from_fixture(
     row: Mapping[str, object],
     target_team_id: str,
+    event_live_payload: object = None,
+    element_team_ids: Mapping[str, str] | None = None,
 ) -> FplOpponentDefensiveHistory:
     is_home = str(row["home_team_id"]) == target_team_id
     total_points, attacking_points, defensive_points = _fixture_asset_points(
@@ -674,6 +728,9 @@ def _defensive_history_from_fixture(
         target_team_id=target_team_id,
         home_team_id=str(row["home_team_id"]),
         away_team_id=str(row["away_team_id"]),
+        fixture_id=int(row["fixture_id"]),
+        event_live_payload=event_live_payload,
+        element_team_ids=element_team_ids or {},
     )
     return FplOpponentDefensiveHistory(
         fixture_id=int(row["fixture_id"]),
@@ -696,7 +753,21 @@ def _fixture_asset_points(
     target_team_id: str,
     home_team_id: str,
     away_team_id: str,
+    fixture_id: int | None = None,
+    event_live_payload: object = None,
+    element_team_ids: Mapping[str, str] | None = None,
 ) -> tuple[int | None, int | None, int | None]:
+    live_points = _event_live_asset_points(
+        event_live_payload,
+        fixture_id=fixture_id,
+        target_team_id=target_team_id,
+        home_team_id=home_team_id,
+        away_team_id=away_team_id,
+        fixture_payload=payload,
+        element_team_ids=element_team_ids or {},
+    )
+    if live_points is not None:
+        return live_points
     if not isinstance(payload, Mapping) or not isinstance(payload.get("stats"), list):
         return None, None, None
     target_is_home = target_team_id == home_team_id
@@ -756,6 +827,129 @@ def _fixture_asset_points(
         (attacking_points if stat_points_found else None),
         (defensive_points if stat_points_found else None),
     )
+
+
+def _event_live_asset_points(
+    payload: object,
+    *,
+    fixture_id: int | None,
+    target_team_id: str,
+    home_team_id: str,
+    away_team_id: str,
+    fixture_payload: object,
+    element_team_ids: Mapping[str, str],
+) -> tuple[int, int, int] | None:
+    if (
+        fixture_id is None
+        or not isinstance(payload, Mapping)
+        or not isinstance(payload.get("elements"), list)
+    ):
+        return None
+
+    opposition_team_id = away_team_id if target_team_id == home_team_id else home_team_id
+    opposition_element_ids = _fixture_opposition_element_ids(
+        fixture_payload,
+        target_team_id == home_team_id,
+    )
+    total_points = 0
+    attacking_points = 0
+    defensive_points = 0
+    found_fixture = False
+    attacking_identifiers = {
+        "goals_scored",
+        "assists",
+        "penalties_missed",
+        "own_goals",
+    }
+    defensive_identifiers = {
+        "minutes",
+        "clean_sheets",
+        "goals_conceded",
+        "saves",
+        "penalties_saved",
+        "defensive_contribution",
+        "defensive_contributions",
+        "clearances_blocks_interceptions",
+        "recoveries",
+        "tackles",
+        "bonus",
+        "yellow_cards",
+        "red_cards",
+    }
+
+    for element in payload["elements"]:
+        if not isinstance(element, Mapping):
+            continue
+        element_id = str(element.get("id") or "")
+        if (
+            element_team_ids.get(element_id) != opposition_team_id
+            and element_id not in opposition_element_ids
+        ):
+            continue
+        explanations = element.get("explain")
+        if not isinstance(explanations, list):
+            continue
+        for explanation in explanations:
+            if not isinstance(explanation, Mapping):
+                continue
+            if _optional_int_value(explanation.get("fixture")) != fixture_id:
+                continue
+            stats = explanation.get("stats")
+            if not isinstance(stats, list):
+                continue
+            found_fixture = True
+            for stat in stats:
+                if not isinstance(stat, Mapping):
+                    continue
+                points = _optional_int_value(stat.get("points"))
+                if points is None:
+                    continue
+                total_points += points
+                identifier = str(stat.get("identifier") or "")
+                if identifier in attacking_identifiers:
+                    attacking_points += points
+                elif identifier in defensive_identifiers:
+                    defensive_points += points
+                else:
+                    defensive_points += points
+
+    return (total_points, attacking_points, defensive_points) if found_fixture else None
+
+
+def _fixture_opposition_element_ids(payload: object, target_is_home: bool) -> set[str]:
+    if not isinstance(payload, Mapping) or not isinstance(payload.get("stats"), list):
+        return set()
+    side = "a" if target_is_home else "h"
+    element_ids: set[str] = set()
+    for group in payload["stats"]:
+        if not isinstance(group, Mapping) or not isinstance(group.get(side), list):
+            continue
+        for entry in group[side]:
+            if isinstance(entry, Mapping) and entry.get("element") is not None:
+                element_ids.add(str(entry["element"]))
+    return element_ids
+
+
+def _event_live_element_team_ids(
+    session: Session,
+    payloads: Mapping[int, object],
+) -> dict[str, str]:
+    element_ids = {
+        str(element.get("id"))
+        for payload in payloads.values()
+        if isinstance(payload, Mapping) and isinstance(payload.get("elements"), list)
+        for element in payload["elements"]
+        if isinstance(element, Mapping) and element.get("id") is not None
+    }
+    if not element_ids:
+        return {}
+    player_ids = {f"fpl-{element_id}" for element_id in element_ids}
+    rows = session.execute(
+        select(fpl_players_table.c.id, fpl_players_table.c.team_id).where(
+            fpl_players_table.c.id.in_(player_ids)
+        )
+    ).mappings()
+    return {str(row["id"]).removeprefix("fpl-"): str(row["team_id"]) for row in rows}
 
 
 def _optional_int_value(value: object) -> int | None:

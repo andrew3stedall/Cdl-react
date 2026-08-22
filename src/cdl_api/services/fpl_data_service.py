@@ -20,6 +20,7 @@ from cdl_api.fpl_client import FplApiError, FplApiResponse
 from cdl_api.repositories.postgres_fpl_data import PostgreSQLFplDataRepository
 
 ELEMENT_SUMMARY_TTL = timedelta(hours=6)
+EVENT_LIVE_TTL = timedelta(hours=6)
 
 
 class FplApiClientProtocol(Protocol):
@@ -30,6 +31,8 @@ class FplApiClientProtocol(Protocol):
     def fetch_fixtures(self) -> FplApiResponse: ...
 
     def fetch_element_summary(self, player_id: int) -> FplApiResponse: ...
+
+    def fetch_event_live(self, gameweek: int) -> FplApiResponse: ...
 
 
 class FplDataService:
@@ -42,6 +45,7 @@ class FplDataService:
         self._repository = repository
 
     def refresh(self, resources: Iterable[FplRefreshResource]) -> FplRefreshResponse:
+        resources = list(resources)
         results = []
         for resource in resources:
             fetched_at = datetime.now(UTC)
@@ -69,6 +73,7 @@ class FplDataService:
                         response_sha256=response_sha256,
                         fetched_at=fetched_at,
                     )
+                    self._refresh_completed_event_live(response.payload)
                 results.append(result)
             except Exception as exc:
                 self._repository.record_failure(
@@ -133,8 +138,67 @@ class FplDataService:
         self,
         response: FplPlayerHistoryResponse,
     ) -> FplPlayerHistoryResponse:
+        event_live_payloads: dict[int, object] = {}
+        if response.fixtures:
+            target_team_id = str(response.fixtures[0].opponent_team_id)
+            gameweeks = self._repository.completed_fixture_gameweeks(
+                target_team_id,
+                limit=10,
+            )
+            for gameweek in set(gameweeks):
+                payload = self._event_live_payload(gameweek)
+                if payload is not None:
+                    event_live_payloads[gameweek] = payload
         enrich = getattr(self._repository, "enrich_player_history", None)
-        return enrich(response) if callable(enrich) else response
+        if not callable(enrich):
+            return response
+        return enrich(response, event_live_payloads=event_live_payloads)
+
+    def _refresh_completed_event_live(self, payload: list[Mapping[str, object]]) -> None:
+        fetch_event_live = getattr(self._client, "fetch_event_live", None)
+        if not callable(fetch_event_live):
+            return
+        gameweeks = {
+            _as_optional_int(row.get("event"))
+            for row in payload
+            if bool(row.get("started"))
+            and bool(row.get("finished") or row.get("finished_provisional"))
+        }
+        for gameweek in sorted(gameweek for gameweek in gameweeks if gameweek is not None):
+            self._fetch_and_cache_event_live(gameweek)
+
+    def _event_live_payload(self, gameweek: int) -> object | None:
+        resource = f"event-live:{gameweek}"
+        cached = self._repository.cached_payload(resource)
+        now = datetime.now(UTC)
+        if cached is not None:
+            payload, fetched_at, _ = cached
+            if _cache_is_fresh(fetched_at, now, ttl=EVENT_LIVE_TTL):
+                return payload
+        return self._fetch_and_cache_event_live(gameweek)
+
+    def _fetch_and_cache_event_live(self, gameweek: int) -> object | None:
+        fetch_event_live = getattr(self._client, "fetch_event_live", None)
+        if not callable(fetch_event_live):
+            return None
+        try:
+            response = fetch_event_live(gameweek)
+            if not isinstance(response.payload, dict):
+                raise FplApiError("FPL event live payload must be an object.")
+            if not isinstance(response.payload.get("elements"), list):
+                raise FplApiError("FPL event live payload is missing elements.")
+            fetched_at = datetime.now(UTC)
+            self._repository.persist_event_live(
+                gameweek,
+                response.payload,
+                endpoint=response.endpoint,
+                status_code=response.status_code,
+                response_sha256=_payload_sha256(response.payload),
+                fetched_at=fetched_at,
+            )
+            return response.payload
+        except (FplApiError, AttributeError):
+            return None
 
     def status(self) -> FplCacheStatusResponse:
         return self._repository.status()
@@ -151,9 +215,14 @@ class FplDataService:
         return self._client.endpoint_for(suffix)
 
 
-def _cache_is_fresh(fetched_at: datetime, now: datetime) -> bool:
+def _cache_is_fresh(
+    fetched_at: datetime,
+    now: datetime,
+    *,
+    ttl: timedelta = ELEMENT_SUMMARY_TTL,
+) -> bool:
     normalized = fetched_at if fetched_at.tzinfo is not None else fetched_at.replace(tzinfo=UTC)
-    return now - normalized <= ELEMENT_SUMMARY_TTL
+    return now - normalized <= ttl
 
 
 def _external_player_id(player_id: str) -> int:

@@ -686,22 +686,29 @@ function ChartCard({ children, className = '', compact = false, idPrefix, title 
 
 function FormChart({ fixtures, fdrDisplayMode, windowLabel = 'latest ten' }: { fixtures: ProfileFixture[]; fdrDisplayMode: 'font' | 'fill'; windowLabel?: string }) {
   const maxValue = formChartScaleMax(fixtures);
-  return <div aria-label={`Fantasy points over the ${windowLabel} fixtures, vertical scale 0 to ${maxValue} points`} className="player-profile__chart" data-chart-kind="form" data-y-axis-max={maxValue} data-y-axis-min="0" role="img"><div className="player-profile__chart-columns">{fixtures.map((fixture) => <ChartColumn fixture={fixture} fdrDisplayMode={fdrDisplayMode} maxValue={maxValue} key={fixture.fixtureId} value={fixture.fantasyPoints} valueLabel={formatNullableNumber(fixture.fantasyPoints)} />)}</div></div>;
+  return <div aria-label={`Fantasy points over the ${windowLabel} fixtures, vertical scale 0 to ${maxValue} points`} className="player-profile__chart" data-chart-kind="form" data-y-axis-max={maxValue} data-y-axis-min="0" role="img"><div className="player-profile__chart-columns">{fixtures.map((fixture, index) => <ChartColumn fixture={fixture} fdrDisplayMode={fdrDisplayMode} maxValue={maxValue} key={fixture.fixtureId} style={chartColumnStyle(index, fixtures.length)} value={fixture.fantasyPoints} valueLabel={formatNullableNumber(fixture.fantasyPoints)} />)}</div></div>;
 }
 
 function MinutesChart({ fixtures, fdrDisplayMode, windowLabel = 'latest ten' }: { fixtures: ProfileFixture[]; fdrDisplayMode: 'font' | 'fill'; windowLabel?: string }) {
-  return <div aria-label={`Minutes played over the ${windowLabel} fixtures`} className="player-profile__chart player-profile__chart--minutes" data-chart-kind="minutes" role="img"><div className="player-profile__chart-columns">{fixtures.map((fixture) => <ChartColumn compact fixture={fixture} fdrDisplayMode={fdrDisplayMode} maxValue={90} key={fixture.fixtureId} minutes value={fixture.minutesPlayed} valueLabel={formatNullableNumber(fixture.minutesPlayed)} />)}</div></div>;
+  return <div aria-label={`Minutes played over the ${windowLabel} fixtures`} className="player-profile__chart player-profile__chart--minutes" data-chart-kind="minutes" role="img"><div className="player-profile__chart-columns">{fixtures.map((fixture, index) => <ChartColumn compact fixture={fixture} fdrDisplayMode={fdrDisplayMode} maxValue={90} key={fixture.fixtureId} minutes style={chartColumnStyle(index, fixtures.length)} value={fixture.minutesPlayed} valueLabel={formatNullableNumber(fixture.minutesPlayed)} />)}</div></div>;
 }
 
 function DefensiveChart({ fixtures, fdrDisplayMode }: { fixtures: SquadApiOpponentDefensiveHistory[]; fdrDisplayMode: 'font' | 'fill' }) {
   const maxValue = Math.max(1, ...fixtures.map((fixture) => Math.max(fixture.total_points_conceded ?? 0, (fixture.attacking_asset_points ?? 0) + (fixture.defensive_asset_points ?? 0))));
-  return <><div aria-label="Attacking and defensive fantasy points conceded by the opponent" className="player-profile__chart player-profile__chart--defensive" data-chart-kind="opponent-defence" role="img"><div className="player-profile__chart-columns">{fixtures.map((fixture) => <DefensiveColumn fixture={fixture} fdrDisplayMode={fdrDisplayMode} maxValue={maxValue} key={String(fixture.fixture_id)} />)}</div></div><div className="player-profile__legend"><span><i className="player-profile__legend-swatch player-profile__legend-swatch--attack" />Attacking assets</span><span><i className="player-profile__legend-swatch player-profile__legend-swatch--defence" />Defensive assets</span></div></>;
+  return <><div aria-label="Attacking and defensive fantasy points conceded by the opponent" className="player-profile__chart player-profile__chart--defensive" data-chart-kind="opponent-defence" role="img"><div className="player-profile__chart-columns">{fixtures.map((fixture, index) => <DefensiveColumn fixture={fixture} fdrDisplayMode={fdrDisplayMode} maxValue={maxValue} key={String(fixture.fixture_id)} style={chartColumnStyle(index, fixtures.length)} />)}</div></div><div className="player-profile__legend"><span><i className="player-profile__legend-swatch player-profile__legend-swatch--attack" />Attacking assets</span><span><i className="player-profile__legend-swatch player-profile__legend-swatch--defence" />Defensive assets</span></div></>;
 }
 
-function ChartColumn({ compact = false, fixture, fdrDisplayMode, maxValue, minutes = false, value, valueLabel }: { compact?: boolean; fixture: ProfileFixture; fdrDisplayMode: 'font' | 'fill'; maxValue: number; minutes?: boolean; value: number | null; valueLabel: string }) {
+function ChartColumn({ compact = false, fixture, fdrDisplayMode, maxValue, minutes = false, style, value, valueLabel }: { compact?: boolean; fixture: ProfileFixture; fdrDisplayMode: 'font' | 'fill'; maxValue: number; minutes?: boolean; style?: CSSProperties; value: number | null; valueLabel: string }) {
   const fdrStyle = fdrStyleFor(fixture.fdr, fdrDisplayMode);
   const height = value === null ? 0 : Math.max(value === 0 ? 5 : 8, (Math.abs(value) / maxValue) * 100);
-  return <div className={`player-profile__chart-column${compact ? ' is-compact' : ''}`}><span className={`player-profile__chart-value${value === null ? ' is-empty' : ''}`}>{valueLabel}</span><div className="player-profile__bar-track">{minutes ? <div aria-hidden="true" className="player-profile__threshold-line" /> : null}<div className={`player-profile__bar player-profile__bar--${barTone(value)}`} style={{ '--bar-height': `${height}%` } as CSSProperties}>{minutes ? null : <StatIcons fixture={fixture} />}</div></div><span className="player-profile__opponent-label" style={fdrStyle}>{formatOpponentLabel(fixture.opponentShortName, fixture.isHome)}</span></div>;
+  return <div className={`player-profile__chart-column${compact ? ' is-compact' : ''}`} style={style}><span className={`player-profile__chart-value${value === null ? ' is-empty' : ''}`}>{valueLabel}</span><div className="player-profile__bar-track">{minutes ? <div aria-hidden="true" className="player-profile__threshold-line" /> : null}<div className={`player-profile__bar player-profile__bar--${barTone(value)}`} style={{ '--bar-height': `${height}%` } as CSSProperties}>{minutes ? null : <StatIcons fixture={fixture} />}</div></div><span className="player-profile__opponent-label" style={fdrStyle}>{formatOpponentLabel(fixture.opponentShortName, fixture.isHome)}</span></div>;
+}
+
+const PROFILE_CHART_COLUMN_COUNT = 10;
+
+function chartColumnStyle(index: number, fixtureCount: number): CSSProperties | undefined {
+  if (fixtureCount < 1 || fixtureCount > PROFILE_CHART_COLUMN_COUNT) return undefined;
+  return { gridColumnStart: PROFILE_CHART_COLUMN_COUNT - fixtureCount + index + 1 };
 }
 
 function formChartScaleMax(fixtures: ProfileFixture[]): number {
@@ -709,14 +716,14 @@ function formChartScaleMax(fixtures: ProfileFixture[]): number {
   return Math.max(10, largestScore);
 }
 
-function DefensiveColumn({ fixture, fdrDisplayMode, maxValue }: { fixture: SquadApiOpponentDefensiveHistory; fdrDisplayMode: 'font' | 'fill'; maxValue: number }) {
+function DefensiveColumn({ fixture, fdrDisplayMode, maxValue, style }: { fixture: SquadApiOpponentDefensiveHistory; fdrDisplayMode: 'font' | 'fill'; maxValue: number; style?: CSSProperties }) {
   const total = fixture.total_points_conceded ?? ((fixture.attacking_asset_points ?? 0) + (fixture.defensive_asset_points ?? 0));
   const attack = fixture.attacking_asset_points ?? 0;
   const defence = fixture.defensive_asset_points ?? 0;
   const totalHeight = total === 0 ? 5 : Math.max(8, (total / maxValue) * 100);
   const attackHeight = total > 0 ? (attack / total) * 100 : 0;
   const defenceHeight = total > 0 ? (defence / total) * 100 : 0;
-  return <div className="player-profile__chart-column"><span className={`player-profile__chart-value${fixture.total_points_conceded === null || fixture.total_points_conceded === undefined ? ' is-empty' : ''}`}>{formatNullableNumber(fixture.total_points_conceded)}</span><div className="player-profile__bar-track"><div className="player-profile__bar player-profile__bar--stacked" style={{ '--bar-height': `${totalHeight}%` } as CSSProperties}><span className="player-profile__bar-segment player-profile__bar-segment--attack" style={{ '--segment-height': `${attackHeight}%` } as CSSProperties} /><span className="player-profile__bar-segment player-profile__bar-segment--defence" style={{ '--segment-height': `${defenceHeight}%` } as CSSProperties} /></div></div><span className="player-profile__opponent-label" style={fdrStyleFor(fixture.difficulty ?? null, fdrDisplayMode)}>{formatOpponentLabel(fixture.opponent_short_name ?? null, fixture.is_home)}</span></div>;
+  return <div className="player-profile__chart-column" style={style}><span className={`player-profile__chart-value${fixture.total_points_conceded === null || fixture.total_points_conceded === undefined ? ' is-empty' : ''}`}>{formatNullableNumber(fixture.total_points_conceded)}</span><div className="player-profile__bar-track"><div className="player-profile__bar player-profile__bar--stacked" style={{ '--bar-height': `${totalHeight}%` } as CSSProperties}><span className="player-profile__bar-segment player-profile__bar-segment--attack" style={{ '--segment-height': `${attackHeight}%` } as CSSProperties} /><span className="player-profile__bar-segment player-profile__bar-segment--defence" style={{ '--segment-height': `${defenceHeight}%` } as CSSProperties} /></div></div><span className="player-profile__opponent-label" style={fdrStyleFor(fixture.difficulty ?? null, fdrDisplayMode)}>{formatOpponentLabel(fixture.opponent_short_name ?? null, fixture.is_home)}</span></div>;
 }
 
 function StatIcons({ fixture }: { fixture: ProfileFixture }) {

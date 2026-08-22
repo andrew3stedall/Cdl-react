@@ -238,8 +238,14 @@ jobs:
         run: |
           set -euo pipefail
           image_uri="${REGION}-docker.pkg.dev/${PROJECT_ID}/${ARTIFACT_REPOSITORY}/${IMAGE_NAME}:${GITHUB_SHA}"
-          docker build --pull --tag "${image_uri}" .
-          docker push "${image_uri}"
+          if gcloud artifacts docker images describe "${image_uri}" \
+            --project "${PROJECT_ID}" \
+            --format='value(image_summary.digest)' >/dev/null 2>&1; then
+            echo "Immutable image already exists; reusing ${image_uri}."
+          else
+            docker build --pull --tag "${image_uri}" .
+            docker push "${image_uri}"
+          fi
           digest="$(
             gcloud artifacts docker images describe "${image_uri}" \
               --project "${PROJECT_ID}" \

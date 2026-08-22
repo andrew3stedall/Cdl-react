@@ -722,7 +722,8 @@ function DefensiveColumn({ fixture, fdrDisplayMode, maxValue, style }: { fixture
 }
 
 function groupedAssetBarHeight(points: number, maxValue: number, hasPoints: boolean): number {
-  if (!hasPoints || points <= 0) return 0;
+  if (!hasPoints) return 0;
+  if (points <= 0) return 8;
   return Math.max(8, (points / maxValue) * 100);
 }
 

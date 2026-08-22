@@ -6,6 +6,7 @@ import {
   Ellipsis,
   Footprints,
   Repeat2,
+  RectangleVertical,
   Shield,
   ShieldCheck,
   Star,
@@ -83,6 +84,8 @@ interface ProfileFixture {
     goals: number;
     assists: number;
     cleanSheets: number;
+    yellowCards: number;
+    redCards: number;
     defensiveContributions: number;
     bonusPoints: number;
   };
@@ -687,8 +690,8 @@ function MinutesChart({ fixtures, fdrDisplayMode, windowLabel = 'latest ten' }: 
 }
 
 function DefensiveChart({ fixtures, fdrDisplayMode }: { fixtures: SquadApiOpponentDefensiveHistory[]; fdrDisplayMode: 'font' | 'fill' }) {
-  const maxValue = Math.max(1, ...fixtures.map((fixture) => Math.max(fixture.total_points_conceded ?? 0, (fixture.attacking_asset_points ?? 0) + (fixture.defensive_asset_points ?? 0))));
-  return <><div aria-label="Attacking and defensive fantasy points conceded by the opponent" className="player-profile__chart player-profile__chart--defensive" data-chart-kind="opponent-defence" role="img"><div className="player-profile__chart-columns">{fixtures.map((fixture, index) => <DefensiveColumn fixture={fixture} fdrDisplayMode={fdrDisplayMode} maxValue={maxValue} key={String(fixture.fixture_id)} style={chartColumnStyle(index, fixtures.length)} />)}</div></div><div className="player-profile__legend"><span><i className="player-profile__legend-swatch player-profile__legend-swatch--attack" />Attacking assets</span><span><i className="player-profile__legend-swatch player-profile__legend-swatch--defence" />Defensive assets</span></div></>;
+  const maxValue = Math.max(80, ...fixtures.map((fixture) => Math.max(fixture.total_points_conceded ?? 0, (fixture.attacking_asset_points ?? 0) + (fixture.defensive_asset_points ?? 0))));
+  return <><div aria-label={`Attacking and defensive fantasy points conceded by the opponent, vertical scale 0 to ${maxValue} points`} className="player-profile__chart player-profile__chart--defensive" data-chart-kind="opponent-defence" data-y-axis-max={maxValue} data-y-axis-min="0" role="img"><div className="player-profile__chart-columns">{fixtures.map((fixture, index) => <DefensiveColumn fixture={fixture} fdrDisplayMode={fdrDisplayMode} maxValue={maxValue} key={String(fixture.fixture_id)} style={chartColumnStyle(index, fixtures.length)} />)}</div></div><div className="player-profile__legend"><span><i className="player-profile__legend-swatch player-profile__legend-swatch--attack" />Attacking assets</span><span><i className="player-profile__legend-swatch player-profile__legend-swatch--defence" />Defensive assets</span></div></>;
 }
 
 function ChartColumn({ compact = false, fixture, fdrDisplayMode, maxValue, minutes = false, style, value, valueLabel }: { compact?: boolean; fixture: ProfileFixture; fdrDisplayMode: 'font' | 'fill'; maxValue: number; minutes?: boolean; style?: CSSProperties; value: number | null; valueLabel: string }) {
@@ -715,7 +718,7 @@ function DefensiveColumn({ fixture, fdrDisplayMode, maxValue, style }: { fixture
   const hasPoints = fixture.total_points_conceded !== null && fixture.total_points_conceded !== undefined;
   const attackHeight = groupedAssetBarHeight(attack, maxValue, hasPoints);
   const defenceHeight = groupedAssetBarHeight(defence, maxValue, hasPoints);
-  return <div className="player-profile__chart-column" style={style}><span className={`player-profile__chart-value${hasPoints ? '' : ' is-empty'}`}>{formatNullableNumber(fixture.total_points_conceded)}</span><div className="player-profile__bar-track player-profile__bar-track--grouped"><span aria-label={`Attacking assets: ${attack} points`} className="player-profile__grouped-bar player-profile__grouped-bar--attack" style={{ '--bar-height': `${attackHeight}%` } as CSSProperties} /><span aria-label={`Defensive assets: ${defence} points`} className="player-profile__grouped-bar player-profile__grouped-bar--defence" style={{ '--bar-height': `${defenceHeight}%` } as CSSProperties} /></div><span className="player-profile__opponent-label" style={fdrStyleFor(fixture.difficulty ?? null, fdrDisplayMode)}>{formatOpponentLabel(fixture.opponent_short_name ?? null, fixture.is_home)}</span></div>;
+  return <div className="player-profile__chart-column" style={style}><span className={`player-profile__chart-value${hasPoints ? '' : ' is-empty'}`}>{formatNullableNumber(fixture.total_points_conceded)}</span><div className="player-profile__bar-track player-profile__bar-track--grouped"><span className="player-profile__grouped-bar-wrap" style={{ '--bar-height': `${attackHeight}%` } as CSSProperties}><span aria-label={`Attacking assets: ${attack} points`} className="player-profile__grouped-bar player-profile__grouped-bar--attack" /><b className="player-profile__grouped-bar-value player-profile__grouped-bar-value--attack">{attack}</b></span><span className="player-profile__grouped-bar-wrap" style={{ '--bar-height': `${defenceHeight}%` } as CSSProperties}><span aria-label={`Defensive assets: ${defence} points`} className="player-profile__grouped-bar player-profile__grouped-bar--defence" /><b className="player-profile__grouped-bar-value player-profile__grouped-bar-value--defence">{defence}</b></span></div><span className="player-profile__opponent-label" style={fdrStyleFor(fixture.difficulty ?? null, fdrDisplayMode)}>{formatOpponentLabel(fixture.opponent_short_name ?? null, fixture.is_home)}</span></div>;
 }
 
 function groupedAssetBarHeight(points: number, maxValue: number, hasPoints: boolean): number {
@@ -724,14 +727,16 @@ function groupedAssetBarHeight(points: number, maxValue: number, hasPoints: bool
 }
 
 function StatIcons({ fixture }: { fixture: ProfileFixture }) {
-  const stats: Array<{ key: string; label: string; value: number; icon: LucideIcon }> = [
+  const stats: Array<{ key: string; label: string; value: number; icon: LucideIcon; tone?: 'yellow' | 'red' }> = [
     { key: 'goals', label: 'Goals scored', value: fixture.stats.goals, icon: Target },
     { key: 'assists', label: 'Assists', value: fixture.stats.assists, icon: Footprints },
     { key: 'clean-sheets', label: 'Clean sheets', value: fixture.stats.cleanSheets, icon: ShieldCheck },
+    { key: 'yellow-cards', label: 'Yellow cards', value: fixture.stats.yellowCards, icon: RectangleVertical, tone: 'yellow' },
+    { key: 'red-cards', label: 'Red cards', value: fixture.stats.redCards, icon: RectangleVertical, tone: 'red' },
     { key: 'defensive-contributions', label: 'Defensive contributions', value: fixture.stats.defensiveContributions, icon: Shield },
     { key: 'bonus', label: 'Bonus points', value: fixture.stats.bonusPoints, icon: Trophy },
   ];
-  return <span className="player-profile__stat-icons">{stats.filter((stat) => stat.key === 'defensive-contributions' ? earnedDefensiveContributionPoints(fixture.stats.defensiveContributions, fixture.position) : stat.value > 0).map((stat) => <span aria-label={`${stat.label}: ${stat.value}`} className="player-profile__stat-icon" key={stat.key} role="img" title={`${stat.label}: ${stat.value}`}><stat.icon aria-hidden="true" size={11} />{stat.value > 1 ? <b className="player-profile__stat-multiplier">×{stat.value}</b> : null}</span>)}</span>;
+  return <span className="player-profile__stat-icons">{stats.filter((stat) => stat.key === 'defensive-contributions' ? earnedDefensiveContributionPoints(fixture.stats.defensiveContributions, fixture.position) : stat.value > 0).map((stat) => <span aria-label={`${stat.label}: ${stat.value}`} className={`player-profile__stat-icon${stat.tone ? ` player-profile__stat-icon--${stat.tone}` : ''}`} key={stat.key} role="img" title={`${stat.label}: ${stat.value}`}><stat.icon aria-hidden="true" fill={stat.tone ? 'currentColor' : 'none'} size={11} />{stat.value > 1 ? <b className="player-profile__stat-multiplier">×{stat.value}</b> : null}</span>)}</span>;
 }
 
 export function earnedDefensiveContributionPoints(value: number, position: string | null): boolean {
@@ -818,6 +823,8 @@ function mapHistoryFixture(row: SquadApiHistoryResponse['history'][number], posi
       goals: row.goals_scored,
       assists: row.assists,
       cleanSheets: row.clean_sheets,
+      yellowCards: row.yellow_cards,
+      redCards: row.red_cards,
       defensiveContributions: row.defensive_contributions ?? 0,
       bonusPoints: row.bonus,
     },

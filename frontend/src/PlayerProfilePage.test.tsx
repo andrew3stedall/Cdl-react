@@ -65,6 +65,8 @@ const history: SquadApiHistoryResponse = {
     goals_scored: index === 4 ? 2 : index === 2 ? 1 : 0,
     assists: index === 3 ? 1 : 0,
     clean_sheets: index === 2 ? 1 : 0,
+    yellow_cards: index === 3 ? 1 : 0,
+    red_cards: index === 4 ? 1 : 0,
     bonus: index === 4 ? 2 : 0,
     bps: 30,
     expected_goals: 0.4,
@@ -319,6 +321,8 @@ describe('PlayerProfilePage', () => {
     expect(container.querySelector('[data-chart-kind="form"]')?.getAttribute('data-y-axis-max')).toBe('13');
     expect(container.querySelector('[data-chart-kind="form"]')?.getAttribute('aria-label')).toContain('vertical scale 0 to 13 points');
     expect(container.querySelector('[data-chart-kind="form"] .player-profile__stat-icon')?.getAttribute('aria-label')).toContain('Goals scored');
+    expect(container.querySelector('[data-chart-kind="form"] .player-profile__stat-icon--yellow')?.getAttribute('aria-label')).toContain('Yellow cards');
+    expect(container.querySelector('[data-chart-kind="form"] .player-profile__stat-icon--red')?.getAttribute('aria-label')).toContain('Red cards');
     expect(container.querySelector('[aria-label^="Defensive contributions"]')).toBeNull();
     expect(container.querySelector('.player-profile__stat-multiplier')?.textContent).toBe('×2');
     expect(container.querySelector('.player-profile__stat-multiplier')?.className).toContain('player-profile__stat-multiplier');
@@ -330,6 +334,9 @@ describe('PlayerProfilePage', () => {
     expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__chart-column')).toHaveLength(10);
     expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__grouped-bar--attack')).toHaveLength(10);
     expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__grouped-bar--defence')).toHaveLength(10);
+    expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__grouped-bar-value')).toHaveLength(20);
+    expect(container.querySelector('[data-chart-kind="opponent-defence"]')?.getAttribute('data-y-axis-min')).toBe('0');
+    expect(container.querySelector('[data-chart-kind="opponent-defence"]')?.getAttribute('data-y-axis-max')).toBe('80');
     expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__bar--stacked')).toHaveLength(0);
     expect(container.textContent).toContain('Attacking assets');
     expect(container.textContent).toContain('Defensive assets');

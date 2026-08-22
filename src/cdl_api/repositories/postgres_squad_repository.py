@@ -24,6 +24,7 @@ from cdl_api.repositories.postgres_fpl_data import (
     fpl_fixtures_table,
     fpl_gameweeks_table,
     fpl_player_current_metrics_table,
+    next_upcoming_gameweek_number,
 )
 from cdl_api.repositories.postgres_league_fpl import (
     draft_teams_table,
@@ -233,6 +234,12 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
                     .order_by(fpl_fixtures_table.c.kickoff_time.asc().nulls_last())
                 ).mappings()
             )
+            next_gameweek = next_upcoming_gameweek_number(session)
+            if next_gameweek is None:
+                next_gameweek = min(
+                    (int(row["gameweek"]) for row in rows if row["gameweek"] is not None),
+                    default=None,
+                )
         except SQLAlchemyError:
             return {}
         fixtures_by_team: dict[str, list[PlayerNextFixture]] = {}
@@ -276,11 +283,7 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
 
         next_fixtures: dict[str, list[PlayerNextFixture]] = {}
         for team_id, team_fixtures in fixtures_by_team.items():
-            gameweek_numbers = [
-                fixture.gameweek.number for fixture in team_fixtures if fixture.gameweek is not None
-            ]
-            if gameweek_numbers:
-                next_gameweek = min(gameweek_numbers)
+            if next_gameweek is not None:
                 selected = [
                     fixture
                     for fixture in team_fixtures

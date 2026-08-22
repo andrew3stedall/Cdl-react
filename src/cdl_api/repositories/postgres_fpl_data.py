@@ -405,13 +405,24 @@ class PostgreSQLFplDataRepository:
         with self._session_factory() as session:
             context_rows = self._fixture_rows(session, fixture_ids=fixture_ids)
             contexts = {str(row["fixture_id"]): row for row in context_rows}
+            player_team_id = session.execute(
+                select(fpl_players_table.c.team_id).where(
+                    fpl_players_table.c.id == response.player_id
+                )
+            ).scalar_one_or_none()
 
             history = [
                 row.model_copy(update=_player_fixture_enrichment(row, contexts))
                 for row in response.history
             ]
             fixtures = [
-                row.model_copy(update=_upcoming_fixture_enrichment(row, contexts))
+                row.model_copy(
+                    update=_upcoming_fixture_enrichment(
+                        row,
+                        contexts,
+                        player_team_id=str(player_team_id) if player_team_id is not None else None,
+                    )
+                )
                 for row in response.fixtures
             ]
 
@@ -427,7 +438,6 @@ class PostgreSQLFplDataRepository:
                 defensive_rows = self._fixture_rows(
                     session,
                     team_id=target_team_id,
-                    finished_only=True,
                     before_gameweek=next_fixture.gameweek,
                     limit=10,
                 )
@@ -690,12 +700,14 @@ def _player_fixture_enrichment(
 def _upcoming_fixture_enrichment(
     fixture: object,
     contexts: Mapping[str, Mapping[str, object]],
+    *,
+    player_team_id: str | None = None,
 ) -> dict[str, object]:
     context = contexts.get(str(fixture.fixture_id))
     if context is None:
         return {}
     is_home = bool(fixture.is_home)
-    return {
+    update = {
         "opponent_name": context["away_team_name" if is_home else "home_team_name"],
         "opponent_short_name": context[
             "away_team_short_name" if is_home else "home_team_short_name"
@@ -704,6 +716,13 @@ def _upcoming_fixture_enrichment(
         or fixture.difficulty,
         "opponent_difficulty": context["away_difficulty" if is_home else "home_difficulty"],
     }
+    home_team_id = str(context["home_team_id"])
+    away_team_id = str(context["away_team_id"])
+    if player_team_id == home_team_id:
+        update["opponent_team_id"] = int(away_team_id)
+    elif player_team_id == away_team_id:
+        update["opponent_team_id"] = int(home_team_id)
+    return update
 
 
 def next_upcoming_gameweek_number(session: Session) -> int | None:

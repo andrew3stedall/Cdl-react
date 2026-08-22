@@ -417,7 +417,13 @@ def test_squad_fixture_enrichment_returns_next_opponent_and_home_away_context() 
     sessions = _session_factory()
     repository = PostgreSQLFplDataRepository(sessions)
     repository.persist_bootstrap_static(
-        BOOTSTRAP,
+        {
+            **BOOTSTRAP,
+            "teams": [
+                *BOOTSTRAP["teams"],
+                {"id": 3, "short_name": "BHA", "name": "Brighton & Hove Albion"},
+            ],
+        },
         endpoint="https://fantasy.premierleague.com/api/bootstrap-static/",
         status_code=200,
         response_sha256="bootstrap-sha",
@@ -431,6 +437,14 @@ def test_squad_fixture_enrichment_returns_next_opponent_and_home_away_context() 
             "team_h": 2,
             "team_a": 1,
             "kickoff_time": "2026-08-16T14:00:00Z",
+        },
+        {
+            **FIXTURES[0],
+            "id": 103,
+            "event": 2,
+            "team_h": 3,
+            "team_a": 1,
+            "kickoff_time": "2026-08-22T14:00:00Z",
         },
     ]
     repository.persist_fixtures(
@@ -450,6 +464,79 @@ def test_squad_fixture_enrichment_returns_next_opponent_and_home_away_context() 
     assert [fixture.difficulty for fixture in fixtures["1"]] == [2, 4]
     assert len(fixtures["2"]) == 2
     assert [fixture.opponent.short_name for fixture in fixtures["2"]] == ["ARS", "ARS"]
+    assert fixtures["3"] == []
+
+
+def test_squad_fixture_selection_uses_one_official_next_gameweek_for_all_teams() -> None:
+    sessions = _session_factory()
+    repository = PostgreSQLFplDataRepository(sessions)
+    repository.persist_bootstrap_static(
+        {
+            **BOOTSTRAP,
+            "events": [
+                BOOTSTRAP["events"][0],
+                {
+                    "id": 2,
+                    "name": "Gameweek 2",
+                    "deadline_time": "2026-08-21T17:30:00Z",
+                    "is_previous": False,
+                    "is_current": False,
+                    "is_next": True,
+                    "finished": False,
+                    "data_checked": False,
+                },
+                {
+                    "id": 3,
+                    "name": "Gameweek 3",
+                    "deadline_time": "2026-08-28T17:30:00Z",
+                    "is_previous": False,
+                    "is_current": False,
+                    "is_next": False,
+                    "finished": False,
+                    "data_checked": False,
+                },
+            ],
+            "teams": [
+                *BOOTSTRAP["teams"],
+                {"id": 3, "short_name": "BHA", "name": "Brighton & Hove Albion"},
+            ],
+        },
+        endpoint="https://fantasy.premierleague.com/api/bootstrap-static/",
+        status_code=200,
+        response_sha256="bootstrap-next-gameweek-sha",
+        fetched_at=datetime.now(UTC),
+    )
+    repository.persist_fixtures(
+        [
+            {
+                **FIXTURES[0],
+                "id": 200,
+                "event": 2,
+                "team_h": 1,
+                "team_a": 2,
+            },
+            {
+                **FIXTURES[0],
+                "id": 201,
+                "event": 3,
+                "team_h": 3,
+                "team_a": 1,
+            },
+        ],
+        endpoint="https://fantasy.premierleague.com/api/fixtures/",
+        status_code=200,
+        response_sha256="fixtures-next-gameweek-sha",
+        fetched_at=datetime.now(UTC),
+    )
+
+    with sessions() as session:
+        fixtures = PostgreSQLSquadRepository._next_fixtures_by_team(session)
+
+    assert [fixture.gameweek.number for fixture in fixtures["1"]] == [2]
+    assert [fixture.opponent.short_name for fixture in fixtures["1"]] == ["AVL"]
+    assert [fixture.gameweek.number for fixture in fixtures["2"]] == [2]
+    assert [fixture.opponent.short_name for fixture in fixtures["2"]] == ["ARS"]
+    assert fixtures["3"] == []
 
 
 def test_repository_records_fetch_failure_without_marking_freshness() -> None:

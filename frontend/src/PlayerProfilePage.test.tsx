@@ -211,6 +211,37 @@ describe('PlayerProfilePage', () => {
     root.unmount();
   });
 
+  test('keeps the profile on the squad read model gameweek when history has a later fixture', async () => {
+    const squadClient = new MemorySquadClient();
+    squadClient.getPlayer = async () => ({
+      ...player,
+      next_fixtures: [{
+        fixture_id: 'fixture-arsenal',
+        gameweek: { id: 'gw-11', name: 'Gameweek 11', number: 11 },
+        opponent: { id: 'epl-ars', name: 'Arsenal', short_name: 'ARS' },
+        difficulty: 4,
+        is_home: true,
+      }],
+    });
+    squadClient.getPlayerHistory = async () => ({
+      ...history,
+      fixtures: [{
+        fixture_id: 1001,
+        gameweek: 12,
+        opponent_team_id: BrightonId,
+        difficulty: 3,
+        is_home: false,
+        opponent_name: 'Brighton',
+        opponent_short_name: 'BHA',
+      }],
+    });
+    const { container, root } = renderPage(squadClient);
+    await settle();
+
+    expect(container.querySelector('.player-profile__shirt-opponent')?.textContent).toBe('ARS');
+    root.unmount();
+  });
+
   test('renders every fixture in the next gameweek for a double gameweek and scopes opponent form to both opponents', async () => {
     const doubleGameweekHistory: SquadApiHistoryResponse = {
       ...history,

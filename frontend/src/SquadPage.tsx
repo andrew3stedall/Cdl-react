@@ -18,7 +18,6 @@ import {
   Layers,
   List,
   LockKeyhole,
-  MoreHorizontal,
   Repeat2,
   Save,
   Search,
@@ -1425,59 +1424,49 @@ function SquadList({
                 <colgroup>
                   <col className="player" />
                   <col className="points" />
-                  <col className="form" />
                   <col className="expected" />
                   <col className="availability" />
-                  <col className="action" />
                 </colgroup>
-                <thead><tr><th>Player</th><th className="sorted">Pts <ArrowDown size={11} /></th><th>Form</th><th>xG / xA</th><th><span className="sr-only">Availability</span><CircleCheck aria-hidden="true" size={13} /></th><th><span className="sr-only">Actions</span></th></tr></thead>
+                <thead><tr><th>Player</th><th className="sorted">Pts <ArrowDown size={11} /></th><th>xG / xA</th><th><span className="sr-only">Availability</span><CircleCheck aria-hidden="true" size={13} /></th></tr></thead>
                 <tbody>
-                  {group.players.map((player) => (
+                  {group.players.map((player, index) => {
+                    const startsNewPosition = index > 0 && group.players[index - 1]?.position !== player.position;
+                    const rowIsInteractive = !substitutionMode || substitutionCandidateIds.has(player.id);
+                    const rowLabel = substitutionMode
+                      ? rowIsInteractive
+                        ? `Substitute with ${player.displayName}`
+                        : `${player.displayName} is not a legal substitution candidate`
+                      : `View ${player.displayName} details`;
+                    return (
                     <tr
-                      className={`squad-page__player-row position-${player.position.toLowerCase()} ${substitutionMode ? 'is-substitution-mode' : ''} ${substitutionSourceId === player.id ? 'is-substitution-source' : ''} ${substitutionCandidateIds.has(player.id) ? 'is-substitution-candidate' : ''} ${substitutionTargetId === player.id ? 'is-substitution-target' : ''} ${substitutionMode && !substitutionCandidateIds.has(player.id) ? 'is-substitution-unavailable' : ''}`}
+                      aria-label={rowLabel}
+                      aria-pressed={substitutionMode && rowIsInteractive ? substitutionTargetId === player.id : undefined}
+                      className={`squad-page__player-row position-${player.position.toLowerCase()} ${startsNewPosition ? 'is-position-start' : ''} ${substitutionMode ? 'is-substitution-mode' : ''} ${substitutionSourceId === player.id ? 'is-substitution-source' : ''} ${substitutionCandidateIds.has(player.id) ? 'is-substitution-candidate' : ''} ${substitutionTargetId === player.id ? 'is-substitution-target' : ''} ${substitutionMode && !substitutionCandidateIds.has(player.id) ? 'is-substitution-unavailable' : ''}`}
                       key={player.id}
+                      onClick={rowIsInteractive ? () => selectPlayer(player) : undefined}
+                      onKeyDown={rowIsInteractive ? (event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          selectPlayer(player);
+                        }
+                      } : undefined}
+                      role={rowIsInteractive ? 'button' : undefined}
+                      tabIndex={rowIsInteractive ? 0 : undefined}
                     >
                       <td>
-                        <button
-                          aria-label={substitutionMode
-                            ? substitutionCandidateIds.has(player.id)
-                              ? `Substitute with ${player.displayName}`
-                              : `${player.displayName} is not a legal substitution candidate`
-                            : `View ${player.displayName} details`}
-                          aria-pressed={substitutionMode && substitutionCandidateIds.has(player.id) ? substitutionTargetId === player.id : undefined}
-                          className="squad-page__player-link"
-                          disabled={substitutionMode && !substitutionCandidateIds.has(player.id)}
-                          onClick={() => selectPlayer(player)}
-                          type="button"
-                        >
+                        <div className="squad-page__player-row-identity">
                           <PlayerIdentity circle player={player} />
+                          <span className="squad-page__row-form" title={`Form ${formatMetric(player.form)}`}><FormDots value={player.form} /></span>
                           {player.captain ? <span className="squad-page__row-badge">C</span> : null}
                           {player.viceCaptain ? <span className="squad-page__row-badge vice">VC</span> : null}
-                        </button>
+                        </div>
                       </td>
                       <td><strong>{formatInteger(player.points)}</strong></td>
-                      <td><span className="squad-page__list-form-value"><strong>{formatMetric(player.form)}</strong><span className="squad-page__list-form"><FormDots value={player.form} /></span></span></td>
                       <td><span className="squad-page__expected"><span>{formatMetric(player.xg)}</span><span>{formatMetric(player.xa)}</span></span></td>
                       <td><AvailabilityFlag inline player={player} /></td>
-                      <td>
-                        <button
-                          aria-label={substitutionMode
-                            ? substitutionCandidateIds.has(player.id)
-                              ? `Substitute with ${player.displayName}`
-                              : `${player.displayName} is not a legal substitution candidate`
-                            : `Player actions for ${player.displayName}`}
-                          aria-pressed={substitutionMode && substitutionCandidateIds.has(player.id) ? substitutionTargetId === player.id : undefined}
-                          className="squad-page__icon-button"
-                          disabled={substitutionMode && !substitutionCandidateIds.has(player.id)}
-                          onClick={() => selectPlayer(player)}
-                          title={substitutionMode ? `Substitute with ${player.displayName}` : `Actions for ${player.displayName}`}
-                          type="button"
-                        >
-                          {substitutionMode ? <Repeat2 size={17} /> : <MoreHorizontal size={17} />}
-                        </button>
-                      </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

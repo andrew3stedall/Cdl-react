@@ -492,12 +492,14 @@ describe('SquadPage', () => {
     expect(container.querySelector('[aria-label="Starting XI players table"]')).not.toBeNull();
     expect(window.localStorage.getItem('cdl:squad-view')).toBe('list');
     const startingTable = container.querySelector('[aria-label="Starting XI players table"]');
-    expect(startingTable?.querySelector('.squad-page__list-form')).not.toBeNull();
+    expect(startingTable?.querySelector('.squad-page__row-form')).not.toBeNull();
     expect(startingTable?.querySelector('.squad-page__identity--circle')).not.toBeNull();
     expect(startingTable?.textContent).toContain('CHE');
     expect(startingTable?.textContent).toContain('ars');
     expect(startingTable?.textContent).not.toContain('vs');
-    expect(Array.from(startingTable?.querySelectorAll('th') ?? []).some((header) => header.textContent?.includes('Form'))).toBe(true);
+    expect(Array.from(startingTable?.querySelectorAll('th') ?? []).some((header) => header.textContent?.includes('Form'))).toBe(false);
+    expect(startingTable?.querySelectorAll('button[aria-label^="Player actions for "]').length).toBe(0);
+    expect(startingTable?.querySelector('tr[role="button"][aria-label="View Haaland details"]')).not.toBeNull();
 
     await act(async () => {
       buttonByText(container, 'FWD').click();
@@ -594,7 +596,7 @@ describe('SquadPage', () => {
     expect(container.querySelector('.squad-page__drawer-layer')).toBeNull();
   });
 
-  test('starts a substitution from the list context menu and stages the selected swap', async () => {
+  test('starts a substitution by selecting the list row and stages the selected swap', async () => {
     const { container } = await renderPage();
 
     await act(async () => {
@@ -605,7 +607,7 @@ describe('SquadPage', () => {
     expect(container.querySelectorAll('.squad-page__list select')).toHaveLength(0);
 
     await act(async () => {
-      (container.querySelector('button[aria-label="Player actions for Haaland"]') as HTMLButtonElement).click();
+      (container.querySelector('tr[role="button"][aria-label="View Haaland details"]') as HTMLElement).click();
       await Promise.resolve();
     });
     await act(async () => {
@@ -614,12 +616,12 @@ describe('SquadPage', () => {
     });
 
     expect(container.querySelector('.squad-page__drawer--profile')).toBeNull();
-    expect(container.querySelector('button[aria-label="Substitute with Riley Forward"]')).not.toBeNull();
-    expect(container.querySelector('button[aria-label="Substitute with Morgan Reserve"]')).not.toBeNull();
-    expect(container.querySelector('button[aria-label="Substitute with Ben Defender"]')).toBeNull();
+    expect(container.querySelector('tr[role="button"][aria-label="Substitute with Riley Forward"]')).not.toBeNull();
+    expect(container.querySelector('tr[role="button"][aria-label="Substitute with Morgan Reserve"]')).not.toBeNull();
+    expect(container.querySelector('tr[role="button"][aria-label="Substitute with Ben Defender"]')).toBeNull();
 
     await act(async () => {
-      (container.querySelector('button[aria-label="Substitute with Riley Forward"]') as HTMLButtonElement).click();
+      (container.querySelector('tr[role="button"][aria-label="Substitute with Riley Forward"]') as HTMLElement).click();
       await Promise.resolve();
     });
 
@@ -641,7 +643,7 @@ describe('SquadPage', () => {
       await Promise.resolve();
     });
     await act(async () => {
-      (container.querySelector('button[aria-label="Player actions for Bench Defender"]') as HTMLButtonElement).click();
+      (container.querySelector('tr[role="button"][aria-label="View Bench Defender details"]') as HTMLElement).click();
       await Promise.resolve();
     });
     await act(async () => {
@@ -650,10 +652,10 @@ describe('SquadPage', () => {
     });
 
     expect(container.querySelector('.squad-page__drawer--profile')).toBeNull();
-    expect(container.querySelector('button[aria-label="Substitute with Starting Defender 1"]')).not.toBeNull();
-    expect(container.querySelector('button[aria-label="Substitute with Reserve Forward"]')).not.toBeNull();
-    expect(container.querySelector('button[aria-label="Substitute with Bench Keeper"]')).toBeNull();
-    expect(container.querySelector('button[aria-label="Substitute with Reserve Keeper"]')).toBeNull();
+    expect(container.querySelector('tr[role="button"][aria-label="Substitute with Starting Defender 1"]')).not.toBeNull();
+    expect(container.querySelector('tr[role="button"][aria-label="Substitute with Reserve Forward"]')).not.toBeNull();
+    expect(container.querySelector('tr[role="button"][aria-label="Substitute with Bench Keeper"]')).toBeNull();
+    expect(container.querySelector('tr[role="button"][aria-label="Substitute with Reserve Keeper"]')).toBeNull();
     expect(container.querySelector('button[aria-label="Cancel substitution"]')).not.toBeNull();
 
     await act(async () => {
@@ -663,7 +665,7 @@ describe('SquadPage', () => {
     expect(container.querySelector('[aria-label="Substitution mode"]')).toBeNull();
 
     await act(async () => {
-      (container.querySelector('button[aria-label="Player actions for Reserve Midfielder"]') as HTMLButtonElement).click();
+      (container.querySelector('tr[role="button"][aria-label="View Reserve Midfielder details"]') as HTMLElement).click();
       await Promise.resolve();
     });
     await act(async () => {
@@ -671,8 +673,8 @@ describe('SquadPage', () => {
       await Promise.resolve();
     });
     expect(container.querySelector('[aria-label="Substitution mode"]')?.textContent).toContain('Reserve Midfielder');
-    expect(container.querySelector('button[aria-label="Substitute with Starting Midfielder 1"]')).not.toBeNull();
-    expect(container.querySelector('button[aria-label="Substitute with Bench Keeper"]')).toBeNull();
+    expect(container.querySelector('tr[role="button"][aria-label="Substitute with Starting Midfielder 1"]')).not.toBeNull();
+    expect(container.querySelector('tr[role="button"][aria-label="Substitute with Bench Keeper"]')).toBeNull();
   });
 
   test('compares manually selected players in selection order', async () => {

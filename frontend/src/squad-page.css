@@ -1289,27 +1289,19 @@
 }
 
 .squad-page__list-table col.player {
-  width: 42%;
+  width: 58%;
 }
 
 .squad-page__list-table col.points {
-  width: 12%;
-}
-
-.squad-page__list-table col.form {
-  width: 14%;
+  width: 13%;
 }
 
 .squad-page__list-table col.expected {
-  width: 16%;
+  width: 20%;
 }
 
 .squad-page__list-table col.availability {
-  width: 8%;
-}
-
-.squad-page__list-table col.action {
-  width: 8%;
+  width: 9%;
 }
 
 .squad-page__list-table th,
@@ -1322,8 +1314,8 @@
   text-align: right;
 }
 
-.squad-page__list-table th:nth-last-child(-n + 2),
-.squad-page__list-table td:nth-last-child(-n + 2) {
+.squad-page__list-table th:last-child,
+.squad-page__list-table td:last-child {
   text-align: center;
 }
 
@@ -1339,12 +1331,23 @@
   padding-right: 0.28rem;
 }
 
-.squad-page__list-table .squad-page__player-link {
+.squad-page__player-row-identity {
   align-items: center;
   display: flex;
   gap: 0.25rem;
   max-width: 100%;
   width: 100%;
+}
+
+.squad-page__player-row-identity .squad-page__identity--circle {
+  flex: 0 0 4.55rem;
+}
+
+.squad-page__row-form {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 auto;
+  min-height: 0.85rem;
 }
 
 .squad-page__list-table .squad-page__identity {
@@ -1376,17 +1379,6 @@
   align-items: center;
   display: inline-flex;
   min-height: 0.45rem;
-}
-
-.squad-page__list-form-value {
-  align-items: center;
-  display: inline-flex;
-  gap: 0.25rem;
-  justify-content: flex-end;
-}
-
-.squad-page__list-form-value strong {
-  font-size: 0.68rem;
 }
 
 .squad-page__list-form .squad-page__form-dots i {
@@ -1526,6 +1518,19 @@
   background: var(--secondary);
 }
 
+.squad-page__table-scroll tbody tr[role='button'] {
+  cursor: pointer;
+}
+
+.squad-page__table-scroll tbody tr[role='button']:focus-visible {
+  outline: 2px solid var(--squad-accent);
+  outline-offset: -2px;
+}
+
+.squad-page__table-scroll tbody tr.is-position-start td {
+  border-top: 2px solid var(--squad-border-strong);
+}
+
 .squad-page__table-scroll tbody tr.is-substitution-candidate td:first-child {
   border-left: 2px solid var(--squad-accent);
 }
@@ -1540,19 +1545,6 @@
 
 .squad-page__table-scroll tbody tr.is-substitution-unavailable {
   opacity: 0.38;
-}
-
-.squad-page__player-link {
-  background: transparent;
-  border: 0;
-  color: inherit;
-  cursor: pointer;
-  padding: 0;
-  text-align: left;
-}
-
-.squad-page__player-link:disabled {
-  cursor: not-allowed;
 }
 
 .squad-page__identity {
@@ -1622,14 +1614,14 @@
 }
 
 .squad-page__identity-circle-shirt-crop > .squad-page__shirt.large {
-  height: 200%;
+  height: 140%;
   left: 50%;
   max-width: none;
   object-fit: contain;
   position: absolute;
   top: 0;
   transform: translateX(-50%);
-  width: 96%;
+  width: 67%;
 }
 
 .squad-page__identity-circle-name,
@@ -1652,10 +1644,22 @@
 }
 
 .squad-page__identity-circle-opponent {
+  display: flex !important;
   font-size: 0.56rem;
   font-weight: 800;
   line-height: 1;
+  left: 0;
+  max-width: none;
+  padding-inline: 0;
+  right: 0;
   top: calc(66% + 0.68rem);
+  width: 100%;
+}
+
+.squad-page__identity-circle-opponent > .squad-page__opponent {
+  flex: 1 1 0;
+  min-width: 0;
+  text-align: center;
 }
 
 .squad-page__position {

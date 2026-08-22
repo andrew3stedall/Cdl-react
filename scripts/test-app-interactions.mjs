@@ -538,12 +538,12 @@ async function testTeamSelection(page) {
     throw new Error('List view must not expose player movement dropdowns');
   }
 
-  await page.getByRole('button', { name: 'Player actions for Alex Keeper' }).click();
+  await page.locator('tr[role="button"][aria-label="View Alex Keeper details"]').click();
   const profileDrawer = page.locator('.squad-page__drawer--profile');
   await profileDrawer.getByRole('toolbar', { name: 'Squad-management actions' }).waitFor();
   await profileDrawer.getByRole('button', { name: 'Sub' }).click();
   await page.getByRole('region', { name: 'Substitution mode' }).waitFor();
-  await page.locator('.squad-page__player-link[aria-label="Substitute with Riley Forward"]').click();
+  await page.locator('tr[role="button"][aria-label="Substitute with Riley Forward"]').click();
   const substitutionDrawer = page.locator('.squad-page__drawer--substitution');
   await substitutionDrawer.getByRole('heading', { name: 'Review substitution' }).waitFor();
   await substitutionDrawer.getByRole('button', { name: 'Confirm sub' }).click();
@@ -555,8 +555,8 @@ async function testTeamSelection(page) {
   await page.reload({ waitUntil: 'networkidle' });
   await expectStatus(page, 'Exeter Gently squad ready for review.');
 
-  if (await page.getByRole('button', { name: 'Player actions for Ben Defender' }).count() !== 1) {
-    throw new Error('Expected the saved lineup to render its player action controls after reload');
+  if (await page.locator('tr[role="button"][aria-label="View Ben Defender details"]').count() !== 1) {
+    throw new Error('Expected the saved lineup to render clickable player rows after reload');
   }
   if (await page.locator('[aria-label="Starting XI players table"] select').count() !== 0) {
     throw new Error('Expected list view to remain free of player movement dropdowns after reload');
@@ -741,7 +741,7 @@ async function testLockedTeamSelection(page) {
   if (!(await tripleCaptainActivate.isDisabled())) {
     throw new Error('Expected chip controls to be disabled after fixture lock');
   }
-  await page.getByRole('button', { name: 'Player actions for Alex Keeper' }).click();
+  await page.locator('tr[role="button"][aria-label="View Alex Keeper details"]').click();
   if (!(await page.locator('.squad-page__drawer--profile').getByRole('button', { name: 'Sub' }).isDisabled())) {
     throw new Error('Expected substitution to be disabled after fixture lock');
   }

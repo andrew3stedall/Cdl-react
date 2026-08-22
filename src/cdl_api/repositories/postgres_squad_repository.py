@@ -277,17 +277,14 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
         next_fixtures: dict[str, list[PlayerNextFixture]] = {}
         for team_id, team_fixtures in fixtures_by_team.items():
             gameweek_numbers = [
-                fixture.gameweek.number
-                for fixture in team_fixtures
-                if fixture.gameweek is not None
+                fixture.gameweek.number for fixture in team_fixtures if fixture.gameweek is not None
             ]
             if gameweek_numbers:
                 next_gameweek = min(gameweek_numbers)
                 selected = [
                     fixture
                     for fixture in team_fixtures
-                    if fixture.gameweek is not None
-                    and fixture.gameweek.number == next_gameweek
+                    if fixture.gameweek is not None and fixture.gameweek.number == next_gameweek
                 ]
             else:
                 selected = team_fixtures[:1]

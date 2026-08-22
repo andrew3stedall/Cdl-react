@@ -80,7 +80,7 @@ def test_league_tables_are_contained_on_narrow_screens() -> None:
 def test_interaction_script_exercises_team_selection_validation() -> None:
     content = INTERACTION_SCRIPT.read_text(encoding="utf-8")
     assert "/team-selection" in content
-    assert "Player actions for Alex Keeper" in content
+    assert 'tr[role="button"][aria-label="View Alex Keeper details"]' in content
     assert "Sub" in content
     assert "Riley Forward" in content
     assert "Alex Keeper swapped with Riley Forward." in content

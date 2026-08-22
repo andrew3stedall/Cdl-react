@@ -420,7 +420,6 @@ export function PlayerProfilePage({
               </button>
             </div>
             <div className="player-profile__identity-tags">
-              <TeamShirt team={player.epl_team.short_name ?? player.epl_team.name} />
               <span className="player-profile__tag player-profile__tag--status">{squadStatusLabel(squadStatus)}</span>
               {captaincy === 'captain' ? <span className="player-profile__tag player-profile__tag--captain">Captain</span> : null}
               {captaincy === 'vice_captain' ? <span className="player-profile__tag player-profile__tag--vice">Vice-captain</span> : null}
@@ -449,37 +448,9 @@ export function PlayerProfilePage({
         {historyError ? <ChartEmpty message={`Minutes history unavailable: ${historyError}`} /> : formFixtures.length > 0 ? <MinutesChart fixtures={formFixtures} fdrDisplayMode={fdrDisplayMode} /> : <ChartEmpty message="No completed FPL fixture history is available." />}
       </ChartCard>
 
-      <section aria-labelledby="next-fixture-title" className="player-profile__card player-profile__next-fixture">
-        <div className="player-profile__card-heading">
-          <h2 id="next-fixture-title">Next {nextFixtures.length > 1 ? 'fixtures' : 'fixture'}</h2>
-          {nextFixture?.gameweek ? <span className="player-profile__muted-label">GW {nextFixture.gameweek}</span> : null}
-        </div>
-        {nextFixtures.length > 0 ? (
-          <div className="player-profile__fixture-summaries">
-            {nextFixtures.map((fixture) => {
-              const fixtureOpponent = fixture.opponent_short_name ?? fixture.opponent_name ?? 'Opponent';
-              return <div className="player-profile__fixture-summary" key={String(fixture.fixture_id)}>
-                <TeamShirt large team={fixtureOpponent} />
-                <div>
-                  <strong>{fixtureOpponent.toUpperCase()} ({fixture.is_home ? 'H' : 'A'})</strong>
-                  <div className="player-profile__fdr-pair">
-                    <FdrBadge label={`FDR for ${player.display_name}`} value={fixture.difficulty ?? null} displayMode={fdrDisplayMode} />
-                    <FdrBadge label={`FDR for ${player.epl_team.short_name ?? player.epl_team.name}`} value={fixture.opponent_difficulty ?? null} displayMode={fdrDisplayMode} />
-                  </div>
-                </div>
-                <div className="player-profile__fixture-labels">
-                  <span>Player FDR: {formatNullableNumber(fixture.difficulty)}</span>
-                  <span>Opponent FDR: {formatNullableNumber(fixture.opponent_difficulty ?? null)}</span>
-                </div>
-              </div>
-            })}
-          </div>
-        ) : <ChartEmpty message="No upcoming fixture is available in the FPL cache." />}
-      </section>
-
       {defensiveHistoryGroups.length > 0 ? defensiveHistoryGroups.map((group) => {
         const groupOpponent = group.opponent_name ?? group.opponent_short_name ?? 'Opponent';
-        return <ChartCard key={group.opponent_team_id} title={`Points against ${groupOpponent} — last 10 fixtures`} className="player-profile__chart-card--full">
+        return <ChartCard key={group.opponent_team_id} title={`Points against ${groupOpponent}`} className="player-profile__chart-card--full">
           {group.fixtures.length > 0 ? <DefensiveChart fixtures={group.fixtures} fdrDisplayMode={fdrDisplayMode} /> : <ChartEmpty message={`No cached defensive history is available for ${groupOpponent}.`} />}
         </ChartCard>;
       }) : <ChartCard title="Opponent form" className="player-profile__chart-card--full"><ChartEmpty message="No cached defensive history is available for the next opponent." /></ChartCard>}
@@ -767,10 +738,6 @@ export function earnedDefensiveContributionPoints(value: number, position: strin
   const normalizedPosition = position?.toUpperCase();
   const threshold = normalizedPosition === 'DEF' ? 10 : normalizedPosition === 'MID' || normalizedPosition === 'FWD' ? 12 : null;
   return threshold !== null && value >= threshold;
-}
-
-function FdrBadge({ displayMode, label, value }: { displayMode: 'font' | 'fill'; label: string; value: number | null }) {
-  return <span aria-label={`${label}: ${formatNullableNumber(value)}`} className="player-profile__fdr-badge" data-fdr={value ?? 'none'} style={fdrStyleFor(value, displayMode)}>{formatNullableNumber(value)}</span>;
 }
 
 function AvailabilityTag({ issue, status }: { issue: AvailabilityIssue; status: string }) {

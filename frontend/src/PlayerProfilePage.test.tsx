@@ -211,6 +211,67 @@ describe('PlayerProfilePage', () => {
     root.unmount();
   });
 
+  test('renders every fixture in the next gameweek for a double gameweek and scopes opponent form to both opponents', async () => {
+    const doubleGameweekHistory: SquadApiHistoryResponse = {
+      ...history,
+      fixtures: [
+        { ...history.fixtures[0], gameweek: 11, opponent_team_id: BrightonId },
+        {
+          ...history.fixtures[0],
+          fixture_id: 1000,
+          gameweek: 11,
+          opponent_team_id: 1001,
+          opponent_name: 'Arsenal',
+          opponent_short_name: 'ARS',
+          is_home: true,
+          difficulty: 4,
+          opponent_difficulty: 5,
+        },
+        {
+          ...history.fixtures[0],
+          fixture_id: 1001,
+          gameweek: 12,
+          opponent_team_id: 1002,
+          opponent_name: 'Liverpool',
+          opponent_short_name: 'LIV',
+          is_home: false,
+        },
+      ],
+      opponent_defensive_histories: [
+        {
+          opponent_team_id: BrightonId,
+          opponent_name: 'Brighton',
+          opponent_short_name: 'BHA',
+          fixtures: history.opponent_defensive_history ?? [],
+        },
+        {
+          opponent_team_id: 1001,
+          opponent_name: 'Arsenal',
+          opponent_short_name: 'ARS',
+          fixtures: (history.opponent_defensive_history ?? []).map((fixture) => ({
+            ...fixture,
+            fixture_id: fixture.fixture_id + 100,
+            opponent_short_name: 'MCI',
+          })),
+        },
+      ],
+    };
+    const squadClient = new MemorySquadClient();
+    squadClient.getPlayerHistory = async () => doubleGameweekHistory;
+    const { container, root } = renderPage(squadClient);
+    await settle();
+
+    expect(container.textContent).toContain('Next fixtures');
+    expect(container.querySelectorAll('.player-profile__fixture-summary')).toHaveLength(2);
+    expect(container.textContent).toContain('bha');
+    expect(container.textContent).toContain('ARS');
+    expect(container.textContent).not.toContain('liv');
+    expect(container.querySelectorAll('[data-chart-kind="opponent-defence"]')).toHaveLength(2);
+    expect(container.textContent).toContain('Points against Brighton');
+    expect(container.textContent).toContain('Points against Arsenal');
+    root.unmount();
+  });
+
   test('renders ten chronological fixtures, home/away casing, FDR colours, stat icons, and compact minutes chart', async () => {
     const { container, root } = renderPage();
     await settle();

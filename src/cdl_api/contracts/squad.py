@@ -56,6 +56,7 @@ class PlayerDetail(PlayerSummary):
     availability_news: str = ""
     chance_of_playing_next_round: int | None = None
     next_fixture: PlayerNextFixture | None = None
+    next_fixtures: list[PlayerNextFixture] = Field(default_factory=list)
 
 
 class ScoutingFilters(BaseModel):

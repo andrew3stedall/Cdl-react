@@ -423,8 +423,18 @@ def test_squad_fixture_enrichment_returns_next_opponent_and_home_away_context() 
         response_sha256="bootstrap-sha",
         fetched_at=datetime.now(UTC),
     )
+    double_gameweek_fixtures = [
+        *FIXTURES,
+        {
+            **FIXTURES[0],
+            "id": 102,
+            "team_h": 2,
+            "team_a": 1,
+            "kickoff_time": "2026-08-16T14:00:00Z",
+        },
+    ]
     repository.persist_fixtures(
-        FIXTURES,
+        double_gameweek_fixtures,
         endpoint="https://fantasy.premierleague.com/api/fixtures/",
         status_code=200,
         response_sha256="fixtures-sha",
@@ -434,12 +444,12 @@ def test_squad_fixture_enrichment_returns_next_opponent_and_home_away_context() 
     with sessions() as session:
         fixtures = PostgreSQLSquadRepository._next_fixtures_by_team(session)
 
-    assert fixtures["1"].opponent.short_name == "AVL"
-    assert fixtures["1"].is_home is True
-    assert fixtures["1"].difficulty == 2
-    assert fixtures["2"].opponent.short_name == "ARS"
-    assert fixtures["2"].is_home is False
-    assert fixtures["2"].difficulty == 4
+    assert len(fixtures["1"]) == 2
+    assert [fixture.opponent.short_name for fixture in fixtures["1"]] == ["AVL", "AVL"]
+    assert [fixture.is_home for fixture in fixtures["1"]] == [True, False]
+    assert [fixture.difficulty for fixture in fixtures["1"]] == [2, 4]
+    assert len(fixtures["2"]) == 2
+    assert [fixture.opponent.short_name for fixture in fixtures["2"]] == ["ARS", "ARS"]
 
 
 def test_repository_records_fetch_failure_without_marking_freshness() -> None:

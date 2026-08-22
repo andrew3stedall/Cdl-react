@@ -38,6 +38,7 @@ import {
   HttpSquadClient,
   SquadApiError,
   type SquadApiNotification,
+  type SquadApiNextFixture,
   type SquadApiPlayer,
   type SquadApiSummary,
   type SquadClient,
@@ -103,6 +104,7 @@ interface PlayerView {
   availability: string | null;
   availabilityNews: string | null;
   chanceOfPlaying: number | null;
+  nextFixtures: SquadApiNextFixture[];
   slot?: TeamSelectionSlot;
   slotOrder?: number;
   captain?: boolean;
@@ -130,11 +132,21 @@ interface PlayerApiResponse {
   availability_news?: string | null;
   chance_of_playing_next_round?: number | null;
   next_fixture?: {
+    fixture_id?: string | number;
+    gameweek?: { id: string; name: string; number: number; deadline_at?: string | null } | null;
     opponent: { id: string; name: string; short_name?: string | null };
     difficulty?: number | null;
     is_home: boolean;
     kickoff_at?: string | null;
   } | null;
+  next_fixtures?: Array<{
+    fixture_id: string | number;
+    gameweek?: { id: string; name: string; number: number; deadline_at?: string | null } | null;
+    opponent: { id: string; name: string; short_name?: string | null };
+    difficulty?: number | null;
+    is_home: boolean;
+    kickoff_at?: string | null;
+  }> | null;
 }
 
 const pitchPositionOrder = ['FWD', 'MID', 'DEF', 'GKP'];
@@ -182,7 +194,12 @@ function getStoredView(): SquadView {
 }
 
 function mapPlayer(player: PlayerApiResponse): PlayerView {
-  const nextFixture = player.next_fixture ?? null;
+  const nextFixtures = player.next_fixtures?.length
+    ? player.next_fixtures
+    : player.next_fixture
+      ? [player.next_fixture]
+      : [];
+  const nextFixture = nextFixtures[0] ?? null;
   return {
     id: player.id,
     displayName: player.display_name,
@@ -211,6 +228,14 @@ function mapPlayer(player: PlayerApiResponse): PlayerView {
     chanceOfPlaying: typeof player.chance_of_playing_next_round === 'number'
       ? player.chance_of_playing_next_round
       : null,
+    nextFixtures: nextFixtures.map((fixture) => ({
+      fixture_id: String(fixture.fixture_id ?? `fixture-${player.id}-${fixture.opponent.id}`),
+      gameweek: fixture.gameweek ?? null,
+      opponent: fixture.opponent,
+      difficulty: fixture.difficulty ?? null,
+      is_home: fixture.is_home,
+      kickoff_at: fixture.kickoff_at ?? null,
+    })),
   };
 }
 
@@ -235,6 +260,7 @@ function mapTeamSelectionPlayer(player: TeamSelectionPlayer): PlayerView {
     availability: null,
     availabilityNews: null,
     chanceOfPlaying: null,
+    nextFixtures: [],
     slot: player.slot,
     slotOrder: player.slotOrder,
     captain: player.captain,
@@ -269,6 +295,7 @@ function mergeLineupPlayers(roster: PlayerView[], lineup: TeamSelectionPlayer[] 
       availability: existing?.availability ?? null,
       availabilityNews: existing?.availabilityNews ?? null,
       chanceOfPlaying: existing?.chanceOfPlaying ?? null,
+      nextFixtures: existing?.nextFixtures ?? [],
       slot: player.slot,
       slotOrder: player.slotOrder,
       captain: player.captain,
@@ -460,7 +487,7 @@ export function SquadPage({
       .filter((player) => positionFilter === 'all' || player.position === positionFilter)
       .filter((player) => matchesQuery(player, query))
       .filter((player) => availabilityFilter === 'all' || isAvailabilityRisk(player))
-      .filter((player) => fixtureFilter === 'all' || (player.nextFixtureDifficulty !== null && player.nextFixtureDifficulty <= 3));
+      .filter((player) => fixtureFilter === 'all' || player.nextFixtures.some((fixture) => (fixture.difficulty ?? 6) <= 3));
     return [...filtered].sort((left, right) => compareListPlayers(left, right, sortKey));
   }, [availabilityFilter, fixtureFilter, positionFilter, query, sortKey, visibleSquadPlayers]);
   const positionCounts = useMemo(() => ({
@@ -598,15 +625,8 @@ export function SquadPage({
       availability_status: player.availability,
       availability_news: player.availabilityNews,
       chance_of_playing_next_round: player.chanceOfPlaying,
-      next_fixture: player.nextOpponent
-        ? {
-            fixture_id: `squad-${player.id}`,
-            opponent: { id: player.nextOpponent, name: player.nextOpponent, short_name: player.nextOpponent },
-            difficulty: player.nextFixtureDifficulty,
-            is_home: player.nextFixtureIsHome ?? true,
-            kickoff_at: player.nextFixtureKickoff,
-          }
-        : null,
+      next_fixture: player.nextFixtures[0] ?? null,
+      next_fixtures: player.nextFixtures,
     };
   }
 
@@ -1259,12 +1279,7 @@ function PitchCard({
       <span aria-hidden="true" className="squad-page__pitch-shirt-crop"><TeamShirt large team={player.team} /></span>
       <strong className="squad-page__pitch-player-name">{shortPlayerName(player.displayName)}</strong>
       <span className="squad-page__pitch-player-form"><FormDots value={player.form} /></span>
-      <small
-        className={`${fixtureOpponentClassName(player.nextFixtureDifficulty)} ${player.nextOpponent ? '' : 'is-placeholder'}`.trim()}
-        title={fixtureDifficultyTitle(player.nextFixtureDifficulty)}
-      >
-        {formatFixtureLabel(player)}
-      </small>
+      <small className={`squad-page__fixture-label-list ${fixtureOpponentClassName(player.nextFixtures[0]?.difficulty)}`} title={player.nextFixtures.length === 1 ? fixtureDifficultyTitle(player.nextFixtures[0]?.difficulty) : 'Next gameweek fixtures'}><FixtureLabels player={player} /></small>
       {player.captain ? <span className="squad-page__captain">C</span> : null}
       {player.viceCaptain ? <span className="squad-page__captain vice">VC</span> : null}
       <AvailabilityFlag player={player} />
@@ -1481,7 +1496,7 @@ function DrawerHeader({ onClose, player, title }: { onClose: () => void; player?
   return (
     <header className="squad-page__drawer-header">
       {player ? <TeamShirt large team={player.team} /> : <span className="squad-page__brand-mark"><Shield size={22} /></span>}
-      <div><h2>{title}</h2>{player ? <p><PositionMarker position={player.position} /> · <span className={`${fixtureOpponentClassName(player.nextFixtureDifficulty)} ${player.nextOpponent ? '' : 'is-placeholder'}`.trim()} title={fixtureDifficultyTitle(player.nextFixtureDifficulty)}>{formatFixtureLabel(player)}</span></p> : null}</div>
+      <div><h2>{title}</h2>{player ? <p><PositionMarker position={player.position} /> · <FixtureLabels player={player} /></p> : null}</div>
       <button aria-label="Close drawer" className="squad-page__icon-button" onClick={onClose} type="button"><X size={19} /></button>
     </header>
   );
@@ -1590,7 +1605,7 @@ function PlayerIdentity({ circle = false, large = false, player, showForm = fals
       <span className="squad-page__identity squad-page__identity--circle">
         <span aria-hidden="true" className="squad-page__identity-circle-shirt-crop"><TeamShirt large team={player.team} /></span>
         <strong className="squad-page__identity-circle-name">{shortPlayerName(player.displayName)}</strong>
-        <small className={`${fixtureOpponentClassName(player.nextFixtureDifficulty)} squad-page__identity-circle-opponent ${player.nextOpponent ? '' : 'is-placeholder'}`.trim()} title={fixtureDifficultyTitle(player.nextFixtureDifficulty)}>{formatFixtureLabel(player)}</small>
+        <small className="squad-page__identity-circle-opponent squad-page__fixture-label-list"><FixtureLabels player={player} /></small>
       </span>
     );
   }
@@ -1598,9 +1613,16 @@ function PlayerIdentity({ circle = false, large = false, player, showForm = fals
     <span className={`squad-page__identity ${large ? 'large' : ''}`}>
       <PositionMarker position={player.position} />
       <TeamShirt large={large} team={player.team} />
-      <span><strong>{player.displayName}</strong>{showForm ? <span className="squad-page__list-form"><FormDots value={player.form} /></span> : null}{showMeta ? <small><span className={`${fixtureOpponentClassName(player.nextFixtureDifficulty)} ${player.nextOpponent ? '' : 'is-placeholder'}`.trim()} title={fixtureDifficultyTitle(player.nextFixtureDifficulty)}>{formatFixtureLabel(player)}</span></small> : null}</span>
+      <span><strong>{player.displayName}</strong>{showForm ? <span className="squad-page__list-form"><FormDots value={player.form} /></span> : null}{showMeta ? <small className="squad-page__fixture-label-list"><FixtureLabels player={player} /></small> : null}</span>
     </span>
   );
+}
+
+function FixtureLabels({ player }: { player: PlayerView }) {
+  if (player.nextFixtures.length === 0) {
+    return <span className="squad-page__opponent is-placeholder">Next —</span>;
+  }
+  return <>{player.nextFixtures.map((fixture) => <span className={fixtureOpponentClassName(fixture.difficulty)} key={fixture.fixture_id} title={fixtureDifficultyTitle(fixture.difficulty)}>{formatOpponentFixtureLabel(fixture.opponent.short_name ?? fixture.opponent.name, fixture.is_home)}</span>)}</>;
 }
 
 function PositionMarker({ position }: { position: string }) {
@@ -2023,9 +2045,12 @@ export function formBand(value: number | null): 'negative' | 'low' | 'steady' | 
 
 export function formatFixtureLabel(player: Pick<PlayerView, 'nextOpponent' | 'nextFixtureIsHome'>): string {
   if (!player.nextOpponent) return 'Next —';
-  return player.nextFixtureIsHome === true
-    ? player.nextOpponent.toUpperCase()
-    : player.nextOpponent.toLowerCase();
+  return formatOpponentFixtureLabel(player.nextOpponent, player.nextFixtureIsHome === true);
+}
+
+function formatOpponentFixtureLabel(opponent: string | null, isHome: boolean): string {
+  if (!opponent) return '—';
+  return isHome ? opponent.toUpperCase() : opponent.toLowerCase();
 }
 
 const fixtureDifficultyLabels = ['Very easy', 'Easy', 'Balanced', 'Hard', 'Very challenging'] as const;

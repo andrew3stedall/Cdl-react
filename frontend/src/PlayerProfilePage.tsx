@@ -30,7 +30,9 @@ import {
   HttpSquadClient,
   type SquadApiHistoryResponse,
   type SquadApiOpponentDefensiveHistory,
+  type SquadApiNextFixture,
   type SquadApiPlayer,
+  type SquadApiUpcomingFixture,
   type SquadApiSummary,
   type SquadClient,
 } from './squad-api';
@@ -89,6 +91,7 @@ interface ProfileFixture {
 interface ProfileNextFixture {
   fixture_id: number | string;
   gameweek?: number | null;
+  opponent_team_id: number | string;
   opponent_name?: string | null;
   opponent_short_name?: string | null;
   difficulty?: number | null;
@@ -180,16 +183,32 @@ export function PlayerProfilePage({
     () => (history?.history ?? []).map((row) => mapHistoryFixture(row, playerPosition)).slice(-10),
     [history, playerPosition],
   );
-  const nextFixture: ProfileNextFixture | null = history?.fixtures[0] ?? (player?.next_fixture ? {
-    fixture_id: player.next_fixture.fixture_id,
-    gameweek: player.next_fixture.gameweek?.number ?? null,
-    opponent_name: player.next_fixture.opponent.name,
-    opponent_short_name: player.next_fixture.opponent.short_name ?? player.next_fixture.opponent.name,
-    difficulty: player.next_fixture.difficulty ?? null,
-    is_home: player.next_fixture.is_home,
-    opponent_difficulty: null,
-  } : null);
-  const defensiveHistory = history?.opponent_defensive_history ?? [];
+  const nextFixtures = useMemo(
+    () => selectNextGameweekFixtures(
+      history?.fixtures.length
+        ? history.fixtures
+        : player?.next_fixtures?.length
+          ? player.next_fixtures
+          : player?.next_fixture
+            ? [player.next_fixture]
+            : [],
+    ),
+    [history, player],
+  );
+  const defensiveHistoryGroups = useMemo(
+    () => history?.opponent_defensive_histories?.length
+      ? history.opponent_defensive_histories
+      : nextFixtures.length > 0 && history?.opponent_defensive_history?.length
+        ? [{
+            opponent_team_id: nextFixtures[0].opponent_team_id,
+            opponent_name: nextFixtures[0].opponent_name,
+            opponent_short_name: nextFixtures[0].opponent_short_name,
+            fixtures: history.opponent_defensive_history,
+          }]
+        : [],
+    [history, nextFixtures],
+  );
+  const nextFixture = nextFixtures[0] ?? null;
   const substitutionOptions = useMemo(
     () => selection && selectedLineupPlayer
       ? getSubstitutionOptions(selection.players, selectedLineupPlayer.id)
@@ -342,8 +361,6 @@ export function PlayerProfilePage({
   }
 
   const titleName = shortPlayerName(player.display_name);
-  const opponentName = nextFixture?.opponent_name ?? nextFixture?.opponent_short_name ?? 'Opponent';
-  const opponentShortName = nextFixture?.opponent_short_name ?? opponentName;
   const availabilityNews = (availability !== null || availabilityChance(player.chance_of_playing_next_round) !== null)
     ? player.availability_news?.trim() || null
     : null;
@@ -389,7 +406,7 @@ export function PlayerProfilePage({
               <TeamShirt large team={player.epl_team.short_name ?? player.epl_team.name} />
             </span>
             <strong className="player-profile__shirt-name">{shortPlayerName(player.display_name)}</strong>
-            {nextFixture ? <small className={`${fixtureOpponentClassName(nextFixture.difficulty)} player-profile__shirt-opponent`} title={fixtureDifficultyTitle(nextFixture.difficulty)}>{formatOpponentLabel(opponentShortName, nextFixture.is_home)}</small> : null}
+            {nextFixtures.length > 0 ? <small className={`player-profile__shirt-opponents player-profile__shirt-opponent ${fixtureOpponentClassName(nextFixture?.difficulty)}`} title={nextFixtures.length === 1 ? fixtureDifficultyTitle(nextFixture?.difficulty) : 'Next gameweek fixtures'}>{nextFixtures.map((fixture) => <span className={fixtureOpponentClassName(fixture.difficulty)} key={String(fixture.fixture_id)} title={fixtureDifficultyTitle(fixture.difficulty)}>{formatOpponentLabel(fixture.opponent_short_name ?? fixture.opponent_name ?? null, fixture.is_home)}</span>)}</small> : null}
           </div>
           <div className="player-profile__identity-copy">
             <div className="player-profile__identity-heading">
@@ -436,30 +453,38 @@ export function PlayerProfilePage({
 
       <section aria-labelledby="next-fixture-title" className="player-profile__card player-profile__next-fixture">
         <div className="player-profile__card-heading">
-          <h2 id="next-fixture-title">Next fixture</h2>
+          <h2 id="next-fixture-title">Next {nextFixtures.length > 1 ? 'fixtures' : 'fixture'}</h2>
           {nextFixture?.gameweek ? <span className="player-profile__muted-label">GW {nextFixture.gameweek}</span> : null}
         </div>
-        {nextFixture ? (
-          <div className="player-profile__fixture-summary">
-            <TeamShirt large team={opponentShortName} />
-            <div>
-              <strong>{opponentShortName.toUpperCase()} ({nextFixture.is_home ? 'H' : 'A'})</strong>
-              <div className="player-profile__fdr-pair">
-                <FdrBadge label={`FDR for ${player.display_name}`} value={nextFixture.difficulty ?? null} displayMode={fdrDisplayMode} />
-                <FdrBadge label={`FDR for ${player.epl_team.short_name ?? player.epl_team.name}`} value={nextFixture.opponent_difficulty ?? null} displayMode={fdrDisplayMode} />
+        {nextFixtures.length > 0 ? (
+          <div className="player-profile__fixture-summaries">
+            {nextFixtures.map((fixture) => {
+              const fixtureOpponent = fixture.opponent_short_name ?? fixture.opponent_name ?? 'Opponent';
+              return <div className="player-profile__fixture-summary" key={String(fixture.fixture_id)}>
+                <TeamShirt large team={fixtureOpponent} />
+                <div>
+                  <strong>{fixtureOpponent.toUpperCase()} ({fixture.is_home ? 'H' : 'A'})</strong>
+                  <div className="player-profile__fdr-pair">
+                    <FdrBadge label={`FDR for ${player.display_name}`} value={fixture.difficulty ?? null} displayMode={fdrDisplayMode} />
+                    <FdrBadge label={`FDR for ${player.epl_team.short_name ?? player.epl_team.name}`} value={fixture.opponent_difficulty ?? null} displayMode={fdrDisplayMode} />
+                  </div>
+                </div>
+                <div className="player-profile__fixture-labels">
+                  <span>Player FDR: {formatNullableNumber(fixture.difficulty)}</span>
+                  <span>Opponent FDR: {formatNullableNumber(fixture.opponent_difficulty ?? null)}</span>
+                </div>
               </div>
-            </div>
-            <div className="player-profile__fixture-labels">
-              <span>Player FDR: {formatNullableNumber(nextFixture.difficulty)}</span>
-              <span>Opponent FDR: {formatNullableNumber(nextFixture.opponent_difficulty ?? null)}</span>
-            </div>
+            })}
           </div>
         ) : <ChartEmpty message="No upcoming fixture is available in the FPL cache." />}
       </section>
 
-      <ChartCard title={`Points against ${opponentName} — last 10 fixtures`} className="player-profile__chart-card--full">
-        {defensiveHistory.length > 0 ? <DefensiveChart fixtures={defensiveHistory} fdrDisplayMode={fdrDisplayMode} /> : <ChartEmpty message="No cached defensive history is available for the next opponent." />}
-      </ChartCard>
+      {defensiveHistoryGroups.length > 0 ? defensiveHistoryGroups.map((group) => {
+        const groupOpponent = group.opponent_name ?? group.opponent_short_name ?? 'Opponent';
+        return <ChartCard key={group.opponent_team_id} title={`Points against ${groupOpponent} — last 10 fixtures`} className="player-profile__chart-card--full">
+          {group.fixtures.length > 0 ? <DefensiveChart fixtures={group.fixtures} fdrDisplayMode={fdrDisplayMode} /> : <ChartEmpty message={`No cached defensive history is available for ${groupOpponent}.`} />}
+        </ChartCard>;
+      }) : <ChartCard title="Opponent form" className="player-profile__chart-card--full"><ChartEmpty message="No cached defensive history is available for the next opponent." /></ChartCard>}
 
       {notice ? <p className="player-profile__notice" role="status">{notice}</p> : null}
       </div>
@@ -649,8 +674,7 @@ export function SubstitutionReviewDrawer({
 }
 
 function ReviewPlayerColumn({ fdrDisplayMode, fixtures, idPrefix, label, player, slotLabel }: { fdrDisplayMode: 'font' | 'fill'; fixtures: ProfileFixture[]; idPrefix: string; label: string; player: SquadApiPlayer; slotLabel?: string }) {
-  const nextFixture = player.next_fixture ?? null;
-  const opponent = nextFixture?.opponent.short_name ?? nextFixture?.opponent.name ?? null;
+  const nextFixtures = player.next_fixtures?.length ? player.next_fixtures : player.next_fixture ? [player.next_fixture] : [];
   return (
     <article aria-label={`${label}: ${player.display_name}`} className="player-profile__comparison-player">
       <div className="player-profile__comparison-player-heading">
@@ -661,12 +685,12 @@ function ReviewPlayerColumn({ fdrDisplayMode, fixtures, idPrefix, label, player,
         <div aria-label={`Shirt for ${player.display_name}`} className="player-profile__shirt-token" role="img">
           <span aria-hidden="true" className="player-profile__shirt-crop"><TeamShirt large team={player.epl_team.short_name ?? player.epl_team.name} /></span>
           <strong className="player-profile__shirt-name">{shortPlayerName(player.display_name)}</strong>
-          {opponent ? <small className={`${fixtureOpponentClassName(nextFixture?.difficulty ?? null)} player-profile__shirt-opponent`}>{formatOpponentLabel(opponent, nextFixture?.is_home ?? true)}</small> : null}
+          {nextFixtures.length > 0 ? <small className="player-profile__shirt-opponents">{nextFixtures.map((fixture) => <span className={fixtureOpponentClassName(fixture.difficulty)} key={fixture.fixture_id}>{formatOpponentLabel(fixture.opponent.short_name ?? fixture.opponent.name, fixture.is_home)}</span>)}</small> : null}
         </div>
         <div>
           <h3>{player.display_name}</h3>
           <p>{player.position} <span aria-hidden="true">·</span> {player.epl_team.short_name ?? player.epl_team.name}</p>
-          <small>{opponent ? `Next: ${formatOpponentLabel(opponent, nextFixture?.is_home ?? true)}` : 'Next fixture unavailable'}</small>
+          <small>{nextFixtures.length > 0 ? `Next: ${nextFixtures.map((fixture) => formatOpponentLabel(fixture.opponent.short_name ?? fixture.opponent.name, fixture.is_home)).join(' · ')}` : 'Next fixture unavailable'}</small>
         </div>
       </div>
       <ChartCard idPrefix={`${idPrefix}-form`} title="Form">
@@ -774,6 +798,41 @@ function ProfileState({ error, onBack, title }: { error?: string; onBack?: () =>
 
 function ChartEmpty({ message }: { message: string }) {
   return <p className="player-profile__chart-empty" role="status">{message}</p>;
+}
+
+function selectNextGameweekFixtures(
+  fixtures: Array<SquadApiUpcomingFixture | SquadApiNextFixture>,
+): ProfileNextFixture[] {
+  const normalized = fixtures.map((fixture) => {
+    if ('opponent' in fixture) {
+      return {
+        fixture_id: fixture.fixture_id,
+        gameweek: fixture.gameweek?.number ?? null,
+        opponent_team_id: fixture.opponent.id,
+        opponent_name: fixture.opponent.name,
+        opponent_short_name: fixture.opponent.short_name ?? fixture.opponent.name,
+        difficulty: fixture.difficulty ?? null,
+        is_home: fixture.is_home,
+        opponent_difficulty: null,
+      } satisfies ProfileNextFixture;
+    }
+    return {
+      fixture_id: fixture.fixture_id,
+      gameweek: fixture.gameweek ?? null,
+      opponent_team_id: fixture.opponent_team_id,
+      opponent_name: fixture.opponent_name,
+      opponent_short_name: fixture.opponent_short_name,
+      difficulty: fixture.difficulty ?? null,
+      is_home: fixture.is_home,
+      opponent_difficulty: fixture.opponent_difficulty ?? null,
+    } satisfies ProfileNextFixture;
+  });
+  const gameweeks = normalized
+    .map((fixture) => fixture.gameweek)
+    .filter((gameweek): gameweek is number => gameweek !== null);
+  if (gameweeks.length === 0) return normalized.slice(0, 1);
+  const nextGameweek = Math.min(...gameweeks);
+  return normalized.filter((fixture) => fixture.gameweek === nextGameweek);
 }
 
 function mapHistoryFixture(row: SquadApiHistoryResponse['history'][number], position: string | null = null): ProfileFixture {

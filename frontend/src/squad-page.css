@@ -1424,6 +1424,21 @@
   white-space: nowrap;
 }
 
+.squad-page__fixture-label-list {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.25rem;
+  justify-content: center;
+  max-width: 100%;
+}
+
+.squad-page__fixture-label-list > .squad-page__opponent {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .squad-page__opponent--fdr-1 {
   color: var(--squad-fdr-very-easy);
 }

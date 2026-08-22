@@ -102,6 +102,13 @@ class FplOpponentDefensiveHistory(BaseModel):
     defensive_asset_points: int | None = None
 
 
+class FplOpponentDefensiveHistoryGroup(BaseModel):
+    opponent_team_id: int
+    opponent_name: str | None = None
+    opponent_short_name: str | None = None
+    fixtures: list[FplOpponentDefensiveHistory] = Field(default_factory=list)
+
+
 class FplPlayerHistoryResponse(BaseModel):
     player_id: str
     fetched_at: datetime
@@ -109,3 +116,6 @@ class FplPlayerHistoryResponse(BaseModel):
     history: list[FplPlayerGameweekHistory]
     fixtures: list[FplPlayerUpcomingFixture]
     opponent_defensive_history: list[FplOpponentDefensiveHistory] = Field(default_factory=list)
+    opponent_defensive_histories: list[FplOpponentDefensiveHistoryGroup] = Field(
+        default_factory=list
+    )

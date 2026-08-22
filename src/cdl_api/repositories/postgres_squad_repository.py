@@ -205,7 +205,7 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
         self._players_cache = None
 
     @staticmethod
-    def _next_fixtures_by_team(session: Session) -> dict[str, PlayerNextFixture]:
+    def _next_fixtures_by_team(session: Session) -> dict[str, list[PlayerNextFixture]]:
         home_team = epl_teams_table.alias("fixture_home_team")
         away_team = epl_teams_table.alias("fixture_away_team")
         try:
@@ -235,7 +235,7 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
             )
         except SQLAlchemyError:
             return {}
-        fixtures: dict[str, PlayerNextFixture] = {}
+        fixtures_by_team: dict[str, list[PlayerNextFixture]] = {}
         for row in rows:
             gameweek_number = row["gameweek"]
             gameweek = (
@@ -271,15 +271,39 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
                 is_home=False,
                 kickoff_at=row["kickoff_time"],
             )
-            fixtures.setdefault(str(row["home_team_id"]), home_fixture)
-            fixtures.setdefault(str(row["away_team_id"]), away_fixture)
-        return fixtures
+            fixtures_by_team.setdefault(str(row["home_team_id"]), []).append(home_fixture)
+            fixtures_by_team.setdefault(str(row["away_team_id"]), []).append(away_fixture)
+
+        next_fixtures: dict[str, list[PlayerNextFixture]] = {}
+        for team_id, team_fixtures in fixtures_by_team.items():
+            gameweek_numbers = [
+                fixture.gameweek.number for fixture in team_fixtures if fixture.gameweek is not None
+            ]
+            if gameweek_numbers:
+                next_gameweek = min(gameweek_numbers)
+                selected = [
+                    fixture
+                    for fixture in team_fixtures
+                    if fixture.gameweek is not None and fixture.gameweek.number == next_gameweek
+                ]
+            else:
+                selected = team_fixtures[:1]
+            next_fixtures[team_id] = sorted(
+                selected,
+                key=lambda fixture: (
+                    fixture.kickoff_at is None,
+                    fixture.kickoff_at,
+                    fixture.fixture_id,
+                ),
+            )
+        return next_fixtures
 
     @staticmethod
     def _player_from_database_row(
         row: object,
-        next_fixture: PlayerNextFixture | None = None,
+        next_fixtures: list[PlayerNextFixture] | None = None,
     ) -> PlayerDetail:
+        upcoming_fixtures = next_fixtures or []
         epl_team = TeamSummary(
             id=row["epl_team_id"],
             name=row["epl_team_name"],
@@ -315,7 +339,8 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
             availability_status=row["availability_status"],
             availability_news=row["availability_news"] or "",
             chance_of_playing_next_round=row["chance_of_playing_next_round"],
-            next_fixture=next_fixture,
+            next_fixture=upcoming_fixtures[0] if upcoming_fixtures else None,
+            next_fixtures=upcoming_fixtures,
         )
 
     def list_squad_players(self) -> list[PlayerDetail]:

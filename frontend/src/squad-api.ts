@@ -32,6 +32,7 @@ export interface SquadApiPlayer {
   availability_news?: string | null;
   chance_of_playing_next_round?: number | null;
   next_fixture?: SquadApiNextFixture | null;
+  next_fixtures?: SquadApiNextFixture[] | null;
 }
 
 export interface SquadApiSummary {
@@ -95,6 +96,13 @@ export interface SquadApiOpponentDefensiveHistory {
   defensive_asset_points?: number | null;
 }
 
+export interface SquadApiOpponentDefensiveHistoryGroup {
+  opponent_team_id: number;
+  opponent_name?: string | null;
+  opponent_short_name?: string | null;
+  fixtures: SquadApiOpponentDefensiveHistory[];
+}
+
 export interface SquadApiHistoryResponse {
   player_id: string;
   fetched_at: string;
@@ -102,6 +110,7 @@ export interface SquadApiHistoryResponse {
   history: SquadApiHistoryRow[];
   fixtures: SquadApiUpcomingFixture[];
   opponent_defensive_history?: SquadApiOpponentDefensiveHistory[];
+  opponent_defensive_histories?: SquadApiOpponentDefensiveHistoryGroup[];
 }
 
 export interface SquadApiNotification {

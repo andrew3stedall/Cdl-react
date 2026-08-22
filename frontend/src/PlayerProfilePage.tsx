@@ -441,7 +441,7 @@ export function PlayerProfilePage({
         </section>
       ) : null}
 
-      <ChartCard title="Form" className="player-profile__chart-card--full">
+      <ChartCard compact title="Form">
         {historyError ? <ChartEmpty message={`Form history unavailable: ${historyError}`} /> : formFixtures.length > 0 ? <FormChart fixtures={formFixtures} fdrDisplayMode={fdrDisplayMode} /> : <ChartEmpty message="No completed FPL fixture history is available." />}
       </ChartCard>
 

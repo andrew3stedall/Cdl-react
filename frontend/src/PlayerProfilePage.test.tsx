@@ -323,6 +323,7 @@ describe('PlayerProfilePage', () => {
     expect(container.querySelector('.player-profile__stat-multiplier')?.textContent).toBe('×2');
     expect(container.querySelector('.player-profile__stat-multiplier')?.className).toContain('player-profile__stat-multiplier');
     expect(container.querySelector('.player-profile__chart-card--compact')).toBeTruthy();
+    expect(container.querySelector('section[aria-labelledby="form"]')?.className).toContain('player-profile__chart-card--compact');
     expect(container.textContent).not.toContain('60 min threshold');
     expect(container.querySelector('.player-profile__threshold-line')).toBeTruthy();
     expect(container.querySelector('[data-chart-kind="minutes"]')?.getAttribute('aria-label')).toBe('Minutes played over the latest ten fixtures');

@@ -300,6 +300,22 @@ def test_player_history_enriches_fixture_context_and_conceded_points_from_cached
     repository = PostgreSQLFplDataRepository(sessions)
     service = FplDataService(FakeClient(), repository)
     service.refresh(list(FplRefreshResource))
+    with sessions() as session:
+        session.execute(
+            insert(fpl_players_table),
+            [
+                {
+                    "id": f"fpl-{element_id}",
+                    "first_name": "Opposition",
+                    "second_name": f"Player {element_id}",
+                    "web_name": f"Player {element_id}",
+                    "position_id": "GKP",
+                    "team_id": "1",
+                }
+                for element_id in (901, 902, 903)
+            ],
+        )
+        session.commit()
     repository.persist_fixtures(
         [
             {
@@ -315,23 +331,6 @@ def test_player_history_enriches_fixture_context_and_conceded_points_from_cached
                 "team_a_difficulty": 2,
                 "team_h_score": 1,
                 "team_a_score": 0,
-                "stats": [
-                    {
-                        "identifier": "goals_scored",
-                        "h": [],
-                        "a": [{"element": 901, "points": 2, "total_points": 2}],
-                    },
-                    {
-                        "identifier": "assists",
-                        "h": [],
-                        "a": [{"element": 902, "points": 3, "total_points": 3}],
-                    },
-                    {
-                        "identifier": "clean_sheets",
-                        "h": [],
-                        "a": [{"element": 903, "points": 1, "total_points": 1}],
-                    },
-                ],
             },
             {
                 "id": 101,
@@ -345,6 +344,20 @@ def test_player_history_enriches_fixture_context_and_conceded_points_from_cached
                 "team_a_difficulty": 4,
                 "team_h_score": None,
                 "team_a_score": None,
+            },
+            {
+                "id": 102,
+                "event": 3,
+                "team_h": 2,
+                "team_a": 1,
+                "kickoff_time": "2026-08-29T14:00:00Z",
+                "started": True,
+                "finished": True,
+                "finished_provisional": False,
+                "team_h_difficulty": 2,
+                "team_a_difficulty": 4,
+                "team_h_score": 1,
+                "team_a_score": 1,
             },
         ],
         endpoint="https://fantasy.premierleague.com/api/fixtures/",
@@ -366,6 +379,7 @@ def test_player_history_enriches_fixture_context_and_conceded_points_from_cached
     assert response.opponent_defensive_history[0].attacking_asset_points == 8
     assert response.opponent_defensive_history[0].defensive_asset_points == 7
     assert response.opponent_defensive_history[0].gameweek == 0
+    assert [fixture.fixture_id for fixture in response.opponent_defensive_history] == [98]
 
 
 def test_bootstrap_refresh_enriches_existing_canonical_draft_player_in_place() -> None:

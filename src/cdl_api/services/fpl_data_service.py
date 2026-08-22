@@ -159,10 +159,7 @@ class FplDataService:
         if not callable(fetch_event_live):
             return
         gameweeks = {
-            _as_optional_int(row.get("event"))
-            for row in payload
-            if bool(row.get("started"))
-            and bool(row.get("finished") or row.get("finished_provisional"))
+            _as_optional_int(row.get("event")) for row in payload if bool(row.get("started"))
         }
         for gameweek in sorted(gameweek for gameweek in gameweeks if gameweek is not None):
             self._fetch_and_cache_event_live(gameweek)

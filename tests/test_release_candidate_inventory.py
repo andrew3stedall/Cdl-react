@@ -97,12 +97,12 @@ def test_team_selection_release_evidence_is_focused_and_truthful() -> None:
     inventory = INVENTORY.read_text(encoding="utf-8")
     browser = BROWSER_INTERACTIONS.read_text(encoding="utf-8")
     required_browser_evidence = (
-        "Player actions for Alex Keeper",
+        'tr[role="button"][aria-label="View Alex Keeper details"]',
         "Sub",
         "Riley Forward",
         "Confirm sub",
         "Alex Keeper swapped with Riley Forward.",
-        "Expected the saved lineup to render its player action controls after reload",
+        "Expected the saved lineup to render clickable player rows after reload",
         "Expected list view to remain free of player movement dropdowns after reload",
         "Triple Captain chip state updated.",
         "Expected Save lineup to be disabled after fixture lock",

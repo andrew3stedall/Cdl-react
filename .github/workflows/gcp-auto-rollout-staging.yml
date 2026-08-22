@@ -417,7 +417,7 @@ jobs:
             --region "${REGION}" \
             --format='yaml(status.conditions,status.failedCount,status.logUri)'
           gcloud logging read \
-            "resource.type=\"cloud_run_job\" AND resource.labels.job_name=\"${MIGRATION_JOB}\" AND resource.labels.execution_name=\"${execution}\"" \
+            "resource.type=\"cloud_run_job\" AND resource.labels.job_name=\"${MIGRATION_JOB}\" AND labels.\"run.googleapis.com/execution_name\"=\"${execution}\"" \
             --project "${PROJECT_ID}" \
             --freshness=1h \
             --limit=100 \

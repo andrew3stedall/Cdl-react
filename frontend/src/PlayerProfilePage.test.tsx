@@ -217,6 +217,7 @@ describe('PlayerProfilePage', () => {
 
     expect(container.querySelectorAll('[data-chart-kind="form"] .player-profile__chart-column')).toHaveLength(10);
     expect(container.querySelectorAll('[data-chart-kind="minutes"] .player-profile__chart-column')).toHaveLength(10);
+    expect(Array.from(container.querySelectorAll('[data-chart-kind="form"] .player-profile__chart-column')).map((column) => Number((column as HTMLElement).style.gridColumnStart))).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
     expect([...container.querySelectorAll('.player-profile__opponent-label')].slice(0, 10).map((node) => node.textContent)).toEqual([
       'WOL', 'bou', 'wol', 'BOU', 'CHE', 'tot', 'AVL', 'ful', 'eve', 'NEW',
     ]);
@@ -237,6 +238,24 @@ describe('PlayerProfilePage', () => {
     expect(container.textContent).toContain('Attacking assets');
     expect(container.textContent).toContain('Defensive assets');
     root.unmount();
+  });
+
+  test('right-aligns shorter fixture windows while keeping the newest fixture furthest right', async () => {
+    const oneFixtureClient = new MemorySquadClient();
+    oneFixtureClient.getPlayerHistory = async () => ({ ...history, history: history.history.slice(-1) });
+    const oneFixture = renderPage(oneFixtureClient);
+    await settle();
+    expect(Array.from(oneFixture.container.querySelectorAll('[data-chart-kind="form"] .player-profile__chart-column')).map((column) => Number((column as HTMLElement).style.gridColumnStart))).toEqual([10]);
+    expect(Array.from(oneFixture.container.querySelectorAll('[data-chart-kind="minutes"] .player-profile__chart-column')).map((column) => Number((column as HTMLElement).style.gridColumnStart))).toEqual([10]);
+    oneFixture.root.unmount();
+
+    const twoFixtureClient = new MemorySquadClient();
+    twoFixtureClient.getPlayerHistory = async () => ({ ...history, history: history.history.slice(-2) });
+    const twoFixtures = renderPage(twoFixtureClient);
+    await settle();
+    expect(Array.from(twoFixtures.container.querySelectorAll('[data-chart-kind="form"] .player-profile__chart-column')).map((column) => Number((column as HTMLElement).style.gridColumnStart))).toEqual([9, 10]);
+    expect([...twoFixtures.container.querySelectorAll('[data-chart-kind="form"] .player-profile__opponent-label')].map((node) => node.textContent)).toEqual(['eve', 'NEW']);
+    twoFixtures.root.unmount();
   });
 
   test('keeps the form chart scale at a minimum of ten points', async () => {

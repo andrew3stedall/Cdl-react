@@ -471,16 +471,16 @@ describe('SquadPage', () => {
     expect(container.querySelector('img[src="https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_43-110.webp"]')).not.toBeNull();
     const pitchHaaland = container.querySelector('button[aria-label="View Haaland details"]');
     expect(pitchHaaland?.className).toContain('form-band-steady');
-    expect(pitchHaaland?.querySelector('.squad-page__shirt.large')).not.toBeNull();
-    expect(pitchHaaland?.querySelector('.squad-page__pitch-shirt-crop > .squad-page__shirt.large')).not.toBeNull();
-    expect(pitchHaaland?.querySelector('.squad-page__pitch-player-name')?.textContent).toBe('Haaland');
+    expect(pitchHaaland?.querySelector('.player-card__shirt.large')).not.toBeNull();
+    expect(pitchHaaland?.querySelector('.player-card__shirt-crop > .player-card__shirt.large')).not.toBeNull();
+    expect(pitchHaaland?.querySelector('.player-card__name')?.textContent).toBe('Haaland');
     expect(pitchHaaland?.textContent).toContain('CHE');
-    expect(pitchHaaland?.querySelector('small')?.className).toContain('squad-page__opponent--fdr-3');
-    expect(pitchHaaland?.querySelector('small')?.getAttribute('title')).toBe('Balanced fixture');
+    expect(pitchHaaland?.querySelector('.player-card__opponent--fdr-3')).not.toBeNull();
+    expect(pitchHaaland?.querySelector('.player-card__opponents')?.getAttribute('title')).toBe('Balanced fixture');
     expect(pitchHaaland?.textContent).not.toContain('FDR');
     const pitchPickford = container.querySelector('button[aria-label="View Pickford details"]');
-    expect(pitchPickford?.querySelector('small')?.className).toContain('squad-page__opponent--fdr-4');
-    expect(pitchHaaland?.querySelector('.squad-page__form-dots')).not.toBeNull();
+    expect(pitchPickford?.querySelector('.player-card__opponent--fdr-4')).not.toBeNull();
+    expect(pitchHaaland?.querySelector('.player-card__form-dots')).not.toBeNull();
     expect(pitchHaaland?.textContent).not.toContain('7.4');
     expect(container.textContent).not.toContain('PostgreSQL');
 
@@ -492,8 +492,8 @@ describe('SquadPage', () => {
     expect(container.querySelector('[aria-label="Starting XI players table"]')).not.toBeNull();
     expect(window.localStorage.getItem('cdl:squad-view')).toBe('list');
     const startingTable = container.querySelector('[aria-label="Starting XI players table"]');
-    expect(startingTable?.querySelector('.squad-page__row-form')).not.toBeNull();
-    expect(startingTable?.querySelector('.squad-page__identity--circle')).not.toBeNull();
+    expect(startingTable?.querySelector('.player-card__form-dots')).not.toBeNull();
+    expect(startingTable?.querySelector('.player-card--list')).not.toBeNull();
     expect(startingTable?.textContent).toContain('CHE');
     expect(startingTable?.textContent).toContain('ars');
     expect(startingTable?.textContent).not.toContain('vs');

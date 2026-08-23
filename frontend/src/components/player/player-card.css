@@ -1,0 +1,247 @@
+.player-card {
+  --player-card-size: 4.05rem;
+  --player-card-form-tone: var(--squad-form-low, var(--muted-foreground));
+  align-items: center;
+  color: var(--foreground);
+  display: inline-flex;
+  min-width: 0;
+  position: relative;
+}
+
+.player-card--size-xs { --player-card-size: 3rem; }
+.player-card--size-sm { --player-card-size: 4.05rem; }
+.player-card--size-md { --player-card-size: 4.55rem; }
+.player-card--size-lg { --player-card-size: 5.25rem; }
+
+.player-card--pitch {
+  display: block;
+  inset: 0;
+  position: absolute;
+}
+
+.player-card--list,
+.player-card--token {
+  gap: 0.45rem;
+}
+
+.player-card--token {
+  display: inline-flex;
+  flex-direction: column;
+  height: var(--player-card-size);
+  justify-content: center;
+  width: var(--player-card-size);
+}
+
+.player-card--list {
+  align-items: center;
+  flex-direction: row;
+}
+
+.player-card--pitch .player-card__token {
+  height: 100%;
+  inset: 0;
+  position: absolute;
+  width: 100%;
+}
+
+.player-card__token {
+  align-items: center;
+  aspect-ratio: 1;
+  background: color-mix(in srgb, var(--squad-pitch, var(--secondary)) 88%, var(--squad-form-steady, var(--primary)) 12%);
+  border-radius: 50%;
+  display: flex;
+  flex: 0 0 var(--player-card-size);
+  height: var(--player-card-size);
+  justify-content: center;
+  overflow: visible;
+  position: relative;
+  text-align: center;
+  width: var(--player-card-size);
+}
+
+.player-card--pitch .player-card__token {
+  background: transparent;
+}
+
+.player-card__shirt-crop {
+  height: 52%;
+  left: 50%;
+  overflow: hidden;
+  position: absolute;
+  top: 0.2rem;
+  transform: translateX(-50%);
+  width: 92%;
+  z-index: 1;
+}
+
+.player-card__shirt-crop > .player-card__shirt.large {
+  height: 200%;
+  left: 50%;
+  max-width: none;
+  object-fit: contain;
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  width: 96%;
+}
+
+.player-card--size-xs .player-card__shirt-crop > .player-card__shirt.large {
+  height: 165%;
+}
+
+.player-card__shirt {
+  display: block;
+  height: 2.4rem;
+  object-fit: contain;
+  width: 2.8rem;
+}
+
+.player-card__shirt.large {
+  height: 3.8rem;
+  width: 4.2rem;
+}
+
+.player-card__name,
+.player-card__opponents {
+  left: 0.2rem;
+  max-width: calc(100% - 0.4rem);
+  overflow: hidden;
+  position: absolute;
+  right: 0.2rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  z-index: 2;
+}
+
+.player-card__name {
+  font-size: clamp(0.55rem, 1.65vw, 0.7rem);
+  line-height: 1;
+  top: 66%;
+  transform: translateY(-50%);
+}
+
+.player-card__opponents {
+  align-items: center;
+  display: flex;
+  font-size: clamp(0.47rem, 1.3vw, 0.58rem);
+  font-weight: 800;
+  gap: 0.18rem;
+  justify-content: center;
+  line-height: 1;
+  top: calc(66% + 0.68rem);
+}
+
+.player-card__opponent {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.player-card__opponent--placeholder { color: var(--muted-foreground); }
+
+.player-card__position-marker {
+  background: var(--player-position-color, var(--border));
+  border-radius: 50%;
+  height: 0.38rem;
+  position: absolute;
+  right: 0.45rem;
+  top: 0.55rem;
+  width: 0.38rem;
+  z-index: 3;
+}
+
+.player-card__position-marker.position-gkp { --player-position-color: var(--squad-position-gkp, #8b9bb4); }
+.player-card__position-marker.position-def { --player-position-color: var(--squad-position-def, #67a890); }
+.player-card__position-marker.position-mid { --player-position-color: var(--squad-position-mid, #c7a969); }
+.player-card__position-marker.position-fwd { --player-position-color: var(--squad-position-fwd, #be7d8a); }
+
+.player-card__role,
+.player-card__availability {
+  align-items: center;
+  background: var(--primary);
+  border-radius: 999px;
+  color: var(--primary-foreground);
+  display: inline-flex;
+  font-size: 0.42rem;
+  font-weight: 900;
+  height: 0.9rem;
+  justify-content: center;
+  line-height: 1;
+  min-width: 0.9rem;
+  padding: 0 0.18rem;
+  position: absolute;
+  z-index: 4;
+}
+
+.player-card__role { right: 0.18rem; top: 0.18rem; }
+.player-card__role--vice { background: var(--secondary); border: 1px solid var(--border); color: var(--foreground); font-size: 0.36rem; }
+.player-card__availability { background: var(--secondary); border: 1px solid var(--border); color: var(--squad-warning, var(--primary)); left: 0.18rem; top: 0.18rem; }
+
+.player-card__form {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  z-index: 5;
+}
+
+.player-card--form-below .player-card__form {
+  bottom: -0.86rem;
+  left: 0;
+  position: absolute;
+  right: 0;
+}
+
+.player-card--form-beside .player-card__form { flex: 0 0 auto; }
+
+.player-card__form-dots {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.13rem;
+  justify-content: center;
+  min-height: 0.85rem;
+}
+
+.player-card__form-dots i {
+  background: color-mix(in srgb, var(--foreground) 16%, transparent);
+  border-radius: 50%;
+  display: block;
+  height: 0.34rem;
+  width: 0.34rem;
+}
+
+.player-card__form-dots i.active { background: var(--player-card-form-tone); }
+.player-card__form-dots.form-band-negative { --player-card-form-tone: var(--squad-form-negative, #a8777e); }
+.player-card__form-dots.form-band-low { --player-card-form-tone: var(--squad-form-low, #71889a); }
+.player-card__form-dots.form-band-steady { --player-card-form-tone: var(--squad-form-steady, #a9966e); }
+.player-card__form-dots.form-band-high { --player-card-form-tone: var(--squad-form-high, #78a39a); }
+
+.player-card__opponent--fdr-1 { color: var(--cdl-fdr-1, var(--squad-fdr-very-easy, var(--primary))); }
+.player-card__opponent--fdr-2 { color: var(--cdl-fdr-2, var(--squad-fdr-easy, var(--primary))); }
+.player-card__opponent--fdr-3 { color: var(--cdl-fdr-3, var(--squad-fdr-balanced, var(--foreground))); }
+.player-card__opponent--fdr-4 { color: var(--cdl-fdr-4, var(--squad-fdr-hard, var(--primary))); }
+.player-card__opponent--fdr-5 { color: var(--cdl-fdr-5, var(--squad-fdr-very-hard, var(--primary))); }
+
+[data-fdr-display-mode='fill'] .player-card__opponent--fdr-1,
+[data-fdr-display-mode='fill'] .player-card__opponent--fdr-2,
+[data-fdr-display-mode='fill'] .player-card__opponent--fdr-3,
+[data-fdr-display-mode='fill'] .player-card__opponent--fdr-4,
+[data-fdr-display-mode='fill'] .player-card__opponent--fdr-5 {
+  border-radius: 0.25rem;
+  display: inline-block;
+  padding: 0.05rem 0.22rem;
+}
+
+[data-fdr-display-mode='fill'] .player-card__opponent--fdr-1 { background: var(--cdl-fdr-fill-1); color: var(--cdl-fdr-fill-foreground-1); }
+[data-fdr-display-mode='fill'] .player-card__opponent--fdr-2 { background: var(--cdl-fdr-fill-2); color: var(--cdl-fdr-fill-foreground-2); }
+[data-fdr-display-mode='fill'] .player-card__opponent--fdr-3 { background: var(--cdl-fdr-fill-3); color: var(--cdl-fdr-fill-foreground-3); }
+[data-fdr-display-mode='fill'] .player-card__opponent--fdr-4 { background: var(--cdl-fdr-fill-4); color: var(--cdl-fdr-fill-foreground-4); }
+[data-fdr-display-mode='fill'] .player-card__opponent--fdr-5 { background: var(--cdl-fdr-fill-5); color: var(--cdl-fdr-fill-foreground-5); }
+
+@media (max-width: 560px) {
+  .player-card--size-xs { --player-card-size: 2.75rem; }
+  .player-card--size-sm { --player-card-size: 3.7rem; }
+  .player-card__name { font-size: 0.6rem; }
+  .player-card__opponents { font-size: 0.5rem; }
+  .player-card__form-dots i { height: 0.3rem; width: 0.3rem; }
+}

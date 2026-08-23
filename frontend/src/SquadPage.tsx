@@ -30,8 +30,8 @@ import {
 } from 'lucide-react';
 
 import { Button } from './components/ui/button';
+import { FormDots, PlayerCard, type PlayerCardPlayer, formBand } from './components/player/PlayerCard';
 import type { AttackDirection, ThemePreset } from './contracts';
-import { officialFplShirtUrl } from './fpl-shirt-assets';
 import { availabilityChance, getAvailabilityIssue, hasAvailabilityIssue } from './player-availability';
 import {
   HttpSquadClient,
@@ -1275,13 +1275,7 @@ function PitchCard({
       onClick={handleClick}
       type="button"
     >
-      <span aria-hidden="true" className="squad-page__pitch-shirt-crop"><TeamShirt large team={player.team} /></span>
-      <strong className="squad-page__pitch-player-name">{shortPlayerName(player.displayName)}</strong>
-      <span className="squad-page__pitch-player-form"><FormDots value={player.form} /></span>
-      <small className={`squad-page__fixture-label-list ${fixtureOpponentClassName(player.nextFixtures[0]?.difficulty)}`} title={player.nextFixtures.length === 1 ? fixtureDifficultyTitle(player.nextFixtures[0]?.difficulty) : 'Next gameweek fixtures'}><FixtureLabels player={player} /></small>
-      {player.captain ? <span className="squad-page__captain">C</span> : null}
-      {player.viceCaptain ? <span className="squad-page__captain vice">VC</span> : null}
-      <AvailabilityFlag player={player} />
+      <PlayerCard formPosition="below" layout="pitch" player={toPlayerCardPlayer(player)} showPositionMarker={false} size={compact ? 'sm' : 'md'} />
       {compact && benchOrder !== undefined ? <span className="squad-page__bench-order">{benchOrder === 0 ? 'GK' : benchOrder}</span> : null}
     </button>
   );
@@ -1458,9 +1452,6 @@ function SquadList({
                       <td>
                         <div className="squad-page__player-row-identity">
                           <PlayerIdentity circle player={player} />
-                          <span className="squad-page__row-form" title={`Form ${formatMetric(player.form)}`}><FormDots value={player.form} /></span>
-                          {player.captain ? <span className="squad-page__row-badge">C</span> : null}
-                          {player.viceCaptain ? <span className="squad-page__row-badge vice">VC</span> : null}
                         </div>
                       </td>
                       <td><strong>{formatInteger(player.points)}</strong></td>
@@ -1486,8 +1477,8 @@ function DrawerLayer({ children, onClose }: { children: ReactNode; onClose: () =
 function DrawerHeader({ onClose, player, title }: { onClose: () => void; player?: PlayerView; title: string }) {
   return (
     <header className="squad-page__drawer-header">
-      {player ? <TeamShirt large team={player.team} /> : <span className="squad-page__brand-mark"><Shield size={22} /></span>}
-      <div><h2>{title}</h2>{player ? <p><PositionMarker position={player.position} /> · <FixtureLabels player={player} /></p> : null}</div>
+      {player ? <PlayerCard formPosition="hidden" layout="token" player={toPlayerCardPlayer(player)} showOpponent={false} showPositionMarker={false} size="xs" /> : <span className="squad-page__brand-mark"><Shield size={22} /></span>}
+      <div><h2>{title}</h2>{player ? <p><FixtureLabels player={player} /></p> : null}</div>
       <button aria-label="Close drawer" className="squad-page__icon-button" onClick={onClose} type="button"><X size={19} /></button>
     </header>
   );
@@ -1591,22 +1582,24 @@ function TradeDrawer({
 }
 
 function PlayerIdentity({ circle = false, large = false, player, showForm = false, showMeta = true }: { circle?: boolean; large?: boolean; player: PlayerView; showForm?: boolean; showMeta?: boolean }) {
-  if (circle) {
-    return (
-      <span className="squad-page__identity squad-page__identity--circle">
-        <span aria-hidden="true" className="squad-page__identity-circle-shirt-crop"><TeamShirt large team={player.team} /></span>
-        <strong className="squad-page__identity-circle-name">{shortPlayerName(player.displayName)}</strong>
-        <small className="squad-page__identity-circle-opponent squad-page__fixture-label-list"><FixtureLabels player={player} /></small>
-      </span>
-    );
-  }
-  return (
-    <span className={`squad-page__identity ${large ? 'large' : ''}`}>
-      <PositionMarker position={player.position} />
-      <TeamShirt large={large} team={player.team} />
-      <span><strong>{player.displayName}</strong>{showForm ? <span className="squad-page__list-form"><FormDots value={player.form} /></span> : null}{showMeta ? <small className="squad-page__fixture-label-list"><FixtureLabels player={player} /></small> : null}</span>
-    </span>
-  );
+  return <PlayerCard className="squad-page__shared-player-card" formPosition={circle || showForm ? 'beside' : 'hidden'} layout="list" player={toPlayerCardPlayer(player)} showOpponent={showMeta} size={circle ? 'sm' : large ? 'md' : 'xs'} />;
+}
+
+function toPlayerCardPlayer(player: PlayerView): PlayerCardPlayer {
+  return {
+    availabilityChance: player.chanceOfPlaying,
+    captain: player.captain,
+    displayName: player.displayName,
+    fixtures: player.nextFixtures.map((fixture) => ({
+      difficulty: fixture.difficulty,
+      label: formatOpponentFixtureLabel(fixture.opponent.short_name ?? fixture.opponent.name, fixture.is_home),
+      title: fixtureDifficultyTitle(fixture.difficulty),
+    })),
+    form: player.form,
+    position: player.position,
+    team: player.team,
+    viceCaptain: player.viceCaptain,
+  };
 }
 
 function FixtureLabels({ player }: { player: PlayerView }) {
@@ -1614,28 +1607,6 @@ function FixtureLabels({ player }: { player: PlayerView }) {
     return <span className="squad-page__opponent is-placeholder">Next —</span>;
   }
   return <>{player.nextFixtures.map((fixture) => <span className={fixtureOpponentClassName(fixture.difficulty)} key={fixture.fixture_id} title={fixtureDifficultyTitle(fixture.difficulty)}>{formatOpponentFixtureLabel(fixture.opponent.short_name ?? fixture.opponent.name, fixture.is_home)}</span>)}</>;
-}
-
-function PositionMarker({ position }: { position: string }) {
-  return <span aria-hidden="true" className={`squad-page__position-marker position-${normalizePosition(position).toLowerCase()}`} title={`${positionLabel(position)} player`} />;
-}
-
-export function TeamShirt({ large = false, team }: { large?: boolean; team: string }) {
-  const normalized = team.trim().toLowerCase();
-  const officialSrc = officialFplShirtUrl(team, large);
-  const fallbackSrc = `/team-shirts/${normalized}.svg`;
-  return (
-    <img
-      alt=""
-      aria-hidden="true"
-      className={`squad-page__shirt ${large ? 'large' : ''}`}
-      onError={(event) => {
-        event.currentTarget.onerror = null;
-        event.currentTarget.src = officialSrc ? fallbackSrc : '/team-shirts/unknown.svg';
-      }}
-      src={officialSrc ?? '/team-shirts/unknown.svg'}
-    />
-  );
 }
 
 function AvailabilityFlag({ inline = false, player }: { inline?: boolean; player: PlayerView }) {
@@ -1651,16 +1622,6 @@ function AvailabilityFlag({ inline = false, player }: { inline?: boolean; player
 
 function Metric({ dots = false, label, placeholder = false, value }: { dots?: boolean; label: string; placeholder?: boolean; value: string }) {
   return <div className={`squad-page__metric ${placeholder ? 'is-placeholder' : ''}`}><span>{label}</span><strong>{value}</strong>{dots ? <FormDots value={Number(value)} /> : null}{placeholder ? <small>Not in source</small> : null}</div>;
-}
-
-export function FormDots({ value }: { value: number | null }) {
-  const active = value === null || Number.isNaN(value)
-    ? 0
-    : value < 0
-      ? 1
-      : Math.max(0, Math.min(5, Math.round(value / 2)));
-  const band = formBand(value);
-  return <span aria-hidden="true" className={`squad-page__form-dots form-band-${band}`}>{Array.from({ length: 5 }, (_, index) => <i className={index < active ? 'active' : ''} key={index} />)}</span>;
 }
 
 function ChangeReview({ label, players }: { label: string; players: PlayerView[] }) {
@@ -2001,15 +1962,6 @@ function normalizePosition(position: string): string {
   return normalized;
 }
 
-function positionLabel(position: string): string {
-  const normalized = normalizePosition(position);
-  if (normalized === 'GKP') return 'Goalkeeper';
-  if (normalized === 'DEF') return 'Defender';
-  if (normalized === 'MID') return 'Midfielder';
-  if (normalized === 'FWD') return 'Forward';
-  return normalized;
-}
-
 function firstNumber(...values: Array<number | null | undefined>): number | null {
   return values.find((value): value is number => typeof value === 'number') ?? null;
 }
@@ -2024,14 +1976,6 @@ function formatMetric(value: number | null): string {
 
 function formatInteger(value: number | null): string {
   return value === null || Number.isNaN(value) ? '—' : String(value);
-}
-
-export function formBand(value: number | null): 'negative' | 'low' | 'steady' | 'high' | 'unknown' {
-  if (value === null || Number.isNaN(value)) return 'unknown';
-  if (value < 0) return 'negative';
-  if (value < 4) return 'low';
-  if (value < 10) return 'steady';
-  return 'high';
 }
 
 export function formatFixtureLabel(player: Pick<PlayerView, 'nextOpponent' | 'nextFixtureIsHome'>): string {
@@ -2068,8 +2012,4 @@ function isAvailabilityRisk(player: PlayerView): boolean {
   });
 }
 
-export function shortPlayerName(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length <= 2) return name;
-  return `${parts[0][0]}. ${parts.at(-1)}`;
-}
+export { formBand, shortPlayerName } from './components/player/PlayerCard';

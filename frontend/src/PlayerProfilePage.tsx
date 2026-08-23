@@ -17,13 +17,11 @@ import {
 } from 'lucide-react';
 
 import { Button } from './components/ui/button';
+import { PlayerCard, shortPlayerName, type PlayerCardPlayer } from './components/player/PlayerCard';
 import {
   fixtureDifficultyTitle,
-  fixtureOpponentClassName,
   applySubstitution,
   getSubstitutionOptions,
-  shortPlayerName,
-  TeamShirt,
   type SubstitutionOption,
 } from './SquadPage';
 import { availabilityChance, getAvailabilityIssue, type AvailabilityIssue } from './player-availability';
@@ -209,7 +207,6 @@ export function PlayerProfilePage({
         : [],
     [history, nextFixtures],
   );
-  const nextFixture = nextFixtures[0] ?? null;
   const substitutionOptions = useMemo(
     () => selection && selectedLineupPlayer
       ? getSubstitutionOptions(selection.players, selectedLineupPlayer.id)
@@ -402,13 +399,14 @@ export function PlayerProfilePage({
       <div className="player-profile__content">
       <section aria-label="Player identity" className="player-profile__card player-profile__identity-card">
         <div className="player-profile__identity-main">
-          <div aria-label={`Shirt for ${player.display_name}`} className="player-profile__shirt-token" role="img">
-            <span aria-hidden="true" className="player-profile__shirt-crop">
-              <TeamShirt large team={player.epl_team.short_name ?? player.epl_team.name} />
-            </span>
-            <strong className="player-profile__shirt-name">{shortPlayerName(player.display_name)}</strong>
-            {nextFixtures.length > 0 ? <small className={`player-profile__shirt-opponents player-profile__shirt-opponent ${fixtureOpponentClassName(nextFixture?.difficulty)}`} title={nextFixtures.length === 1 ? fixtureDifficultyTitle(nextFixture?.difficulty) : 'Next gameweek fixtures'}>{nextFixtures.map((fixture) => <span className={fixtureOpponentClassName(fixture.difficulty)} key={String(fixture.fixture_id)} title={fixtureDifficultyTitle(fixture.difficulty)}>{formatOpponentLabel(fixture.opponent_short_name ?? fixture.opponent_name ?? null, fixture.is_home)}</span>)}</small> : null}
-          </div>
+          <PlayerCard
+            ariaLabel={`Shirt for ${player.display_name}`}
+            className="player-profile__player-card"
+            formPosition="hidden"
+            layout="token"
+            player={toPlayerCardPlayer(player, nextFixtures)}
+            size="lg"
+          />
           <div className="player-profile__identity-copy">
             <div className="player-profile__identity-heading">
               <p>{player.position} <span aria-hidden="true">·</span> {player.epl_team.short_name ?? player.epl_team.name}</p>
@@ -654,11 +652,7 @@ function ReviewPlayerColumn({ fdrDisplayMode, fixtures, idPrefix, label, player,
         <strong>{slotLabel ?? 'Squad'}</strong>
       </div>
       <div className="player-profile__comparison-identity">
-        <div aria-label={`Shirt for ${player.display_name}`} className="player-profile__shirt-token" role="img">
-          <span aria-hidden="true" className="player-profile__shirt-crop"><TeamShirt large team={player.epl_team.short_name ?? player.epl_team.name} /></span>
-          <strong className="player-profile__shirt-name">{shortPlayerName(player.display_name)}</strong>
-          {nextFixtures.length > 0 ? <small className="player-profile__shirt-opponents">{nextFixtures.map((fixture) => <span className={fixtureOpponentClassName(fixture.difficulty)} key={fixture.fixture_id}>{formatOpponentLabel(fixture.opponent.short_name ?? fixture.opponent.name, fixture.is_home)}</span>)}</small> : null}
-        </div>
+        <PlayerCard ariaLabel={`Shirt for ${player.display_name}`} className="player-profile__player-card" formPosition="hidden" layout="token" player={toPlayerCardPlayer(player)} size="xs" />
         <div>
           <h3>{player.display_name}</h3>
           <p>{player.position} <span aria-hidden="true">·</span> {player.epl_team.short_name ?? player.epl_team.name}</p>
@@ -673,6 +667,39 @@ function ReviewPlayerColumn({ fdrDisplayMode, fixtures, idPrefix, label, player,
       </ChartCard>
     </article>
   );
+}
+
+function toPlayerCardPlayer(player: SquadApiPlayer, selectedFixtures?: ProfileNextFixture[]): PlayerCardPlayer {
+  const nextFixtures = selectedFixtures ?? (player.next_fixtures?.length ? player.next_fixtures.map((fixture) => ({
+    fixture_id: fixture.fixture_id,
+    gameweek: fixture.gameweek?.number ?? null,
+    opponent_team_id: fixture.opponent.id,
+    opponent_name: fixture.opponent.name,
+    opponent_short_name: fixture.opponent.short_name ?? fixture.opponent.name,
+    difficulty: fixture.difficulty ?? null,
+    is_home: fixture.is_home,
+    opponent_difficulty: null,
+  })) : player.next_fixture ? [{
+    fixture_id: player.next_fixture.fixture_id,
+    gameweek: player.next_fixture.gameweek?.number ?? null,
+    opponent_team_id: player.next_fixture.opponent.id,
+    opponent_name: player.next_fixture.opponent.name,
+    opponent_short_name: player.next_fixture.opponent.short_name ?? player.next_fixture.opponent.name,
+    difficulty: player.next_fixture.difficulty ?? null,
+    is_home: player.next_fixture.is_home,
+    opponent_difficulty: null,
+  }] : []);
+  return {
+    displayName: player.display_name,
+    fixtures: nextFixtures.map((fixture) => ({
+      difficulty: fixture.difficulty,
+      label: formatOpponentLabel(fixture.opponent_short_name ?? fixture.opponent_name ?? null, fixture.is_home),
+      title: fixtureDifficultyTitle(fixture.difficulty),
+    })),
+    form: player.form,
+    position: player.position,
+    team: player.epl_team.short_name ?? player.epl_team.name,
+  };
 }
 
 function ChartCard({ children, className = '', compact = false, idPrefix, title }: { children: ReactNode; className?: string; compact?: boolean; idPrefix?: string; title: string }) {

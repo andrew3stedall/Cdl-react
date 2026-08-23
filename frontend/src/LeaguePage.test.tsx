@@ -212,11 +212,11 @@ describe('LeaguePage', () => {
     expect(client.squadRequests).toEqual(['fixture-1301']);
     expect(container.querySelector('[aria-label="Squad comparison"]')?.textContent).toContain('Castle Keeper');
     expect(container.querySelectorAll('.fixture-squad-pitch')).toHaveLength(1);
-    expect(container.querySelectorAll('.fixture-squad-pitch .squad-page__pitch-shirt-crop img')).toHaveLength(2);
-    expect(container.querySelectorAll('.fixture-squad-pitch .squad-page__form-dots')).toHaveLength(2);
-    expect(container.querySelectorAll('.fixture-squad-roster .squad-page__form-dots')).toHaveLength(4);
-    expect(container.querySelector('.fixture-squad-pitch .squad-page__captain')?.textContent).toBe('C');
-    expect(container.querySelector('.fixture-squad-pitch .squad-page__opponent--fdr-3')).not.toBeNull();
+    expect(container.querySelectorAll('.fixture-squad-pitch .player-card__shirt-crop img')).toHaveLength(2);
+    expect(container.querySelectorAll('.fixture-squad-pitch .player-card__form-dots')).toHaveLength(2);
+    expect(container.querySelectorAll('.fixture-squad-roster .player-card__form-dots')).toHaveLength(4);
+    expect(container.querySelector('.fixture-squad-pitch .player-card__role')?.textContent).toBe('C');
+    expect(container.querySelector('.fixture-squad-pitch .player-card__opponent--fdr-3')).not.toBeNull();
     expect(container.querySelectorAll('.fixture-squad-roster')).toHaveLength(4);
     expect(container.textContent).toContain('Andrew');
     expect(container.textContent).toContain('DJ');

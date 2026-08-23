@@ -76,6 +76,12 @@ def create_app() -> FastAPI:
                 "description": "A deep, low-contrast workspace for evening sessions.",
                 "is_default": False,
             },
+            {
+                "name": "adaptive",
+                "label": "Adaptive mode",
+                "description": "Switches between light and dark mode using your local time of day.",
+                "is_default": False,
+            },
         ]
 
     mount_static_frontend(

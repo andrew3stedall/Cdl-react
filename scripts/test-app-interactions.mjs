@@ -712,7 +712,7 @@ async function testMobileNavigationClearance(page) {
   await page.getByRole('button', { name: /Option \d+/ }).click();
   const sheet = page.locator('#fdr-scale-sheet');
   await sheet.waitFor({ state: 'visible' });
-  const chooserGeometry = await page.locator('.profile-fdr-scale-option').first().evaluate((element) => {
+  const chooserGeometry = await page.locator('.profile-fdr-scale-option').first().evaluate((element, initialScrollY) => {
     const sheetElement = element.closest('#fdr-scale-sheet');
     const option = element.getBoundingClientRect();
     const sheetRect = sheetElement?.getBoundingClientRect();
@@ -723,9 +723,9 @@ async function testMobileNavigationClearance(page) {
       sheetWidth: sheetRect?.width ?? null,
       viewportWidth: window.innerWidth,
       windowScrollY: window.scrollY,
-      initialChooserScrollY,
+      initialChooserScrollY: initialScrollY,
     };
-  });
+  }, initialChooserScrollY);
   if (!chooserGeometry
     || chooserGeometry.optionWidth < chooserGeometry.viewportWidth * 0.8
     || chooserGeometry.sheetWidth !== chooserGeometry.viewportWidth

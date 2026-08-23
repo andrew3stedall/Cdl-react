@@ -880,11 +880,6 @@
   font-size: 0.55rem;
 }
 
-.player-profile__comparison-identity .player-card__opponents {
-  font-size: 0.45rem;
-  top: calc(66% + 0.55rem);
-}
-
 .player-profile__comparison-identity .player-profile__shirt-token {
   flex-basis: 3.6rem;
   height: 3.6rem;

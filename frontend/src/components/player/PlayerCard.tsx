@@ -76,7 +76,11 @@ function PlayerToken({ player, showOpponent, showPositionMarker }: { player: Pla
       </span>
       <strong className="player-card__name">{shortPlayerName(player.displayName)}</strong>
       {showOpponent ? (
-        <small className="player-card__opponents" title={fixtures.length === 1 ? fixtures[0]?.title : 'Next gameweek fixtures'}>
+        <small
+          className={`player-card__opponents ${fixtures.length > 1 ? 'player-card__opponents--multiple' : 'player-card__opponents--single'}`}
+          data-fixture-count={fixtures.length}
+          title={fixtures.length === 1 ? fixtures[0]?.title : 'Next gameweek fixtures'}
+        >
           {fixtures.length > 0
             ? fixtures.map((fixture) => <span className={fixtureClassName(fixture.difficulty)} key={`${fixture.label}-${fixture.difficulty ?? 'unknown'}`} title={fixture.title}>{fixture.label}</span>)
             : <span className="player-card__opponent player-card__opponent--placeholder">Next —</span>}

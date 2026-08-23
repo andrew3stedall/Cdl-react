@@ -14,8 +14,9 @@ import {
 
 import { Button } from './components/ui/button';
 import { Card } from './components/ui/card';
+import { PlayerCard, type PlayerCardPlayer, formBand } from './components/player/PlayerCard';
 import type { AttackDirection } from './contracts';
-import { fixtureDifficultyTitle, fixtureOpponentClassName, FormDots, formBand, shortPlayerName, TeamShirt } from './SquadPage';
+import { fixtureDifficultyTitle } from './SquadPage';
 import {
   HttpLeagueClient,
   type FixtureDetailResponse,
@@ -472,8 +473,21 @@ function FixturePitchPlayer({ player }: { player: FixtureSquad['starters'][numbe
 }
 
 function FixturePlayerToken({ fixtureLabel, player, shirtTeam }: { fixtureLabel: string; player: FixtureSquad['starters'][number]; shirtTeam: string }) {
-  const difficultyClass = fixtureOpponentClassName(player.nextFixtureDifficulty);
-  return <div className={`squad-page__pitch-player fixture-squad-pitch__player position-${player.position.toLowerCase()} form-band-${formBand(player.form)}`} data-player-id={player.id} title={`${player.displayName} · ${player.points} pts`}><span aria-hidden="true" className={`squad-page__position-marker position-${player.position.toLowerCase()}`} /><span aria-hidden="true" className="squad-page__pitch-shirt-crop"><TeamShirt large team={shirtTeam} /></span><strong className="squad-page__pitch-player-name">{shortPlayerName(player.displayName)}</strong><span className="squad-page__pitch-player-form"><FormDots value={player.form} /></span><small className={difficultyClass} title={fixtureDifficultyTitle(player.nextFixtureDifficulty)}>{fixtureLabel}</small>{player.isCaptain ? <span className="squad-page__captain">C</span> : null}{player.isViceCaptain ? <span className="squad-page__captain vice">VC</span> : null}</div>;
+  return <div className={`squad-page__pitch-player fixture-squad-pitch__player position-${player.position.toLowerCase()} form-band-${formBand(player.form)}`} data-player-id={player.id} title={`${player.displayName} · ${player.points} pts`}><PlayerCard formPosition="below" layout="pitch" player={toFixtureCardPlayer(player, fixtureLabel, shirtTeam)} showPositionMarker={false} size="md" /></div>;
+}
+
+function toFixtureCardPlayer(player: FixtureSquad['players'][number], fixtureLabel?: string, shirtTeam?: string): PlayerCardPlayer {
+  const opponent = player.nextOpponent?.shortName ?? player.nextOpponent?.name;
+  const label = fixtureLabel ?? (opponent ? (player.nextFixtureIsHome === true ? opponent.toUpperCase() : opponent.toLowerCase()) : 'Next —');
+  return {
+    captain: player.isCaptain,
+    displayName: player.displayName,
+    fixtures: [{ difficulty: player.nextFixtureDifficulty, label, title: fixtureDifficultyTitle(player.nextFixtureDifficulty) }],
+    form: player.form,
+    position: player.position,
+    team: shirtTeam ?? player.club?.shortName ?? player.club?.name ?? 'unknown',
+    viceCaptain: player.isViceCaptain,
+  };
 }
 
 function FixtureRosterColumn({ label, players, squad }: { label: 'Substitutes' | 'Reserves'; players: FixtureSquad['bench']; squad: FixtureSquad }) {
@@ -493,7 +507,7 @@ function FixtureRosterPlayer({ player }: { player: FixtureSquad['bench'][number]
 function OpponentPrediction({ onToggle, players, predictedIds, squad }: { onToggle: (player: FixtureSquad['starters'][number]) => void; players: FixtureSquad['players']; predictedIds: Set<string>; squad: FixtureSquad }) {
   const counts = positionCounts(predictedIds, players);
   const isLegal = predictedIds.size === 11 && Object.entries(counts).every(([position, count]) => count >= positionMinimum(position) && count <= positionMaximum(position));
-  return <section aria-label={`${fixtureParticipantName(squad.team)} lineup prediction`} className="fixture-lineup-prediction"><header><div><p className="eyebrow">Opponent squad</p><h3>Predict their XI</h3></div><strong>{predictedIds.size}/11</strong></header><p className="fixture-lineup-prediction__hint">Tap players to add or remove them from the predicted Starting XI.</p><div className="fixture-lineup-prediction__status" data-valid={isLegal ? 'true' : 'false'}>{isLegal ? 'Valid Starting XI' : 'Choose a legal formation to complete your prediction.'}</div><div className="fixture-lineup-prediction__players">{['FWD', 'MID', 'DEF', 'GKP'].map((position) => <div className="fixture-lineup-prediction__group" key={position}><strong>{positionLabel(position)}s</strong><div>{players.filter((player) => player.position === position).map((player) => { const selected = predictedIds.has(player.id); const canAdd = selected || (predictedIds.size < 11 && counts[position] < positionMaximum(position)); return <button aria-label={`${selected ? 'Remove' : 'Add'} ${player.displayName} ${selected ? 'from' : 'to'} predicted XI`} aria-pressed={selected} className={`fixture-lineup-prediction__player${selected ? ' is-selected' : ''}`} disabled={!canAdd} key={player.id} onClick={() => onToggle(player)} title={selected ? `Remove ${player.displayName} from predicted XI` : `Add ${player.displayName} to predicted XI`} type="button"><span>{player.displayName}</span><small>{selected ? 'Starting' : 'Available'}</small></button>; })}</div></div>)}</div></section>;
+  return <section aria-label={`${fixtureParticipantName(squad.team)} lineup prediction`} className="fixture-lineup-prediction"><header><div><p className="eyebrow">Opponent squad</p><h3>Predict their XI</h3></div><strong>{predictedIds.size}/11</strong></header><p className="fixture-lineup-prediction__hint">Tap players to add or remove them from the predicted Starting XI.</p><div className="fixture-lineup-prediction__status" data-valid={isLegal ? 'true' : 'false'}>{isLegal ? 'Valid Starting XI' : 'Choose a legal formation to complete your prediction.'}</div><div className="fixture-lineup-prediction__players">{['FWD', 'MID', 'DEF', 'GKP'].map((position) => <div className="fixture-lineup-prediction__group" key={position}><strong>{positionLabel(position)}s</strong><div>{players.filter((player) => player.position === position).map((player) => { const selected = predictedIds.has(player.id); const canAdd = selected || (predictedIds.size < 11 && counts[position] < positionMaximum(position)); return <button aria-label={`${selected ? 'Remove' : 'Add'} ${player.displayName} ${selected ? 'from' : 'to'} predicted XI`} aria-pressed={selected} className={`fixture-lineup-prediction__player${selected ? ' is-selected' : ''}`} disabled={!canAdd} key={player.id} onClick={() => onToggle(player)} title={selected ? `Remove ${player.displayName} from predicted XI` : `Add ${player.displayName} to predicted XI`} type="button"><PlayerCard formPosition="beside" layout="list" player={toFixtureCardPlayer(player)} size="xs" /><small>{selected ? 'Starting' : 'Available'}</small></button>; })}</div></div>)}</div></section>;
 }
 
 function positionCounts(ids: Set<string>, players: FixtureSquad['players']): Record<string, number> {

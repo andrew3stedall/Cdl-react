@@ -25,12 +25,13 @@ import {
   getFdrFillPalette,
   getFdrPalette,
   getFdrColourScale,
+  type FdrCustomAnchors,
   type FdrColourScale,
   type FdrDisplayMode,
 } from './fdr-colour-scales';
 import { getThemeMode, themePresets } from './theme-presets';
 import { useThemePreset } from './theme-preset-provider';
-import { themeColourOptions, type ThemeColourMode } from './theme-colours';
+import { getThemeColourForMode, themeColourOptions } from './theme-colours';
 import './profile-page.css';
 
 interface ProfilePageProps {
@@ -45,14 +46,15 @@ export function ProfilePage({ onRefresh, onSignOut, session }: ProfilePageProps)
     fdrDisplayMode,
     fdrScale,
     fdrScaleReversed,
-    lightThemeColour,
-    darkThemeColour,
+    customFdrAnchors,
+    themeColour,
     preset,
     saveStatus,
     setAttackDirection,
     setFdrDisplayMode,
     setFdrScale,
     setFdrScaleReversed,
+    setCustomFdrAnchors,
     setThemeColour,
     setPresetName,
   } = useThemePreset();
@@ -63,21 +65,39 @@ export function ProfilePage({ onRefresh, onSignOut, session }: ProfilePageProps)
 
     const documentElement = document.documentElement;
     const body = document.body;
+    const scrollX = window.scrollX;
+    const scrollY = window.scrollY;
     const previousDocumentOverflow = documentElement.style.overflow;
     const previousDocumentOverscrollBehavior = documentElement.style.overscrollBehavior;
     const previousBodyOverflow = body.style.overflow;
     const previousBodyOverscrollBehavior = body.style.overscrollBehavior;
+    const previousBodyPosition = body.style.position;
+    const previousBodyTop = body.style.top;
+    const previousBodyLeft = body.style.left;
+    const previousBodyRight = body.style.right;
+    const previousBodyWidth = body.style.width;
 
     documentElement.style.overflow = 'hidden';
     documentElement.style.overscrollBehavior = 'none';
     body.style.overflow = 'hidden';
     body.style.overscrollBehavior = 'none';
+    body.style.position = 'fixed';
+    body.style.top = `-${scrollY}px`;
+    body.style.left = `-${scrollX}px`;
+    body.style.right = '0';
+    body.style.width = '100%';
 
     return () => {
       documentElement.style.overflow = previousDocumentOverflow;
       documentElement.style.overscrollBehavior = previousDocumentOverscrollBehavior;
       body.style.overflow = previousBodyOverflow;
       body.style.overscrollBehavior = previousBodyOverscrollBehavior;
+      body.style.position = previousBodyPosition;
+      body.style.top = previousBodyTop;
+      body.style.left = previousBodyLeft;
+      body.style.right = previousBodyRight;
+      body.style.width = previousBodyWidth;
+      window.scrollTo(scrollX, scrollY);
     };
   }, [isFdrScaleSheetOpen]);
 
@@ -145,8 +165,7 @@ export function ProfilePage({ onRefresh, onSignOut, session }: ProfilePageProps)
             ))}
           </div>
           <ThemeColourControls
-            darkThemeColour={darkThemeColour}
-            lightThemeColour={lightThemeColour}
+            themeColour={themeColour}
             onSelect={setThemeColour}
           />
           <p aria-live="polite" className="profile-save-status" role="status">
@@ -189,6 +208,7 @@ export function ProfilePage({ onRefresh, onSignOut, session }: ProfilePageProps)
             mode={themeMode}
             reversed={fdrScaleReversed}
             scale={selectedFdrScale}
+            customAnchors={customFdrAnchors}
           />
         </div>
         <div aria-label="FDR display style" className="profile-fdr-display-mode" role="group">
@@ -245,7 +265,17 @@ export function ProfilePage({ onRefresh, onSignOut, session }: ProfilePageProps)
             {fdrColourScales.map((scale, index) => (
               <div key={scale.name}>
                 {scale.group === 'Custom' && fdrColourScales[index - 1]?.group !== 'Custom' ? (
-                  <h3 className="profile-fdr-custom-heading">Three-colour options</h3>
+                  <>
+                    <h3 className="profile-fdr-custom-heading">Custom scales</h3>
+                    <CustomFdrScaleEditor
+                      anchors={customFdrAnchors}
+                      onChange={setCustomFdrAnchors}
+                      onUse={() => {
+                        setFdrScale('CustomHex');
+                        setIsFdrScaleSheetOpen(false);
+                      }}
+                    />
+                  </>
                 ) : null}
                 <button
                   aria-label={`FDR colour scale option ${index + 1}`}
@@ -265,6 +295,7 @@ export function ProfilePage({ onRefresh, onSignOut, session }: ProfilePageProps)
                       mode={themeMode}
                       reversed={fdrScaleReversed}
                       scale={scale}
+                      customAnchors={customFdrAnchors}
                     />
                   </span>
                   <span aria-hidden="true" className="profile-preset-check">
@@ -368,20 +399,28 @@ function FdrPalettePreview({
   mode,
   reversed,
   scale,
+  customAnchors,
 }: {
   displayMode: FdrDisplayMode;
   mode: 'light' | 'dark';
   reversed: boolean;
   scale: FdrColourScale;
+  customAnchors: FdrCustomAnchors;
 }) {
-  const palette = getFdrPalette(scale.name, mode, reversed);
+  const palette = getFdrPalette(scale.name, mode, reversed, customAnchors);
   return (
     <div className="profile-fdr-preview" data-mode={mode}>
       <div className="profile-fdr-preview__header">
         <strong>{mode === 'light' ? 'Light theme' : 'Dark theme'}</strong>
         <small>{displayMode === 'font' ? 'Coloured font' : 'Coloured fill'}</small>
       </div>
-      <FdrPaletteBar displayMode={displayMode} mode={mode} reversed={reversed} scale={scale} />
+      <FdrPaletteBar
+        customAnchors={customAnchors}
+        displayMode={displayMode}
+        mode={mode}
+        reversed={reversed}
+        scale={scale}
+      />
       <div className="profile-fdr-preview__labels">
         {palette.map((colour, index) => (
           <span key={`${scale.name}-${mode}-${index}`} style={{ color: colour }}>
@@ -399,13 +438,15 @@ function FdrPaletteBar({
   mode,
   reversed,
   scale,
+  customAnchors,
 }: {
   displayMode: FdrDisplayMode;
   mode: 'light' | 'dark';
   reversed: boolean;
   scale: FdrColourScale;
+  customAnchors: FdrCustomAnchors;
 }) {
-  const palette = getFdrDisplayPalette(scale.name, mode, reversed, displayMode);
+  const palette = getFdrDisplayPalette(scale.name, mode, reversed, displayMode, customAnchors);
   return (
     <span aria-label={`FDR colour scale option ${getFdrScaleOptionNumber(scale.name)}`} className="profile-fdr-palette-bar" data-display-mode={displayMode}>
       {palette.map((colour, index) => (
@@ -432,10 +473,11 @@ function getFdrDisplayPalette(
   mode: 'light' | 'dark',
   reversed: boolean,
   displayMode: FdrDisplayMode,
+  customAnchors: FdrCustomAnchors,
 ) {
   return displayMode === 'fill'
-    ? getFdrFillPalette(name, mode, reversed)
-    : getFdrPalette(name, mode, reversed);
+    ? getFdrFillPalette(name, mode, reversed, customAnchors)
+    : getFdrPalette(name, mode, reversed, customAnchors);
 }
 
 function getFdrDisplayBackground(colour: string, displayMode: FdrDisplayMode): string {
@@ -477,59 +519,101 @@ function DisplayModeOption({
 }
 
 function ThemeColourControls({
-  darkThemeColour,
-  lightThemeColour,
+  themeColour,
   onSelect,
 }: {
-  darkThemeColour: string;
-  lightThemeColour: string;
-  onSelect: (mode: ThemeColourMode, colour: string) => void;
+  themeColour: string;
+  onSelect: (colour: string) => void;
 }) {
-  const colours: Record<ThemeColourMode, string> = {
-    light: lightThemeColour,
-    dark: darkThemeColour,
-  };
-
   return (
     <section aria-labelledby="main-theme-colour-title" className="profile-theme-colours">
       <div className="profile-theme-colours__header">
         <div>
           <strong id="main-theme-colour-title">Main theme colour</strong>
-          <small>Choose a separate accent for light and dark mode.</small>
+          <small>Choose one colour; light and dark variants are adjusted automatically.</small>
         </div>
       </div>
-      {(['light', 'dark'] as const).map((mode) => (
-        <div className="profile-theme-colour-row" data-theme-colour-mode={mode} key={mode}>
-          <div className="profile-theme-colour-row__copy">
-            <strong>{mode === 'light' ? 'Light mode' : 'Dark mode'}</strong>
-            <small>{colours[mode]}</small>
-          </div>
-          <div aria-label={`${mode === 'light' ? 'Light' : 'Dark'} mode theme colours`} className="profile-theme-colour-options" role="group">
-            {themeColourOptions.map((option) => (
-              <button
-                aria-label={`${option.label} ${mode} theme colour`}
-                aria-pressed={colours[mode] === option[mode]}
-                className={`profile-theme-colour-swatch${colours[mode] === option[mode] ? ' is-selected' : ''}`}
-                key={`${mode}-${option.label}`}
-                onClick={() => onSelect(mode, option[mode])}
-                style={{ '--swatch-colour': option[mode] } as CSSProperties}
-                title={option.label}
-                type="button"
-              />
-            ))}
-            <label className="profile-theme-colour-picker">
-              <span className="sr-only">Choose a custom {mode} mode theme colour</span>
-              <input
-                aria-label={`Custom ${mode} mode theme colour`}
-                onChange={(event) => onSelect(mode, event.target.value)}
-                type="color"
-                value={colours[mode]}
-              />
-            </label>
-          </div>
+      <div className="profile-theme-colour-row" data-theme-colour-mode="shared">
+        <div className="profile-theme-colour-row__copy">
+          <strong>Shared accent</strong>
+          <small>{themeColour}</small>
         </div>
-      ))}
+        <div aria-label="Main theme colours" className="profile-theme-colour-options" role="group">
+          {themeColourOptions.map((option) => (
+            <button
+              aria-label={`${option.label} theme colour`}
+              aria-pressed={themeColour === option.colour}
+              className={`profile-theme-colour-swatch${themeColour === option.colour ? ' is-selected' : ''}`}
+              key={option.label}
+              onClick={() => onSelect(option.colour)}
+              style={{ '--swatch-colour': option.colour } as CSSProperties}
+              title={option.label}
+              type="button"
+            />
+          ))}
+          <label className="profile-theme-colour-picker">
+            <span className="sr-only">Choose a custom theme colour</span>
+            <input
+              aria-label="Custom theme colour"
+              onChange={(event) => onSelect(event.target.value)}
+              type="color"
+              value={themeColour}
+            />
+          </label>
+        </div>
+      </div>
+      <div className="profile-theme-colour-variants">
+        <span style={{ '--swatch-colour': getThemeColourForMode(themeColour, 'light') } as CSSProperties}>Light {getThemeColourForMode(themeColour, 'light')}</span>
+        <span style={{ '--swatch-colour': getThemeColourForMode(themeColour, 'dark') } as CSSProperties}>Dark {getThemeColourForMode(themeColour, 'dark')}</span>
+      </div>
     </section>
+  );
+}
+
+function CustomFdrScaleEditor({
+  anchors,
+  onChange,
+  onUse,
+}: {
+  anchors: FdrCustomAnchors;
+  onChange: (anchors: FdrCustomAnchors) => void;
+  onUse: () => void;
+}) {
+  return (
+    <div className="profile-fdr-custom-editor">
+      <div className="profile-fdr-custom-editor__header">
+        <div>
+          <strong>Custom hex scale</strong>
+          <small>Choose levels 1, 3 and 5. Levels 2 and 4 interpolate automatically.</small>
+        </div>
+        <Button onClick={onUse} type="button" variant="secondary">Use custom</Button>
+      </div>
+      <div className="profile-fdr-custom-editor__inputs">
+        {([
+          ['min', 'Minimum · 1'],
+          ['mid', 'Midpoint · 3'],
+          ['max', 'Maximum · 5'],
+        ] as const).map(([key, label]) => (
+          <label key={key}>
+            <span>{label}</span>
+            <input
+              aria-label={label}
+              onChange={(event) => onChange({ ...anchors, [key]: event.target.value })}
+              type="color"
+              value={anchors[key]}
+            />
+            <small>{anchors[key]}</small>
+          </label>
+        ))}
+      </div>
+      <FdrPaletteBar
+        customAnchors={anchors}
+        displayMode="fill"
+        mode="light"
+        reversed={false}
+        scale={getFdrColourScale('CustomHex')}
+      />
+    </div>
   );
 }
 

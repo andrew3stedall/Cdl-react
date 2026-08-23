@@ -711,7 +711,8 @@ async function testMobileNavigationClearance(page) {
   await page.getByRole('button', { name: /Option \d+/ }).click();
   const sheet = page.locator('#fdr-scale-sheet');
   await sheet.waitFor({ state: 'visible' });
-  const chooserGeometry = await page.locator('.profile-fdr-scale-option').first().evaluate((element) => {
+  const chooserOpenedScrollY = await page.evaluate(() => window.scrollY);
+  const chooserGeometry = await page.locator('.profile-fdr-scale-option').first().evaluate((element, expectedScrollY) => {
     const sheetElement = element.closest('#fdr-scale-sheet');
     const option = element.getBoundingClientRect();
     const sheetRect = sheetElement?.getBoundingClientRect();
@@ -722,21 +723,52 @@ async function testMobileNavigationClearance(page) {
       sheetWidth: sheetRect?.width ?? null,
       viewportWidth: window.innerWidth,
       windowScrollY: window.scrollY,
+      chooserOpenedScrollY: expectedScrollY,
     };
-  });
+  }, chooserOpenedScrollY);
   if (!chooserGeometry
     || chooserGeometry.optionWidth < chooserGeometry.viewportWidth * 0.8
     || chooserGeometry.sheetWidth !== chooserGeometry.viewportWidth
-    || chooserGeometry.windowScrollY !== 0) {
+    || chooserGeometry.windowScrollY !== chooserGeometry.chooserOpenedScrollY) {
     throw new Error(`FDR chooser is not full-width or initially locked to the viewport (received ${JSON.stringify(chooserGeometry)})`);
   }
   await page.evaluate(() => window.scrollTo(0, 400));
   await page.waitForTimeout(50);
   const lockedScrollY = await page.evaluate(() => window.scrollY);
-  if (lockedScrollY !== 0) {
+  if (lockedScrollY !== chooserGeometry.chooserOpenedScrollY) {
     throw new Error(`FDR chooser allowed the background page to scroll (received ${lockedScrollY}px)`);
   }
-  await page.getByRole('button', { name: 'Close FDR colour scale chooser' }).click();
+
+  const navigationAtOpen = await page.locator('.global-mobile-navigation').evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    return { bottom: rect.bottom, top: rect.top };
+  });
+  await sheet.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+  });
+  await page.waitForTimeout(50);
+  const endGeometry = await page.evaluate(() => {
+    const navigation = document.querySelector('.global-mobile-navigation');
+    const options = document.querySelectorAll('#fdr-scale-sheet .profile-fdr-scale-option');
+    const lastOption = options.item(options.length - 1);
+    if (!navigation || !lastOption) return null;
+    const navigationRect = navigation.getBoundingClientRect();
+    const lastOptionRect = lastOption.getBoundingClientRect();
+    return {
+      lastOptionBottom: lastOptionRect.bottom,
+      navigationBottom: navigationRect.bottom,
+      navigationTop: navigationRect.top,
+      viewportHeight: window.innerHeight,
+    };
+  });
+  if (!endGeometry
+    || Math.abs(endGeometry.navigationTop - navigationAtOpen.top) > 1
+    || Math.abs(endGeometry.navigationBottom - navigationAtOpen.bottom) > 1
+    || Math.abs(endGeometry.navigationBottom - endGeometry.viewportHeight) > 1
+    || endGeometry.lastOptionBottom > endGeometry.navigationTop - 8) {
+    throw new Error(`FDR chooser content is hidden by moving navigation (received ${JSON.stringify({ endGeometry, navigationAtOpen })})`);
+  }
+  await sheet.getByRole('button', { name: 'Close FDR colour scale chooser' }).click();
   await sheet.waitFor({ state: 'hidden' });
 }
 

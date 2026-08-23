@@ -240,7 +240,7 @@ describe('AppShell integration', () => {
       await Promise.resolve();
     });
     expect(container.querySelector('#fdr-scale-sheet')?.hasAttribute('hidden')).toBe(false);
-    expect(container.querySelectorAll('.profile-fdr-scale-option')).toHaveLength(40);
+    expect(container.querySelectorAll('.profile-fdr-scale-option')).toHaveLength(42);
     expect(container.querySelector('#fdr-scale-sheet')?.textContent).not.toContain('Viridis');
     expect(container.querySelector('.profile-fdr-preview__labels')?.textContent).toContain('Very easy');
     expect(container.querySelector('.profile-fdr-preview .profile-fdr-palette-bar')?.textContent).toBe('12345');
@@ -254,13 +254,13 @@ describe('AppShell integration', () => {
     expect(preferenceClient.preferences.fdrScale).toBe('Viridis');
     expect(document.documentElement.dataset.fdrScale).toBe('Viridis');
 
-    const darkBlueOption = container.querySelector<HTMLButtonElement>('[aria-label="Blue dark theme colour"]');
+    const blueOption = container.querySelector<HTMLButtonElement>('[aria-label="Blue theme colour"]');
     await act(async () => {
-      darkBlueOption?.click();
+      blueOption?.click();
       await Promise.resolve();
     });
-    expect(preferenceClient.preferences.darkThemeColour).toBe('#60A5FA');
-    expect(document.documentElement.style.getPropertyValue('--primary')).toBe('#60A5FA');
+    expect(preferenceClient.preferences.lightThemeColour).toBe('#2563EB');
+    expect(document.documentElement.style.getPropertyValue('--primary')).toBe('#6B95F1');
 
     const reverseOrder = container.querySelector<HTMLInputElement>('.profile-fdr-reverse-toggle input');
     await act(async () => {

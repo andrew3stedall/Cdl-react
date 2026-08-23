@@ -690,6 +690,11 @@
   text-align: left;
 }
 
+.squad-player-button > .player-card,
+.squad-activity-item > .player-card {
+  flex: 0 0 auto;
+}
+
 .squad-player-button span:nth-child(2),
 .squad-activity-item span:nth-child(2),
 .squad-trade-item span:nth-child(2) {
@@ -908,6 +913,10 @@
   display: grid;
   flex: 1;
   gap: 0.2rem;
+}
+
+.squad-drawer-player > .player-card {
+  flex: 0 0 auto;
 }
 
 .squad-drawer-player > div span {

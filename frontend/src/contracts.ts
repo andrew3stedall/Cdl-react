@@ -51,7 +51,8 @@ export interface ThemePresetTokens {
 
 export type ThemePresetName =
   | 'teal-light'
-  | 'teal-dark';
+  | 'teal-dark'
+  | 'adaptive';
 
 export interface ThemePreset {
   name: ThemePresetName;
@@ -73,6 +74,11 @@ export interface UserPreferences {
   fdrDisplayMode?: FdrDisplayMode;
   lightThemeColour?: string;
   darkThemeColour?: string;
+  fdrCustomAnchors?: {
+    min: string;
+    mid: string;
+    max: string;
+  };
 }
 
 export interface TeamSummary {

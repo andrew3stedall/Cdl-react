@@ -20,18 +20,16 @@
     align-items: stretch;
     background: var(--surface);
     border-top: 1px solid var(--cdl-border);
-    bottom: 0;
     box-sizing: border-box;
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     height: var(--cdl-mobile-navigation-clearance);
-    inset-inline: 0;
+    inset: auto 0 0;
     padding: 0.45rem max(0.45rem, env(safe-area-inset-right))
       calc(0.45rem + env(safe-area-inset-bottom))
       max(0.45rem, env(safe-area-inset-left));
-    position: fixed;
-    transform: translate3d(0, 0, 0);
-    will-change: transform;
+    position: fixed !important;
+    transform: none;
     z-index: 40;
   }
 

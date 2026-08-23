@@ -148,6 +148,18 @@
   min-width: 0;
 }
 
+.player-profile__identity-main .player-card--token {
+  flex: 0 0 5.25rem;
+  height: 5.25rem;
+  width: 5.25rem;
+}
+
+.player-profile__identity-main .player-card__token {
+  background: color-mix(in srgb, var(--profile-accent) 18%, var(--profile-panel));
+  border: 1px solid color-mix(in srgb, var(--profile-accent) 55%, var(--profile-border));
+  overflow: hidden;
+}
+
 .player-profile__shirt-token {
   align-items: center;
   background: color-mix(in srgb, var(--profile-accent) 18%, var(--profile-panel));
@@ -855,6 +867,22 @@
   gap: 0.45rem;
   min-width: 0;
   padding-bottom: 0.45rem;
+}
+
+.player-profile__comparison-identity .player-card--token {
+  --player-card-size: 3.6rem;
+  flex: 0 0 3.6rem;
+  height: 3.6rem;
+  width: 3.6rem;
+}
+
+.player-profile__comparison-identity .player-card__name {
+  font-size: 0.55rem;
+}
+
+.player-profile__comparison-identity .player-card__opponents {
+  font-size: 0.45rem;
+  top: calc(66% + 0.55rem);
 }
 
 .player-profile__comparison-identity .player-profile__shirt-token {

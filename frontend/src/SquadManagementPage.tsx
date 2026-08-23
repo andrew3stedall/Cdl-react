@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 
 import { Button } from './components/ui/button';
+import { PlayerCard, type PlayerCardPlayer } from './components/player/PlayerCard';
 import type { ThemePreset } from './contracts';
 import './squad-management.css';
 
@@ -344,7 +345,7 @@ export function SquadManagementPage({ preset }: SquadManagementPageProps) {
                       onClick={() => player && openPlayer(player)}
                       type="button"
                     >
-                      <span className="squad-player-avatar">{initials(interest.player.display_name)}</span>
+                      <PlayerCard formPosition="hidden" layout="list" player={toPlayerCardPlayer(player ?? { displayName: interest.player.display_name, position: '', team: 'unknown', form: null, chanceOfPlayingNextRound: null })} showPositionMarker={Boolean(player?.position)} size="xs" />
                       <span><strong>{interest.player.display_name}</strong><small>Registered interest</small></span>
                       <ChevronRight aria-hidden="true" size={17} />
                     </button>
@@ -408,7 +409,7 @@ export function SquadManagementPage({ preset }: SquadManagementPageProps) {
             </header>
 
             <div className="squad-drawer-player">
-              <span className="squad-player-avatar squad-player-avatar-large">{initials(selectedPlayer.displayName)}</span>
+              <PlayerCard formPosition="hidden" layout="token" player={toPlayerCardPlayer(selectedPlayer)} showPositionMarker size="lg" />
               <div>
                 <strong>{selectedPlayer.displayName}</strong>
                 <span>{selectedPlayer.position} · {selectedPlayer.team}</span>
@@ -544,8 +545,7 @@ function PlayerTable({
               <tr key={player.id}>
                 <td>
                   <button className="squad-player-button" onClick={() => onSelect({ ...player, status })} type="button">
-                    <span className="squad-player-avatar">{initials(player.displayName)}</span>
-                    <span><strong>{player.displayName}</strong><small>View player</small></span>
+                    <PlayerCard formPosition="beside" layout="list" player={toPlayerCardPlayer(player)} showPositionMarker size="xs" />
                   </button>
                 </td>
                 <td><span className={`squad-position-badge position-${player.position.toLowerCase()}`}>{player.position}</span></td>
@@ -581,16 +581,22 @@ function PlayerTable({
   );
 }
 
+function toPlayerCardPlayer(player: { displayName: string; team: string; position: string; form: number | null; chanceOfPlayingNextRound?: number | null }): PlayerCardPlayer {
+  return {
+    availabilityChance: player.chanceOfPlayingNextRound,
+    displayName: player.displayName,
+    form: player.form,
+    position: player.position,
+    team: player.team,
+  };
+}
+
 function StatusBadge({ status }: { status: PlayerView['status'] }) {
   return <span className={`squad-status-badge status-${status}`}>{formatStatus(status)}</span>;
 }
 
 function EmptyState({ message }: { message: string }) {
   return <div className="squad-empty-state"><Users aria-hidden="true" size={20} /><p>{message}</p></div>;
-}
-
-function initials(name: string): string {
-  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
 }
 
 function normalizePosition(position: string): string {

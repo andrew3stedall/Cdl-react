@@ -55,6 +55,9 @@ def test_preferences_use_authenticated_user_identity() -> None:
         "fdr_display_mode": "fill",
         "light_theme_colour": "#2563EB",
         "dark_theme_colour": "#60A5FA",
+        "fdr_custom_min": "#2166AC",
+        "fdr_custom_mid": "#F7F7F7",
+        "fdr_custom_max": "#B2182B",
     }
     assert client.get("/api/me/preferences").json() == {
         "theme_preset": "teal-dark",
@@ -64,6 +67,9 @@ def test_preferences_use_authenticated_user_identity() -> None:
         "fdr_display_mode": "fill",
         "light_theme_colour": "#2563EB",
         "dark_theme_colour": "#60A5FA",
+        "fdr_custom_min": "#2166AC",
+        "fdr_custom_mid": "#F7F7F7",
+        "fdr_custom_max": "#B2182B",
     }
 
     app.dependency_overrides[require_authenticated_session] = lambda: _user("manager-2")
@@ -75,6 +81,9 @@ def test_preferences_use_authenticated_user_identity() -> None:
         "fdr_display_mode": "font",
         "light_theme_colour": "#0F766E",
         "dark_theme_colour": "#2DD4BF",
+        "fdr_custom_min": "#2166AC",
+        "fdr_custom_mid": "#F7F7F7",
+        "fdr_custom_max": "#B2182B",
     }
 
     response = client.put(
@@ -99,6 +108,9 @@ def test_preferences_use_authenticated_user_identity() -> None:
         "fdr_display_mode": "font",
         "light_theme_colour": "#0F766E",
         "dark_theme_colour": "#2DD4BF",
+        "fdr_custom_min": "#2166AC",
+        "fdr_custom_mid": "#F7F7F7",
+        "fdr_custom_max": "#B2182B",
     }
 
     app.dependency_overrides[require_authenticated_session] = lambda: _user("manager-1")
@@ -110,4 +122,7 @@ def test_preferences_use_authenticated_user_identity() -> None:
         "fdr_display_mode": "fill",
         "light_theme_colour": "#2563EB",
         "dark_theme_colour": "#60A5FA",
+        "fdr_custom_min": "#2166AC",
+        "fdr_custom_mid": "#F7F7F7",
+        "fdr_custom_max": "#B2182B",
     }

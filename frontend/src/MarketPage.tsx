@@ -15,8 +15,8 @@ import {
 } from 'lucide-react';
 
 import { Button } from './components/ui/button';
+import { FormDots, PlayerCard, type PlayerCardPlayer } from './components/player/PlayerCard';
 import type { ThemePreset } from './contracts';
-import { officialFplShirtUrl } from './fpl-shirt-assets';
 import { availabilityIssueLabel, hasAvailabilityIssue } from './player-availability';
 import type { SquadApiPlayer } from './squad-api';
 import './market-page.css';
@@ -519,9 +519,7 @@ function MarketPlayerRow({ interested, managerTeam, onInterest, onOpen, pendingA
     <tr className="market-page__player-row">
       <td className="market-page__player-cell">
         <button aria-label={`View ${player.displayName} details`} className="market-page__player-identity" onClick={() => onOpen(player)} type="button">
-          <PositionMarker position={player.position} />
-          <TeamShirt team={player.club} />
-          <span><strong>{player.displayName}</strong><small>{positionLabel(player.position)} · {player.club}</small></span>
+          <PlayerCard formPosition="beside" layout="list" player={toPlayerCardPlayer(player)} showPositionMarker size="xs" />
         </button>
       </td>
       <td><Metric hideLabel label="Pts" value={formatInteger(player.points)} /></td>
@@ -540,7 +538,7 @@ function InterestsPanel({ interests, onBrowse, onOpenPlayer, onRemove, pendingAc
   return (
     <section aria-label="Your Interests" className="market-page__activity-panel">
       <div className="market-page__explainer"><Bookmark aria-hidden="true" size={20} /><div><strong>Interests are draw preferences</strong><span>They keep a player on your current shortlist. They do not add a player to your squad or act as a general watchlist.</span></div></div>
-      {interests.length === 0 ? <EmptyActivity icon={<Bookmark aria-hidden="true" size={23} />} onAction={onBrowse} action="Find a player" title="Your shortlist is empty" description="Start in Discovery, then add players you would want to prioritise in a draw." /> : <div className="market-page__activity-list">{interests.map((interest) => <article className="market-page__activity-row" key={interest.id}><button aria-label={`View ${interest.player.displayName} details`} className="market-page__player-identity" onClick={() => onOpenPlayer(interest.player)} type="button"><PositionMarker position={interest.player.position} /><TeamShirt team={interest.player.club} /><span><strong>{interest.player.displayName}</strong><small>{interest.player.club} · {interest.gameweekName ?? 'Current gameweek'}</small></span></button><StatusBadge player={interest.player} status="interested" /><Button aria-label={`Remove ${interest.player.displayName} from Interests`} disabled={pendingAction === interest.id} onClick={() => void onRemove(interest)} type="button" variant="ghost">{pendingAction === interest.id ? 'Removing…' : 'Remove'}</Button></article>)}</div>}
+      {interests.length === 0 ? <EmptyActivity icon={<Bookmark aria-hidden="true" size={23} />} onAction={onBrowse} action="Find a player" title="Your shortlist is empty" description="Start in Discovery, then add players you would want to prioritise in a draw." /> : <div className="market-page__activity-list">{interests.map((interest) => <article className="market-page__activity-row" key={interest.id}><button aria-label={`View ${interest.player.displayName} details`} className="market-page__player-identity" onClick={() => onOpenPlayer(interest.player)} type="button"><PlayerCard formPosition="beside" layout="list" player={toPlayerCardPlayer(interest.player)} showPositionMarker size="xs" /></button><StatusBadge player={interest.player} status="interested" /><Button aria-label={`Remove ${interest.player.displayName} from Interests`} disabled={pendingAction === interest.id} onClick={() => void onRemove(interest)} type="button" variant="ghost">{pendingAction === interest.id ? 'Removing…' : 'Remove'}</Button></article>)}</div>}
     </section>
   );
 }
@@ -554,7 +552,7 @@ function PlayerDrawer({ drawerRef, history, historyStatus, interest, managerTeam
   const status = interest ? 'interested' : effectiveStatus(player, new Set(), managerTeam);
   const issue = availabilityIssueLabel(toAvailabilityInput(player));
   return (
-    <div className="market-page__drawer-layer"><button aria-label="Close player details" className="market-page__drawer-backdrop" onClick={onClose} type="button" /><aside aria-labelledby="market-player-detail-title" aria-modal="true" className="market-page__drawer" ref={drawerRef} role="dialog" tabIndex={-1}><span aria-hidden="true" className="market-page__sheet-handle" /><header className="market-page__drawer-header"><TeamShirt large team={player.club} /><div><p className="eyebrow">Player evidence</p><h2 id="market-player-detail-title">{player.displayName}</h2><span><PositionMarker position={player.position} /> {positionLabel(player.position)} · {player.club}</span></div><button aria-label="Close player details" className="market-page__icon-button" onClick={onClose} type="button"><X aria-hidden="true" size={19} /></button></header><section aria-label="Player metrics" className="market-page__detail-metrics"><Metric label="Total points" value={formatInteger(player.points)} /><Metric dots label="Form" value={player.form} /><Metric label="xG" value={formatMetric(player.xg)} /><Metric label="xA" value={formatMetric(player.xa)} /><Metric label="Value" value={player.value === null ? '—' : `£${player.value.toFixed(1)}m`} /><Metric label="Selected" value={player.selectedPercent === null ? '—' : `${formatMetric(player.selectedPercent)}%`} /></section><section className="market-page__drawer-section"><h3>Next fixture</h3><p>{formatFixture(player)}{player.nextDifficulty === null ? '' : ` · FDR ${player.nextDifficulty}`}</p></section><section className="market-page__drawer-section"><h3>Availability</h3><p>{issue ? issue : 'No current availability flag from official FPL data.'}{player.availabilityNews ? ` ${player.availabilityNews}` : ''}</p></section><section className="market-page__drawer-section"><h3>Recent FPL history</h3>{historyStatus ? <p role="status">{historyStatus}</p> : null}{history?.history.length ? <div aria-label="Recent FPL gameweek history" className="market-page__history"><table><thead><tr><th>GW</th><th>Pts</th><th>Min</th><th>xG</th><th>xA</th></tr></thead><tbody>{history.history.slice(-5).reverse().map((row) => <tr key={row.gameweek}><td>{row.gameweek}</td><td><strong>{row.total_points}</strong></td><td>{row.minutes}</td><td>{row.expected_goals.toFixed(2)}</td><td>{row.expected_assists.toFixed(2)}</td></tr>)}</tbody></table></div> : null}{history && history.history.length === 0 ? <p>No completed gameweek history is available.</p> : null}</section><footer className="market-page__drawer-actions">{status === 'owned' ? <Button onClick={() => { onClose(); onNavigate('/squad'); }} type="button"><Users aria-hidden="true" size={16} />View in Squad</Button> : null}{status === 'interested' && interest ? <Button disabled={pendingAction === interest.id} onClick={() => void onRemoveInterest(interest)} type="button" variant="secondary">{pendingAction === interest.id ? 'Removing…' : 'Remove Interest'}</Button> : null}{status !== 'owned' && status !== 'interested' ? <Button disabled={pendingAction === player.id} onClick={onAddInterest} type="button"><Star aria-hidden="true" size={16} />{pendingAction === player.id ? 'Adding…' : 'Add to Interests'}</Button> : null}<Button onClick={onClose} type="button" variant="ghost">Close</Button></footer></aside></div>
+    <div className="market-page__drawer-layer"><button aria-label="Close player details" className="market-page__drawer-backdrop" onClick={onClose} type="button" /><aside aria-labelledby="market-player-detail-title" aria-modal="true" className="market-page__drawer" ref={drawerRef} role="dialog" tabIndex={-1}><span aria-hidden="true" className="market-page__sheet-handle" /><header className="market-page__drawer-header"><PlayerCard formPosition="hidden" layout="token" player={toPlayerCardPlayer(player)} showOpponent={false} showPositionMarker={false} size="lg" /><div><p className="eyebrow">Player evidence</p><h2 id="market-player-detail-title">{player.displayName}</h2><span>{positionLabel(player.position)} · {player.club}</span></div><button aria-label="Close player details" className="market-page__icon-button" onClick={onClose} type="button"><X aria-hidden="true" size={19} /></button></header><section aria-label="Player metrics" className="market-page__detail-metrics"><Metric label="Total points" value={formatInteger(player.points)} /><Metric dots label="Form" value={player.form} /><Metric label="xG" value={formatMetric(player.xg)} /><Metric label="xA" value={formatMetric(player.xa)} /><Metric label="Value" value={player.value === null ? '—' : `£${player.value.toFixed(1)}m`} /><Metric label="Selected" value={player.selectedPercent === null ? '—' : `${formatMetric(player.selectedPercent)}%`} /></section><section className="market-page__drawer-section"><h3>Next fixture</h3><p>{formatFixture(player)}{player.nextDifficulty === null ? '' : ` · FDR ${player.nextDifficulty}`}</p></section><section className="market-page__drawer-section"><h3>Availability</h3><p>{issue ? issue : 'No current availability flag from official FPL data.'}{player.availabilityNews ? ` ${player.availabilityNews}` : ''}</p></section><section className="market-page__drawer-section"><h3>Recent FPL history</h3>{historyStatus ? <p role="status">{historyStatus}</p> : null}{history?.history.length ? <div aria-label="Recent FPL gameweek history" className="market-page__history"><table><thead><tr><th>GW</th><th>Pts</th><th>Min</th><th>xG</th><th>xA</th></tr></thead><tbody>{history.history.slice(-5).reverse().map((row) => <tr key={row.gameweek}><td>{row.gameweek}</td><td><strong>{row.total_points}</strong></td><td>{row.minutes}</td><td>{row.expected_goals.toFixed(2)}</td><td>{row.expected_assists.toFixed(2)}</td></tr>)}</tbody></table></div> : null}{history && history.history.length === 0 ? <p>No completed gameweek history is available.</p> : null}</section><footer className="market-page__drawer-actions">{status === 'owned' ? <Button onClick={() => { onClose(); onNavigate('/squad'); }} type="button"><Users aria-hidden="true" size={16} />View in Squad</Button> : null}{status === 'interested' && interest ? <Button disabled={pendingAction === interest.id} onClick={() => void onRemoveInterest(interest)} type="button" variant="secondary">{pendingAction === interest.id ? 'Removing…' : 'Remove Interest'}</Button> : null}{status !== 'owned' && status !== 'interested' ? <Button disabled={pendingAction === player.id} onClick={onAddInterest} type="button"><Star aria-hidden="true" size={16} />{pendingAction === player.id ? 'Adding…' : 'Add to Interests'}</Button> : null}<Button onClick={onClose} type="button" variant="ghost">Close</Button></footer></aside></div>
   );
 }
 
@@ -578,19 +576,17 @@ function StatusBadge({ player, status }: { player: MarketPlayer | null; status: 
   return <span className={`market-page__status-badge status-${status}`}>{icon}<span className="market-page__status-full">{label}</span><span className="market-page__status-short">{shortLabel}</span></span>;
 }
 
-function FormDots({ value }: { value: number | null }) {
-  const active = value === null || Number.isNaN(value) ? 0 : Math.max(0, Math.min(5, Math.round(value / 2)));
-  const band = formBand(value);
-  return <span aria-hidden="true" className={`market-page__form-dots form-band-${band}`}>{Array.from({ length: 5 }, (_, index) => <i className={index < active ? 'active' : ''} key={index} />)}</span>;
-}
-
-function PositionMarker({ position }: { position: string }) {
-  return <span aria-hidden="true" className={`market-page__position-marker position-${position.toLowerCase()}`} title={`${positionLabel(position)} player`} />;
-}
-
-function TeamShirt({ large = false, team }: { large?: boolean; team: string }) {
-  const fallback = `/team-shirts/${team.trim().toLowerCase()}.svg`;
-  return <img alt="" aria-hidden="true" className={`market-page__shirt${large ? ' large' : ''}`} onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = '/team-shirts/unknown.svg'; }} src={officialFplShirtUrl(team, large) ?? fallback} />;
+function toPlayerCardPlayer(player: MarketPlayer): PlayerCardPlayer {
+  return {
+    availabilityChance: player.chanceOfPlaying,
+    displayName: player.displayName,
+    fixtures: player.nextOpponent
+      ? [{ difficulty: player.nextDifficulty, label: player.nextFixtureIsHome === false ? player.nextOpponent.toLowerCase() : player.nextOpponent.toUpperCase(), title: player.nextDifficulty === null ? undefined : `FDR ${player.nextDifficulty} fixture` }]
+      : [],
+    form: player.form,
+    position: player.position,
+    team: player.club,
+  };
 }
 
 function modeFromPath(path: string): MarketMode {
@@ -700,14 +696,6 @@ function formatInteger(value: number | null): string {
 
 function formatMetric(value: number | null): string {
   return value === null || Number.isNaN(value) ? '—' : value.toFixed(1);
-}
-
-function formBand(value: number | null): 'negative' | 'low' | 'steady' | 'high' | 'unknown' {
-  if (value === null || Number.isNaN(value)) return 'unknown';
-  if (value < 0) return 'negative';
-  if (value < 4) return 'low';
-  if (value < 10) return 'steady';
-  return 'high';
 }
 
 function positionLabel(position: string): string {

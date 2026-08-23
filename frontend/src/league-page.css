@@ -1177,6 +1177,7 @@
 .fixture-lineup-prediction__group > strong { color: var(--muted-foreground); font-size: .68rem; letter-spacing: .05em; text-transform: uppercase; }
 .fixture-lineup-prediction__group > div { display: grid; gap: .35rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .fixture-lineup-prediction__player { align-items: center; background: var(--secondary); border: 1px solid var(--border); border-radius: .45rem; color: var(--foreground); display: flex; font: inherit; justify-content: space-between; min-height: 2.3rem; padding: .35rem .45rem; text-align: left; }
+.fixture-lineup-prediction__player > .player-card { --player-card-size: 2.4rem; flex: 1 1 auto; min-width: 0; }
 .fixture-lineup-prediction__player:hover:not(:disabled), .fixture-lineup-prediction__player.is-selected { border-color: var(--primary); }
 .fixture-lineup-prediction__player.is-selected { background: color-mix(in srgb, var(--primary) 12%, var(--secondary)); }
 .fixture-lineup-prediction__player:disabled { cursor: not-allowed; opacity: .45; }

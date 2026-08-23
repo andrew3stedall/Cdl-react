@@ -373,6 +373,11 @@
   width: 100%;
 }
 
+.market-page__player-identity > .player-card {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .market-page__player-identity:hover,
 .market-page__player-identity:focus-visible {
   color: var(--primary);
@@ -691,6 +696,7 @@
 .market-page__drawer-header h2 { font-size: 1.25rem; }
 .market-page__drawer-header > div { display: grid; gap: 0.22rem; }
 .market-page__drawer-header > div > span { color: var(--market-muted); font-size: 0.78rem; }
+.market-page__drawer-header > .player-card { flex: 0 0 auto; }
 .market-page__drawer-section { border-top: 1px solid var(--border); padding-top: 0.9rem; }
 .market-page__drawer-section h3 { font-size: 0.8rem; margin: 0 0 0.35rem; }
 .market-page__drawer-section p { color: var(--market-muted); font-size: 0.82rem; line-height: 1.45; margin: 0; }

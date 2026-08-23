@@ -19,3 +19,6 @@ class UserPreferences(BaseModel):
     fdr_display_mode: str = "font"
     light_theme_colour: str = "#0F766E"
     dark_theme_colour: str = "#2DD4BF"
+    fdr_custom_min: str = "#2166AC"
+    fdr_custom_mid: str = "#F7F7F7"
+    fdr_custom_max: str = "#B2182B"

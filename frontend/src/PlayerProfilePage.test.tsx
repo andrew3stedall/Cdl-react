@@ -202,13 +202,13 @@ describe('PlayerProfilePage', () => {
     const { container, root } = renderPage();
     await settle();
 
-    expect(container.querySelector('.player-profile__shirt-token')).not.toBeNull();
-    expect(container.querySelector('.player-profile__shirt-token')?.getAttribute('aria-label')).toBe('Shirt for M. Santos');
-    expect(container.querySelector('.player-profile__shirt-crop .squad-page__shirt.large')).not.toBeNull();
-    expect(container.querySelector('.player-profile__shirt-name')?.textContent).toBe('M. Santos');
-    expect(container.querySelector('.player-profile__shirt-opponent')?.textContent).toBe('bha');
-    expect(container.querySelector('.player-profile__shirt-opponent')?.className).toContain('player-profile__shirt-opponent');
-    expect(container.querySelector('.player-profile__shirt-opponent')?.className).toContain('squad-page__opponent--fdr-3');
+    expect(container.querySelector('.player-profile__player-card')).not.toBeNull();
+    expect(container.querySelector('.player-profile__player-card')?.getAttribute('aria-label')).toBe('Shirt for M. Santos');
+    expect(container.querySelector('.player-card__shirt-crop .player-card__shirt.large')).not.toBeNull();
+    expect(container.querySelector('.player-card__name')?.textContent).toBe('M. Santos');
+    expect(container.querySelector('.player-card__opponent')?.textContent).toBe('bha');
+    expect(container.querySelector('.player-card__opponent')?.className).toContain('player-card__opponent');
+    expect(container.querySelector('.player-card__opponent')?.className).toContain('player-card__opponent--fdr-3');
     expect(container.querySelector('.player-profile__portrait')).toBeNull();
     root.unmount();
   });
@@ -240,7 +240,7 @@ describe('PlayerProfilePage', () => {
     const { container, root } = renderPage(squadClient);
     await settle();
 
-    expect(container.querySelector('.player-profile__shirt-opponent')?.textContent).toBe('ARS');
+    expect(container.querySelector('.player-card__opponent')?.textContent).toBe('ARS');
     root.unmount();
   });
 

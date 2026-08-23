@@ -738,7 +738,7 @@ async function testMobileNavigationClearance(page) {
   if (lockedScrollY !== chooserGeometry.chooserOpenedScrollY) {
     throw new Error(`FDR chooser allowed the background page to scroll (received ${lockedScrollY}px)`);
   }
-  await page.getByRole('button', { name: 'Close FDR colour scale chooser' }).click();
+  await sheet.getByRole('button', { name: 'Close FDR colour scale chooser' }).click();
   await sheet.waitFor({ state: 'hidden' });
 }
 

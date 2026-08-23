@@ -71,6 +71,8 @@ export interface UserPreferences {
   fdrScale: FdrScaleName;
   fdrScaleReversed: boolean;
   fdrDisplayMode?: FdrDisplayMode;
+  lightThemeColour?: string;
+  darkThemeColour?: string;
 }
 
 export interface TeamSummary {

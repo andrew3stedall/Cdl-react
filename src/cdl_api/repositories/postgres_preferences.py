@@ -19,6 +19,8 @@ user_preferences_table = Table(
     Column("fdr_scale", String(64), nullable=False),
     Column("fdr_scale_reversed", Boolean, nullable=False),
     Column("fdr_display_mode", String(16), nullable=False),
+    Column("light_theme_colour", String(7), nullable=False),
+    Column("dark_theme_colour", String(7), nullable=False),
 )
 
 
@@ -35,6 +37,8 @@ class PostgreSQLUserPreferenceRepository:
                     user_preferences_table.c.fdr_scale,
                     user_preferences_table.c.fdr_scale_reversed,
                     user_preferences_table.c.fdr_display_mode,
+                    user_preferences_table.c.light_theme_colour,
+                    user_preferences_table.c.dark_theme_colour,
                 ).where(user_preferences_table.c.user_id == user_id)
             ).one_or_none()
 
@@ -47,6 +51,8 @@ class PostgreSQLUserPreferenceRepository:
             fdr_scale=preference_row.fdr_scale,
             fdr_scale_reversed=preference_row.fdr_scale_reversed,
             fdr_display_mode=preference_row.fdr_display_mode,
+            light_theme_colour=preference_row.light_theme_colour,
+            dark_theme_colour=preference_row.dark_theme_colour,
         )
 
     def save_for_user(self, user_id: str, preferences: UserPreferences) -> UserPreferences:
@@ -57,6 +63,8 @@ class PostgreSQLUserPreferenceRepository:
             fdr_scale=preferences.fdr_scale,
             fdr_scale_reversed=preferences.fdr_scale_reversed,
             fdr_display_mode=preferences.fdr_display_mode,
+            light_theme_colour=preferences.light_theme_colour,
+            dark_theme_colour=preferences.dark_theme_colour,
         )
         statement = statement.on_conflict_do_update(
             index_elements=[user_preferences_table.c.user_id],
@@ -66,6 +74,8 @@ class PostgreSQLUserPreferenceRepository:
                 "fdr_scale": preferences.fdr_scale,
                 "fdr_scale_reversed": preferences.fdr_scale_reversed,
                 "fdr_display_mode": preferences.fdr_display_mode,
+                "light_theme_colour": preferences.light_theme_colour,
+                "dark_theme_colour": preferences.dark_theme_colour,
             },
         )
 

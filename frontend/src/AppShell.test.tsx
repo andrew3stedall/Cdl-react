@@ -223,7 +223,7 @@ describe('AppShell integration', () => {
     expect(container.querySelector('.profile-direction-option[aria-pressed="true"]')?.textContent).toContain('Attack upwards');
 
     const darkOption = [...container.querySelectorAll<HTMLButtonElement>('.profile-preset-option')]
-      .find((option) => option.textContent?.includes('Teal · Dark'));
+      .find((option) => option.textContent?.includes('Dark mode'));
     expect(darkOption).toBeDefined();
 
     await act(async () => {
@@ -240,19 +240,27 @@ describe('AppShell integration', () => {
       await Promise.resolve();
     });
     expect(container.querySelector('#fdr-scale-sheet')?.hasAttribute('hidden')).toBe(false);
-    expect(container.querySelectorAll('.profile-fdr-scale-option')).toHaveLength(32);
+    expect(container.querySelectorAll('.profile-fdr-scale-option')).toHaveLength(40);
+    expect(container.querySelector('#fdr-scale-sheet')?.textContent).not.toContain('Viridis');
     expect(container.querySelector('.profile-fdr-preview__labels')?.textContent).toContain('Very easy');
     expect(container.querySelector('.profile-fdr-preview .profile-fdr-palette-bar')?.textContent).toBe('12345');
     expect(container.textContent).not.toContain('Light theme');
 
-    const viridisOption = [...container.querySelectorAll<HTMLButtonElement>('.profile-fdr-scale-option')]
-      .find((option) => option.textContent?.includes('Viridis'));
+    const viridisOption = container.querySelector<HTMLButtonElement>('[data-scale-name="Viridis"]');
     await act(async () => {
       viridisOption?.click();
       await Promise.resolve();
     });
     expect(preferenceClient.preferences.fdrScale).toBe('Viridis');
     expect(document.documentElement.dataset.fdrScale).toBe('Viridis');
+
+    const darkBlueOption = container.querySelector<HTMLButtonElement>('[aria-label="Blue dark theme colour"]');
+    await act(async () => {
+      darkBlueOption?.click();
+      await Promise.resolve();
+    });
+    expect(preferenceClient.preferences.darkThemeColour).toBe('#60A5FA');
+    expect(document.documentElement.style.getPropertyValue('--primary')).toBe('#60A5FA');
 
     const reverseOrder = container.querySelector<HTMLInputElement>('.profile-fdr-reverse-toggle input');
     await act(async () => {

@@ -15,17 +15,27 @@ import {
 import { FallbackPreferenceClient, type PreferenceClient } from './preferences-api';
 import { getThemeMode, getThemePresetClassName, resolveThemePreset } from './theme-presets';
 import { getStoredThemePreset, setThemePresetCookie } from './theme-cookie';
+import {
+  applyThemeColours,
+  defaultDarkThemeColour,
+  defaultLightThemeColour,
+  resolveThemeColour,
+  type ThemeColourMode,
+} from './theme-colours';
 
 interface ThemePresetContextValue {
   attackDirection: AttackDirection;
   fdrDisplayMode: FdrDisplayMode;
   fdrScale: FdrScaleName;
   fdrScaleReversed: boolean;
+  lightThemeColour: string;
+  darkThemeColour: string;
   preset: ThemePreset;
   setAttackDirection: (direction: AttackDirection) => void;
   setFdrDisplayMode: (mode: FdrDisplayMode) => void;
   setFdrScale: (scale: FdrScaleName) => void;
   setFdrScaleReversed: (reversed: boolean) => void;
+  setThemeColour: (mode: ThemeColourMode, colour: string) => void;
   setPresetName: (presetName: ThemePreset['name']) => void;
   saveStatus: 'idle' | 'saving' | 'saved' | 'error';
 }
@@ -51,8 +61,13 @@ export function ThemePresetProvider({
   const [fdrScale, setFdrScaleState] = useState<FdrScaleName>(defaultFdrScaleName);
   const [fdrScaleReversed, setFdrScaleReversedState] = useState(defaultFdrScaleReversed);
   const [fdrDisplayMode, setFdrDisplayModeState] = useState<FdrDisplayMode>(defaultFdrDisplayMode);
+  const [lightThemeColour, setLightThemeColourState] = useState(defaultLightThemeColour);
+  const [darkThemeColour, setDarkThemeColourState] = useState(defaultDarkThemeColour);
   const [saveStatus, setSaveStatus] = useState<ThemePresetContextValue['saveStatus']>('idle');
-  const preset = resolveThemePreset(presetName);
+  const preset = useMemo(
+    () => applyThemeColours(resolveThemePreset(presetName), lightThemeColour, darkThemeColour),
+    [darkThemeColour, lightThemeColour, presetName],
+  );
 
   useEffect(() => {
     let isMounted = true;
@@ -68,6 +83,8 @@ export function ThemePresetProvider({
           setFdrScaleState(resolveFdrScaleName(preferences.fdrScale));
           setFdrScaleReversedState(preferences.fdrScaleReversed ?? defaultFdrScaleReversed);
           setFdrDisplayModeState(preferences.fdrDisplayMode ?? defaultFdrDisplayMode);
+          setLightThemeColourState(resolveThemeColour(preferences.lightThemeColour, 'light'));
+          setDarkThemeColourState(resolveThemeColour(preferences.darkThemeColour, 'dark'));
         }
       })
       .catch(() => {
@@ -150,6 +167,8 @@ export function ThemePresetProvider({
       fdrDisplayMode,
       fdrScale,
       fdrScaleReversed,
+      lightThemeColour,
+      darkThemeColour,
       preset,
       setAttackDirection: (nextAttackDirection) => {
         setAttackDirectionState(nextAttackDirection);
@@ -159,6 +178,8 @@ export function ThemePresetProvider({
           fdrScale,
           fdrScaleReversed,
           fdrDisplayMode,
+          lightThemeColour,
+          darkThemeColour,
         });
       },
       setFdrDisplayMode: (nextFdrDisplayMode) => {
@@ -169,6 +190,8 @@ export function ThemePresetProvider({
           fdrScale,
           fdrScaleReversed,
           fdrDisplayMode: nextFdrDisplayMode,
+          lightThemeColour,
+          darkThemeColour,
         });
       },
       setFdrScale: (nextFdrScale) => {
@@ -179,6 +202,8 @@ export function ThemePresetProvider({
           fdrScale: nextFdrScale,
           fdrScaleReversed,
           fdrDisplayMode,
+          lightThemeColour,
+          darkThemeColour,
         });
       },
       setFdrScaleReversed: (nextFdrScaleReversed) => {
@@ -189,6 +214,25 @@ export function ThemePresetProvider({
           fdrScale,
           fdrScaleReversed: nextFdrScaleReversed,
           fdrDisplayMode,
+          lightThemeColour,
+          darkThemeColour,
+        });
+      },
+      setThemeColour: (mode, nextColour) => {
+        const resolvedColour = resolveThemeColour(nextColour, mode);
+        if (mode === 'light') {
+          setLightThemeColourState(resolvedColour);
+        } else {
+          setDarkThemeColourState(resolvedColour);
+        }
+        savePreference({
+          themePreset: preset.name,
+          attackDirection,
+          fdrScale,
+          fdrScaleReversed,
+          fdrDisplayMode,
+          lightThemeColour: mode === 'light' ? resolvedColour : lightThemeColour,
+          darkThemeColour: mode === 'dark' ? resolvedColour : darkThemeColour,
         });
       },
       setPresetName: (nextPresetName) => {
@@ -202,11 +246,13 @@ export function ThemePresetProvider({
           fdrScale,
           fdrScaleReversed,
           fdrDisplayMode,
+          lightThemeColour,
+          darkThemeColour,
         });
       },
       saveStatus,
     }),
-    [attackDirection, fdrDisplayMode, fdrScale, fdrScaleReversed, preset, saveStatus],
+    [attackDirection, darkThemeColour, fdrDisplayMode, fdrScale, fdrScaleReversed, lightThemeColour, preset, saveStatus],
   );
 
   return <ThemePresetContext.Provider value={value}>{children}</ThemePresetContext.Provider>;

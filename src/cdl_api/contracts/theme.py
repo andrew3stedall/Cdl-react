@@ -17,3 +17,5 @@ class UserPreferences(BaseModel):
     fdr_scale: str = "RdYlGn"
     fdr_scale_reversed: bool = True
     fdr_display_mode: str = "font"
+    light_theme_colour: str = "#0F766E"
+    dark_theme_colour: str = "#2DD4BF"

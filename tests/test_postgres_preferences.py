@@ -74,6 +74,8 @@ def test_authenticated_preferences_persist_and_remain_isolated() -> None:
             "fdr_scale": "Viridis",
             "fdr_scale_reversed": False,
             "fdr_display_mode": "fill",
+            "light_theme_colour": "#2563EB",
+            "dark_theme_colour": "#60A5FA",
         },
     ).json() == {
         "theme_preset": "teal-dark",
@@ -81,6 +83,8 @@ def test_authenticated_preferences_persist_and_remain_isolated() -> None:
         "fdr_scale": "Viridis",
         "fdr_scale_reversed": False,
         "fdr_display_mode": "fill",
+        "light_theme_colour": "#2563EB",
+        "dark_theme_colour": "#60A5FA",
     }
 
     app.dependency_overrides[require_authenticated_session] = lambda: _user("preferences-manager-2")
@@ -90,6 +94,8 @@ def test_authenticated_preferences_persist_and_remain_isolated() -> None:
         "fdr_scale": "RdYlGn",
         "fdr_scale_reversed": True,
         "fdr_display_mode": "font",
+        "light_theme_colour": "#0F766E",
+        "dark_theme_colour": "#2DD4BF",
     }
     assert client.put(
         "/api/me/preferences",
@@ -99,6 +105,8 @@ def test_authenticated_preferences_persist_and_remain_isolated() -> None:
             "fdr_scale": "Rainbow",
             "fdr_scale_reversed": True,
             "fdr_display_mode": "font",
+            "light_theme_colour": "#0F766E",
+            "dark_theme_colour": "#2DD4BF",
         },
     ).json() == {
         "theme_preset": "teal-dark",
@@ -106,6 +114,8 @@ def test_authenticated_preferences_persist_and_remain_isolated() -> None:
         "fdr_scale": "Rainbow",
         "fdr_scale_reversed": True,
         "fdr_display_mode": "font",
+        "light_theme_colour": "#0F766E",
+        "dark_theme_colour": "#2DD4BF",
     }
 
     reloaded_repository = PostgreSQLUserPreferenceRepository(session_factory)

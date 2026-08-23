@@ -21,3 +21,16 @@ def test_fdr_display_mode_migration_is_append_only() -> None:
     assert "Revises: 0012_fdr_scale_prefs" in content
     assert '"fdr_display_mode"' in content
     assert 'server_default="font"' in content
+
+
+def test_theme_colour_preferences_migration_is_append_only() -> None:
+    content = Path(
+        "migrations/versions/0015_theme_colour_preferences.py",
+    ).read_text(encoding="utf-8")
+
+    assert "Revision ID: 0015_theme_colour_preferences" in content
+    assert "Revises: 0014_fpl_provisional_fixture" in content
+    assert '"light_theme_colour"' in content
+    assert '"dark_theme_colour"' in content
+    assert 'server_default="#0F766E"' in content
+    assert 'server_default="#2DD4BF"' in content

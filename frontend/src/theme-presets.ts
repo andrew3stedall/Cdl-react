@@ -54,8 +54,8 @@ const darkPalette = ['#2dd4bf', '#5eead4', '#99f6e4', '#94a3b8'];
 export const themePresets: ThemePreset[] = [
   {
     name: 'teal-light',
-    label: 'Teal · Light',
-    description: 'A bright, restrained workspace with teal actions.',
+    label: 'Light mode',
+    description: 'A bright, restrained workspace for daytime sessions.',
     isDefault: true,
     tokens: {
       colors: lightColors,
@@ -67,7 +67,7 @@ export const themePresets: ThemePreset[] = [
   },
   {
     name: 'teal-dark',
-    label: 'Teal · Dark',
+    label: 'Dark mode',
     description: 'A deep, low-contrast workspace for evening sessions.',
     isDefault: false,
     tokens: {

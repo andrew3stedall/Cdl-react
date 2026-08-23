@@ -13,6 +13,8 @@ def test_preference_service_returns_default_theme() -> None:
     assert preferences.fdr_scale == "RdYlGn"
     assert preferences.fdr_scale_reversed is True
     assert preferences.fdr_display_mode == "font"
+    assert preferences.light_theme_colour == "#0F766E"
+    assert preferences.dark_theme_colour == "#2DD4BF"
 
 
 def test_preference_service_persists_supported_theme() -> None:
@@ -26,6 +28,8 @@ def test_preference_service_persists_supported_theme() -> None:
             fdr_scale="Viridis",
             fdr_scale_reversed=False,
             fdr_display_mode="fill",
+            light_theme_colour="#2563EB",
+            dark_theme_colour="#60A5FA",
         ),
     )
 
@@ -34,6 +38,8 @@ def test_preference_service_persists_supported_theme() -> None:
     assert updated.fdr_scale == "Viridis"
     assert updated.fdr_scale_reversed is False
     assert updated.fdr_display_mode == "fill"
+    assert updated.light_theme_colour == "#2563EB"
+    assert updated.dark_theme_colour == "#60A5FA"
     assert service.get_preferences("manager-1").theme_preset == "teal-dark"
     assert service.get_preferences("manager-1").attack_direction == "down"
 
@@ -76,3 +82,25 @@ def test_preference_service_rejects_unsupported_fdr_display_mode() -> None:
     )
 
     assert updated.fdr_display_mode == "font"
+
+
+def test_preference_service_rejects_invalid_theme_colour() -> None:
+    service = UserPreferenceService(InMemoryUserPreferenceRepository())
+
+    updated = service.update_preferences(
+        "manager-1",
+        UserPreferences(theme_preset="teal-light", light_theme_colour="teal"),
+    )
+
+    assert updated.light_theme_colour == "#0F766E"
+
+
+def test_preference_service_accepts_custom_fdr_scale() -> None:
+    service = UserPreferenceService(InMemoryUserPreferenceRepository())
+
+    updated = service.update_preferences(
+        "manager-1",
+        UserPreferences(theme_preset="teal-light", fdr_scale="CustomOcean"),
+    )
+
+    assert updated.fdr_scale == "CustomOcean"

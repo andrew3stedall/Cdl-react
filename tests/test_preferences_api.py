@@ -41,6 +41,8 @@ def test_preferences_use_authenticated_user_identity() -> None:
             "fdr_scale": "Spectral",
             "fdr_scale_reversed": False,
             "fdr_display_mode": "fill",
+            "light_theme_colour": "#2563EB",
+            "dark_theme_colour": "#60A5FA",
         },
     )
 
@@ -51,6 +53,8 @@ def test_preferences_use_authenticated_user_identity() -> None:
         "fdr_scale": "Spectral",
         "fdr_scale_reversed": False,
         "fdr_display_mode": "fill",
+        "light_theme_colour": "#2563EB",
+        "dark_theme_colour": "#60A5FA",
     }
     assert client.get("/api/me/preferences").json() == {
         "theme_preset": "teal-dark",
@@ -58,6 +62,8 @@ def test_preferences_use_authenticated_user_identity() -> None:
         "fdr_scale": "Spectral",
         "fdr_scale_reversed": False,
         "fdr_display_mode": "fill",
+        "light_theme_colour": "#2563EB",
+        "dark_theme_colour": "#60A5FA",
     }
 
     app.dependency_overrides[require_authenticated_session] = lambda: _user("manager-2")
@@ -67,6 +73,8 @@ def test_preferences_use_authenticated_user_identity() -> None:
         "fdr_scale": "RdYlGn",
         "fdr_scale_reversed": True,
         "fdr_display_mode": "font",
+        "light_theme_colour": "#0F766E",
+        "dark_theme_colour": "#2DD4BF",
     }
 
     response = client.put(
@@ -77,6 +85,8 @@ def test_preferences_use_authenticated_user_identity() -> None:
             "fdr_scale": "Warm",
             "fdr_scale_reversed": True,
             "fdr_display_mode": "font",
+            "light_theme_colour": "#0F766E",
+            "dark_theme_colour": "#2DD4BF",
         },
     )
 
@@ -87,6 +97,8 @@ def test_preferences_use_authenticated_user_identity() -> None:
         "fdr_scale": "Warm",
         "fdr_scale_reversed": True,
         "fdr_display_mode": "font",
+        "light_theme_colour": "#0F766E",
+        "dark_theme_colour": "#2DD4BF",
     }
 
     app.dependency_overrides[require_authenticated_session] = lambda: _user("manager-1")
@@ -96,4 +108,6 @@ def test_preferences_use_authenticated_user_identity() -> None:
         "fdr_scale": "Spectral",
         "fdr_scale_reversed": False,
         "fdr_display_mode": "fill",
+        "light_theme_colour": "#2563EB",
+        "dark_theme_colour": "#60A5FA",
     }

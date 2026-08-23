@@ -39,8 +39,8 @@
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding-bottom: 1rem;
-  scroll-padding-bottom: 1rem;
+  padding-bottom: calc(1rem + var(--cdl-mobile-navigation-clearance));
+  scroll-padding-bottom: calc(1rem + var(--cdl-mobile-navigation-clearance));
 }
 
 .player-profile__sheet-handle {
@@ -691,12 +691,14 @@
   border-radius: 0;
   border-top: 1px solid var(--cdl-border);
   bottom: 0;
+  left: 0;
+  right: 0;
   box-sizing: border-box;
   gap: 0;
   padding: 0.45rem max(0.45rem, env(safe-area-inset-right))
     calc(0.45rem + env(safe-area-inset-bottom))
     max(0.45rem, env(safe-area-inset-left));
-  position: relative;
+  position: fixed;
   z-index: 12;
 }
 

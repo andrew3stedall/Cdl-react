@@ -278,8 +278,8 @@ async function testSquadWorkspace(browser, viewport) {
   }
 
   await page.goto(`${baseUrl}/account`, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: /RdYlGn/ }).click();
-  await page.locator('.profile-fdr-scale-option').filter({ hasText: 'Viridis' }).click();
+  await page.getByRole('button', { name: /Option 8/ }).click();
+  await page.getByRole('button', { name: 'FDR colour scale option 11' }).click();
   await page.getByRole('status').getByText('Appearance preference saved.', { exact: true }).waitFor();
   await page.locator('.profile-fdr-reverse-toggle input').click();
   await page.getByRole('status').getByText('Appearance preference saved.', { exact: true }).waitFor();

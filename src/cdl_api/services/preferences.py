@@ -1,5 +1,7 @@
 """User preference service."""
 
+import re
+
 from cdl_api.contracts.theme import UserPreferences
 from cdl_api.repositories.preferences import InMemoryUserPreferenceRepository
 
@@ -45,7 +47,16 @@ SUPPORTED_FDR_SCALES = {
     "YlOrRd",
     "Rainbow",
     "Sinebow",
+    "CustomOcean",
+    "CustomBerry",
+    "CustomForest",
+    "CustomEmber",
+    "CustomAqua",
+    "CustomOrchid",
+    "CustomSlate",
+    "CustomCitrus",
 }
+THEME_COLOUR_PATTERN = re.compile(r"^#[0-9A-Fa-f]{6}$")
 
 
 class UserPreferenceService:
@@ -61,6 +72,8 @@ class UserPreferenceService:
             or preferences.attack_direction not in SUPPORTED_ATTACK_DIRECTIONS
             or preferences.fdr_scale not in SUPPORTED_FDR_SCALES
             or preferences.fdr_display_mode not in SUPPORTED_FDR_DISPLAY_MODES
+            or not THEME_COLOUR_PATTERN.fullmatch(preferences.light_theme_colour)
+            or not THEME_COLOUR_PATTERN.fullmatch(preferences.dark_theme_colour)
         ):
             return self._repository.get_for_user(user_id)
 

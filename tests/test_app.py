@@ -58,6 +58,8 @@ def test_user_preferences_endpoint_round_trip() -> None:
         "fdr_scale": "RdYlGn",
         "fdr_scale_reversed": True,
         "fdr_display_mode": "font",
+        "light_theme_colour": "#0F766E",
+        "dark_theme_colour": "#2DD4BF",
     }
     assert update_response.status_code == 200
     assert update_response.json() == {
@@ -66,6 +68,8 @@ def test_user_preferences_endpoint_round_trip() -> None:
         "fdr_scale": "Viridis",
         "fdr_scale_reversed": False,
         "fdr_display_mode": "fill",
+        "light_theme_colour": "#0F766E",
+        "dark_theme_colour": "#2DD4BF",
     }
     assert final_response.json() == {
         "theme_preset": "teal-dark",
@@ -73,4 +77,6 @@ def test_user_preferences_endpoint_round_trip() -> None:
         "fdr_scale": "Viridis",
         "fdr_scale_reversed": False,
         "fdr_display_mode": "fill",
+        "light_theme_colour": "#0F766E",
+        "dark_theme_colour": "#2DD4BF",
     }

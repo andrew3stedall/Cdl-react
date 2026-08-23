@@ -7,6 +7,11 @@ import {
 } from './fdr-colour-scales';
 import { resolveThemePreset } from './theme-presets';
 import { getStoredThemePreset, setThemePresetCookie } from './theme-cookie';
+import {
+  defaultDarkThemeColour,
+  defaultLightThemeColour,
+  resolveThemeColour,
+} from './theme-colours';
 
 interface ApiUserPreferences {
   theme_preset: string;
@@ -14,6 +19,8 @@ interface ApiUserPreferences {
   fdr_scale?: string;
   fdr_scale_reversed?: boolean;
   fdr_display_mode?: string;
+  light_theme_colour?: string;
+  dark_theme_colour?: string;
 }
 
 export interface PreferenceClient {
@@ -28,6 +35,8 @@ function fromApiPreferences(preferences: ApiUserPreferences): UserPreferences {
     fdrScale: resolveFdrScaleName(preferences.fdr_scale),
     fdrScaleReversed: preferences.fdr_scale_reversed ?? defaultFdrScaleReversed,
     fdrDisplayMode: resolveFdrDisplayMode(preferences.fdr_display_mode),
+    lightThemeColour: resolveThemeColour(preferences.light_theme_colour, 'light'),
+    darkThemeColour: resolveThemeColour(preferences.dark_theme_colour, 'dark'),
   };
 }
 
@@ -38,6 +47,8 @@ function toApiPreferences(preferences: UserPreferences): ApiUserPreferences {
     fdr_scale: preferences.fdrScale,
     fdr_scale_reversed: preferences.fdrScaleReversed,
     fdr_display_mode: preferences.fdrDisplayMode ?? defaultFdrDisplayMode,
+    light_theme_colour: resolveThemeColour(preferences.lightThemeColour, 'light'),
+    dark_theme_colour: resolveThemeColour(preferences.darkThemeColour, 'dark'),
   };
 }
 
@@ -92,6 +103,8 @@ export class LocalStoragePreferenceClient implements PreferenceClient {
   private readonly fdrScaleStorageKey = 'cdl-fdr-scale';
   private readonly fdrScaleReversedStorageKey = 'cdl-fdr-scale-reversed';
   private readonly fdrDisplayModeStorageKey = 'cdl-fdr-display-mode';
+  private readonly lightThemeColourStorageKey = 'cdl-light-theme-colour';
+  private readonly darkThemeColourStorageKey = 'cdl-dark-theme-colour';
 
   async getPreferences(): Promise<UserPreferences> {
     const storedPreset = getStoredThemePreset();
@@ -104,6 +117,8 @@ export class LocalStoragePreferenceClient implements PreferenceClient {
         ? localStorage.getItem(this.fdrScaleReversedStorageKey) === 'true'
         : defaultFdrScaleReversed,
       fdrDisplayMode: resolveFdrDisplayMode(localStorage.getItem(this.fdrDisplayModeStorageKey) ?? undefined),
+      lightThemeColour: resolveThemeColour(localStorage.getItem(this.lightThemeColourStorageKey), 'light'),
+      darkThemeColour: resolveThemeColour(localStorage.getItem(this.darkThemeColourStorageKey), 'dark'),
     };
   }
 
@@ -114,6 +129,8 @@ export class LocalStoragePreferenceClient implements PreferenceClient {
     localStorage.setItem(this.fdrScaleStorageKey, preferences.fdrScale);
     localStorage.setItem(this.fdrScaleReversedStorageKey, String(preferences.fdrScaleReversed));
     localStorage.setItem(this.fdrDisplayModeStorageKey, preferences.fdrDisplayMode ?? defaultFdrDisplayMode);
+    localStorage.setItem(this.lightThemeColourStorageKey, resolveThemeColour(preferences.lightThemeColour ?? defaultLightThemeColour, 'light'));
+    localStorage.setItem(this.darkThemeColourStorageKey, resolveThemeColour(preferences.darkThemeColour ?? defaultDarkThemeColour, 'dark'));
 
     return preferences;
   }

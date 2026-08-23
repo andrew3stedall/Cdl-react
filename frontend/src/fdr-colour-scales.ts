@@ -8,9 +8,63 @@
  * so the scale does not complete a full colour cycle.
  */
 
-export type FdrScaleGroup = 'Diverging' | 'Sequential' | 'Cyclical';
+export type FdrScaleGroup = 'Diverging' | 'Sequential' | 'Cyclical' | 'Custom';
 export type FdrPalette = readonly [string, string, string, string, string];
 export type FdrDisplayMode = 'font' | 'fill';
+
+type Rgb = [number, number, number];
+
+function hexToRgb(hex: string): Rgb {
+  return [1, 3, 5].map((index) => Number.parseInt(hex.slice(index, index + 2), 16)) as Rgb;
+}
+
+function rgbToHex(rgb: Rgb): string {
+  return `#${rgb.map((channel) => Math.round(channel).toString(16).padStart(2, '0')).join('')}`.toUpperCase();
+}
+
+function mixRgb(first: Rgb, second: Rgb, firstWeight: number): Rgb {
+  return first.map((channel, index) => channel * firstWeight + second[index] * (1 - firstWeight)) as Rgb;
+}
+
+function interpolateThreeColourAnchors(anchors: readonly [string, string, string]): FdrPalette {
+  const first = hexToRgb(anchors[0]);
+  const middle = hexToRgb(anchors[1]);
+  const last = hexToRgb(anchors[2]);
+  return [
+    anchors[0],
+    rgbToHex(mixRgb(first, middle, 0.5)),
+    anchors[1],
+    rgbToHex(mixRgb(middle, last, 0.5)),
+    anchors[2],
+  ];
+}
+
+function buildThreeColourScale<const TName extends string>(
+  name: TName,
+  label: string,
+  lightAnchors: readonly [string, string, string],
+  darkAnchors: readonly [string, string, string],
+) {
+  return {
+    name,
+    label,
+    group: 'Custom' as const,
+    isCyclical: false as const,
+    light: interpolateThreeColourAnchors(lightAnchors),
+    dark: interpolateThreeColourAnchors(darkAnchors),
+  } as const;
+}
+
+const customFdrScaleRows = [
+  buildThreeColourScale('CustomOcean', 'Ocean', ['#2E86AB', '#F6C85F', '#C73E1D'], ['#7DD3FC', '#FDE68A', '#FB7185']),
+  buildThreeColourScale('CustomBerry', 'Berry', ['#312E81', '#C026D3', '#BE123C'], ['#A5B4FC', '#F0ABFC', '#FDA4AF']),
+  buildThreeColourScale('CustomForest', 'Forest', ['#166534', '#D4A017', '#991B1B'], ['#86EFAC', '#FDE68A', '#FCA5A5']),
+  buildThreeColourScale('CustomEmber', 'Ember', ['#FDE68A', '#F97316', '#4A1942'], ['#FEF08A', '#FB923C', '#F0ABFC']),
+  buildThreeColourScale('CustomAqua', 'Aqua', ['#0F766E', '#F4D35E', '#C2410C'], ['#5EEAD4', '#FDE68A', '#FDBA74']),
+  buildThreeColourScale('CustomOrchid', 'Orchid', ['#5B21B6', '#F59E0B', '#9D174D'], ['#C4B5FD', '#FCD34D', '#F9A8D4']),
+  buildThreeColourScale('CustomSlate', 'Slate', ['#2F6690', '#E0A458', '#9B2226'], ['#93C5FD', '#FCD34D', '#FDA4AF']),
+  buildThreeColourScale('CustomCitrus', 'Citrus', ['#2A9D8F', '#E9C46A', '#E76F51'], ['#5EEAD4', '#FDE68A', '#FDA4AF']),
+] as const;
 
 const fdrScaleRows = [
   { name: 'BrBG', label: 'Brown–Blue–Green', group: 'Diverging', isCyclical: false, light: ['#543005', '#946D2B', '#687951', '#3B7E77', '#003C30'], dark: ['#B6680B', '#CEA156', '#EEF1EA', '#5BB2A8', '#008C70'] },
@@ -45,6 +99,7 @@ const fdrScaleRows = [
   { name: 'YlOrRd', label: 'Yellow–Orange–Red', group: 'Sequential', isCyclical: false, light: ['#787800', '#986C01', '#C44F02', '#E11E20', '#800026'], dark: ['#FFFFCC', '#FED676', '#FD893C', '#E5393B', '#F50049'] },
   { name: 'Rainbow', label: 'Rainbow', group: 'Cyclical', isCyclical: true, light: ['#6E40AA', '#E0106B', '#B55B04', '#3B8309', '#118360'], dark: ['#9067C6', '#F24591', '#FB9633', '#97F357', '#1DDFA3'] },
   { name: 'Sinebow', label: 'Sinebow', group: 'Cyclical', isCyclical: true, light: ['#E90000', '#727900', '#018710', '#017E98', '#582AFC'], dark: ['#FF4040', '#B9C500', '#35FE4C', '#02ADD0', '#815EFD'] },
+  ...customFdrScaleRows,
 ] as const;
 
 export type FdrScaleName = (typeof fdrScaleRows)[number]['name'];
@@ -61,20 +116,6 @@ const fdrThemeSurface = {
   dark: '#111c1b',
   light: '#ffffff',
 } as const;
-
-type Rgb = [number, number, number];
-
-function hexToRgb(hex: string): Rgb {
-  return [1, 3, 5].map((index) => Number.parseInt(hex.slice(index, index + 2), 16)) as Rgb;
-}
-
-function rgbToHex(rgb: Rgb): string {
-  return `#${rgb.map((channel) => Math.round(channel).toString(16).padStart(2, '0')).join('')}`.toUpperCase();
-}
-
-function mixRgb(first: Rgb, second: Rgb, firstWeight: number): Rgb {
-  return first.map((channel, index) => channel * firstWeight + second[index] * (1 - firstWeight)) as Rgb;
-}
 
 function relativeLuminance(rgb: Rgb): number {
   return rgb.reduce((total, channel, index) => {

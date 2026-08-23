@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import {
   ArrowDown,
   ArrowUp,
@@ -9,7 +9,6 @@ import {
   LogOut,
   Moon,
   RefreshCw,
-  Search,
   Sun,
   Type,
   PaintBucket,
@@ -28,10 +27,10 @@ import {
   getFdrColourScale,
   type FdrColourScale,
   type FdrDisplayMode,
-  type FdrScaleGroup,
 } from './fdr-colour-scales';
 import { getThemeMode, themePresets } from './theme-presets';
 import { useThemePreset } from './theme-preset-provider';
+import { themeColourOptions, type ThemeColourMode } from './theme-colours';
 import './profile-page.css';
 
 interface ProfilePageProps {
@@ -46,24 +45,22 @@ export function ProfilePage({ onRefresh, onSignOut, session }: ProfilePageProps)
     fdrDisplayMode,
     fdrScale,
     fdrScaleReversed,
+    lightThemeColour,
+    darkThemeColour,
     preset,
     saveStatus,
     setAttackDirection,
     setFdrDisplayMode,
     setFdrScale,
     setFdrScaleReversed,
+    setThemeColour,
     setPresetName,
   } = useThemePreset();
   const [isFdrScaleSheetOpen, setIsFdrScaleSheetOpen] = useState(false);
-  const [fdrScaleSearch, setFdrScaleSearch] = useState('');
   const user = session.user;
   const selectedFdrScale = getFdrColourScale(fdrScale);
+  const selectedFdrScaleNumber = getFdrScaleOptionNumber(fdrScale);
   const themeMode = getThemeMode(preset);
-  const filteredFdrScales = useMemo(() => {
-    const query = fdrScaleSearch.trim().toLowerCase();
-    if (!query) return fdrColourScales;
-    return fdrColourScales.filter((scale) => `${scale.name} ${scale.label} ${scale.group}`.toLowerCase().includes(query));
-  }, [fdrScaleSearch]);
   const displayName = user?.displayName ?? 'Authenticated user';
   const initials = displayName
     .split(/\s+/)
@@ -111,7 +108,7 @@ export function ProfilePage({ onRefresh, onSignOut, session }: ProfilePageProps)
             <AppearanceIcon preset={preset} />
           </div>
           <p className="profile-card__copy">
-            Choose the shared Teal light or dark workspace appearance.
+            Choose the light or dark workspace appearance.
           </p>
           <div aria-label="Visual preset" className="profile-preset-grid" role="group">
             {themePresets.map((themePreset) => (
@@ -123,6 +120,11 @@ export function ProfilePage({ onRefresh, onSignOut, session }: ProfilePageProps)
               />
             ))}
           </div>
+          <ThemeColourControls
+            darkThemeColour={darkThemeColour}
+            lightThemeColour={lightThemeColour}
+            onSelect={setThemeColour}
+          />
           <p aria-live="polite" className="profile-save-status" role="status">
             {saveStatus === 'saving' ? 'Saving your appearance preference…' : null}
             {saveStatus === 'saved' ? 'Appearance preference saved.' : null}
@@ -152,8 +154,8 @@ export function ProfilePage({ onRefresh, onSignOut, session }: ProfilePageProps)
           variant="secondary"
         >
           <span>
-            <strong>{selectedFdrScale.label}</strong>
-            <small>{selectedFdrScale.name} · {selectedFdrScale.group}</small>
+            <strong>Option {selectedFdrScaleNumber}</strong>
+            <small>Five FDR colour steps</small>
           </span>
           <ChevronRight aria-hidden="true" size={18} />
         </Button>
@@ -215,62 +217,38 @@ export function ProfilePage({ onRefresh, onSignOut, session }: ProfilePageProps)
               <X aria-hidden="true" size={18} />
             </Button>
           </header>
-          <p className="profile-card__copy">
-            Choose from the multi-colour D3 scales. Options use the current {themeMode} theme and
-            cyclical scales stop at 70% of their colour cycle so level 5 does not wrap back towards
-            level 1.
-          </p>
-          <label className="profile-fdr-search">
-            <Search aria-hidden="true" size={16} />
-            <span className="sr-only">Search FDR colour scales</span>
-            <input
-              onChange={(event) => setFdrScaleSearch(event.target.value)}
-              placeholder="Search scales"
-              type="search"
-              value={fdrScaleSearch}
-            />
-          </label>
           <div className="profile-fdr-scale-list">
-            {(['Diverging', 'Sequential', 'Cyclical'] as FdrScaleGroup[]).map((group) => {
-              const groupScales = filteredFdrScales.filter((scale) => scale.group === group);
-              if (groupScales.length === 0) return null;
-              return (
-                <section aria-labelledby={`fdr-scale-group-${group.toLowerCase()}`} key={group}>
-                  <h3 id={`fdr-scale-group-${group.toLowerCase()}`}>{group}</h3>
-                  <div className="profile-fdr-scale-options">
-                    {groupScales.map((scale) => (
-                      <button
-                        aria-pressed={scale.name === fdrScale}
-                        className={`profile-fdr-scale-option${scale.name === fdrScale ? ' is-selected' : ''}`}
-                        key={scale.name}
-                        onClick={() => {
-                          setFdrScale(scale.name);
-                          setIsFdrScaleSheetOpen(false);
-                        }}
-                        type="button"
-                      >
-                        <span className="profile-fdr-scale-option__copy">
-                          <strong>{scale.label}</strong>
-                          <small>{scale.name}</small>
-                        </span>
-                        <span className="profile-fdr-scale-option__previews">
-                          <FdrPaletteBar
-                            displayMode={fdrDisplayMode}
-                            mode={themeMode}
-                            reversed={fdrScaleReversed}
-                            scale={scale}
-                          />
-                        </span>
-                        <span aria-hidden="true" className="profile-preset-check">
-                          {scale.name === fdrScale ? <Check size={15} /> : <Circle size={15} />}
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </section>
-              );
-            })}
-            {filteredFdrScales.length === 0 ? <p className="profile-fdr-empty">No scales match that search.</p> : null}
+            {fdrColourScales.map((scale, index) => (
+              <div key={scale.name}>
+                {scale.group === 'Custom' && fdrColourScales[index - 1]?.group !== 'Custom' ? (
+                  <h3 className="profile-fdr-custom-heading">Three-colour options</h3>
+                ) : null}
+                <button
+                  aria-label={`FDR colour scale option ${index + 1}`}
+                  aria-pressed={scale.name === fdrScale}
+                  className={`profile-fdr-scale-option${scale.name === fdrScale ? ' is-selected' : ''}`}
+                  data-scale-name={scale.name}
+                  onClick={() => {
+                    setFdrScale(scale.name);
+                    setIsFdrScaleSheetOpen(false);
+                  }}
+                  type="button"
+                >
+                  <span aria-hidden="true" className="profile-fdr-scale-option__number">{index + 1}</span>
+                  <span className="profile-fdr-scale-option__previews">
+                    <FdrPaletteBar
+                      displayMode={fdrDisplayMode}
+                      mode={themeMode}
+                      reversed={fdrScaleReversed}
+                      scale={scale}
+                    />
+                  </span>
+                  <span aria-hidden="true" className="profile-preset-check">
+                    {scale.name === fdrScale ? <Check size={15} /> : <Circle size={15} />}
+                  </span>
+                </button>
+              </div>
+            ))}
           </div>
         </div>
       </Sheet>
@@ -357,6 +335,10 @@ function AppearanceIcon({ preset }: { preset: ThemePreset }) {
   return <Icon aria-hidden="true" className="profile-appearance-icon" size={20} />;
 }
 
+function getFdrScaleOptionNumber(scaleName: FdrColourScale['name']): number {
+  return Math.max(0, fdrColourScales.findIndex((scale) => scale.name === scaleName)) + 1;
+}
+
 function FdrPalettePreview({
   displayMode,
   mode,
@@ -401,10 +383,10 @@ function FdrPaletteBar({
 }) {
   const palette = getFdrDisplayPalette(scale.name, mode, reversed, displayMode);
   return (
-    <span aria-label={`${scale.label} ${mode} theme colour steps`} className="profile-fdr-palette-bar" data-display-mode={displayMode}>
+    <span aria-label={`FDR colour scale option ${getFdrScaleOptionNumber(scale.name)}`} className="profile-fdr-palette-bar" data-display-mode={displayMode}>
       {palette.map((colour, index) => (
         <span
-          aria-label={`FDR ${index + 1}, ${fdrDifficultyLabels[index]}: ${colour}`}
+          aria-label={`FDR ${index + 1}: ${colour}`}
           key={`${scale.name}-${mode}-${index}`}
           style={{
             backgroundColor: getFdrDisplayBackground(colour, displayMode),
@@ -467,6 +449,63 @@ function DisplayModeOption({
         {isSelected ? <Check size={15} /> : <Circle size={15} />}
       </span>
     </button>
+  );
+}
+
+function ThemeColourControls({
+  darkThemeColour,
+  lightThemeColour,
+  onSelect,
+}: {
+  darkThemeColour: string;
+  lightThemeColour: string;
+  onSelect: (mode: ThemeColourMode, colour: string) => void;
+}) {
+  const colours: Record<ThemeColourMode, string> = {
+    light: lightThemeColour,
+    dark: darkThemeColour,
+  };
+
+  return (
+    <section aria-labelledby="main-theme-colour-title" className="profile-theme-colours">
+      <div className="profile-theme-colours__header">
+        <div>
+          <strong id="main-theme-colour-title">Main theme colour</strong>
+          <small>Choose a separate accent for light and dark mode.</small>
+        </div>
+      </div>
+      {(['light', 'dark'] as const).map((mode) => (
+        <div className="profile-theme-colour-row" data-theme-colour-mode={mode} key={mode}>
+          <div className="profile-theme-colour-row__copy">
+            <strong>{mode === 'light' ? 'Light mode' : 'Dark mode'}</strong>
+            <small>{colours[mode]}</small>
+          </div>
+          <div aria-label={`${mode === 'light' ? 'Light' : 'Dark'} mode theme colours`} className="profile-theme-colour-options" role="group">
+            {themeColourOptions.map((option) => (
+              <button
+                aria-label={`${option.label} ${mode} theme colour`}
+                aria-pressed={colours[mode] === option[mode]}
+                className={`profile-theme-colour-swatch${colours[mode] === option[mode] ? ' is-selected' : ''}`}
+                key={`${mode}-${option.label}`}
+                onClick={() => onSelect(mode, option[mode])}
+                style={{ '--swatch-colour': option[mode] } as CSSProperties}
+                title={option.label}
+                type="button"
+              />
+            ))}
+            <label className="profile-theme-colour-picker">
+              <span className="sr-only">Choose a custom {mode} mode theme colour</span>
+              <input
+                aria-label={`Custom ${mode} mode theme colour`}
+                onChange={(event) => onSelect(mode, event.target.value)}
+                type="color"
+                value={colours[mode]}
+              />
+            </label>
+          </div>
+        </div>
+      ))}
+    </section>
   );
 }
 

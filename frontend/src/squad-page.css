@@ -1684,7 +1684,7 @@
 }
 
 .squad-page__list-table .squad-page__identity-circle-opponent {
-  top: calc(66% + 0.72rem);
+  top: calc(66% + 0.5rem);
 }
 
 .squad-page__identity-circle-opponent > .squad-page__opponent {

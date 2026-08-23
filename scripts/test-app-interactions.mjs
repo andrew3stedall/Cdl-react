@@ -708,11 +708,11 @@ async function testMobileNavigationClearance(page) {
   }
 
   await page.goto(baseUrl + '/account', { waitUntil: 'networkidle' });
-  const initialChooserScrollY = await page.evaluate(() => window.scrollY);
   await page.getByRole('button', { name: /Option \d+/ }).click();
   const sheet = page.locator('#fdr-scale-sheet');
   await sheet.waitFor({ state: 'visible' });
-  const chooserGeometry = await page.locator('.profile-fdr-scale-option').first().evaluate((element, initialScrollY) => {
+  const chooserOpenedScrollY = await page.evaluate(() => window.scrollY);
+  const chooserGeometry = await page.locator('.profile-fdr-scale-option').first().evaluate((element, expectedScrollY) => {
     const sheetElement = element.closest('#fdr-scale-sheet');
     const option = element.getBoundingClientRect();
     const sheetRect = sheetElement?.getBoundingClientRect();
@@ -723,19 +723,19 @@ async function testMobileNavigationClearance(page) {
       sheetWidth: sheetRect?.width ?? null,
       viewportWidth: window.innerWidth,
       windowScrollY: window.scrollY,
-      initialChooserScrollY: initialScrollY,
+      chooserOpenedScrollY: expectedScrollY,
     };
-  }, initialChooserScrollY);
+  }, chooserOpenedScrollY);
   if (!chooserGeometry
     || chooserGeometry.optionWidth < chooserGeometry.viewportWidth * 0.8
     || chooserGeometry.sheetWidth !== chooserGeometry.viewportWidth
-    || chooserGeometry.windowScrollY !== chooserGeometry.initialChooserScrollY) {
+    || chooserGeometry.windowScrollY !== chooserGeometry.chooserOpenedScrollY) {
     throw new Error(`FDR chooser is not full-width or initially locked to the viewport (received ${JSON.stringify(chooserGeometry)})`);
   }
   await page.evaluate(() => window.scrollTo(0, 400));
   await page.waitForTimeout(50);
   const lockedScrollY = await page.evaluate(() => window.scrollY);
-  if (lockedScrollY !== chooserGeometry.initialChooserScrollY) {
+  if (lockedScrollY !== chooserGeometry.chooserOpenedScrollY) {
     throw new Error(`FDR chooser allowed the background page to scroll (received ${lockedScrollY}px)`);
   }
   await page.getByRole('button', { name: 'Close FDR colour scale chooser' }).click();

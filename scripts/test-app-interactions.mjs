@@ -664,7 +664,7 @@ async function testShellAndLeagueNavigation(page, viewportName) {
 }
 
 async function testMobileNavigationClearance(page) {
-  const routes = ['/','/league','/dashboard','/fdr','/scouting','/squad-management','/team-selection'];
+  const routes = ['/','/account','/league','/dashboard','/fdr','/scouting','/squad-management','/team-selection'];
 
   for (const route of routes) {
     await page.goto(baseUrl + route, { waitUntil: 'networkidle' });
@@ -694,7 +694,52 @@ async function testMobileNavigationClearance(page) {
     if (geometry.contentPaddingBottom < geometry.navigationHeight) {
       throw new Error(`Mobile content clearance is smaller than the navigation on ${route}.`);
     }
+
+    const initialNavigationTop = geometry.viewportHeight - geometry.navigationHeight;
+    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+    await page.waitForTimeout(50);
+    const scrolledNavigation = await page.locator('.global-mobile-navigation').evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return { bottom: rect.bottom, top: rect.top };
+    });
+    if (Math.abs(scrolledNavigation.top - initialNavigationTop) > 1 || Math.abs(scrolledNavigation.bottom - geometry.viewportHeight) > 1) {
+      throw new Error(`Mobile navigation moved with page scrolling on ${route}.`);
+    }
   }
+
+  await page.goto(baseUrl + '/account', { waitUntil: 'networkidle' });
+  await page.getByRole('button', { name: /Option \d+/ }).click();
+  const sheet = page.locator('#fdr-scale-sheet');
+  await sheet.waitFor({ state: 'visible' });
+  const chooserOpenedScrollY = await page.evaluate(() => window.scrollY);
+  const chooserGeometry = await page.locator('.profile-fdr-scale-option').first().evaluate((element, expectedScrollY) => {
+    const sheetElement = element.closest('#fdr-scale-sheet');
+    const option = element.getBoundingClientRect();
+    const sheetRect = sheetElement?.getBoundingClientRect();
+    return {
+      optionRight: option.right,
+      optionWidth: option.width,
+      sheetRight: sheetRect?.right ?? null,
+      sheetWidth: sheetRect?.width ?? null,
+      viewportWidth: window.innerWidth,
+      windowScrollY: window.scrollY,
+      chooserOpenedScrollY: expectedScrollY,
+    };
+  }, chooserOpenedScrollY);
+  if (!chooserGeometry
+    || chooserGeometry.optionWidth < chooserGeometry.viewportWidth * 0.8
+    || chooserGeometry.sheetWidth !== chooserGeometry.viewportWidth
+    || chooserGeometry.windowScrollY !== chooserGeometry.chooserOpenedScrollY) {
+    throw new Error(`FDR chooser is not full-width or initially locked to the viewport (received ${JSON.stringify(chooserGeometry)})`);
+  }
+  await page.evaluate(() => window.scrollTo(0, 400));
+  await page.waitForTimeout(50);
+  const lockedScrollY = await page.evaluate(() => window.scrollY);
+  if (lockedScrollY !== chooserGeometry.chooserOpenedScrollY) {
+    throw new Error(`FDR chooser allowed the background page to scroll (received ${lockedScrollY}px)`);
+  }
+  await sheet.getByRole('button', { name: 'Close FDR colour scale chooser' }).click();
+  await sheet.waitFor({ state: 'hidden' });
 }
 
 async function testUnauthenticatedGuard(page) {

@@ -25,13 +25,14 @@
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     height: var(--cdl-mobile-navigation-clearance);
-    left: 0;
+    inset-inline: 0;
     padding: 0.45rem max(0.45rem, env(safe-area-inset-right))
       calc(0.45rem + env(safe-area-inset-bottom))
       max(0.45rem, env(safe-area-inset-left));
     position: fixed;
-    right: 0;
-    z-index: 18;
+    transform: translate3d(0, 0, 0);
+    will-change: transform;
+    z-index: 40;
   }
 
   .global-mobile-navigation a {

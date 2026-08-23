@@ -606,6 +606,13 @@
 .profile-fdr-scale-list {
   display: grid;
   gap: 1rem;
+  min-width: 0;
+  width: 100%;
+}
+
+.profile-fdr-scale-list > div {
+  min-width: 0;
+  width: 100%;
 }
 
 .profile-fdr-custom-heading {
@@ -643,9 +650,11 @@
   cursor: pointer;
   display: grid;
   gap: 0.7rem;
-  grid-template-columns: 2.15rem minmax(0, 1fr) auto;
-  padding: 0.55rem 0.65rem;
+  grid-template-columns: 3rem minmax(0, 1fr) 2.25rem;
+  min-height: 4.25rem;
+  padding: 0.65rem 0.75rem;
   text-align: left;
+  width: 100%;
 }
 
 .profile-fdr-scale-option:hover,
@@ -661,11 +670,11 @@
   border-radius: 0.45rem;
   color: var(--foreground);
   display: inline-flex;
-  font-size: 0.78rem;
+  font-size: 1rem;
   font-weight: 800;
-  height: 2rem;
+  height: 2.75rem;
   justify-content: center;
-  width: 2rem;
+  width: 2.75rem;
 }
 
 .profile-fdr-scale-option__copy {
@@ -689,10 +698,17 @@
 .profile-fdr-scale-option__previews {
   display: grid;
   gap: 0.25rem;
+  min-width: 0;
+  width: 100%;
 }
 
 .profile-fdr-scale-option__previews .profile-fdr-palette-bar {
-  height: 0.55rem;
+  height: 2.1rem;
+  width: 100%;
+}
+
+.profile-fdr-scale-option__previews .profile-fdr-palette-bar > span {
+  font-size: 0.82rem;
 }
 
 .profile-fdr-scale-option__previews .profile-fdr-palette-bar:first-child {
@@ -706,6 +722,11 @@
 .profile-fdr-empty {
   color: var(--muted-foreground);
   margin: 0;
+}
+
+#fdr-scale-sheet.ui-sheet {
+  box-sizing: border-box;
+  width: min(34rem, 100vw);
 }
 
 @media (max-width: 760px) {
@@ -727,7 +748,7 @@
   }
 
   .profile-fdr-scale-option {
-    grid-template-columns: 2.15rem minmax(0, 1fr) auto;
+    grid-template-columns: 3rem minmax(0, 1fr) 2.25rem;
   }
 
   .profile-theme-colour-row {
@@ -737,5 +758,12 @@
 
   .profile-theme-colour-options {
     justify-content: flex-start;
+  }
+
+  #fdr-scale-sheet.ui-sheet {
+    border-left: 0;
+    inset: 0;
+    max-width: none;
+    width: 100vw;
   }
 }

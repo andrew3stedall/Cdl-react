@@ -345,6 +345,24 @@
   width: 2rem;
 }
 
+.profile-theme-colour-variants {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.profile-theme-colour-variants span {
+  align-items: center;
+  background: var(--swatch-colour);
+  border: 1px solid color-mix(in srgb, var(--foreground) 20%, transparent);
+  border-radius: 999px;
+  color: var(--foreground);
+  display: inline-flex;
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 0.25rem 0.55rem;
+}
+
 .profile-save-status {
   color: var(--muted-foreground);
   font-size: 0.76rem;
@@ -624,6 +642,77 @@
   text-transform: uppercase;
 }
 
+.profile-fdr-custom-editor {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: grid;
+  gap: 0.7rem;
+  padding: 0.75rem;
+}
+
+.profile-fdr-custom-editor__header {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.profile-fdr-custom-editor__header > div {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.profile-fdr-custom-editor__header strong {
+  font-size: 0.78rem;
+}
+
+.profile-fdr-custom-editor__header small {
+  color: var(--muted-foreground);
+  font-size: 0.65rem;
+  line-height: 1.35;
+}
+
+.profile-fdr-custom-editor__header button {
+  flex: 0 0 auto;
+  min-height: 2.15rem;
+  padding: 0.35rem 0.65rem;
+}
+
+.profile-fdr-custom-editor__inputs {
+  display: grid;
+  gap: 0.45rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.profile-fdr-custom-editor__inputs label {
+  align-items: center;
+  display: grid;
+  gap: 0.25rem;
+  justify-items: center;
+}
+
+.profile-fdr-custom-editor__inputs label > span,
+.profile-fdr-custom-editor__inputs label > small {
+  color: var(--muted-foreground);
+  font-size: 0.62rem;
+  text-align: center;
+}
+
+.profile-fdr-custom-editor__inputs label > span {
+  color: var(--foreground);
+  font-weight: 700;
+}
+
+.profile-fdr-custom-editor__inputs input {
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  cursor: pointer;
+  height: 2rem;
+  padding: 0;
+  width: 2rem;
+}
+
 .profile-fdr-scale-list section {
   display: grid;
   gap: 0.45rem;
@@ -759,6 +848,15 @@
 
   .profile-theme-colour-options {
     justify-content: flex-start;
+  }
+
+  .profile-fdr-custom-editor__header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .profile-fdr-custom-editor__header button {
+    justify-self: start;
   }
 
   #fdr-scale-sheet.ui-sheet {

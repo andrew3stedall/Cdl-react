@@ -708,6 +708,7 @@ async function testMobileNavigationClearance(page) {
   }
 
   await page.goto(baseUrl + '/account', { waitUntil: 'networkidle' });
+  const initialChooserScrollY = await page.evaluate(() => window.scrollY);
   await page.getByRole('button', { name: /Option \d+/ }).click();
   const sheet = page.locator('#fdr-scale-sheet');
   await sheet.waitFor({ state: 'visible' });
@@ -722,18 +723,19 @@ async function testMobileNavigationClearance(page) {
       sheetWidth: sheetRect?.width ?? null,
       viewportWidth: window.innerWidth,
       windowScrollY: window.scrollY,
+      initialChooserScrollY,
     };
   });
   if (!chooserGeometry
     || chooserGeometry.optionWidth < chooserGeometry.viewportWidth * 0.8
     || chooserGeometry.sheetWidth !== chooserGeometry.viewportWidth
-    || chooserGeometry.windowScrollY !== 0) {
+    || chooserGeometry.windowScrollY !== chooserGeometry.initialChooserScrollY) {
     throw new Error(`FDR chooser is not full-width or initially locked to the viewport (received ${JSON.stringify(chooserGeometry)})`);
   }
   await page.evaluate(() => window.scrollTo(0, 400));
   await page.waitForTimeout(50);
   const lockedScrollY = await page.evaluate(() => window.scrollY);
-  if (lockedScrollY !== 0) {
+  if (lockedScrollY !== chooserGeometry.initialChooserScrollY) {
     throw new Error(`FDR chooser allowed the background page to scroll (received ${lockedScrollY}px)`);
   }
   await page.getByRole('button', { name: 'Close FDR colour scale chooser' }).click();

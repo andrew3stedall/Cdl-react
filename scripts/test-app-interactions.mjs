@@ -738,6 +738,36 @@ async function testMobileNavigationClearance(page) {
   if (lockedScrollY !== chooserGeometry.chooserOpenedScrollY) {
     throw new Error(`FDR chooser allowed the background page to scroll (received ${lockedScrollY}px)`);
   }
+
+  const navigationAtOpen = await page.locator('.global-mobile-navigation').evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    return { bottom: rect.bottom, top: rect.top };
+  });
+  await sheet.evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+  });
+  await page.waitForTimeout(50);
+  const endGeometry = await page.evaluate(() => {
+    const navigation = document.querySelector('.global-mobile-navigation');
+    const options = document.querySelectorAll('#fdr-scale-sheet .profile-fdr-scale-option');
+    const lastOption = options.item(options.length - 1);
+    if (!navigation || !lastOption) return null;
+    const navigationRect = navigation.getBoundingClientRect();
+    const lastOptionRect = lastOption.getBoundingClientRect();
+    return {
+      lastOptionBottom: lastOptionRect.bottom,
+      navigationBottom: navigationRect.bottom,
+      navigationTop: navigationRect.top,
+      viewportHeight: window.innerHeight,
+    };
+  });
+  if (!endGeometry
+    || Math.abs(endGeometry.navigationTop - navigationAtOpen.top) > 1
+    || Math.abs(endGeometry.navigationBottom - navigationAtOpen.bottom) > 1
+    || Math.abs(endGeometry.navigationBottom - endGeometry.viewportHeight) > 1
+    || endGeometry.lastOptionBottom > endGeometry.navigationTop - 8) {
+    throw new Error(`FDR chooser content is hidden by moving navigation (received ${JSON.stringify({ endGeometry, navigationAtOpen })})`);
+  }
   await sheet.getByRole('button', { name: 'Close FDR colour scale chooser' }).click();
   await sheet.waitFor({ state: 'hidden' });
 }

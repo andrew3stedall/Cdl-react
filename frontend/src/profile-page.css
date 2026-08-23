@@ -547,6 +547,7 @@
   padding: clamp(1rem, 3vw, 1.75rem);
   position: fixed;
   right: 0;
+  scroll-padding-bottom: var(--cdl-mobile-navigation-clearance);
   top: 0;
   width: min(34rem, 100vw);
   z-index: 30;
@@ -764,6 +765,13 @@
     border-left: 0;
     inset: 0;
     max-width: none;
+    padding-bottom: calc(clamp(1rem, 3vw, 1.75rem) + var(--cdl-mobile-navigation-clearance));
     width: 100vw;
+  }
+}
+
+@media (min-width: 761px) and (max-width: 900px) {
+  #fdr-scale-sheet.ui-sheet {
+    padding-bottom: calc(clamp(1rem, 3vw, 1.75rem) + var(--cdl-mobile-navigation-clearance));
   }
 }

@@ -2,16 +2,18 @@ import { describe, expect, test } from 'vitest';
 
 import {
   defaultFdrDisplayMode,
+  defaultFdrCustomAnchors,
   fdrColourScales,
   getFdrFillForeground,
   getFdrFillPalette,
   getFdrPalette,
   getFdrColourScale,
+  resolveFdrCustomAnchors,
 } from './fdr-colour-scales';
 
 describe('FDR colour scales', () => {
   test('contains every non-categorical D3 interpolator as five hex steps', () => {
-    expect(fdrColourScales).toHaveLength(40);
+    expect(fdrColourScales).toHaveLength(42);
     expect(fdrColourScales.every((scale) => scale.light.length === 5 && scale.dark.length === 5)).toBe(true);
     expect(fdrColourScales.flatMap((scale) => [...scale.light, ...scale.dark]).every((colour) => /^#[0-9A-F]{6}$/.test(colour))).toBe(true);
     expect(fdrColourScales.filter((scale) => scale.group === 'Cyclical').map((scale) => scale.name)).toEqual([
@@ -21,13 +23,17 @@ describe('FDR colour scales', () => {
     expect(fdrColourScales.map((scale) => scale.name)).not.toEqual(expect.arrayContaining([
       'Blues', 'Greens', 'Greys', 'Oranges', 'Purples', 'Reds',
     ]));
-    expect(fdrColourScales.filter((scale) => scale.group === 'Custom')).toHaveLength(8);
+    expect(fdrColourScales.filter((scale) => scale.group === 'Custom')).toHaveLength(10);
   });
 
-  test('interpolates custom scales between level 1, 3, and 5 anchors', () => {
-    expect(getFdrColourScale('CustomOcean').light).toEqual([
-      '#2E86AB', '#92A785', '#F6C85F', '#DF833E', '#C73E1D',
+  test('interpolates the custom D3-style scale between level 1, 3, and 5 anchors', () => {
+    const anchors = { min: '#0000FF', mid: '#00FF00', max: '#FF0000' };
+
+    expect(getFdrFillPalette('CustomHex', 'light', false, anchors)).toEqual([
+      '#0000FF', '#008080', '#00FF00', '#808000', '#FF0000',
     ]);
+    expect(defaultFdrCustomAnchors).toEqual({ min: '#2166AC', mid: '#F7F7F7', max: '#B2182B' });
+    expect(resolveFdrCustomAnchors({ min: 'not-a-colour' })).toEqual(defaultFdrCustomAnchors);
   });
 
   test('reverses the selected FDR order without changing the scale colours', () => {

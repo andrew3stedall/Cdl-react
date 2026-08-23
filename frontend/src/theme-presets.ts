@@ -78,6 +78,19 @@ export const themePresets: ThemePreset[] = [
       chartPaletteHooks: darkPalette,
     },
   },
+  {
+    name: 'adaptive',
+    label: 'Adaptive mode',
+    description: 'Switches between light and dark mode using your local time of day.',
+    isDefault: false,
+    tokens: {
+      colors: lightColors,
+      density: 'comfortable',
+      radius: '0.65rem',
+      typographyScale: 'standard',
+      chartPaletteHooks: lightPalette,
+    },
+  },
 ];
 
 const legacyPresetAliases: Record<string, ThemePresetName> = {
@@ -86,6 +99,8 @@ const legacyPresetAliases: Record<string, ThemePresetName> = {
   compact: 'teal-light',
   'teal-light-compact': 'teal-light',
   'teal-dark-compact': 'teal-dark',
+  auto: 'adaptive',
+  system: 'adaptive',
 };
 
 export function getDefaultThemePreset(): ThemePreset {
@@ -101,6 +116,11 @@ export function getThemePresetClassName(preset: ThemePreset): string {
   return `theme-${preset.name} density-${preset.tokens.density} type-${preset.tokens.typographyScale}`;
 }
 
-export function getThemeMode(preset: ThemePreset): 'light' | 'dark' {
+export function getThemeMode(preset: ThemePreset, now = new Date()): 'light' | 'dark' {
+  if (preset.name === 'adaptive') {
+    const hour = now.getHours();
+    return hour >= 7 && hour < 19 ? 'light' : 'dark';
+  }
+
   return preset.name.includes('dark') ? 'dark' : 'light';
 }

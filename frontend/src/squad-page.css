@@ -1359,6 +1359,7 @@
   flex: 0 0 4.05rem;
   height: 4.05rem;
   min-width: 4.05rem;
+  overflow: hidden;
 }
 
 .squad-page__list-table .squad-page__identity strong {
@@ -1660,8 +1661,13 @@
   top: 57%;
 }
 
+.squad-page__list-table .squad-page__identity-circle-shirt-crop {
+  height: 44%;
+  top: 0.1rem;
+}
+
 .squad-page__list-table .squad-page__identity-circle-opponent {
-  top: calc(57% + 0.62rem);
+  top: calc(57% + 0.48rem);
 }
 
 .squad-page__identity-circle-opponent > .squad-page__opponent {

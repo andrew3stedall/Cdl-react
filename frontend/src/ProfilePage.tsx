@@ -1,5 +1,5 @@
 import type { CSSProperties } from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ArrowDown,
   ArrowUp,
@@ -57,6 +57,30 @@ export function ProfilePage({ onRefresh, onSignOut, session }: ProfilePageProps)
     setPresetName,
   } = useThemePreset();
   const [isFdrScaleSheetOpen, setIsFdrScaleSheetOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isFdrScaleSheetOpen) return undefined;
+
+    const documentElement = document.documentElement;
+    const body = document.body;
+    const previousDocumentOverflow = documentElement.style.overflow;
+    const previousDocumentOverscrollBehavior = documentElement.style.overscrollBehavior;
+    const previousBodyOverflow = body.style.overflow;
+    const previousBodyOverscrollBehavior = body.style.overscrollBehavior;
+
+    documentElement.style.overflow = 'hidden';
+    documentElement.style.overscrollBehavior = 'none';
+    body.style.overflow = 'hidden';
+    body.style.overscrollBehavior = 'none';
+
+    return () => {
+      documentElement.style.overflow = previousDocumentOverflow;
+      documentElement.style.overscrollBehavior = previousDocumentOverscrollBehavior;
+      body.style.overflow = previousBodyOverflow;
+      body.style.overscrollBehavior = previousBodyOverscrollBehavior;
+    };
+  }, [isFdrScaleSheetOpen]);
+
   const user = session.user;
   const selectedFdrScale = getFdrColourScale(fdrScale);
   const selectedFdrScaleNumber = getFdrScaleOptionNumber(fdrScale);

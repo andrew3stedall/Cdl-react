@@ -23,6 +23,7 @@ def test_theme_contract_endpoint() -> None:
     assert [preset["name"] for preset in presets] == [
         "teal-light",
         "teal-dark",
+        "adaptive",
     ]
 
 
@@ -60,6 +61,9 @@ def test_user_preferences_endpoint_round_trip() -> None:
         "fdr_display_mode": "font",
         "light_theme_colour": "#0F766E",
         "dark_theme_colour": "#2DD4BF",
+        "fdr_custom_min": "#2166AC",
+        "fdr_custom_mid": "#F7F7F7",
+        "fdr_custom_max": "#B2182B",
     }
     assert update_response.status_code == 200
     assert update_response.json() == {
@@ -70,6 +74,9 @@ def test_user_preferences_endpoint_round_trip() -> None:
         "fdr_display_mode": "fill",
         "light_theme_colour": "#0F766E",
         "dark_theme_colour": "#2DD4BF",
+        "fdr_custom_min": "#2166AC",
+        "fdr_custom_mid": "#F7F7F7",
+        "fdr_custom_max": "#B2182B",
     }
     assert final_response.json() == {
         "theme_preset": "teal-dark",
@@ -79,4 +86,7 @@ def test_user_preferences_endpoint_round_trip() -> None:
         "fdr_display_mode": "fill",
         "light_theme_colour": "#0F766E",
         "dark_theme_colour": "#2DD4BF",
+        "fdr_custom_min": "#2166AC",
+        "fdr_custom_mid": "#F7F7F7",
+        "fdr_custom_max": "#B2182B",
     }

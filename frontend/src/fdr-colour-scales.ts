@@ -11,6 +11,17 @@
 export type FdrScaleGroup = 'Diverging' | 'Sequential' | 'Cyclical' | 'Custom';
 export type FdrPalette = readonly [string, string, string, string, string];
 export type FdrDisplayMode = 'font' | 'fill';
+export interface FdrCustomAnchors {
+  min: string;
+  mid: string;
+  max: string;
+}
+
+export const defaultFdrCustomAnchors: FdrCustomAnchors = {
+  min: '#2166AC',
+  mid: '#F7F7F7',
+  max: '#B2182B',
+};
 
 type Rgb = [number, number, number];
 
@@ -26,17 +37,33 @@ function mixRgb(first: Rgb, second: Rgb, firstWeight: number): Rgb {
   return first.map((channel, index) => channel * firstWeight + second[index] * (1 - firstWeight)) as Rgb;
 }
 
+function interpolateRgb(first: string, second: string, t: number): string {
+  return rgbToHex(mixRgb(hexToRgb(first), hexToRgb(second), 1 - t));
+}
+
 function interpolateThreeColourAnchors(anchors: readonly [string, string, string]): FdrPalette {
   const first = hexToRgb(anchors[0]);
   const middle = hexToRgb(anchors[1]);
   const last = hexToRgb(anchors[2]);
   return [
-    anchors[0],
-    rgbToHex(mixRgb(first, middle, 0.5)),
-    anchors[1],
-    rgbToHex(mixRgb(middle, last, 0.5)),
-    anchors[2],
+    rgbToHex(first),
+    interpolateRgb(anchors[0], anchors[1], 0.5),
+    rgbToHex(middle),
+    interpolateRgb(anchors[1], anchors[2], 0.5),
+    rgbToHex(last),
   ];
+}
+
+export function resolveFdrCustomAnchors(value: Partial<FdrCustomAnchors> | null | undefined): FdrCustomAnchors {
+  const resolve = (candidate: string | undefined, fallback: string): string => (
+    candidate && /^#[0-9A-Fa-f]{6}$/.test(candidate) ? candidate.toUpperCase() : fallback
+  );
+
+  return {
+    min: resolve(value?.min, defaultFdrCustomAnchors.min),
+    mid: resolve(value?.mid, defaultFdrCustomAnchors.mid),
+    max: resolve(value?.max, defaultFdrCustomAnchors.max),
+  };
 }
 
 function buildThreeColourScale<const TName extends string>(
@@ -56,14 +83,16 @@ function buildThreeColourScale<const TName extends string>(
 }
 
 const customFdrScaleRows = [
-  buildThreeColourScale('CustomOcean', 'Ocean', ['#2E86AB', '#F6C85F', '#C73E1D'], ['#7DD3FC', '#FDE68A', '#FB7185']),
-  buildThreeColourScale('CustomBerry', 'Berry', ['#312E81', '#C026D3', '#BE123C'], ['#A5B4FC', '#F0ABFC', '#FDA4AF']),
-  buildThreeColourScale('CustomForest', 'Forest', ['#166534', '#D4A017', '#991B1B'], ['#86EFAC', '#FDE68A', '#FCA5A5']),
-  buildThreeColourScale('CustomEmber', 'Ember', ['#FDE68A', '#F97316', '#4A1942'], ['#FEF08A', '#FB923C', '#F0ABFC']),
-  buildThreeColourScale('CustomAqua', 'Aqua', ['#0F766E', '#F4D35E', '#C2410C'], ['#5EEAD4', '#FDE68A', '#FDBA74']),
-  buildThreeColourScale('CustomOrchid', 'Orchid', ['#5B21B6', '#F59E0B', '#9D174D'], ['#C4B5FD', '#FCD34D', '#F9A8D4']),
-  buildThreeColourScale('CustomSlate', 'Slate', ['#2F6690', '#E0A458', '#9B2226'], ['#93C5FD', '#FCD34D', '#FDA4AF']),
-  buildThreeColourScale('CustomCitrus', 'Citrus', ['#2A9D8F', '#E9C46A', '#E76F51'], ['#5EEAD4', '#FDE68A', '#FDA4AF']),
+  buildThreeColourScale('CustomHex', 'Custom hex', [defaultFdrCustomAnchors.min, defaultFdrCustomAnchors.mid, defaultFdrCustomAnchors.max], [defaultFdrCustomAnchors.min, defaultFdrCustomAnchors.mid, defaultFdrCustomAnchors.max]),
+  buildThreeColourScale('CustomBlueRedVibrant', 'Blue–Red vibrant', ['#2166AC', '#F7F7F7', '#B2182B'], ['#67B7E1', '#F7F7F7', '#F06B6B']),
+  buildThreeColourScale('CustomBlueRedMuted', 'Blue–Red muted', ['#6B8FB3', '#F2F0EC', '#B97A7F'], ['#9CB9CF', '#F2F0EC', '#D6A4A7']),
+  buildThreeColourScale('CustomGreenPurpleVibrant', 'Green–Purple vibrant', ['#1B9E77', '#F7F7F7', '#984EA3'], ['#5FD3A8', '#F7F7F7', '#D17BE0']),
+  buildThreeColourScale('CustomGreenPurpleMuted', 'Green–Purple muted', ['#7AA68C', '#F0EEE5', '#9A7BAA'], ['#A9CBB7', '#F0EEE5', '#C8A9D2']),
+  buildThreeColourScale('CustomWhiteBlackMuted', 'White–Black muted', ['#FFFFFF', '#B8B8B8', '#000000'], ['#FFFFFF', '#B8B8B8', '#101010']),
+  buildThreeColourScale('CustomWhiteBlackContrast', 'White–Black contrast', ['#FFFFFF', '#808080', '#000000'], ['#FFFFFF', '#A8A8A8', '#000000']),
+  buildThreeColourScale('CustomHeatmapViridis', 'Heat map viridis', ['#440154', '#21918C', '#FDE725'], ['#6D68F6', '#21918C', '#FDE725']),
+  buildThreeColourScale('CustomHeatmapInferno', 'Heat map inferno', ['#000004', '#BC3754', '#FCFFA4'], ['#6767FF', '#CC516C', '#FCFFA4']),
+  buildThreeColourScale('CustomHeatmapYlOrRd', 'Heat map yellow–red', ['#FFFFCC', '#FD8D3C', '#800026'], ['#FFFFCC', '#FD8D3C', '#F50049']),
 ] as const;
 
 const fdrScaleRows = [
@@ -165,8 +194,12 @@ export function getFdrPalette(
   name: FdrScaleName,
   mode: 'light' | 'dark',
   reversed: boolean,
+  customAnchors: FdrCustomAnchors = defaultFdrCustomAnchors,
 ): FdrPalette {
-  const palette = getFdrColourScale(name)[mode].map((colour) => adjustForFdrChipContrast(colour, mode));
+  const sourcePalette = name === 'CustomHex'
+    ? interpolateThreeColourAnchors([customAnchors.min, customAnchors.mid, customAnchors.max])
+    : getFdrColourScale(name)[mode];
+  const palette = sourcePalette.map((colour) => adjustForFdrChipContrast(colour, mode));
   if (reversed) palette.reverse();
   return palette as unknown as FdrPalette;
 }
@@ -175,8 +208,11 @@ export function getFdrFillPalette(
   name: FdrScaleName,
   mode: 'light' | 'dark',
   reversed: boolean,
+  customAnchors: FdrCustomAnchors = defaultFdrCustomAnchors,
 ): FdrPalette {
-  const palette = [...getFdrColourScale(name)[mode]];
+  const palette = name === 'CustomHex'
+    ? [...interpolateThreeColourAnchors([customAnchors.min, customAnchors.mid, customAnchors.max])]
+    : [...getFdrColourScale(name)[mode]];
   if (reversed) palette.reverse();
   return palette as unknown as FdrPalette;
 }

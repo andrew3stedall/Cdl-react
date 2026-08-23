@@ -76,6 +76,9 @@ def test_authenticated_preferences_persist_and_remain_isolated() -> None:
             "fdr_display_mode": "fill",
             "light_theme_colour": "#2563EB",
             "dark_theme_colour": "#60A5FA",
+            "fdr_custom_min": "#1B9E77",
+            "fdr_custom_mid": "#F7F7F7",
+            "fdr_custom_max": "#984EA3",
         },
     ).json() == {
         "theme_preset": "teal-dark",
@@ -85,6 +88,9 @@ def test_authenticated_preferences_persist_and_remain_isolated() -> None:
         "fdr_display_mode": "fill",
         "light_theme_colour": "#2563EB",
         "dark_theme_colour": "#60A5FA",
+        "fdr_custom_min": "#1B9E77",
+        "fdr_custom_mid": "#F7F7F7",
+        "fdr_custom_max": "#984EA3",
     }
 
     app.dependency_overrides[require_authenticated_session] = lambda: _user("preferences-manager-2")
@@ -96,6 +102,9 @@ def test_authenticated_preferences_persist_and_remain_isolated() -> None:
         "fdr_display_mode": "font",
         "light_theme_colour": "#0F766E",
         "dark_theme_colour": "#2DD4BF",
+        "fdr_custom_min": "#2166AC",
+        "fdr_custom_mid": "#F7F7F7",
+        "fdr_custom_max": "#B2182B",
     }
     assert client.put(
         "/api/me/preferences",
@@ -107,6 +116,9 @@ def test_authenticated_preferences_persist_and_remain_isolated() -> None:
             "fdr_display_mode": "font",
             "light_theme_colour": "#0F766E",
             "dark_theme_colour": "#2DD4BF",
+            "fdr_custom_min": "#2166AC",
+            "fdr_custom_mid": "#F7F7F7",
+            "fdr_custom_max": "#B2182B",
         },
     ).json() == {
         "theme_preset": "teal-dark",
@@ -116,6 +128,9 @@ def test_authenticated_preferences_persist_and_remain_isolated() -> None:
         "fdr_display_mode": "font",
         "light_theme_colour": "#0F766E",
         "dark_theme_colour": "#2DD4BF",
+        "fdr_custom_min": "#2166AC",
+        "fdr_custom_mid": "#F7F7F7",
+        "fdr_custom_max": "#B2182B",
     }
 
     reloaded_repository = PostgreSQLUserPreferenceRepository(session_factory)

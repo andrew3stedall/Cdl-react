@@ -58,4 +58,42 @@ describe('PlayerCard', () => {
     expect(container.querySelector('.player-card__role')?.textContent).toBe('C');
     expect(container.querySelector('.player-card__availability')?.getAttribute('aria-label')).toBe('75% chance of playing');
   });
+
+  test('uses the full opponent row and splits double-gameweek fixtures evenly', () => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    mountedRoots.push({ container, root });
+
+    act(() => {
+      root.render(
+        <>
+          <PlayerCard
+            layout="token"
+            player={{
+              displayName: 'M. Santos',
+              fixtures: [
+                { difficulty: 3, label: 'bha' },
+                { difficulty: 4, label: 'ARS' },
+              ],
+              team: 'ARS',
+            }}
+          />
+          <PlayerCard
+            layout="token"
+            player={{ displayName: 'Single Fixture', fixtures: [{ difficulty: 3, label: 'CHE' }], team: 'ARS' }}
+          />
+        </>,
+      );
+    });
+
+    const opponents = container.querySelectorAll('.player-card__opponents');
+    expect(opponents[0]?.className).toContain('player-card__opponents--multiple');
+    expect(opponents[0]?.getAttribute('data-fixture-count')).toBe('2');
+    expect(opponents[0]?.children).toHaveLength(2);
+    expect(opponents[0]?.children[0]?.className).toContain('player-card__opponent--fdr-3');
+    expect(opponents[0]?.children[1]?.className).toContain('player-card__opponent--fdr-4');
+    expect(opponents[1]?.className).toContain('player-card__opponents--single');
+    expect(opponents[1]?.getAttribute('data-fixture-count')).toBe('1');
+  });
 });

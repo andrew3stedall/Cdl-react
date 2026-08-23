@@ -103,11 +103,11 @@
 
 .player-card__name,
 .player-card__opponents {
-  left: 0.2rem;
-  max-width: calc(100% - 0.4rem);
+  left: 0;
+  max-width: none;
   overflow: hidden;
   position: absolute;
-  right: 0.2rem;
+  right: 0;
   text-overflow: ellipsis;
   white-space: nowrap;
   z-index: 2;
@@ -125,15 +125,17 @@
   display: flex;
   font-size: clamp(0.47rem, 1.3vw, 0.58rem);
   font-weight: 800;
-  gap: 0.18rem;
+  height: 0.72rem;
   justify-content: center;
   line-height: 1;
-  top: calc(66% + 0.68rem);
+  top: calc(66% + 0.45rem);
 }
 
 .player-card__opponent {
+  flex: 1 1 0;
   min-width: 0;
   overflow: hidden;
+  text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;
 }

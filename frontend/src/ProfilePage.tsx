@@ -63,21 +63,39 @@ export function ProfilePage({ onRefresh, onSignOut, session }: ProfilePageProps)
 
     const documentElement = document.documentElement;
     const body = document.body;
+    const scrollX = window.scrollX;
+    const scrollY = window.scrollY;
     const previousDocumentOverflow = documentElement.style.overflow;
     const previousDocumentOverscrollBehavior = documentElement.style.overscrollBehavior;
     const previousBodyOverflow = body.style.overflow;
     const previousBodyOverscrollBehavior = body.style.overscrollBehavior;
+    const previousBodyPosition = body.style.position;
+    const previousBodyTop = body.style.top;
+    const previousBodyLeft = body.style.left;
+    const previousBodyRight = body.style.right;
+    const previousBodyWidth = body.style.width;
 
     documentElement.style.overflow = 'hidden';
     documentElement.style.overscrollBehavior = 'none';
     body.style.overflow = 'hidden';
     body.style.overscrollBehavior = 'none';
+    body.style.position = 'fixed';
+    body.style.top = `-${scrollY}px`;
+    body.style.left = `-${scrollX}px`;
+    body.style.right = '0';
+    body.style.width = '100%';
 
     return () => {
       documentElement.style.overflow = previousDocumentOverflow;
       documentElement.style.overscrollBehavior = previousDocumentOverscrollBehavior;
       body.style.overflow = previousBodyOverflow;
       body.style.overscrollBehavior = previousBodyOverscrollBehavior;
+      body.style.position = previousBodyPosition;
+      body.style.top = previousBodyTop;
+      body.style.left = previousBodyLeft;
+      body.style.right = previousBodyRight;
+      body.style.width = previousBodyWidth;
+      window.scrollTo(scrollX, scrollY);
     };
   }, [isFdrScaleSheetOpen]);
 

@@ -39,8 +39,8 @@
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding-bottom: calc(1rem + var(--cdl-mobile-navigation-clearance));
-  scroll-padding-bottom: calc(1rem + var(--cdl-mobile-navigation-clearance));
+  padding-bottom: calc(2rem + var(--cdl-mobile-navigation-clearance));
+  scroll-padding-bottom: calc(2rem + var(--cdl-mobile-navigation-clearance));
 }
 
 .player-profile__sheet-handle {
@@ -709,7 +709,8 @@
 }
 
 .player-profile__substitution-review .player-profile__content {
-  padding-bottom: 5rem;
+  padding-bottom: calc(2rem + var(--cdl-mobile-navigation-clearance));
+  scroll-padding-bottom: calc(2rem + var(--cdl-mobile-navigation-clearance));
 }
 
 .player-profile__comparison-card {

@@ -50,6 +50,7 @@ describe('PlayerCard', () => {
     });
 
     expect(container.querySelectorAll('.player-card__token')).toHaveLength(2);
+    expect(container.querySelectorAll('.player-card__token--with-opponent')).toHaveLength(2);
     expect(container.querySelectorAll('.player-card__shirt-crop img')).toHaveLength(2);
     expect(container.querySelectorAll('.player-card__name')).toHaveLength(2);
     expect(container.querySelectorAll('.player-card__opponent--fdr-3')).toHaveLength(2);

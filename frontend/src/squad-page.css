@@ -739,7 +739,7 @@
 .squad-page__pitch-player {
   align-items: center;
   aspect-ratio: 1;
-  background: var(--squad-form-surface, color-mix(in srgb, var(--squad-pitch) 88%, var(--squad-form-tone) 12%));
+  background: transparent;
   border: 0;
   border-radius: 50%;
   color: var(--squad-text);
@@ -756,8 +756,25 @@
   --squad-form-tone: var(--squad-form-low);
 }
 
+.squad-page__pitch-player::before {
+  background: var(--squad-form-surface, color-mix(in srgb, var(--squad-pitch) 88%, var(--squad-form-tone) 12%));
+  border-radius: 50% 50% 0 0 / 50% 50% 0 0;
+  content: '';
+  height: calc(72% + 0.72rem + 0.08rem);
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  z-index: 0;
+}
+
 .squad-page__pitch-player:hover,
 .squad-page__pitch-player:focus-visible {
+  background: transparent;
+}
+
+.squad-page__pitch-player:hover::before,
+.squad-page__pitch-player:focus-visible::before {
   background: color-mix(in srgb, var(--squad-form-surface) 84%, var(--squad-text) 16%);
 }
 

@@ -5,8 +5,15 @@
   flex-wrap: wrap;
   gap: 0.14rem;
   justify-content: center;
+  left: 50%;
   max-width: calc(100% - 0.15rem);
   position: absolute;
+  transform: translateX(-50%);
+}
+
+.player-profile__combined-bar .player-profile__stat-icons,
+.player-profile__grouped-stat-icons .player-profile__stat-icons {
+  bottom: 0.2rem;
 }
 
 .player-profile__stat-icon {

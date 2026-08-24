@@ -11,7 +11,12 @@ import {
 import { Button } from './components/ui/button';
 import { OpponentFdrBadge, PlayerCard, shortPlayerName, type PlayerCardPlayer } from './components/player/PlayerCard';
 import { CombinedFormMinutesChart, type CombinedFormMinutesFixture } from './components/player/CombinedFormMinutesChart';
-import { PlayerStatIcons, type PlayerStatSummary } from './components/player/PlayerStatIcons';
+import {
+  PlayerChartDetailDialog,
+  type PlayerChartDetailSection,
+  type PlayerChartDetailSummaryItem,
+} from './components/player/PlayerChartDetailDialog';
+import { earnedDefensiveContributionPoints, PlayerStatIcons, type PlayerStatSummary } from './components/player/PlayerStatIcons';
 import {
   barTone,
   chartColumnStyle,
@@ -71,6 +76,9 @@ type ActionSheet = 'bench' | 'remove' | null;
 type PendingAction = 'history' | 'lineup' | 'remove' | null;
 
 type ProfileFixture = CombinedFormMinutesFixture & { gameweek: number };
+type ChartDetailSelection =
+  | { kind: 'form'; fixture: ProfileFixture }
+  | { kind: 'opponent'; fixture: SquadApiOpponentDefensiveHistory };
 
 interface ProfileNextFixture {
   fixture_id: number | string;
@@ -114,6 +122,7 @@ export function PlayerProfilePage({
   const [replacementPlayers, setReplacementPlayers] = useState<SquadApiPlayer[]>([]);
   const [replacementId, setReplacementId] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
+  const [chartDetail, setChartDetail] = useState<ChartDetailSelection | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -379,7 +388,7 @@ export function PlayerProfilePage({
       {selectionError ? <p className="player-profile__inline-error" role="alert">{selectionError}</p> : null}
 
       <ChartCard compact title="Form & minutes">
-        {historyError ? <ChartEmpty message={`Form and minutes history unavailable: ${historyError}`} /> : formFixtures.length > 0 ? <CombinedFormMinutesChart fixtures={formFixtures} fdrDisplayMode={fdrDisplayMode} /> : <ChartEmpty message="No completed FPL fixture history is available." />}
+        {historyError ? <ChartEmpty message={`Form and minutes history unavailable: ${historyError}`} /> : formFixtures.length > 0 ? <CombinedFormMinutesChart fixtures={formFixtures} fdrDisplayMode={fdrDisplayMode} onFixtureClick={(fixture) => setChartDetail({ kind: 'form', fixture: fixture as ProfileFixture })} /> : <ChartEmpty message="No completed FPL fixture history is available." />}
       </ChartCard>
 
       {defensiveHistoryGroups.length > 0 ? defensiveHistoryGroups.map((group) => {
@@ -393,7 +402,7 @@ export function PlayerProfilePage({
           heading={<OpponentChartHeading difficulty={opponentDifficulty} headingId={`opponent-${group.opponent_team_id}`} label={groupOpponentShortName} title={fixtureDifficultyTitle(opponentDifficulty)} />}
           key={group.opponent_team_id}
         >
-          {group.fixtures.length > 0 ? <DefensiveChart fixtures={group.fixtures} fdrDisplayMode={fdrDisplayMode} /> : <ChartEmpty message={`No cached defensive history is available for ${groupOpponent}.`} />}
+          {group.fixtures.length > 0 ? <DefensiveChart fixtures={group.fixtures} fdrDisplayMode={fdrDisplayMode} onFixtureClick={(fixture) => setChartDetail({ kind: 'opponent', fixture })} /> : <ChartEmpty message={`No cached defensive history is available for ${groupOpponent}.`} />}
         </ChartCard>;
       }) : <ChartCard title="Opponent form" className="player-profile__chart-card--full"><ChartEmpty message="No cached defensive history is available for the next opponent." /></ChartCard>}
 
@@ -484,6 +493,17 @@ export function PlayerProfilePage({
             <Button className="player-profile__danger-button" disabled={!selectedReplacement || pendingAction !== null} onClick={() => void confirmRemoval()} type="button" variant="primary">Confirm removal</Button>
           </div>
         </ActionDialog>
+      ) : null}
+
+      {chartDetail ? (
+        <PlayerChartDetailDialog
+          kind={chartDetail.kind}
+          onClose={() => setChartDetail(null)}
+          sections={chartDetail.kind === 'form' ? formDetailSections(chartDetail.fixture) : opponentDetailSections(chartDetail.fixture)}
+          subtitle={chartDetail.kind === 'form' ? `${player.display_name} · ${formatOpponentLabel(chartDetail.fixture.opponentShortName, chartDetail.fixture.isHome)}` : `Points against ${formatOpponentLabel(chartDetail.fixture.opponent_short_name ?? null, chartDetail.fixture.is_home)}`}
+          summary={chartDetail.kind === 'form' ? formDetailSummary(chartDetail.fixture) : opponentDetailSummary(chartDetail.fixture)}
+          title={chartDetail.kind === 'form' ? `GW${chartDetail.fixture.gameweek} · ${formatOpponentLabel(chartDetail.fixture.opponentShortName, chartDetail.fixture.isHome)}` : `${formatOpponentLabel(chartDetail.fixture.opponent_short_name ?? null, chartDetail.fixture.is_home)} · GW${chartDetail.fixture.gameweek ?? '—'}`}
+        />
       ) : null}
     </main>
   );
@@ -664,9 +684,9 @@ function MinutesChart({ fixtures, fdrDisplayMode, windowLabel = 'latest ten' }: 
   return <div aria-label={`Minutes played over the ${windowLabel} fixtures`} className="player-profile__chart player-profile__chart--minutes" data-chart-kind="minutes" role="img"><div className="player-profile__chart-columns">{fixtures.map((fixture, index) => <ChartColumn compact fixture={fixture} fdrDisplayMode={fdrDisplayMode} maxValue={90} key={fixture.fixtureId} minutes style={chartColumnStyle(index, fixtures.length)} value={fixture.minutesPlayed} valueLabel={formatNullableNumber(fixture.minutesPlayed)} />)}</div></div>;
 }
 
-function DefensiveChart({ fixtures, fdrDisplayMode }: { fixtures: SquadApiOpponentDefensiveHistory[]; fdrDisplayMode: 'font' | 'fill' }) {
+function DefensiveChart({ fixtures, fdrDisplayMode, onFixtureClick }: { fixtures: SquadApiOpponentDefensiveHistory[]; fdrDisplayMode: 'font' | 'fill'; onFixtureClick?: (fixture: SquadApiOpponentDefensiveHistory) => void }) {
   const maxValue = Math.max(80, ...fixtures.map((fixture) => Math.max(fixture.total_points_conceded ?? 0, (fixture.attacking_asset_points ?? 0) + (fixture.defensive_asset_points ?? 0))));
-  return <><div aria-label={`Attacking and defensive fantasy points conceded by the opponent, vertical scale 0 to ${maxValue} points`} className="player-profile__chart player-profile__chart--defensive" data-chart-kind="opponent-defence" data-y-axis-max={maxValue} data-y-axis-min="0" role="img"><div className="player-profile__chart-columns">{fixtures.map((fixture, index) => <DefensiveColumn fixture={fixture} fdrDisplayMode={fdrDisplayMode} maxValue={maxValue} key={String(fixture.fixture_id)} style={chartColumnStyle(index, fixtures.length)} />)}</div></div><div className="player-profile__legend"><span><i className="player-profile__legend-swatch player-profile__legend-swatch--attack" />Attacking assets</span><span><i className="player-profile__legend-swatch player-profile__legend-swatch--defence" />Defensive assets</span></div></>;
+  return <><div aria-label={`Attacking and defensive fantasy points conceded by the opponent, vertical scale 0 to ${maxValue} points`} className="player-profile__chart player-profile__chart--defensive" data-chart-kind="opponent-defence" data-y-axis-max={maxValue} data-y-axis-min="0" role="group"><div className="player-profile__chart-columns">{fixtures.map((fixture, index) => <DefensiveColumn fixture={fixture} fdrDisplayMode={fdrDisplayMode} maxValue={maxValue} onClick={onFixtureClick} key={String(fixture.fixture_id)} style={chartColumnStyle(index, fixtures.length)} />)}</div></div><div className="player-profile__legend"><span><i className="player-profile__legend-swatch player-profile__legend-swatch--attack" />Attacking assets</span><span><i className="player-profile__legend-swatch player-profile__legend-swatch--defence" />Defensive assets</span></div></>;
 }
 
 function ChartColumn({ compact = false, fixture, fdrDisplayMode, maxValue, minutes = false, style, value, valueLabel }: { compact?: boolean; fixture: ProfileFixture; fdrDisplayMode: 'font' | 'fill'; maxValue: number; minutes?: boolean; style?: CSSProperties; value: number | null; valueLabel: string }) {
@@ -675,13 +695,13 @@ function ChartColumn({ compact = false, fixture, fdrDisplayMode, maxValue, minut
   return <div className={`player-profile__chart-column${compact ? ' is-compact' : ''}`} style={style}><span className={`player-profile__chart-value${value === null ? ' is-empty' : ''}`}>{valueLabel}</span><div className="player-profile__bar-track">{minutes ? <div aria-hidden="true" className="player-profile__threshold-line" /> : null}<div className={`player-profile__bar player-profile__bar--${barTone(value)}`} style={{ '--bar-height': `${height}%` } as CSSProperties}>{minutes ? null : <StatIcons fixture={fixture} />}</div></div><span className="player-profile__opponent-label" style={fdrStyle}>{formatOpponentLabel(fixture.opponentShortName, fixture.isHome)}</span></div>;
 }
 
-function DefensiveColumn({ fixture, fdrDisplayMode, maxValue, style }: { fixture: SquadApiOpponentDefensiveHistory; fdrDisplayMode: 'font' | 'fill'; maxValue: number; style?: CSSProperties }) {
+function DefensiveColumn({ fixture, fdrDisplayMode, maxValue, onClick, style }: { fixture: SquadApiOpponentDefensiveHistory; fdrDisplayMode: 'font' | 'fill'; maxValue: number; onClick?: (fixture: SquadApiOpponentDefensiveHistory) => void; style?: CSSProperties }) {
   const attack = fixture.attacking_asset_points ?? 0;
   const defence = fixture.defensive_asset_points ?? 0;
   const hasPoints = fixture.total_points_conceded !== null && fixture.total_points_conceded !== undefined;
   const attackHeight = groupedAssetBarHeight(attack, maxValue, hasPoints);
   const defenceHeight = groupedAssetBarHeight(defence, maxValue, hasPoints);
-  return <div className="player-profile__chart-column" style={style}><span className={`player-profile__chart-value${hasPoints ? '' : ' is-empty'}`}>{formatNullableNumber(fixture.total_points_conceded)}</span><div className="player-profile__bar-track player-profile__bar-track--grouped"><span className="player-profile__grouped-bar-wrap player-profile__grouped-bar-wrap--attack"><span aria-label={`Attacking assets: ${attack} points`} className="player-profile__grouped-bar player-profile__grouped-bar--attack" style={{ '--bar-height': `${attackHeight}%` } as CSSProperties} /><b className="player-profile__grouped-bar-value player-profile__grouped-bar-value--attack">{attack}</b></span><span className="player-profile__grouped-stat-icons"><PlayerStatIcons className="player-profile__stat-icons--compact" position={null} stats={opponentStatSummary(fixture)} /></span><span className="player-profile__grouped-bar-wrap player-profile__grouped-bar-wrap--defence"><span aria-label={`Defensive assets: ${defence} points`} className="player-profile__grouped-bar player-profile__grouped-bar--defence" style={{ '--bar-height': `${defenceHeight}%` } as CSSProperties} /><b className="player-profile__grouped-bar-value player-profile__grouped-bar-value--defence">{defence}</b></span></div><span className="player-profile__opponent-label" style={fdrStyleFor(fixture.difficulty ?? null, fdrDisplayMode)}>{formatOpponentLabel(fixture.opponent_short_name ?? null, fixture.is_home)}</span></div>;
+  return <div className="player-profile__chart-column" style={style}><span className={`player-profile__chart-value${hasPoints ? '' : ' is-empty'}`}>{formatNullableNumber(fixture.total_points_conceded)}</span><button aria-label={`View ${formatOpponentLabel(fixture.opponent_short_name ?? null, fixture.is_home)} points-against details`} className="player-profile__bar-track player-profile__bar-track--grouped player-profile__grouped-bar-button" onClick={() => onClick?.(fixture)} type="button"><span className="player-profile__grouped-bar-wrap player-profile__grouped-bar-wrap--attack"><span aria-label={`Attacking assets: ${attack} points`} className="player-profile__grouped-bar player-profile__grouped-bar--attack" style={{ '--bar-height': `${attackHeight}%` } as CSSProperties} /><b className="player-profile__grouped-bar-value player-profile__grouped-bar-value--attack">{attack}</b></span><span className="player-profile__grouped-stat-icons"><PlayerStatIcons className="player-profile__stat-icons--compact" position={null} stats={opponentStatSummary(fixture)} /></span><span className="player-profile__grouped-bar-wrap player-profile__grouped-bar-wrap--defence"><span aria-label={`Defensive assets: ${defence} points`} className="player-profile__grouped-bar player-profile__grouped-bar--defence" style={{ '--bar-height': `${defenceHeight}%` } as CSSProperties} /><b className="player-profile__grouped-bar-value player-profile__grouped-bar-value--defence">{defence}</b></span></button><span className="player-profile__opponent-label" style={fdrStyleFor(fixture.difficulty ?? null, fdrDisplayMode)}>{formatOpponentLabel(fixture.opponent_short_name ?? null, fixture.is_home)}</span></div>;
 }
 
 function groupedAssetBarHeight(points: number, maxValue: number, hasPoints: boolean): number {
@@ -705,6 +725,79 @@ function opponentStatSummary(fixture: SquadApiOpponentDefensiveHistory): PlayerS
     defensiveContributions: fixture.stat_icons?.defensive_contributions ?? 0,
     bonusPoints: fixture.stat_icons?.bonus_points ?? 0,
   };
+}
+
+const detailCategoryLabels: Record<string, string> = {
+  assists: 'Assists',
+  bonus_points: 'Bonus points system',
+  clean_sheets: 'Clean sheets',
+  defensive_contributions: 'Defensive contributions',
+  goals: 'Goals scored',
+  red_cards: 'Red cards',
+  saves: 'Saves',
+  yellow_cards: 'Yellow cards',
+};
+
+function formDetailSummary(fixture: ProfileFixture): PlayerChartDetailSummaryItem[] {
+  return [
+    { label: 'Fantasy points', value: formatNullableNumber(fixture.fantasyPoints) },
+    { label: 'Minutes', value: formatNullableNumber(fixture.minutesPlayed) },
+    { label: 'FDR', value: formatNullableNumber(fixture.fdr) },
+  ];
+}
+
+function formDetailSections(fixture: ProfileFixture): PlayerChartDetailSection[] {
+  const rows = [
+    { label: 'Goals scored', value: fixture.stats.goals },
+    { label: 'Assists', value: fixture.stats.assists },
+    { label: 'Clean sheets', value: fixture.stats.cleanSheets },
+    { label: 'Saves', value: fixture.stats.saves },
+    { label: 'Yellow cards', value: fixture.stats.yellowCards },
+    { label: 'Red cards', value: fixture.stats.redCards },
+    { label: 'Bonus points system', value: fixture.stats.bonusPoints },
+    {
+      label: 'Defensive contributions',
+      value: earnedDefensiveContributionPoints(fixture.stats.defensiveContributions, fixture.position)
+        ? fixture.stats.defensiveContributions
+        : 0,
+    },
+  ]
+    .filter((row) => row.value > 0)
+    .map((row) => ({ label: row.label, value: String(row.value) }));
+  return [{ title: 'Scoring returns', rows }];
+}
+
+function opponentDetailSummary(fixture: SquadApiOpponentDefensiveHistory): PlayerChartDetailSummaryItem[] {
+  return [
+    { label: 'Total points', value: formatNullableNumber(fixture.total_points_conceded) },
+    { label: 'Attacking', value: formatNullableNumber(fixture.attacking_asset_points) },
+    { label: 'Defensive', value: formatNullableNumber(fixture.defensive_asset_points) },
+    { label: 'FDR', value: formatNullableNumber(fixture.difficulty) },
+  ];
+}
+
+function opponentDetailSections(fixture: SquadApiOpponentDefensiveHistory): PlayerChartDetailSection[] {
+  const details = fixture.stat_details ?? [];
+  if (details.length > 0) {
+    const categoryOrder = Object.keys(detailCategoryLabels);
+    return categoryOrder
+      .map((category) => ({
+        title: detailCategoryLabels[category],
+        rows: details
+          .filter((detail) => detail.category === category)
+          .map((detail) => ({
+            label: detail.player_name,
+            points: detail.points > 0 ? `+${detail.points}` : undefined,
+            value: detail.value !== null && detail.value !== undefined && detail.value > 0 ? `(${detail.value})` : undefined,
+          })),
+      }))
+      .filter((section) => section.rows.length > 0);
+  }
+
+  const fallbackRows = Object.entries(opponentStatSummary(fixture))
+    .filter(([, value]) => value > 0)
+    .map(([key, value]) => ({ label: detailCategoryLabels[key] ?? key, value: String(value) }));
+  return [{ title: 'Recorded returns', rows: fallbackRows }];
 }
 
 export { earnedDefensiveContributionPoints } from './components/player/PlayerStatIcons';

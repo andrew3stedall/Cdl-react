@@ -63,6 +63,30 @@ export function PlayerCard({
   );
 }
 
+export function OpponentFdrBadge({
+  className = '',
+  difficulty,
+  label,
+  title,
+}: {
+  className?: string;
+  difficulty?: number | null;
+  label: string;
+  title?: string;
+}) {
+  const rating = typeof difficulty === 'number' && Number.isFinite(difficulty)
+    ? Math.min(5, Math.max(1, Math.round(difficulty)))
+    : null;
+  return (
+    <span
+      className={`player-card__opponent${rating === null ? '' : ` player-card__opponent--fdr-${rating}`}${className ? ` ${className}` : ''}`}
+      title={title}
+    >
+      {label}
+    </span>
+  );
+}
+
 function PlayerToken({ player, showOpponent, showPositionMarker }: { player: PlayerCardPlayer; showOpponent: boolean; showPositionMarker: boolean }) {
   const fixtures = player.fixtures ?? [];
   const chance = player.availabilityChance;

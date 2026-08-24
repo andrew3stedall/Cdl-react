@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 
-import { PlayerChartGrid, PlayerChartYAxisScale } from './PlayerChartGrid';
+import { PlayerChartGrid, PlayerChartYAxisScale, PlayerChartZeroLine } from './PlayerChartGrid';
 import { PlayerStatIcons, type PlayerStatSummary } from './PlayerStatIcons';
 import {
   barTone,
@@ -53,16 +53,17 @@ export function CombinedFormMinutesChart({
     >
       <div className="player-profile__combined-chart-layout">
         <div aria-hidden="true" className="player-profile__combined-chart-y-axis">
-          <PlayerChartYAxisScale max={formMax} step={5} />
-          <span aria-hidden="true" />
-          <PlayerChartYAxisScale max={minutesMax} step={30} />
+          <PlayerChartYAxisScale className="player-profile__combined-chart-y-axis-scale--positive" max={formMax} step={5} />
+          <PlayerChartYAxisScale className="player-profile__combined-chart-y-axis-scale--negative" direction="down" max={minutesMax} step={30} />
         </div>
         <div className="player-profile__combined-chart-plot">
           <div className="player-profile__combined-chart-grid player-profile__combined-chart-grid--positive">
             <PlayerChartGrid max={formMax} step={5} />
+            <PlayerChartZeroLine />
           </div>
           <div className="player-profile__combined-chart-grid player-profile__combined-chart-grid--negative">
-            <PlayerChartGrid max={minutesMax} step={30} />
+            <PlayerChartGrid direction="down" max={minutesMax} step={30} />
+            <PlayerChartZeroLine />
           </div>
           <div className="player-profile__combined-chart-columns">
             {fixtures.map((fixture, index) => (

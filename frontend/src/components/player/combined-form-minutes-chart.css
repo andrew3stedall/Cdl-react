@@ -1,17 +1,68 @@
 .player-profile__combined-chart {
+  --combined-form-height: var(--profile-combined-form-height, 11.625rem);
+  --combined-minutes-height: var(--profile-combined-minutes-height, 3.875rem);
+  --combined-opponent-height: var(--profile-combined-opponent-height, 1.35rem);
+  --combined-value-row: 1.1rem;
   min-width: 0;
   width: 100%;
 }
 
+.player-profile__combined-chart-layout {
+  display: grid;
+  gap: 0.35rem;
+  grid-template-columns: 1.55rem minmax(0, 1fr);
+  min-width: 0;
+}
+
+.player-profile__combined-chart-y-axis {
+  color: var(--profile-muted);
+  display: grid;
+  font-size: clamp(0.45rem, 1.55vw, 0.56rem);
+  font-variant-numeric: tabular-nums;
+  grid-template-rows: var(--combined-form-height) var(--combined-opponent-height) var(--combined-minutes-height);
+  line-height: 1;
+  min-width: 0;
+  text-align: right;
+}
+
+.player-profile__combined-chart-y-axis > span {
+  min-height: 0;
+}
+
+.player-profile__combined-chart-plot {
+  min-width: 0;
+  position: relative;
+}
+
+.player-profile__combined-chart-grid {
+  left: 0;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+  z-index: 2;
+}
+
+.player-profile__combined-chart-grid--positive {
+  height: calc(var(--combined-form-height) - var(--combined-value-row));
+  top: var(--combined-value-row);
+}
+
+.player-profile__combined-chart-grid--negative {
+  height: calc(var(--combined-minutes-height) - var(--combined-value-row));
+  top: calc(var(--combined-form-height) + var(--combined-opponent-height));
+}
+
+.player-profile__combined-chart-grid .player-profile__chart-grid {
+  inset: 0;
+}
+
 .player-profile__combined-chart-columns {
   align-items: stretch;
-  --combined-form-height: var(--profile-combined-form-height, 11.625rem);
-  --combined-minutes-height: var(--profile-combined-minutes-height, 3.875rem);
-  --combined-opponent-height: var(--profile-combined-opponent-height, 1.35rem);
   display: grid;
   gap: clamp(0.15rem, 1.2vw, 0.5rem);
   grid-template-columns: repeat(10, minmax(0, 1fr));
   min-height: calc(var(--combined-form-height) + var(--combined-opponent-height) + var(--combined-minutes-height));
+  position: relative;
 }
 
 .player-profile__combined-chart-column {
@@ -71,7 +122,7 @@
   padding: 0;
   position: relative;
   width: 100%;
-  z-index: 1;
+  z-index: 3;
 }
 
 .player-profile__combined-bar:focus-visible {
@@ -128,6 +179,15 @@
 }
 
 @media (max-width: 32rem) {
+  .player-profile__combined-chart {
+    --combined-value-row: 0.95rem;
+  }
+
+  .player-profile__combined-chart-layout {
+    gap: 0.25rem;
+    grid-template-columns: 1.35rem minmax(0, 1fr);
+  }
+
   .player-profile__combined-chart-columns {
     gap: 0.12rem;
   }

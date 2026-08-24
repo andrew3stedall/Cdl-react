@@ -8,7 +8,10 @@
   --profile-chart-track: color-mix(in srgb, var(--profile-text) 8%, transparent);
   --profile-chart-empty: color-mix(in srgb, var(--profile-text) 22%, transparent);
   --profile-chart-height: 7.74rem;
-  --profile-combined-chart-height: 9.1rem;
+  --profile-combined-form-height: 11.625rem;
+  --profile-combined-minutes-height: 3.875rem;
+  --profile-combined-opponent-height: 1.35rem;
+  --profile-defensive-chart-height: calc(var(--profile-chart-height) * 1.5);
   --profile-compact-chart-card-height: 11.7rem;
   background: var(--background);
   color: var(--profile-text);
@@ -252,7 +255,7 @@
 }
 
 .player-profile__chart--defensive .player-profile__chart-columns {
-  min-height: var(--profile-chart-height);
+  min-height: var(--profile-defensive-chart-height);
 }
 
 .player-profile__chart-column {

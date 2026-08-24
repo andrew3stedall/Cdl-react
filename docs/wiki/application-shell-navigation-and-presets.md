@@ -28,9 +28,9 @@ Rules are a support utility rather than a permanent primary destination.
 `AppShell` provides:
 
 - A compact sticky desktop sidebar with four primary items.
-- A mobile-only account section on Managers Desk with appearance, profile and preferences, refresh, and sign-out controls.
+- A compact Managers Desk profile-image menu with Account and Sign out actions.
 - A compact sticky header showing the current section and page rather than the generic “Application Shell” heading.
-- A desktop account menu containing the authenticated identity, visual preset, manual refresh count, and sign-out action.
+- A desktop account menu containing the authenticated identity, Account, and Sign out actions.
 - A horizontally scrollable contextual navigation row that does not duplicate every subroute in the global sidebar.
 - A persistent bottom navigation bar for mobile global destinations.
 
@@ -54,7 +54,9 @@ Presets remain configured in `frontend/src/theme-presets.ts`:
 - `dark`
 - `compact`
 
-The preset selector has moved from the global action row into the desktop account menu and the mobile Managers Desk account section. Preferences continue to use `GET /api/me/preferences` and `PUT /api/me/preferences`, with the documented local-storage fallback.
+The account route is a compact summary of the current identity, workspace appearance, FDR colour scale, and attacking orientation. Detailed controls are available through the SPA subroutes `/account/appearance`, `/account/fdr`, and `/account/orientation`. Preferences continue to use `GET /api/me/preferences` and `PUT /api/me/preferences`, with the documented local-storage fallback.
+
+Passkey setup is shown only when the authenticated user has no registered device credential. The account summary does not expose the manager role or account ID.
 
 ## Accessibility and responsive behaviour
 

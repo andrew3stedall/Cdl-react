@@ -1,6 +1,6 @@
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
-import { describe, expect, test } from 'vitest';
+import { describe, expect, test, vi } from 'vitest';
 
 import { App } from './App';
 import type { SessionState, UserPreferences } from './contracts';
@@ -203,7 +203,7 @@ describe('AppShell integration', () => {
       await Promise.resolve();
     });
     expect(container.querySelector('main[aria-labelledby="account-title"]')).not.toBeNull();
-    expect(container.textContent).toContain('Refresh data');
+    expect(container.querySelector('.profile-page')?.textContent).not.toContain('Refresh data');
   });
 
   test('renders the single League page through the shared shell', async () => {
@@ -223,7 +223,52 @@ describe('AppShell integration', () => {
     expect(container.textContent).not.toContain('Overview stays lightweight');
   });
 
-  test('provides an account profile with persisted appearance controls', async () => {
+  test('hides passkey setup after a device credential is already registered', async () => {
+    const previousFetch = globalThis.fetch;
+    globalThis.fetch = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ enabled: true, registered_count: 1 }),
+    })) as unknown as typeof fetch;
+
+    try {
+      const { container, root } = renderApp({ initialPath: '/account' });
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      expect(container.querySelector('.profile-security-card')).toBeNull();
+      root.unmount();
+    } finally {
+      globalThis.fetch = previousFetch;
+    }
+  });
+
+  test('shows concise passkey setup when no device credential is registered', async () => {
+    const previousFetch = globalThis.fetch;
+    globalThis.fetch = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ enabled: true, registered_count: 0 }),
+    })) as unknown as typeof fetch;
+
+    try {
+      const { container, root } = renderApp({ initialPath: '/account' });
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      const securityCard = container.querySelector('.profile-security-card');
+      expect(securityCard).not.toBeNull();
+      expect(securityCard?.textContent).toContain('Use Face ID or fingerprint');
+      expect(securityCard?.textContent).not.toContain('Add a passkey to this device');
+      root.unmount();
+    } finally {
+      globalThis.fetch = previousFetch;
+    }
+  });
+
+  test('provides a compact account summary with navigable persisted settings', async () => {
     const preferenceClient = new MemoryPreferenceClient();
     const { container } = renderApp({ initialPath: '/account', preferenceClient });
 
@@ -234,9 +279,21 @@ describe('AppShell integration', () => {
     expect(container.querySelector('h1')?.textContent).toBe('Account');
     expect(container.textContent).not.toContain('Profile & preferences');
     expect(container.textContent).toContain('Test Manager');
-    expect(container.textContent).toContain('Refresh data');
-    expect(container.textContent).toContain('Sign out');
-    expect(container.querySelector('.profile-direction-option[aria-pressed="true"]')?.textContent).toContain('Attack upwards');
+    expect(container.querySelector('.profile-page')?.textContent).not.toContain('Refresh data');
+    expect(container.querySelector('.profile-page')?.textContent).not.toContain('Sign out');
+    expect(container.querySelector('.profile-page')?.textContent).not.toContain('Account ID');
+    expect(container.querySelector('.profile-page')?.textContent).not.toContain('Role');
+    expect(container.querySelector('[aria-label="Open workspace appearance settings"]')).not.toBeNull();
+    expect(container.querySelector('[aria-label="Open FDR colour scale settings"]')).not.toBeNull();
+    expect(container.querySelector('[aria-label^="Current attacking orientation"]')).not.toBeNull();
+    expect(container.querySelector('.profile-page .profile-preset-option')).toBeNull();
+    expect(container.querySelector('.profile-page .profile-direction-option')).toBeNull();
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[aria-label="Open workspace appearance settings"]')?.click();
+      await Promise.resolve();
+    });
+    expect(container.querySelector('#account-settings-title')?.textContent).toBe('Visual preset');
 
     const darkOption = [...container.querySelectorAll<HTMLButtonElement>('.profile-preset-option')]
       .find((option) => option.textContent?.includes('Dark mode'));
@@ -249,6 +306,24 @@ describe('AppShell integration', () => {
 
     expect(preferenceClient.preferences.themePreset).toBe('teal-dark');
     expect(document.documentElement.dataset.themeMode).toBe('dark');
+
+    const blueOption = container.querySelector<HTMLButtonElement>('[aria-label="Blue theme colour"]');
+    await act(async () => {
+      blueOption?.click();
+      await Promise.resolve();
+    });
+    expect(preferenceClient.preferences.lightThemeColour).toBe('#2563EB');
+    expect(document.documentElement.style.getPropertyValue('--primary')).toBe('#6B95F1');
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('.profile-subpage-back')?.click();
+      await Promise.resolve();
+    });
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[aria-label="Open FDR colour scale settings"]')?.click();
+      await Promise.resolve();
+    });
+    expect(container.querySelector('#account-settings-title')?.textContent).toBe('FDR colour scale');
 
     const fdrScaleTrigger = container.querySelector<HTMLButtonElement>('.profile-fdr-scale-trigger');
     await act(async () => {
@@ -271,14 +346,6 @@ describe('AppShell integration', () => {
     });
     expect(preferenceClient.preferences.fdrScale).toBe('RdBu');
     expect(document.documentElement.dataset.fdrScale).toBe('RdBu');
-
-    const blueOption = container.querySelector<HTMLButtonElement>('[aria-label="Blue theme colour"]');
-    await act(async () => {
-      blueOption?.click();
-      await Promise.resolve();
-    });
-    expect(preferenceClient.preferences.lightThemeColour).toBe('#2563EB');
-    expect(document.documentElement.style.getPropertyValue('--primary')).toBe('#6B95F1');
 
     const reverseOrder = container.querySelector<HTMLInputElement>('.profile-fdr-reverse-toggle input');
     await act(async () => {
@@ -332,6 +399,15 @@ describe('AppShell integration', () => {
       await Promise.resolve();
     });
     expect(preferenceClient.palettes).toHaveLength(0);
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('.profile-subpage-back')?.click();
+      await Promise.resolve();
+    });
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[aria-label^="Current attacking orientation"]')?.click();
+      await Promise.resolve();
+    });
 
     const attackDownOption = container.querySelector<HTMLButtonElement>('.profile-direction-option[aria-pressed="false"]');
     expect(attackDownOption?.textContent).toContain('Attack downwards');

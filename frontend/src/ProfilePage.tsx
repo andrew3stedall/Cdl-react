@@ -1,14 +1,13 @@
-import { useEffect, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
+import { useEffect, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
 import {
+  ArrowLeft,
   ArrowDown,
   ArrowUp,
   Check,
   ChevronRight,
   Circle,
   Fingerprint,
-  LogOut,
   Moon,
-  RefreshCw,
   Sun,
   Type,
   PaintBucket,
@@ -34,16 +33,16 @@ import {
 import { getThemeMode, themePresets } from './theme-presets';
 import { useThemePreset } from './theme-preset-provider';
 import { getThemeColourForMode, themeColourOptions } from './theme-colours';
-import { registerPasskey } from './passkeys';
+import { getPasskeyStatus, registerPasskey, type PasskeyStatus } from './passkeys';
 import './profile-page.css';
 
 interface ProfilePageProps {
-  onRefresh: () => void;
-  onSignOut: () => void;
+  currentPath: string;
+  onNavigate: (href: string) => void;
   session: SessionState;
 }
 
-export function ProfilePage({ onRefresh, onSignOut, session }: ProfilePageProps) {
+export function ProfilePage({ currentPath, onNavigate, session }: ProfilePageProps) {
   const {
     attackDirection,
     fdrDisplayMode,
@@ -66,8 +65,30 @@ export function ProfilePage({ onRefresh, onSignOut, session }: ProfilePageProps)
     setPresetName,
   } = useThemePreset();
   const [isFdrScaleSheetOpen, setIsFdrScaleSheetOpen] = useState(false);
+  const [passkeyStatus, setPasskeyStatus] = useState<PasskeyStatus | null>(null);
   const [passkeyPending, setPasskeyPending] = useState(false);
   const [passkeyMessage, setPasskeyMessage] = useState<string | null>(null);
+  const isAccountSummary = currentPath === '/account' || currentPath === '/profile';
+  const isAppearancePage = currentPath === '/account/appearance' || currentPath === '/profile/appearance';
+  const isFdrPage = currentPath === '/account/fdr' || currentPath === '/profile/fdr';
+  const isOrientationPage = currentPath === '/account/orientation' || currentPath === '/profile/orientation';
+
+  useEffect(() => {
+    if (!isAccountSummary) return undefined;
+
+    let active = true;
+    void getPasskeyStatus()
+      .then((status) => {
+        if (active) setPasskeyStatus(status);
+      })
+      .catch(() => {
+        if (active) setPasskeyStatus({ enabled: false, registeredCount: 0 });
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [isAccountSummary]);
 
   useEffect(() => {
     if (!isFdrScaleSheetOpen) return undefined;
@@ -122,47 +143,110 @@ export function ProfilePage({ onRefresh, onSignOut, session }: ProfilePageProps)
     .map((part) => part[0]?.toUpperCase())
     .join('') || 'CD';
 
+  if (isAppearancePage) {
+    return (
+      <main aria-labelledby="account-settings-title" className="feature-screen profile-page profile-page--subpage">
+        <SettingsPageHeader onBack={() => onNavigate('/account')} title="Visual preset" />
+        <AppearanceSettingsCard
+          preset={preset}
+          saveStatus={saveStatus}
+          setPresetName={setPresetName}
+          setThemeColour={setThemeColour}
+          themeColour={themeColour}
+        />
+      </main>
+    );
+  }
+
+  if (isFdrPage) {
+    return (
+      <main aria-labelledby="account-settings-title" className="feature-screen profile-page profile-page--subpage">
+        <SettingsPageHeader onBack={() => onNavigate('/account')} title="FDR colour scale" />
+        <FdrSettingsCard
+          customFdrAnchors={customFdrAnchors}
+          fdrDisplayMode={fdrDisplayMode}
+          fdrScale={fdrScale}
+          fdrScaleReversed={fdrScaleReversed}
+          isFdrScaleSheetOpen={isFdrScaleSheetOpen}
+          onOpenSheet={() => setIsFdrScaleSheetOpen(true)}
+          onSetFdrDisplayMode={setFdrDisplayMode}
+          onSetFdrScaleReversed={setFdrScaleReversed}
+          selectedFdrScale={selectedFdrScale}
+          selectedFdrScaleNumber={selectedFdrScaleNumber}
+          themeMode={themeMode}
+        />
+        <FdrScaleChooser
+          customFdrAnchors={customFdrAnchors}
+          customFdrPalettes={customFdrPalettes}
+          deleteCustomFdrPalette={deleteCustomFdrPalette}
+          fdrDisplayMode={fdrDisplayMode}
+          fdrScale={fdrScale}
+          fdrScaleReversed={fdrScaleReversed}
+          isOpen={isFdrScaleSheetOpen}
+          onClose={() => setIsFdrScaleSheetOpen(false)}
+          onSave={saveCustomFdrPalette}
+          onSetCustomFdrAnchors={setCustomFdrAnchors}
+          onSetFdrScale={setFdrScale}
+          onUseCustomFdrPalette={useCustomFdrPalette}
+          themeMode={themeMode}
+        />
+      </main>
+    );
+  }
+
+  if (isOrientationPage) {
+    return (
+      <main aria-labelledby="account-settings-title" className="feature-screen profile-page profile-page--subpage">
+        <SettingsPageHeader onBack={() => onNavigate('/account')} title="Attacking orientation" />
+        <PitchSettingsCard attackDirection={attackDirection} onSetAttackDirection={setAttackDirection} />
+      </main>
+    );
+  }
+
   return (
-    <main aria-labelledby="account-title" className="feature-screen profile-page">
+    <main aria-labelledby="account-title" className="feature-screen profile-page profile-page--summary">
       <header className="profile-page__header">
         <p className="eyebrow">Account</p>
         <h1 id="account-title">Account</h1>
-        <p>Manage your identity, workspace appearance, pitch orientation, data, and session.</p>
+        <p>Manage your identity, workspace appearance, pitch orientation, and FDR colours.</p>
       </header>
 
-      <Card className="profile-card profile-security-card">
-        <div className="profile-card__header">
-          <div>
-            <p className="profile-card__eyebrow">Fast sign-in</p>
-            <h2>Use Face ID or fingerprint</h2>
+      {isAccountSummary && passkeyStatus?.enabled && passkeyStatus.registeredCount === 0 ? (
+        <Card className="profile-card profile-security-card">
+          <div className="profile-card__header">
+            <div>
+              <p className="profile-card__eyebrow">Fast sign-in</p>
+              <h2>Use Face ID or fingerprint</h2>
+            </div>
+            <Fingerprint aria-hidden="true" className="profile-appearance-icon" size={22} />
           </div>
-          <Fingerprint aria-hidden="true" className="profile-appearance-icon" size={22} />
-        </div>
-        <p className="profile-card__copy">
-          Add a passkey to this device. The phone will use Face ID, fingerprint, or its secure PIN
-          when you sign in again.
-        </p>
-        <Button
-          disabled={passkeyPending}
-          onClick={() => {
-            setPasskeyMessage(null);
-            setPasskeyPending(true);
-            void registerPasskey()
-              .then((result) => {
-                setPasskeyMessage(result.ok ? 'Passkey added on this device.' : result.error.message);
-              })
-              .finally(() => setPasskeyPending(false));
-          }}
-          type="button"
-          variant="secondary"
-        >
-          <Fingerprint aria-hidden="true" size={17} />
-          {passkeyPending ? 'Waiting for device verification…' : 'Enable device sign-in'}
-        </Button>
-        {passkeyMessage ? <p aria-live="polite" className="profile-save-status" role="status">{passkeyMessage}</p> : null}
-      </Card>
+          <Button
+            disabled={passkeyPending}
+            onClick={() => {
+              setPasskeyMessage(null);
+              setPasskeyPending(true);
+              void registerPasskey()
+                .then((result) => {
+                  if (result.ok) {
+                    setPasskeyStatus({ enabled: true, registeredCount: 1 });
+                    setPasskeyMessage('Passkey added on this device.');
+                  } else {
+                    setPasskeyMessage(result.error.message);
+                  }
+                })
+                .finally(() => setPasskeyPending(false));
+            }}
+            type="button"
+            variant="secondary"
+          >
+            <Fingerprint aria-hidden="true" size={17} />
+            {passkeyPending ? 'Waiting for device verification…' : 'Enable device sign-in'}
+          </Button>
+          {passkeyMessage ? <p aria-live="polite" className="profile-save-status" role="status">{passkeyMessage}</p> : null}
+        </Card>
+      ) : null}
 
-      <div className="profile-page__grid">
+      <div className="profile-page__summary-grid">
         <Card className="profile-card profile-identity-card">
           <div className="profile-identity">
             <span aria-hidden="true" className="profile-avatar">{initials}</span>
@@ -172,19 +256,12 @@ export function ProfilePage({ onRefresh, onSignOut, session }: ProfilePageProps)
               <p>{user?.email ?? 'No email address available'}</p>
             </div>
           </div>
-          <dl className="profile-details">
-            <div>
-              <dt>Role</dt>
-              <dd>{user?.roles.join(', ') || 'Manager'}</dd>
-            </div>
-            <div>
-              <dt>Account ID</dt>
-              <dd>{user?.id ?? 'Unavailable'}</dd>
-            </div>
-          </dl>
         </Card>
 
-        <Card className="profile-card profile-appearance-card">
+        <ProfileSummaryCard
+          ariaLabel="Open workspace appearance settings"
+          onSelect={() => onNavigate('/account/appearance')}
+        >
           <div className="profile-card__header">
             <div>
               <p className="profile-card__eyebrow">Workspace appearance</p>
@@ -192,113 +269,275 @@ export function ProfilePage({ onRefresh, onSignOut, session }: ProfilePageProps)
             </div>
             <AppearanceIcon preset={preset} />
           </div>
-          <p className="profile-card__copy">
-            Choose the light or dark workspace appearance.
-          </p>
-          <div aria-label="Visual preset" className="profile-preset-grid" role="group">
-            {themePresets.map((themePreset) => (
-              <PresetOption
-                key={themePreset.name}
-                isSelected={themePreset.name === preset.name}
-                onSelect={() => setPresetName(themePreset.name)}
-                preset={themePreset}
-              />
-            ))}
-          </div>
-          <ThemeColourControls
-            themeColour={themeColour}
-            onSelect={setThemeColour}
-          />
-          <p aria-live="polite" className="profile-save-status" role="status">
-            {saveStatus === 'saving' ? 'Saving your appearance preference…' : null}
-            {saveStatus === 'saved' ? 'Appearance preference saved.' : null}
-            {saveStatus === 'error' ? 'The server could not save this preference; local fallback is active.' : null}
-          </p>
-        </Card>
-      </div>
+          <span className="profile-summary-value">{preset.label} · {themeColour}</span>
+          <AppearanceSummaryPreview preset={preset} themeColour={themeColour} />
+          <ChevronRight aria-hidden="true" className="profile-summary-card__arrow" size={18} />
+        </ProfileSummaryCard>
 
-      <Card className="profile-card profile-fdr-card">
-        <div className="profile-card__header">
-          <div>
-            <p className="profile-card__eyebrow">Fixture difficulty</p>
-            <h2>FDR colour scale</h2>
-          </div>
-          <span className="profile-fdr-count">{fdrColourScales.length} presets + custom</span>
-        </div>
-        <p className="profile-card__copy">
-          Show extremely easy fixtures as 1 and extremely difficult fixtures as 5. The selected
-          scale is used for opponent labels, FDR tables, and fixture cues.
-        </p>
-        <Button
-          aria-controls="fdr-scale-sheet"
-          aria-expanded={isFdrScaleSheetOpen}
-          className="profile-fdr-scale-trigger"
-          onClick={() => setIsFdrScaleSheetOpen(true)}
-          type="button"
-          variant="secondary"
+        <ProfileSummaryCard
+          ariaLabel="Open FDR colour scale settings"
+          onSelect={() => onNavigate('/account/fdr')}
         >
-          <span>
-            <strong>{selectedFdrScaleNumber ? `Option ${selectedFdrScaleNumber}` : selectedFdrScale.label}</strong>
-            <small>Five FDR colour steps</small>
+          <div className="profile-card__header">
+            <div>
+              <p className="profile-card__eyebrow">Fixture difficulty</p>
+              <h2>FDR colour scale</h2>
+            </div>
+            <ChevronRight aria-hidden="true" className="profile-summary-card__arrow" size={18} />
+          </div>
+          <span className="profile-summary-value">
+            {selectedFdrScaleNumber ? `Option ${selectedFdrScaleNumber}` : selectedFdrScale.label} · {fdrDisplayMode === 'fill' ? 'Coloured fill' : 'Coloured font'}
           </span>
-          <ChevronRight aria-hidden="true" size={18} />
-        </Button>
-        <div aria-label="Selected FDR colour scale preview" className="profile-fdr-preview-container">
-          <FdrPalettePreview
-            displayMode={fdrDisplayMode}
-            mode={themeMode}
-            reversed={fdrScaleReversed}
-            scale={selectedFdrScale}
-            customAnchors={customFdrAnchors}
-          />
-        </div>
-        <div aria-label="FDR display style" className="profile-fdr-display-mode" role="group">
-          <DisplayModeOption
-            displayMode="font"
-            isSelected={fdrDisplayMode === 'font'}
-            onSelect={() => setFdrDisplayMode('font')}
-          />
-          <DisplayModeOption
-            displayMode="fill"
-            isSelected={fdrDisplayMode === 'fill'}
-            onSelect={() => setFdrDisplayMode('fill')}
-          />
-        </div>
-        <label className="profile-fdr-reverse-toggle">
-          <input
-            checked={fdrScaleReversed}
-            onChange={(event) => setFdrScaleReversed(event.target.checked)}
-            type="checkbox"
-          />
-          <span>
-            <strong>Reverse order</strong>
-            <small>Swap which end of the chosen scale represents 1 and 5.</small>
-          </span>
-        </label>
-      </Card>
+          <div aria-label="Current FDR colour scale" className="profile-fdr-summary-preview">
+            <FdrPaletteBar
+              customAnchors={customFdrAnchors}
+              displayMode={fdrDisplayMode}
+              mode={themeMode}
+              reversed={fdrScaleReversed}
+              scale={selectedFdrScale}
+            />
+          </div>
+        </ProfileSummaryCard>
 
-      {isFdrScaleSheetOpen ? (
-        <button
-          aria-label="Close FDR colour scale chooser"
-          className="profile-fdr-sheet-backdrop"
-          onClick={() => setIsFdrScaleSheetOpen(false)}
-          type="button"
+        <ProfileSummaryCard
+          ariaLabel={`Current attacking orientation: attack ${attackDirection === 'up' ? 'upwards' : 'downwards'}. Open settings.`}
+          onSelect={() => onNavigate('/account/orientation')}
+        >
+          <div className="profile-card__header">
+            <div>
+              <p className="profile-card__eyebrow">Pitch orientation</p>
+              <h2>Attacking direction</h2>
+            </div>
+            <ChevronRight aria-hidden="true" className="profile-summary-card__arrow" size={18} />
+          </div>
+          <span aria-hidden="true" className="profile-pitch-summary-demo">
+            {attackDirection === 'up' ? <ArrowUp size={42} /> : <ArrowDown size={42} />}
+          </span>
+        </ProfileSummaryCard>
+      </div>
+    </main>
+  );
+}
+
+function SettingsPageHeader({ onBack, title }: { onBack: () => void; title: string }) {
+  return (
+    <header className="profile-page__header profile-page__header--subpage">
+      <button className="profile-subpage-back" onClick={onBack} type="button">
+        <ArrowLeft aria-hidden="true" size={17} />
+        Account
+      </button>
+      <p className="eyebrow">Account</p>
+      <h1 id="account-settings-title">{title}</h1>
+    </header>
+  );
+}
+
+function ProfileSummaryCard({ ariaLabel, children, onSelect }: { ariaLabel: string; children: ReactNode; onSelect: () => void }) {
+  return (
+    <button aria-label={ariaLabel} className="ui-card profile-card profile-summary-card" onClick={onSelect} type="button">
+      {children}
+    </button>
+  );
+}
+
+function AppearanceSummaryPreview({ preset, themeColour }: { preset: ThemePreset; themeColour: string }) {
+  const mode = getThemeMode(preset);
+  const previewStyle = {
+    '--summary-preview-background': preset.tokens.colors.background,
+    '--summary-preview-card': preset.tokens.colors.card,
+    '--summary-preview-border': preset.tokens.colors.border,
+    '--summary-preview-foreground': preset.tokens.colors.foreground,
+    '--summary-preview-primary': getThemeColourForMode(themeColour, mode),
+  } as CSSProperties;
+
+  return (
+    <span aria-label={`${preset.label} with accent ${themeColour}`} className="profile-appearance-summary-preview" style={previewStyle}>
+      <span className="profile-appearance-summary-preview__sidebar" />
+      <span className="profile-appearance-summary-preview__content">
+        <span />
+        <span />
+        <span />
+      </span>
+    </span>
+  );
+}
+
+function AppearanceSettingsCard({
+  preset,
+  saveStatus,
+  setPresetName,
+  setThemeColour,
+  themeColour,
+}: {
+  preset: ThemePreset;
+  saveStatus: 'idle' | 'saving' | 'saved' | 'error';
+  setPresetName: (presetName: ThemePreset['name']) => void;
+  setThemeColour: (colour: string) => void;
+  themeColour: string;
+}) {
+  return (
+    <Card className="profile-card profile-appearance-card profile-settings-card">
+      <div className="profile-card__header">
+        <div>
+          <p className="profile-card__eyebrow">Workspace appearance</p>
+          <h2>Visual preset</h2>
+        </div>
+        <AppearanceIcon preset={preset} />
+      </div>
+      <p className="profile-card__copy">Choose the light, dark, or adaptive workspace appearance.</p>
+      <div aria-label="Visual preset" className="profile-preset-grid" role="group">
+        {themePresets.map((themePreset) => (
+          <PresetOption
+            key={themePreset.name}
+            isSelected={themePreset.name === preset.name}
+            onSelect={() => setPresetName(themePreset.name)}
+            preset={themePreset}
+          />
+        ))}
+      </div>
+      <ThemeColourControls themeColour={themeColour} onSelect={setThemeColour} />
+      <p aria-live="polite" className="profile-save-status" role="status">
+        {saveStatus === 'saving' ? 'Saving your appearance preference…' : null}
+        {saveStatus === 'saved' ? 'Appearance preference saved.' : null}
+        {saveStatus === 'error' ? 'The server could not save this preference; local fallback is active.' : null}
+      </p>
+    </Card>
+  );
+}
+
+function FdrSettingsCard({
+  customFdrAnchors,
+  fdrDisplayMode,
+  fdrScale,
+  fdrScaleReversed,
+  isFdrScaleSheetOpen,
+  onOpenSheet,
+  onSetFdrDisplayMode,
+  onSetFdrScaleReversed,
+  selectedFdrScale,
+  selectedFdrScaleNumber,
+  themeMode,
+}: {
+  customFdrAnchors: FdrCustomAnchors;
+  fdrDisplayMode: FdrDisplayMode;
+  fdrScale: FdrColourScale['name'];
+  fdrScaleReversed: boolean;
+  isFdrScaleSheetOpen: boolean;
+  onOpenSheet: () => void;
+  onSetFdrDisplayMode: (mode: FdrDisplayMode) => void;
+  onSetFdrScaleReversed: (reversed: boolean) => void;
+  selectedFdrScale: FdrColourScale;
+  selectedFdrScaleNumber: number | null;
+  themeMode: 'light' | 'dark';
+}) {
+  return (
+    <Card className="profile-card profile-fdr-card profile-settings-card">
+      <div className="profile-card__header">
+        <div>
+          <p className="profile-card__eyebrow">Fixture difficulty</p>
+          <h2>FDR colour scale</h2>
+        </div>
+        <span className="profile-fdr-count">{fdrColourScales.length} presets + custom</span>
+      </div>
+      <p className="profile-card__copy">Choose how fixture difficulty is coloured across the workspace.</p>
+      <Button
+        aria-controls="fdr-scale-sheet"
+        aria-expanded={isFdrScaleSheetOpen}
+        className="profile-fdr-scale-trigger"
+        onClick={onOpenSheet}
+        type="button"
+        variant="secondary"
+      >
+        <span>
+          <strong>{selectedFdrScaleNumber ? `Option ${selectedFdrScaleNumber}` : selectedFdrScale.label}</strong>
+          <small>Five FDR colour steps</small>
+        </span>
+        <ChevronRight aria-hidden="true" size={18} />
+      </Button>
+      <div aria-label="Selected FDR colour scale preview" className="profile-fdr-preview-container">
+        <FdrPalettePreview
+          displayMode={fdrDisplayMode}
+          mode={themeMode}
+          reversed={fdrScaleReversed}
+          scale={selectedFdrScale}
+          customAnchors={customFdrAnchors}
         />
-      ) : null}
-      <Sheet id="fdr-scale-sheet" isOpen={isFdrScaleSheetOpen} labelledBy="fdr-scale-sheet-title">
+      </div>
+      <div aria-label="FDR display style" className="profile-fdr-display-mode" role="group">
+        <DisplayModeOption displayMode="font" isSelected={fdrDisplayMode === 'font'} onSelect={() => onSetFdrDisplayMode('font')} />
+        <DisplayModeOption displayMode="fill" isSelected={fdrDisplayMode === 'fill'} onSelect={() => onSetFdrDisplayMode('fill')} />
+      </div>
+      <label className="profile-fdr-reverse-toggle">
+        <input checked={fdrScaleReversed} onChange={(event) => onSetFdrScaleReversed(event.target.checked)} type="checkbox" />
+        <span>
+          <strong>Reverse order</strong>
+          <small>Swap which end of the chosen scale represents 1 and 5.</small>
+        </span>
+      </label>
+      <span className="sr-only">Current FDR scale: {fdrScale}</span>
+    </Card>
+  );
+}
+
+function PitchSettingsCard({ attackDirection, onSetAttackDirection }: { attackDirection: AttackDirection; onSetAttackDirection: (direction: AttackDirection) => void }) {
+  return (
+    <Card className="profile-card profile-pitch-card profile-settings-card">
+      <div className="profile-card__header">
+        <div>
+          <p className="profile-card__eyebrow">Pitch orientation</p>
+          <h2>Your attacking direction</h2>
+        </div>
+        {attackDirection === 'up' ? <ArrowUp aria-hidden="true" className="profile-appearance-icon" size={21} /> : <ArrowDown aria-hidden="true" className="profile-appearance-icon" size={21} />}
+      </div>
+      <p className="profile-card__copy">Choose the direction your team attacks in pitch views.</p>
+      <div aria-label="Attacking direction" className="profile-direction-grid" role="group">
+        <DirectionOption direction="up" isSelected={attackDirection === 'up'} onSelect={() => onSetAttackDirection('up')} />
+        <DirectionOption direction="down" isSelected={attackDirection === 'down'} onSelect={() => onSetAttackDirection('down')} />
+      </div>
+    </Card>
+  );
+}
+
+function FdrScaleChooser({
+  customFdrAnchors,
+  customFdrPalettes,
+  deleteCustomFdrPalette,
+  fdrDisplayMode,
+  fdrScale,
+  fdrScaleReversed,
+  isOpen,
+  onClose,
+  onSave,
+  onSetCustomFdrAnchors,
+  onSetFdrScale,
+  onUseCustomFdrPalette,
+  themeMode,
+}: {
+  customFdrAnchors: FdrCustomAnchors;
+  customFdrPalettes: FdrCustomPalette[];
+  deleteCustomFdrPalette: (paletteId: string) => Promise<void>;
+  fdrDisplayMode: FdrDisplayMode;
+  fdrScale: FdrColourScale['name'];
+  fdrScaleReversed: boolean;
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (palette: { name: string; mode: 'anchors' | 'all'; anchors: FdrCustomAnchors }) => Promise<FdrCustomPalette>;
+  onSetCustomFdrAnchors: (anchors: FdrCustomAnchors) => void;
+  onSetFdrScale: (scale: 'CustomHex' | 'CustomAll' | FdrColourScale['name']) => void;
+  onUseCustomFdrPalette: (palette: FdrCustomPalette) => void;
+  themeMode: 'light' | 'dark';
+}) {
+  return (
+    <>
+      {isOpen ? <button aria-label="Close FDR colour scale chooser" className="profile-fdr-sheet-backdrop" onClick={onClose} type="button" /> : null}
+      <Sheet id="fdr-scale-sheet" isOpen={isOpen} labelledBy="fdr-scale-sheet-title">
         <div className="profile-fdr-sheet">
           <header className="profile-fdr-sheet__header">
             <div>
               <p className="profile-card__eyebrow">FDR colour scale</p>
               <h2 id="fdr-scale-sheet-title">Choose a scale</h2>
             </div>
-            <Button
-              aria-label="Close FDR colour scale chooser"
-              className="profile-fdr-sheet__close"
-              onClick={() => setIsFdrScaleSheetOpen(false)}
-              type="button"
-              variant="ghost"
-            >
+            <Button aria-label="Close FDR colour scale chooser" className="profile-fdr-sheet__close" onClick={onClose} type="button" variant="ghost">
               <X aria-hidden="true" size={18} />
             </Button>
           </header>
@@ -307,11 +546,11 @@ export function ProfilePage({ onRefresh, onSignOut, session }: ProfilePageProps)
               <h3 className="profile-fdr-custom-heading" id="profile-fdr-custom-heading">Custom scales</h3>
               <CustomFdrScaleEditor
                 anchors={customFdrAnchors}
-                onChange={setCustomFdrAnchors}
-                onSave={saveCustomFdrPalette}
+                onChange={onSetCustomFdrAnchors}
+                onSave={onSave}
                 onUse={(scaleName) => {
-                  setFdrScale(scaleName);
-                  setIsFdrScaleSheetOpen(false);
+                  onSetFdrScale(scaleName);
+                  onClose();
                 }}
                 selectedScaleName={fdrScale}
               />
@@ -325,8 +564,8 @@ export function ProfilePage({ onRefresh, onSignOut, session }: ProfilePageProps)
                     key={palette.id}
                     onDelete={() => deleteCustomFdrPalette(palette.id)}
                     onUse={() => {
-                      useCustomFdrPalette(palette);
-                      setIsFdrScaleSheetOpen(false);
+                      onUseCustomFdrPalette(palette);
+                      onClose();
                     }}
                     palette={palette}
                   />
@@ -343,76 +582,25 @@ export function ProfilePage({ onRefresh, onSignOut, session }: ProfilePageProps)
                   aria-pressed={scale.name === fdrScale}
                   className={`profile-fdr-scale-option${scale.name === fdrScale ? ' is-selected' : ''}`}
                   data-scale-name={scale.name}
+                  key={scale.name}
                   onClick={() => {
-                    setFdrScale(scale.name);
-                    setIsFdrScaleSheetOpen(false);
+                    onSetFdrScale(scale.name);
+                    onClose();
                   }}
                   type="button"
                 >
                   <span aria-hidden="true" className="profile-fdr-scale-option__number">{scale.optionNumber}</span>
                   <span className="profile-fdr-scale-option__previews">
-                    <FdrPaletteBar
-                      displayMode={fdrDisplayMode}
-                      mode={themeMode}
-                      reversed={fdrScaleReversed}
-                      scale={scale}
-                      customAnchors={customFdrAnchors}
-                    />
+                    <FdrPaletteBar displayMode={fdrDisplayMode} mode={themeMode} reversed={fdrScaleReversed} scale={scale} customAnchors={customFdrAnchors} />
                   </span>
-                  <span aria-hidden="true" className="profile-preset-check">
-                    {scale.name === fdrScale ? <Check size={15} /> : <Circle size={15} />}
-                  </span>
+                  <span aria-hidden="true" className="profile-preset-check">{scale.name === fdrScale ? <Check size={15} /> : <Circle size={15} />}</span>
                 </button>
               ))}
             </section>
           </div>
         </div>
       </Sheet>
-
-      <Card className="profile-card profile-pitch-card">
-        <div className="profile-card__header">
-          <div>
-            <p className="profile-card__eyebrow">Pitch orientation</p>
-            <h2>Your attacking direction</h2>
-          </div>
-          {attackDirection === 'up' ? <ArrowUp aria-hidden="true" className="profile-appearance-icon" size={21} /> : <ArrowDown aria-hidden="true" className="profile-appearance-icon" size={21} />}
-        </div>
-        <p className="profile-card__copy">
-          Choose the direction your team attacks. Pitch views show the attacking end in the same
-          direction every time, with the opposition facing the other way.
-        </p>
-        <div aria-label="Attacking direction" className="profile-direction-grid" role="group">
-          <DirectionOption
-            direction="up"
-            isSelected={attackDirection === 'up'}
-            onSelect={() => setAttackDirection('up')}
-          />
-          <DirectionOption
-            direction="down"
-            isSelected={attackDirection === 'down'}
-            onSelect={() => setAttackDirection('down')}
-          />
-        </div>
-      </Card>
-
-      <Card className="profile-card profile-session-card">
-        <div>
-          <p className="profile-card__eyebrow">Data &amp; session</p>
-          <h2>Account actions</h2>
-          <p>Refresh your account data or end your current manager session.</p>
-        </div>
-        <div className="profile-session-card__actions">
-          <Button onClick={onRefresh} type="button" variant="secondary">
-            <RefreshCw aria-hidden="true" size={17} />
-            Refresh data
-          </Button>
-          <Button onClick={onSignOut} type="button" variant="ghost">
-            <LogOut aria-hidden="true" size={17} />
-            Sign out
-          </Button>
-        </div>
-      </Card>
-    </main>
+    </>
   );
 }
 

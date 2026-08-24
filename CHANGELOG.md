@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Reworked the account page into a compact summary with navigable appearance, FDR colour, and attacking-orientation settings subpages.
+- Hide device sign-in setup after a passkey is registered and remove manager role, account ID, and dedicated account-action content from the page.
 - Added 30-day PostgreSQL-backed application sessions with secure persistent cookies.
 - Added WebAuthn passkey registration and sign-in for device Face ID, fingerprint, or PIN unlock.
 - Added configurable Sign in with Apple support while retaining the allowlisted Google flow.

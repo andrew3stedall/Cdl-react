@@ -45,3 +45,15 @@ def test_full_custom_fdr_palette_migration_is_append_only() -> None:
     assert "Revises: 0017_auth_passkeys" in content
     assert '"fdr_custom_second"' in content
     assert '"fdr_custom_fourth"' in content
+
+
+def test_saved_custom_fdr_palettes_migration_is_append_only() -> None:
+    content = Path(
+        "migrations/versions/0019_fdr_custom_palettes.py",
+    ).read_text(encoding="utf-8")
+
+    assert "Revision ID: 0019_fdr_custom_palettes" in content
+    assert "Revises: 0018_fdr_custom_full_palette" in content
+    assert '"fdr_custom_palettes"' in content
+    assert '"fdr_custom_min"' in content
+    assert '"fdr_custom_max"' in content

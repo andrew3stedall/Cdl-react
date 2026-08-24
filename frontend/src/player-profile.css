@@ -403,8 +403,9 @@
 }
 
 .player-profile__grouped-stat-icons {
-  align-items: center;
-  display: inline-flex;
+  align-items: stretch;
+  align-self: stretch;
+  display: flex;
   flex: 1 1 auto;
   justify-content: center;
   min-width: 0;
@@ -412,28 +413,7 @@
 }
 
 .player-profile__grouped-stat-icons .player-profile__stat-icons {
-  bottom: auto;
-  gap: 0.08rem;
-  max-width: 100%;
-  position: static;
-}
-
-.player-profile__grouped-stat-icons .player-profile__stat-icon {
-  height: 0.76rem;
-  width: 0.76rem;
-}
-
-.player-profile__grouped-stat-icons .player-profile__stat-icon svg {
-  height: 0.56rem;
-  width: 0.56rem;
-}
-
-.player-profile__grouped-stat-icons .player-profile__stat-multiplier {
-  font-size: 0.35rem;
-  height: 0.52rem;
-  min-width: 0.52rem;
-  right: -0.2rem;
-  top: -0.2rem;
+  max-width: calc(100% - 0.15rem);
 }
 
 .player-profile__grouped-bar {

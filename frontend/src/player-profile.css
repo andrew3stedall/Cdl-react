@@ -34,13 +34,21 @@
 }
 
 .player-profile--drawer .player-profile__content {
+  --player-profile-drawer-scroll-tail: calc(5rem + var(--cdl-mobile-navigation-clearance));
   display: grid;
   gap: 0.65rem;
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding-bottom: calc(4rem + var(--cdl-mobile-navigation-clearance));
-  scroll-padding-bottom: calc(4rem + var(--cdl-mobile-navigation-clearance));
+  padding-bottom: 0;
+  scroll-padding-bottom: var(--player-profile-drawer-scroll-tail);
+}
+
+.player-profile--drawer .player-profile__scroll-end-spacer {
+  display: block;
+  height: var(--player-profile-drawer-scroll-tail);
+  min-height: var(--player-profile-drawer-scroll-tail);
+  width: 100%;
 }
 
 .player-profile__sheet-handle {
@@ -709,8 +717,7 @@
 }
 
 .player-profile__substitution-review .player-profile__content {
-  padding-bottom: calc(4rem + var(--cdl-mobile-navigation-clearance));
-  scroll-padding-bottom: calc(4rem + var(--cdl-mobile-navigation-clearance));
+  --player-profile-drawer-scroll-tail: calc(5rem + var(--cdl-mobile-navigation-clearance));
 }
 
 .player-profile__comparison-card {

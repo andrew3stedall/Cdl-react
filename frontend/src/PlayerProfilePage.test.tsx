@@ -172,14 +172,23 @@ const preferenceClient: PreferenceClient = {
   updatePreferences: async (preferences: UserPreferences) => preferences,
 };
 
-function renderPage(squadClient = new MemorySquadClient(), teamSelectionClient = new MemoryTeamSelectionClient()) {
+function renderPage(
+  squadClient = new MemorySquadClient(),
+  teamSelectionClient = new MemoryTeamSelectionClient(),
+  presentation: 'page' | 'drawer' = 'page',
+) {
   const container = document.createElement('div');
   document.body.appendChild(container);
   const root: Root = createRoot(container);
   act(() => {
     root.render(
       <ThemePresetProvider initialPresetName="teal-dark" preferenceClient={preferenceClient}>
-        <PlayerProfilePage playerId={player.id} squadClient={squadClient} teamSelectionClient={teamSelectionClient} />
+        <PlayerProfilePage
+          playerId={player.id}
+          presentation={presentation}
+          squadClient={squadClient}
+          teamSelectionClient={teamSelectionClient}
+        />
       </ThemePresetProvider>,
     );
   });
@@ -210,6 +219,14 @@ describe('PlayerProfilePage', () => {
     expect(container.querySelector('.player-card__opponent')?.className).toContain('player-card__opponent');
     expect(container.querySelector('.player-card__opponent')?.className).toContain('player-card__opponent--fdr-3');
     expect(container.querySelector('.player-profile__portrait')).toBeNull();
+    root.unmount();
+  });
+
+  test('adds a reachable scroll tail when the profile is presented as a drawer', async () => {
+    const { container, root } = renderPage(new MemorySquadClient(), new MemoryTeamSelectionClient(), 'drawer');
+    await settle();
+
+    expect(container.querySelector('.player-profile--drawer .player-profile__scroll-end-spacer')).not.toBeNull();
     root.unmount();
   });
 

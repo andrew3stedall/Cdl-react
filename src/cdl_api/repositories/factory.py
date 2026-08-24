@@ -4,6 +4,10 @@ from dataclasses import dataclass
 
 from cdl_api.database import build_session_factory
 from cdl_api.repositories.auth import InMemorySessionRepository, InMemoryUserRepository
+from cdl_api.repositories.fdr_custom_palettes import (
+    InMemoryFdrCustomPaletteRepository,
+    PostgreSQLFdrCustomPaletteRepository,
+)
 from cdl_api.repositories.league_repository import LeagueRepository
 from cdl_api.repositories.passkeys import (
     InMemoryAuthChallengeRepository,
@@ -38,6 +42,7 @@ class RepositoryBundle:
     users: object
     sessions: object
     preferences: object
+    fdr_custom_palettes: object
     squad: object
     team_selection: object
     league: object
@@ -49,6 +54,7 @@ _memory_bundle = RepositoryBundle(
     users=InMemoryUserRepository(),
     sessions=InMemorySessionRepository(),
     preferences=InMemoryUserPreferenceRepository(),
+    fdr_custom_palettes=InMemoryFdrCustomPaletteRepository(),
     squad=InMemorySquadRepository(),
     team_selection=InMemoryTeamSelectionRepository(),
     league=LeagueRepository(),
@@ -70,6 +76,7 @@ def build_repositories(settings: Settings) -> RepositoryBundle:
             users=users,
             sessions=PostgreSQLSessionRepository(session_factory),
             preferences=PostgreSQLUserPreferenceRepository(session_factory),
+            fdr_custom_palettes=PostgreSQLFdrCustomPaletteRepository(session_factory),
             squad=squad,
             team_selection=PostgreSQLTeamSelectionRepository(session_factory),
             league=league,

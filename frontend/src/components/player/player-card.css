@@ -1,4 +1,6 @@
 .player-card {
+  --player-card-opponent-height: 0.72rem;
+  --player-card-opponent-top: 72%;
   --player-card-size: 4.05rem;
   --player-card-form-tone: var(--squad-form-low, var(--muted-foreground));
   align-items: center;
@@ -47,7 +49,7 @@
 .player-card__token {
   align-items: center;
   aspect-ratio: 1;
-  background: color-mix(in srgb, var(--squad-pitch, var(--secondary)) 88%, var(--squad-form-steady, var(--primary)) 12%);
+  background: var(--squad-pitch, var(--secondary));
   border-radius: 50%;
   display: flex;
   flex: 0 0 var(--player-card-size);
@@ -59,7 +61,28 @@
   width: var(--player-card-size);
 }
 
+.player-card__token--with-opponent {
+  background: transparent;
+}
+
+.player-card__token--with-opponent::before {
+  background: var(--squad-pitch, var(--secondary));
+  border-radius: 50%;
+  clip-path: inset(0 0 20% 0);
+  content: '';
+  height: 100%;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+  z-index: 0;
+}
+
 .player-card--pitch .player-card__token {
+  background: transparent;
+}
+
+.player-card--pitch .player-card__token--with-opponent::before {
   background: transparent;
 }
 
@@ -125,10 +148,10 @@
   display: flex;
   font-size: clamp(0.47rem, 1.3vw, 0.58rem);
   font-weight: 800;
-  height: 0.72rem;
+  height: var(--player-card-opponent-height);
   justify-content: center;
   line-height: 1;
-  top: calc(66% + 0.45rem);
+  top: var(--player-card-opponent-top);
 }
 
 .player-card__opponent {
@@ -187,11 +210,12 @@
   z-index: 5;
 }
 
-.player-card--form-below .player-card__form {
-  bottom: -0.86rem;
+.player-card--pitch.player-card--form-below .player-card__form {
+  bottom: auto;
   left: 0;
   position: absolute;
   right: 0;
+  top: calc(var(--player-card-opponent-top) + var(--player-card-opponent-height));
 }
 
 .player-card--form-beside .player-card__form { flex: 0 0 auto; }

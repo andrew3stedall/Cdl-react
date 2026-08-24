@@ -1,9 +1,9 @@
 .player-profile__stat-icons {
   align-items: center;
-  bottom: 0.24rem;
+  bottom: 0.14rem;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.14rem;
+  gap: 0.1rem;
   justify-content: center;
   left: 50%;
   max-width: calc(100% - 0.15rem);
@@ -23,10 +23,15 @@
   border-radius: 0.2rem;
   color: var(--profile-text);
   display: inline-flex;
-  height: 1.18rem;
+  height: 0.826rem;
   justify-content: center;
   position: relative;
-  width: 1.18rem;
+  width: 0.826rem;
+}
+
+.player-profile__stat-icon svg {
+  height: 0.48rem;
+  width: 0.48rem;
 }
 
 .player-profile__stat-icon--yellow {
@@ -44,14 +49,14 @@
   border-radius: 999px;
   color: var(--primary-foreground);
   display: inline-flex;
-  font-size: 0.48rem;
-  height: 0.72rem;
+  font-size: 0.34rem;
+  height: 0.504rem;
   justify-content: center;
   line-height: 1;
-  min-width: 0.72rem;
-  padding: 0 0.1rem;
+  min-width: 0.504rem;
+  padding: 0 0.07rem;
   position: absolute;
-  right: -0.28rem;
-  top: -0.32rem;
+  right: -0.18rem;
+  top: -0.2rem;
   z-index: 2;
 }

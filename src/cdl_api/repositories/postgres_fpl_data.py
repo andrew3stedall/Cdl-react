@@ -28,6 +28,7 @@ from cdl_api.contracts.fpl_data import (
     FplCacheStatusResponse,
     FplOpponentDefensiveHistory,
     FplOpponentDefensiveHistoryGroup,
+    FplOpponentStatIcons,
     FplPlayerHistoryResponse,
     FplRefreshResource,
     FplResourceRefreshResult,
@@ -756,7 +757,7 @@ def _defensive_history_from_fixture(
     element_metadata: Mapping[str, tuple[str, str]] | None = None,
 ) -> FplOpponentDefensiveHistory:
     is_home = str(row["home_team_id"]) == target_team_id
-    total_points, attacking_points, defensive_points = _fixture_asset_points(
+    total_points, attacking_points, defensive_points, stat_icons = _fixture_asset_points(
         row["payload_json"],
         target_team_id=target_team_id,
         home_team_id=str(row["home_team_id"]),
@@ -777,6 +778,7 @@ def _defensive_history_from_fixture(
         total_points_conceded=total_points,
         attacking_asset_points=attacking_points,
         defensive_asset_points=defensive_points,
+        stat_icons=stat_icons,
     )
 
 
@@ -789,7 +791,7 @@ def _fixture_asset_points(
     fixture_id: int | None = None,
     event_live_payload: object = None,
     element_metadata: Mapping[str, tuple[str, str]] | None = None,
-) -> tuple[int | None, int | None, int | None]:
+) -> tuple[int | None, int | None, int | None, FplOpponentStatIcons]:
     live_points = _event_live_asset_points(
         event_live_payload,
         fixture_id=fixture_id,
@@ -802,13 +804,14 @@ def _fixture_asset_points(
     if live_points is not None:
         return live_points
     if not isinstance(payload, Mapping) or not isinstance(payload.get("stats"), list):
-        return None, None, None
+        return None, None, None, FplOpponentStatIcons()
     target_is_home = target_team_id == home_team_id
     opposition_side = "a" if target_is_home else "h"
     total_by_element: dict[str, int] = {}
     total_from_stat_points = 0
     stat_points_found = False
     points_by_element: dict[str, int] = {}
+    stat_icons = FplOpponentStatIcons()
     for group in payload["stats"]:
         if not isinstance(group, Mapping):
             continue
@@ -823,6 +826,7 @@ def _fixture_asset_points(
             if total_points is not None and element:
                 total_by_element[element] = total_points
             stat_points = _optional_int_value(entry.get("points"))
+            _add_stat_icon(stat_icons, group.get("identifier"), entry.get("value"))
             if stat_points is None:
                 continue
             stat_points_found = True
@@ -853,6 +857,7 @@ def _fixture_asset_points(
         total_points,
         (attacking_points if stat_points_found else None),
         (defensive_points if stat_points_found else None),
+        stat_icons,
     )
 
 
@@ -865,7 +870,7 @@ def _event_live_asset_points(
     away_team_id: str,
     fixture_payload: object,
     element_metadata: Mapping[str, tuple[str, str]],
-) -> tuple[int, int, int] | None:
+) -> tuple[int, int, int, FplOpponentStatIcons] | None:
     if (
         fixture_id is None
         or not isinstance(payload, Mapping)
@@ -879,6 +884,7 @@ def _event_live_asset_points(
         target_team_id == home_team_id,
     )
     points_by_element: dict[str, int] = {}
+    stat_icons = FplOpponentStatIcons()
     found_fixture = False
 
     for element in payload["elements"]:
@@ -912,6 +918,7 @@ def _event_live_asset_points(
                 if points is None:
                     continue
                 points_by_element[element_id] = points_by_element.get(element_id, 0) + points
+                _add_stat_icon(stat_icons, stat.get("identifier"), stat.get("value"))
 
     total_points = sum(points_by_element.values())
     attacking_points = 0
@@ -923,7 +930,25 @@ def _event_live_asset_points(
         else:
             defensive_points += points
 
-    return (total_points, attacking_points, defensive_points) if found_fixture else None
+    return (total_points, attacking_points, defensive_points, stat_icons) if found_fixture else None
+
+
+def _add_stat_icon(stat_icons: FplOpponentStatIcons, identifier: object, value: object) -> None:
+    icon_key = {
+        "goals_scored": "goals",
+        "assists": "assists",
+        "clean_sheets": "clean_sheets",
+        "saves": "saves",
+        "yellow_cards": "yellow_cards",
+        "red_cards": "red_cards",
+        "defensive_contribution": "defensive_contributions",
+        "defensive_contributions": "defensive_contributions",
+        "bonus": "bonus_points",
+    }.get(str(identifier or ""))
+    icon_value = _optional_int_value(value)
+    if icon_key is None or icon_value is None or icon_value <= 0:
+        return
+    setattr(stat_icons, icon_key, getattr(stat_icons, icon_key) + icon_value)
 
 
 def _fixture_opposition_element_ids(payload: object, target_is_home: bool) -> set[str]:

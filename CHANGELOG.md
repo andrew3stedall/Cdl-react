@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Added 30-day PostgreSQL-backed application sessions with secure persistent cookies.
+- Added WebAuthn passkey registration and sign-in for device Face ID, fingerprint, or PIN unlock.
+- Added configurable Sign in with Apple support while retaining the allowlisted Google flow.
+
 ## 2026-08-22 - Finish player profile drawer spacing
 
 ### Fixed

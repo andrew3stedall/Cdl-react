@@ -39,6 +39,7 @@ def create_app() -> FastAPI:
             repositories.users,
             repositories.sessions,
             settings.development_login_secret,
+            settings.session_ttl_days,
         )
         app.middleware("http")(build_staging_access_middleware(settings, auth_service))
     app.include_router(auth_router, prefix=settings.api_prefix)

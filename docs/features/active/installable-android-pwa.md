@@ -17,6 +17,8 @@ Implemented.
   same build works at the Cloud Run root and under GitHub Pages.
 - A production-only service worker caches the static app shell and bypasses
   `/api/` requests so authenticated and league data remain network-backed.
+- The installed PWA uses the same-origin HTTP-only session cookie as the browser, and the
+  authenticated app offers WebAuthn passkeys for device biometrics or PIN unlock.
 - Dynamic viewport sizing keeps the app shell fitted to standalone mobile
   windows.
 

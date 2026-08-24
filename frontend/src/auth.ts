@@ -18,6 +18,15 @@ export interface GoogleAuthConfig {
   clientId: string | null;
 }
 
+export interface AppleAuthConfig {
+  enabled: boolean;
+}
+
+export interface PasskeyAuthConfig {
+  enabled: boolean;
+  rpId: string | null;
+}
+
 export interface SessionClient {
   getSession(): Promise<SessionState>;
   getGoogleAuthConfig(): Promise<GoogleAuthConfig>;
@@ -119,6 +128,23 @@ export async function getGoogleAuthConfig(): Promise<GoogleAuthConfig> {
 
   const config = (await response.json()) as ApiGoogleAuthConfig;
   return { enabled: config.enabled, clientId: config.client_id };
+}
+
+export async function getAppleAuthConfig(): Promise<AppleAuthConfig> {
+  const response = await fetch('/api/auth/apple/config', { credentials: 'include' });
+  if (!response.ok) return { enabled: false };
+  const config = (await response.json()) as { enabled?: boolean };
+  return { enabled: config.enabled === true };
+}
+
+export async function getPasskeyAuthConfig(): Promise<PasskeyAuthConfig> {
+  const response = await fetch('/api/auth/passkeys/config', { credentials: 'include' });
+  if (!response.ok) return { enabled: false, rpId: null };
+  const config = (await response.json()) as { enabled?: boolean; rp_id?: string | null };
+  return {
+    enabled: config.enabled === true,
+    rpId: config.rp_id ?? null,
+  };
 }
 
 export async function loginWithGoogleCredential(

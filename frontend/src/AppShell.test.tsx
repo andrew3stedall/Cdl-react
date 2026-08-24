@@ -5,7 +5,8 @@ import { describe, expect, test } from 'vitest';
 import { App } from './App';
 import type { SessionState, UserPreferences } from './contracts';
 import type { LeagueClient, LeagueSnapshot } from './league-api';
-import type { PreferenceClient } from './preferences-api';
+import type { FdrCustomPalette } from './fdr-colour-scales';
+import type { FdrCustomPaletteDraft, PreferenceClient } from './preferences-api';
 
 const testGlobal = globalThis as typeof globalThis & {
   IS_REACT_ACT_ENVIRONMENT: boolean;
@@ -24,6 +25,7 @@ const authenticatedSession: SessionState = {
 };
 
 class MemoryPreferenceClient implements PreferenceClient {
+  palettes: FdrCustomPalette[] = [];
   preferences: UserPreferences = {
     themePreset: 'teal-light',
     attackDirection: 'up',
@@ -38,6 +40,20 @@ class MemoryPreferenceClient implements PreferenceClient {
   async updatePreferences(preferences: UserPreferences): Promise<UserPreferences> {
     this.preferences = preferences;
     return preferences;
+  }
+
+  async getFdrCustomPalettes(): Promise<FdrCustomPalette[]> {
+    return this.palettes;
+  }
+
+  async createFdrCustomPalette(palette: FdrCustomPaletteDraft): Promise<FdrCustomPalette> {
+    const saved = { ...palette, id: `palette-${this.palettes.length + 1}` };
+    this.palettes = [...this.palettes, saved];
+    return saved;
+  }
+
+  async deleteFdrCustomPalette(paletteId: string): Promise<void> {
+    this.palettes = this.palettes.filter((palette) => palette.id !== paletteId);
   }
 }
 
@@ -241,6 +257,8 @@ describe('AppShell integration', () => {
     });
     expect(container.querySelector('#fdr-scale-sheet')?.hasAttribute('hidden')).toBe(false);
     expect(container.querySelectorAll('.profile-fdr-scale-option')).toHaveLength(7);
+    expect([...container.querySelectorAll('.profile-fdr-scale-option__number')].map((number) => number.textContent)).toEqual(['1', '2', '3', '4', '5', '6', '7']);
+    expect(container.querySelectorAll('[aria-label^="Delete saved FDR palette"]').length).toBe(0);
     expect(container.querySelector('#fdr-scale-sheet')?.textContent).not.toContain('Viridis');
     expect(container.querySelector('.profile-fdr-preview__labels')?.textContent).toContain('Very easy');
     expect(container.querySelector('.profile-fdr-preview .profile-fdr-palette-bar')?.textContent).toBe('12345');
@@ -278,6 +296,42 @@ describe('AppShell integration', () => {
     expect(preferenceClient.preferences.fdrDisplayMode).toBe('fill');
     expect(document.documentElement.dataset.fdrDisplayMode).toBe('fill');
     expect(document.documentElement.style.getPropertyValue('--cdl-fdr-fill-foreground-1')).toMatch(/^#(000000|FFFFFF)$/);
+
+    const paletteName = container.querySelector<HTMLInputElement>('[aria-label="Saved FDR palette name"]');
+    await act(async () => {
+      if (paletteName) {
+        const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+        setter?.call(paletteName, 'Weekend watch');
+        paletteName.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      await Promise.resolve();
+    });
+    const savePalette = [...container.querySelectorAll<HTMLButtonElement>('button')]
+      .find((button) => button.textContent?.includes('Save palette'));
+    await act(async () => {
+      savePalette?.click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(preferenceClient.palettes.map((palette) => palette.name)).toEqual(['Weekend watch']);
+    expect(container.textContent).toContain('Weekend watch');
+    expect(container.querySelector('[aria-label="Delete saved FDR palette Weekend watch"]')).not.toBeNull();
+
+    const useSavedPalette = [...container.querySelectorAll<HTMLButtonElement>('.profile-fdr-saved-palette button')]
+      .find((button) => button.textContent === 'Use');
+    await act(async () => {
+      useSavedPalette?.click();
+      await Promise.resolve();
+    });
+    expect(preferenceClient.preferences.fdrScale).toBe('CustomHex');
+
+    const deleteSavedPalette = container.querySelector<HTMLButtonElement>('[aria-label="Delete saved FDR palette Weekend watch"]');
+    await act(async () => {
+      deleteSavedPalette?.click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(preferenceClient.palettes).toHaveLength(0);
 
     const attackDownOption = container.querySelector<HTMLButtonElement>('.profile-direction-option[aria-pressed="false"]');
     expect(attackDownOption?.textContent).toContain('Attack downwards');

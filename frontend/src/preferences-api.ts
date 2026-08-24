@@ -25,7 +25,9 @@ interface ApiUserPreferences {
   light_theme_colour?: string;
   dark_theme_colour?: string;
   fdr_custom_min?: string;
+  fdr_custom_second?: string;
   fdr_custom_mid?: string;
+  fdr_custom_fourth?: string;
   fdr_custom_max?: string;
 }
 
@@ -45,7 +47,9 @@ function fromApiPreferences(preferences: ApiUserPreferences): UserPreferences {
     darkThemeColour: resolveThemeColour(preferences.light_theme_colour ?? preferences.dark_theme_colour, 'dark'),
     fdrCustomAnchors: resolveFdrCustomAnchors({
       min: preferences.fdr_custom_min,
+      second: preferences.fdr_custom_second,
       mid: preferences.fdr_custom_mid,
+      fourth: preferences.fdr_custom_fourth,
       max: preferences.fdr_custom_max,
     }),
   };
@@ -61,7 +65,9 @@ function toApiPreferences(preferences: UserPreferences): ApiUserPreferences {
     light_theme_colour: resolveThemeBaseColour(preferences.lightThemeColour ?? defaultThemeColour),
     dark_theme_colour: getThemeColourForMode(preferences.lightThemeColour ?? defaultThemeColour, 'dark'),
     fdr_custom_min: preferences.fdrCustomAnchors?.min ?? defaultFdrCustomAnchors.min,
+    fdr_custom_second: preferences.fdrCustomAnchors?.second ?? defaultFdrCustomAnchors.second,
     fdr_custom_mid: preferences.fdrCustomAnchors?.mid ?? defaultFdrCustomAnchors.mid,
+    fdr_custom_fourth: preferences.fdrCustomAnchors?.fourth ?? defaultFdrCustomAnchors.fourth,
     fdr_custom_max: preferences.fdrCustomAnchors?.max ?? defaultFdrCustomAnchors.max,
   };
 }
@@ -120,7 +126,9 @@ export class LocalStoragePreferenceClient implements PreferenceClient {
   private readonly lightThemeColourStorageKey = 'cdl-light-theme-colour';
   private readonly darkThemeColourStorageKey = 'cdl-dark-theme-colour';
   private readonly fdrCustomMinStorageKey = 'cdl-fdr-custom-min';
+  private readonly fdrCustomSecondStorageKey = 'cdl-fdr-custom-second';
   private readonly fdrCustomMidStorageKey = 'cdl-fdr-custom-mid';
+  private readonly fdrCustomFourthStorageKey = 'cdl-fdr-custom-fourth';
   private readonly fdrCustomMaxStorageKey = 'cdl-fdr-custom-max';
 
   async getPreferences(): Promise<UserPreferences> {
@@ -138,7 +146,9 @@ export class LocalStoragePreferenceClient implements PreferenceClient {
       darkThemeColour: resolveThemeColour(localStorage.getItem(this.lightThemeColourStorageKey) ?? defaultThemeColour, 'dark'),
       fdrCustomAnchors: resolveFdrCustomAnchors({
         min: localStorage.getItem(this.fdrCustomMinStorageKey) ?? undefined,
+        second: localStorage.getItem(this.fdrCustomSecondStorageKey) ?? undefined,
         mid: localStorage.getItem(this.fdrCustomMidStorageKey) ?? undefined,
+        fourth: localStorage.getItem(this.fdrCustomFourthStorageKey) ?? undefined,
         max: localStorage.getItem(this.fdrCustomMaxStorageKey) ?? undefined,
       }),
     };
@@ -155,7 +165,9 @@ export class LocalStoragePreferenceClient implements PreferenceClient {
     localStorage.setItem(this.lightThemeColourStorageKey, themeColour);
     localStorage.setItem(this.darkThemeColourStorageKey, getThemeColourForMode(themeColour, 'dark'));
     localStorage.setItem(this.fdrCustomMinStorageKey, preferences.fdrCustomAnchors?.min ?? defaultFdrCustomAnchors.min);
+    localStorage.setItem(this.fdrCustomSecondStorageKey, preferences.fdrCustomAnchors?.second ?? defaultFdrCustomAnchors.second);
     localStorage.setItem(this.fdrCustomMidStorageKey, preferences.fdrCustomAnchors?.mid ?? defaultFdrCustomAnchors.mid);
+    localStorage.setItem(this.fdrCustomFourthStorageKey, preferences.fdrCustomAnchors?.fourth ?? defaultFdrCustomAnchors.fourth);
     localStorage.setItem(this.fdrCustomMaxStorageKey, preferences.fdrCustomAnchors?.max ?? defaultFdrCustomAnchors.max);
 
     return preferences;

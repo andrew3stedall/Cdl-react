@@ -210,11 +210,12 @@
   z-index: 5;
 }
 
-.player-card--form-below .player-card__form {
-  bottom: -0.86rem;
+.player-card--pitch.player-card--form-below .player-card__form {
+  bottom: auto;
   left: 0;
   position: absolute;
   right: 0;
+  top: calc(var(--player-card-opponent-top) + var(--player-card-opponent-height));
 }
 
 .player-card--form-beside .player-card__form { flex: 0 0 auto; }

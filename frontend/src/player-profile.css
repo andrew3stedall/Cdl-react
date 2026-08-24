@@ -525,7 +525,7 @@
   padding: 0.45rem max(0.45rem, env(safe-area-inset-right))
     calc(0.45rem + env(safe-area-inset-bottom))
     max(0.45rem, env(safe-area-inset-left));
-  position: absolute;
+  position: fixed;
   z-index: 12;
 }
 
@@ -750,7 +750,7 @@
   grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
   left: 0;
   padding: 0.45rem max(0.55rem, env(safe-area-inset-right)) calc(0.45rem + env(safe-area-inset-bottom)) max(0.55rem, env(safe-area-inset-left));
-  position: absolute;
+  position: fixed;
   right: 0;
   z-index: 12;
 }

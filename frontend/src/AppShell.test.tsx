@@ -240,19 +240,19 @@ describe('AppShell integration', () => {
       await Promise.resolve();
     });
     expect(container.querySelector('#fdr-scale-sheet')?.hasAttribute('hidden')).toBe(false);
-    expect(container.querySelectorAll('.profile-fdr-scale-option')).toHaveLength(42);
+    expect(container.querySelectorAll('.profile-fdr-scale-option')).toHaveLength(7);
     expect(container.querySelector('#fdr-scale-sheet')?.textContent).not.toContain('Viridis');
     expect(container.querySelector('.profile-fdr-preview__labels')?.textContent).toContain('Very easy');
     expect(container.querySelector('.profile-fdr-preview .profile-fdr-palette-bar')?.textContent).toBe('12345');
     expect(container.textContent).not.toContain('Light theme');
 
-    const viridisOption = container.querySelector<HTMLButtonElement>('[data-scale-name="Viridis"]');
+    const redBlueOption = container.querySelector<HTMLButtonElement>('[data-scale-name="RdBu"]');
     await act(async () => {
-      viridisOption?.click();
+      redBlueOption?.click();
       await Promise.resolve();
     });
-    expect(preferenceClient.preferences.fdrScale).toBe('Viridis');
-    expect(document.documentElement.dataset.fdrScale).toBe('Viridis');
+    expect(preferenceClient.preferences.fdrScale).toBe('RdBu');
+    expect(document.documentElement.dataset.fdrScale).toBe('RdBu');
 
     const blueOption = container.querySelector<HTMLButtonElement>('[aria-label="Blue theme colour"]');
     await act(async () => {

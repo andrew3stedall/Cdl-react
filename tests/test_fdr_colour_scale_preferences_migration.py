@@ -34,3 +34,14 @@ def test_theme_colour_preferences_migration_is_append_only() -> None:
     assert '"dark_theme_colour"' in content
     assert 'server_default="#0F766E"' in content
     assert 'server_default="#2DD4BF"' in content
+
+
+def test_full_custom_fdr_palette_migration_is_append_only() -> None:
+    content = Path(
+        "migrations/versions/0018_fdr_custom_full_palette.py",
+    ).read_text(encoding="utf-8")
+
+    assert "Revision ID: 0018_fdr_custom_full_palette" in content
+    assert "Revises: 0017_auth_passkeys" in content
+    assert '"fdr_custom_second"' in content
+    assert '"fdr_custom_fourth"' in content

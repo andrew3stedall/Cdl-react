@@ -338,10 +338,6 @@ export function App({
     setBrowserPath(href);
   };
 
-  const handleRefresh = () => {
-    void refreshActiveSession();
-  };
-
   if (activeSession === null) {
     return (
       <main className="session-boundary" aria-label="Protected route session state">
@@ -406,7 +402,6 @@ export function App({
             leagueClient={leagueClient}
             managerDeskClient={managerDeskClient}
             onNavigate={handleNavigate}
-            onRefresh={handleRefresh}
             onSignOut={() => void handleSignOut()}
             squadClient={squadClient}
             teamSelectionClient={teamSelectionClient}
@@ -426,7 +421,6 @@ interface AppRouteContentProps {
   leagueClient?: LeagueClient;
   managerDeskClient?: ManagerDeskClient;
   onNavigate: (href: string) => void;
-  onRefresh: () => void;
   onSignOut: () => void;
   squadClient?: SquadClient;
   teamSelectionClient?: TeamSelectionClient;
@@ -440,7 +434,6 @@ function AppRouteContent({
   leagueClient,
   managerDeskClient,
   onNavigate,
-  onRefresh,
   onSignOut,
   squadClient,
   teamSelectionClient,
@@ -459,7 +452,7 @@ function AppRouteContent({
   );
 
   if (currentPath.startsWith('/account') || currentPath.startsWith('/profile')) {
-    routeContent = <ProfilePage onRefresh={onRefresh} onSignOut={onSignOut} session={activeSession} />;
+    routeContent = <ProfilePage currentPath={currentPath} onNavigate={onNavigate} session={activeSession} />;
   }
 
   if (currentPath.startsWith('/rules')) {

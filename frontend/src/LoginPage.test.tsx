@@ -73,4 +73,29 @@ describe('LoginPage', () => {
     act(() => retry?.click());
     expect(onRetry).toHaveBeenCalledOnce();
   });
+
+  test('shows configured device and provider sign-in actions', () => {
+    const onAppleSignIn = vi.fn();
+    const onPasskeyLogin = vi.fn();
+    const { container } = renderLoginPage({
+      appleEnabled: true,
+      onAppleSignIn,
+      onPasskeyLogin,
+      passkeyEnabled: true,
+    });
+
+    const apple = Array.from(container.querySelectorAll('button')).find((button) => (
+      button.textContent?.includes('Continue with Apple')
+    ));
+    const passkey = Array.from(container.querySelectorAll('button')).find((button) => (
+      button.textContent?.includes('Use Face ID')
+    ));
+
+    expect(apple).toBeDefined();
+    expect(passkey).toBeDefined();
+    act(() => apple?.click());
+    act(() => passkey?.click());
+    expect(onAppleSignIn).toHaveBeenCalledOnce();
+    expect(onPasskeyLogin).toHaveBeenCalledOnce();
+  });
 });

@@ -76,7 +76,9 @@ export interface UserPreferences {
   darkThemeColour?: string;
   fdrCustomAnchors?: {
     min: string;
+    second: string;
     mid: string;
+    fourth: string;
     max: string;
   };
 }

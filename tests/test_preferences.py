@@ -25,7 +25,7 @@ def test_preference_service_persists_supported_theme() -> None:
         UserPreferences(
             theme_preset="teal-dark",
             attack_direction="down",
-            fdr_scale="Viridis",
+            fdr_scale="RdBu",
             fdr_scale_reversed=False,
             fdr_display_mode="fill",
             light_theme_colour="#2563EB",
@@ -35,7 +35,7 @@ def test_preference_service_persists_supported_theme() -> None:
 
     assert updated.theme_preset == "teal-dark"
     assert updated.attack_direction == "down"
-    assert updated.fdr_scale == "Viridis"
+    assert updated.fdr_scale == "RdBu"
     assert updated.fdr_scale_reversed is False
     assert updated.fdr_display_mode == "fill"
     assert updated.light_theme_colour == "#2563EB"
@@ -100,7 +100,7 @@ def test_preference_service_accepts_custom_fdr_scale() -> None:
 
     updated = service.update_preferences(
         "manager-1",
-        UserPreferences(theme_preset="teal-light", fdr_scale="CustomOcean"),
+        UserPreferences(theme_preset="teal-light", fdr_scale="CustomAll"),
     )
 
-    assert updated.fdr_scale == "CustomOcean"
+    assert updated.fdr_scale == "CustomAll"

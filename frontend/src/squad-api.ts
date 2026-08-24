@@ -98,6 +98,15 @@ export interface SquadApiOpponentDefensiveHistory {
   attacking_asset_points?: number | null;
   defensive_asset_points?: number | null;
   stat_icons?: SquadApiOpponentStatIcons;
+  stat_details?: SquadApiOpponentStatDetail[];
+}
+
+export interface SquadApiOpponentStatDetail {
+  category: string;
+  player_name: string;
+  player_position?: string | null;
+  value?: number | null;
+  points: number;
 }
 
 export interface SquadApiOpponentStatIcons {

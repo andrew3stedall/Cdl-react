@@ -1,4 +1,6 @@
-"""Theme contract models."""
+"""Theme and FDR colour preference contract models."""
+
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -9,6 +11,20 @@ class ThemePreset(BaseModel):
     description: str = ""
     is_default: bool = False
     tokens: dict[str, object] = Field(default_factory=dict)
+
+
+class FdrCustomPaletteCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=80)
+    mode: Literal["anchors", "all"] = "anchors"
+    min: str = Field(pattern=r"^#[0-9A-Fa-f]{6}$")
+    second: str = Field(pattern=r"^#[0-9A-Fa-f]{6}$")
+    mid: str = Field(pattern=r"^#[0-9A-Fa-f]{6}$")
+    fourth: str = Field(pattern=r"^#[0-9A-Fa-f]{6}$")
+    max: str = Field(pattern=r"^#[0-9A-Fa-f]{6}$")
+
+
+class FdrCustomPalette(FdrCustomPaletteCreate):
+    id: str
 
 
 class UserPreferences(BaseModel):

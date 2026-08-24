@@ -25,6 +25,8 @@ def test_staging_allows_health_frontend_and_auth_bootstrap_routes(
     assert staging_client.get("/health").status_code == 200
     assert staging_client.get("/api/auth/session").status_code == 200
     assert staging_client.get("/api/auth/google/config").status_code == 200
+    assert staging_client.get("/api/auth/apple/config").status_code == 200
+    assert staging_client.get("/api/auth/passkeys/config").status_code == 200
     assert staging_client.post("/api/auth/logout").status_code == 200
     assert staging_client.get("/").status_code == 404
 

@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react';
 
-import { PlayerChartGrid } from './PlayerChartGrid';
+import { PlayerChartGrid, PlayerChartYAxisScale } from './PlayerChartGrid';
 import { PlayerStatIcons, type PlayerStatSummary } from './PlayerStatIcons';
 import {
   barTone,
@@ -51,18 +51,33 @@ export function CombinedFormMinutesChart({
       data-y-axis-tick-step="5"
       role="group"
     >
-      <div className="player-profile__combined-chart-columns">
-        {fixtures.map((fixture, index) => (
-          <CombinedChartColumn
-            fixture={fixture}
-            formMax={formMax}
-            fdrDisplayMode={fdrDisplayMode}
-            key={fixture.fixtureId}
-            minutesMax={minutesMax}
-            onFixtureClick={onFixtureClick}
-            style={chartColumnStyle(index, fixtures.length)}
-          />
-        ))}
+      <div className="player-profile__combined-chart-layout">
+        <div aria-hidden="true" className="player-profile__combined-chart-y-axis">
+          <PlayerChartYAxisScale max={formMax} step={5} />
+          <span aria-hidden="true" />
+          <PlayerChartYAxisScale max={minutesMax} step={30} />
+        </div>
+        <div className="player-profile__combined-chart-plot">
+          <div className="player-profile__combined-chart-grid player-profile__combined-chart-grid--positive">
+            <PlayerChartGrid max={formMax} step={5} />
+          </div>
+          <div className="player-profile__combined-chart-grid player-profile__combined-chart-grid--negative">
+            <PlayerChartGrid max={minutesMax} step={30} />
+          </div>
+          <div className="player-profile__combined-chart-columns">
+            {fixtures.map((fixture, index) => (
+              <CombinedChartColumn
+                fixture={fixture}
+                formMax={formMax}
+                fdrDisplayMode={fdrDisplayMode}
+                key={fixture.fixtureId}
+                minutesMax={minutesMax}
+                onFixtureClick={onFixtureClick}
+                style={chartColumnStyle(index, fixtures.length)}
+              />
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -94,7 +109,6 @@ function CombinedChartColumn({
           {formatNullableNumber(fixture.fantasyPoints)}
         </span>
         <div className="player-profile__combined-track player-profile__combined-track--positive">
-          <PlayerChartGrid max={formMax} step={5} />
           <button
             aria-label={`View ${formatOpponentLabel(fixture.opponentShortName, fixture.isHome)} form details: ${formatNullableNumber(fixture.fantasyPoints)} points`}
             className={`player-profile__combined-bar player-profile__combined-bar--${pointsTone}`}
@@ -111,7 +125,6 @@ function CombinedChartColumn({
       </span>
       <div className="player-profile__combined-negative">
         <div className="player-profile__combined-track player-profile__combined-track--negative">
-          <PlayerChartGrid max={minutesMax} step={30} />
           <div aria-hidden="true" className="player-profile__combined-threshold-line" />
           <button
             aria-label={`View ${formatOpponentLabel(fixture.opponentShortName, fixture.isHome)} minutes details: ${formatNullableNumber(fixture.minutesPlayed)} minutes`}

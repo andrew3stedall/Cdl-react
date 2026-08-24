@@ -299,6 +299,7 @@
   min-height: 0;
   position: relative;
   width: 100%;
+  z-index: 1;
 }
 
 .player-profile__bar--empty {
@@ -414,6 +415,7 @@
   height: 100%;
   min-width: 0;
   position: relative;
+  z-index: 1;
 }
 
 .player-profile__grouped-stat-icons {
@@ -424,6 +426,7 @@
   justify-content: center;
   min-width: 0;
   position: relative;
+  z-index: 1;
 }
 
 .player-profile__grouped-stat-icons .player-profile__stat-icons {
@@ -919,8 +922,8 @@
   }
 
   .player-profile__stat-icon {
-    height: 0.7rem;
-    width: 0.7rem;
+    height: 0.8rem;
+    width: 0.8rem;
   }
 }
 

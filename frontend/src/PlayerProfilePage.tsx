@@ -457,6 +457,7 @@ export function PlayerProfilePage({
       }) : <ChartCard title="Opponent form" className="player-profile__chart-card--full"><ChartEmpty message="No cached defensive history is available for the next opponent." /></ChartCard>}
 
       {notice ? <p className="player-profile__notice" role="status">{notice}</p> : null}
+      {presentation === 'drawer' ? <div aria-hidden="true" className="player-profile__scroll-end-spacer" /> : null}
       </div>
 
       <div aria-label="Squad-management actions" className="player-profile__action-bar" role="toolbar">
@@ -501,7 +502,10 @@ export function PlayerProfilePage({
                 onClick={() => setSelectedSubstitution(option)}
                 type="button"
               >
-                <span><strong>{option.target.name}</strong><small>{option.target.position} · {option.target.slot === 'bench' ? 'Bench' : 'Reserves'}</small></span>
+                <span className="player-profile__action-option-player">
+                  <PlayerCard formPosition="hidden" layout="list" player={toTeamSelectionCardPlayer(option.target)} showOpponent={false} size="xs" />
+                  <small>{option.target.position} · {option.target.slot === 'bench' ? 'Bench' : 'Reserves'}</small>
+                </span>
                 <span aria-hidden="true">{selectedSubstitution?.target.id === option.target.id ? 'Selected' : 'Select'}</span>
               </button>
             ))}
@@ -526,7 +530,10 @@ export function PlayerProfilePage({
                 onClick={() => setReplacementId(replacement.id)}
                 type="button"
               >
-                <span><strong>{replacement.display_name}</strong><small>{replacement.position} · {replacement.epl_team.short_name ?? replacement.epl_team.name}</small></span>
+                <span className="player-profile__action-option-player">
+                  <PlayerCard formPosition="hidden" layout="list" player={toPlayerCardPlayer(replacement)} size="xs" />
+                  <small>{replacement.position} · {replacement.epl_team.short_name ?? replacement.epl_team.name}</small>
+                </span>
                 <span aria-hidden="true">{replacementId === replacement.id ? 'Selected' : 'Select'}</span>
               </button>
             ))}
@@ -630,6 +637,7 @@ export function SubstitutionReviewDrawer({
           {loading ? <ChartEmpty message="Loading the latest four fixtures…" /> : null}
           {!loading && error ? <p className="player-profile__inline-error" role="status">{error} Form and minutes may be incomplete.</p> : null}
         </section>
+        <div aria-hidden="true" className="player-profile__scroll-end-spacer" />
       </div>
 
       <div aria-label="Substitution review actions" className="player-profile__review-actions" role="toolbar">
@@ -644,7 +652,9 @@ export function SubstitutionReviewDrawer({
 }
 
 function ReviewPlayerColumn({ fdrDisplayMode, fixtures, idPrefix, label, player, slotLabel }: { fdrDisplayMode: 'font' | 'fill'; fixtures: ProfileFixture[]; idPrefix: string; label: string; player: SquadApiPlayer; slotLabel?: string }) {
-  const nextFixtures = player.next_fixtures?.length ? player.next_fixtures : player.next_fixture ? [player.next_fixture] : [];
+  const nextFixtures = selectNextGameweekFixtures(
+    player.next_fixtures?.length ? player.next_fixtures : player.next_fixture ? [player.next_fixture] : [],
+  );
   return (
     <article aria-label={`${label}: ${player.display_name}`} className="player-profile__comparison-player">
       <div className="player-profile__comparison-player-heading">
@@ -652,11 +662,9 @@ function ReviewPlayerColumn({ fdrDisplayMode, fixtures, idPrefix, label, player,
         <strong>{slotLabel ?? 'Squad'}</strong>
       </div>
       <div className="player-profile__comparison-identity">
-        <PlayerCard ariaLabel={`Shirt for ${player.display_name}`} className="player-profile__player-card" formPosition="hidden" layout="token" player={toPlayerCardPlayer(player)} size="xs" />
+        <PlayerCard ariaLabel={`Shirt for ${player.display_name}`} className="player-profile__player-card" formPosition="hidden" layout="token" player={toPlayerCardPlayer(player, nextFixtures)} size="xs" />
         <div>
-          <h3>{player.display_name}</h3>
           <p>{player.position} <span aria-hidden="true">·</span> {player.epl_team.short_name ?? player.epl_team.name}</p>
-          <small>{nextFixtures.length > 0 ? `Next: ${nextFixtures.map((fixture) => formatOpponentLabel(fixture.opponent.short_name ?? fixture.opponent.name, fixture.is_home)).join(' · ')}` : 'Next fixture unavailable'}</small>
         </div>
       </div>
       <ChartCard idPrefix={`${idPrefix}-form`} title="Form">
@@ -669,26 +677,22 @@ function ReviewPlayerColumn({ fdrDisplayMode, fixtures, idPrefix, label, player,
   );
 }
 
+function toTeamSelectionCardPlayer(player: TeamSelectionPlayer): PlayerCardPlayer {
+  return {
+    displayName: player.name,
+    form: null,
+    position: player.position,
+    team: player.team,
+  };
+}
+
 function toPlayerCardPlayer(player: SquadApiPlayer, selectedFixtures?: ProfileNextFixture[]): PlayerCardPlayer {
-  const nextFixtures = selectedFixtures ?? (player.next_fixtures?.length ? player.next_fixtures.map((fixture) => ({
-    fixture_id: fixture.fixture_id,
-    gameweek: fixture.gameweek?.number ?? null,
-    opponent_team_id: fixture.opponent.id,
-    opponent_name: fixture.opponent.name,
-    opponent_short_name: fixture.opponent.short_name ?? fixture.opponent.name,
-    difficulty: fixture.difficulty ?? null,
-    is_home: fixture.is_home,
-    opponent_difficulty: null,
-  })) : player.next_fixture ? [{
-    fixture_id: player.next_fixture.fixture_id,
-    gameweek: player.next_fixture.gameweek?.number ?? null,
-    opponent_team_id: player.next_fixture.opponent.id,
-    opponent_name: player.next_fixture.opponent.name,
-    opponent_short_name: player.next_fixture.opponent.short_name ?? player.next_fixture.opponent.name,
-    difficulty: player.next_fixture.difficulty ?? null,
-    is_home: player.next_fixture.is_home,
-    opponent_difficulty: null,
-  }] : []);
+  const rawFixtures: Array<SquadApiNextFixture | SquadApiUpcomingFixture> = player.next_fixtures?.length
+    ? player.next_fixtures
+    : player.next_fixture
+      ? [player.next_fixture]
+      : [];
+  const nextFixtures = selectedFixtures ?? selectNextGameweekFixtures(rawFixtures);
   return {
     displayName: player.display_name,
     fixtures: nextFixtures.map((fixture) => ({

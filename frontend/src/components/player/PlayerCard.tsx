@@ -69,7 +69,7 @@ function PlayerToken({ player, showOpponent, showPositionMarker }: { player: Pla
   const hasAvailabilityWarning = typeof chance === 'number' && Number.isFinite(chance) && chance < 100;
 
   return (
-    <span aria-label={`Shirt for ${player.displayName}`} className="player-card__token" role="img">
+    <span aria-label={`Shirt for ${player.displayName}`} className={`player-card__token${showOpponent ? ' player-card__token--with-opponent' : ''}`} role="img">
       {showPositionMarker && player.position ? <PositionMarker position={player.position} /> : null}
       <span aria-hidden="true" className="player-card__shirt-crop">
         <TeamShirt large team={player.team} />

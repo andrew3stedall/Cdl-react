@@ -5,11 +5,19 @@ from dataclasses import dataclass
 from cdl_api.database import build_session_factory
 from cdl_api.repositories.auth import InMemorySessionRepository, InMemoryUserRepository
 from cdl_api.repositories.league_repository import LeagueRepository
+from cdl_api.repositories.passkeys import (
+    InMemoryAuthChallengeRepository,
+    InMemoryPasskeyRepository,
+)
 from cdl_api.repositories.postgres_auth import (
     PostgreSQLSessionRepository,
     PostgreSQLUserRepository,
 )
 from cdl_api.repositories.postgres_league_fixtures import PostgreSQLLeagueRepository
+from cdl_api.repositories.postgres_passkeys import (
+    PostgreSQLAuthChallengeRepository,
+    PostgreSQLPasskeyRepository,
+)
 from cdl_api.repositories.postgres_preferences import PostgreSQLUserPreferenceRepository
 from cdl_api.repositories.postgres_squad_repository import PostgreSQLSquadRepository
 from cdl_api.repositories.postgres_team_selection import (
@@ -33,6 +41,8 @@ class RepositoryBundle:
     squad: object
     team_selection: object
     league: object
+    passkeys: object
+    auth_challenges: object
 
 
 _memory_bundle = RepositoryBundle(
@@ -42,6 +52,8 @@ _memory_bundle = RepositoryBundle(
     squad=InMemorySquadRepository(),
     team_selection=InMemoryTeamSelectionRepository(),
     league=LeagueRepository(),
+    passkeys=InMemoryPasskeyRepository(),
+    auth_challenges=InMemoryAuthChallengeRepository(),
 )
 
 
@@ -61,6 +73,8 @@ def build_repositories(settings: Settings) -> RepositoryBundle:
             squad=squad,
             team_selection=PostgreSQLTeamSelectionRepository(session_factory),
             league=league,
+            passkeys=PostgreSQLPasskeyRepository(session_factory),
+            auth_challenges=PostgreSQLAuthChallengeRepository(session_factory),
         )
 
     msg = f"Unsupported repository mode: {settings.repository_mode}"

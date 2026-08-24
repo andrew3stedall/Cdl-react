@@ -22,7 +22,9 @@ user_preferences_table = Table(
     Column("light_theme_colour", String(7), nullable=False),
     Column("dark_theme_colour", String(7), nullable=False),
     Column("fdr_custom_min", String(7), nullable=False),
+    Column("fdr_custom_second", String(7), nullable=False),
     Column("fdr_custom_mid", String(7), nullable=False),
+    Column("fdr_custom_fourth", String(7), nullable=False),
     Column("fdr_custom_max", String(7), nullable=False),
 )
 
@@ -43,7 +45,9 @@ class PostgreSQLUserPreferenceRepository:
                     user_preferences_table.c.light_theme_colour,
                     user_preferences_table.c.dark_theme_colour,
                     user_preferences_table.c.fdr_custom_min,
+                    user_preferences_table.c.fdr_custom_second,
                     user_preferences_table.c.fdr_custom_mid,
+                    user_preferences_table.c.fdr_custom_fourth,
                     user_preferences_table.c.fdr_custom_max,
                 ).where(user_preferences_table.c.user_id == user_id)
             ).one_or_none()
@@ -60,7 +64,9 @@ class PostgreSQLUserPreferenceRepository:
             light_theme_colour=preference_row.light_theme_colour,
             dark_theme_colour=preference_row.dark_theme_colour,
             fdr_custom_min=preference_row.fdr_custom_min,
+            fdr_custom_second=preference_row.fdr_custom_second,
             fdr_custom_mid=preference_row.fdr_custom_mid,
+            fdr_custom_fourth=preference_row.fdr_custom_fourth,
             fdr_custom_max=preference_row.fdr_custom_max,
         )
 
@@ -75,7 +81,9 @@ class PostgreSQLUserPreferenceRepository:
             light_theme_colour=preferences.light_theme_colour,
             dark_theme_colour=preferences.dark_theme_colour,
             fdr_custom_min=preferences.fdr_custom_min,
+            fdr_custom_second=preferences.fdr_custom_second,
             fdr_custom_mid=preferences.fdr_custom_mid,
+            fdr_custom_fourth=preferences.fdr_custom_fourth,
             fdr_custom_max=preferences.fdr_custom_max,
         )
         statement = statement.on_conflict_do_update(
@@ -89,7 +97,9 @@ class PostgreSQLUserPreferenceRepository:
                 "light_theme_colour": preferences.light_theme_colour,
                 "dark_theme_colour": preferences.dark_theme_colour,
                 "fdr_custom_min": preferences.fdr_custom_min,
+                "fdr_custom_second": preferences.fdr_custom_second,
                 "fdr_custom_mid": preferences.fdr_custom_mid,
+                "fdr_custom_fourth": preferences.fdr_custom_fourth,
                 "fdr_custom_max": preferences.fdr_custom_max,
             },
         )

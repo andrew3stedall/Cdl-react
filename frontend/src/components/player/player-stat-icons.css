@@ -1,0 +1,57 @@
+.player-profile__stat-icons {
+  align-items: center;
+  bottom: 0.24rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.14rem;
+  justify-content: center;
+  left: 50%;
+  max-width: calc(100% - 0.15rem);
+  position: absolute;
+  transform: translateX(-50%);
+}
+
+.player-profile__combined-bar .player-profile__stat-icons,
+.player-profile__grouped-stat-icons .player-profile__stat-icons {
+  bottom: 0.2rem;
+}
+
+.player-profile__stat-icon {
+  align-items: center;
+  background: color-mix(in srgb, var(--profile-panel) 80%, transparent);
+  border: 1px solid color-mix(in srgb, var(--profile-text) 45%, transparent);
+  border-radius: 0.2rem;
+  color: var(--profile-text);
+  display: inline-flex;
+  height: 1.18rem;
+  justify-content: center;
+  position: relative;
+  width: 1.18rem;
+}
+
+.player-profile__stat-icon--yellow {
+  color: #eab308;
+}
+
+.player-profile__stat-icon--red {
+  color: #ef4444;
+}
+
+.player-profile__stat-multiplier {
+  align-items: center;
+  background: var(--profile-accent);
+  border: 1px solid var(--profile-panel);
+  border-radius: 999px;
+  color: var(--primary-foreground);
+  display: inline-flex;
+  font-size: 0.48rem;
+  height: 0.72rem;
+  justify-content: center;
+  line-height: 1;
+  min-width: 0.72rem;
+  padding: 0 0.1rem;
+  position: absolute;
+  right: -0.28rem;
+  top: -0.32rem;
+  z-index: 2;
+}

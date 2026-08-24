@@ -14,7 +14,7 @@ import {
 describe('FDR colour scales', () => {
   test('keeps the requested numbered presets and custom modes as five hex steps', () => {
     expect(fdrColourScales).toHaveLength(7);
-    expect(fdrColourScales.map((scale) => scale.optionNumber)).toEqual([1, 5, 8, 10, 32, 34, 36]);
+    expect(fdrColourScales.map((scale) => scale.optionNumber)).toEqual([1, 2, 3, 4, 5, 6, 7]);
     expect(fdrColourScales.every((scale) => scale.light.length === 5 && scale.dark.length === 5)).toBe(true);
     expect(fdrColourScales.flatMap((scale) => [...scale.light, ...scale.dark]).every((colour) => /^#[0-9A-F]{6}$/.test(colour))).toBe(true);
     expect(fdrColourScales.filter((scale) => scale.group === 'Cyclical').map((scale) => scale.name)).toEqual([

@@ -1,11 +1,11 @@
-import type { CSSProperties } from 'react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
 import {
   ArrowDown,
   ArrowUp,
   Check,
   ChevronRight,
   Circle,
+  Fingerprint,
   LogOut,
   Moon,
   RefreshCw,
@@ -32,6 +32,7 @@ import {
 import { getThemeMode, themePresets } from './theme-presets';
 import { useThemePreset } from './theme-preset-provider';
 import { getThemeColourForMode, themeColourOptions } from './theme-colours';
+import { registerPasskey } from './passkeys';
 import './profile-page.css';
 
 interface ProfilePageProps {
@@ -59,6 +60,8 @@ export function ProfilePage({ onRefresh, onSignOut, session }: ProfilePageProps)
     setPresetName,
   } = useThemePreset();
   const [isFdrScaleSheetOpen, setIsFdrScaleSheetOpen] = useState(false);
+  const [passkeyPending, setPasskeyPending] = useState(false);
+  const [passkeyMessage, setPasskeyMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isFdrScaleSheetOpen) return undefined;
@@ -121,6 +124,38 @@ export function ProfilePage({ onRefresh, onSignOut, session }: ProfilePageProps)
         <p>Manage your identity, workspace appearance, pitch orientation, data, and session.</p>
       </header>
 
+      <Card className="profile-card profile-security-card">
+        <div className="profile-card__header">
+          <div>
+            <p className="profile-card__eyebrow">Fast sign-in</p>
+            <h2>Use Face ID or fingerprint</h2>
+          </div>
+          <Fingerprint aria-hidden="true" className="profile-appearance-icon" size={22} />
+        </div>
+        <p className="profile-card__copy">
+          Add a passkey to this device. The phone will use Face ID, fingerprint, or its secure PIN
+          when you sign in again.
+        </p>
+        <Button
+          disabled={passkeyPending}
+          onClick={() => {
+            setPasskeyMessage(null);
+            setPasskeyPending(true);
+            void registerPasskey()
+              .then((result) => {
+                setPasskeyMessage(result.ok ? 'Passkey added on this device.' : result.error.message);
+              })
+              .finally(() => setPasskeyPending(false));
+          }}
+          type="button"
+          variant="secondary"
+        >
+          <Fingerprint aria-hidden="true" size={17} />
+          {passkeyPending ? 'Waiting for device verification…' : 'Enable device sign-in'}
+        </Button>
+        {passkeyMessage ? <p aria-live="polite" className="profile-save-status" role="status">{passkeyMessage}</p> : null}
+      </Card>
+
       <div className="profile-page__grid">
         <Card className="profile-card profile-identity-card">
           <div className="profile-identity">
@@ -182,7 +217,7 @@ export function ProfilePage({ onRefresh, onSignOut, session }: ProfilePageProps)
             <p className="profile-card__eyebrow">Fixture difficulty</p>
             <h2>FDR colour scale</h2>
           </div>
-          <span className="profile-fdr-count">{fdrColourScales.length} options</span>
+          <span className="profile-fdr-count">{fdrColourScales.length} presets + custom</span>
         </div>
         <p className="profile-card__copy">
           Show extremely easy fixtures as 1 and extremely difficult fixtures as 5. The selected
@@ -197,7 +232,7 @@ export function ProfilePage({ onRefresh, onSignOut, session }: ProfilePageProps)
           variant="secondary"
         >
           <span>
-            <strong>Option {selectedFdrScaleNumber}</strong>
+            <strong>{selectedFdrScaleNumber ? `Option ${selectedFdrScaleNumber}` : selectedFdrScale.label}</strong>
             <small>Five FDR colour steps</small>
           </span>
           <ChevronRight aria-hidden="true" size={18} />
@@ -262,23 +297,23 @@ export function ProfilePage({ onRefresh, onSignOut, session }: ProfilePageProps)
             </Button>
           </header>
           <div className="profile-fdr-scale-list">
-            {fdrColourScales.map((scale, index) => (
-              <div key={scale.name}>
-                {scale.group === 'Custom' && fdrColourScales[index - 1]?.group !== 'Custom' ? (
-                  <>
-                    <h3 className="profile-fdr-custom-heading">Custom scales</h3>
-                    <CustomFdrScaleEditor
-                      anchors={customFdrAnchors}
-                      onChange={setCustomFdrAnchors}
-                      onUse={() => {
-                        setFdrScale('CustomHex');
-                        setIsFdrScaleSheetOpen(false);
-                      }}
-                    />
-                  </>
-                ) : null}
+            <section aria-labelledby="profile-fdr-custom-heading">
+              <h3 className="profile-fdr-custom-heading" id="profile-fdr-custom-heading">Custom scales</h3>
+              <CustomFdrScaleEditor
+                anchors={customFdrAnchors}
+                onChange={setCustomFdrAnchors}
+                onUse={(scaleName) => {
+                  setFdrScale(scaleName);
+                  setIsFdrScaleSheetOpen(false);
+                }}
+                selectedScaleName={fdrScale}
+              />
+            </section>
+            <section aria-labelledby="profile-fdr-presets-heading">
+              <h3 className="profile-fdr-custom-heading" id="profile-fdr-presets-heading">Numbered presets</h3>
+              {fdrColourScales.map((scale) => (
                 <button
-                  aria-label={`FDR colour scale option ${index + 1}`}
+                  aria-label={`FDR colour scale option ${scale.optionNumber}`}
                   aria-pressed={scale.name === fdrScale}
                   className={`profile-fdr-scale-option${scale.name === fdrScale ? ' is-selected' : ''}`}
                   data-scale-name={scale.name}
@@ -288,7 +323,7 @@ export function ProfilePage({ onRefresh, onSignOut, session }: ProfilePageProps)
                   }}
                   type="button"
                 >
-                  <span aria-hidden="true" className="profile-fdr-scale-option__number">{index + 1}</span>
+                  <span aria-hidden="true" className="profile-fdr-scale-option__number">{scale.optionNumber}</span>
                   <span className="profile-fdr-scale-option__previews">
                     <FdrPaletteBar
                       displayMode={fdrDisplayMode}
@@ -302,8 +337,8 @@ export function ProfilePage({ onRefresh, onSignOut, session }: ProfilePageProps)
                     {scale.name === fdrScale ? <Check size={15} /> : <Circle size={15} />}
                   </span>
                 </button>
-              </div>
-            ))}
+              ))}
+            </section>
           </div>
         </div>
       </Sheet>
@@ -390,8 +425,8 @@ function AppearanceIcon({ preset }: { preset: ThemePreset }) {
   return <Icon aria-hidden="true" className="profile-appearance-icon" size={20} />;
 }
 
-function getFdrScaleOptionNumber(scaleName: FdrColourScale['name']): number {
-  return Math.max(0, fdrColourScales.findIndex((scale) => scale.name === scaleName)) + 1;
+function getFdrScaleOptionNumber(scaleName: FdrColourScale['name']): number | null {
+  return getFdrColourScale(scaleName).optionNumber;
 }
 
 function FdrPalettePreview({
@@ -448,7 +483,7 @@ function FdrPaletteBar({
 }) {
   const palette = getFdrDisplayPalette(scale.name, mode, reversed, displayMode, customAnchors);
   return (
-    <span aria-label={`FDR colour scale option ${getFdrScaleOptionNumber(scale.name)}`} className="profile-fdr-palette-bar" data-display-mode={displayMode}>
+    <span aria-label={scale.optionNumber ? `FDR colour scale option ${scale.optionNumber}` : scale.label} className="profile-fdr-palette-bar" data-display-mode={displayMode}>
       {palette.map((colour, index) => (
         <span
           aria-label={`FDR ${index + 1}: ${colour}`}
@@ -574,47 +609,212 @@ function CustomFdrScaleEditor({
   anchors,
   onChange,
   onUse,
+  selectedScaleName,
 }: {
   anchors: FdrCustomAnchors;
   onChange: (anchors: FdrCustomAnchors) => void;
-  onUse: () => void;
+  onUse: (scaleName: 'CustomHex' | 'CustomAll') => void;
+  selectedScaleName: FdrColourScale['name'];
 }) {
+  const [mode, setMode] = useState<'anchors' | 'all'>(selectedScaleName === 'CustomAll' ? 'all' : 'anchors');
+  const [activeKey, setActiveKey] = useState<CustomColourKey>('min');
+  useEffect(() => {
+    setMode(selectedScaleName === 'CustomAll' ? 'all' : 'anchors');
+  }, [selectedScaleName]);
+  const editableKeys: CustomColourKey[] = mode === 'anchors' ? ['min', 'mid', 'max'] : [...customColourKeys];
+  const selectedKey = editableKeys.includes(activeKey) ? activeKey : editableKeys[0];
+  const activeColour = mode === 'anchors'
+    ? getFdrFillPalette('CustomHex', 'light', false, anchors)[customColourKeys.indexOf(selectedKey)]
+    : anchors[selectedKey];
+  const hsv = hexToHsv(activeColour);
+
+  const updateFromHsv = (next: HsvColour) => {
+    onChange({ ...anchors, [selectedKey]: hsvToHex(next) });
+  };
+
+  const updateFieldFromPointer = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const saturation = clamp((event.clientX - bounds.left) / bounds.width);
+    const exposure = clamp(1 - ((event.clientY - bounds.top) / bounds.height));
+    updateFromHsv({ ...hsv, saturation, exposure });
+  };
+
+  const updateHueFromPointer = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const hue = clamp((event.clientX - bounds.left) / bounds.width) * 360;
+    updateFromHsv({ ...hsv, hue });
+  };
+
   return (
     <div className="profile-fdr-custom-editor">
       <div className="profile-fdr-custom-editor__header">
         <div>
-          <strong>Custom hex scale</strong>
-          <small>Choose levels 1, 3 and 5. Levels 2 and 4 interpolate automatically.</small>
+          <strong>Build your own scale</strong>
+          <small>Use the colour field to tune saturation and exposure, then choose exactly which FDR levels are editable.</small>
         </div>
-        <Button onClick={onUse} type="button" variant="secondary">Use custom</Button>
+        <Button onClick={() => onUse(mode === 'all' ? 'CustomAll' : 'CustomHex')} type="button" variant="secondary">
+          Use {mode === 'all' ? 'every colour' : '1 / 3 / 5'}
+        </Button>
       </div>
-      <div className="profile-fdr-custom-editor__inputs">
-        {([
-          ['min', 'Minimum · 1'],
-          ['mid', 'Midpoint · 3'],
-          ['max', 'Maximum · 5'],
-        ] as const).map(([key, label]) => (
-          <label key={key}>
-            <span>{label}</span>
-            <input
-              aria-label={label}
-              onChange={(event) => onChange({ ...anchors, [key]: event.target.value })}
-              type="color"
-              value={anchors[key]}
-            />
-            <small>{anchors[key]}</small>
-          </label>
-        ))}
+      <div aria-label="Custom FDR scale mode" className="profile-fdr-custom-editor__modes" role="group">
+        <button
+          aria-pressed={mode === 'anchors'}
+          className={`profile-fdr-custom-editor__mode${mode === 'anchors' ? ' is-selected' : ''}`}
+          onClick={() => setMode('anchors')}
+          type="button"
+        >
+          <strong>Custom 1 / 3 / 5</strong>
+          <small>Levels 2 and 4 interpolate automatically.</small>
+        </button>
+        <button
+          aria-pressed={mode === 'all'}
+          className={`profile-fdr-custom-editor__mode${mode === 'all' ? ' is-selected' : ''}`}
+          onClick={() => setMode('all')}
+          type="button"
+        >
+          <strong>Custom every colour</strong>
+          <small>Choose all five FDR colours independently.</small>
+        </button>
+      </div>
+      <div aria-label="Custom FDR colours" className="profile-fdr-custom-editor__inputs" role="group">
+        {customColourKeys.map((key, index) => {
+          const isEditable = editableKeys.includes(key);
+          const colour = mode === 'anchors'
+            ? getFdrFillPalette('CustomHex', 'light', false, anchors)[index]
+            : anchors[key];
+          return (
+            <button
+              aria-label={`Edit FDR ${index + 1} colour`}
+              aria-pressed={isEditable && key === selectedKey}
+              className={`profile-fdr-custom-editor__level${key === selectedKey ? ' is-selected' : ''}${!isEditable ? ' is-interpolated' : ''}`}
+              disabled={!isEditable}
+              key={key}
+              onClick={() => setActiveKey(key)}
+              style={{ '--level-colour': colour, '--level-foreground': getFdrFillForeground(colour) } as CSSProperties}
+              type="button"
+            >
+              <span>{index + 1}</span>
+              <small>{isEditable ? colour : 'Auto'}</small>
+            </button>
+          );
+        })}
+      </div>
+      <div
+        aria-label={`Colour field for FDR ${customColourKeys.indexOf(selectedKey) + 1}`}
+        className="profile-fdr-colour-picker__field"
+        onPointerDown={(event) => {
+          event.currentTarget.setPointerCapture(event.pointerId);
+          updateFieldFromPointer(event);
+        }}
+        onPointerMove={(event) => {
+          if (event.buttons > 0) updateFieldFromPointer(event);
+        }}
+        style={{ '--picker-hue': `${hsv.hue}deg` } as CSSProperties}
+      >
+        <span
+          aria-hidden="true"
+          className="profile-fdr-colour-picker__field-pointer"
+          style={{ left: `${hsv.saturation * 100}%`, top: `${(1 - hsv.exposure) * 100}%` }}
+        />
+      </div>
+      <div
+        aria-label="All colours hue selector"
+        className="profile-fdr-colour-picker__hue"
+        onPointerDown={(event) => {
+          event.currentTarget.setPointerCapture(event.pointerId);
+          updateHueFromPointer(event);
+        }}
+        onPointerMove={(event) => {
+          if (event.buttons > 0) updateHueFromPointer(event);
+        }}
+      >
+        <span aria-hidden="true" className="profile-fdr-colour-picker__hue-pointer" style={{ left: `${(hsv.hue / 360) * 100}%` }} />
+      </div>
+      <div className="profile-fdr-colour-picker__sliders">
+        <label>
+          <span>Saturation <strong>{Math.round(hsv.saturation * 100)}%</strong></span>
+          <input
+            aria-label={`Saturation for FDR ${customColourKeys.indexOf(selectedKey) + 1}`}
+            max="100"
+            min="0"
+            onChange={(event) => updateFromHsv({ ...hsv, saturation: Number(event.target.value) / 100 })}
+            type="range"
+            value={Math.round(hsv.saturation * 100)}
+          />
+        </label>
+        <label>
+          <span>Exposure <strong>{Math.round(hsv.exposure * 100)}%</strong></span>
+          <input
+            aria-label={`Exposure for FDR ${customColourKeys.indexOf(selectedKey) + 1}`}
+            max="100"
+            min="0"
+            onChange={(event) => updateFromHsv({ ...hsv, exposure: Number(event.target.value) / 100 })}
+            type="range"
+            value={Math.round(hsv.exposure * 100)}
+          />
+        </label>
       </div>
       <FdrPaletteBar
         customAnchors={anchors}
         displayMode="fill"
         mode="light"
         reversed={false}
-        scale={getFdrColourScale('CustomHex')}
+        scale={getFdrColourScale(mode === 'all' ? 'CustomAll' : 'CustomHex')}
       />
     </div>
   );
+}
+
+const customColourKeys = ['min', 'second', 'mid', 'fourth', 'max'] as const;
+type CustomColourKey = typeof customColourKeys[number];
+interface HsvColour {
+  hue: number;
+  saturation: number;
+  exposure: number;
+}
+
+function clamp(value: number): number {
+  return Math.min(1, Math.max(0, value));
+}
+
+function hexToHsv(hex: string): HsvColour {
+  const values = [1, 3, 5].map((index) => Number.parseInt(hex.slice(index, index + 2), 16) / 255);
+  const [red, green, blue] = values;
+  const max = Math.max(red, green, blue);
+  const min = Math.min(red, green, blue);
+  const delta = max - min;
+  let hue = 0;
+
+  if (delta !== 0) {
+    if (max === red) hue = 60 * (((green - blue) / delta) % 6);
+    else if (max === green) hue = 60 * ((blue - red) / delta + 2);
+    else hue = 60 * ((red - green) / delta + 4);
+  }
+
+  return {
+    hue: hue < 0 ? hue + 360 : hue,
+    saturation: max === 0 ? 0 : delta / max,
+    exposure: max,
+  };
+}
+
+function hsvToHex({ hue, saturation, exposure }: HsvColour): string {
+  const chroma = exposure * saturation;
+  const segment = ((hue % 360) + 360) % 360 / 60;
+  const secondary = chroma * (1 - Math.abs((segment % 2) - 1));
+  const match = exposure - chroma;
+  const rgb = segment < 1
+    ? [chroma, secondary, 0]
+    : segment < 2
+      ? [secondary, chroma, 0]
+      : segment < 3
+        ? [0, chroma, secondary]
+        : segment < 4
+          ? [0, secondary, chroma]
+          : segment < 5
+            ? [secondary, 0, chroma]
+            : [chroma, 0, secondary];
+  return `#${rgb.map((channel) => Math.round((channel + match) * 255).toString(16).padStart(2, '0')).join('')}`.toUpperCase();
 }
 
 function PresetOption({

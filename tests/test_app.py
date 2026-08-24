@@ -43,7 +43,7 @@ def test_user_preferences_endpoint_round_trip() -> None:
         json={
             "theme_preset": "teal-dark",
             "attack_direction": "down",
-            "fdr_scale": "Viridis",
+            "fdr_scale": "RdBu",
             "fdr_scale_reversed": False,
             "fdr_display_mode": "fill",
         },
@@ -62,31 +62,37 @@ def test_user_preferences_endpoint_round_trip() -> None:
         "light_theme_colour": "#0F766E",
         "dark_theme_colour": "#2DD4BF",
         "fdr_custom_min": "#2166AC",
+        "fdr_custom_second": "#8CAFD2",
         "fdr_custom_mid": "#F7F7F7",
+        "fdr_custom_fourth": "#D58891",
         "fdr_custom_max": "#B2182B",
     }
     assert update_response.status_code == 200
     assert update_response.json() == {
         "theme_preset": "teal-dark",
         "attack_direction": "down",
-        "fdr_scale": "Viridis",
+        "fdr_scale": "RdBu",
         "fdr_scale_reversed": False,
         "fdr_display_mode": "fill",
         "light_theme_colour": "#0F766E",
         "dark_theme_colour": "#2DD4BF",
         "fdr_custom_min": "#2166AC",
+        "fdr_custom_second": "#8CAFD2",
         "fdr_custom_mid": "#F7F7F7",
+        "fdr_custom_fourth": "#D58891",
         "fdr_custom_max": "#B2182B",
     }
     assert final_response.json() == {
         "theme_preset": "teal-dark",
         "attack_direction": "down",
-        "fdr_scale": "Viridis",
+        "fdr_scale": "RdBu",
         "fdr_scale_reversed": False,
         "fdr_display_mode": "fill",
         "light_theme_colour": "#0F766E",
         "dark_theme_colour": "#2DD4BF",
         "fdr_custom_min": "#2166AC",
+        "fdr_custom_second": "#8CAFD2",
         "fdr_custom_mid": "#F7F7F7",
+        "fdr_custom_fourth": "#D58891",
         "fdr_custom_max": "#B2182B",
     }

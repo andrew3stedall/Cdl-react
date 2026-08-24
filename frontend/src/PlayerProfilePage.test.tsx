@@ -65,6 +65,7 @@ const history: SquadApiHistoryResponse = {
     goals_scored: index === 4 ? 2 : index === 2 ? 1 : 0,
     assists: index === 3 ? 1 : 0,
     clean_sheets: index === 2 ? 1 : 0,
+    saves: index === 4 ? 3 : 0,
     yellow_cards: index === 3 ? 1 : 0,
     red_cards: index === 4 ? 1 : 0,
     bonus: index === 4 ? 2 : 0,
@@ -97,6 +98,16 @@ const history: SquadApiHistoryResponse = {
     total_points_conceded: 4 + index,
     attacking_asset_points: 2 + index,
     defensive_asset_points: 2,
+    stat_icons: index === 0 ? {
+      goals: 1,
+      assists: 2,
+      clean_sheets: 0,
+      saves: 3,
+      yellow_cards: 0,
+      red_cards: 0,
+      defensive_contributions: 0,
+      bonus_points: 0,
+    } : undefined,
   })),
 };
 
@@ -207,18 +218,20 @@ afterEach(() => {
 });
 
 describe('PlayerProfilePage', () => {
-  test('uses the squad shirt token treatment instead of an initials portrait', async () => {
+  test('uses the shared player card in the drawer header', async () => {
     const { container, root } = renderPage();
     await settle();
 
-    expect(container.querySelector('.player-profile__player-card')).not.toBeNull();
-    expect(container.querySelector('.player-profile__player-card')?.getAttribute('aria-label')).toBe('Shirt for M. Santos');
+    expect(container.querySelector('.player-profile__header-player-card')).not.toBeNull();
+    expect(container.querySelector('.player-profile__header-player-card')?.getAttribute('aria-label')).toBe('Player card for M. Santos');
     expect(container.querySelector('.player-card__shirt-crop .player-card__shirt.large')).not.toBeNull();
     expect(container.querySelector('.player-card__name')?.textContent).toBe('M. Santos');
     expect(container.querySelector('.player-card__opponent')?.textContent).toBe('bha');
     expect(container.querySelector('.player-card__opponent')?.className).toContain('player-card__opponent');
     expect(container.querySelector('.player-card__opponent')?.className).toContain('player-card__opponent--fdr-3');
     expect(container.querySelector('.player-profile__portrait')).toBeNull();
+    expect(container.querySelector('.player-profile__identity-card')).toBeNull();
+    expect(container.querySelector('.player-profile__favourite')).toBeNull();
     root.unmount();
   });
 
@@ -317,41 +330,46 @@ describe('PlayerProfilePage', () => {
     expect(container.textContent).toContain('ARS');
     expect(container.textContent).not.toContain('liv');
     expect(container.querySelectorAll('[data-chart-kind="opponent-defence"]')).toHaveLength(2);
-    expect(container.textContent).toContain('Points against Brighton');
-    expect(container.textContent).toContain('Points against Arsenal');
+    expect(container.querySelectorAll('.player-profile__opponent-chart-heading')).toHaveLength(2);
+    expect(container.textContent).toContain('Points againstBHA');
+    expect(container.textContent).toContain('Points againstARS');
     root.unmount();
   });
 
-  test('renders ten chronological fixtures, home/away casing, FDR colours, stat icons, and compact minutes chart', async () => {
+  test('renders ten chronological fixtures in one combined form and minutes chart', async () => {
     const { container, root } = renderPage();
     await settle();
 
-    expect(container.querySelectorAll('[data-chart-kind="form"] .player-profile__chart-column')).toHaveLength(10);
-    expect(container.querySelectorAll('[data-chart-kind="minutes"] .player-profile__chart-column')).toHaveLength(10);
-    expect(Array.from(container.querySelectorAll('[data-chart-kind="form"] .player-profile__chart-column')).map((column) => Number((column as HTMLElement).style.gridColumnStart))).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
-    expect([...container.querySelectorAll('.player-profile__opponent-label')].slice(0, 10).map((node) => node.textContent)).toEqual([
+    expect(container.querySelectorAll('[data-chart-kind="combined-form-minutes"] .player-profile__combined-chart-column')).toHaveLength(10);
+    expect(Array.from(container.querySelectorAll('[data-chart-kind="combined-form-minutes"] .player-profile__combined-chart-column')).map((column) => Number((column as HTMLElement).style.gridColumnStart))).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+    expect([...container.querySelectorAll('[data-chart-kind="combined-form-minutes"] .player-profile__combined-opponent')].map((node) => node.textContent)).toEqual([
       'WOL', 'bou', 'wol', 'BOU', 'CHE', 'tot', 'AVL', 'ful', 'eve', 'NEW',
     ]);
-    expect(container.querySelector('[data-chart-kind="form"]')?.textContent).toContain('—');
-    expect(container.querySelector('[data-chart-kind="form"] .player-profile__opponent-label')?.getAttribute('style')).toContain('var(--cdl-fdr-1)');
-    expect(container.querySelector('[data-chart-kind="form"]')?.getAttribute('data-y-axis-min')).toBe('0');
-    expect(container.querySelector('[data-chart-kind="form"]')?.getAttribute('data-y-axis-max')).toBe('13');
-    expect(container.querySelector('[data-chart-kind="form"]')?.getAttribute('aria-label')).toContain('vertical scale 0 to 13 points');
-    expect(container.querySelector('[data-chart-kind="form"] .player-profile__stat-icon')?.getAttribute('aria-label')).toContain('Goals scored');
-    expect(container.querySelector('[data-chart-kind="form"] .player-profile__stat-icon--yellow')?.getAttribute('aria-label')).toContain('Yellow cards');
-    expect(container.querySelector('[data-chart-kind="form"] .player-profile__stat-icon--red')?.getAttribute('aria-label')).toContain('Red cards');
+    expect(container.querySelector('[data-chart-kind="combined-form-minutes"]')?.textContent).toContain('—');
+    expect(container.querySelector('[data-chart-kind="combined-form-minutes"] .player-profile__combined-opponent')?.getAttribute('style')).toContain('var(--cdl-fdr-1)');
+    expect(container.querySelector('[data-chart-kind="combined-form-minutes"]')?.getAttribute('data-y-axis-min')).toBe('-90');
+    expect(container.querySelector('[data-chart-kind="combined-form-minutes"]')?.getAttribute('data-y-axis-max')).toBe('13');
+    expect(container.querySelector('[data-chart-kind="combined-form-minutes"]')?.getAttribute('data-minutes-y-axis-max')).toBe('90');
+    expect(container.querySelector('[data-chart-kind="combined-form-minutes"]')?.getAttribute('data-minutes-y-axis-threshold')).toBe('60');
+    expect(container.querySelectorAll('[data-chart-kind="combined-form-minutes"] .player-profile__combined-threshold-line')).toHaveLength(10);
+    expect(container.querySelector('[data-chart-kind="combined-form-minutes"]')?.getAttribute('aria-label')).toContain('Fantasy points above the zero line and minutes played below it');
+    expect(container.querySelector('[data-chart-kind="combined-form-minutes"] .player-profile__stat-icon')?.getAttribute('aria-label')).toContain('Goals scored');
+    expect(container.querySelector('[data-chart-kind="combined-form-minutes"] [data-stat-key="assists"] svg')).toBeTruthy();
+    expect(container.querySelector('[data-chart-kind="combined-form-minutes"] [data-stat-key="clean-sheets"] svg')).toBeTruthy();
+    expect(container.querySelector('[data-chart-kind="combined-form-minutes"] [data-stat-key="saves"] svg')).toBeTruthy();
+    expect(container.querySelector('[data-chart-kind="combined-form-minutes"] .player-profile__stat-icon--yellow')?.getAttribute('aria-label')).toContain('Yellow cards');
+    expect(container.querySelector('[data-chart-kind="combined-form-minutes"] .player-profile__stat-icon--red')?.getAttribute('aria-label')).toContain('Red cards');
     expect(container.querySelector('[aria-label^="Defensive contributions"]')).toBeNull();
     expect(container.querySelector('.player-profile__stat-multiplier')?.textContent).toBe('×2');
     expect(container.querySelector('.player-profile__stat-multiplier')?.className).toContain('player-profile__stat-multiplier');
     expect(container.querySelector('.player-profile__chart-card--compact')).toBeTruthy();
-    expect(container.querySelector('section[aria-labelledby="form"]')?.className).toContain('player-profile__chart-card--compact');
     expect(container.textContent).not.toContain('60 min threshold');
-    expect(container.querySelector('.player-profile__threshold-line')).toBeTruthy();
-    expect(container.querySelector('[data-chart-kind="minutes"]')?.getAttribute('aria-label')).toBe('Minutes played over the latest ten fixtures');
+    expect(container.querySelector('.player-profile__threshold-line')).toBeNull();
     expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__chart-column')).toHaveLength(10);
     expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__grouped-bar--attack')).toHaveLength(10);
     expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__grouped-bar--defence')).toHaveLength(10);
     expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__grouped-bar-value')).toHaveLength(20);
+    expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__grouped-stat-icons .player-profile__stat-icon')).toHaveLength(3);
     expect(container.querySelector('[data-chart-kind="opponent-defence"]')?.getAttribute('data-y-axis-min')).toBe('0');
     expect(container.querySelector('[data-chart-kind="opponent-defence"]')?.getAttribute('data-y-axis-max')).toBe('80');
     expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__bar--stacked')).toHaveLength(0);
@@ -366,16 +384,15 @@ describe('PlayerProfilePage', () => {
     oneFixtureClient.getPlayerHistory = async () => ({ ...history, history: history.history.slice(-1) });
     const oneFixture = renderPage(oneFixtureClient);
     await settle();
-    expect(Array.from(oneFixture.container.querySelectorAll('[data-chart-kind="form"] .player-profile__chart-column')).map((column) => Number((column as HTMLElement).style.gridColumnStart))).toEqual([10]);
-    expect(Array.from(oneFixture.container.querySelectorAll('[data-chart-kind="minutes"] .player-profile__chart-column')).map((column) => Number((column as HTMLElement).style.gridColumnStart))).toEqual([10]);
+    expect(Array.from(oneFixture.container.querySelectorAll('[data-chart-kind="combined-form-minutes"] .player-profile__combined-chart-column')).map((column) => Number((column as HTMLElement).style.gridColumnStart))).toEqual([10]);
     oneFixture.root.unmount();
 
     const twoFixtureClient = new MemorySquadClient();
     twoFixtureClient.getPlayerHistory = async () => ({ ...history, history: history.history.slice(-2) });
     const twoFixtures = renderPage(twoFixtureClient);
     await settle();
-    expect(Array.from(twoFixtures.container.querySelectorAll('[data-chart-kind="form"] .player-profile__chart-column')).map((column) => Number((column as HTMLElement).style.gridColumnStart))).toEqual([9, 10]);
-    expect([...twoFixtures.container.querySelectorAll('[data-chart-kind="form"] .player-profile__opponent-label')].map((node) => node.textContent)).toEqual(['eve', 'NEW']);
+    expect(Array.from(twoFixtures.container.querySelectorAll('[data-chart-kind="combined-form-minutes"] .player-profile__combined-chart-column')).map((column) => Number((column as HTMLElement).style.gridColumnStart))).toEqual([9, 10]);
+    expect([...twoFixtures.container.querySelectorAll('[data-chart-kind="combined-form-minutes"] .player-profile__combined-opponent')].map((node) => node.textContent)).toEqual(['eve', 'NEW']);
     twoFixtures.root.unmount();
   });
 
@@ -389,9 +406,8 @@ describe('PlayerProfilePage', () => {
     const { container, root } = renderPage(squadClient);
     await settle();
 
-    expect(container.querySelector('[data-chart-kind="form"]')?.getAttribute('data-y-axis-min')).toBe('0');
-    expect(container.querySelector('[data-chart-kind="form"]')?.getAttribute('data-y-axis-max')).toBe('10');
-    expect(container.querySelector('[data-chart-kind="form"]')?.getAttribute('aria-label')).toContain('vertical scale 0 to 10 points');
+    expect(container.querySelector('[data-chart-kind="combined-form-minutes"]')?.getAttribute('data-y-axis-max')).toBe('10');
+    expect(container.querySelector('[data-chart-kind="combined-form-minutes"]')?.getAttribute('aria-label')).toContain('Fantasy points above the zero line');
     root.unmount();
   });
 
@@ -442,10 +458,9 @@ describe('PlayerProfilePage', () => {
     squadClient.getPlayer = async () => doubtful;
     const { container, root } = renderPage(squadClient);
     await settle();
-    expect(container.textContent).toContain('Doubtful');
+    expect(container.querySelector('.player-profile__header-player-card .player-card__availability')?.getAttribute('aria-label')).toContain('75% chance of playing');
     expect(container.querySelector('.player-profile__availability-news')?.textContent).toContain('Late fitness test');
     expect(container.querySelector('.player-profile__availability-news')?.textContent).toContain('Chance 75%');
-    expect(container.textContent).not.toContain('Injured');
     root.unmount();
 
     const injured = { ...player, availability_status: 'injured', chance_of_playing_next_round: 25 };
@@ -453,7 +468,7 @@ describe('PlayerProfilePage', () => {
     injuredClient.getPlayer = async () => injured;
     const { container: injuredContainer, root: injuredRoot } = renderPage(injuredClient);
     await settle();
-    expect(injuredContainer.textContent).toContain('Injured');
+    expect(injuredContainer.querySelector('.player-profile__header-player-card .player-card__availability')?.getAttribute('aria-label')).toContain('25% chance of playing');
     injuredRoot.unmount();
   });
 
@@ -466,6 +481,7 @@ describe('PlayerProfilePage', () => {
     expect(captainButton).toBeTruthy();
     act(() => { captainButton?.click(); });
     await settle();
+    expect(container.querySelector('.player-profile__header-player-card .player-card__role')?.textContent).toBe('C');
     expect(teamSelectionClient.saved.at(-1)?.find((candidate) => candidate.id === player.id)?.captain).toBe(true);
     expect(teamSelectionClient.saved.at(-1)?.find((candidate) => candidate.id === 'fpl-11')?.captain).toBe(false);
     expect(teamSelectionClient.saved.at(-1)?.find((candidate) => candidate.id === 'fpl-11')?.viceCaptain).toBe(false);
@@ -479,6 +495,7 @@ describe('PlayerProfilePage', () => {
     expect(viceButton).toBeTruthy();
     act(() => { viceButton?.click(); });
     await settle();
+    expect(viceContainer.querySelector('.player-profile__header-player-card .player-card__role')?.textContent).toBe('VC');
     expect(viceSelectionClient.saved.at(-1)?.find((candidate) => candidate.id === player.id)?.viceCaptain).toBe(true);
     expect(viceSelectionClient.saved.at(-1)?.find((candidate) => candidate.id === 'fpl-11')?.captain).toBe(true);
     expect(viceSelectionClient.saved.at(-1)?.find((candidate) => candidate.id === 'fpl-12')?.viceCaptain).toBe(false);

@@ -17,56 +17,14 @@ SUPPORTED_ATTACK_DIRECTIONS = {"up", "down"}
 SUPPORTED_FDR_DISPLAY_MODES = {"font", "fill"}
 SUPPORTED_FDR_SCALES = {
     "BrBG",
-    "PRGn",
-    "PiYG",
-    "PuOr",
     "RdBu",
-    "RdGy",
-    "RdYlBu",
     "RdYlGn",
-    "Spectral",
     "Turbo",
-    "Viridis",
-    "Inferno",
-    "Magma",
-    "Plasma",
-    "Cividis",
-    "Warm",
-    "Cool",
-    "CubehelixDefault",
-    "BuGn",
-    "BuPu",
-    "GnBu",
-    "OrRd",
-    "PuBuGn",
-    "PuBu",
-    "PuRd",
-    "RdPu",
-    "YlGnBu",
-    "YlGn",
-    "YlOrBr",
-    "YlOrRd",
-    "Rainbow",
     "Sinebow",
-    "CustomHex",
     "CustomBlueRedVibrant",
-    "CustomBlueRedMuted",
     "CustomGreenPurpleVibrant",
-    "CustomGreenPurpleMuted",
-    "CustomWhiteBlackMuted",
-    "CustomWhiteBlackContrast",
-    "CustomHeatmapViridis",
-    "CustomHeatmapInferno",
-    "CustomHeatmapYlOrRd",
-    # Keep names accepted for clients that have not refreshed their chooser yet.
-    "CustomOcean",
-    "CustomBerry",
-    "CustomForest",
-    "CustomEmber",
-    "CustomAqua",
-    "CustomOrchid",
-    "CustomSlate",
-    "CustomCitrus",
+    "CustomHex",
+    "CustomAll",
 }
 THEME_COLOUR_PATTERN = re.compile(r"^#[0-9A-Fa-f]{6}$")
 
@@ -87,7 +45,9 @@ class UserPreferenceService:
             or not THEME_COLOUR_PATTERN.fullmatch(preferences.light_theme_colour)
             or not THEME_COLOUR_PATTERN.fullmatch(preferences.dark_theme_colour)
             or not THEME_COLOUR_PATTERN.fullmatch(preferences.fdr_custom_min)
+            or not THEME_COLOUR_PATTERN.fullmatch(preferences.fdr_custom_second)
             or not THEME_COLOUR_PATTERN.fullmatch(preferences.fdr_custom_mid)
+            or not THEME_COLOUR_PATTERN.fullmatch(preferences.fdr_custom_fourth)
             or not THEME_COLOUR_PATTERN.fullmatch(preferences.fdr_custom_max)
         ):
             return self._repository.get_for_user(user_id)

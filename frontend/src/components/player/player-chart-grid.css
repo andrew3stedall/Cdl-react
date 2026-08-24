@@ -6,7 +6,16 @@
 }
 
 .player-profile__chart-gridline {
-  border-top: 1px dotted color-mix(in srgb, var(--profile-text) 22%, transparent);
+  border-top: 1px dotted var(--profile-accent);
+  display: block;
+  left: 0;
+  opacity: 0.35;
+  position: absolute;
+  right: 0;
+}
+
+.player-profile__chart-zero-line {
+  border-top: 1px solid var(--profile-accent);
   display: block;
   left: 0;
   position: absolute;

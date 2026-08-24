@@ -267,17 +267,31 @@
 }
 
 .player-profile__chart-y-axis-scale {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
   min-height: 0;
+  position: relative;
+}
+
+.player-profile__chart-y-axis-scale--up {
+  overflow: visible;
+}
+
+.player-profile__chart-y-axis-scale--down {
   overflow: visible;
 }
 
 .player-profile__chart-y-axis-label {
+  color: inherit;
+  min-height: 0;
   display: block;
   line-height: 1;
+  position: absolute;
+  right: 0;
+  transform: translateY(50%);
   white-space: nowrap;
+}
+
+.player-profile__chart-y-axis-scale--down .player-profile__chart-y-axis-label {
+  transform: translateY(-50%);
 }
 
 .player-profile__chart-plot {
@@ -291,6 +305,10 @@
   right: 0;
   top: var(--chart-value-row);
   z-index: 2;
+}
+
+.player-profile__chart-plot > .player-profile__chart-zero-line {
+  bottom: var(--chart-opponent-row);
 }
 
 .player-profile__chart-columns {
@@ -354,6 +372,7 @@
   display: flex;
   justify-content: center;
   min-height: 0;
+  opacity: 0.85;
   position: relative;
   width: 100%;
   z-index: 3;
@@ -403,7 +422,7 @@
 }
 
 .player-profile__threshold-line {
-  border-top: 1px dashed #22d3ee;
+  border-top: 1px dashed var(--profile-accent);
   left: -0.05rem;
   pointer-events: none;
   position: absolute;
@@ -497,6 +516,7 @@
   height: var(--bar-height);
   left: 0;
   min-height: 0;
+  opacity: 0.85;
   position: absolute;
   right: 0;
 }

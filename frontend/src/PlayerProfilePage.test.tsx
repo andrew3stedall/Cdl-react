@@ -335,7 +335,7 @@ describe('PlayerProfilePage', () => {
     expect(container.textContent).not.toContain('liv');
     expect(container.querySelectorAll('[data-chart-kind="opponent-defence"]')).toHaveLength(2);
     expect(container.querySelectorAll('.player-profile__opponent-chart-heading')).toHaveLength(2);
-    expect(container.textContent).toContain('Points againstBHA');
+    expect(container.textContent).toContain('Points againstbha');
     expect(container.textContent).toContain('Points againstARS');
     root.unmount();
   });
@@ -358,8 +358,12 @@ describe('PlayerProfilePage', () => {
     expect(container.querySelector('[data-chart-kind="combined-form-minutes"]')?.getAttribute('data-minutes-y-axis-tick-step')).toBe('30');
     expect(container.querySelector('[data-chart-kind="combined-form-minutes"]')?.getAttribute('data-minutes-y-axis-threshold')).toBe('60');
     expect(container.querySelectorAll('[data-chart-kind="combined-form-minutes"] .player-profile__combined-threshold-line')).toHaveLength(10);
-    expect(container.querySelectorAll('[data-chart-kind="combined-form-minutes"] .player-profile__combined-track--positive .player-profile__chart-gridline')).toHaveLength(20);
-    expect(container.querySelectorAll('[data-chart-kind="combined-form-minutes"] .player-profile__combined-track--negative .player-profile__chart-gridline')).toHaveLength(20);
+    expect(container.querySelectorAll('[data-chart-kind="combined-form-minutes"] .player-profile__combined-chart-grid--positive .player-profile__chart-gridline')).toHaveLength(2);
+    expect(container.querySelectorAll('[data-chart-kind="combined-form-minutes"] .player-profile__combined-chart-grid--negative .player-profile__chart-gridline')).toHaveLength(2);
+    expect(container.querySelectorAll('[data-chart-kind="combined-form-minutes"] .player-profile__chart-y-axis-scale')).toHaveLength(2);
+    expect([...container.querySelectorAll('[data-chart-kind="combined-form-minutes"] .player-profile__chart-y-axis-label')].map((node) => node.textContent)).toEqual([
+      '15', '10', '5', '0', '90', '60', '30', '0',
+    ]);
     expect(container.querySelector('[data-chart-kind="combined-form-minutes"]')?.getAttribute('aria-label')).toContain('Fantasy points above the zero line and minutes played below it');
     expect(container.querySelector('[data-chart-kind="combined-form-minutes"] .player-profile__stat-icon')?.getAttribute('aria-label')).toContain('Goals scored');
     expect(container.querySelector('[data-chart-kind="combined-form-minutes"] [data-stat-key="assists"] svg')).toBeTruthy();
@@ -381,7 +385,10 @@ describe('PlayerProfilePage', () => {
     expect(container.querySelector('[data-chart-kind="opponent-defence"]')?.getAttribute('data-y-axis-min')).toBe('0');
     expect(container.querySelector('[data-chart-kind="opponent-defence"]')?.getAttribute('data-y-axis-max')).toBe('80');
     expect(container.querySelector('[data-chart-kind="opponent-defence"]')?.getAttribute('data-y-axis-tick-step')).toBe('10');
-    expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__chart-gridline')).toHaveLength(70);
+    expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__chart-gridline')).toHaveLength(7);
+    expect([...container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__chart-y-axis-label')].map((node) => node.textContent)).toEqual([
+      '80', '70', '60', '50', '40', '30', '20', '10', '0',
+    ]);
     expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__bar--stacked')).toHaveLength(0);
     expect(container.textContent).toContain('Attacking assets');
     expect(container.textContent).toContain('Defensive assets');
@@ -488,6 +495,10 @@ describe('PlayerProfilePage', () => {
     expect(container.textContent).not.toContain('Next:');
     expect(container.querySelectorAll('[data-chart-kind="form"] .player-profile__chart-column')).toHaveLength(8);
     expect(container.querySelectorAll('[data-chart-kind="minutes"] .player-profile__chart-column')).toHaveLength(8);
+    expect(container.querySelectorAll('[data-chart-kind="form"] .player-profile__chart-y-axis')).toHaveLength(2);
+    expect(container.querySelectorAll('[data-chart-kind="minutes"] .player-profile__chart-y-axis')).toHaveLength(2);
+    expect(container.querySelectorAll('[data-chart-kind="form"] .player-profile__chart-gridline')).toHaveLength(2);
+    expect(container.querySelectorAll('[data-chart-kind="minutes"] .player-profile__chart-gridline')).toHaveLength(4);
     expect(Array.from(container.querySelectorAll('[data-chart-kind="form"], [data-chart-kind="minutes"]')).every((chart) => chart.getAttribute('aria-label')?.includes('latest four'))).toBe(true);
     root.unmount();
   });

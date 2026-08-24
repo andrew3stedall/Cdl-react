@@ -1,0 +1,135 @@
+.player-profile__combined-chart {
+  min-width: 0;
+  width: 100%;
+}
+
+.player-profile__combined-chart-columns {
+  align-items: stretch;
+  --combined-form-height: var(--profile-combined-form-height, 11.625rem);
+  --combined-minutes-height: var(--profile-combined-minutes-height, 3.875rem);
+  --combined-opponent-height: var(--profile-combined-opponent-height, 1.35rem);
+  display: grid;
+  gap: clamp(0.15rem, 1.2vw, 0.5rem);
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  min-height: calc(var(--combined-form-height) + var(--combined-opponent-height) + var(--combined-minutes-height));
+}
+
+.player-profile__combined-chart-column {
+  display: grid;
+  grid-template-rows: minmax(0, var(--combined-form-height)) var(--combined-opponent-height) minmax(0, var(--combined-minutes-height));
+  min-width: 0;
+  text-align: center;
+}
+
+.player-profile__combined-positive,
+.player-profile__combined-negative {
+  display: grid;
+  gap: 0.12rem;
+  grid-template-rows: 1.1rem minmax(0, 1fr);
+  min-height: 0;
+}
+
+.player-profile__combined-negative {
+  grid-template-rows: minmax(0, 1fr) 1.1rem;
+}
+
+.player-profile__combined-track {
+  background: var(--profile-chart-track);
+  min-height: 0;
+  position: relative;
+}
+
+.player-profile__combined-track--positive {
+  align-items: flex-end;
+  border-radius: 0.25rem 0.25rem 0.12rem 0.12rem;
+  display: flex;
+}
+
+.player-profile__combined-track--negative {
+  align-items: flex-start;
+  border-radius: 0.12rem 0.12rem 0.25rem 0.25rem;
+  display: flex;
+}
+
+.player-profile__combined-threshold-line {
+  border-top: 1px dashed #22d3ee;
+  left: -0.05rem;
+  pointer-events: none;
+  position: absolute;
+  right: -0.05rem;
+  top: 66.666%;
+  z-index: 2;
+}
+
+.player-profile__combined-bar {
+  border-radius: 0.25rem 0.25rem 0.1rem 0.1rem;
+  min-height: 0;
+  position: relative;
+  width: 100%;
+}
+
+.player-profile__combined-bar--minutes {
+  background: color-mix(in srgb, var(--profile-muted) 62%, var(--profile-panel));
+  border-radius: 0.1rem 0.1rem 0.25rem 0.25rem;
+}
+
+.player-profile__combined-bar--empty {
+  background: var(--profile-chart-empty);
+}
+
+.player-profile__combined-bar--negative {
+  background: color-mix(in srgb, var(--profile-danger) 75%, var(--profile-panel));
+}
+
+.player-profile__combined-bar--neutral {
+  background: color-mix(in srgb, var(--profile-muted) 62%, var(--profile-panel));
+}
+
+.player-profile__combined-bar--low {
+  background: color-mix(in srgb, var(--profile-accent) 45%, var(--profile-panel));
+}
+
+.player-profile__combined-bar--positive,
+.player-profile__combined-bar--high {
+  background: color-mix(in srgb, #22c55e 68%, var(--profile-panel));
+}
+
+.player-profile__combined-bar {
+  height: var(--bar-height);
+}
+
+.player-profile__combined-opponent {
+  align-self: center;
+  border-radius: 0.25rem;
+  display: block;
+  font-size: clamp(0.56rem, 1.9vw, 0.69rem);
+  font-weight: 900;
+  line-height: 1.1;
+  overflow: hidden;
+  padding: 0.16rem 0.08rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+[data-fdr-display-mode='fill'] .player-profile__combined-opponent {
+  padding-inline: 0.18rem;
+}
+
+@media (max-width: 32rem) {
+  .player-profile__combined-chart-columns {
+    gap: 0.12rem;
+  }
+
+  .player-profile__combined-chart-column {
+    --combined-opponent-height: 1.2rem;
+  }
+
+  .player-profile__combined-positive,
+  .player-profile__combined-negative {
+    grid-template-rows: 0.95rem minmax(0, 1fr);
+  }
+
+  .player-profile__combined-negative {
+    grid-template-rows: minmax(0, 1fr) 0.95rem;
+  }
+}

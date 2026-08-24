@@ -685,36 +685,149 @@
 
 .profile-fdr-custom-editor__inputs {
   display: grid;
-  gap: 0.45rem;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.35rem;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
-.profile-fdr-custom-editor__inputs label {
-  align-items: center;
+.profile-fdr-custom-editor__mode {
+  background: var(--secondary);
+  border: 1px solid transparent;
+  border-radius: calc(var(--radius) - 0.15rem);
+  color: var(--foreground);
+  cursor: pointer;
   display: grid;
-  gap: 0.25rem;
-  justify-items: center;
+  gap: 0.12rem;
+  padding: 0.55rem 0.65rem;
+  text-align: left;
 }
 
-.profile-fdr-custom-editor__inputs label > span,
-.profile-fdr-custom-editor__inputs label > small {
+.profile-fdr-custom-editor__modes {
+  display: grid;
+  gap: 0.4rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.profile-fdr-custom-editor__mode:hover,
+.profile-fdr-custom-editor__mode:focus-visible,
+.profile-fdr-custom-editor__mode.is-selected {
+  border-color: var(--primary);
+  outline: none;
+}
+
+.profile-fdr-custom-editor__mode strong,
+.profile-fdr-custom-editor__mode small {
+  display: block;
+}
+
+.profile-fdr-custom-editor__mode strong {
+  font-size: 0.7rem;
+}
+
+.profile-fdr-custom-editor__mode small {
   color: var(--muted-foreground);
   font-size: 0.62rem;
-  text-align: center;
+  line-height: 1.35;
 }
 
-.profile-fdr-custom-editor__inputs label > span {
-  color: var(--foreground);
-  font-weight: 700;
-}
-
-.profile-fdr-custom-editor__inputs input {
-  border: 1px solid var(--border);
-  border-radius: 50%;
+.profile-fdr-custom-editor__level {
+  align-items: center;
+  background: var(--level-colour);
+  border: 2px solid transparent;
+  border-radius: calc(var(--radius) - 0.2rem);
+  color: var(--level-foreground, #ffffff);
   cursor: pointer;
-  height: 2rem;
-  padding: 0;
-  width: 2rem;
+  display: grid;
+  gap: 0.12rem;
+  justify-items: center;
+  min-height: 3.3rem;
+  padding: 0.35rem 0.15rem;
+}
+
+.profile-fdr-custom-editor__level:hover,
+.profile-fdr-custom-editor__level:focus-visible,
+.profile-fdr-custom-editor__level.is-selected {
+  border-color: var(--foreground);
+  outline: none;
+}
+
+.profile-fdr-custom-editor__level.is-interpolated {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.profile-fdr-custom-editor__level span {
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.profile-fdr-custom-editor__level small {
+  font-size: 0.53rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+}
+
+.profile-fdr-colour-picker__field {
+  background:
+    linear-gradient(to top, #000000, transparent),
+    linear-gradient(to right, #ffffff, hsl(var(--picker-hue) 100% 50%));
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 0.15rem);
+  cursor: crosshair;
+  height: 12rem;
+  position: relative;
+  touch-action: none;
+}
+
+.profile-fdr-colour-picker__field-pointer,
+.profile-fdr-colour-picker__hue-pointer {
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.55);
+  height: 0.85rem;
+  pointer-events: none;
+  position: absolute;
+  transform: translate(-50%, -50%);
+  width: 0.85rem;
+}
+
+.profile-fdr-colour-picker__hue {
+  background: linear-gradient(to right, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: crosshair;
+  height: 1.15rem;
+  position: relative;
+  touch-action: none;
+}
+
+.profile-fdr-colour-picker__hue-pointer {
+  height: 1.15rem;
+  top: 50%;
+  width: 1.15rem;
+}
+
+.profile-fdr-colour-picker__sliders {
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.profile-fdr-colour-picker__sliders label {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.profile-fdr-colour-picker__sliders label > span {
+  color: var(--muted-foreground);
+  display: flex;
+  font-size: 0.63rem;
+  justify-content: space-between;
+}
+
+.profile-fdr-colour-picker__sliders label strong {
+  color: var(--foreground);
 }
 
 .profile-fdr-scale-list section {

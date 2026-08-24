@@ -71,25 +71,29 @@ def test_authenticated_preferences_persist_and_remain_isolated() -> None:
         json={
             "theme_preset": "teal-dark",
             "attack_direction": "down",
-            "fdr_scale": "Viridis",
+            "fdr_scale": "RdBu",
             "fdr_scale_reversed": False,
             "fdr_display_mode": "fill",
             "light_theme_colour": "#2563EB",
             "dark_theme_colour": "#60A5FA",
             "fdr_custom_min": "#1B9E77",
+            "fdr_custom_second": "#8CCBB5",
             "fdr_custom_mid": "#F7F7F7",
+            "fdr_custom_fourth": "#C58CDA",
             "fdr_custom_max": "#984EA3",
         },
     ).json() == {
         "theme_preset": "teal-dark",
         "attack_direction": "down",
-        "fdr_scale": "Viridis",
+        "fdr_scale": "RdBu",
         "fdr_scale_reversed": False,
         "fdr_display_mode": "fill",
         "light_theme_colour": "#2563EB",
         "dark_theme_colour": "#60A5FA",
         "fdr_custom_min": "#1B9E77",
+        "fdr_custom_second": "#8CCBB5",
         "fdr_custom_mid": "#F7F7F7",
+        "fdr_custom_fourth": "#C58CDA",
         "fdr_custom_max": "#984EA3",
     }
 
@@ -103,7 +107,9 @@ def test_authenticated_preferences_persist_and_remain_isolated() -> None:
         "light_theme_colour": "#0F766E",
         "dark_theme_colour": "#2DD4BF",
         "fdr_custom_min": "#2166AC",
+        "fdr_custom_second": "#8CAFD2",
         "fdr_custom_mid": "#F7F7F7",
+        "fdr_custom_fourth": "#D58891",
         "fdr_custom_max": "#B2182B",
     }
     assert client.put(
@@ -111,36 +117,40 @@ def test_authenticated_preferences_persist_and_remain_isolated() -> None:
         json={
             "theme_preset": "teal-dark",
             "attack_direction": "up",
-            "fdr_scale": "Rainbow",
+            "fdr_scale": "Sinebow",
             "fdr_scale_reversed": True,
             "fdr_display_mode": "font",
             "light_theme_colour": "#0F766E",
             "dark_theme_colour": "#2DD4BF",
             "fdr_custom_min": "#2166AC",
+            "fdr_custom_second": "#8CAFD2",
             "fdr_custom_mid": "#F7F7F7",
+            "fdr_custom_fourth": "#D58891",
             "fdr_custom_max": "#B2182B",
         },
     ).json() == {
         "theme_preset": "teal-dark",
         "attack_direction": "up",
-        "fdr_scale": "Rainbow",
+        "fdr_scale": "Sinebow",
         "fdr_scale_reversed": True,
         "fdr_display_mode": "font",
         "light_theme_colour": "#0F766E",
         "dark_theme_colour": "#2DD4BF",
         "fdr_custom_min": "#2166AC",
+        "fdr_custom_second": "#8CAFD2",
         "fdr_custom_mid": "#F7F7F7",
+        "fdr_custom_fourth": "#D58891",
         "fdr_custom_max": "#B2182B",
     }
 
     reloaded_repository = PostgreSQLUserPreferenceRepository(session_factory)
     assert reloaded_repository.get_for_user("preferences-manager-1").theme_preset == "teal-dark"
     assert reloaded_repository.get_for_user("preferences-manager-1").attack_direction == "down"
-    assert reloaded_repository.get_for_user("preferences-manager-1").fdr_scale == "Viridis"
+    assert reloaded_repository.get_for_user("preferences-manager-1").fdr_scale == "RdBu"
     assert reloaded_repository.get_for_user("preferences-manager-1").fdr_scale_reversed is False
     assert reloaded_repository.get_for_user("preferences-manager-2").theme_preset == "teal-dark"
     assert reloaded_repository.get_for_user("preferences-manager-2").attack_direction == "up"
-    assert reloaded_repository.get_for_user("preferences-manager-2").fdr_scale == "Rainbow"
+    assert reloaded_repository.get_for_user("preferences-manager-2").fdr_scale == "Sinebow"
     assert reloaded_repository.get_for_user("preferences-manager-2").fdr_scale_reversed is True
 
     with engine.begin() as connection:

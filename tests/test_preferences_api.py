@@ -38,7 +38,7 @@ def test_preferences_use_authenticated_user_identity() -> None:
         json={
             "theme_preset": "teal-dark",
             "attack_direction": "down",
-            "fdr_scale": "Spectral",
+            "fdr_scale": "RdBu",
             "fdr_scale_reversed": False,
             "fdr_display_mode": "fill",
             "light_theme_colour": "#2563EB",
@@ -50,25 +50,29 @@ def test_preferences_use_authenticated_user_identity() -> None:
     assert response.json() == {
         "theme_preset": "teal-dark",
         "attack_direction": "down",
-        "fdr_scale": "Spectral",
+        "fdr_scale": "RdBu",
         "fdr_scale_reversed": False,
         "fdr_display_mode": "fill",
         "light_theme_colour": "#2563EB",
         "dark_theme_colour": "#60A5FA",
         "fdr_custom_min": "#2166AC",
+        "fdr_custom_second": "#8CAFD2",
         "fdr_custom_mid": "#F7F7F7",
+        "fdr_custom_fourth": "#D58891",
         "fdr_custom_max": "#B2182B",
     }
     assert client.get("/api/me/preferences").json() == {
         "theme_preset": "teal-dark",
         "attack_direction": "down",
-        "fdr_scale": "Spectral",
+        "fdr_scale": "RdBu",
         "fdr_scale_reversed": False,
         "fdr_display_mode": "fill",
         "light_theme_colour": "#2563EB",
         "dark_theme_colour": "#60A5FA",
         "fdr_custom_min": "#2166AC",
+        "fdr_custom_second": "#8CAFD2",
         "fdr_custom_mid": "#F7F7F7",
+        "fdr_custom_fourth": "#D58891",
         "fdr_custom_max": "#B2182B",
     }
 
@@ -82,7 +86,9 @@ def test_preferences_use_authenticated_user_identity() -> None:
         "light_theme_colour": "#0F766E",
         "dark_theme_colour": "#2DD4BF",
         "fdr_custom_min": "#2166AC",
+        "fdr_custom_second": "#8CAFD2",
         "fdr_custom_mid": "#F7F7F7",
+        "fdr_custom_fourth": "#D58891",
         "fdr_custom_max": "#B2182B",
     }
 
@@ -91,7 +97,7 @@ def test_preferences_use_authenticated_user_identity() -> None:
         json={
             "theme_preset": "teal-light",
             "attack_direction": "up",
-            "fdr_scale": "Warm",
+            "fdr_scale": "Turbo",
             "fdr_scale_reversed": True,
             "fdr_display_mode": "font",
             "light_theme_colour": "#0F766E",
@@ -103,13 +109,15 @@ def test_preferences_use_authenticated_user_identity() -> None:
     assert response.json() == {
         "theme_preset": "teal-light",
         "attack_direction": "up",
-        "fdr_scale": "Warm",
+        "fdr_scale": "Turbo",
         "fdr_scale_reversed": True,
         "fdr_display_mode": "font",
         "light_theme_colour": "#0F766E",
         "dark_theme_colour": "#2DD4BF",
         "fdr_custom_min": "#2166AC",
+        "fdr_custom_second": "#8CAFD2",
         "fdr_custom_mid": "#F7F7F7",
+        "fdr_custom_fourth": "#D58891",
         "fdr_custom_max": "#B2182B",
     }
 
@@ -117,12 +125,14 @@ def test_preferences_use_authenticated_user_identity() -> None:
     assert client.get("/api/me/preferences").json() == {
         "theme_preset": "teal-dark",
         "attack_direction": "down",
-        "fdr_scale": "Spectral",
+        "fdr_scale": "RdBu",
         "fdr_scale_reversed": False,
         "fdr_display_mode": "fill",
         "light_theme_colour": "#2563EB",
         "dark_theme_colour": "#60A5FA",
         "fdr_custom_min": "#2166AC",
+        "fdr_custom_second": "#8CAFD2",
         "fdr_custom_mid": "#F7F7F7",
+        "fdr_custom_fourth": "#D58891",
         "fdr_custom_max": "#B2182B",
     }

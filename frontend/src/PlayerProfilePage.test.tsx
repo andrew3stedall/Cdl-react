@@ -172,14 +172,23 @@ const preferenceClient: PreferenceClient = {
   updatePreferences: async (preferences: UserPreferences) => preferences,
 };
 
-function renderPage(squadClient = new MemorySquadClient(), teamSelectionClient = new MemoryTeamSelectionClient()) {
+function renderPage(
+  squadClient = new MemorySquadClient(),
+  teamSelectionClient = new MemoryTeamSelectionClient(),
+  presentation: 'page' | 'drawer' = 'page',
+) {
   const container = document.createElement('div');
   document.body.appendChild(container);
   const root: Root = createRoot(container);
   act(() => {
     root.render(
       <ThemePresetProvider initialPresetName="teal-dark" preferenceClient={preferenceClient}>
-        <PlayerProfilePage playerId={player.id} squadClient={squadClient} teamSelectionClient={teamSelectionClient} />
+        <PlayerProfilePage
+          playerId={player.id}
+          presentation={presentation}
+          squadClient={squadClient}
+          teamSelectionClient={teamSelectionClient}
+        />
       </ThemePresetProvider>,
     );
   });
@@ -210,6 +219,14 @@ describe('PlayerProfilePage', () => {
     expect(container.querySelector('.player-card__opponent')?.className).toContain('player-card__opponent');
     expect(container.querySelector('.player-card__opponent')?.className).toContain('player-card__opponent--fdr-3');
     expect(container.querySelector('.player-profile__portrait')).toBeNull();
+    root.unmount();
+  });
+
+  test('adds a reachable scroll tail when the profile is presented as a drawer', async () => {
+    const { container, root } = renderPage(new MemorySquadClient(), new MemoryTeamSelectionClient(), 'drawer');
+    await settle();
+
+    expect(container.querySelector('.player-profile--drawer .player-profile__scroll-end-spacer')).not.toBeNull();
     root.unmount();
   });
 
@@ -409,6 +426,10 @@ describe('PlayerProfilePage', () => {
     await settle();
 
     expect(container.querySelectorAll('.player-profile__comparison-player')).toHaveLength(2);
+    expect(container.querySelectorAll('.player-profile__comparison-player .player-card')).toHaveLength(2);
+    expect(container.querySelectorAll('.player-profile__comparison-player .player-card__opponents')).toHaveLength(2);
+    expect(container.querySelectorAll('.player-profile__comparison-identity h3')).toHaveLength(0);
+    expect(container.textContent).not.toContain('Next:');
     expect(container.querySelectorAll('[data-chart-kind="form"] .player-profile__chart-column')).toHaveLength(8);
     expect(container.querySelectorAll('[data-chart-kind="minutes"] .player-profile__chart-column')).toHaveLength(8);
     expect(Array.from(container.querySelectorAll('[data-chart-kind="form"], [data-chart-kind="minutes"]')).every((chart) => chart.getAttribute('aria-label')?.includes('latest four'))).toBe(true);
@@ -471,6 +492,7 @@ describe('PlayerProfilePage', () => {
     act(() => { benchButton?.click(); });
     await settle();
     expect(benchContainer.textContent).toContain('Choose substitution');
+    expect(benchContainer.querySelectorAll('.player-profile__action-option .player-card').length).toBeGreaterThan(0);
     const benchOption = [...benchContainer.querySelectorAll('button')].find((button) => button.textContent?.includes('Bench Player'));
     expect(benchOption).toBeTruthy();
     act(() => { benchOption?.click(); });

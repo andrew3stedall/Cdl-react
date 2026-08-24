@@ -352,10 +352,14 @@ describe('PlayerProfilePage', () => {
     expect(container.querySelector('[data-chart-kind="combined-form-minutes"]')?.textContent).toContain('—');
     expect(container.querySelector('[data-chart-kind="combined-form-minutes"] .player-profile__combined-opponent')?.getAttribute('style')).toContain('var(--cdl-fdr-1)');
     expect(container.querySelector('[data-chart-kind="combined-form-minutes"]')?.getAttribute('data-y-axis-min')).toBe('-90');
-    expect(container.querySelector('[data-chart-kind="combined-form-minutes"]')?.getAttribute('data-y-axis-max')).toBe('13');
+    expect(container.querySelector('[data-chart-kind="combined-form-minutes"]')?.getAttribute('data-y-axis-max')).toBe('15');
+    expect(container.querySelector('[data-chart-kind="combined-form-minutes"]')?.getAttribute('data-y-axis-tick-step')).toBe('5');
     expect(container.querySelector('[data-chart-kind="combined-form-minutes"]')?.getAttribute('data-minutes-y-axis-max')).toBe('90');
+    expect(container.querySelector('[data-chart-kind="combined-form-minutes"]')?.getAttribute('data-minutes-y-axis-tick-step')).toBe('30');
     expect(container.querySelector('[data-chart-kind="combined-form-minutes"]')?.getAttribute('data-minutes-y-axis-threshold')).toBe('60');
     expect(container.querySelectorAll('[data-chart-kind="combined-form-minutes"] .player-profile__combined-threshold-line')).toHaveLength(10);
+    expect(container.querySelectorAll('[data-chart-kind="combined-form-minutes"] .player-profile__combined-track--positive .player-profile__chart-gridline')).toHaveLength(20);
+    expect(container.querySelectorAll('[data-chart-kind="combined-form-minutes"] .player-profile__combined-track--negative .player-profile__chart-gridline')).toHaveLength(20);
     expect(container.querySelector('[data-chart-kind="combined-form-minutes"]')?.getAttribute('aria-label')).toContain('Fantasy points above the zero line and minutes played below it');
     expect(container.querySelector('[data-chart-kind="combined-form-minutes"] .player-profile__stat-icon')?.getAttribute('aria-label')).toContain('Goals scored');
     expect(container.querySelector('[data-chart-kind="combined-form-minutes"] [data-stat-key="assists"] svg')).toBeTruthy();
@@ -376,6 +380,8 @@ describe('PlayerProfilePage', () => {
     expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__grouped-stat-icons .player-profile__stat-icon')).toHaveLength(3);
     expect(container.querySelector('[data-chart-kind="opponent-defence"]')?.getAttribute('data-y-axis-min')).toBe('0');
     expect(container.querySelector('[data-chart-kind="opponent-defence"]')?.getAttribute('data-y-axis-max')).toBe('80');
+    expect(container.querySelector('[data-chart-kind="opponent-defence"]')?.getAttribute('data-y-axis-tick-step')).toBe('10');
+    expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__chart-gridline')).toHaveLength(70);
     expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__bar--stacked')).toHaveLength(0);
     expect(container.textContent).toContain('Attacking assets');
     expect(container.textContent).toContain('Defensive assets');

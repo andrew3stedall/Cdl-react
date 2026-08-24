@@ -39,5 +39,5 @@ export function barTone(value: number | null): string {
 
 export function formChartScaleMax(fixtures: ReadonlyArray<{ fantasyPoints: number | null }>): number {
   const largestScore = fixtures.reduce((largest, fixture) => Math.max(largest, fixture.fantasyPoints ?? 0), 0);
-  return Math.max(10, largestScore);
+  return Math.max(10, Math.ceil(largestScore / 5) * 5);
 }

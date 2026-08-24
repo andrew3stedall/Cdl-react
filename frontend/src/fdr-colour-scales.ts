@@ -1,19 +1,27 @@
 /**
  * FDR colour scales sampled at five FDR levels (1–5).
  *
- * The numbered choices intentionally retain their original option numbers so
- * existing screenshots, notes, and user preferences remain understandable.
+ * Stock choices are numbered sequentially in the chooser. The names remain
+ * stable so saved preferences and API payloads do not change meaning.
  */
 
 export type FdrScaleGroup = 'Diverging' | 'Sequential' | 'Cyclical' | 'Custom';
 export type FdrPalette = readonly [string, string, string, string, string];
 export type FdrDisplayMode = 'font' | 'fill';
+export type FdrCustomPaletteMode = 'anchors' | 'all';
 export interface FdrCustomAnchors {
   min: string;
   second: string;
   mid: string;
   fourth: string;
   max: string;
+}
+
+export interface FdrCustomPalette {
+  id: string;
+  name: string;
+  mode: FdrCustomPaletteMode;
+  anchors: FdrCustomAnchors;
 }
 
 export const defaultFdrCustomAnchors: FdrCustomAnchors = {
@@ -85,12 +93,12 @@ function buildThreeColourScale<const TName extends string>(
 
 const fdrScaleRows = [
   { name: 'BrBG', label: 'Brown–Blue–Green', group: 'Diverging', isCyclical: false, optionNumber: 1, light: ['#543005', '#946D2B', '#687951', '#3B7E77', '#003C30'], dark: ['#B6680B', '#CEA156', '#EEF1EA', '#5BB2A8', '#008C70'] },
-  { name: 'RdBu', label: 'Red–Blue', group: 'Diverging', isCyclical: false, optionNumber: 5, light: ['#67001F', '#CB4724', '#866E67', '#337AA2', '#053061'], dark: ['#F4004A', '#E48268', '#F2EFEE', '#6BACD0', '#0C78F2'] },
-  { name: 'RdYlGn', label: 'Red–Yellow–Green', group: 'Diverging', isCyclical: false, optionNumber: 8, light: ['#A50026', '#C74C08', '#7A7709', '#46812C', '#006837'], dark: ['#F60039', '#F88D52', '#F9F7AE', '#85CB67', '#008E4B'] },
-  { name: 'Turbo', label: 'Turbo', group: 'Sequential', isCyclical: false, optionNumber: 10, light: ['#23171B', '#157E98', '#378403', '#BD5500', '#900C00'], dark: ['#9F6D7E', '#26BCE1', '#95FB51', '#FF821D', '#F41400'] },
-  { name: 'Sinebow', label: 'Sinebow', group: 'Cyclical', isCyclical: true, optionNumber: 32, light: ['#E90000', '#727900', '#018710', '#017E98', '#582AFC'], dark: ['#FF4040', '#B9C500', '#35FE4C', '#02ADD0', '#815EFD'] },
-  { name: 'CustomBlueRedVibrant', label: 'Blue–Red vibrant', group: 'Custom', isCyclical: false, optionNumber: 34, light: ['#2166AC', '#8CAFD2', '#F7F7F7', '#D58891', '#B2182B'], dark: ['#67B7E1', '#AFE0F1', '#F7F7F7', '#F5A2A2', '#F06B6B'] },
-  { name: 'CustomGreenPurpleVibrant', label: 'Green–Purple vibrant', group: 'Custom', isCyclical: false, optionNumber: 36, light: ['#1B9E77', '#8CCBB5', '#F7F7F7', '#C58CDA', '#984EA3'], dark: ['#5FD3A8', '#ABEDD3', '#F7F7F7', '#E0A5EF', '#D17BE0'] },
+  { name: 'RdBu', label: 'Red–Blue', group: 'Diverging', isCyclical: false, optionNumber: 2, light: ['#67001F', '#CB4724', '#866E67', '#337AA2', '#053061'], dark: ['#F4004A', '#E48268', '#F2EFEE', '#6BACD0', '#0C78F2'] },
+  { name: 'RdYlGn', label: 'Red–Yellow–Green', group: 'Diverging', isCyclical: false, optionNumber: 3, light: ['#A50026', '#C74C08', '#7A7709', '#46812C', '#006837'], dark: ['#F60039', '#F88D52', '#F9F7AE', '#85CB67', '#008E4B'] },
+  { name: 'Turbo', label: 'Turbo', group: 'Sequential', isCyclical: false, optionNumber: 4, light: ['#23171B', '#157E98', '#378403', '#BD5500', '#900C00'], dark: ['#9F6D7E', '#26BCE1', '#95FB51', '#FF821D', '#F41400'] },
+  { name: 'Sinebow', label: 'Sinebow', group: 'Cyclical', isCyclical: true, optionNumber: 5, light: ['#E90000', '#727900', '#018710', '#017E98', '#582AFC'], dark: ['#FF4040', '#B9C500', '#35FE4C', '#02ADD0', '#815EFD'] },
+  { name: 'CustomBlueRedVibrant', label: 'Blue–Red vibrant', group: 'Custom', isCyclical: false, optionNumber: 6, light: ['#2166AC', '#8CAFD2', '#F7F7F7', '#D58891', '#B2182B'], dark: ['#67B7E1', '#AFE0F1', '#F7F7F7', '#F5A2A2', '#F06B6B'] },
+  { name: 'CustomGreenPurpleVibrant', label: 'Green–Purple vibrant', group: 'Custom', isCyclical: false, optionNumber: 7, light: ['#1B9E77', '#8CCBB5', '#F7F7F7', '#C58CDA', '#984EA3'], dark: ['#5FD3A8', '#ABEDD3', '#F7F7F7', '#E0A5EF', '#D17BE0'] },
 ] as const;
 
 const customFdrScaleRows = [

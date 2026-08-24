@@ -12,6 +12,7 @@ import {
   Sun,
   Type,
   PaintBucket,
+  Trash2,
   X,
 } from 'lucide-react';
 
@@ -26,6 +27,7 @@ import {
   getFdrPalette,
   getFdrColourScale,
   type FdrCustomAnchors,
+  type FdrCustomPalette,
   type FdrColourScale,
   type FdrDisplayMode,
 } from './fdr-colour-scales';
@@ -48,6 +50,7 @@ export function ProfilePage({ onRefresh, onSignOut, session }: ProfilePageProps)
     fdrScale,
     fdrScaleReversed,
     customFdrAnchors,
+    customFdrPalettes,
     themeColour,
     preset,
     saveStatus,
@@ -56,6 +59,9 @@ export function ProfilePage({ onRefresh, onSignOut, session }: ProfilePageProps)
     setFdrScale,
     setFdrScaleReversed,
     setCustomFdrAnchors,
+    saveCustomFdrPalette,
+    deleteCustomFdrPalette,
+    useCustomFdrPalette,
     setThemeColour,
     setPresetName,
   } = useThemePreset();
@@ -302,12 +308,32 @@ export function ProfilePage({ onRefresh, onSignOut, session }: ProfilePageProps)
               <CustomFdrScaleEditor
                 anchors={customFdrAnchors}
                 onChange={setCustomFdrAnchors}
+                onSave={saveCustomFdrPalette}
                 onUse={(scaleName) => {
                   setFdrScale(scaleName);
                   setIsFdrScaleSheetOpen(false);
                 }}
                 selectedScaleName={fdrScale}
               />
+              <div aria-label="Saved custom FDR palettes" className="profile-fdr-saved-palettes">
+                <div className="profile-fdr-saved-palettes__header">
+                  <h4>Saved palettes</h4>
+                  <small>Only palettes you save here can be deleted.</small>
+                </div>
+                {customFdrPalettes.length ? customFdrPalettes.map((palette) => (
+                  <SavedFdrPaletteOption
+                    key={palette.id}
+                    onDelete={() => deleteCustomFdrPalette(palette.id)}
+                    onUse={() => {
+                      useCustomFdrPalette(palette);
+                      setIsFdrScaleSheetOpen(false);
+                    }}
+                    palette={palette}
+                  />
+                )) : (
+                  <p className="profile-fdr-saved-palettes__empty">Save a custom palette to keep it here for later.</p>
+                )}
+              </div>
             </section>
             <section aria-labelledby="profile-fdr-presets-heading">
               <h3 className="profile-fdr-custom-heading" id="profile-fdr-presets-heading">Numbered presets</h3>
@@ -608,16 +634,21 @@ function ThemeColourControls({
 function CustomFdrScaleEditor({
   anchors,
   onChange,
+  onSave,
   onUse,
   selectedScaleName,
 }: {
   anchors: FdrCustomAnchors;
   onChange: (anchors: FdrCustomAnchors) => void;
+  onSave: (palette: { name: string; mode: 'anchors' | 'all'; anchors: FdrCustomAnchors }) => Promise<FdrCustomPalette>;
   onUse: (scaleName: 'CustomHex' | 'CustomAll') => void;
   selectedScaleName: FdrColourScale['name'];
 }) {
   const [mode, setMode] = useState<'anchors' | 'all'>(selectedScaleName === 'CustomAll' ? 'all' : 'anchors');
   const [activeKey, setActiveKey] = useState<CustomColourKey>('min');
+  const [paletteName, setPaletteName] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
   useEffect(() => {
     setMode(selectedScaleName === 'CustomAll' ? 'all' : 'anchors');
   }, [selectedScaleName]);
@@ -645,6 +676,26 @@ function CustomFdrScaleEditor({
     updateFromHsv({ ...hsv, hue });
   };
 
+  const savePalette = async () => {
+    const name = paletteName.trim();
+    if (!name) {
+      setSaveMessage('Give this palette a name first.');
+      return;
+    }
+
+    setIsSaving(true);
+    setSaveMessage(null);
+    try {
+      await onSave({ name, mode, anchors });
+      setPaletteName('');
+      setSaveMessage('Palette saved.');
+    } catch {
+      setSaveMessage('The palette could not be saved.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div className="profile-fdr-custom-editor">
       <div className="profile-fdr-custom-editor__header">
@@ -652,9 +703,11 @@ function CustomFdrScaleEditor({
           <strong>Build your own scale</strong>
           <small>Use the colour field to tune saturation and exposure, then choose exactly which FDR levels are editable.</small>
         </div>
-        <Button onClick={() => onUse(mode === 'all' ? 'CustomAll' : 'CustomHex')} type="button" variant="secondary">
-          Use {mode === 'all' ? 'every colour' : '1 / 3 / 5'}
-        </Button>
+        <div className="profile-fdr-custom-editor__actions">
+          <Button onClick={() => onUse(mode === 'all' ? 'CustomAll' : 'CustomHex')} type="button" variant="secondary">
+            Use {mode === 'all' ? 'every colour' : '1 / 3 / 5'}
+          </Button>
+        </div>
       </div>
       <div aria-label="Custom FDR scale mode" className="profile-fdr-custom-editor__modes" role="group">
         <button
@@ -754,6 +807,26 @@ function CustomFdrScaleEditor({
           />
         </label>
       </div>
+      <div className="profile-fdr-custom-editor__save">
+        <label>
+          <span>Palette name</span>
+          <input
+            aria-label="Saved FDR palette name"
+            maxLength={80}
+            onChange={(event) => {
+              setPaletteName(event.target.value);
+              setSaveMessage(null);
+            }}
+            placeholder="e.g. Weekend watch"
+            type="text"
+            value={paletteName}
+          />
+        </label>
+        <Button disabled={isSaving} onClick={() => void savePalette()} type="button" variant="secondary">
+          {isSaving ? 'Saving…' : 'Save palette'}
+        </Button>
+        {saveMessage ? <small aria-live="polite" role="status">{saveMessage}</small> : null}
+      </div>
       <FdrPaletteBar
         customAnchors={anchors}
         displayMode="fill"
@@ -761,6 +834,58 @@ function CustomFdrScaleEditor({
         reversed={false}
         scale={getFdrColourScale(mode === 'all' ? 'CustomAll' : 'CustomHex')}
       />
+    </div>
+  );
+}
+
+function SavedFdrPaletteOption({
+  onDelete,
+  onUse,
+  palette,
+}: {
+  onDelete: () => Promise<void>;
+  onUse: () => void;
+  palette: FdrCustomPalette;
+}) {
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [error, setError] = useState(false);
+  const scaleName = palette.mode === 'all' ? 'CustomAll' : 'CustomHex';
+
+  return (
+    <div className="profile-fdr-saved-palette">
+      <div className="profile-fdr-saved-palette__preview">
+        <div>
+          <strong>{palette.name}</strong>
+          <small>{palette.mode === 'all' ? 'Every colour editable' : 'Levels 1, 3 and 5 editable'}</small>
+        </div>
+        <FdrPaletteBar
+          customAnchors={palette.anchors}
+          displayMode="fill"
+          mode="light"
+          reversed={false}
+          scale={getFdrColourScale(scaleName)}
+        />
+      </div>
+      <div className="profile-fdr-saved-palette__actions">
+        <Button onClick={onUse} type="button" variant="secondary">Use</Button>
+        <Button
+          aria-label={`Delete saved FDR palette ${palette.name}`}
+          disabled={isDeleting}
+          onClick={() => {
+            setIsDeleting(true);
+            setError(false);
+            void onDelete()
+              .catch(() => setError(true))
+              .finally(() => setIsDeleting(false));
+          }}
+          type="button"
+          variant="ghost"
+        >
+          <Trash2 aria-hidden="true" size={16} />
+          {isDeleting ? 'Deleting…' : 'Delete'}
+        </Button>
+      </div>
+      {error ? <small aria-live="polite" className="profile-fdr-saved-palette__error" role="alert">Could not delete this palette.</small> : null}
     </div>
   );
 }

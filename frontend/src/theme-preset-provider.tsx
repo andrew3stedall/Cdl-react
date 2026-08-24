@@ -12,10 +12,11 @@ import {
   resolveFdrCustomAnchors,
   resolveFdrScaleName,
   type FdrCustomAnchors,
+  type FdrCustomPalette,
   type FdrDisplayMode,
   type FdrScaleName,
 } from './fdr-colour-scales';
-import { FallbackPreferenceClient, type PreferenceClient } from './preferences-api';
+import { FallbackPreferenceClient, type FdrCustomPaletteDraft, type PreferenceClient } from './preferences-api';
 import { getThemeMode, getThemePresetClassName, resolveThemePreset } from './theme-presets';
 import { getStoredThemePreset, setThemePresetCookie } from './theme-cookie';
 import {
@@ -31,6 +32,7 @@ interface ThemePresetContextValue {
   fdrScale: FdrScaleName;
   fdrScaleReversed: boolean;
   customFdrAnchors: FdrCustomAnchors;
+  customFdrPalettes: FdrCustomPalette[];
   themeColour: string;
   preset: ThemePreset;
   setAttackDirection: (direction: AttackDirection) => void;
@@ -38,6 +40,9 @@ interface ThemePresetContextValue {
   setFdrScale: (scale: FdrScaleName) => void;
   setFdrScaleReversed: (reversed: boolean) => void;
   setCustomFdrAnchors: (anchors: FdrCustomAnchors) => void;
+  useCustomFdrPalette: (palette: FdrCustomPalette) => void;
+  saveCustomFdrPalette: (palette: FdrCustomPaletteDraft) => Promise<FdrCustomPalette>;
+  deleteCustomFdrPalette: (paletteId: string) => Promise<void>;
   setThemeColour: (colour: string) => void;
   setPresetName: (presetName: ThemePreset['name']) => void;
   saveStatus: 'idle' | 'saving' | 'saved' | 'error';
@@ -65,6 +70,7 @@ export function ThemePresetProvider({
   const [fdrScaleReversed, setFdrScaleReversedState] = useState(defaultFdrScaleReversed);
   const [fdrDisplayMode, setFdrDisplayModeState] = useState<FdrDisplayMode>(defaultFdrDisplayMode);
   const [customFdrAnchors, setCustomFdrAnchorsState] = useState(defaultFdrCustomAnchors);
+  const [customFdrPalettes, setCustomFdrPalettes] = useState<FdrCustomPalette[]>([]);
   const [themeColour, setThemeColourState] = useState(defaultThemeColour);
   const [themeClockTick, setThemeClockTick] = useState(() => Date.now());
   const [saveStatus, setSaveStatus] = useState<ThemePresetContextValue['saveStatus']>('idle');
@@ -102,6 +108,23 @@ export function ThemePresetProvider({
         if (isMounted) {
           setSaveStatus('error');
         }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [preferenceClient]);
+
+  useEffect(() => {
+    let isMounted = true;
+    if (!preferenceClient.getFdrCustomPalettes) return undefined;
+
+    preferenceClient.getFdrCustomPalettes()
+      .then((palettes) => {
+        if (isMounted) setCustomFdrPalettes(palettes);
+      })
+      .catch(() => {
+        if (isMounted) setCustomFdrPalettes([]);
       });
 
     return () => {
@@ -179,6 +202,7 @@ export function ThemePresetProvider({
       fdrScale,
       fdrScaleReversed,
       customFdrAnchors,
+      customFdrPalettes,
       themeColour,
       preset,
       setAttackDirection: (nextAttackDirection) => {
@@ -247,6 +271,36 @@ export function ThemePresetProvider({
           fdrCustomAnchors: resolvedAnchors,
         });
       },
+      useCustomFdrPalette: (palette) => {
+        const nextScale: FdrScaleName = palette.mode === 'all' ? 'CustomAll' : 'CustomHex';
+        setCustomFdrAnchorsState(palette.anchors);
+        setFdrScaleState(nextScale);
+        savePreference({
+          themePreset: preset.name,
+          attackDirection,
+          fdrScale: nextScale,
+          fdrScaleReversed,
+          fdrDisplayMode,
+          lightThemeColour: themeColour,
+          darkThemeColour: getThemeColourForMode(themeColour, 'dark'),
+          fdrCustomAnchors: palette.anchors,
+        });
+      },
+      saveCustomFdrPalette: async (palette) => {
+        if (!preferenceClient.createFdrCustomPalette) {
+          throw new Error('No FDR palette store is available.');
+        }
+        const saved = await preferenceClient.createFdrCustomPalette(palette);
+        setCustomFdrPalettes((current) => [...current, saved]);
+        return saved;
+      },
+      deleteCustomFdrPalette: async (paletteId) => {
+        if (!preferenceClient.deleteFdrCustomPalette) {
+          throw new Error('No FDR palette store is available.');
+        }
+        await preferenceClient.deleteFdrCustomPalette(paletteId);
+        setCustomFdrPalettes((current) => current.filter((palette) => palette.id !== paletteId));
+      },
       setThemeColour: (nextColour) => {
         const resolvedColour = resolveThemeBaseColour(nextColour);
         setThemeColourState(resolvedColour);
@@ -279,7 +333,7 @@ export function ThemePresetProvider({
       },
       saveStatus,
     }),
-    [attackDirection, customFdrAnchors, fdrDisplayMode, fdrScale, fdrScaleReversed, preset, saveStatus, themeColour],
+    [attackDirection, customFdrAnchors, customFdrPalettes, fdrDisplayMode, fdrScale, fdrScaleReversed, preferenceClient, preset, saveStatus, themeColour],
   );
 
   return <ThemePresetContext.Provider value={value}>{children}</ThemePresetContext.Provider>;

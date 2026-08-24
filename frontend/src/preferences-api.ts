@@ -5,6 +5,8 @@ import {
   defaultFdrScaleReversed,
   resolveFdrCustomAnchors,
   resolveFdrScaleName,
+  type FdrCustomPalette,
+  type FdrCustomPaletteMode,
   type FdrDisplayMode,
 } from './fdr-colour-scales';
 import { resolveThemePreset } from './theme-presets';
@@ -31,9 +33,56 @@ interface ApiUserPreferences {
   fdr_custom_max?: string;
 }
 
+interface ApiFdrCustomPalette {
+  id: string;
+  name: string;
+  mode: FdrCustomPaletteMode;
+  fdr_custom_min: string;
+  fdr_custom_second: string;
+  fdr_custom_mid: string;
+  fdr_custom_fourth: string;
+  fdr_custom_max: string;
+}
+
+export interface FdrCustomPaletteDraft {
+  name: string;
+  mode: FdrCustomPaletteMode;
+  anchors: FdrCustomPalette['anchors'];
+}
+
 export interface PreferenceClient {
   getPreferences(): Promise<UserPreferences>;
   updatePreferences(preferences: UserPreferences): Promise<UserPreferences>;
+  getFdrCustomPalettes?: () => Promise<FdrCustomPalette[]>;
+  createFdrCustomPalette?: (palette: FdrCustomPaletteDraft) => Promise<FdrCustomPalette>;
+  deleteFdrCustomPalette?: (paletteId: string) => Promise<void>;
+}
+
+function fromApiFdrCustomPalette(palette: ApiFdrCustomPalette): FdrCustomPalette {
+  return {
+    id: palette.id,
+    name: palette.name,
+    mode: palette.mode === 'all' ? 'all' : 'anchors',
+    anchors: resolveFdrCustomAnchors({
+      min: palette.fdr_custom_min,
+      second: palette.fdr_custom_second,
+      mid: palette.fdr_custom_mid,
+      fourth: palette.fdr_custom_fourth,
+      max: palette.fdr_custom_max,
+    }),
+  };
+}
+
+function toApiFdrCustomPalette(palette: FdrCustomPaletteDraft): Omit<ApiFdrCustomPalette, 'id'> & { name: string } {
+  return {
+    name: palette.name,
+    mode: palette.mode,
+    fdr_custom_min: palette.anchors.min,
+    fdr_custom_second: palette.anchors.second,
+    fdr_custom_mid: palette.anchors.mid,
+    fdr_custom_fourth: palette.anchors.fourth,
+    fdr_custom_max: palette.anchors.max,
+  };
 }
 
 function fromApiPreferences(preferences: ApiUserPreferences): UserPreferences {
@@ -115,6 +164,34 @@ export class HttpPreferenceClient implements PreferenceClient {
 
     return fromApiPreferences((await response.json()) as ApiUserPreferences);
   }
+
+  async getFdrCustomPalettes(): Promise<FdrCustomPalette[]> {
+    const response = await fetch(`${this.baseUrl}/me/preferences/fdr-palettes`, {
+      headers: { Accept: 'application/json' },
+      credentials: 'include',
+    });
+    if (!response.ok) throw new Error('Unable to load saved FDR palettes.');
+    return ((await response.json()) as ApiFdrCustomPalette[]).map(fromApiFdrCustomPalette);
+  }
+
+  async createFdrCustomPalette(palette: FdrCustomPaletteDraft): Promise<FdrCustomPalette> {
+    const response = await fetch(`${this.baseUrl}/me/preferences/fdr-palettes`, {
+      method: 'POST',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(toApiFdrCustomPalette(palette)),
+    });
+    if (!response.ok) throw new Error('Unable to save the FDR palette.');
+    return fromApiFdrCustomPalette((await response.json()) as ApiFdrCustomPalette);
+  }
+
+  async deleteFdrCustomPalette(paletteId: string): Promise<void> {
+    const response = await fetch(`${this.baseUrl}/me/preferences/fdr-palettes/${encodeURIComponent(paletteId)}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    if (!response.ok) throw new Error('Unable to delete the FDR palette.');
+  }
 }
 
 export class LocalStoragePreferenceClient implements PreferenceClient {
@@ -130,6 +207,7 @@ export class LocalStoragePreferenceClient implements PreferenceClient {
   private readonly fdrCustomMidStorageKey = 'cdl-fdr-custom-mid';
   private readonly fdrCustomFourthStorageKey = 'cdl-fdr-custom-fourth';
   private readonly fdrCustomMaxStorageKey = 'cdl-fdr-custom-max';
+  private readonly fdrCustomPalettesStorageKey = 'cdl-fdr-custom-palettes';
 
   async getPreferences(): Promise<UserPreferences> {
     const storedPreset = getStoredThemePreset();
@@ -172,6 +250,47 @@ export class LocalStoragePreferenceClient implements PreferenceClient {
 
     return preferences;
   }
+
+  async getFdrCustomPalettes(): Promise<FdrCustomPalette[]> {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(this.fdrCustomPalettesStorageKey) ?? '[]') as unknown;
+      if (!Array.isArray(parsed)) return [];
+      return parsed.flatMap((value) => {
+        if (!value || typeof value !== 'object') return [];
+        const candidate = value as Partial<FdrCustomPalette>;
+        if (typeof candidate.id !== 'string' || typeof candidate.name !== 'string') return [];
+        if (candidate.mode !== 'anchors' && candidate.mode !== 'all') return [];
+        return [{
+          id: candidate.id,
+          name: candidate.name,
+          mode: candidate.mode,
+          anchors: resolveFdrCustomAnchors(candidate.anchors),
+        }];
+      });
+    } catch {
+      return [];
+    }
+  }
+
+  async createFdrCustomPalette(palette: FdrCustomPaletteDraft): Promise<FdrCustomPalette> {
+    const saved: FdrCustomPalette = {
+      id: `local-${globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`}`,
+      name: palette.name.trim(),
+      mode: palette.mode,
+      anchors: resolveFdrCustomAnchors(palette.anchors),
+    };
+    const palettes = await this.getFdrCustomPalettes();
+    localStorage.setItem(this.fdrCustomPalettesStorageKey, JSON.stringify([...palettes, saved]));
+    return saved;
+  }
+
+  async deleteFdrCustomPalette(paletteId: string): Promise<void> {
+    const palettes = await this.getFdrCustomPalettes();
+    localStorage.setItem(
+      this.fdrCustomPalettesStorageKey,
+      JSON.stringify(palettes.filter((palette) => palette.id !== paletteId)),
+    );
+  }
 }
 
 export class FallbackPreferenceClient implements PreferenceClient {
@@ -194,5 +313,36 @@ export class FallbackPreferenceClient implements PreferenceClient {
     } catch {
       return this.fallback.updatePreferences(preferences);
     }
+  }
+
+  async getFdrCustomPalettes(): Promise<FdrCustomPalette[]> {
+    try {
+      if (this.primary.getFdrCustomPalettes) return await this.primary.getFdrCustomPalettes();
+    } catch {
+      // Fall through to the local palette store when the API is unavailable.
+    }
+    return this.fallback.getFdrCustomPalettes?.() ?? [];
+  }
+
+  async createFdrCustomPalette(palette: FdrCustomPaletteDraft): Promise<FdrCustomPalette> {
+    try {
+      if (this.primary.createFdrCustomPalette) return await this.primary.createFdrCustomPalette(palette);
+    } catch {
+      // Fall through to the local palette store when the API is unavailable.
+    }
+    if (!this.fallback.createFdrCustomPalette) throw new Error('No FDR palette store is available.');
+    return this.fallback.createFdrCustomPalette(palette);
+  }
+
+  async deleteFdrCustomPalette(paletteId: string): Promise<void> {
+    try {
+      if (this.primary.deleteFdrCustomPalette) {
+        await this.primary.deleteFdrCustomPalette(paletteId);
+        return;
+      }
+    } catch {
+      // Fall through to the local palette store when the API is unavailable.
+    }
+    if (this.fallback.deleteFdrCustomPalette) await this.fallback.deleteFdrCustomPalette(paletteId);
   }
 }

@@ -294,6 +294,47 @@
   max-width: 100%;
 }
 
+.login-provider-button {
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  display: flex;
+  font-size: 0.9rem;
+  font-weight: 800;
+  gap: 0.65rem;
+  justify-content: center;
+  min-height: 3.15rem;
+  padding: 0.75rem 1rem;
+  width: 100%;
+}
+
+.login-provider-button:disabled {
+  cursor: wait;
+  opacity: 0.68;
+}
+
+.login-provider-button-apple {
+  background: #000;
+  border-color: #000;
+  color: #fff;
+}
+
+.login-provider-button-passkey {
+  background: var(--secondary);
+  color: var(--foreground);
+}
+
+.login-provider-button:focus-visible {
+  outline: 3px solid var(--ring);
+  outline-offset: 3px;
+}
+
+.login-provider-icon {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
 .google-account-switch {
   background: transparent;
   border: 0;

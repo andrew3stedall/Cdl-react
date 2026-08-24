@@ -1,6 +1,6 @@
 """Add durable sessions and passkey authentication support.
 
-Revision ID: 0017_auth_durable_sessions_passkeys
+Revision ID: 0017_auth_passkeys
 Revises: 0016_fdr_custom_anchors
 Create Date: 2026-08-24 00:00:00.000000
 """
@@ -10,7 +10,7 @@ from collections.abc import Sequence
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "0017_auth_durable_sessions_passkeys"
+revision: str = "0017_auth_passkeys"
 down_revision: str | None = "0016_fdr_custom_anchors"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None

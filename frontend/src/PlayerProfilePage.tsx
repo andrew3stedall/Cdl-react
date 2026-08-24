@@ -1,23 +1,25 @@
 import { type CSSProperties, type ReactNode, useEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft,
-  CircleAlert,
   CircleX,
   Ellipsis,
-  Footprints,
   Repeat2,
-  RectangleVertical,
-  Shield,
-  ShieldCheck,
-  Star,
-  Target,
-  Trophy,
   X,
   type LucideIcon,
 } from 'lucide-react';
 
 import { Button } from './components/ui/button';
-import { PlayerCard, shortPlayerName, type PlayerCardPlayer } from './components/player/PlayerCard';
+import { OpponentFdrBadge, PlayerCard, shortPlayerName, type PlayerCardPlayer } from './components/player/PlayerCard';
+import { CombinedFormMinutesChart, type CombinedFormMinutesFixture } from './components/player/CombinedFormMinutesChart';
+import { PlayerStatIcons, type PlayerStatSummary } from './components/player/PlayerStatIcons';
+import {
+  barTone,
+  chartColumnStyle,
+  fdrStyleFor,
+  formChartScaleMax,
+  formatNullableNumber,
+  formatOpponentLabel,
+} from './components/player/player-chart-utils';
 import {
   fixtureDifficultyTitle,
   applySubstitution,
@@ -46,7 +48,6 @@ import './player-profile.css';
 
 const defaultSquadClient = new HttpSquadClient();
 const defaultTeamSelectionClient = new HttpTeamSelectionClient();
-const FAVOURITES_STORAGE_KEY = 'cdl:favourite-players';
 
 interface PlayerProfilePageProps {
   initialPlayer?: SquadApiPlayer;
@@ -67,27 +68,9 @@ interface PlayerProfilePageProps {
 type ProfileSquadStatus = TeamSelectionPlayer['slot'] | null;
 type Captaincy = 'captain' | 'vice_captain' | null;
 type ActionSheet = 'bench' | 'remove' | null;
-type PendingAction = 'history' | 'lineup' | 'remove' | 'favourite' | null;
+type PendingAction = 'history' | 'lineup' | 'remove' | null;
 
-interface ProfileFixture {
-  fixtureId: string;
-  gameweek: number;
-  position: string | null;
-  opponentShortName: string | null;
-  isHome: boolean;
-  fdr: number | null;
-  fantasyPoints: number | null;
-  minutesPlayed: number | null;
-  stats: {
-    goals: number;
-    assists: number;
-    cleanSheets: number;
-    yellowCards: number;
-    redCards: number;
-    defensiveContributions: number;
-    bonusPoints: number;
-  };
-}
+type ProfileFixture = CombinedFormMinutesFixture & { gameweek: number };
 
 interface ProfileNextFixture {
   fixture_id: number | string;
@@ -131,7 +114,6 @@ export function PlayerProfilePage({
   const [replacementPlayers, setReplacementPlayers] = useState<SquadApiPlayer[]>([]);
   const [replacementId, setReplacementId] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
-  const [favourite, setFavourite] = useState(() => readFavourite(playerId));
 
   useEffect(() => {
     let mounted = true;
@@ -167,10 +149,6 @@ export function PlayerProfilePage({
       mounted = false;
     };
   }, [playerId, squadClient, teamSelectionClient]);
-
-  useEffect(() => {
-    setFavourite(readFavourite(playerId));
-  }, [playerId]);
 
   const selectedLineupPlayer = selection?.players.find((candidate) => candidate.id === playerId) ?? null;
   const squadStatus: ProfileSquadStatus = selectedLineupPlayer?.slot ?? null;
@@ -227,13 +205,6 @@ export function PlayerProfilePage({
       return;
     }
     window.history.back();
-  }
-
-  function toggleFavourite() {
-    const next = !favourite;
-    setFavourite(next);
-    writeFavourite(playerId, next);
-    setNotice(next ? 'Player added to favourites.' : 'Player removed from favourites.');
   }
 
   function openBenchActions() {
@@ -358,14 +329,13 @@ export function PlayerProfilePage({
     return <ProfileState error={loadError ?? 'Player could not be found.'} onBack={goBack} title="Player profile unavailable" />;
   }
 
-  const titleName = shortPlayerName(player.display_name);
   const availabilityNews = (availability !== null || availabilityChance(player.chance_of_playing_next_round) !== null)
     ? player.availability_news?.trim() || null
     : null;
 
   return (
     <main
-      aria-labelledby="player-profile-title"
+      aria-label={`Player profile for ${player.display_name}`}
       className={`player-profile${presentation === 'drawer' ? ' player-profile--drawer' : ''}`}
       data-presentation={presentation}
     >
@@ -374,7 +344,14 @@ export function PlayerProfilePage({
         <button aria-label={presentation === 'drawer' ? 'Close player profile' : 'Back to squad'} className="player-profile__icon-button" onClick={goBack} type="button">
           {presentation === 'drawer' ? <X aria-hidden="true" size={20} /> : <ArrowLeft aria-hidden="true" size={20} />}
         </button>
-        <h1 id="player-profile-title">{titleName}</h1>
+        <PlayerCard
+          ariaLabel={`Player card for ${player.display_name}`}
+          className="player-profile__header-player-card"
+          formPosition="hidden"
+          layout="token"
+          player={toPlayerCardPlayer(player, nextFixtures, captaincy)}
+          size="md"
+        />
         <div className="player-profile__overflow-wrap">
           <button
             aria-expanded={overflowOpen}
@@ -388,7 +365,6 @@ export function PlayerProfilePage({
           {overflowOpen ? (
             <div className="player-profile__overflow-menu" role="menu">
               <button onClick={goBack} role="menuitem" type="button">Return to squad</button>
-              <button onClick={toggleFavourite} role="menuitem" type="button">{favourite ? 'Remove favourite' : 'Add favourite'}</button>
               {onCompare ? <button onClick={onCompare} role="menuitem" type="button">Compare player</button> : null}
               {onTrade ? <button onClick={onTrade} role="menuitem" type="button">Draft trade</button> : null}
             </div>
@@ -397,61 +373,26 @@ export function PlayerProfilePage({
       </header>
 
       <div className="player-profile__content">
-      <section aria-label="Player identity" className="player-profile__card player-profile__identity-card">
-        <div className="player-profile__identity-main">
-          <PlayerCard
-            ariaLabel={`Shirt for ${player.display_name}`}
-            className="player-profile__player-card"
-            formPosition="hidden"
-            layout="token"
-            player={toPlayerCardPlayer(player, nextFixtures)}
-            size="lg"
-          />
-          <div className="player-profile__identity-copy">
-            <div className="player-profile__identity-heading">
-              <p>{player.position} <span aria-hidden="true">·</span> {player.epl_team.short_name ?? player.epl_team.name}</p>
-              <button
-                aria-label={favourite ? `Remove ${player.display_name} from favourites` : `Add ${player.display_name} to favourites`}
-                aria-pressed={favourite}
-                className={`player-profile__favourite${favourite ? ' is-active' : ''}`}
-                onClick={toggleFavourite}
-                type="button"
-              >
-                <Star aria-hidden="true" fill={favourite ? "currentColor" : "none"} size={20} />
-              </button>
-            </div>
-            <div className="player-profile__identity-tags">
-              <span className="player-profile__tag player-profile__tag--status">{squadStatusLabel(squadStatus)}</span>
-              {captaincy === 'captain' ? <span className="player-profile__tag player-profile__tag--captain">Captain</span> : null}
-              {captaincy === 'vice_captain' ? <span className="player-profile__tag player-profile__tag--vice">Vice-captain</span> : null}
-              {availability ? <AvailabilityTag issue={availability.issue} status={availability.status} /> : null}
-            </div>
-          </div>
-        </div>
-        {selectionError ? <p className="player-profile__inline-error" role="alert">{selectionError}</p> : null}
-      </section>
-
       {availabilityNews ? (
-        <section aria-labelledby="player-availability-news-title" className="player-profile__card player-profile__availability-news">
-          <div className="player-profile__card-heading">
-            <h2 id="player-availability-news-title">FPL news</h2>
-            <span className="player-profile__muted-label">Chance {player.chance_of_playing_next_round}%</span>
-          </div>
-          <p>{availabilityNews}</p>
-        </section>
+        <PlayerAvailabilityNews chance={player.chance_of_playing_next_round} news={availabilityNews} />
       ) : null}
+      {selectionError ? <p className="player-profile__inline-error" role="alert">{selectionError}</p> : null}
 
-      <ChartCard compact title="Form">
-        {historyError ? <ChartEmpty message={`Form history unavailable: ${historyError}`} /> : formFixtures.length > 0 ? <FormChart fixtures={formFixtures} fdrDisplayMode={fdrDisplayMode} /> : <ChartEmpty message="No completed FPL fixture history is available." />}
-      </ChartCard>
-
-      <ChartCard compact title="Minutes played">
-        {historyError ? <ChartEmpty message={`Minutes history unavailable: ${historyError}`} /> : formFixtures.length > 0 ? <MinutesChart fixtures={formFixtures} fdrDisplayMode={fdrDisplayMode} /> : <ChartEmpty message="No completed FPL fixture history is available." />}
+      <ChartCard compact title="Form & minutes">
+        {historyError ? <ChartEmpty message={`Form and minutes history unavailable: ${historyError}`} /> : formFixtures.length > 0 ? <CombinedFormMinutesChart fixtures={formFixtures} fdrDisplayMode={fdrDisplayMode} /> : <ChartEmpty message="No completed FPL fixture history is available." />}
       </ChartCard>
 
       {defensiveHistoryGroups.length > 0 ? defensiveHistoryGroups.map((group) => {
         const groupOpponent = group.opponent_name ?? group.opponent_short_name ?? 'Opponent';
-        return <ChartCard key={group.opponent_team_id} title={`Points against ${groupOpponent}`} className="player-profile__chart-card--full">
+        const groupOpponentShortName = group.opponent_short_name ?? groupOpponent;
+        const upcomingFixture = nextFixtures.find((fixture) => String(fixture.opponent_team_id) === String(group.opponent_team_id));
+        const opponentDifficulty = upcomingFixture?.difficulty ?? group.fixtures.at(-1)?.difficulty ?? null;
+        return <ChartCard
+          ariaLabel={`Points against ${groupOpponent}`}
+          className="player-profile__chart-card--full"
+          heading={<OpponentChartHeading difficulty={opponentDifficulty} headingId={`opponent-${group.opponent_team_id}`} label={groupOpponentShortName} title={fixtureDifficultyTitle(opponentDifficulty)} />}
+          key={group.opponent_team_id}
+        >
           {group.fixtures.length > 0 ? <DefensiveChart fixtures={group.fixtures} fdrDisplayMode={fdrDisplayMode} /> : <ChartEmpty message={`No cached defensive history is available for ${groupOpponent}.`} />}
         </ChartCard>;
       }) : <ChartCard title="Opponent form" className="player-profile__chart-card--full"><ChartEmpty message="No cached defensive history is available for the next opponent." /></ChartCard>}
@@ -686,7 +627,7 @@ function toTeamSelectionCardPlayer(player: TeamSelectionPlayer): PlayerCardPlaye
   };
 }
 
-function toPlayerCardPlayer(player: SquadApiPlayer, selectedFixtures?: ProfileNextFixture[]): PlayerCardPlayer {
+function toPlayerCardPlayer(player: SquadApiPlayer, selectedFixtures?: ProfileNextFixture[], captaincy: Captaincy = null): PlayerCardPlayer {
   const rawFixtures: Array<SquadApiNextFixture | SquadApiUpcomingFixture> = player.next_fixtures?.length
     ? player.next_fixtures
     : player.next_fixture
@@ -703,12 +644,15 @@ function toPlayerCardPlayer(player: SquadApiPlayer, selectedFixtures?: ProfileNe
     form: player.form,
     position: player.position,
     team: player.epl_team.short_name ?? player.epl_team.name,
+    captain: captaincy === 'captain',
+    viceCaptain: captaincy === 'vice_captain',
+    availabilityChance: player.chance_of_playing_next_round,
   };
 }
 
-function ChartCard({ children, className = '', compact = false, idPrefix, title }: { children: ReactNode; className?: string; compact?: boolean; idPrefix?: string; title: string }) {
-  const headingId = idPrefix ?? title.replace(/\s+/g, '-').toLowerCase();
-  return <section aria-labelledby={headingId} className={`player-profile__card player-profile__chart-card${compact ? ' player-profile__chart-card--compact' : ''} ${className}`.trim()}><div className="player-profile__card-heading"><h2 id={headingId}>{title}</h2></div>{children}</section>;
+function ChartCard({ ariaLabel, children, className = '', compact = false, heading, idPrefix, title }: { ariaLabel?: string; children: ReactNode; className?: string; compact?: boolean; heading?: ReactNode; idPrefix?: string; title?: string }) {
+  const headingId = idPrefix ?? title?.replace(/\s+/g, '-').toLowerCase() ?? 'player-profile-chart';
+  return <section aria-label={ariaLabel} aria-labelledby={heading ? headingId : undefined} className={`player-profile__card player-profile__chart-card${compact ? ' player-profile__chart-card--compact' : ''} ${className}`.trim()}><div className="player-profile__card-heading">{heading ?? <h2 id={headingId}>{title}</h2>}</div>{children}</section>;
 }
 
 function FormChart({ fixtures, fdrDisplayMode, windowLabel = 'latest ten' }: { fixtures: ProfileFixture[]; fdrDisplayMode: 'font' | 'fill'; windowLabel?: string }) {
@@ -731,25 +675,13 @@ function ChartColumn({ compact = false, fixture, fdrDisplayMode, maxValue, minut
   return <div className={`player-profile__chart-column${compact ? ' is-compact' : ''}`} style={style}><span className={`player-profile__chart-value${value === null ? ' is-empty' : ''}`}>{valueLabel}</span><div className="player-profile__bar-track">{minutes ? <div aria-hidden="true" className="player-profile__threshold-line" /> : null}<div className={`player-profile__bar player-profile__bar--${barTone(value)}`} style={{ '--bar-height': `${height}%` } as CSSProperties}>{minutes ? null : <StatIcons fixture={fixture} />}</div></div><span className="player-profile__opponent-label" style={fdrStyle}>{formatOpponentLabel(fixture.opponentShortName, fixture.isHome)}</span></div>;
 }
 
-const PROFILE_CHART_COLUMN_COUNT = 10;
-
-function chartColumnStyle(index: number, fixtureCount: number): CSSProperties | undefined {
-  if (fixtureCount < 1 || fixtureCount > PROFILE_CHART_COLUMN_COUNT) return undefined;
-  return { gridColumnStart: PROFILE_CHART_COLUMN_COUNT - fixtureCount + index + 1 };
-}
-
-function formChartScaleMax(fixtures: ProfileFixture[]): number {
-  const largestScore = fixtures.reduce((largest, fixture) => Math.max(largest, fixture.fantasyPoints ?? 0), 0);
-  return Math.max(10, largestScore);
-}
-
 function DefensiveColumn({ fixture, fdrDisplayMode, maxValue, style }: { fixture: SquadApiOpponentDefensiveHistory; fdrDisplayMode: 'font' | 'fill'; maxValue: number; style?: CSSProperties }) {
   const attack = fixture.attacking_asset_points ?? 0;
   const defence = fixture.defensive_asset_points ?? 0;
   const hasPoints = fixture.total_points_conceded !== null && fixture.total_points_conceded !== undefined;
   const attackHeight = groupedAssetBarHeight(attack, maxValue, hasPoints);
   const defenceHeight = groupedAssetBarHeight(defence, maxValue, hasPoints);
-  return <div className="player-profile__chart-column" style={style}><span className={`player-profile__chart-value${hasPoints ? '' : ' is-empty'}`}>{formatNullableNumber(fixture.total_points_conceded)}</span><div className="player-profile__bar-track player-profile__bar-track--grouped"><span className="player-profile__grouped-bar-wrap player-profile__grouped-bar-wrap--attack"><span aria-label={`Attacking assets: ${attack} points`} className="player-profile__grouped-bar player-profile__grouped-bar--attack" style={{ '--bar-height': `${attackHeight}%` } as CSSProperties} /><b className="player-profile__grouped-bar-value player-profile__grouped-bar-value--attack">{attack}</b></span><span className="player-profile__grouped-bar-wrap player-profile__grouped-bar-wrap--defence"><span aria-label={`Defensive assets: ${defence} points`} className="player-profile__grouped-bar player-profile__grouped-bar--defence" style={{ '--bar-height': `${defenceHeight}%` } as CSSProperties} /><b className="player-profile__grouped-bar-value player-profile__grouped-bar-value--defence">{defence}</b></span></div><span className="player-profile__opponent-label" style={fdrStyleFor(fixture.difficulty ?? null, fdrDisplayMode)}>{formatOpponentLabel(fixture.opponent_short_name ?? null, fixture.is_home)}</span></div>;
+  return <div className="player-profile__chart-column" style={style}><span className={`player-profile__chart-value${hasPoints ? '' : ' is-empty'}`}>{formatNullableNumber(fixture.total_points_conceded)}</span><div className="player-profile__bar-track player-profile__bar-track--grouped"><span className="player-profile__grouped-bar-wrap player-profile__grouped-bar-wrap--attack"><span aria-label={`Attacking assets: ${attack} points`} className="player-profile__grouped-bar player-profile__grouped-bar--attack" style={{ '--bar-height': `${attackHeight}%` } as CSSProperties} /><b className="player-profile__grouped-bar-value player-profile__grouped-bar-value--attack">{attack}</b></span><span className="player-profile__grouped-stat-icons"><PlayerStatIcons className="player-profile__stat-icons--compact" position={null} stats={opponentStatSummary(fixture)} /></span><span className="player-profile__grouped-bar-wrap player-profile__grouped-bar-wrap--defence"><span aria-label={`Defensive assets: ${defence} points`} className="player-profile__grouped-bar player-profile__grouped-bar--defence" style={{ '--bar-height': `${defenceHeight}%` } as CSSProperties} /><b className="player-profile__grouped-bar-value player-profile__grouped-bar-value--defence">{defence}</b></span></div><span className="player-profile__opponent-label" style={fdrStyleFor(fixture.difficulty ?? null, fdrDisplayMode)}>{formatOpponentLabel(fixture.opponent_short_name ?? null, fixture.is_home)}</span></div>;
 }
 
 function groupedAssetBarHeight(points: number, maxValue: number, hasPoints: boolean): number {
@@ -759,27 +691,42 @@ function groupedAssetBarHeight(points: number, maxValue: number, hasPoints: bool
 }
 
 function StatIcons({ fixture }: { fixture: ProfileFixture }) {
-  const stats: Array<{ key: string; label: string; value: number; icon: LucideIcon; tone?: 'yellow' | 'red' }> = [
-    { key: 'goals', label: 'Goals scored', value: fixture.stats.goals, icon: Target },
-    { key: 'assists', label: 'Assists', value: fixture.stats.assists, icon: Footprints },
-    { key: 'clean-sheets', label: 'Clean sheets', value: fixture.stats.cleanSheets, icon: ShieldCheck },
-    { key: 'yellow-cards', label: 'Yellow cards', value: fixture.stats.yellowCards, icon: RectangleVertical, tone: 'yellow' },
-    { key: 'red-cards', label: 'Red cards', value: fixture.stats.redCards, icon: RectangleVertical, tone: 'red' },
-    { key: 'defensive-contributions', label: 'Defensive contributions', value: fixture.stats.defensiveContributions, icon: Shield },
-    { key: 'bonus', label: 'Bonus points', value: fixture.stats.bonusPoints, icon: Trophy },
-  ];
-  return <span className="player-profile__stat-icons">{stats.filter((stat) => stat.key === 'defensive-contributions' ? earnedDefensiveContributionPoints(fixture.stats.defensiveContributions, fixture.position) : stat.value > 0).map((stat) => <span aria-label={`${stat.label}: ${stat.value}`} className={`player-profile__stat-icon${stat.tone ? ` player-profile__stat-icon--${stat.tone}` : ''}`} key={stat.key} role="img" title={`${stat.label}: ${stat.value}`}><stat.icon aria-hidden="true" fill={stat.tone ? 'currentColor' : 'none'} size={11} />{stat.value > 1 ? <b className="player-profile__stat-multiplier">×{stat.value}</b> : null}</span>)}</span>;
+  return <PlayerStatIcons position={fixture.position} stats={fixture.stats} />;
 }
 
-export function earnedDefensiveContributionPoints(value: number, position: string | null): boolean {
-  const normalizedPosition = position?.toUpperCase();
-  const threshold = normalizedPosition === 'DEF' ? 10 : normalizedPosition === 'MID' || normalizedPosition === 'FWD' ? 12 : null;
-  return threshold !== null && value >= threshold;
+function opponentStatSummary(fixture: SquadApiOpponentDefensiveHistory): PlayerStatSummary {
+  return {
+    goals: fixture.stat_icons?.goals ?? 0,
+    assists: fixture.stat_icons?.assists ?? 0,
+    cleanSheets: fixture.stat_icons?.clean_sheets ?? 0,
+    yellowCards: fixture.stat_icons?.yellow_cards ?? 0,
+    redCards: fixture.stat_icons?.red_cards ?? 0,
+    defensiveContributions: fixture.stat_icons?.defensive_contributions ?? 0,
+    bonusPoints: fixture.stat_icons?.bonus_points ?? 0,
+  };
 }
 
-function AvailabilityTag({ issue, status }: { issue: AvailabilityIssue; status: string }) {
-  const Icon = issue.severity === 'critical' ? CircleX : CircleAlert;
-  return <span className={`player-profile__tag player-profile__tag--availability player-profile__tag--${issue.severity}`} title={issue.label}><Icon aria-hidden="true" size={13} />{status}</span>;
+export { earnedDefensiveContributionPoints } from './components/player/PlayerStatIcons';
+
+function PlayerAvailabilityNews({ chance, news }: { chance: number | null | undefined; news: string }) {
+  return (
+    <section aria-labelledby="player-availability-news-title" className="player-profile__card player-profile__availability-news">
+      <div className="player-profile__card-heading">
+        <h2 id="player-availability-news-title">FPL news</h2>
+        {typeof chance === 'number' ? <span className="player-profile__muted-label">Chance {chance}%</span> : null}
+      </div>
+      <p>{news}</p>
+    </section>
+  );
+}
+
+function OpponentChartHeading({ difficulty, headingId, label, title }: { difficulty: number | null; headingId: string; label: string; title?: string }) {
+  return (
+    <h2 className="player-profile__opponent-chart-heading" id={headingId}>
+      <span className="player-profile__muted-label">Points against</span>
+      <OpponentFdrBadge difficulty={difficulty} label={label} title={title} />
+    </h2>
+  );
 }
 
 function ActionButton({ active = false, danger = false, disabled, icon: Icon, label, onClick, visual }: { active?: boolean; danger?: boolean; disabled: boolean; icon?: LucideIcon; label: string; onClick: () => void; visual?: ReactNode }) {
@@ -878,64 +825,4 @@ function availabilityInfo(player: SquadApiPlayer): { issue: AvailabilityIssue; s
         ? 'Suspended'
         : issue.label.split(' · ')[0];
   return { issue, status };
-}
-
-function squadStatusLabel(status: ProfileSquadStatus): string {
-  if (status === 'starter') return 'Starting XI';
-  if (status === 'bench') return 'Bench';
-  if (status === 'reserve') return 'Reserves';
-  return 'Squad status unavailable';
-}
-
-function formatOpponentLabel(shortName: string | null, isHome: boolean): string {
-  if (!shortName) return '—';
-  return isHome ? shortName.toUpperCase() : shortName.toLowerCase();
-}
-
-function barTone(value: number | null): string {
-  if (value === null) return 'empty';
-  if (value < 0) return 'negative';
-  if (value === 0) return 'neutral';
-  if (value >= 10) return 'high';
-  if (value >= 5) return 'positive';
-  return 'low';
-}
-
-function fdrStyleFor(value: number | null, displayMode: 'font' | 'fill'): CSSProperties {
-  if (value === null || !Number.isFinite(value)) return {};
-  const fdr = Math.min(5, Math.max(1, Math.round(value)));
-  if (displayMode === 'fill') {
-    return {
-      backgroundColor: `var(--cdl-fdr-fill-${fdr})`,
-      color: `var(--cdl-fdr-fill-foreground-${fdr})`,
-    };
-  }
-  return { color: `var(--cdl-fdr-${fdr})` };
-}
-
-function formatNullableNumber(value: number | null | undefined): string {
-  return value === null || value === undefined || Number.isNaN(value) ? '—' : String(value);
-}
-
-function readFavourite(playerId: string): boolean {
-  try {
-    const raw = window.localStorage.getItem(FAVOURITES_STORAGE_KEY);
-    const ids = raw ? JSON.parse(raw) : [];
-    return Array.isArray(ids) && ids.includes(playerId);
-  } catch {
-    return false;
-  }
-}
-
-function writeFavourite(playerId: string, favourite: boolean) {
-  try {
-    const raw = window.localStorage.getItem(FAVOURITES_STORAGE_KEY);
-    const parsed: unknown = raw ? JSON.parse(raw) : [];
-    const ids = new Set<string>(Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : []);
-    if (favourite) ids.add(playerId);
-    else ids.delete(playerId);
-    window.localStorage.setItem(FAVOURITES_STORAGE_KEY, JSON.stringify([...ids]));
-  } catch {
-    // Favourites are an optional local preference and must not block squad actions.
-  }
 }

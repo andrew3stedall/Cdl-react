@@ -41,6 +41,7 @@ export function CombinedFormMinutesChart({
       data-chart-kind="combined-form-minutes"
       data-minutes-y-axis-max={minutesMax}
       data-minutes-y-axis-min="0"
+      data-minutes-y-axis-threshold="60"
       data-y-axis-max={formMax}
       data-y-axis-min={`-${minutesMax}`}
       role="img"
@@ -98,6 +99,7 @@ function CombinedChartColumn({
       </span>
       <div className="player-profile__combined-negative">
         <div className="player-profile__combined-track player-profile__combined-track--negative">
+          <div aria-hidden="true" className="player-profile__combined-threshold-line" />
           <div
             className="player-profile__combined-bar player-profile__combined-bar--minutes"
             style={{ '--bar-height': `${minutesHeight}%` } as CSSProperties}

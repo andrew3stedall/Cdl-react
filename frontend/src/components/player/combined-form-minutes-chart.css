@@ -5,15 +5,18 @@
 
 .player-profile__combined-chart-columns {
   align-items: stretch;
+  --combined-form-height: var(--profile-combined-form-height, 11.625rem);
+  --combined-minutes-height: var(--profile-combined-minutes-height, 3.875rem);
+  --combined-opponent-height: var(--profile-combined-opponent-height, 1.35rem);
   display: grid;
   gap: clamp(0.15rem, 1.2vw, 0.5rem);
   grid-template-columns: repeat(10, minmax(0, 1fr));
-  min-height: var(--profile-combined-chart-height, 9.1rem);
+  min-height: calc(var(--combined-form-height) + var(--combined-opponent-height) + var(--combined-minutes-height));
 }
 
 .player-profile__combined-chart-column {
   display: grid;
-  grid-template-rows: minmax(0, 1fr) 1.35rem minmax(0, 1fr);
+  grid-template-rows: minmax(0, var(--combined-form-height)) var(--combined-opponent-height) minmax(0, var(--combined-minutes-height));
   min-width: 0;
   text-align: center;
 }
@@ -46,6 +49,16 @@
   align-items: flex-start;
   border-radius: 0.12rem 0.12rem 0.25rem 0.25rem;
   display: flex;
+}
+
+.player-profile__combined-threshold-line {
+  border-top: 1px dashed #22d3ee;
+  left: -0.05rem;
+  pointer-events: none;
+  position: absolute;
+  right: -0.05rem;
+  top: 66.666%;
+  z-index: 2;
 }
 
 .player-profile__combined-bar {
@@ -112,7 +125,7 @@
   }
 
   .player-profile__combined-chart-column {
-    grid-template-rows: minmax(0, 1fr) 1.2rem minmax(0, 1fr);
+    --combined-opponent-height: 1.2rem;
   }
 
   .player-profile__combined-positive,

@@ -336,6 +336,7 @@ beforeEach(() => {
             goals_scored: 1,
             assists: 0,
             clean_sheets: 0,
+            saves: 0,
             bonus: 2,
             bps: 30,
             expected_goals: 0.8,

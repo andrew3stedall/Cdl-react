@@ -19,11 +19,21 @@ depends_on: str | Sequence[str] | None = None
 def upgrade() -> None:
     op.add_column(
         "user_preferences",
-        sa.Column("fdr_custom_second", sa.String(length=7), nullable=False, server_default="#8CAFD2"),
+        sa.Column(
+            "fdr_custom_second",
+            sa.String(length=7),
+            nullable=False,
+            server_default="#8CAFD2",
+        ),
     )
     op.add_column(
         "user_preferences",
-        sa.Column("fdr_custom_fourth", sa.String(length=7), nullable=False, server_default="#D58891"),
+        sa.Column(
+            "fdr_custom_fourth",
+            sa.String(length=7),
+            nullable=False,
+            server_default="#D58891",
+        ),
     )
 
 

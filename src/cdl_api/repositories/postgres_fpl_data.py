@@ -28,6 +28,7 @@ from cdl_api.contracts.fpl_data import (
     FplCacheStatusResponse,
     FplOpponentDefensiveHistory,
     FplOpponentDefensiveHistoryGroup,
+    FplOpponentStatDetail,
     FplOpponentStatIcons,
     FplPlayerHistoryResponse,
     FplRefreshResource,
@@ -754,10 +755,16 @@ def _defensive_history_from_fixture(
     row: Mapping[str, object],
     target_team_id: str,
     event_live_payload: object = None,
-    element_metadata: Mapping[str, tuple[str, str]] | None = None,
+    element_metadata: Mapping[str, tuple[str, str, str]] | None = None,
 ) -> FplOpponentDefensiveHistory:
     is_home = str(row["home_team_id"]) == target_team_id
-    total_points, attacking_points, defensive_points, stat_icons = _fixture_asset_points(
+    (
+        total_points,
+        attacking_points,
+        defensive_points,
+        stat_icons,
+        stat_details,
+    ) = _fixture_asset_points(
         row["payload_json"],
         target_team_id=target_team_id,
         home_team_id=str(row["home_team_id"]),
@@ -779,6 +786,7 @@ def _defensive_history_from_fixture(
         attacking_asset_points=attacking_points,
         defensive_asset_points=defensive_points,
         stat_icons=stat_icons,
+        stat_details=stat_details,
     )
 
 
@@ -790,8 +798,8 @@ def _fixture_asset_points(
     away_team_id: str,
     fixture_id: int | None = None,
     event_live_payload: object = None,
-    element_metadata: Mapping[str, tuple[str, str]] | None = None,
-) -> tuple[int | None, int | None, int | None, FplOpponentStatIcons]:
+    element_metadata: Mapping[str, tuple[str, str, str]] | None = None,
+) -> tuple[int | None, int | None, int | None, FplOpponentStatIcons, list[FplOpponentStatDetail]]:
     live_points = _event_live_asset_points(
         event_live_payload,
         fixture_id=fixture_id,
@@ -804,7 +812,7 @@ def _fixture_asset_points(
     if live_points is not None:
         return live_points
     if not isinstance(payload, Mapping) or not isinstance(payload.get("stats"), list):
-        return None, None, None, FplOpponentStatIcons()
+        return None, None, None, FplOpponentStatIcons(), []
     target_is_home = target_team_id == home_team_id
     opposition_side = "a" if target_is_home else "h"
     total_by_element: dict[str, int] = {}
@@ -812,6 +820,7 @@ def _fixture_asset_points(
     stat_points_found = False
     points_by_element: dict[str, int] = {}
     stat_icons = FplOpponentStatIcons()
+    stat_details: list[FplOpponentStatDetail] = []
     for group in payload["stats"]:
         if not isinstance(group, Mapping):
             continue
@@ -826,6 +835,18 @@ def _fixture_asset_points(
             if total_points is not None and element:
                 total_by_element[element] = total_points
             stat_points = _optional_int_value(entry.get("points"))
+            stat_key = _stat_icon_key(group.get("identifier"))
+            if stat_key is not None:
+                metadata = (element_metadata or {}).get(element, ("", "", element))
+                stat_details.append(
+                    FplOpponentStatDetail(
+                        category=stat_key,
+                        player_name=metadata[2],
+                        player_position=metadata[1] or None,
+                        value=_optional_int_value(entry.get("value")),
+                        points=stat_points or 0,
+                    )
+                )
             _add_stat_icon(stat_icons, group.get("identifier"), entry.get("value"))
             if stat_points is None:
                 continue
@@ -844,7 +865,7 @@ def _fixture_asset_points(
     if total_by_element:
         points_by_element = total_by_element
     for element, points in points_by_element.items():
-        position = (element_metadata or {}).get(element, ("", ""))[1].upper()
+        position = (element_metadata or {}).get(element, ("", "", ""))[1].upper()
         if position in {"MID", "FWD"}:
             attacking_points += points
         elif position in {"GKP", "DEF"}:
@@ -858,6 +879,7 @@ def _fixture_asset_points(
         (attacking_points if stat_points_found else None),
         (defensive_points if stat_points_found else None),
         stat_icons,
+        stat_details,
     )
 
 
@@ -869,8 +891,8 @@ def _event_live_asset_points(
     home_team_id: str,
     away_team_id: str,
     fixture_payload: object,
-    element_metadata: Mapping[str, tuple[str, str]],
-) -> tuple[int, int, int, FplOpponentStatIcons] | None:
+    element_metadata: Mapping[str, tuple[str, str, str]],
+) -> tuple[int, int, int, FplOpponentStatIcons, list[FplOpponentStatDetail]] | None:
     if (
         fixture_id is None
         or not isinstance(payload, Mapping)
@@ -885,6 +907,7 @@ def _event_live_asset_points(
     )
     points_by_element: dict[str, int] = {}
     stat_icons = FplOpponentStatIcons()
+    stat_details: list[FplOpponentStatDetail] = []
     found_fixture = False
 
     for element in payload["elements"]:
@@ -892,7 +915,7 @@ def _event_live_asset_points(
             continue
         element_id = str(element.get("id") or "")
         if (
-            element_metadata.get(element_id, ("", ""))[0] != opposition_team_id
+            element_metadata.get(element_id, ("", "", ""))[0] != opposition_team_id
             and element_id not in opposition_element_ids
         ):
             continue
@@ -918,23 +941,37 @@ def _event_live_asset_points(
                 if points is None:
                     continue
                 points_by_element[element_id] = points_by_element.get(element_id, 0) + points
+                stat_key = _stat_icon_key(stat.get("identifier"))
+                if stat_key is not None:
+                    metadata = element_metadata.get(element_id, ("", "", element_id))
+                    stat_details.append(
+                        FplOpponentStatDetail(
+                            category=stat_key,
+                            player_name=metadata[2],
+                            player_position=metadata[1] or None,
+                            value=_optional_int_value(stat.get("value")),
+                            points=points,
+                        )
+                    )
                 _add_stat_icon(stat_icons, stat.get("identifier"), stat.get("value"))
 
     total_points = sum(points_by_element.values())
     attacking_points = 0
     defensive_points = 0
     for element_id, points in points_by_element.items():
-        position = element_metadata.get(element_id, ("", ""))[1].upper()
+        position = element_metadata.get(element_id, ("", "", ""))[1].upper()
         if position in {"MID", "FWD"}:
             attacking_points += points
         else:
             defensive_points += points
 
-    return (total_points, attacking_points, defensive_points, stat_icons) if found_fixture else None
+    if not found_fixture:
+        return None
+    return total_points, attacking_points, defensive_points, stat_icons, stat_details
 
 
-def _add_stat_icon(stat_icons: FplOpponentStatIcons, identifier: object, value: object) -> None:
-    icon_key = {
+def _stat_icon_key(identifier: object) -> str | None:
+    return {
         "goals_scored": "goals",
         "assists": "assists",
         "clean_sheets": "clean_sheets",
@@ -945,6 +982,10 @@ def _add_stat_icon(stat_icons: FplOpponentStatIcons, identifier: object, value: 
         "defensive_contributions": "defensive_contributions",
         "bonus": "bonus_points",
     }.get(str(identifier or ""))
+
+
+def _add_stat_icon(stat_icons: FplOpponentStatIcons, identifier: object, value: object) -> None:
+    icon_key = _stat_icon_key(identifier)
     icon_value = _optional_int_value(value)
     if icon_key is None or icon_value is None or icon_value <= 0:
         return
@@ -968,7 +1009,7 @@ def _fixture_opposition_element_ids(payload: object, target_is_home: bool) -> se
 def _event_live_element_metadata(
     session: Session,
     payloads: Mapping[int, object],
-) -> dict[str, tuple[str, str]]:
+) -> dict[str, tuple[str, str, str]]:
     element_ids = {
         str(element.get("id"))
         for payload in payloads.values()
@@ -984,12 +1025,14 @@ def _event_live_element_metadata(
             fpl_players_table.c.id,
             fpl_players_table.c.team_id,
             fpl_players_table.c.position_id,
+            fpl_players_table.c.web_name,
         ).where(fpl_players_table.c.id.in_(player_ids))
     ).mappings()
     return {
         str(row["id"]).removeprefix("fpl-"): (
             str(row["team_id"]),
             str(row["position_id"]),
+            str(row["web_name"]),
         )
         for row in rows
     }

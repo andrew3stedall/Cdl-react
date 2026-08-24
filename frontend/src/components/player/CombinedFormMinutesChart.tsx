@@ -25,10 +25,12 @@ export interface CombinedFormMinutesFixture {
 export function CombinedFormMinutesChart({
   fixtures,
   fdrDisplayMode,
+  onFixtureClick,
   windowLabel = 'latest ten',
 }: {
   fixtures: CombinedFormMinutesFixture[];
   fdrDisplayMode: 'font' | 'fill';
+  onFixtureClick?: (fixture: CombinedFormMinutesFixture) => void;
   windowLabel?: string;
 }) {
   const formMax = formChartScaleMax(fixtures);
@@ -44,7 +46,7 @@ export function CombinedFormMinutesChart({
       data-minutes-y-axis-threshold="60"
       data-y-axis-max={formMax}
       data-y-axis-min={`-${minutesMax}`}
-      role="img"
+      role="group"
     >
       <div className="player-profile__combined-chart-columns">
         {fixtures.map((fixture, index) => (
@@ -54,6 +56,7 @@ export function CombinedFormMinutesChart({
             fdrDisplayMode={fdrDisplayMode}
             key={fixture.fixtureId}
             minutesMax={minutesMax}
+            onFixtureClick={onFixtureClick}
             style={chartColumnStyle(index, fixtures.length)}
           />
         ))}
@@ -67,12 +70,14 @@ function CombinedChartColumn({
   formMax,
   fdrDisplayMode,
   minutesMax,
+  onFixtureClick,
   style,
 }: {
   fixture: CombinedFormMinutesFixture;
   formMax: number;
   fdrDisplayMode: 'font' | 'fill';
   minutesMax: number;
+  onFixtureClick?: (fixture: CombinedFormMinutesFixture) => void;
   style?: CSSProperties;
 }) {
   const pointsHeight = chartBarHeight(fixture.fantasyPoints, formMax);
@@ -86,12 +91,15 @@ function CombinedChartColumn({
           {formatNullableNumber(fixture.fantasyPoints)}
         </span>
         <div className="player-profile__combined-track player-profile__combined-track--positive">
-          <div
+          <button
+            aria-label={`View ${formatOpponentLabel(fixture.opponentShortName, fixture.isHome)} form details: ${formatNullableNumber(fixture.fantasyPoints)} points`}
             className={`player-profile__combined-bar player-profile__combined-bar--${pointsTone}`}
+            onClick={() => onFixtureClick?.(fixture)}
             style={{ '--bar-height': `${pointsHeight}%` } as CSSProperties}
+            type="button"
           >
             <PlayerStatIcons position={fixture.position} stats={fixture.stats} />
-          </div>
+          </button>
         </div>
       </div>
       <span className="player-profile__combined-opponent" style={fdrStyleFor(fixture.fdr, fdrDisplayMode)}>
@@ -100,9 +108,12 @@ function CombinedChartColumn({
       <div className="player-profile__combined-negative">
         <div className="player-profile__combined-track player-profile__combined-track--negative">
           <div aria-hidden="true" className="player-profile__combined-threshold-line" />
-          <div
+          <button
+            aria-label={`View ${formatOpponentLabel(fixture.opponentShortName, fixture.isHome)} minutes details: ${formatNullableNumber(fixture.minutesPlayed)} minutes`}
             className="player-profile__combined-bar player-profile__combined-bar--minutes"
+            onClick={() => onFixtureClick?.(fixture)}
             style={{ '--bar-height': `${minutesHeight}%` } as CSSProperties}
+            type="button"
           />
         </div>
         <span className={`player-profile__chart-value${fixture.minutesPlayed === null ? ' is-empty' : ''}`}>

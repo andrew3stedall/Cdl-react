@@ -238,8 +238,59 @@
 }
 
 .player-profile__chart {
+  --chart-opponent-row: 1.35rem;
+  --chart-value-row: 1.2rem;
   min-width: 0;
   width: 100%;
+}
+
+.player-profile__chart-layout {
+  display: grid;
+  gap: 0.35rem;
+  grid-template-columns: 1.55rem minmax(0, 1fr);
+  min-width: 0;
+}
+
+.player-profile__chart-y-axis {
+  color: var(--profile-muted);
+  display: grid;
+  font-size: clamp(0.45rem, 1.55vw, 0.56rem);
+  font-variant-numeric: tabular-nums;
+  grid-template-rows: var(--chart-value-row) minmax(0, 1fr) var(--chart-opponent-row);
+  line-height: 1;
+  min-width: 0;
+  text-align: right;
+}
+
+.player-profile__chart-y-axis > span {
+  min-height: 0;
+}
+
+.player-profile__chart-y-axis-scale {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 0;
+  overflow: visible;
+}
+
+.player-profile__chart-y-axis-label {
+  display: block;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.player-profile__chart-plot {
+  min-width: 0;
+  position: relative;
+}
+
+.player-profile__chart-plot > .player-profile__chart-grid {
+  bottom: var(--chart-opponent-row);
+  left: 0;
+  right: 0;
+  top: var(--chart-value-row);
+  z-index: 2;
 }
 
 .player-profile__chart-columns {
@@ -248,6 +299,12 @@
   gap: clamp(0.15rem, 1.2vw, 0.5rem);
   grid-template-columns: repeat(10, minmax(0, 1fr));
   min-height: var(--profile-chart-height);
+  position: relative;
+}
+
+.player-profile__chart--minutes {
+  --chart-opponent-row: 1.1rem;
+  --chart-value-row: 1rem;
 }
 
 .player-profile__chart--minutes .player-profile__chart-columns {
@@ -299,7 +356,7 @@
   min-height: 0;
   position: relative;
   width: 100%;
-  z-index: 1;
+  z-index: 3;
 }
 
 .player-profile__bar--empty {
@@ -415,7 +472,7 @@
   height: 100%;
   min-width: 0;
   position: relative;
-  z-index: 1;
+  z-index: 3;
 }
 
 .player-profile__grouped-stat-icons {
@@ -426,7 +483,7 @@
   justify-content: center;
   min-width: 0;
   position: relative;
-  z-index: 1;
+  z-index: 3;
 }
 
 .player-profile__grouped-stat-icons .player-profile__stat-icons {

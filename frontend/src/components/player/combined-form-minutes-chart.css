@@ -115,10 +115,6 @@
   padding-inline: 0.18rem;
 }
 
-.player-profile__combined-bar .player-profile__stat-icons {
-  bottom: 0.2rem;
-}
-
 @media (max-width: 32rem) {
   .player-profile__combined-chart-columns {
     gap: 0.12rem;

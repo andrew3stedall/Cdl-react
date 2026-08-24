@@ -16,6 +16,12 @@ _PUBLIC_STAGING_PATHS = {
     "/api/auth/login",
     "/api/auth/google",
     "/api/auth/google/config",
+    "/api/auth/apple/config",
+    "/api/auth/apple/start",
+    "/api/auth/apple/callback",
+    "/api/auth/passkeys/config",
+    "/api/auth/passkeys/authentication/options",
+    "/api/auth/passkeys/authentication",
     "/api/auth/logout",
     "/api/auth/session",
 }

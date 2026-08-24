@@ -96,6 +96,17 @@ export interface SquadApiOpponentDefensiveHistory {
   total_points_conceded?: number | null;
   attacking_asset_points?: number | null;
   defensive_asset_points?: number | null;
+  stat_icons?: SquadApiOpponentStatIcons;
+}
+
+export interface SquadApiOpponentStatIcons {
+  goals: number;
+  assists: number;
+  clean_sheets: number;
+  yellow_cards: number;
+  red_cards: number;
+  defensive_contributions: number;
+  bonus_points: number;
 }
 
 export interface SquadApiOpponentDefensiveHistoryGroup {

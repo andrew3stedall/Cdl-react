@@ -757,10 +757,11 @@
 }
 
 .squad-page__pitch-player::before {
-  background: var(--squad-form-surface, color-mix(in srgb, var(--squad-pitch) 88%, var(--squad-form-tone) 12%));
-  border-radius: 50% 50% 0 0 / 50% 50% 0 0;
+  background: var(--squad-pitch);
+  border-radius: 50%;
+  clip-path: inset(0 0 20% 0);
   content: '';
-  height: calc(72% + 0.72rem + 0.08rem);
+  height: 100%;
   left: 0;
   position: absolute;
   right: 0;

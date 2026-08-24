@@ -59,6 +59,7 @@ export interface SquadApiHistoryRow {
   goals_scored: number;
   assists: number;
   clean_sheets: number;
+  saves: number;
   yellow_cards: number;
   red_cards: number;
   bonus: number;
@@ -103,6 +104,7 @@ export interface SquadApiOpponentStatIcons {
   goals: number;
   assists: number;
   clean_sheets: number;
+  saves: number;
   yellow_cards: number;
   red_cards: number;
   defensive_contributions: number;

@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react';
 
+import { PlayerChartGrid } from './PlayerChartGrid';
 import { PlayerStatIcons, type PlayerStatSummary } from './PlayerStatIcons';
 import {
   barTone,
@@ -43,9 +44,11 @@ export function CombinedFormMinutesChart({
       data-chart-kind="combined-form-minutes"
       data-minutes-y-axis-max={minutesMax}
       data-minutes-y-axis-min="0"
+      data-minutes-y-axis-tick-step="30"
       data-minutes-y-axis-threshold="60"
       data-y-axis-max={formMax}
       data-y-axis-min={`-${minutesMax}`}
+      data-y-axis-tick-step="5"
       role="group"
     >
       <div className="player-profile__combined-chart-columns">
@@ -91,6 +94,7 @@ function CombinedChartColumn({
           {formatNullableNumber(fixture.fantasyPoints)}
         </span>
         <div className="player-profile__combined-track player-profile__combined-track--positive">
+          <PlayerChartGrid max={formMax} step={5} />
           <button
             aria-label={`View ${formatOpponentLabel(fixture.opponentShortName, fixture.isHome)} form details: ${formatNullableNumber(fixture.fantasyPoints)} points`}
             className={`player-profile__combined-bar player-profile__combined-bar--${pointsTone}`}
@@ -107,6 +111,7 @@ function CombinedChartColumn({
       </span>
       <div className="player-profile__combined-negative">
         <div className="player-profile__combined-track player-profile__combined-track--negative">
+          <PlayerChartGrid max={minutesMax} step={30} />
           <div aria-hidden="true" className="player-profile__combined-threshold-line" />
           <button
             aria-label={`View ${formatOpponentLabel(fixture.opponentShortName, fixture.isHome)} minutes details: ${formatNullableNumber(fixture.minutesPlayed)} minutes`}

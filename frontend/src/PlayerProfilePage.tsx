@@ -457,6 +457,7 @@ export function PlayerProfilePage({
       }) : <ChartCard title="Opponent form" className="player-profile__chart-card--full"><ChartEmpty message="No cached defensive history is available for the next opponent." /></ChartCard>}
 
       {notice ? <p className="player-profile__notice" role="status">{notice}</p> : null}
+      {presentation === 'drawer' ? <div aria-hidden="true" className="player-profile__scroll-end-spacer" /> : null}
       </div>
 
       <div aria-label="Squad-management actions" className="player-profile__action-bar" role="toolbar">
@@ -636,6 +637,7 @@ export function SubstitutionReviewDrawer({
           {loading ? <ChartEmpty message="Loading the latest four fixtures…" /> : null}
           {!loading && error ? <p className="player-profile__inline-error" role="status">{error} Form and minutes may be incomplete.</p> : null}
         </section>
+        <div aria-hidden="true" className="player-profile__scroll-end-spacer" />
       </div>
 
       <div aria-label="Substitution review actions" className="player-profile__review-actions" role="toolbar">

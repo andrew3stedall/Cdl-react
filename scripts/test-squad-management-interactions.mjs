@@ -278,8 +278,8 @@ async function testSquadWorkspace(browser, viewport) {
   }
 
   await page.goto(`${baseUrl}/account`, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: /Option 8/ }).click();
-  await page.getByRole('button', { name: 'FDR colour scale option 10' }).click();
+  await page.getByRole('button', { name: /Option 3/ }).click();
+  await page.getByRole('button', { name: 'FDR colour scale option 4' }).click();
   await page.getByRole('status').getByText('Appearance preference saved.', { exact: true }).waitFor();
   await page.locator('.profile-fdr-reverse-toggle input').click();
   await page.getByRole('status').getByText('Appearance preference saved.', { exact: true }).waitFor();

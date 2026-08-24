@@ -104,6 +104,14 @@ class FplOpponentStatIcons(BaseModel):
     bonus_points: int = 0
 
 
+class FplOpponentStatDetail(BaseModel):
+    category: str
+    player_name: str
+    player_position: str | None = None
+    value: int | None = None
+    points: int = 0
+
+
 class FplOpponentDefensiveHistory(BaseModel):
     fixture_id: int
     gameweek: int | None = None
@@ -115,6 +123,7 @@ class FplOpponentDefensiveHistory(BaseModel):
     attacking_asset_points: int | None = None
     defensive_asset_points: int | None = None
     stat_icons: FplOpponentStatIcons = Field(default_factory=FplOpponentStatIcons)
+    stat_details: list[FplOpponentStatDetail] = Field(default_factory=list)
 
 
 class FplOpponentDefensiveHistoryGroup(BaseModel):

@@ -411,6 +411,9 @@ def test_player_history_enriches_fixture_context_and_conceded_points_from_cached
     assert response.opponent_defensive_history[0].total_points_conceded == 20
     assert response.opponent_defensive_history[0].attacking_asset_points == 10
     assert response.opponent_defensive_history[0].defensive_asset_points == 10
+    assert response.opponent_defensive_history[0].stat_icons.goals == 1
+    assert response.opponent_defensive_history[0].stat_icons.assists == 2
+    assert response.opponent_defensive_history[0].stat_icons.clean_sheets == 1
     assert response.opponent_defensive_history[0].gameweek == 0
     assert [fixture.fixture_id for fixture in response.opponent_defensive_history] == [98, 100]
     assert response.opponent_defensive_history[1].total_points_conceded is None

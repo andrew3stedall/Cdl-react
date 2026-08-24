@@ -938,6 +938,7 @@ def _add_stat_icon(stat_icons: FplOpponentStatIcons, identifier: object, value: 
         "goals_scored": "goals",
         "assists": "assists",
         "clean_sheets": "clean_sheets",
+        "saves": "saves",
         "yellow_cards": "yellow_cards",
         "red_cards": "red_cards",
         "defensive_contribution": "defensive_contributions",

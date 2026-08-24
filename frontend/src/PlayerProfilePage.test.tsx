@@ -108,6 +108,10 @@ const history: SquadApiHistoryResponse = {
       defensive_contributions: 0,
       bonus_points: 0,
     } : undefined,
+    stat_details: index === 0 ? [
+      { category: 'goals', player_name: 'Saka', value: 1, points: 5 },
+      { category: 'assists', player_name: 'Ødegaard', value: 1, points: 3 },
+    ] : undefined,
   })),
 };
 
@@ -408,6 +412,36 @@ describe('PlayerProfilePage', () => {
 
     expect(container.querySelector('[data-chart-kind="combined-form-minutes"]')?.getAttribute('data-y-axis-max')).toBe('10');
     expect(container.querySelector('[data-chart-kind="combined-form-minutes"]')?.getAttribute('aria-label')).toContain('Fantasy points above the zero line');
+    root.unmount();
+  });
+
+  test('opens reusable fixture details from form and opposition bars', async () => {
+    const { container, root } = renderPage();
+    await settle();
+
+    const formBar = Array.from(container.querySelectorAll('button[aria-label*="form details"]'))
+      .find((button) => button.getAttribute('aria-label')?.includes('CHE'));
+    expect(formBar).toBeTruthy();
+    act(() => {
+      formBar?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    expect(container.querySelector('[data-chart-detail-kind="form"]')).toBeTruthy();
+    expect(container.textContent).toContain('Scoring returns');
+    expect(container.textContent).toContain('Goals scored');
+
+    act(() => {
+      container.querySelector('.player-chart-detail-backdrop')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    expect(container.querySelector('[data-chart-detail-kind="form"]')).toBeNull();
+
+    const opponentBar = container.querySelector('button[aria-label*="points-against details"]');
+    expect(opponentBar).toBeTruthy();
+    act(() => {
+      opponentBar?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    expect(container.querySelector('[data-chart-detail-kind="opponent"]')).toBeTruthy();
+    expect(container.textContent).toContain('Saka');
+    expect(container.textContent).toContain('+5');
     root.unmount();
   });
 

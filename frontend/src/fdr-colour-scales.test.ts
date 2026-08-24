@@ -12,28 +12,35 @@ import {
 } from './fdr-colour-scales';
 
 describe('FDR colour scales', () => {
-  test('contains every non-categorical D3 interpolator as five hex steps', () => {
-    expect(fdrColourScales).toHaveLength(42);
+  test('keeps the requested numbered presets and custom modes as five hex steps', () => {
+    expect(fdrColourScales).toHaveLength(7);
+    expect(fdrColourScales.map((scale) => scale.optionNumber)).toEqual([1, 5, 8, 10, 32, 34, 36]);
     expect(fdrColourScales.every((scale) => scale.light.length === 5 && scale.dark.length === 5)).toBe(true);
     expect(fdrColourScales.flatMap((scale) => [...scale.light, ...scale.dark]).every((colour) => /^#[0-9A-F]{6}$/.test(colour))).toBe(true);
     expect(fdrColourScales.filter((scale) => scale.group === 'Cyclical').map((scale) => scale.name)).toEqual([
-      'Rainbow',
       'Sinebow',
     ]);
-    expect(fdrColourScales.map((scale) => scale.name)).not.toEqual(expect.arrayContaining([
-      'Blues', 'Greens', 'Greys', 'Oranges', 'Purples', 'Reds',
-    ]));
-    expect(fdrColourScales.filter((scale) => scale.group === 'Custom')).toHaveLength(10);
+    expect(fdrColourScales.map((scale) => scale.name)).toEqual([
+      'BrBG', 'RdBu', 'RdYlGn', 'Turbo', 'Sinebow', 'CustomBlueRedVibrant', 'CustomGreenPurpleVibrant',
+    ]);
   });
 
   test('interpolates the custom D3-style scale between level 1, 3, and 5 anchors', () => {
-    const anchors = { min: '#0000FF', mid: '#00FF00', max: '#FF0000' };
+    const anchors = { min: '#0000FF', second: '#123456', mid: '#00FF00', fourth: '#654321', max: '#FF0000' };
 
     expect(getFdrFillPalette('CustomHex', 'light', false, anchors)).toEqual([
       '#0000FF', '#008080', '#00FF00', '#808000', '#FF0000',
     ]);
-    expect(defaultFdrCustomAnchors).toEqual({ min: '#2166AC', mid: '#F7F7F7', max: '#B2182B' });
+    expect(defaultFdrCustomAnchors).toEqual({ min: '#2166AC', second: '#8CAFD2', mid: '#F7F7F7', fourth: '#D58891', max: '#B2182B' });
     expect(resolveFdrCustomAnchors({ min: 'not-a-colour' })).toEqual(defaultFdrCustomAnchors);
+  });
+
+  test('supports independently selected colours at every FDR level', () => {
+    const anchors = { min: '#010203', second: '#111213', mid: '#212223', fourth: '#313233', max: '#414243' };
+
+    expect(getFdrFillPalette('CustomAll', 'light', false, anchors)).toEqual([
+      '#010203', '#111213', '#212223', '#313233', '#414243',
+    ]);
   });
 
   test('reverses the selected FDR order without changing the scale colours', () => {

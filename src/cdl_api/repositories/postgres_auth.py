@@ -1,14 +1,16 @@
 """PostgreSQL-backed authentication repositories."""
 
 from collections.abc import Callable
+from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
+import sqlalchemy as sa
 from sqlalchemy import JSON, Column, MetaData, String, Table, insert, select
 from sqlalchemy.dialects.postgresql import insert as postgresql_insert
 from sqlalchemy.orm import Session
 
 from cdl_api.contracts.session import SessionUser
-from cdl_api.repositories.auth import UserRecord
+from cdl_api.repositories.auth import SessionRecord, UserRecord
 
 metadata = MetaData()
 
@@ -26,6 +28,8 @@ sessions_table = Table(
     metadata,
     Column("id", String(64), primary_key=True),
     Column("user_id", String(64), nullable=False),
+    Column("created_at", sa.DateTime(timezone=True), nullable=False),
+    Column("expires_at", sa.DateTime(timezone=True), nullable=False),
 )
 
 
@@ -58,6 +62,62 @@ class PostgreSQLUserRepository:
             roles=list(row["roles"]),
         )
 
+    def get_by_id(self, user_id: str) -> UserRecord | None:
+        with self._session_factory() as session:
+            row = (
+                session.execute(
+                    select(
+                        users_table.c.id,
+                        users_table.c.email,
+                        users_table.c.display_name,
+                        users_table.c.roles,
+                    ).where(users_table.c.id == user_id)
+                )
+                .mappings()
+                .first()
+            )
+
+        if row is None:
+            return None
+
+        return UserRecord(
+            id=row["id"],
+            email=row["email"],
+            display_name=row["display_name"],
+            roles=list(row["roles"]),
+        )
+
+    def get_or_create_external_user(
+        self,
+        *,
+        provider: str,
+        subject: str,
+        email: str,
+        display_name: str,
+    ) -> UserRecord:
+        normalized_email = email.lower()
+        existing = self.get_by_email(normalized_email)
+        if existing is not None:
+            return existing
+
+        with self._session_factory() as session:
+            session.execute(
+                postgresql_insert(users_table)
+                .values(
+                    id=f"{provider}:{subject}",
+                    email=normalized_email,
+                    display_name=display_name,
+                    roles=["manager"],
+                )
+                .on_conflict_do_nothing(index_elements=[users_table.c.email])
+            )
+            session.commit()
+
+        created = self.get_by_email(normalized_email)
+        if created is None:
+            raise RuntimeError(f"{provider.title()} user could not be created.")
+        return created
+
     def seed_demo_user(self) -> None:
         with self._session_factory() as session:
             existing = session.execute(
@@ -83,57 +143,68 @@ class PostgreSQLUserRepository:
         email: str,
         display_name: str,
     ) -> UserRecord:
-        normalized_email = email.lower()
-        existing = self.get_by_email(normalized_email)
-        if existing is not None:
-            return existing
+        return self.get_or_create_external_user(
+            provider="google",
+            subject=subject,
+            email=email,
+            display_name=display_name,
+        )
 
-        with self._session_factory() as session:
-            session.execute(
-                postgresql_insert(users_table)
-                .values(
-                    id=f"google:{subject}",
-                    email=normalized_email,
-                    display_name=display_name,
-                    roles=["manager"],
-                )
-                .on_conflict_do_nothing(index_elements=[users_table.c.email])
-            )
-            session.commit()
-
-        created = self.get_by_email(normalized_email)
-        if created is None:
-            raise RuntimeError("Google user could not be created.")
-        return created
+    def get_or_create_apple_user(
+        self,
+        *,
+        subject: str,
+        email: str,
+        display_name: str,
+    ) -> UserRecord:
+        return self.get_or_create_external_user(
+            provider="apple",
+            subject=subject,
+            email=email,
+            display_name=display_name,
+        )
 
 
 class PostgreSQLSessionRepository:
     def __init__(self, session_factory: Callable[[], Session]) -> None:
         self._session_factory = session_factory
 
-    def create(self, user: SessionUser) -> str:
+    def create(self, user: SessionUser, expires_at: datetime | None = None) -> str:
         session_id = str(uuid4())
+        now = datetime.now(UTC)
         with self._session_factory() as session:
-            session.execute(insert(sessions_table).values(id=session_id, user_id=user.id))
+            session.execute(
+                insert(sessions_table).values(
+                    id=session_id,
+                    user_id=user.id,
+                    created_at=now,
+                    expires_at=expires_at or now + timedelta(days=30),
+                )
+            )
             session.commit()
         return session_id
 
-    def get(self, session_id: str | None) -> SessionUser | None:
+    def get_record(self, session_id: str | None) -> SessionRecord | None:
         if session_id is None:
             return None
 
+        now = datetime.now(UTC)
         with self._session_factory() as session:
             row = (
                 session.execute(
                     select(
                         sessions_table.c.id,
+                        sessions_table.c.expires_at,
                         users_table.c.id.label("user_id"),
                         users_table.c.email,
                         users_table.c.display_name,
                         users_table.c.roles,
                     )
                     .join(users_table, sessions_table.c.user_id == users_table.c.id)
-                    .where(sessions_table.c.id == session_id)
+                    .where(
+                        sessions_table.c.id == session_id,
+                        sessions_table.c.expires_at > now,
+                    )
                 )
                 .mappings()
                 .first()
@@ -142,12 +213,22 @@ class PostgreSQLSessionRepository:
         if row is None:
             return None
 
-        return SessionUser(
-            id=row["user_id"],
-            email=row["email"],
-            display_name=row["display_name"],
-            roles=list(row["roles"]),
+        expires_at = row["expires_at"]
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=UTC)
+        return SessionRecord(
+            user=SessionUser(
+                id=row["user_id"],
+                email=row["email"],
+                display_name=row["display_name"],
+                roles=list(row["roles"]),
+            ),
+            expires_at=expires_at,
         )
+
+    def get(self, session_id: str | None) -> SessionUser | None:
+        record = self.get_record(session_id)
+        return record.user if record is not None else None
 
     def delete(self, session_id: str | None) -> None:
         if session_id is None:

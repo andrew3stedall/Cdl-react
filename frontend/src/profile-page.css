@@ -40,6 +40,10 @@
   gap: 0.8rem;
 }
 
+.profile-security-card {
+  gap: 0.8rem;
+}
+
 .profile-direction-grid {
   display: grid;
   gap: 0.65rem;

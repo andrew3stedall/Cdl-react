@@ -6,6 +6,7 @@ import {
   Check,
   ChevronRight,
   Circle,
+  Fingerprint,
   LogOut,
   Moon,
   RefreshCw,
@@ -32,6 +33,7 @@ import {
 import { getThemeMode, themePresets } from './theme-presets';
 import { useThemePreset } from './theme-preset-provider';
 import { getThemeColourForMode, themeColourOptions } from './theme-colours';
+import { registerPasskey } from './passkeys';
 import './profile-page.css';
 
 interface ProfilePageProps {
@@ -59,6 +61,8 @@ export function ProfilePage({ onRefresh, onSignOut, session }: ProfilePageProps)
     setPresetName,
   } = useThemePreset();
   const [isFdrScaleSheetOpen, setIsFdrScaleSheetOpen] = useState(false);
+  const [passkeyPending, setPasskeyPending] = useState(false);
+  const [passkeyMessage, setPasskeyMessage] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isFdrScaleSheetOpen) return undefined;
@@ -120,6 +124,38 @@ export function ProfilePage({ onRefresh, onSignOut, session }: ProfilePageProps)
         <h1 id="account-title">Account</h1>
         <p>Manage your identity, workspace appearance, pitch orientation, data, and session.</p>
       </header>
+
+      <Card className="profile-card profile-security-card">
+        <div className="profile-card__header">
+          <div>
+            <p className="profile-card__eyebrow">Fast sign-in</p>
+            <h2>Use Face ID or fingerprint</h2>
+          </div>
+          <Fingerprint aria-hidden="true" className="profile-appearance-icon" size={22} />
+        </div>
+        <p className="profile-card__copy">
+          Add a passkey to this device. The phone will use Face ID, fingerprint, or its secure PIN
+          when you sign in again.
+        </p>
+        <Button
+          disabled={passkeyPending}
+          onClick={() => {
+            setPasskeyMessage(null);
+            setPasskeyPending(true);
+            void registerPasskey()
+              .then((result) => {
+                setPasskeyMessage(result.ok ? 'Passkey added on this device.' : result.error.message);
+              })
+              .finally(() => setPasskeyPending(false));
+          }}
+          type="button"
+          variant="secondary"
+        >
+          <Fingerprint aria-hidden="true" size={17} />
+          {passkeyPending ? 'Waiting for device verification…' : 'Enable device sign-in'}
+        </Button>
+        {passkeyMessage ? <p aria-live="polite" className="profile-save-status" role="status">{passkeyMessage}</p> : null}
+      </Card>
 
       <div className="profile-page__grid">
         <Card className="profile-card profile-identity-card">

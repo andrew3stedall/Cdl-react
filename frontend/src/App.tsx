@@ -3,6 +3,8 @@ import { type FormEvent, useCallback, useEffect, useState } from 'react';
 import {
   canAccessProtectedRoute,
   defaultSessionClient,
+  getAppleAuthConfig,
+  getPasskeyAuthConfig,
   getUnauthenticatedSession,
   type SessionClient,
 } from './auth';
@@ -24,6 +26,7 @@ import { isSquadRoute } from './navigation';
 import { PlayerProfilePage } from './PlayerProfilePage';
 import type { PreferenceClient } from './preferences-api';
 import { ProfilePage } from './ProfilePage';
+import { loginWithPasskey } from './passkeys';
 import { RulesPage } from './RulesPage';
 import { SquadWorkspacePage } from './SquadWorkspacePage';
 import type { SquadClient } from './squad-api';
@@ -121,6 +124,8 @@ export function App({
   const [loginPassword, setLoginPassword] = useState('');
   const [loginPending, setLoginPending] = useState(false);
   const [googleClientId, setGoogleClientId] = useState<string | null>(null);
+  const [appleEnabled, setAppleEnabled] = useState(false);
+  const [passkeyEnabled, setPasskeyEnabled] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -162,6 +167,29 @@ export function App({
       cancelled = true;
     };
   }, [session, sessionClient]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (session !== undefined) return () => undefined;
+
+    void Promise.all([getAppleAuthConfig(), getPasskeyAuthConfig()])
+      .then(([appleConfig, passkeyConfig]) => {
+        if (!cancelled) {
+          setAppleEnabled(appleConfig.enabled);
+          setPasskeyEnabled(passkeyConfig.enabled);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAppleEnabled(false);
+          setPasskeyEnabled(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [session]);
 
   useEffect(() => {
     let cancelled = false;
@@ -269,6 +297,27 @@ export function App({
     [sessionClient],
   );
 
+  const handlePasskeyLogin = useCallback(async () => {
+    setLoginError(null);
+    setLoginPending(true);
+    try {
+      const result = await loginWithPasskey();
+      if (!result.ok) {
+        setLoginError(result.error.message);
+        return;
+      }
+      setSessionCheckError(null);
+      setBrowserPath('/', true);
+      setActiveSession(result.data.session);
+    } finally {
+      setLoginPending(false);
+    }
+  }, []);
+
+  const handleAppleSignIn = useCallback(() => {
+    window.location.assign('/api/auth/apple/start');
+  }, []);
+
   const handleSignOut = async () => {
     setActiveSession(null);
     setSessionCheckError(null);
@@ -320,16 +369,20 @@ export function App({
         preferenceClient={loginPreferenceClient}
       >
         <LoginPage
+          appleEnabled={appleEnabled}
           email={loginEmail}
           error={loginError}
           googleClientId={googleClientId}
           onEmailChange={setLoginEmail}
           onGoogleCredential={handleGoogleCredential}
+          onAppleSignIn={handleAppleSignIn}
+          onPasskeyLogin={handlePasskeyLogin}
           onPasswordChange={setLoginPassword}
           onRetry={() => void refreshActiveSession()}
           onSubmit={(event) => void handleLogin(event)}
           password={loginPassword}
           pending={loginPending}
+          passkeyEnabled={passkeyEnabled}
           showRetry={session === undefined}
         />
       </ThemePresetProvider>

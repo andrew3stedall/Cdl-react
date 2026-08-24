@@ -181,6 +181,9 @@ module "cloud_run_api" {
   # two-instance staging service.
   environment_variables = {
     CDL_SESSION_COOKIE_SECURE         = "true"
+    CDL_SESSION_TTL_DAYS              = "30"
+    CDL_PASSKEY_RP_ID                 = "cdl-react-staging-api-tkhbn7jfsa-ts.a.run.app"
+    CDL_PASSKEY_EXPECTED_ORIGIN       = "https://cdl-react-staging-api-tkhbn7jfsa-ts.a.run.app"
     CDL_DATABASE_POOL_SIZE            = "4"
     CDL_DATABASE_MAX_OVERFLOW         = "4"
     CDL_DATABASE_POOL_TIMEOUT_SECONDS = "10"

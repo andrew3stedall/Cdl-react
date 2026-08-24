@@ -1,14 +1,18 @@
 import { type FormEvent, useState } from 'react';
-import { ArrowRight, Eye, EyeOff, LockKeyhole, Mail, RefreshCw } from 'lucide-react';
+import { ArrowRight, Eye, EyeOff, Fingerprint, KeyRound, LockKeyhole, Mail, RefreshCw } from 'lucide-react';
 
 import { GoogleSignInButton } from './GoogleSignInButton';
 
 interface LoginPageProps {
+  appleEnabled?: boolean;
   email: string;
   error: string | null;
   googleClientId: string | null;
+  onAppleSignIn?(): void;
+  onPasskeyLogin?(): void | Promise<void>;
   password: string;
   pending: boolean;
+  passkeyEnabled?: boolean;
   showRetry: boolean;
   onEmailChange(value: string): void;
   onGoogleCredential(credential: string): void | Promise<void>;
@@ -28,11 +32,15 @@ function CastleLeagueMark() {
 }
 
 export function LoginPage({
+  appleEnabled = false,
   email,
   error,
   googleClientId,
+  onAppleSignIn = () => undefined,
+  onPasskeyLogin = () => undefined,
   password,
   pending,
+  passkeyEnabled = false,
   showRetry,
   onEmailChange,
   onGoogleCredential,
@@ -138,17 +146,32 @@ export function LoginPage({
           ) : null}
         </form>
 
-        {googleClientId ? (
+        {googleClientId || appleEnabled || passkeyEnabled ? (
           <section className="google-login login-google-redesigned" aria-label="Google sign-in">
             <div className="login-divider-row">
               <span />
               <p>or continue with</p>
               <span />
             </div>
-            <GoogleSignInButton
-              clientId={googleClientId}
-              onCredential={onGoogleCredential}
-            />
+            {googleClientId ? (
+              <GoogleSignInButton
+                clientId={googleClientId}
+                onCredential={onGoogleCredential}
+              />
+            ) : null}
+            {appleEnabled ? (
+              <button className="login-provider-button login-provider-button-apple" onClick={onAppleSignIn} type="button">
+                <span aria-hidden="true" className="login-provider-icon"></span>
+                Continue with Apple
+              </button>
+            ) : null}
+            {passkeyEnabled ? (
+              <button className="login-provider-button login-provider-button-passkey" disabled={pending} onClick={() => void onPasskeyLogin()} type="button">
+                <Fingerprint aria-hidden="true" size={20} />
+                Use Face ID, fingerprint or PIN
+                <KeyRound aria-hidden="true" size={17} />
+              </button>
+            ) : null}
           </section>
         ) : null}
 

@@ -52,6 +52,7 @@ def test_staging_can_require_secure_session_cookie(monkeypatch: pytest.MonkeyPat
     assert "Secure" in response.headers["set-cookie"]
     assert "HttpOnly" in response.headers["set-cookie"]
     assert "SameSite=lax" in response.headers["set-cookie"]
+    assert "Max-Age=2592000" in response.headers["set-cookie"]
 
 
 def test_login_rejects_invalid_credentials_without_enumerating_user() -> None:
@@ -203,3 +204,29 @@ def test_google_login_database_outage_returns_structured_503() -> None:
         "message": "Google sign-in is temporarily unavailable. Try again.",
         "details": {},
     }
+
+
+def test_apple_and_passkey_configuration_is_disabled_by_default() -> None:
+    client = TestClient(create_app())
+
+    assert client.get("/api/auth/apple/config").json() == {"enabled": False}
+    assert client.get("/api/auth/passkeys/config").json() == {
+        "enabled": False,
+        "rp_id": None,
+    }
+
+
+def test_configured_passkeys_issue_one_time_authentication_options(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("CDL_PASSKEY_RP_ID", "staging.example.test")
+    monkeypatch.setenv("CDL_PASSKEY_EXPECTED_ORIGIN", "https://staging.example.test")
+    client = TestClient(create_app())
+
+    config = client.get("/api/auth/passkeys/config")
+    options = client.get("/api/auth/passkeys/authentication/options")
+
+    assert config.json() == {"enabled": True, "rp_id": "staging.example.test"}
+    assert options.status_code == 200
+    assert isinstance(options.json()["challenge"], str)
+    assert "cdl_passkey_challenge=" in options.headers["set-cookie"]

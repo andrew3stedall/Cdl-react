@@ -91,9 +91,10 @@ function PlayerToken({ player, showOpponent, showPositionMarker }: { player: Pla
   const fixtures = player.fixtures ?? [];
   const chance = player.availabilityChance;
   const hasAvailabilityWarning = typeof chance === 'number' && Number.isFinite(chance) && chance < 100;
+  const positionClass = player.position ? ` position-${normalizePosition(player.position).toLowerCase()}` : '';
 
   return (
-    <span aria-label={`Shirt for ${player.displayName}`} className={`player-card__token${showOpponent ? ' player-card__token--with-opponent' : ''}`} role="img">
+    <span aria-label={`Shirt for ${player.displayName}`} className={`player-card__token${showOpponent ? ' player-card__token--with-opponent' : ''}${positionClass}`} role="img">
       {showPositionMarker && player.position ? <PositionMarker position={player.position} /> : null}
       <span aria-hidden="true" className="player-card__shirt-crop">
         <TeamShirt large team={player.team} />

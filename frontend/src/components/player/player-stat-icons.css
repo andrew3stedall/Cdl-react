@@ -23,15 +23,15 @@
   border-radius: 0.2rem;
   color: var(--profile-text);
   display: inline-flex;
-  height: 0.95rem;
+  height: 1.1rem;
   justify-content: center;
   position: relative;
-  width: 0.95rem;
+  width: 1.1rem;
 }
 
 .player-profile__stat-icon svg {
-  height: 0.55rem;
-  width: 0.55rem;
+  height: 0.7rem;
+  width: 0.7rem;
 }
 
 .player-profile__stat-icon--yellow {

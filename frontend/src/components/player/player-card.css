@@ -117,6 +117,10 @@
   background: color-mix(in srgb, var(--player-position-color, var(--secondary)) 20%, var(--secondary));
 }
 
+[data-position-colour-mode='card-fill'] .player-card__token.player-card__token--with-opponent {
+  background: transparent;
+}
+
 [data-position-colour-mode='card-fill'] .player-card__token--with-opponent::before {
   background: color-mix(in srgb, var(--player-position-color, var(--secondary)) 20%, var(--secondary));
 }

@@ -726,6 +726,7 @@ function opponentStatSummary(fixture: SquadApiOpponentDefensiveHistory): PlayerS
     saves: fixture.stat_icons?.saves ?? 0,
     yellowCards: fixture.stat_icons?.yellow_cards ?? 0,
     redCards: fixture.stat_icons?.red_cards ?? 0,
+    ownGoals: fixture.stat_icons?.own_goals ?? 0,
     defensiveContributions: fixture.stat_icons?.defensive_contributions ?? 0,
     bonusPoints: fixture.stat_icons?.bonus_points ?? 0,
   };
@@ -733,14 +734,29 @@ function opponentStatSummary(fixture: SquadApiOpponentDefensiveHistory): PlayerS
 
 const detailCategoryLabels: Record<string, string> = {
   assists: 'Assists',
-  bonus_points: 'Bonus points system',
+  bonus_points: 'Bonus points',
   clean_sheets: 'Clean sheets',
   defensive_contributions: 'Defensive contributions',
-  goals: 'Goals scored',
+  goals: 'Goals',
+  own_goals: 'Own goals',
   red_cards: 'Red cards',
   saves: 'Saves',
   yellow_cards: 'Yellow cards',
 };
+
+const oppositionDetailCategoryOrder = [
+  'goals',
+  'assists',
+  'clean_sheets',
+  'defensive_contributions',
+  'bonus_points',
+  'yellow_cards',
+  'red_cards',
+  'own_goals',
+  // Saves remain available after the explicitly requested order because they
+  // are still a valid FPL scoring return for goalkeeper opposition assets.
+  'saves',
+] as const;
 
 function formDetailSummary(fixture: ProfileFixture): PlayerChartDetailSummaryItem[] {
   return [
@@ -751,24 +767,35 @@ function formDetailSummary(fixture: ProfileFixture): PlayerChartDetailSummaryIte
 }
 
 function formDetailSections(fixture: ProfileFixture): PlayerChartDetailSection[] {
+  const position = fixture.position?.toUpperCase() ?? '';
+  const minutes = fixture.minutesPlayed ?? 0;
+  const goalPoints = position === 'GKP' || position === 'DEF' ? 6 : position === 'MID' ? 5 : 4;
+  const cleanSheetPoints = position === 'GKP' || position === 'DEF' ? 4 : position === 'MID' ? 1 : 0;
   const rows = [
-    { label: 'Goals scored', value: fixture.stats.goals },
-    { label: 'Assists', value: fixture.stats.assists },
-    { label: 'Clean sheets', value: fixture.stats.cleanSheets },
-    { label: 'Saves', value: fixture.stats.saves },
-    { label: 'Yellow cards', value: fixture.stats.yellowCards },
-    { label: 'Red cards', value: fixture.stats.redCards },
-    { label: 'Bonus points system', value: fixture.stats.bonusPoints },
+    { label: 'Minutes', value: minutes, points: minutes >= 60 ? 2 : minutes > 0 ? 1 : 0 },
+    { label: 'Goals', value: fixture.stats.goals, points: fixture.stats.goals * goalPoints },
+    { label: 'Assists', value: fixture.stats.assists, points: fixture.stats.assists * 3 },
+    { label: 'Clean sheets', value: fixture.stats.cleanSheets, points: fixture.stats.cleanSheets * cleanSheetPoints },
+    { label: 'Saves', value: fixture.stats.saves, points: Math.floor(fixture.stats.saves / 3) },
+    { label: 'Yellow card', value: fixture.stats.yellowCards, points: fixture.stats.yellowCards * -1 },
+    { label: 'Red card', value: fixture.stats.redCards, points: fixture.stats.redCards * -3 },
+    { label: 'Own goal', value: fixture.stats.ownGoals ?? 0, points: (fixture.stats.ownGoals ?? 0) * -2 },
+    { label: 'Bonus points', value: fixture.stats.bonusPoints, points: fixture.stats.bonusPoints },
     {
       label: 'Defensive contributions',
       value: earnedDefensiveContributionPoints(fixture.stats.defensiveContributions, fixture.position)
         ? fixture.stats.defensiveContributions
         : 0,
+      points: earnedDefensiveContributionPoints(fixture.stats.defensiveContributions, fixture.position) ? 2 : 0,
     },
   ]
     .filter((row) => row.value > 0)
-    .map((row) => ({ label: row.label, value: String(row.value) }));
+    .map((row) => ({ label: row.label, value: String(row.value), points: formatSignedPoints(row.points) }));
   return [{ title: 'Scoring returns', rows }];
+}
+
+function formatSignedPoints(value: number): string {
+  return value > 0 ? `+${value}` : String(value);
 }
 
 function opponentDetailSummary(fixture: SquadApiOpponentDefensiveHistory): PlayerChartDetailSummaryItem[] {
@@ -783,22 +810,34 @@ function opponentDetailSummary(fixture: SquadApiOpponentDefensiveHistory): Playe
 function opponentDetailSections(fixture: SquadApiOpponentDefensiveHistory): PlayerChartDetailSection[] {
   const details = fixture.stat_details ?? [];
   if (details.length > 0) {
-    const categoryOrder = Object.keys(detailCategoryLabels);
-    return categoryOrder
+    return oppositionDetailCategoryOrder
       .map((category) => ({
         title: detailCategoryLabels[category],
         rows: details
           .filter((detail) => detail.category === category)
+          .sort((left, right) => right.points - left.points)
           .map((detail) => ({
             label: detail.player_name,
-            points: detail.points > 0 ? `+${detail.points}` : undefined,
+            points: formatSignedPoints(detail.points),
             value: detail.value !== null && detail.value !== undefined && detail.value > 0 ? `(${detail.value})` : undefined,
           })),
       }))
       .filter((section) => section.rows.length > 0);
   }
 
-  const fallbackRows = Object.entries(opponentStatSummary(fixture))
+  const summary = opponentStatSummary(fixture);
+  const fallbackStats: Array<[string, number]> = [
+    ['goals', summary.goals],
+    ['assists', summary.assists],
+    ['clean_sheets', summary.cleanSheets],
+    ['defensive_contributions', summary.defensiveContributions],
+    ['bonus_points', summary.bonusPoints],
+    ['yellow_cards', summary.yellowCards],
+    ['red_cards', summary.redCards],
+    ['own_goals', summary.ownGoals ?? 0],
+    ['saves', summary.saves],
+  ];
+  const fallbackRows = fallbackStats
     .filter(([, value]) => value > 0)
     .map(([key, value]) => ({ label: detailCategoryLabels[key] ?? key, value: String(value) }));
   return [{ title: 'Recorded returns', rows: fallbackRows }];
@@ -903,6 +942,7 @@ function mapHistoryFixture(row: SquadApiHistoryResponse['history'][number], posi
       saves: row.saves,
       yellowCards: row.yellow_cards,
       redCards: row.red_cards,
+      ownGoals: row.own_goals ?? 0,
       defensiveContributions: row.defensive_contributions ?? 0,
       bonusPoints: row.bonus,
     },

@@ -68,6 +68,7 @@ class FplPlayerGameweekHistory(BaseModel):
     saves: int = 0
     yellow_cards: int = 0
     red_cards: int = 0
+    own_goals: int = 0
     bonus: int = 0
     bps: int = 0
     expected_goals: float = 0
@@ -100,6 +101,7 @@ class FplOpponentStatIcons(BaseModel):
     saves: int = 0
     yellow_cards: int = 0
     red_cards: int = 0
+    own_goals: int = 0
     defensive_contributions: int = 0
     bonus_points: int = 0
 

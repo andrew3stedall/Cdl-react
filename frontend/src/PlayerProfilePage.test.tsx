@@ -110,7 +110,14 @@ const history: SquadApiHistoryResponse = {
     } : undefined,
     stat_details: index === 0 ? [
       { category: 'goals', player_name: 'Saka', value: 1, points: 5 },
+      { category: 'goals', player_name: 'Haaland', value: 2, points: 10 },
       { category: 'assists', player_name: 'Ødegaard', value: 1, points: 3 },
+      { category: 'clean_sheets', player_name: 'Saka', value: 1, points: 1 },
+      { category: 'defensive_contributions', player_name: 'Saliba', value: 10, points: 2 },
+      { category: 'bonus_points', player_name: 'Saka', value: 3, points: 3 },
+      { category: 'yellow_cards', player_name: 'Saka', value: 1, points: -1 },
+      { category: 'red_cards', player_name: 'Saka', value: 1, points: -3 },
+      { category: 'own_goals', player_name: 'Saka', value: 1, points: -2 },
     ] : undefined,
   })),
 };
@@ -445,7 +452,10 @@ describe('PlayerProfilePage', () => {
     });
     expect(container.querySelector('[data-chart-detail-kind="form"]')).toBeTruthy();
     expect(container.textContent).toContain('Scoring returns');
-    expect(container.textContent).toContain('Goals scored');
+    expect(container.textContent).toContain('Goals');
+    expect(container.textContent).toContain('Minutes90+2');
+    expect(container.textContent).toContain('Goals2+8');
+    expect(container.textContent).toContain('Red card1-3');
 
     act(() => {
       container.querySelector('.player-chart-detail-backdrop')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
@@ -460,6 +470,17 @@ describe('PlayerProfilePage', () => {
     expect(container.querySelector('[data-chart-detail-kind="opponent"]')).toBeTruthy();
     expect(container.textContent).toContain('Saka');
     expect(container.textContent).toContain('+5');
+    expect([...container.querySelectorAll('[data-chart-detail-kind="opponent"] .player-chart-detail__section h3')].map((heading) => heading.textContent)).toEqual([
+      'Goals',
+      'Assists',
+      'Clean sheets',
+      'Defensive contributions',
+      'Bonus points',
+      'Yellow cards',
+      'Red cards',
+      'Own goals',
+    ]);
+    expect([...container.querySelectorAll('[data-chart-detail-kind="opponent"] .player-chart-detail__section:first-of-type li span')].map((row) => row.textContent)).toEqual(['Haaland', 'Saka']);
     root.unmount();
   });
 

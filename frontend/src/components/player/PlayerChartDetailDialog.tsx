@@ -66,12 +66,22 @@ export function PlayerChartDetailDialog({
             <section className="player-chart-detail__section" key={section.title}>
               <h3>{section.title}</h3>
               {section.rows.length > 0 ? (
-                <ul>
+                  <ul>
                   {section.rows.map((row, index) => (
-                    <li key={`${row.label}-${index}`}>
-                      {row.points ? <strong>{row.points}</strong> : null}
-                      <span>{row.label}</span>
-                      {row.value ? <small>{row.value}</small> : null}
+                    <li className={kind === 'form' ? 'player-chart-detail__row--form' : undefined} key={`${row.label}-${index}`}>
+                      {kind === 'form' ? (
+                        <>
+                          <span className="player-chart-detail__row-label">{row.label}</span>
+                          {row.value ? <small className="player-chart-detail__row-value">{row.value}</small> : null}
+                          {row.points ? <strong className={row.points.startsWith('-') ? 'is-negative' : undefined}>{row.points}</strong> : null}
+                        </>
+                      ) : (
+                        <>
+                          {row.points ? <strong>{row.points}</strong> : null}
+                          <span>{row.label}</span>
+                          {row.value ? <small>{row.value}</small> : null}
+                        </>
+                      )}
                     </li>
                   ))}
                 </ul>

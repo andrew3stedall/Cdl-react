@@ -95,8 +95,22 @@
 }
 
 [data-position-colour-mode='card-border'] .player-card__token {
-  border: 2px solid var(--player-position-color, var(--border));
   box-sizing: border-box;
+}
+
+[data-position-colour-mode='card-border'] .player-card__token::after {
+  border: 2px solid var(--player-position-color, var(--border));
+  border-radius: 50%;
+  box-sizing: border-box;
+  content: '';
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 1;
+}
+
+[data-position-colour-mode='card-border'] .player-card__token--with-opponent::after {
+  clip-path: inset(0 0 20% 0);
 }
 
 [data-position-colour-mode='card-fill'] .player-card__token {

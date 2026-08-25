@@ -391,6 +391,9 @@ describe('PlayerProfilePage', () => {
     expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__chart-column')).toHaveLength(10);
     expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__grouped-bar--attack')).toHaveLength(10);
     expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__grouped-bar--defence')).toHaveLength(10);
+    expect([...container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__grouped-bar-position')].map((node) => node.textContent)).toEqual(
+      Array.from({ length: 10 }, () => ['MID', 'DEF']).flat(),
+    );
     expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__grouped-bar-value')).toHaveLength(20);
     expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__grouped-stat-icons .player-profile__stat-icon')).toHaveLength(3);
     expect(container.querySelector('[data-chart-kind="opponent-defence"]')?.getAttribute('data-y-axis-min')).toBe('0');

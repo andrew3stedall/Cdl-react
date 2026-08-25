@@ -329,7 +329,7 @@ export function SquadPage({
   const [lineupDirty, setLineupDirty] = useState(false);
   const [lineupSaving, setLineupSaving] = useState(false);
   const [clockNow, setClockNow] = useState(() => Date.now());
-  const [, setStatus] = useState('Loading squad.');
+  const [status, setStatus] = useState('Loading squad.');
   const [drawerMode, setDrawerMode] = useState<DrawerMode>(null);
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerView | null>(null);
   const [substitutionSource, setSubstitutionSource] = useState<TeamSelectionPlayer | null>(null);
@@ -883,6 +883,9 @@ export function SquadPage({
             </Button>
           </div>
         ) : null}
+        <p className="sr-only" role="status">
+          {lineupLocked ? `Lineup locked. ${teamSelection?.fixtureLock.reason ?? 'The gameweek deadline has passed.'}` : status}
+        </p>
       </section>
 
       {proposedTradeCount > 0 ? (

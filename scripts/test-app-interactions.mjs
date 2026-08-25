@@ -809,8 +809,8 @@ async function testLockedTeamSelection(page) {
   await page.getByRole('button', { name: 'View as list' }).click();
 
   const saveLineup = page.getByRole('button', { name: 'Save lineup' });
-  if (!(await saveLineup.isDisabled())) {
-    throw new Error('Expected Save lineup to be disabled after fixture lock');
+  if (await saveLineup.count() !== 0) {
+    throw new Error('Save lineup should be absent when there are no unsaved lineup changes');
   }
   const tripleCaptainActivate = page.getByRole('button', { name: 'Triple Captain, available' });
   if (!(await tripleCaptainActivate.isDisabled())) {

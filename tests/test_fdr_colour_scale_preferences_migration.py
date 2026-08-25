@@ -69,3 +69,15 @@ def test_player_colour_scales_migration_is_append_only() -> None:
     assert '"position_colour_scale"' in content
     assert '"metric_colour_scale"' in content
     assert '"metric_colour_scale_reversed"' in content
+
+
+def test_player_custom_colour_palettes_migration_is_append_only() -> None:
+    content = Path(
+        "migrations/versions/0021_player_custom_colour_palettes.py",
+    ).read_text(encoding="utf-8")
+
+    assert "Revision ID: 0021_player_custom_colour_palettes" in content
+    assert "Revises: 0020_player_colour_scales" in content
+    assert '"position_colour_mode"' in content
+    assert '"player_colour_palettes"' in content
+    assert '"colours"' in content

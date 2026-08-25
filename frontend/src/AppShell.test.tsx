@@ -425,6 +425,8 @@ describe('AppShell integration', () => {
       await Promise.resolve();
     });
     expect(container.querySelector('#account-settings-title')?.textContent).toBe('Position colours');
+    expect(container.querySelector('[aria-label="Example player card"] .player-card__token.position-mid')).not.toBeNull();
+    expect(container.querySelector('[aria-label="Example player card"] .player-card__opponent--fdr-4')).not.toBeNull();
     container.querySelector<HTMLButtonElement>('[aria-controls="position-colour-sheet"]')?.click();
     await act(async () => {
       await Promise.resolve();

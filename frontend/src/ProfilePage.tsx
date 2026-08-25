@@ -3,6 +3,7 @@ import {
   ArrowLeft,
   ArrowDown,
   ArrowUp,
+  BarChart3,
   Check,
   ChevronRight,
   Circle,
@@ -11,6 +12,7 @@ import {
   Sun,
   Type,
   PaintBucket,
+  Palette,
   Trash2,
   X,
 } from 'lucide-react';
@@ -30,6 +32,15 @@ import {
   type FdrColourScale,
   type FdrDisplayMode,
 } from './fdr-colour-scales';
+import {
+  getMetricColourScale,
+  getMetricPalette,
+  getPositionColourScale,
+  metricColourScales,
+  positionColourScales,
+  type MetricColourScaleName,
+  type PositionColourScaleName,
+} from './player-colour-scales';
 import { getThemeMode, themePresets } from './theme-presets';
 import { useThemePreset } from './theme-preset-provider';
 import { getThemeColourForMode, themeColourOptions } from './theme-colours';
@@ -50,6 +61,9 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
     fdrScaleReversed,
     customFdrAnchors,
     customFdrPalettes,
+    positionColourScale,
+    metricColourScale,
+    metricColourScaleReversed,
     themeColour,
     preset,
     saveStatus,
@@ -60,6 +74,9 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
     setCustomFdrAnchors,
     saveCustomFdrPalette,
     deleteCustomFdrPalette,
+    setPositionColourScale,
+    setMetricColourScale,
+    setMetricColourScaleReversed,
     useCustomFdrPalette,
     setThemeColour,
     setPresetName,
@@ -72,6 +89,7 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
   const isAppearancePage = currentPath === '/account/appearance' || currentPath === '/profile/appearance';
   const isFdrPage = currentPath === '/account/fdr' || currentPath === '/profile/fdr';
   const isOrientationPage = currentPath === '/account/orientation' || currentPath === '/profile/orientation';
+  const isPlayerColoursPage = currentPath === '/account/player-colours' || currentPath === '/profile/player-colours';
 
   useEffect(() => {
     if (!isAccountSummary) return undefined;
@@ -203,12 +221,29 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
     );
   }
 
+  if (isPlayerColoursPage) {
+    return (
+      <main aria-labelledby="account-settings-title" className="feature-screen profile-page profile-page--subpage">
+        <SettingsPageHeader onBack={() => onNavigate('/account')} title="Player colours" />
+        <PlayerColourSettingsCard
+          metricColourScale={metricColourScale}
+          metricColourScaleReversed={metricColourScaleReversed}
+          mode={themeMode}
+          onSetMetricColourScale={setMetricColourScale}
+          onSetMetricColourScaleReversed={setMetricColourScaleReversed}
+          onSetPositionColourScale={setPositionColourScale}
+          positionColourScale={positionColourScale}
+        />
+      </main>
+    );
+  }
+
   return (
     <main aria-labelledby="account-title" className="feature-screen profile-page profile-page--summary">
       <header className="profile-page__header">
         <p className="eyebrow">Account</p>
         <h1 id="account-title">Account</h1>
-        <p>Manage your identity, workspace appearance, pitch orientation, and FDR colours.</p>
+        <p>Manage your identity, workspace appearance, player colours, pitch orientation, and FDR colours.</p>
       </header>
 
       {isAccountSummary && passkeyStatus?.enabled && passkeyStatus.registeredCount === 0 ? (
@@ -272,6 +307,21 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
           <span className="profile-summary-value">{preset.label} · {themeColour}</span>
           <AppearanceSummaryPreview preset={preset} themeColour={themeColour} />
           <ChevronRight aria-hidden="true" className="profile-summary-card__arrow" size={18} />
+        </ProfileSummaryCard>
+
+        <ProfileSummaryCard
+          ariaLabel="Open player colour settings"
+          onSelect={() => onNavigate('/account/player-colours')}
+        >
+          <div className="profile-card__header">
+            <div>
+              <p className="profile-card__eyebrow">Player colours</p>
+              <h2>Positions &amp; metrics</h2>
+            </div>
+            <ChevronRight aria-hidden="true" className="profile-summary-card__arrow" size={18} />
+          </div>
+          <span className="profile-summary-value">{getPositionColourScale(positionColourScale).label} · {getMetricColourScale(metricColourScale).label} metrics</span>
+          <PlayerColourSummaryPreview metricColourScale={metricColourScale} metricColourScaleReversed={metricColourScaleReversed} mode={themeMode} positionColourScale={positionColourScale} />
         </ProfileSummaryCard>
 
         <ProfileSummaryCard
@@ -358,6 +408,143 @@ function AppearanceSummaryPreview({ preset, themeColour }: { preset: ThemePreset
         <span />
         <span />
       </span>
+    </span>
+  );
+}
+
+function PlayerColourSummaryPreview({
+  metricColourScale,
+  metricColourScaleReversed,
+  mode,
+  positionColourScale,
+}: {
+  metricColourScale: MetricColourScaleName;
+  metricColourScaleReversed: boolean;
+  mode: 'light' | 'dark';
+  positionColourScale: PositionColourScaleName;
+}) {
+  return (
+    <span aria-label={`${getPositionColourScale(positionColourScale).label} position colours and ${getMetricColourScale(metricColourScale).label} metric colours`} className="profile-player-colours-summary">
+      <PositionPaletteBar positionColourScale={positionColourScale} />
+      <MetricPaletteBar metricColourScale={metricColourScale} metricColourScaleReversed={metricColourScaleReversed} mode={mode} />
+    </span>
+  );
+}
+
+function PlayerColourSettingsCard({
+  metricColourScale,
+  metricColourScaleReversed,
+  mode,
+  onSetMetricColourScale,
+  onSetMetricColourScaleReversed,
+  onSetPositionColourScale,
+  positionColourScale,
+}: {
+  metricColourScale: MetricColourScaleName;
+  metricColourScaleReversed: boolean;
+  mode: 'light' | 'dark';
+  onSetMetricColourScale: (scale: MetricColourScaleName) => void;
+  onSetMetricColourScaleReversed: (reversed: boolean) => void;
+  onSetPositionColourScale: (scale: PositionColourScaleName) => void;
+  positionColourScale: PositionColourScaleName;
+}) {
+  return (
+    <Card className="profile-card profile-player-colours-card profile-settings-card">
+      <div className="profile-card__header">
+        <div>
+          <p className="profile-card__eyebrow">Player colours</p>
+          <h2>Positions &amp; metrics</h2>
+        </div>
+        <Palette aria-hidden="true" className="profile-appearance-icon" size={21} />
+      </div>
+
+      <section aria-labelledby="position-colours-title" className="profile-player-colour-section">
+        <div className="profile-player-colour-section__header">
+          <div>
+            <strong id="position-colours-title">Position colours</strong>
+            <small>Categorical colours keep each player position distinct.</small>
+          </div>
+          <BarChart3 aria-hidden="true" className="profile-appearance-icon" size={18} />
+        </div>
+        <PositionPaletteBar positionColourScale={positionColourScale} />
+        <div aria-label="Position colour scales" className="profile-player-colour-options" role="group">
+          {positionColourScales.map((scale) => (
+            <button
+              aria-pressed={scale.name === positionColourScale}
+              className={`profile-player-colour-option${scale.name === positionColourScale ? ' is-selected' : ''}`}
+              key={scale.name}
+              onClick={() => onSetPositionColourScale(scale.name)}
+              type="button"
+            >
+              <PositionPaletteBar positionColourScale={scale.name} />
+              <span>{scale.label}</span>
+              <span aria-hidden="true" className="profile-preset-check">{scale.name === positionColourScale ? <Check size={15} /> : <Circle size={15} />}</span>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section aria-labelledby="metric-colours-title" className="profile-player-colour-section">
+        <div className="profile-player-colour-section__header">
+          <div>
+            <strong id="metric-colours-title">Metric colours</strong>
+            <small>Sequential colours move from lower to higher values.</small>
+          </div>
+          <BarChart3 aria-hidden="true" className="profile-appearance-icon" size={18} />
+        </div>
+        <MetricPaletteBar metricColourScale={metricColourScale} metricColourScaleReversed={metricColourScaleReversed} mode={mode} />
+        <div aria-label="Metric colour scales" className="profile-player-colour-options" role="group">
+          {metricColourScales.map((scale) => (
+            <button
+              aria-pressed={scale.name === metricColourScale}
+              className={`profile-player-colour-option${scale.name === metricColourScale ? ' is-selected' : ''}`}
+              key={scale.name}
+              onClick={() => onSetMetricColourScale(scale.name)}
+              type="button"
+            >
+              <MetricPaletteBar metricColourScale={scale.name} metricColourScaleReversed={metricColourScaleReversed} mode={mode} />
+              <span>{scale.label}</span>
+              <span aria-hidden="true" className="profile-preset-check">{scale.name === metricColourScale ? <Check size={15} /> : <Circle size={15} />}</span>
+            </button>
+          ))}
+        </div>
+        <label className="profile-fdr-reverse-toggle">
+          <input checked={metricColourScaleReversed} onChange={(event) => onSetMetricColourScaleReversed(event.target.checked)} type="checkbox" />
+          <span>
+            <strong>Reverse order</strong>
+            <small>Swap which end of the scale represents lower and higher values.</small>
+          </span>
+        </label>
+      </section>
+    </Card>
+  );
+}
+
+function PositionPaletteBar({ positionColourScale }: { positionColourScale: PositionColourScaleName }) {
+  const palette = getPositionColourScale(positionColourScale);
+  return (
+    <span aria-label={`${palette.label} position colour scale`} className="profile-position-palette-bar">
+      {(['GKP', 'DEF', 'MID', 'FWD'] as const).map((position) => (
+        <span key={position} style={{ '--position-colour': palette.positions[position] } as CSSProperties}>{position}</span>
+      ))}
+    </span>
+  );
+}
+
+function MetricPaletteBar({
+  metricColourScale,
+  metricColourScaleReversed,
+  mode,
+}: {
+  metricColourScale: MetricColourScaleName;
+  metricColourScaleReversed: boolean;
+  mode: 'light' | 'dark';
+}) {
+  return (
+    <span aria-label={`${getMetricColourScale(metricColourScale).label} sequential metric colour scale`} className="profile-metric-palette-bar">
+      {getMetricPalette(metricColourScale, mode, metricColourScaleReversed).map((colour, index) => (
+        <span key={`${metricColourScale}-${mode}-${index}`} style={{ backgroundColor: colour }} />
+      ))}
     </span>
   );
 }

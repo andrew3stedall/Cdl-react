@@ -19,12 +19,12 @@
 .player-profile__stat-icon {
   align-items: center;
   background: color-mix(in srgb, var(--profile-panel) 80%, transparent);
-  border: 1px solid color-mix(in srgb, var(--profile-text) 45%, transparent);
   border-radius: 0.2rem;
   color: var(--profile-text);
   display: inline-flex;
   height: 1.1rem;
   justify-content: center;
+  opacity: 1;
   position: relative;
   width: 1.1rem;
 }

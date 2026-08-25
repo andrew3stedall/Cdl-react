@@ -7,6 +7,7 @@ import type { SessionState, UserPreferences } from './contracts';
 import type { LeagueClient, LeagueSnapshot } from './league-api';
 import type { FdrCustomPalette } from './fdr-colour-scales';
 import type { FdrCustomPaletteDraft, PreferenceClient } from './preferences-api';
+import type { PlayerColourPalette } from './player-colour-scales';
 
 const testGlobal = globalThis as typeof globalThis & {
   IS_REACT_ACT_ENVIRONMENT: boolean;
@@ -26,6 +27,7 @@ const authenticatedSession: SessionState = {
 
 class MemoryPreferenceClient implements PreferenceClient {
   palettes: FdrCustomPalette[] = [];
+  playerPalettes: PlayerColourPalette[] = [];
   preferences: UserPreferences = {
     themePreset: 'teal-light',
     attackDirection: 'up',
@@ -54,6 +56,20 @@ class MemoryPreferenceClient implements PreferenceClient {
 
   async deleteFdrCustomPalette(paletteId: string): Promise<void> {
     this.palettes = this.palettes.filter((palette) => palette.id !== paletteId);
+  }
+
+  async getPlayerColourPalettes(): Promise<PlayerColourPalette[]> {
+    return this.playerPalettes;
+  }
+
+  async createPlayerColourPalette(palette: Omit<PlayerColourPalette, 'id'>): Promise<PlayerColourPalette> {
+    const saved = { ...palette, id: `player-palette-${this.playerPalettes.length + 1}` };
+    this.playerPalettes = [...this.playerPalettes, saved];
+    return saved;
+  }
+
+  async deletePlayerColourPalette(paletteId: string): Promise<void> {
+    this.playerPalettes = this.playerPalettes.filter((palette) => palette.id !== paletteId);
   }
 }
 
@@ -405,28 +421,89 @@ describe('AppShell integration', () => {
       await Promise.resolve();
     });
     await act(async () => {
-      container.querySelector<HTMLButtonElement>('[aria-label="Open player colour settings"]')?.click();
+      container.querySelector<HTMLButtonElement>('[aria-label="Open player position colour settings"]')?.click();
       await Promise.resolve();
     });
-    expect(container.querySelector('#account-settings-title')?.textContent).toBe('Player colours');
+    expect(container.querySelector('#account-settings-title')?.textContent).toBe('Position colours');
+    container.querySelector<HTMLButtonElement>('[aria-controls="position-colour-sheet"]')?.click();
+    await act(async () => {
+      await Promise.resolve();
+    });
     expect(container.querySelectorAll('[aria-label="Position colour scales"] .profile-player-colour-option')).toHaveLength(3);
-    expect(container.querySelectorAll('[aria-label="Metric colour scales"] .profile-player-colour-option')).toHaveLength(4);
     const oceanPositions = [...container.querySelectorAll<HTMLButtonElement>('[aria-label="Position colour scales"] .profile-player-colour-option')]
       .find((option) => option.textContent?.includes('Ocean'));
-    const purpleMetrics = [...container.querySelectorAll<HTMLButtonElement>('[aria-label="Metric colour scales"] .profile-player-colour-option')]
-      .find((option) => option.textContent?.includes('Purple'));
     expect(oceanPositions).toBeDefined();
-    expect(purpleMetrics).toBeDefined();
     await act(async () => {
       oceanPositions?.click();
-      purpleMetrics?.click();
-      container.querySelector<HTMLInputElement>('.profile-player-colours-card .profile-fdr-reverse-toggle input')?.click();
       await Promise.resolve();
     });
     expect(preferenceClient.preferences.positionColourScale).toBe('Ocean');
-    expect(preferenceClient.preferences.metricColourScale).toBe('Purple');
-    expect(preferenceClient.preferences.metricColourScaleReversed).toBe(true);
     expect(document.documentElement.dataset.positionColourScale).toBe('Ocean');
+
+    container.querySelector<HTMLButtonElement>('[aria-controls="position-colour-sheet"]')?.click();
+    await act(async () => {
+      await Promise.resolve();
+    });
+    const positionPaletteName = container.querySelector<HTMLInputElement>('[aria-label="Saved position palette name"]');
+    await act(async () => {
+      if (positionPaletteName) {
+        const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+        setter?.call(positionPaletteName, 'Club positions');
+        positionPaletteName.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      await Promise.resolve();
+    });
+    const savePositionPalette = [...container.querySelectorAll<HTMLButtonElement>('button')]
+      .find((button) => button.textContent?.includes('Save palette'));
+    await act(async () => {
+      savePositionPalette?.click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(preferenceClient.playerPalettes.map((palette) => palette.name)).toEqual(['Club positions']);
+    const useCustomPosition = [...container.querySelectorAll<HTMLButtonElement>('button')]
+      .find((button) => button.textContent?.trim() === 'Use custom');
+    await act(async () => {
+      useCustomPosition?.click();
+      await Promise.resolve();
+    });
+    expect(preferenceClient.preferences.positionColourScale).toBe('Custom');
+    expect(document.documentElement.dataset.positionColourScale).toBe('Custom');
+
+    const nameFillMode = container.querySelector<HTMLButtonElement>('[aria-label="Position colour application"] button:nth-child(2)');
+    await act(async () => {
+      nameFillMode?.click();
+      await Promise.resolve();
+    });
+    expect(preferenceClient.preferences.positionColourMode).toBe('name-fill');
+    expect(document.documentElement.dataset.positionColourMode).toBe('name-fill');
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('.profile-subpage-back')?.click();
+      await Promise.resolve();
+      container.querySelector<HTMLButtonElement>('[aria-label="Open player metric colour settings"]')?.click();
+      await Promise.resolve();
+    });
+    expect(container.querySelector('#account-settings-title')?.textContent).toBe('Metric colours');
+    container.querySelector<HTMLButtonElement>('[aria-controls="metric-colour-sheet"]')?.click();
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(container.querySelectorAll('[aria-label="Metric colour scales"] .profile-player-colour-option')).toHaveLength(4);
+    const purpleMetrics = [...container.querySelectorAll<HTMLButtonElement>('[aria-label="Metric colour scales"] .profile-player-colour-option')]
+      .find((option) => option.textContent?.includes('Purple'));
+    expect(purpleMetrics).toBeDefined();
+    await act(async () => {
+      purpleMetrics?.click();
+      await Promise.resolve();
+    });
+    expect(preferenceClient.preferences.metricColourScale).toBe('Purple');
+    expect(document.documentElement.dataset.metricColourScale).toBe('Purple');
+    await act(async () => {
+      container.querySelector<HTMLInputElement>('.profile-fdr-reverse-toggle input')?.click();
+      await Promise.resolve();
+    });
+    expect(preferenceClient.preferences.metricColourScaleReversed).toBe(true);
     expect(document.documentElement.dataset.metricColourScale).toBe('Purple');
 
     await act(async () => {

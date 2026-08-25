@@ -15,6 +15,8 @@ SUPPORTED_THEME_PRESETS = {
 }
 SUPPORTED_ATTACK_DIRECTIONS = {"up", "down"}
 SUPPORTED_FDR_DISPLAY_MODES = {"font", "fill"}
+SUPPORTED_POSITION_COLOUR_SCALES = {"Classic", "Ocean", "Vibrant"}
+SUPPORTED_METRIC_COLOUR_SCALES = {"Blue", "Teal", "Purple", "Amber"}
 SUPPORTED_FDR_SCALES = {
     "BrBG",
     "RdBu",
@@ -42,6 +44,8 @@ class UserPreferenceService:
             or preferences.attack_direction not in SUPPORTED_ATTACK_DIRECTIONS
             or preferences.fdr_scale not in SUPPORTED_FDR_SCALES
             or preferences.fdr_display_mode not in SUPPORTED_FDR_DISPLAY_MODES
+            or preferences.position_colour_scale not in SUPPORTED_POSITION_COLOUR_SCALES
+            or preferences.metric_colour_scale not in SUPPORTED_METRIC_COLOUR_SCALES
             or not THEME_COLOUR_PATTERN.fullmatch(preferences.light_theme_colour)
             or not THEME_COLOUR_PATTERN.fullmatch(preferences.dark_theme_colour)
             or not THEME_COLOUR_PATTERN.fullmatch(preferences.fdr_custom_min)

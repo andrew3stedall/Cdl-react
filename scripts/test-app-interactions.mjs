@@ -708,7 +708,7 @@ async function testMobileNavigationClearance(page) {
   }
 
   await page.goto(baseUrl + '/account', { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: /Option \d+/ }).click();
+  await page.getByRole('button', { name: /FDR colour scale option \d+/ }).click();
   const sheet = page.locator('#fdr-scale-sheet');
   await sheet.waitFor({ state: 'visible' });
   const chooserOpenedScrollY = await page.evaluate(() => window.scrollY);

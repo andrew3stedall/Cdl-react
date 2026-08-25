@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import type { AttackDirection, ThemePreset, UserPreferences } from './contracts';
 import {
@@ -17,6 +17,17 @@ import {
   type FdrScaleName,
 } from './fdr-colour-scales';
 import { FallbackPreferenceClient, type FdrCustomPaletteDraft, type PreferenceClient } from './preferences-api';
+import {
+  defaultMetricColourScale,
+  defaultMetricColourScaleReversed,
+  defaultPositionColourScale,
+  getMetricPalette,
+  getPositionColourScale,
+  resolveMetricColourScale,
+  resolvePositionColourScale,
+  type MetricColourScaleName,
+  type PositionColourScaleName,
+} from './player-colour-scales';
 import { getThemeMode, getThemePresetClassName, resolveThemePreset } from './theme-presets';
 import { getStoredThemePreset, setThemePresetCookie } from './theme-cookie';
 import {
@@ -33,6 +44,9 @@ interface ThemePresetContextValue {
   fdrScaleReversed: boolean;
   customFdrAnchors: FdrCustomAnchors;
   customFdrPalettes: FdrCustomPalette[];
+  positionColourScale: PositionColourScaleName;
+  metricColourScale: MetricColourScaleName;
+  metricColourScaleReversed: boolean;
   themeColour: string;
   preset: ThemePreset;
   setAttackDirection: (direction: AttackDirection) => void;
@@ -43,6 +57,9 @@ interface ThemePresetContextValue {
   useCustomFdrPalette: (palette: FdrCustomPalette) => void;
   saveCustomFdrPalette: (palette: FdrCustomPaletteDraft) => Promise<FdrCustomPalette>;
   deleteCustomFdrPalette: (paletteId: string) => Promise<void>;
+  setPositionColourScale: (scale: PositionColourScaleName) => void;
+  setMetricColourScale: (scale: MetricColourScaleName) => void;
+  setMetricColourScaleReversed: (reversed: boolean) => void;
   setThemeColour: (colour: string) => void;
   setPresetName: (presetName: ThemePreset['name']) => void;
   saveStatus: 'idle' | 'saving' | 'saved' | 'error';
@@ -71,9 +88,14 @@ export function ThemePresetProvider({
   const [fdrDisplayMode, setFdrDisplayModeState] = useState<FdrDisplayMode>(defaultFdrDisplayMode);
   const [customFdrAnchors, setCustomFdrAnchorsState] = useState(defaultFdrCustomAnchors);
   const [customFdrPalettes, setCustomFdrPalettes] = useState<FdrCustomPalette[]>([]);
+  const [positionColourScale, setPositionColourScaleState] = useState<PositionColourScaleName>(defaultPositionColourScale);
+  const [metricColourScale, setMetricColourScaleState] = useState<MetricColourScaleName>(defaultMetricColourScale);
+  const [metricColourScaleReversed, setMetricColourScaleReversedState] = useState(defaultMetricColourScaleReversed);
   const [themeColour, setThemeColourState] = useState(defaultThemeColour);
   const [themeClockTick, setThemeClockTick] = useState(() => Date.now());
   const [saveStatus, setSaveStatus] = useState<ThemePresetContextValue['saveStatus']>('idle');
+  const latestPreferencesRef = useRef<UserPreferences | null>(null);
+  const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
   const preset = useMemo(
     () => applyThemeColours(resolveThemePreset(presetName), themeColour),
     [presetName, themeClockTick, themeColour],
@@ -100,8 +122,12 @@ export function ThemePresetProvider({
           setFdrScaleState(resolveFdrScaleName(preferences.fdrScale));
           setFdrScaleReversedState(preferences.fdrScaleReversed ?? defaultFdrScaleReversed);
           setFdrDisplayModeState(preferences.fdrDisplayMode ?? defaultFdrDisplayMode);
+          setPositionColourScaleState(resolvePositionColourScale(preferences.positionColourScale));
+          setMetricColourScaleState(resolveMetricColourScale(preferences.metricColourScale));
+          setMetricColourScaleReversedState(preferences.metricColourScaleReversed ?? defaultMetricColourScaleReversed);
           setThemeColourState(resolveThemeBaseColour(preferences.lightThemeColour ?? preferences.darkThemeColour));
           setCustomFdrAnchorsState(resolveFdrCustomAnchors(preferences.fdrCustomAnchors));
+          latestPreferencesRef.current = preferences;
         }
       })
       .catch(() => {
@@ -138,6 +164,8 @@ export function ThemePresetProvider({
     const themeMode = getThemeMode(preset);
     const fdrPalette = getFdrPalette(fdrScale, themeMode, fdrScaleReversed, customFdrAnchors);
     const fdrFillPalette = getFdrFillPalette(fdrScale, themeMode, fdrScaleReversed, customFdrAnchors);
+    const positionPalette = getPositionColourScale(positionColourScale);
+    const metricPalette = getMetricPalette(metricColourScale, themeMode, metricColourScaleReversed);
     const tokenValues: Record<string, string> = {
       background: colors.background,
       foreground: colors.foreground,
@@ -177,32 +205,62 @@ export function ThemePresetProvider({
       root.style.setProperty(`--cdl-fdr-fill-${index + 1}`, fdrFillPalette[index]);
       root.style.setProperty(`--cdl-fdr-fill-foreground-${index + 1}`, getFdrFillForeground(fdrFillPalette[index]));
     });
+    root.style.setProperty('--cdl-position-gkp', positionPalette.positions.GKP);
+    root.style.setProperty('--cdl-position-def', positionPalette.positions.DEF);
+    root.style.setProperty('--cdl-position-mid', positionPalette.positions.MID);
+    root.style.setProperty('--cdl-position-fwd', positionPalette.positions.FWD);
+    metricPalette.forEach((color, index) => root.style.setProperty(`--cdl-metric-${index + 1}`, color));
     root.dataset.fdrScale = fdrScale;
     root.dataset.fdrScaleReversed = String(fdrScaleReversed);
     root.dataset.fdrDisplayMode = fdrDisplayMode;
-  }, [customFdrAnchors, fdrDisplayMode, fdrScale, fdrScaleReversed, preset]);
+    root.dataset.positionColourScale = positionColourScale;
+    root.dataset.metricColourScale = metricColourScale;
+    root.dataset.metricColourScaleReversed = String(metricColourScaleReversed);
+  }, [customFdrAnchors, fdrDisplayMode, fdrScale, fdrScaleReversed, metricColourScale, metricColourScaleReversed, positionColourScale, preset]);
 
   const savePreference = (preferences: UserPreferences) => {
+    latestPreferencesRef.current = preferences;
     setSaveStatus('saving');
 
-    preferenceClient
-      .updatePreferences(preferences)
-      .then(() => {
-        setSaveStatus('saved');
+    saveQueueRef.current = saveQueueRef.current
+      .catch(() => undefined)
+      .then(async () => {
+        const nextPreferences = latestPreferencesRef.current;
+        if (nextPreferences) await preferenceClient.updatePreferences(nextPreferences);
       })
-      .catch(() => {
-        setSaveStatus('error');
-      });
+      .then(() => setSaveStatus('saved'))
+      .catch(() => setSaveStatus('error'));
   };
 
   const value = useMemo<ThemePresetContextValue>(
-    () => ({
+    () => {
+      const savePreferencePatch = (patch: Partial<UserPreferences>) => {
+        const basePreferences = latestPreferencesRef.current ?? {
+          themePreset: preset.name,
+          attackDirection,
+          fdrScale,
+          fdrScaleReversed,
+          fdrDisplayMode,
+          positionColourScale,
+          metricColourScale,
+          metricColourScaleReversed,
+          lightThemeColour: themeColour,
+          darkThemeColour: getThemeColourForMode(themeColour, 'dark'),
+          fdrCustomAnchors: customFdrAnchors,
+        };
+        savePreference({ ...basePreferences, ...patch });
+      };
+
+      return ({
       attackDirection,
       fdrDisplayMode,
       fdrScale,
       fdrScaleReversed,
       customFdrAnchors,
       customFdrPalettes,
+      positionColourScale,
+      metricColourScale,
+      metricColourScaleReversed,
       themeColour,
       preset,
       setAttackDirection: (nextAttackDirection) => {
@@ -213,6 +271,9 @@ export function ThemePresetProvider({
           fdrScale,
           fdrScaleReversed,
           fdrDisplayMode,
+          positionColourScale,
+          metricColourScale,
+          metricColourScaleReversed,
           lightThemeColour: themeColour,
           darkThemeColour: getThemeColourForMode(themeColour, 'dark'),
           fdrCustomAnchors: customFdrAnchors,
@@ -226,6 +287,9 @@ export function ThemePresetProvider({
           fdrScale,
           fdrScaleReversed,
           fdrDisplayMode: nextFdrDisplayMode,
+          positionColourScale,
+          metricColourScale,
+          metricColourScaleReversed,
           lightThemeColour: themeColour,
           darkThemeColour: getThemeColourForMode(themeColour, 'dark'),
           fdrCustomAnchors: customFdrAnchors,
@@ -239,6 +303,9 @@ export function ThemePresetProvider({
           fdrScale: nextFdrScale,
           fdrScaleReversed,
           fdrDisplayMode,
+          positionColourScale,
+          metricColourScale,
+          metricColourScaleReversed,
           lightThemeColour: themeColour,
           darkThemeColour: getThemeColourForMode(themeColour, 'dark'),
           fdrCustomAnchors: customFdrAnchors,
@@ -252,6 +319,9 @@ export function ThemePresetProvider({
           fdrScale,
           fdrScaleReversed: nextFdrScaleReversed,
           fdrDisplayMode,
+          positionColourScale,
+          metricColourScale,
+          metricColourScaleReversed,
           lightThemeColour: themeColour,
           darkThemeColour: getThemeColourForMode(themeColour, 'dark'),
           fdrCustomAnchors: customFdrAnchors,
@@ -266,6 +336,9 @@ export function ThemePresetProvider({
           fdrScale,
           fdrScaleReversed,
           fdrDisplayMode,
+          positionColourScale,
+          metricColourScale,
+          metricColourScaleReversed,
           lightThemeColour: themeColour,
           darkThemeColour: getThemeColourForMode(themeColour, 'dark'),
           fdrCustomAnchors: resolvedAnchors,
@@ -281,6 +354,9 @@ export function ThemePresetProvider({
           fdrScale: nextScale,
           fdrScaleReversed,
           fdrDisplayMode,
+          positionColourScale,
+          metricColourScale,
+          metricColourScaleReversed,
           lightThemeColour: themeColour,
           darkThemeColour: getThemeColourForMode(themeColour, 'dark'),
           fdrCustomAnchors: palette.anchors,
@@ -301,6 +377,18 @@ export function ThemePresetProvider({
         await preferenceClient.deleteFdrCustomPalette(paletteId);
         setCustomFdrPalettes((current) => current.filter((palette) => palette.id !== paletteId));
       },
+      setPositionColourScale: (nextPositionColourScale) => {
+        setPositionColourScaleState(nextPositionColourScale);
+        savePreferencePatch({ positionColourScale: nextPositionColourScale });
+      },
+      setMetricColourScale: (nextMetricColourScale) => {
+        setMetricColourScaleState(nextMetricColourScale);
+        savePreferencePatch({ metricColourScale: nextMetricColourScale });
+      },
+      setMetricColourScaleReversed: (nextMetricColourScaleReversed) => {
+        setMetricColourScaleReversedState(nextMetricColourScaleReversed);
+        savePreferencePatch({ metricColourScaleReversed: nextMetricColourScaleReversed });
+      },
       setThemeColour: (nextColour) => {
         const resolvedColour = resolveThemeBaseColour(nextColour);
         setThemeColourState(resolvedColour);
@@ -310,6 +398,9 @@ export function ThemePresetProvider({
           fdrScale,
           fdrScaleReversed,
           fdrDisplayMode,
+          positionColourScale,
+          metricColourScale,
+          metricColourScaleReversed,
           lightThemeColour: resolvedColour,
           darkThemeColour: getThemeColourForMode(resolvedColour, 'dark'),
           fdrCustomAnchors: customFdrAnchors,
@@ -326,14 +417,18 @@ export function ThemePresetProvider({
           fdrScale,
           fdrScaleReversed,
           fdrDisplayMode,
+          positionColourScale,
+          metricColourScale,
+          metricColourScaleReversed,
           lightThemeColour: themeColour,
           darkThemeColour: getThemeColourForMode(themeColour, 'dark'),
           fdrCustomAnchors: customFdrAnchors,
         });
       },
       saveStatus,
-    }),
-    [attackDirection, customFdrAnchors, customFdrPalettes, fdrDisplayMode, fdrScale, fdrScaleReversed, preferenceClient, preset, saveStatus, themeColour],
+      });
+    },
+    [attackDirection, customFdrAnchors, customFdrPalettes, fdrDisplayMode, fdrScale, fdrScaleReversed, metricColourScale, metricColourScaleReversed, positionColourScale, preferenceClient, preset, saveStatus, themeColour],
   );
 
   return <ThemePresetContext.Provider value={value}>{children}</ThemePresetContext.Provider>;

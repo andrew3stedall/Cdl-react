@@ -713,7 +713,6 @@ async function testMobileNavigationClearance(page) {
   await page.locator('.profile-fdr-scale-trigger').click();
   const sheet = page.locator('#fdr-scale-sheet');
   await sheet.waitFor({ state: 'visible' });
-  await sheet.getByRole('button', { name: 'FDR colour scale option 1' }).click();
   const chooserOpenedScrollY = await page.evaluate(() => window.scrollY);
   const chooserGeometry = await page.locator('.profile-fdr-scale-option').first().evaluate((element, expectedScrollY) => {
     const sheetElement = element.closest('#fdr-scale-sheet');

@@ -871,19 +871,21 @@ export function SquadPage({
             <ChipToggle chip={chip} disabled={lineupLocked} key={chip.id} onToggle={() => void toggleChip(chip)} />
           ))}
         </div>
-        <div className="squad-page__matchweek-actions">
-          <Button
-            disabled={!teamSelection || lineupLocked || lineupSaving || !lineupDirty}
-            onClick={() => void saveLineup()}
-            type="button"
-          >
-            {lineupLocked ? <LockKeyhole aria-hidden="true" size={16} /> : <Save aria-hidden="true" size={16} />}
-            Save lineup
-          </Button>
-          <p className="squad-page__matchweek-status" role="status">
-            {lineupLocked ? `Lineup locked. ${teamSelection?.fixtureLock.reason ?? 'The gameweek deadline has passed.'}` : status}
-          </p>
-        </div>
+        {lineupDirty ? (
+          <div className="squad-page__matchweek-actions">
+            <Button
+              disabled={!teamSelection || lineupLocked || lineupSaving}
+              onClick={() => void saveLineup()}
+              type="button"
+            >
+              {lineupLocked ? <LockKeyhole aria-hidden="true" size={16} /> : <Save aria-hidden="true" size={16} />}
+              Save lineup
+            </Button>
+          </div>
+        ) : null}
+        <p className="sr-only" role="status">
+          {lineupLocked ? `Lineup locked. ${teamSelection?.fixtureLock.reason ?? 'The gameweek deadline has passed.'}` : status}
+        </p>
       </section>
 
       {proposedTradeCount > 0 ? (

@@ -105,7 +105,7 @@ def test_team_selection_release_evidence_is_focused_and_truthful() -> None:
         "Expected the saved lineup to render clickable player rows after reload",
         "Expected list view to remain free of player movement dropdowns after reload",
         "Triple Captain chip state updated.",
-        "Expected Save lineup to be disabled after fixture lock",
+        "Save lineup should be absent when there are no unsaved lineup changes",
         "Expected chip controls to be disabled after fixture lock",
         "Expected substitution to be disabled after fixture lock",
         "runViewport({ width: 390, height: 844 }, 'mobile')",

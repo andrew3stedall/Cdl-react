@@ -138,8 +138,9 @@ describe('TeamSelectionPage compatibility export', () => {
   test('renders the canonical Squad workspace without a duplicate panel', async () => {
     const { container } = await renderPage();
 
-    expect(container.textContent).toContain('Castle FC squad ready for review.');
     expect(container.textContent).toContain('Next deadline');
+    expect(container.querySelector('.squad-page__matchweek-status')).toBeNull();
+    expect(Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Save lineup'))).toBeUndefined();
     await act(async () => {
       (container.querySelector('button[aria-label="View as list"]') as HTMLButtonElement).click();
       await Promise.resolve();
@@ -161,14 +162,15 @@ describe('TeamSelectionPage compatibility export', () => {
     });
 
     expect(client.current.chips[0].status).toBe('active');
-    expect(container.textContent).toContain('Wildcard chip state updated.');
+    expect(container.querySelector('[aria-label="Wildcard, active"]')).not.toBeNull();
 
     await act(async () => {
       (container.querySelector('[aria-label="Bench Boost, used"]') as HTMLButtonElement).click();
       await Promise.resolve();
     });
 
-    expect(container.textContent).toContain('Used chips cannot be activated');
+    expect(client.current.chips[1].status).toBe('used');
+    expect(container.querySelector('.squad-page__matchweek-status')).toBeNull();
   });
 
   test('saves a substitution from the full profile drawer', async () => {
@@ -201,20 +203,20 @@ describe('TeamSelectionPage compatibility export', () => {
 
     expect(client.current.players.find((player) => player.id === 'player-1')?.slot).toBe('bench');
     expect(client.current.players.find((player) => player.id === 'player-4')?.slot).toBe('starter');
-    expect(container.textContent).toContain('Lineup saved and validated.');
+    expect(Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Save lineup'))).toBeUndefined();
   });
 
   test('renders a locked lineup with mutation controls disabled', async () => {
     const { container } = await renderPage(true);
 
-    expect(container.textContent).toContain('Lineup locked. FPL deadline passed.');
+    expect(container.querySelector('.squad-page__matchweek-status')).toBeNull();
     await act(async () => {
       (container.querySelector('button[aria-label="View as list"]') as HTMLButtonElement).click();
       await Promise.resolve();
     });
     expect(container.querySelectorAll('select[aria-label^="Move "]').length).toBe(0);
     expect((container.querySelector('button[aria-label="Wildcard, available"]') as HTMLButtonElement).disabled).toBe(true);
-    expect((container.querySelector('button.ui-button') as HTMLButtonElement).disabled).toBe(true);
+    expect(Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Save lineup'))).toBeUndefined();
     await act(async () => {
       (container.querySelector('tr[role="button"][aria-label="View Alex Keeper details"]') as HTMLElement).click();
       await Promise.resolve();

@@ -453,6 +453,12 @@ describe('SquadPage', () => {
     expect(container.querySelectorAll('.squad-page__availability-flag')).toHaveLength(0);
     expect(container.textContent).toContain('Next deadline');
     expect(container.querySelector('[aria-label="Matchweek controls"]')).not.toBeNull();
+    expect(Array.from(container.querySelector('.squad-page__matchweek-controls')?.children ?? [])
+      .filter((child) => !child.classList.contains('sr-only'))).toHaveLength(2);
+    expect(container.querySelector('.squad-page__deadline')).not.toBeNull();
+    expect(container.querySelector('.squad-page__chips')).not.toBeNull();
+    expect(Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Save lineup'))).toBeUndefined();
+    expect(container.querySelector('.squad-page__matchweek-status')).toBeNull();
     expect(container.textContent).not.toContain('Total Points');
     expect(container.querySelector('[aria-label="Squad pitch"]')).not.toBeNull();
     expect(container.querySelectorAll('[aria-label="Squad pitch"] .squad-page__position-marker')).toHaveLength(0);
@@ -560,7 +566,7 @@ describe('SquadPage', () => {
     });
     expect(container.querySelector('.squad-page__drawer--substitution')).toBeNull();
     expect(container.querySelector('[aria-label="Substitution mode"]')).toBeNull();
-    expect(container.textContent).toContain('Save lineup to apply this change.');
+    expect(buttonByText(container, 'Save lineup')).toBeTruthy();
     expect(container.querySelector('[aria-label="Squad pitch"]')?.textContent).toContain('Riley Forward');
   });
 
@@ -634,7 +640,7 @@ describe('SquadPage', () => {
       await Promise.resolve();
     });
 
-    expect(container.textContent).toContain('Haaland swapped with Riley Forward.');
+    expect(buttonByText(container, 'Save lineup')).toBeTruthy();
     expect(container.querySelector('[aria-label="Starting XI players table"]')?.textContent).toContain('Riley Forward');
     expect(container.querySelector('[aria-label="Bench players table"]')?.textContent).toContain('Haaland');
   });
@@ -771,7 +777,7 @@ describe('SquadPage', () => {
 
     const putCallsBeforeSave = vi.mocked(fetch).mock.calls.filter(([, init]) => init?.method === 'PUT');
     expect(putCallsBeforeSave).toHaveLength(0);
-    expect(container.textContent).toContain('Captaincy staged. Save lineup to apply this change.');
+    expect(buttonByText(container, 'Save lineup')).toBeTruthy();
 
     const saveButton = [...container.querySelectorAll<HTMLButtonElement>('button')]
       .find((button) => button.textContent?.trim() === 'Save lineup');

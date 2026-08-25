@@ -708,7 +708,9 @@ async function testMobileNavigationClearance(page) {
   }
 
   await page.goto(baseUrl + '/account', { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: /Option \d+/ }).click();
+  await page.getByRole('button', { name: 'Open FDR colour scale settings' }).click();
+  await page.waitForURL(/\/account\/fdr$/);
+  await page.locator('.profile-fdr-scale-trigger').click();
   const sheet = page.locator('#fdr-scale-sheet');
   await sheet.waitFor({ state: 'visible' });
   const chooserOpenedScrollY = await page.evaluate(() => window.scrollY);
@@ -809,8 +811,8 @@ async function testLockedTeamSelection(page) {
   await page.getByRole('button', { name: 'View as list' }).click();
 
   const saveLineup = page.getByRole('button', { name: 'Save lineup' });
-  if (!(await saveLineup.isDisabled())) {
-    throw new Error('Expected Save lineup to be disabled after fixture lock');
+  if (await saveLineup.count() !== 0) {
+    throw new Error('Save lineup should be absent when there are no unsaved lineup changes');
   }
   const tripleCaptainActivate = page.getByRole('button', { name: 'Triple Captain, available' });
   if (!(await tripleCaptainActivate.isDisabled())) {

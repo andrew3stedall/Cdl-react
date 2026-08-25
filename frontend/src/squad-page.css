@@ -14,7 +14,7 @@
   --squad-success: var(--primary);
   --squad-warning: var(--muted-foreground);
   --squad-danger: var(--destructive);
-  --squad-pitch: color-mix(in srgb, var(--primary) 8%, var(--background));
+  --squad-pitch: var(--squad-bg);
   --squad-pitch-line: color-mix(in srgb, var(--foreground) 24%, transparent);
   --squad-position-gkp: #8172a6;
   --squad-position-def: #3e927f;
@@ -260,13 +260,13 @@
 }
 
 .squad-page__matchweek-controls {
-  align-items: center;
+  align-items: stretch;
   background: var(--squad-panel);
   border: 1px solid var(--squad-border);
   border-radius: 0.85rem;
   display: grid;
   gap: 0.8rem;
-  grid-template-columns: minmax(12rem, 1fr) auto minmax(12rem, auto);
+  grid-template-columns: minmax(0, 1fr);
   padding: 0.7rem 0.8rem;
 }
 
@@ -318,7 +318,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.35rem;
-  justify-content: flex-end;
+  justify-content: flex-start;
 }
 
 .squad-page__chip-toggle {
@@ -382,7 +382,7 @@
   align-items: center;
   display: flex;
   gap: 0.6rem;
-  justify-content: flex-end;
+  justify-content: flex-start;
   min-width: 0;
 }
 
@@ -390,13 +390,6 @@
   flex: 0 0 auto;
   min-height: 2.35rem;
   white-space: nowrap;
-}
-
-.squad-page__matchweek-status {
-  color: var(--squad-muted);
-  font-size: 0.64rem;
-  margin: 0;
-  max-width: 14rem;
 }
 
 .squad-page__summary {
@@ -2575,24 +2568,15 @@
   }
 
   .squad-page__matchweek-controls {
-    align-items: start;
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-
-  .squad-page__chips {
-    justify-content: flex-end;
+    align-items: stretch;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .squad-page__matchweek-actions {
     align-items: flex-start;
     flex-wrap: wrap;
-    grid-column: 1 / -1;
-    justify-content: space-between;
-  }
-
-  .squad-page__matchweek-status {
-    flex: 1 1 11rem;
-    max-width: none;
+    grid-column: auto;
+    justify-content: flex-start;
   }
 
   .squad-page__summary-card {

@@ -278,13 +278,28 @@ async function testSquadWorkspace(browser, viewport) {
   }
 
   await page.goto(`${baseUrl}/account`, { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: /Option 3/ }).click();
-  await page.getByRole('button', { name: 'FDR colour scale option 4' }).click();
-  await page.getByRole('status').getByText('Appearance preference saved.', { exact: true }).waitFor();
-  await page.locator('.profile-fdr-reverse-toggle input').click();
-  await page.getByRole('status').getByText('Appearance preference saved.', { exact: true }).waitFor();
-  await page.getByRole('button', { name: /Attack downwards/ }).click();
-  await page.getByRole('status').getByText('Appearance preference saved.', { exact: true }).waitFor();
+  await page.getByRole('button', { name: 'Open FDR colour scale settings' }).click();
+  await page.waitForURL(/\/account\/fdr$/);
+  await page.locator('.profile-fdr-scale-trigger').click();
+  const fdrScaleSheet = page.locator('#fdr-scale-sheet');
+  await fdrScaleSheet.waitFor({ state: 'visible' });
+  await fdrScaleSheet.getByRole('button', { name: 'FDR colour scale option 4' }).click();
+  const fdrScaleTrigger = page.locator('.profile-fdr-scale-trigger');
+  if (!(await fdrScaleTrigger.locator('strong').textContent()).includes('Option 4')) {
+    throw new Error('FDR option 4 should remain selected after closing the chooser');
+  }
+  const reverseScaleToggle = page.locator('.profile-fdr-reverse-toggle input');
+  const initialReverseScaleState = await reverseScaleToggle.isChecked();
+  await reverseScaleToggle.click();
+  if (await reverseScaleToggle.isChecked() === initialReverseScaleState) {
+    throw new Error('FDR colour scale reverse toggle should change state after selection');
+  }
+  await page.goto(`${baseUrl}/account/orientation`, { waitUntil: 'networkidle' });
+  const attackDownwards = page.getByRole('button', { name: /Attack downwards/ });
+  await attackDownwards.click();
+  if (await attackDownwards.getAttribute('aria-pressed') !== 'true') {
+    throw new Error('Attack downwards should be selected after the orientation change');
+  }
   await page.goto(`${baseUrl}/squad-management`, { waitUntil: 'networkidle' });
   const downPitch = page.locator('section[aria-label="Squad pitch"]');
   await downPitch.waitFor();

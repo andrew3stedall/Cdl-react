@@ -431,6 +431,59 @@
   gap: 0.45rem;
 }
 
+.profile-position-colour-modes {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.profile-position-colour-mode {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--foreground);
+  cursor: pointer;
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: 1.7rem minmax(0, 1fr) auto;
+  padding: 0.6rem 0.7rem;
+  text-align: left;
+}
+
+.profile-position-colour-mode:hover,
+.profile-position-colour-mode:focus-visible,
+.profile-position-colour-mode.is-selected {
+  border-color: var(--primary);
+  outline: none;
+}
+
+.profile-position-colour-mode__icon {
+  align-items: center;
+  background: color-mix(in srgb, var(--primary) 12%, var(--surface));
+  border-radius: 0.35rem;
+  color: var(--primary);
+  display: inline-flex;
+  height: 1.7rem;
+  justify-content: center;
+  width: 1.7rem;
+}
+
+.profile-position-colour-mode > span:nth-child(2) {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.profile-position-colour-mode strong {
+  font-size: 0.75rem;
+}
+
+.profile-position-colour-mode small,
+.profile-player-colour-option small {
+  color: var(--muted-foreground);
+  font-size: 0.65rem;
+  line-height: 1.35;
+}
+
 .profile-player-colour-option {
   align-items: center;
   background: var(--surface);
@@ -499,6 +552,24 @@
 
 .profile-player-colours-summary .profile-metric-palette-bar {
   height: 0.6rem;
+}
+
+.profile-player-colour-sheet {
+  padding-bottom: var(--cdl-mobile-navigation-clearance);
+}
+
+.profile-player-saved-palettes {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 0.8rem;
+}
+
+.profile-player-custom-editor--position .profile-fdr-custom-editor__inputs {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.profile-player-custom-editor--position .profile-fdr-custom-editor__level {
+  min-width: 0;
 }
 
 .profile-fdr-count {

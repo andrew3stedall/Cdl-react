@@ -78,23 +78,23 @@
 }
 
 .squad-page__position.position-gkp {
-  background: var(--secondary);
-  color: var(--foreground);
+  background: color-mix(in srgb, var(--cdl-position-gkp, var(--secondary)) 16%, var(--secondary));
+  color: var(--cdl-position-gkp, var(--foreground));
 }
 
 .squad-page__position.position-def {
-  background: var(--secondary);
-  color: var(--foreground);
+  background: color-mix(in srgb, var(--cdl-position-def, var(--secondary)) 16%, var(--secondary));
+  color: var(--cdl-position-def, var(--foreground));
 }
 
 .squad-page__position.position-mid {
-  background: var(--secondary);
-  color: var(--foreground);
+  background: color-mix(in srgb, var(--cdl-position-mid, var(--secondary)) 16%, var(--secondary));
+  color: var(--cdl-position-mid, var(--foreground));
 }
 
 .squad-page__position.position-fwd {
-  background: var(--secondary);
-  color: var(--foreground);
+  background: color-mix(in srgb, var(--cdl-position-fwd, var(--secondary)) 16%, var(--secondary));
+  color: var(--cdl-position-fwd, var(--foreground));
 }
 
 .squad-page__lineup-role {

@@ -74,6 +74,9 @@ def test_authenticated_preferences_persist_and_remain_isolated() -> None:
             "fdr_scale": "RdBu",
             "fdr_scale_reversed": False,
             "fdr_display_mode": "fill",
+            "position_colour_scale": "Ocean",
+            "metric_colour_scale": "Purple",
+            "metric_colour_scale_reversed": True,
             "light_theme_colour": "#2563EB",
             "dark_theme_colour": "#60A5FA",
             "fdr_custom_min": "#1B9E77",
@@ -88,6 +91,9 @@ def test_authenticated_preferences_persist_and_remain_isolated() -> None:
         "fdr_scale": "RdBu",
         "fdr_scale_reversed": False,
         "fdr_display_mode": "fill",
+        "position_colour_scale": "Ocean",
+        "metric_colour_scale": "Purple",
+        "metric_colour_scale_reversed": True,
         "light_theme_colour": "#2563EB",
         "dark_theme_colour": "#60A5FA",
         "fdr_custom_min": "#1B9E77",
@@ -104,6 +110,9 @@ def test_authenticated_preferences_persist_and_remain_isolated() -> None:
         "fdr_scale": "RdYlGn",
         "fdr_scale_reversed": True,
         "fdr_display_mode": "font",
+        "position_colour_scale": "Classic",
+        "metric_colour_scale": "Blue",
+        "metric_colour_scale_reversed": False,
         "light_theme_colour": "#0F766E",
         "dark_theme_colour": "#2DD4BF",
         "fdr_custom_min": "#2166AC",
@@ -120,6 +129,9 @@ def test_authenticated_preferences_persist_and_remain_isolated() -> None:
             "fdr_scale": "Sinebow",
             "fdr_scale_reversed": True,
             "fdr_display_mode": "font",
+            "position_colour_scale": "Vibrant",
+            "metric_colour_scale": "Amber",
+            "metric_colour_scale_reversed": False,
             "light_theme_colour": "#0F766E",
             "dark_theme_colour": "#2DD4BF",
             "fdr_custom_min": "#2166AC",
@@ -134,6 +146,9 @@ def test_authenticated_preferences_persist_and_remain_isolated() -> None:
         "fdr_scale": "Sinebow",
         "fdr_scale_reversed": True,
         "fdr_display_mode": "font",
+        "position_colour_scale": "Vibrant",
+        "metric_colour_scale": "Amber",
+        "metric_colour_scale_reversed": False,
         "light_theme_colour": "#0F766E",
         "dark_theme_colour": "#2DD4BF",
         "fdr_custom_min": "#2166AC",
@@ -148,10 +163,22 @@ def test_authenticated_preferences_persist_and_remain_isolated() -> None:
     assert reloaded_repository.get_for_user("preferences-manager-1").attack_direction == "down"
     assert reloaded_repository.get_for_user("preferences-manager-1").fdr_scale == "RdBu"
     assert reloaded_repository.get_for_user("preferences-manager-1").fdr_scale_reversed is False
+    assert (
+        reloaded_repository.get_for_user("preferences-manager-1").position_colour_scale == "Ocean"
+    )
+    assert reloaded_repository.get_for_user("preferences-manager-1").metric_colour_scale == "Purple"
+    assert (
+        reloaded_repository.get_for_user("preferences-manager-1").metric_colour_scale_reversed
+        is True
+    )
     assert reloaded_repository.get_for_user("preferences-manager-2").theme_preset == "teal-dark"
     assert reloaded_repository.get_for_user("preferences-manager-2").attack_direction == "up"
     assert reloaded_repository.get_for_user("preferences-manager-2").fdr_scale == "Sinebow"
     assert reloaded_repository.get_for_user("preferences-manager-2").fdr_scale_reversed is True
+    assert (
+        reloaded_repository.get_for_user("preferences-manager-2").position_colour_scale == "Vibrant"
+    )
+    assert reloaded_repository.get_for_user("preferences-manager-2").metric_colour_scale == "Amber"
 
     with engine.begin() as connection:
         connection.execute(

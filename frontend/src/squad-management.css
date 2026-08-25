@@ -748,10 +748,10 @@
   white-space: nowrap;
 }
 
-.position-gkp { background: rgb(34 211 238 / 0.13); border-color: rgb(34 211 238 / 0.28); color: #67e8f9; }
-.position-def { background: rgb(56 189 248 / 0.13); border-color: rgb(56 189 248 / 0.28); color: #7dd3fc; }
-.position-mid { background: rgb(45 212 191 / 0.13); border-color: rgb(45 212 191 / 0.28); color: #5eead4; }
-.position-fwd { background: rgb(251 113 133 / 0.13); border-color: rgb(251 113 133 / 0.28); color: #fda4af; }
+.position-gkp { background: color-mix(in srgb, var(--cdl-position-gkp, #22d3ee) 13%, var(--card)); border-color: color-mix(in srgb, var(--cdl-position-gkp, #22d3ee) 28%, transparent); color: var(--cdl-position-gkp, #67e8f9); }
+.position-def { background: color-mix(in srgb, var(--cdl-position-def, #38bdf8) 13%, var(--card)); border-color: color-mix(in srgb, var(--cdl-position-def, #38bdf8) 28%, transparent); color: var(--cdl-position-def, #7dd3fc); }
+.position-mid { background: color-mix(in srgb, var(--cdl-position-mid, #2dd4bf) 13%, var(--card)); border-color: color-mix(in srgb, var(--cdl-position-mid, #2dd4bf) 28%, transparent); color: var(--cdl-position-mid, #5eead4); }
+.position-fwd { background: color-mix(in srgb, var(--cdl-position-fwd, #fb7185) 13%, var(--card)); border-color: color-mix(in srgb, var(--cdl-position-fwd, #fb7185) 28%, transparent); color: var(--cdl-position-fwd, #fda4af); }
 .status-owned { background: rgb(34 211 238 / 0.13); color: #67e8f9; }
 .status-available { background: rgb(74 222 128 / 0.13); color: #86efac; }
 .status-interested { background: rgb(251 191 36 / 0.13); color: #fcd34d; }

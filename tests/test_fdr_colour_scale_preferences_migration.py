@@ -57,3 +57,15 @@ def test_saved_custom_fdr_palettes_migration_is_append_only() -> None:
     assert '"fdr_custom_palettes"' in content
     assert '"fdr_custom_min"' in content
     assert '"fdr_custom_max"' in content
+
+
+def test_player_colour_scales_migration_is_append_only() -> None:
+    content = Path(
+        "migrations/versions/0020_player_colour_scales.py",
+    ).read_text(encoding="utf-8")
+
+    assert "Revision ID: 0020_player_colour_scales" in content
+    assert "Revises: 0019_fdr_custom_palettes" in content
+    assert '"position_colour_scale"' in content
+    assert '"metric_colour_scale"' in content
+    assert '"metric_colour_scale_reversed"' in content

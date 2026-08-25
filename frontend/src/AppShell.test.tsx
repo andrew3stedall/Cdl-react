@@ -405,6 +405,35 @@ describe('AppShell integration', () => {
       await Promise.resolve();
     });
     await act(async () => {
+      container.querySelector<HTMLButtonElement>('[aria-label="Open player colour settings"]')?.click();
+      await Promise.resolve();
+    });
+    expect(container.querySelector('#account-settings-title')?.textContent).toBe('Player colours');
+    expect(container.querySelectorAll('[aria-label="Position colour scales"] .profile-player-colour-option')).toHaveLength(3);
+    expect(container.querySelectorAll('[aria-label="Metric colour scales"] .profile-player-colour-option')).toHaveLength(4);
+    const oceanPositions = [...container.querySelectorAll<HTMLButtonElement>('[aria-label="Position colour scales"] .profile-player-colour-option')]
+      .find((option) => option.textContent?.includes('Ocean'));
+    const purpleMetrics = [...container.querySelectorAll<HTMLButtonElement>('[aria-label="Metric colour scales"] .profile-player-colour-option')]
+      .find((option) => option.textContent?.includes('Purple'));
+    expect(oceanPositions).toBeDefined();
+    expect(purpleMetrics).toBeDefined();
+    await act(async () => {
+      oceanPositions?.click();
+      purpleMetrics?.click();
+      container.querySelector<HTMLInputElement>('.profile-player-colours-card .profile-fdr-reverse-toggle input')?.click();
+      await Promise.resolve();
+    });
+    expect(preferenceClient.preferences.positionColourScale).toBe('Ocean');
+    expect(preferenceClient.preferences.metricColourScale).toBe('Purple');
+    expect(preferenceClient.preferences.metricColourScaleReversed).toBe(true);
+    expect(document.documentElement.dataset.positionColourScale).toBe('Ocean');
+    expect(document.documentElement.dataset.metricColourScale).toBe('Purple');
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('.profile-subpage-back')?.click();
+      await Promise.resolve();
+    });
+    await act(async () => {
       container.querySelector<HTMLButtonElement>('[aria-label^="Current attacking orientation"]')?.click();
       await Promise.resolve();
     });

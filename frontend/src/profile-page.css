@@ -393,6 +393,114 @@
   gap: 0.8rem;
 }
 
+.profile-player-colours-card {
+  gap: 0.9rem;
+}
+
+.profile-player-colour-section {
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 0.65rem;
+  padding-top: 0.85rem;
+}
+
+.profile-player-colour-section__header {
+  align-items: center;
+  display: flex;
+  gap: 0.65rem;
+  justify-content: space-between;
+}
+
+.profile-player-colour-section__header > div {
+  display: grid;
+  gap: 0.16rem;
+}
+
+.profile-player-colour-section__header strong {
+  font-size: 0.8rem;
+}
+
+.profile-player-colour-section__header small {
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+  line-height: 1.35;
+}
+
+.profile-player-colour-options {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.profile-player-colour-option {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--foreground);
+  cursor: pointer;
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: minmax(8rem, 0.75fr) minmax(0, 1fr) auto;
+  padding: 0.55rem 0.65rem;
+  text-align: left;
+}
+
+.profile-player-colour-option:hover,
+.profile-player-colour-option:focus-visible,
+.profile-player-colour-option.is-selected {
+  border-color: var(--primary);
+  outline: none;
+}
+
+.profile-position-palette-bar,
+.profile-metric-palette-bar {
+  border: 1px solid color-mix(in srgb, var(--foreground) 14%, transparent);
+  border-radius: 0.35rem;
+  display: grid;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.profile-position-palette-bar {
+  gap: 1px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  height: 1.55rem;
+}
+
+.profile-position-palette-bar > span {
+  align-items: center;
+  background: color-mix(in srgb, var(--position-colour) 18%, var(--surface));
+  color: var(--position-colour);
+  display: inline-flex;
+  font-size: 0.58rem;
+  font-weight: 850;
+  justify-content: center;
+  min-width: 0;
+}
+
+.profile-metric-palette-bar {
+  gap: 1px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  height: 1.1rem;
+}
+
+.profile-metric-palette-bar > span {
+  min-width: 0;
+}
+
+.profile-player-colours-summary {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.profile-player-colours-summary .profile-position-palette-bar {
+  height: 1.15rem;
+}
+
+.profile-player-colours-summary .profile-metric-palette-bar {
+  height: 0.6rem;
+}
+
 .profile-fdr-count {
   color: var(--muted-foreground);
   font-size: 0.72rem;

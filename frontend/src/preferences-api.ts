@@ -9,6 +9,13 @@ import {
   type FdrCustomPaletteMode,
   type FdrDisplayMode,
 } from './fdr-colour-scales';
+import {
+  defaultMetricColourScale,
+  defaultMetricColourScaleReversed,
+  defaultPositionColourScale,
+  resolveMetricColourScale,
+  resolvePositionColourScale,
+} from './player-colour-scales';
 import { resolveThemePreset } from './theme-presets';
 import { getStoredThemePreset, setThemePresetCookie } from './theme-cookie';
 import {
@@ -24,6 +31,9 @@ interface ApiUserPreferences {
   fdr_scale?: string;
   fdr_scale_reversed?: boolean;
   fdr_display_mode?: string;
+  position_colour_scale?: string;
+  metric_colour_scale?: string;
+  metric_colour_scale_reversed?: boolean;
   light_theme_colour?: string;
   dark_theme_colour?: string;
   fdr_custom_min?: string;
@@ -92,6 +102,9 @@ function fromApiPreferences(preferences: ApiUserPreferences): UserPreferences {
     fdrScale: resolveFdrScaleName(preferences.fdr_scale),
     fdrScaleReversed: preferences.fdr_scale_reversed ?? defaultFdrScaleReversed,
     fdrDisplayMode: resolveFdrDisplayMode(preferences.fdr_display_mode),
+    positionColourScale: resolvePositionColourScale(preferences.position_colour_scale),
+    metricColourScale: resolveMetricColourScale(preferences.metric_colour_scale),
+    metricColourScaleReversed: preferences.metric_colour_scale_reversed ?? defaultMetricColourScaleReversed,
     lightThemeColour: resolveThemeBaseColour(preferences.light_theme_colour ?? preferences.dark_theme_colour),
     darkThemeColour: resolveThemeColour(preferences.light_theme_colour ?? preferences.dark_theme_colour, 'dark'),
     fdrCustomAnchors: resolveFdrCustomAnchors({
@@ -111,6 +124,9 @@ function toApiPreferences(preferences: UserPreferences): ApiUserPreferences {
     fdr_scale: preferences.fdrScale,
     fdr_scale_reversed: preferences.fdrScaleReversed,
     fdr_display_mode: preferences.fdrDisplayMode ?? defaultFdrDisplayMode,
+    position_colour_scale: preferences.positionColourScale ?? defaultPositionColourScale,
+    metric_colour_scale: preferences.metricColourScale ?? defaultMetricColourScale,
+    metric_colour_scale_reversed: preferences.metricColourScaleReversed ?? defaultMetricColourScaleReversed,
     light_theme_colour: resolveThemeBaseColour(preferences.lightThemeColour ?? defaultThemeColour),
     dark_theme_colour: getThemeColourForMode(preferences.lightThemeColour ?? defaultThemeColour, 'dark'),
     fdr_custom_min: preferences.fdrCustomAnchors?.min ?? defaultFdrCustomAnchors.min,
@@ -200,6 +216,9 @@ export class LocalStoragePreferenceClient implements PreferenceClient {
   private readonly fdrScaleStorageKey = 'cdl-fdr-scale';
   private readonly fdrScaleReversedStorageKey = 'cdl-fdr-scale-reversed';
   private readonly fdrDisplayModeStorageKey = 'cdl-fdr-display-mode';
+  private readonly positionColourScaleStorageKey = 'cdl-position-colour-scale';
+  private readonly metricColourScaleStorageKey = 'cdl-metric-colour-scale';
+  private readonly metricColourScaleReversedStorageKey = 'cdl-metric-colour-scale-reversed';
   private readonly lightThemeColourStorageKey = 'cdl-light-theme-colour';
   private readonly darkThemeColourStorageKey = 'cdl-dark-theme-colour';
   private readonly fdrCustomMinStorageKey = 'cdl-fdr-custom-min';
@@ -220,6 +239,11 @@ export class LocalStoragePreferenceClient implements PreferenceClient {
         ? localStorage.getItem(this.fdrScaleReversedStorageKey) === 'true'
         : defaultFdrScaleReversed,
       fdrDisplayMode: resolveFdrDisplayMode(localStorage.getItem(this.fdrDisplayModeStorageKey) ?? undefined),
+      positionColourScale: resolvePositionColourScale(localStorage.getItem(this.positionColourScaleStorageKey)),
+      metricColourScale: resolveMetricColourScale(localStorage.getItem(this.metricColourScaleStorageKey)),
+      metricColourScaleReversed: localStorage.getItem(this.metricColourScaleReversedStorageKey)
+        ? localStorage.getItem(this.metricColourScaleReversedStorageKey) === 'true'
+        : defaultMetricColourScaleReversed,
       lightThemeColour: resolveThemeBaseColour(localStorage.getItem(this.lightThemeColourStorageKey) ?? defaultThemeColour),
       darkThemeColour: resolveThemeColour(localStorage.getItem(this.lightThemeColourStorageKey) ?? defaultThemeColour, 'dark'),
       fdrCustomAnchors: resolveFdrCustomAnchors({
@@ -239,6 +263,9 @@ export class LocalStoragePreferenceClient implements PreferenceClient {
     localStorage.setItem(this.fdrScaleStorageKey, preferences.fdrScale);
     localStorage.setItem(this.fdrScaleReversedStorageKey, String(preferences.fdrScaleReversed));
     localStorage.setItem(this.fdrDisplayModeStorageKey, preferences.fdrDisplayMode ?? defaultFdrDisplayMode);
+    localStorage.setItem(this.positionColourScaleStorageKey, preferences.positionColourScale ?? defaultPositionColourScale);
+    localStorage.setItem(this.metricColourScaleStorageKey, preferences.metricColourScale ?? defaultMetricColourScale);
+    localStorage.setItem(this.metricColourScaleReversedStorageKey, String(preferences.metricColourScaleReversed ?? defaultMetricColourScaleReversed));
     const themeColour = resolveThemeBaseColour(preferences.lightThemeColour ?? defaultThemeColour);
     localStorage.setItem(this.lightThemeColourStorageKey, themeColour);
     localStorage.setItem(this.darkThemeColourStorageKey, getThemeColourForMode(themeColour, 'dark'));

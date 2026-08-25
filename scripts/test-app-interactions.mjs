@@ -709,6 +709,8 @@ async function testMobileNavigationClearance(page) {
 
   await page.goto(baseUrl + '/account', { waitUntil: 'networkidle' });
   await page.getByRole('button', { name: 'Open FDR colour scale settings' }).click();
+  await page.waitForURL(/\/account\/fdr$/);
+  await page.getByRole('button', { name: /Option \d+ Five FDR colour steps/ }).click();
   const sheet = page.locator('#fdr-scale-sheet');
   await sheet.waitFor({ state: 'visible' });
   await sheet.getByRole('button', { name: 'FDR colour scale option 1' }).click();

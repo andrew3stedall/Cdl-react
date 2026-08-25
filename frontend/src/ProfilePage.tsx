@@ -540,14 +540,14 @@ function PositionColourSettingsCard({
         </div>
         <div className="profile-position-player-card-preview__stage">
           <PlayerCard
-            ariaLabel="Example midfielder player card"
+            ariaLabel="Ndombele example midfielder player card"
             layout="token"
             player={{
-              displayName: 'Example Player',
+              displayName: 'Ndombele',
               fixtures: [{ difficulty: 4, label: 'liv', title: 'Liverpool away' }],
               form: 7.4,
               position: 'MID',
-              team: 'MCI',
+              team: 'TOT',
             }}
             size="lg"
           />

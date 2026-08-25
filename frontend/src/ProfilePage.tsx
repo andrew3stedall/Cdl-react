@@ -35,10 +35,19 @@ import {
 import {
   getMetricColourScale,
   getMetricPalette,
+  getCustomMetricColourScale,
+  getCustomPositionColourScale,
   getPositionColourScale,
   metricColourScales,
+  positionColourModes,
   positionColourScales,
+  resolveMetricPalette,
+  resolvePositionPalette,
+  type MetricPalette,
   type MetricColourScaleName,
+  type PlayerColourPalette,
+  type PositionColourMode,
+  type PositionPalette,
   type PositionColourScaleName,
 } from './player-colour-scales';
 import { getThemeMode, themePresets } from './theme-presets';
@@ -62,8 +71,12 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
     customFdrAnchors,
     customFdrPalettes,
     positionColourScale,
+    positionColourMode,
+    positionCustomColours,
     metricColourScale,
     metricColourScaleReversed,
+    metricCustomColours,
+    customPlayerColourPalettes,
     themeColour,
     preset,
     saveStatus,
@@ -75,13 +88,20 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
     saveCustomFdrPalette,
     deleteCustomFdrPalette,
     setPositionColourScale,
+    setPositionColourMode,
+    useCustomPositionColours,
     setMetricColourScale,
     setMetricColourScaleReversed,
+    useCustomMetricColours,
+    savePlayerColourPalette,
+    deletePlayerColourPalette,
     useCustomFdrPalette,
     setThemeColour,
     setPresetName,
   } = useThemePreset();
   const [isFdrScaleSheetOpen, setIsFdrScaleSheetOpen] = useState(false);
+  const [isPositionScaleSheetOpen, setIsPositionScaleSheetOpen] = useState(false);
+  const [isMetricScaleSheetOpen, setIsMetricScaleSheetOpen] = useState(false);
   const [passkeyStatus, setPasskeyStatus] = useState<PasskeyStatus | null>(null);
   const [passkeyPending, setPasskeyPending] = useState(false);
   const [passkeyMessage, setPasskeyMessage] = useState<string | null>(null);
@@ -89,7 +109,8 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
   const isAppearancePage = currentPath === '/account/appearance' || currentPath === '/profile/appearance';
   const isFdrPage = currentPath === '/account/fdr' || currentPath === '/profile/fdr';
   const isOrientationPage = currentPath === '/account/orientation' || currentPath === '/profile/orientation';
-  const isPlayerColoursPage = currentPath === '/account/player-colours' || currentPath === '/profile/player-colours';
+  const isPositionColoursPage = currentPath === '/account/player-positions' || currentPath === '/profile/player-positions';
+  const isMetricColoursPage = currentPath === '/account/player-metrics' || currentPath === '/profile/player-metrics';
 
   useEffect(() => {
     if (!isAccountSummary) return undefined;
@@ -109,7 +130,7 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
   }, [isAccountSummary]);
 
   useEffect(() => {
-    if (!isFdrScaleSheetOpen) return undefined;
+    if (!isFdrScaleSheetOpen && !isPositionScaleSheetOpen && !isMetricScaleSheetOpen) return undefined;
 
     const documentElement = document.documentElement;
     const body = document.body;
@@ -147,7 +168,7 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
       body.style.width = previousBodyWidth;
       window.scrollTo(scrollX, scrollY);
     };
-  }, [isFdrScaleSheetOpen]);
+  }, [isFdrScaleSheetOpen, isMetricScaleSheetOpen, isPositionScaleSheetOpen]);
 
   const user = session.user;
   const selectedFdrScale = getFdrColourScale(fdrScale);
@@ -221,18 +242,46 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
     );
   }
 
-  if (isPlayerColoursPage) {
+  if (isPositionColoursPage) {
     return (
       <main aria-labelledby="account-settings-title" className="feature-screen profile-page profile-page--subpage">
-        <SettingsPageHeader onBack={() => onNavigate('/account')} title="Player colours" />
-        <PlayerColourSettingsCard
+        <SettingsPageHeader onBack={() => onNavigate('/account')} title="Position colours" />
+        <PositionColourSettingsCard
+          customPalettes={customPlayerColourPalettes}
+          isScaleSheetOpen={isPositionScaleSheetOpen}
+          onCloseSheet={() => setIsPositionScaleSheetOpen(false)}
+          onDeletePalette={deletePlayerColourPalette}
+          onOpenSheet={() => setIsPositionScaleSheetOpen(true)}
+          onSavePalette={savePlayerColourPalette}
+          onSetMode={setPositionColourMode}
+          onSetPositionColourScale={setPositionColourScale}
+          onUseCustomColours={useCustomPositionColours}
+          positionColourMode={positionColourMode}
+          positionCustomColours={positionCustomColours}
+          positionColourScale={positionColourScale}
+        />
+      </main>
+    );
+  }
+
+  if (isMetricColoursPage) {
+    return (
+      <main aria-labelledby="account-settings-title" className="feature-screen profile-page profile-page--subpage">
+        <SettingsPageHeader onBack={() => onNavigate('/account')} title="Metric colours" />
+        <MetricColourSettingsCard
+          customPalettes={customPlayerColourPalettes}
+          isScaleSheetOpen={isMetricScaleSheetOpen}
           metricColourScale={metricColourScale}
           metricColourScaleReversed={metricColourScaleReversed}
+          metricCustomColours={metricCustomColours}
           mode={themeMode}
+          onCloseSheet={() => setIsMetricScaleSheetOpen(false)}
+          onDeletePalette={deletePlayerColourPalette}
+          onOpenSheet={() => setIsMetricScaleSheetOpen(true)}
+          onSavePalette={savePlayerColourPalette}
           onSetMetricColourScale={setMetricColourScale}
           onSetMetricColourScaleReversed={setMetricColourScaleReversed}
-          onSetPositionColourScale={setPositionColourScale}
-          positionColourScale={positionColourScale}
+          onUseCustomColours={useCustomMetricColours}
         />
       </main>
     );
@@ -310,18 +359,33 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
         </ProfileSummaryCard>
 
         <ProfileSummaryCard
-          ariaLabel="Open player colour settings"
-          onSelect={() => onNavigate('/account/player-colours')}
+          ariaLabel="Open player position colour settings"
+          onSelect={() => onNavigate('/account/player-positions')}
         >
           <div className="profile-card__header">
             <div>
-              <p className="profile-card__eyebrow">Player colours</p>
-              <h2>Positions &amp; metrics</h2>
+              <p className="profile-card__eyebrow">Player positions</p>
+              <h2>Position colours</h2>
             </div>
             <ChevronRight aria-hidden="true" className="profile-summary-card__arrow" size={18} />
           </div>
-          <span className="profile-summary-value">{getPositionColourScale(positionColourScale).label} · {getMetricColourScale(metricColourScale).label} metrics</span>
-          <PlayerColourSummaryPreview metricColourScale={metricColourScale} metricColourScaleReversed={metricColourScaleReversed} mode={themeMode} positionColourScale={positionColourScale} />
+          <span className="profile-summary-value">{positionColourScale === 'Custom' ? 'Custom' : getPositionColourScale(positionColourScale).label} · {positionColourMode.replace('-', ' ')}</span>
+          <PositionPaletteBar positionColourScale={positionColourScale} customColours={positionCustomColours} />
+        </ProfileSummaryCard>
+
+        <ProfileSummaryCard
+          ariaLabel="Open player metric colour settings"
+          onSelect={() => onNavigate('/account/player-metrics')}
+        >
+          <div className="profile-card__header">
+            <div>
+              <p className="profile-card__eyebrow">Player metrics</p>
+              <h2>Metric heatmap</h2>
+            </div>
+            <ChevronRight aria-hidden="true" className="profile-summary-card__arrow" size={18} />
+          </div>
+          <span className="profile-summary-value">{metricColourScale === 'Custom' ? 'Custom' : getMetricColourScale(metricColourScale).label} · {metricColourScaleReversed ? 'Reversed' : 'Low to high'}</span>
+          <MetricPaletteBar customColours={metricCustomColours} metricColourScale={metricColourScale} metricColourScaleReversed={metricColourScaleReversed} mode={themeMode} />
         </ProfileSummaryCard>
 
         <ProfileSummaryCard
@@ -412,116 +476,151 @@ function AppearanceSummaryPreview({ preset, themeColour }: { preset: ThemePreset
   );
 }
 
-function PlayerColourSummaryPreview({
-  metricColourScale,
-  metricColourScaleReversed,
-  mode,
-  positionColourScale,
-}: {
-  metricColourScale: MetricColourScaleName;
-  metricColourScaleReversed: boolean;
-  mode: 'light' | 'dark';
-  positionColourScale: PositionColourScaleName;
-}) {
-  return (
-    <span aria-label={`${getPositionColourScale(positionColourScale).label} position colours and ${getMetricColourScale(metricColourScale).label} metric colours`} className="profile-player-colours-summary">
-      <PositionPaletteBar positionColourScale={positionColourScale} />
-      <MetricPaletteBar metricColourScale={metricColourScale} metricColourScaleReversed={metricColourScaleReversed} mode={mode} />
-    </span>
-  );
-}
-
-function PlayerColourSettingsCard({
-  metricColourScale,
-  metricColourScaleReversed,
-  mode,
-  onSetMetricColourScale,
-  onSetMetricColourScaleReversed,
+function PositionColourSettingsCard({
+  customPalettes,
+  isScaleSheetOpen,
+  onCloseSheet,
+  onDeletePalette,
+  onOpenSheet,
+  onSavePalette,
+  onSetMode,
   onSetPositionColourScale,
+  onUseCustomColours,
+  positionColourMode,
+  positionCustomColours,
   positionColourScale,
 }: {
-  metricColourScale: MetricColourScaleName;
-  metricColourScaleReversed: boolean;
-  mode: 'light' | 'dark';
-  onSetMetricColourScale: (scale: MetricColourScaleName) => void;
-  onSetMetricColourScaleReversed: (reversed: boolean) => void;
+  customPalettes: PlayerColourPalette[];
+  isScaleSheetOpen: boolean;
+  onCloseSheet: () => void;
+  onDeletePalette: (paletteId: string) => Promise<void>;
+  onOpenSheet: () => void;
+  onSavePalette: (palette: Omit<PlayerColourPalette, 'id'>) => Promise<PlayerColourPalette>;
+  onSetMode: (mode: PositionColourMode) => void;
   onSetPositionColourScale: (scale: PositionColourScaleName) => void;
+  onUseCustomColours: (colours: PositionPalette) => void;
+  positionColourMode: PositionColourMode;
+  positionCustomColours: PositionPalette;
   positionColourScale: PositionColourScaleName;
 }) {
   return (
     <Card className="profile-card profile-player-colours-card profile-settings-card">
       <div className="profile-card__header">
         <div>
-          <p className="profile-card__eyebrow">Player colours</p>
-          <h2>Positions &amp; metrics</h2>
+          <p className="profile-card__eyebrow">Player positions</p>
+          <h2>Position colours</h2>
         </div>
         <Palette aria-hidden="true" className="profile-appearance-icon" size={21} />
       </div>
-
-      <section aria-labelledby="position-colours-title" className="profile-player-colour-section">
-        <div className="profile-player-colour-section__header">
-          <div>
-            <strong id="position-colours-title">Position colours</strong>
-            <small>Categorical colours keep each player position distinct.</small>
-          </div>
-          <BarChart3 aria-hidden="true" className="profile-appearance-icon" size={18} />
-        </div>
-        <PositionPaletteBar positionColourScale={positionColourScale} />
-        <div aria-label="Position colour scales" className="profile-player-colour-options" role="group">
-          {positionColourScales.map((scale) => (
-            <button
-              aria-pressed={scale.name === positionColourScale}
-              className={`profile-player-colour-option${scale.name === positionColourScale ? ' is-selected' : ''}`}
-              key={scale.name}
-              onClick={() => onSetPositionColourScale(scale.name)}
-              type="button"
-            >
-              <PositionPaletteBar positionColourScale={scale.name} />
-              <span>{scale.label}</span>
-              <span aria-hidden="true" className="profile-preset-check">{scale.name === positionColourScale ? <Check size={15} /> : <Circle size={15} />}</span>
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section aria-labelledby="metric-colours-title" className="profile-player-colour-section">
-        <div className="profile-player-colour-section__header">
-          <div>
-            <strong id="metric-colours-title">Metric colours</strong>
-            <small>Sequential colours move from lower to higher values.</small>
-          </div>
-          <BarChart3 aria-hidden="true" className="profile-appearance-icon" size={18} />
-        </div>
-        <MetricPaletteBar metricColourScale={metricColourScale} metricColourScaleReversed={metricColourScaleReversed} mode={mode} />
-        <div aria-label="Metric colour scales" className="profile-player-colour-options" role="group">
-          {metricColourScales.map((scale) => (
-            <button
-              aria-pressed={scale.name === metricColourScale}
-              className={`profile-player-colour-option${scale.name === metricColourScale ? ' is-selected' : ''}`}
-              key={scale.name}
-              onClick={() => onSetMetricColourScale(scale.name)}
-              type="button"
-            >
-              <MetricPaletteBar metricColourScale={scale.name} metricColourScaleReversed={metricColourScaleReversed} mode={mode} />
-              <span>{scale.label}</span>
-              <span aria-hidden="true" className="profile-preset-check">{scale.name === metricColourScale ? <Check size={15} /> : <Circle size={15} />}</span>
-            </button>
-          ))}
-        </div>
-        <label className="profile-fdr-reverse-toggle">
-          <input checked={metricColourScaleReversed} onChange={(event) => onSetMetricColourScaleReversed(event.target.checked)} type="checkbox" />
-          <span>
-            <strong>Reverse order</strong>
-            <small>Swap which end of the scale represents lower and higher values.</small>
-          </span>
-        </label>
-      </section>
+      <p className="profile-card__copy">Choose distinct categorical colours for GKP, DEF, MID, and FWD players.</p>
+      <Button aria-controls="position-colour-sheet" aria-expanded={isScaleSheetOpen} className="profile-fdr-scale-trigger" onClick={onOpenSheet} type="button" variant="secondary">
+        <span>
+          <strong>{positionColourScale === 'Custom' ? 'Custom' : getPositionColourScale(positionColourScale).label}</strong>
+          <small>Four position colours</small>
+        </span>
+        <ChevronRight aria-hidden="true" size={18} />
+      </Button>
+      <PositionPaletteBar customColours={positionCustomColours} positionColourScale={positionColourScale} />
+      <div aria-label="Position colour application" className="profile-position-colour-modes" role="group">
+        {positionColourModes.map((option) => (
+          <button aria-pressed={option.name === positionColourMode} className={`profile-position-colour-mode${option.name === positionColourMode ? ' is-selected' : ''}`} key={option.name} onClick={() => onSetMode(option.name)} type="button">
+            <span className="profile-position-colour-mode__icon" aria-hidden="true">
+              {option.name === 'name-font' ? <Type size={16} /> : option.name === 'name-fill' ? <PaintBucket size={16} /> : option.name === 'card-border' ? <Circle size={16} /> : <Palette size={16} />}
+            </span>
+            <span><strong>{option.label}</strong><small>{option.description}</small></span>
+            <span aria-hidden="true" className="profile-preset-check">{option.name === positionColourMode ? <Check size={15} /> : <Circle size={15} />}</span>
+          </button>
+        ))}
+      </div>
+      <PlayerColourPaletteChooser
+        customColours={Object.values(positionCustomColours)}
+        customPalettes={customPalettes}
+        family="position"
+        isOpen={isScaleSheetOpen}
+        onClose={onCloseSheet}
+        onDeletePalette={onDeletePalette}
+        onSavePalette={onSavePalette}
+        onSetScale={(scale) => onSetPositionColourScale(scale as PositionColourScaleName)}
+        onUseCustomColours={(colours) => onUseCustomColours(resolvePositionPalette({ GKP: colours[0], DEF: colours[1], MID: colours[2], FWD: colours[3] }))}
+        selectedScale={positionColourScale}
+      />
     </Card>
   );
 }
 
-function PositionPaletteBar({ positionColourScale }: { positionColourScale: PositionColourScaleName }) {
-  const palette = getPositionColourScale(positionColourScale);
+function MetricColourSettingsCard({
+  customPalettes,
+  isScaleSheetOpen,
+  metricColourScale,
+  metricColourScaleReversed,
+  metricCustomColours,
+  mode,
+  onCloseSheet,
+  onDeletePalette,
+  onOpenSheet,
+  onSavePalette,
+  onSetMetricColourScale,
+  onSetMetricColourScaleReversed,
+  onUseCustomColours,
+}: {
+  customPalettes: PlayerColourPalette[];
+  isScaleSheetOpen: boolean;
+  metricColourScale: MetricColourScaleName;
+  metricColourScaleReversed: boolean;
+  metricCustomColours: MetricPalette;
+  mode: 'light' | 'dark';
+  onCloseSheet: () => void;
+  onDeletePalette: (paletteId: string) => Promise<void>;
+  onOpenSheet: () => void;
+  onSavePalette: (palette: Omit<PlayerColourPalette, 'id'>) => Promise<PlayerColourPalette>;
+  onSetMetricColourScale: (scale: MetricColourScaleName) => void;
+  onSetMetricColourScaleReversed: (reversed: boolean) => void;
+  onUseCustomColours: (colours: MetricPalette) => void;
+}) {
+  return (
+    <Card className="profile-card profile-player-colours-card profile-settings-card">
+      <div className="profile-card__header">
+        <div>
+          <p className="profile-card__eyebrow">Player metrics</p>
+          <h2>Metric heatmap</h2>
+        </div>
+        <BarChart3 aria-hidden="true" className="profile-appearance-icon" size={21} />
+      </div>
+      <p className="profile-card__copy">Use hue-varying sequential colours so low-to-high metrics read like a heatmap.</p>
+      <Button aria-controls="metric-colour-sheet" aria-expanded={isScaleSheetOpen} className="profile-fdr-scale-trigger" onClick={onOpenSheet} type="button" variant="secondary">
+        <span>
+          <strong>{metricColourScale === 'Custom' ? 'Custom' : getMetricColourScale(metricColourScale).label}</strong>
+          <small>Five heatmap steps</small>
+        </span>
+        <ChevronRight aria-hidden="true" size={18} />
+      </Button>
+      <MetricPaletteBar customColours={metricCustomColours} metricColourScale={metricColourScale} metricColourScaleReversed={metricColourScaleReversed} mode={mode} />
+      <label className="profile-fdr-reverse-toggle">
+        <input checked={metricColourScaleReversed} onChange={(event) => onSetMetricColourScaleReversed(event.target.checked)} type="checkbox" />
+        <span>
+          <strong>Reverse order</strong>
+          <small>Swap which end of the heatmap represents lower and higher values.</small>
+        </span>
+      </label>
+      <PlayerColourPaletteChooser
+        customColours={[...metricCustomColours]}
+        customPalettes={customPalettes}
+        family="metric"
+        isOpen={isScaleSheetOpen}
+        mode={mode}
+        onClose={onCloseSheet}
+        onDeletePalette={onDeletePalette}
+        onSavePalette={onSavePalette}
+        onSetScale={(scale) => onSetMetricColourScale(scale as MetricColourScaleName)}
+        onUseCustomColours={(colours) => onUseCustomColours(resolveMetricPalette(colours))}
+        selectedScale={metricColourScale}
+      />
+    </Card>
+  );
+}
+
+function PositionPaletteBar({ positionColourScale, customColours }: { positionColourScale: PositionColourScaleName; customColours?: PositionPalette }) {
+  const palette = positionColourScale === 'Custom' ? getCustomPositionColourScale(customColours) : getPositionColourScale(positionColourScale);
   return (
     <span aria-label={`${palette.label} position colour scale`} className="profile-position-palette-bar">
       {(['GKP', 'DEF', 'MID', 'FWD'] as const).map((position) => (
@@ -532,6 +631,7 @@ function PositionPaletteBar({ positionColourScale }: { positionColourScale: Posi
 }
 
 function MetricPaletteBar({
+  customColours,
   metricColourScale,
   metricColourScaleReversed,
   mode,
@@ -539,13 +639,262 @@ function MetricPaletteBar({
   metricColourScale: MetricColourScaleName;
   metricColourScaleReversed: boolean;
   mode: 'light' | 'dark';
+  customColours?: MetricPalette;
 }) {
+  const palette = metricColourScale === 'Custom' ? getCustomMetricColourScale(customColours) : getMetricColourScale(metricColourScale);
   return (
-    <span aria-label={`${getMetricColourScale(metricColourScale).label} sequential metric colour scale`} className="profile-metric-palette-bar">
-      {getMetricPalette(metricColourScale, mode, metricColourScaleReversed).map((colour, index) => (
+    <span aria-label={`${palette.label} heatmap metric colour scale`} className="profile-metric-palette-bar">
+      {getMetricPalette(metricColourScale, mode, metricColourScaleReversed, customColours).map((colour, index) => (
         <span key={`${metricColourScale}-${mode}-${index}`} style={{ backgroundColor: colour }} />
       ))}
     </span>
+  );
+}
+
+function PlayerColourPaletteChooser({
+  customColours,
+  customPalettes,
+  family,
+  isOpen,
+  mode = 'light',
+  onClose,
+  onDeletePalette,
+  onSavePalette,
+  onSetScale,
+  onUseCustomColours,
+  selectedScale,
+}: {
+  customColours: string[];
+  customPalettes: PlayerColourPalette[];
+  family: 'position' | 'metric';
+  isOpen: boolean;
+  mode?: 'light' | 'dark';
+  onClose: () => void;
+  onDeletePalette: (paletteId: string) => Promise<void>;
+  onSavePalette: (palette: Omit<PlayerColourPalette, 'id'>) => Promise<PlayerColourPalette>;
+  onSetScale: (scale: PositionColourScaleName | MetricColourScaleName) => void;
+  onUseCustomColours: (colours: string[]) => void;
+  selectedScale: PositionColourScaleName | MetricColourScaleName;
+}) {
+  const isPosition = family === 'position';
+  const presets = isPosition ? positionColourScales : metricColourScales;
+  const savedPalettes = customPalettes.filter((palette) => palette.family === family);
+  const title = isPosition ? 'Position colours' : 'Metric heatmap colours';
+  const selectedLabel = selectedScale === 'Custom' ? 'Custom' : presets.find((scale) => scale.name === selectedScale)?.label ?? selectedScale;
+
+  return (
+    <>
+      {isOpen ? <button aria-label={`Close ${title} chooser`} className="profile-fdr-sheet-backdrop" onClick={onClose} type="button" /> : null}
+      <Sheet id={isPosition ? 'position-colour-sheet' : 'metric-colour-sheet'} isOpen={isOpen} labelledBy={`${family}-colour-sheet-title`}>
+        <div className="profile-fdr-sheet profile-player-colour-sheet">
+          <header className="profile-fdr-sheet__header">
+            <div>
+              <p className="profile-card__eyebrow">{title}</p>
+              <h2 id={`${family}-colour-sheet-title`}>Choose a palette</h2>
+            </div>
+            <Button aria-label={`Close ${title} chooser`} className="profile-fdr-sheet__close" onClick={onClose} type="button" variant="ghost">
+              <X aria-hidden="true" size={18} />
+            </Button>
+          </header>
+          <div className="profile-fdr-scale-list">
+            <section aria-labelledby={`${family}-custom-heading`}>
+              <h3 className="profile-fdr-custom-heading" id={`${family}-custom-heading`}>Custom palette</h3>
+              <CustomPlayerColourEditor
+                family={family}
+                initialColours={customColours}
+                onSave={(palette) => onSavePalette(palette)}
+                onUse={(colours) => {
+                  onUseCustomColours(colours);
+                  onClose();
+                }}
+              />
+              {savedPalettes.length ? (
+                <div aria-label={`Saved custom ${family} palettes`} className="profile-player-saved-palettes">
+                  <div className="profile-fdr-saved-palettes__header">
+                    <h4>Saved palettes</h4>
+                    <small>Only palettes saved here can be deleted.</small>
+                  </div>
+                  {savedPalettes.map((palette) => (
+                    <SavedPlayerColourPalette
+                      key={palette.id}
+                      onDelete={() => onDeletePalette(palette.id)}
+                      onUse={() => {
+                        onUseCustomColours(palette.colours);
+                        onClose();
+                      }}
+                      palette={palette}
+                    />
+                  ))}
+                </div>
+              ) : null}
+            </section>
+            <section aria-labelledby={`${family}-preset-heading`}>
+              <h3 className="profile-fdr-custom-heading" id={`${family}-preset-heading`}>Presets</h3>
+              <div aria-label={`${isPosition ? 'Position' : 'Metric'} colour scales`} className="profile-player-colour-options" role="group">
+                {presets.map((scale) => (
+                  <button
+                    aria-pressed={scale.name === selectedScale}
+                    className={`profile-player-colour-option${scale.name === selectedScale ? ' is-selected' : ''}`}
+                    key={scale.name}
+                    onClick={() => {
+                      onSetScale(scale.name);
+                      onClose();
+                    }}
+                    type="button"
+                  >
+                    {isPosition
+                      ? <PositionPaletteBar positionColourScale={scale.name as PositionColourScaleName} />
+                      : <MetricPaletteBar metricColourScale={scale.name as MetricColourScaleName} metricColourScaleReversed={false} mode={mode} />}
+                    <span><strong>{scale.label}</strong><small>{scale.description}</small></span>
+                    <span aria-hidden="true" className="profile-preset-check">{scale.name === selectedScale ? <Check size={15} /> : <Circle size={15} />}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          </div>
+          <span className="sr-only">Current palette: {selectedLabel}</span>
+        </div>
+      </Sheet>
+    </>
+  );
+}
+
+function CustomPlayerColourEditor({
+  family,
+  initialColours,
+  onSave,
+  onUse,
+}: {
+  family: 'position' | 'metric';
+  initialColours: string[];
+  onSave: (palette: Omit<PlayerColourPalette, 'id'>) => Promise<PlayerColourPalette>;
+  onUse: (colours: string[]) => void;
+}) {
+  const [colours, setColours] = useState(() => [...initialColours]);
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [hsv, setHsv] = useState(() => hexToHsv(initialColours[0] ?? '#2563EB'));
+  const [paletteName, setPaletteName] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const labels = family === 'position' ? ['GKP', 'DEF', 'MID', 'FWD'] : ['Low', 'Lower', 'Mid', 'Higher', 'High'];
+
+  const updateColours = (nextHsv: HsvColour) => {
+    const nextColours = [...colours];
+    nextColours[selectedIndex] = hsvToHex(nextHsv);
+    setColours(nextColours);
+    setHsv(nextHsv);
+  };
+
+  const selectColour = (index: number) => {
+    setSelectedIndex(index);
+    setHsv(hexToHsv(colours[index] ?? '#2563EB'));
+  };
+
+  const updateFieldFromPointer = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    updateColours({ ...hsv, saturation: clamp((event.clientX - bounds.left) / bounds.width), exposure: clamp(1 - ((event.clientY - bounds.top) / bounds.height)) });
+  };
+
+  const updateHueFromPointer = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    updateColours({ ...hsv, hue: clamp((event.clientX - bounds.left) / bounds.width) * 360 });
+  };
+
+  const savePalette = async () => {
+    const name = paletteName.trim();
+    if (!name) {
+      setSaveMessage('Give this palette a name first.');
+      return;
+    }
+    setIsSaving(true);
+    setSaveMessage(null);
+    try {
+      await onSave({ name, family, colours });
+      setPaletteName('');
+      setSaveMessage('Palette saved.');
+    } catch {
+      setSaveMessage('The palette could not be saved.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className={`profile-fdr-custom-editor profile-player-custom-editor profile-player-custom-editor--${family}`}>
+      <div className="profile-fdr-custom-editor__header">
+        <div>
+          <strong>Build your own {family} palette</strong>
+          <small>Pick each colour independently with the colour field, hue strip, saturation, and exposure controls.</small>
+        </div>
+        <Button onClick={() => onUse(colours)} type="button" variant="secondary">Use custom</Button>
+      </div>
+      <div aria-label={`Custom ${family} colours`} className="profile-fdr-custom-editor__inputs" role="group">
+        {colours.map((colour, index) => (
+          <button
+            aria-label={`Edit ${family} ${labels[index]} colour`}
+            aria-pressed={index === selectedIndex}
+            className={`profile-fdr-custom-editor__level${index === selectedIndex ? ' is-selected' : ''}`}
+            key={`${family}-${labels[index]}`}
+            onClick={() => selectColour(index)}
+            style={{ '--level-colour': colour, '--level-foreground': getFdrFillForeground(colour) } as CSSProperties}
+            type="button"
+          >
+            <span>{labels[index]}</span>
+            <small>{colour}</small>
+          </button>
+        ))}
+      </div>
+      <div aria-label={`Colour field for ${family} ${labels[selectedIndex]}`} className="profile-fdr-colour-picker__field" onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); updateFieldFromPointer(event); }} onPointerMove={(event) => { if (event.buttons > 0) updateFieldFromPointer(event); }} style={{ '--picker-hue': `${hsv.hue}deg` } as CSSProperties}>
+        <span aria-hidden="true" className="profile-fdr-colour-picker__field-pointer" style={{ left: `${hsv.saturation * 100}%`, top: `${(1 - hsv.exposure) * 100}%` }} />
+      </div>
+      <div aria-label={`${family} palette hue selector`} className="profile-fdr-colour-picker__hue" onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); updateHueFromPointer(event); }} onPointerMove={(event) => { if (event.buttons > 0) updateHueFromPointer(event); }}>
+        <span aria-hidden="true" className="profile-fdr-colour-picker__hue-pointer" style={{ left: `${(hsv.hue / 360) * 100}%` }} />
+      </div>
+      <div className="profile-fdr-colour-picker__sliders">
+        <label>
+          <span>Saturation <strong>{Math.round(hsv.saturation * 100)}%</strong></span>
+          <input aria-label={`Saturation for ${family} ${labels[selectedIndex]}`} max="100" min="0" onChange={(event) => updateColours({ ...hsv, saturation: Number(event.target.value) / 100 })} type="range" value={Math.round(hsv.saturation * 100)} />
+        </label>
+        <label>
+          <span>Exposure <strong>{Math.round(hsv.exposure * 100)}%</strong></span>
+          <input aria-label={`Exposure for ${family} ${labels[selectedIndex]}`} max="100" min="0" onChange={(event) => updateColours({ ...hsv, exposure: Number(event.target.value) / 100 })} type="range" value={Math.round(hsv.exposure * 100)} />
+        </label>
+      </div>
+      <div className="profile-fdr-custom-editor__save">
+        <label>
+          <span>Palette name</span>
+          <input aria-label={`Saved ${family} palette name`} maxLength={80} onChange={(event) => { setPaletteName(event.target.value); setSaveMessage(null); }} placeholder="e.g. Weekend watch" type="text" value={paletteName} />
+        </label>
+        <Button disabled={isSaving} onClick={() => void savePalette()} type="button" variant="secondary">{isSaving ? 'Saving…' : 'Save palette'}</Button>
+        {saveMessage ? <small aria-live="polite" role="status">{saveMessage}</small> : null}
+      </div>
+      {family === 'position'
+        ? <PositionPaletteBar customColours={resolvePositionPalette({ GKP: colours[0], DEF: colours[1], MID: colours[2], FWD: colours[3] })} positionColourScale="Custom" />
+        : <MetricPaletteBar customColours={resolveMetricPalette(colours)} metricColourScale="Custom" metricColourScaleReversed={false} mode="light" />}
+    </div>
+  );
+}
+
+function SavedPlayerColourPalette({ onDelete, onUse, palette }: { onDelete: () => Promise<void>; onUse: () => void; palette: PlayerColourPalette }) {
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [error, setError] = useState(false);
+  return (
+    <div className="profile-fdr-saved-palette profile-player-saved-palette">
+      <div className="profile-fdr-saved-palette__preview">
+        <div><strong>{palette.name}</strong><small>{palette.family === 'position' ? 'Four positions' : 'Five heatmap steps'}</small></div>
+        {palette.family === 'position'
+          ? <PositionPaletteBar customColours={resolvePositionPalette({ GKP: palette.colours[0], DEF: palette.colours[1], MID: palette.colours[2], FWD: palette.colours[3] })} positionColourScale="Custom" />
+          : <MetricPaletteBar customColours={resolveMetricPalette(palette.colours)} metricColourScale="Custom" metricColourScaleReversed={false} mode="light" />}
+      </div>
+      <div className="profile-fdr-saved-palette__actions">
+        <Button onClick={onUse} type="button" variant="secondary">Use</Button>
+        <Button aria-label={`Delete saved ${palette.family} palette ${palette.name}`} disabled={isDeleting} onClick={() => { setIsDeleting(true); setError(false); void onDelete().catch(() => setError(true)).finally(() => setIsDeleting(false)); }} type="button" variant="ghost">
+          <Trash2 aria-hidden="true" size={16} />
+          {isDeleting ? 'Deleting…' : 'Delete'}
+        </Button>
+      </div>
+      {error ? <small aria-live="polite" className="profile-fdr-saved-palette__error" role="alert">Could not delete this palette.</small> : null}
+    </div>
   );
 }
 

@@ -1,4 +1,5 @@
 import type { FdrDisplayMode, FdrScaleName } from './fdr-colour-scales';
+import type { MetricColourScaleName, PositionColourScaleName } from './player-colour-scales';
 
 export interface ApiErrorResponse {
   code: 'validation_error' | 'unauthenticated' | 'forbidden' | 'not_found' | 'conflict' | 'server_error';
@@ -72,6 +73,9 @@ export interface UserPreferences {
   fdrScale: FdrScaleName;
   fdrScaleReversed: boolean;
   fdrDisplayMode?: FdrDisplayMode;
+  positionColourScale?: PositionColourScaleName;
+  metricColourScale?: MetricColourScaleName;
+  metricColourScaleReversed?: boolean;
   lightThemeColour?: string;
   darkThemeColour?: string;
   fdrCustomAnchors?: {

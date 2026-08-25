@@ -329,7 +329,7 @@ export function SquadPage({
   const [lineupDirty, setLineupDirty] = useState(false);
   const [lineupSaving, setLineupSaving] = useState(false);
   const [clockNow, setClockNow] = useState(() => Date.now());
-  const [status, setStatus] = useState('Loading squad.');
+  const [, setStatus] = useState('Loading squad.');
   const [drawerMode, setDrawerMode] = useState<DrawerMode>(null);
   const [selectedPlayer, setSelectedPlayer] = useState<PlayerView | null>(null);
   const [substitutionSource, setSubstitutionSource] = useState<TeamSelectionPlayer | null>(null);
@@ -871,19 +871,18 @@ export function SquadPage({
             <ChipToggle chip={chip} disabled={lineupLocked} key={chip.id} onToggle={() => void toggleChip(chip)} />
           ))}
         </div>
-        <div className="squad-page__matchweek-actions">
-          <Button
-            disabled={!teamSelection || lineupLocked || lineupSaving || !lineupDirty}
-            onClick={() => void saveLineup()}
-            type="button"
-          >
-            {lineupLocked ? <LockKeyhole aria-hidden="true" size={16} /> : <Save aria-hidden="true" size={16} />}
-            Save lineup
-          </Button>
-          <p className="squad-page__matchweek-status" role="status">
-            {lineupLocked ? `Lineup locked. ${teamSelection?.fixtureLock.reason ?? 'The gameweek deadline has passed.'}` : status}
-          </p>
-        </div>
+        {lineupDirty ? (
+          <div className="squad-page__matchweek-actions">
+            <Button
+              disabled={!teamSelection || lineupLocked || lineupSaving}
+              onClick={() => void saveLineup()}
+              type="button"
+            >
+              {lineupLocked ? <LockKeyhole aria-hidden="true" size={16} /> : <Save aria-hidden="true" size={16} />}
+              Save lineup
+            </Button>
+          </div>
+        ) : null}
       </section>
 
       {proposedTradeCount > 0 ? (

@@ -392,12 +392,12 @@
 }
 
 .player-profile__bar--low {
-  background: color-mix(in srgb, var(--profile-accent) 45%, var(--profile-panel));
+  background: color-mix(in srgb, var(--cdl-metric-2, var(--profile-accent)) 68%, var(--profile-panel));
 }
 
 .player-profile__bar--positive,
 .player-profile__bar--high {
-  background: color-mix(in srgb, #22c55e 68%, var(--profile-panel));
+  background: color-mix(in srgb, var(--cdl-metric-4, #22c55e) 68%, var(--profile-panel));
 }
 
 .player-profile__bar {

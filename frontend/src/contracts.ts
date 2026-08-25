@@ -1,5 +1,12 @@
 import type { FdrDisplayMode, FdrScaleName } from './fdr-colour-scales';
-import type { MetricColourScaleName, PositionColourScaleName } from './player-colour-scales';
+import type {
+  MetricColourScaleName,
+  MetricPalette,
+  PlayerPosition,
+  PositionColourMode,
+  PositionColourScaleName,
+  PositionPalette,
+} from './player-colour-scales';
 
 export interface ApiErrorResponse {
   code: 'validation_error' | 'unauthenticated' | 'forbidden' | 'not_found' | 'conflict' | 'server_error';
@@ -74,8 +81,11 @@ export interface UserPreferences {
   fdrScaleReversed: boolean;
   fdrDisplayMode?: FdrDisplayMode;
   positionColourScale?: PositionColourScaleName;
+  positionColourMode?: PositionColourMode;
+  positionCustomColours?: Partial<Record<PlayerPosition, string>> & Partial<PositionPalette>;
   metricColourScale?: MetricColourScaleName;
   metricColourScaleReversed?: boolean;
+  metricCustomColours?: MetricPalette;
   lightThemeColour?: string;
   darkThemeColour?: string;
   fdrCustomAnchors?: {

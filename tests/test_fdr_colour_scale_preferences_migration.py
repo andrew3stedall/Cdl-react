@@ -76,7 +76,7 @@ def test_player_custom_colour_palettes_migration_is_append_only() -> None:
         "migrations/versions/0021_player_custom_colour_palettes.py",
     ).read_text(encoding="utf-8")
 
-    assert "Revision ID: 0021_player_custom_colour_palettes" in content
+    assert "Revision ID: 0021_player_custom_palettes" in content
     assert "Revises: 0020_player_colour_scales" in content
     assert '"position_colour_mode"' in content
     assert '"player_colour_palettes"' in content

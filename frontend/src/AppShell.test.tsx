@@ -4,6 +4,7 @@ import { describe, expect, test, vi } from 'vitest';
 
 import { App } from './App';
 import type { SessionState, UserPreferences } from './contracts';
+import { officialFplShirtUrl } from './fpl-shirt-assets';
 import type { LeagueClient, LeagueSnapshot } from './league-api';
 import type { FdrCustomPalette } from './fdr-colour-scales';
 import type { FdrCustomPaletteDraft, PreferenceClient } from './preferences-api';
@@ -427,6 +428,8 @@ describe('AppShell integration', () => {
     expect(container.querySelector('#account-settings-title')?.textContent).toBe('Position colours');
     expect(container.querySelector('[aria-label="Example player card"] .player-card__token.position-mid')).not.toBeNull();
     expect(container.querySelector('[aria-label="Example player card"] .player-card__opponent--fdr-4')).not.toBeNull();
+    expect(container.querySelector('[aria-label="Example player card"] .player-card__name')?.textContent).toBe('Ndombele');
+    expect(container.querySelector('[aria-label="Example player card"] .player-card__shirt')?.getAttribute('src')).toBe(officialFplShirtUrl('TOT', true));
     container.querySelector<HTMLButtonElement>('[aria-controls="position-colour-sheet"]')?.click();
     await act(async () => {
       await Promise.resolve();

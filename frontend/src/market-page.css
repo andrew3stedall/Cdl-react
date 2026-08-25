@@ -2,14 +2,14 @@
   --market-surface: var(--card);
   --market-subtle: var(--secondary);
   --market-muted: var(--muted-foreground);
-  --market-position-gkp: #8b78b8;
-  --market-position-def: #3e927f;
-  --market-position-mid: #397d9b;
-  --market-position-fwd: #a2784c;
-  --market-form-negative: #a8777e;
-  --market-form-low: #71889a;
-  --market-form-steady: #a9966e;
-  --market-form-high: #78a39a;
+  --market-position-gkp: var(--cdl-position-gkp, #8b78b8);
+  --market-position-def: var(--cdl-position-def, #3e927f);
+  --market-position-mid: var(--cdl-position-mid, #397d9b);
+  --market-position-fwd: var(--cdl-position-fwd, #a2784c);
+  --market-form-negative: var(--cdl-metric-1, #a8777e);
+  --market-form-low: var(--cdl-metric-2, #71889a);
+  --market-form-steady: var(--cdl-metric-3, #a9966e);
+  --market-form-high: var(--cdl-metric-5, #78a39a);
   gap: 1rem;
   padding: clamp(1rem, 2.4vw, 2rem);
 }

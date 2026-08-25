@@ -20,6 +20,7 @@ import {
 import { Button } from './components/ui/button';
 import { Card } from './components/ui/card';
 import { Sheet } from './components/ui/sheet';
+import { PlayerCard } from './components/player/PlayerCard';
 import type { AttackDirection, SessionState, ThemePreset } from './contracts';
 import {
   fdrColourScales,
@@ -532,6 +533,26 @@ function PositionColourSettingsCard({
           </button>
         ))}
       </div>
+      <section aria-label="Example player card" className="profile-position-player-card-preview">
+        <div className="profile-position-player-card-preview__copy">
+          <strong>Live player card preview</strong>
+          <small>Updates as you choose a position colour and application style.</small>
+        </div>
+        <div className="profile-position-player-card-preview__stage">
+          <PlayerCard
+            ariaLabel="Example midfielder player card"
+            layout="token"
+            player={{
+              displayName: 'Example Player',
+              fixtures: [{ difficulty: 4, label: 'liv', title: 'Liverpool away' }],
+              form: 7.4,
+              position: 'MID',
+              team: 'MCI',
+            }}
+            size="lg"
+          />
+        </div>
+      </section>
       <PlayerColourPaletteChooser
         customColours={Object.values(positionCustomColours)}
         customPalettes={customPalettes}

@@ -78,6 +78,43 @@
   z-index: 0;
 }
 
+.player-card__token.position-gkp { --player-position-color: var(--cdl-position-gkp, var(--squad-position-gkp, #8b9bb4)); }
+.player-card__token.position-def { --player-position-color: var(--cdl-position-def, var(--squad-position-def, #67a890)); }
+.player-card__token.position-mid { --player-position-color: var(--cdl-position-mid, var(--squad-position-mid, #c7a969)); }
+.player-card__token.position-fwd { --player-position-color: var(--cdl-position-fwd, var(--squad-position-fwd, #be7d8a)); }
+
+[data-position-colour-mode='name-font'] .player-card__token .player-card__name {
+  color: var(--player-position-color, var(--foreground));
+}
+
+[data-position-colour-mode='name-fill'] .player-card__token .player-card__name {
+  background: color-mix(in srgb, var(--player-position-color, var(--primary)) 22%, var(--card));
+  border-radius: 0.2rem;
+  color: var(--player-position-color, var(--foreground));
+  padding: 0.1rem 0.24rem;
+}
+
+[data-position-colour-mode='card-border'] .player-card__token {
+  border: 2px solid var(--player-position-color, var(--border));
+  box-sizing: border-box;
+}
+
+[data-position-colour-mode='card-fill'] .player-card__token {
+  background: color-mix(in srgb, var(--player-position-color, var(--secondary)) 20%, var(--secondary));
+}
+
+[data-position-colour-mode='card-fill'] .player-card__token--with-opponent::before {
+  background: color-mix(in srgb, var(--player-position-color, var(--secondary)) 20%, var(--secondary));
+}
+
+[data-position-colour-mode='card-fill'] .player-card--pitch .player-card__token {
+  background: transparent;
+}
+
+[data-position-colour-mode='card-fill'] .player-card--pitch .player-card__token--with-opponent::before {
+  background: color-mix(in srgb, var(--player-position-color, var(--secondary)) 20%, transparent);
+}
+
 .player-card--pitch .player-card__token {
   background: transparent;
 }

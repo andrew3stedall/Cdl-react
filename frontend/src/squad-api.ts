@@ -62,6 +62,7 @@ export interface SquadApiHistoryRow {
   saves: number;
   yellow_cards: number;
   red_cards: number;
+  own_goals?: number;
   bonus: number;
   bps: number;
   expected_goals: number;
@@ -116,6 +117,7 @@ export interface SquadApiOpponentStatIcons {
   saves: number;
   yellow_cards: number;
   red_cards: number;
+  own_goals?: number;
   defensive_contributions: number;
   bonus_points: number;
 }

@@ -978,6 +978,7 @@ def _stat_icon_key(identifier: object) -> str | None:
         "saves": "saves",
         "yellow_cards": "yellow_cards",
         "red_cards": "red_cards",
+        "own_goals": "own_goals",
         "defensive_contribution": "defensive_contributions",
         "defensive_contributions": "defensive_contributions",
         "bonus": "bonus_points",

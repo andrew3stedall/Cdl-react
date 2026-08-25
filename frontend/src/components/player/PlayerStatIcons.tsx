@@ -10,6 +10,7 @@ export interface PlayerStatSummary {
   saves: number;
   yellowCards: number;
   redCards: number;
+  ownGoals?: number;
   defensiveContributions: number;
   bonusPoints: number;
 }

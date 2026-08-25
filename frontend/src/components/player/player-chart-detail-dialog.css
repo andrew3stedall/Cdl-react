@@ -159,6 +159,29 @@
   margin-left: auto;
 }
 
+.player-chart-detail__section li.player-chart-detail__row--form {
+  gap: 0.65rem;
+}
+
+.player-chart-detail__row--form .player-chart-detail__row-label {
+  flex: 1 1 auto;
+}
+
+.player-chart-detail__row--form .player-chart-detail__row-value {
+  margin-left: auto;
+  min-width: 2rem;
+  text-align: right;
+}
+
+.player-chart-detail__row--form strong {
+  min-width: 2.2rem;
+  text-align: right;
+}
+
+.player-chart-detail__row--form strong.is-negative {
+  color: var(--destructive, #b35f69);
+}
+
 .player-chart-detail__empty {
   color: var(--profile-muted);
   font-size: 0.75rem;

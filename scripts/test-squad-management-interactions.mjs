@@ -289,9 +289,10 @@ async function testSquadWorkspace(browser, viewport) {
     throw new Error('FDR option 4 should remain selected after closing the chooser');
   }
   const reverseScaleToggle = page.locator('.profile-fdr-reverse-toggle input');
+  const initialReverseScaleState = await reverseScaleToggle.isChecked();
   await reverseScaleToggle.click();
-  if (!(await reverseScaleToggle.isChecked())) {
-    throw new Error('FDR colour scale reverse toggle should be enabled after selection');
+  if (await reverseScaleToggle.isChecked() === initialReverseScaleState) {
+    throw new Error('FDR colour scale reverse toggle should change state after selection');
   }
   await page.goto(`${baseUrl}/account/orientation`, { waitUntil: 'networkidle' });
   const attackDownwards = page.getByRole('button', { name: /Attack downwards/ });

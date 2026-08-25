@@ -453,7 +453,8 @@ describe('SquadPage', () => {
     expect(container.querySelectorAll('.squad-page__availability-flag')).toHaveLength(0);
     expect(container.textContent).toContain('Next deadline');
     expect(container.querySelector('[aria-label="Matchweek controls"]')).not.toBeNull();
-    expect(container.querySelector('.squad-page__matchweek-controls')?.children).toHaveLength(2);
+    expect(Array.from(container.querySelector('.squad-page__matchweek-controls')?.children ?? [])
+      .filter((child) => !child.classList.contains('sr-only'))).toHaveLength(2);
     expect(container.querySelector('.squad-page__deadline')).not.toBeNull();
     expect(container.querySelector('.squad-page__chips')).not.toBeNull();
     expect(Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Save lineup'))).toBeUndefined();

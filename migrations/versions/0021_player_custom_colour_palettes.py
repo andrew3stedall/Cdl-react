@@ -1,6 +1,6 @@
 """persist player position and metric custom colour palettes
 
-Revision ID: 0021_player_custom_colour_palettes
+Revision ID: 0021_player_custom_palettes
 Revises: 0020_player_colour_scales
 Create Date: 2026-08-25 00:00:00.000000
 """
@@ -10,7 +10,7 @@ from collections.abc import Sequence
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "0021_player_custom_colour_palettes"
+revision: str = "0021_player_custom_palettes"
 down_revision: str | None = "0020_player_colour_scales"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None

@@ -27,6 +27,16 @@ class FdrCustomPalette(FdrCustomPaletteCreate):
     id: str
 
 
+class PlayerColourPaletteCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=80)
+    family: Literal["position", "metric"]
+    colours: list[str] = Field(min_length=4, max_length=5)
+
+
+class PlayerColourPalette(PlayerColourPaletteCreate):
+    id: str
+
+
 class UserPreferences(BaseModel):
     theme_preset: str = "teal-light"
     attack_direction: str = "up"
@@ -34,8 +44,18 @@ class UserPreferences(BaseModel):
     fdr_scale_reversed: bool = True
     fdr_display_mode: str = "font"
     position_colour_scale: str = "Classic"
+    position_colour_mode: str = "name-font"
+    position_custom_gkp: str = "#7C3AED"
+    position_custom_def: str = "#2563EB"
+    position_custom_mid: str = "#059669"
+    position_custom_fwd: str = "#EA580C"
     metric_colour_scale: str = "Blue"
     metric_colour_scale_reversed: bool = False
+    metric_custom_1: str = "#2563EB"
+    metric_custom_2: str = "#0EA5A4"
+    metric_custom_3: str = "#A3C635"
+    metric_custom_4: str = "#F59E0B"
+    metric_custom_5: str = "#DC2626"
     light_theme_colour: str = "#0F766E"
     dark_theme_colour: str = "#2DD4BF"
     fdr_custom_min: str = "#2166AC"

@@ -176,10 +176,10 @@
   z-index: 3;
 }
 
-.player-card__position-marker.position-gkp { --player-position-color: var(--squad-position-gkp, #8b9bb4); }
-.player-card__position-marker.position-def { --player-position-color: var(--squad-position-def, #67a890); }
-.player-card__position-marker.position-mid { --player-position-color: var(--squad-position-mid, #c7a969); }
-.player-card__position-marker.position-fwd { --player-position-color: var(--squad-position-fwd, #be7d8a); }
+.player-card__position-marker.position-gkp { --player-position-color: var(--cdl-position-gkp, var(--squad-position-gkp, #8b9bb4)); }
+.player-card__position-marker.position-def { --player-position-color: var(--cdl-position-def, var(--squad-position-def, #67a890)); }
+.player-card__position-marker.position-mid { --player-position-color: var(--cdl-position-mid, var(--squad-position-mid, #c7a969)); }
+.player-card__position-marker.position-fwd { --player-position-color: var(--cdl-position-fwd, var(--squad-position-fwd, #be7d8a)); }
 
 .player-card__role,
 .player-card__availability {

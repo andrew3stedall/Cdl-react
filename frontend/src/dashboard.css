@@ -47,7 +47,7 @@
 }
 
 .dashboard-chart-bar::before {
-  background: var(--primary);
+  background: var(--cdl-metric-4, var(--primary));
   content: '';
   inset: 0 auto 0 0;
   opacity: 0.14;

@@ -708,9 +708,10 @@ async function testMobileNavigationClearance(page) {
   }
 
   await page.goto(baseUrl + '/account', { waitUntil: 'networkidle' });
-  await page.getByRole('button', { name: /FDR colour scale option \d+/ }).click();
+  await page.getByRole('button', { name: 'Open FDR colour scale settings' }).click();
   const sheet = page.locator('#fdr-scale-sheet');
   await sheet.waitFor({ state: 'visible' });
+  await sheet.getByRole('button', { name: 'FDR colour scale option 1' }).click();
   const chooserOpenedScrollY = await page.evaluate(() => window.scrollY);
   const chooserGeometry = await page.locator('.profile-fdr-scale-option').first().evaluate((element, expectedScrollY) => {
     const sheetElement = element.closest('#fdr-scale-sheet');

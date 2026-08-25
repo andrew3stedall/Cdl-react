@@ -468,6 +468,7 @@
   justify-content: space-between;
   overflow: hidden;
   padding: 0;
+  position: relative;
 }
 
 .player-profile__grouped-bar-button {
@@ -487,12 +488,22 @@
 .player-profile__grouped-bar-wrap {
   align-self: stretch;
   display: block;
-  flex: 0 0 clamp(0.16rem, 0.8vw, 0.28rem);
+  flex: 0 0 clamp(0.1rem, 0.5vw, 0.18rem);
   height: 100%;
   min-width: 0;
   position: relative;
   z-index: 3;
 }
+
+.player-profile__grouped-bar-wrap--attack,
+.player-profile__grouped-bar-wrap--defence {
+  bottom: 0;
+  position: absolute;
+  top: 0;
+}
+
+.player-profile__grouped-bar-wrap--attack { left: 0; }
+.player-profile__grouped-bar-wrap--defence { right: 0; }
 
 .player-profile__grouped-stat-icons {
   align-items: stretch;
@@ -501,7 +512,9 @@
   flex: 1 1 auto;
   justify-content: center;
   min-width: 0;
+  padding-inline: clamp(0.32rem, 1vw, 0.5rem);
   position: relative;
+  width: 100%;
   z-index: 3;
 }
 
@@ -999,8 +1012,8 @@
   }
 
   .player-profile__stat-icon {
-    height: 0.8rem;
-    width: 0.8rem;
+    height: 1rem;
+    width: 1rem;
   }
 }
 

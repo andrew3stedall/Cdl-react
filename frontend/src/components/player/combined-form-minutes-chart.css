@@ -162,8 +162,9 @@
 }
 
 .player-profile__combined-bar--empty {
-  background: var(--profile-chart-empty);
+  background: var(--profile-chart-track);
   cursor: default;
+  opacity: 1;
 }
 
 .player-profile__combined-bar--negative {

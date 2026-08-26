@@ -393,6 +393,8 @@ describe('PlayerProfilePage', () => {
     expect([...container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__grouped-bar-point-label')].map((node) => node.textContent)).toEqual(
       Array.from({ length: 8 }, (_, index) => [String(index + 4), '2']).flat(),
     );
+    expect(container.querySelector('[data-chart-kind="opponent-defence"] .player-profile__grouped-bar-point-label--attack')).toBeTruthy();
+    expect(container.querySelector('[data-chart-kind="opponent-defence"] .player-profile__grouped-bar-point-label--defence')).toBeTruthy();
     expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__grouped-bar-value')).toHaveLength(0);
     expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__grouped-stat-icons .player-profile__stat-icon')).toHaveLength(3);
     expect(container.querySelector('[data-chart-kind="opponent-defence"]')?.getAttribute('data-y-axis-min')).toBe('0');
@@ -412,11 +414,12 @@ describe('PlayerProfilePage', () => {
 
   test('renders empty slots before shorter fixture windows while keeping the newest fixture furthest right', async () => {
     const oneFixtureClient = new MemorySquadClient();
-    oneFixtureClient.getPlayerHistory = async () => ({ ...history, history: history.history.slice(-1) });
+    oneFixtureClient.getPlayerHistory = async () => ({ ...history, history: history.history.slice(-1), opponent_defensive_history: history.opponent_defensive_history?.slice(-1) });
     const oneFixture = renderPage(oneFixtureClient);
     await settle();
     expect(oneFixture.container.querySelectorAll('[data-chart-kind="combined-form-minutes"] .player-profile__combined-chart-column')).toHaveLength(8);
     expect(oneFixture.container.querySelectorAll('[data-chart-kind="combined-form-minutes"] .player-profile__combined-bar--empty')).toHaveLength(14);
+    expect(oneFixture.container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__grouped-bar-empty')).toHaveLength(7);
     expect([...oneFixture.container.querySelectorAll('[data-chart-kind="combined-form-minutes"] .player-profile__combined-opponent')].map((node) => node.textContent)).toEqual(['', '', '', '', '', '', '', 'NEW']);
     oneFixture.root.unmount();
 

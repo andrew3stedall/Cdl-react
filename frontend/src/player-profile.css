@@ -379,8 +379,9 @@
 }
 
 .player-profile__bar--empty {
-  background: var(--profile-chart-empty);
+  background: var(--profile-chart-track);
   min-height: 0;
+  opacity: 1;
 }
 
 .player-profile__bar--negative {
@@ -484,7 +485,7 @@
 }
 
 .player-profile__grouped-bar-empty {
-  background: var(--profile-chart-empty);
+  background: var(--profile-chart-track);
   cursor: default;
 }
 
@@ -545,18 +546,27 @@
 }
 
 .player-profile__grouped-bar-point-label {
-  color: var(--profile-panel);
   display: block;
   font-size: 0.39rem;
   font-weight: 900;
-  left: 50%;
   line-height: 1;
+  pointer-events: none;
   position: absolute;
   text-transform: uppercase;
   top: 0.18rem;
-  transform: translateX(-50%) rotate(180deg);
+  transform: rotate(180deg);
   writing-mode: vertical-rl;
-  z-index: 4;
+  z-index: 5;
+}
+
+.player-profile__grouped-bar-point-label--attack {
+  color: var(--cdl-position-mid, var(--squad-position-mid, #c7a969));
+  left: calc(100% + 0.16rem);
+}
+
+.player-profile__grouped-bar-point-label--defence {
+  color: var(--cdl-position-def, var(--squad-position-def, #67a890));
+  right: calc(100% + 0.16rem);
 }
 
 .player-profile__grouped-bar--attack {

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Added a Tauri 2 Android shell and reproducible debug APK workflow around the existing React frontend.
+- Kept the existing FastAPI/PostgreSQL Cloud Run service as the backend; staging APK builds open the deployed staging app to preserve same-origin cookie authentication.
+
+
+## Unreleased
+
 - Match points-against labels to their attacking/defensive bar colours, keep them clear of the bars, and use the result-track colour for empty chart slots.
 - Reworked the account page into a compact summary with navigable appearance, FDR colour, and attacking-orientation settings subpages.
 - Hide device sign-in setup after a passkey is registered and remove manager role, account ID, and dedicated account-action content from the page.

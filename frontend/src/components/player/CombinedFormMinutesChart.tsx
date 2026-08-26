@@ -4,7 +4,7 @@ import { PlayerChartGrid, PlayerChartYAxisScale, PlayerChartZeroLine } from './P
 import { PlayerStatIcons, type PlayerStatSummary } from './PlayerStatIcons';
 import {
   barTone,
-  chartColumnStyle,
+  chartFixtureSlots,
   fdrStyleFor,
   formChartScaleMax,
   formatNullableNumber,
@@ -27,7 +27,7 @@ export function CombinedFormMinutesChart({
   fixtures,
   fdrDisplayMode,
   onFixtureClick,
-  windowLabel = 'latest ten',
+  windowLabel = 'latest eight',
 }: {
   fixtures: CombinedFormMinutesFixture[];
   fdrDisplayMode: 'font' | 'fill';
@@ -36,6 +36,7 @@ export function CombinedFormMinutesChart({
 }) {
   const formMax = formChartScaleMax(fixtures);
   const minutesMax = 90;
+  const slots = chartFixtureSlots(fixtures);
 
   return (
     <div
@@ -66,15 +67,14 @@ export function CombinedFormMinutesChart({
             <PlayerChartZeroLine />
           </div>
           <div className="player-profile__combined-chart-columns">
-            {fixtures.map((fixture, index) => (
+            {slots.map((fixture, index) => (
               <CombinedChartColumn
                 fixture={fixture}
                 formMax={formMax}
                 fdrDisplayMode={fdrDisplayMode}
-                key={fixture.fixtureId}
+                key={fixture?.fixtureId ?? `empty-${index}`}
                 minutesMax={minutesMax}
                 onFixtureClick={onFixtureClick}
-                style={chartColumnStyle(index, fixtures.length)}
               />
             ))}
           </div>
@@ -92,51 +92,51 @@ function CombinedChartColumn({
   onFixtureClick,
   style,
 }: {
-  fixture: CombinedFormMinutesFixture;
+  fixture: CombinedFormMinutesFixture | null;
   formMax: number;
   fdrDisplayMode: 'font' | 'fill';
   minutesMax: number;
   onFixtureClick?: (fixture: CombinedFormMinutesFixture) => void;
   style?: CSSProperties;
 }) {
-  const pointsHeight = chartBarHeight(fixture.fantasyPoints, formMax);
-  const minutesHeight = chartBarHeight(fixture.minutesPlayed, minutesMax);
-  const pointsTone = barTone(fixture.fantasyPoints);
+  const pointsHeight = fixture ? chartBarHeight(fixture.fantasyPoints, formMax) : 100;
+  const minutesHeight = fixture ? chartBarHeight(fixture.minutesPlayed, minutesMax) : 100;
+  const pointsTone = barTone(fixture?.fantasyPoints ?? null);
 
   return (
     <div className="player-profile__combined-chart-column" style={style}>
       <div className="player-profile__combined-positive">
-        <span className={`player-profile__chart-value${fixture.fantasyPoints === null ? ' is-empty' : ''}`}>
-          {formatNullableNumber(fixture.fantasyPoints)}
+        <span className={`player-profile__chart-value${fixture?.fantasyPoints === null || !fixture ? ' is-empty' : ''}`}>
+          {formatNullableNumber(fixture?.fantasyPoints)}
         </span>
         <div className="player-profile__combined-track player-profile__combined-track--positive">
-          <button
-            aria-label={`View ${formatOpponentLabel(fixture.opponentShortName, fixture.isHome)} form details: ${formatNullableNumber(fixture.fantasyPoints)} points`}
-            className={`player-profile__combined-bar player-profile__combined-bar--${pointsTone}`}
-            onClick={() => onFixtureClick?.(fixture)}
-            style={{ '--bar-height': `${pointsHeight}%` } as CSSProperties}
-            type="button"
-          >
-            <PlayerStatIcons position={fixture.position} stats={fixture.stats} />
-          </button>
+          {fixture ? <button
+              aria-label={`View ${formatOpponentLabel(fixture.opponentShortName, fixture.isHome)} form details: ${formatNullableNumber(fixture.fantasyPoints)} points`}
+              className={`player-profile__combined-bar player-profile__combined-bar--${pointsTone}`}
+              onClick={() => onFixtureClick?.(fixture)}
+              style={{ '--bar-height': `${pointsHeight}%` } as CSSProperties}
+              type="button"
+            >
+              <PlayerStatIcons position={fixture.position} stats={fixture.stats} />
+            </button> : <span aria-hidden="true" className="player-profile__combined-bar player-profile__combined-bar--empty" style={{ '--bar-height': `${pointsHeight}%` } as CSSProperties} />}
         </div>
       </div>
-      <span className="player-profile__combined-opponent" style={fdrStyleFor(fixture.fdr, fdrDisplayMode)}>
-        {formatOpponentLabel(fixture.opponentShortName, fixture.isHome)}
+      <span className="player-profile__combined-opponent" style={fdrStyleFor(fixture?.fdr ?? null, fdrDisplayMode)}>
+        {fixture ? formatOpponentLabel(fixture.opponentShortName, fixture.isHome) : ''}
       </span>
       <div className="player-profile__combined-negative">
         <div className="player-profile__combined-track player-profile__combined-track--negative">
           <div aria-hidden="true" className="player-profile__combined-threshold-line" />
-          <button
-            aria-label={`View ${formatOpponentLabel(fixture.opponentShortName, fixture.isHome)} minutes details: ${formatNullableNumber(fixture.minutesPlayed)} minutes`}
-            className="player-profile__combined-bar player-profile__combined-bar--minutes"
-            onClick={() => onFixtureClick?.(fixture)}
-            style={{ '--bar-height': `${minutesHeight}%` } as CSSProperties}
-            type="button"
-          />
+          {fixture ? <button
+              aria-label={`View ${formatOpponentLabel(fixture.opponentShortName, fixture.isHome)} minutes details: ${formatNullableNumber(fixture.minutesPlayed)} minutes`}
+              className="player-profile__combined-bar player-profile__combined-bar--minutes"
+              onClick={() => onFixtureClick?.(fixture)}
+              style={{ '--bar-height': `${minutesHeight}%` } as CSSProperties}
+              type="button"
+            /> : <span aria-hidden="true" className="player-profile__combined-bar player-profile__combined-bar--empty player-profile__combined-bar--minutes" style={{ '--bar-height': `${minutesHeight}%` } as CSSProperties} />}
         </div>
-        <span className={`player-profile__chart-value${fixture.minutesPlayed === null ? ' is-empty' : ''}`}>
-          {formatNullableNumber(fixture.minutesPlayed)}
+        <span className={`player-profile__chart-value${fixture?.minutesPlayed === null || !fixture ? ' is-empty' : ''}`}>
+          {formatNullableNumber(fixture?.minutesPlayed)}
         </span>
       </div>
     </div>

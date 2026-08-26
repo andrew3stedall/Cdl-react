@@ -84,7 +84,7 @@
   align-items: stretch;
   display: grid;
   gap: clamp(0.15rem, 1.2vw, 0.5rem);
-  grid-template-columns: repeat(10, minmax(0, 1fr));
+  grid-template-columns: repeat(8, minmax(0, 1fr));
   min-height: calc(var(--combined-form-height) + var(--combined-opponent-height) + var(--combined-minutes-height));
   position: relative;
 }
@@ -162,7 +162,9 @@
 }
 
 .player-profile__combined-bar--empty {
-  background: var(--profile-chart-empty);
+  background: var(--profile-chart-track);
+  cursor: default;
+  opacity: 1;
 }
 
 .player-profile__combined-bar--negative {

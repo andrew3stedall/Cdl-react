@@ -558,6 +558,12 @@ export function SubstitutionReviewDrawer({
 
   const sourceFixtures = (histories.source?.history ?? []).map((row) => mapHistoryFixture(row, sourcePlayer.position)).slice(-5);
   const targetFixtures = (histories.target?.history ?? []).map((row) => mapHistoryFixture(row, targetPlayer.position)).slice(-5);
+  const reviewGroups = [
+    createReviewPlayerGroup('source', sourcePlayer, histories.source, sourceFixtures),
+    createReviewPlayerGroup('target', targetPlayer, histories.target, targetFixtures),
+  ] satisfies ReviewPlayerGroup[];
+  const formFixtures = reviewGroups.flatMap((group) => chartFixtureSlots(group.fixtures, REVIEW_FIXTURE_COUNT));
+  const opponentFixtures = reviewGroups.flatMap((group) => chartFixtureSlots(group.opponent.fixtures, REVIEW_FIXTURE_COUNT));
 
   return (
     <main aria-labelledby="substitution-review-title" className="player-profile player-profile--drawer player-profile--substitution-review" data-presentation="drawer">
@@ -570,23 +576,30 @@ export function SubstitutionReviewDrawer({
 
       <div className="player-profile__content">
         <section aria-label="Substitution players" className="player-profile__card player-profile__comparison-card">
-          <div className="player-profile__comparison-grid">
-            <ReviewPlayerColumn
-              fdrDisplayMode={fdrDisplayMode}
-              fixtures={sourceFixtures}
-              history={histories.source}
-              idPrefix={`source-${sourcePlayer.id}`}
-              player={sourcePlayer}
+          <ChartCard compact className="player-profile__substitution-shared-chart" title="Form & minutes">
+            <ReviewChartGroupHeaders
+              groups={reviewGroups.map((group) => ({
+                ariaLabel: `Fixtures for ${group.player.display_name}`,
+                content: <PlayerCard ariaLabel={`Player card for ${group.player.display_name}`} className="player-profile__player-card" formPosition="hidden" layout="token" player={toPlayerCardPlayer(group.player, group.nextFixtures)} size="xs" />,
+                id: group.id,
+                slotCount: REVIEW_FIXTURE_COUNT,
+              }))}
+              label="Substitution players"
             />
-            <ReviewPlayerColumn
-              fdrDisplayMode={fdrDisplayMode}
-              fixtures={targetFixtures}
-              history={histories.target}
-              idPrefix={`target-${targetPlayer.id}`}
-              player={targetPlayer}
+            {loading ? <ChartEmpty message="Loading the latest five fixtures…" /> : <CombinedFormMinutesChart fixtureCount={REVIEW_CHART_SLOT_COUNT} fixtures={formFixtures} fdrDisplayMode={fdrDisplayMode} windowLabel="latest five per player" />}
+          </ChartCard>
+          <ChartCard className="player-profile__substitution-shared-chart" title="Points against">
+            <ReviewChartGroupHeaders
+              groups={reviewGroups.map((group) => ({
+                ariaLabel: `Opponent group for ${group.opponent.name}`,
+                content: <OpponentFdrBadge difficulty={group.opponent.difficulty} label={group.opponent.label} title={fixtureDifficultyTitle(group.opponent.difficulty)} />,
+                id: group.id,
+                slotCount: REVIEW_FIXTURE_COUNT,
+              }))}
+              label="Upcoming opponents"
             />
-          </div>
-          {loading ? <ChartEmpty message="Loading the latest five fixtures…" /> : null}
+            {loading ? <ChartEmpty message="Loading opponent history…" /> : <DefensiveChart fixtureCount={REVIEW_CHART_SLOT_COUNT} fixtures={opponentFixtures} fdrDisplayMode={fdrDisplayMode} />}
+          </ChartCard>
           {!loading && error ? <p className="player-profile__inline-error" role="status">{error} Form and minutes may be incomplete.</p> : null}
         </section>
         <div aria-hidden="true" className="player-profile__scroll-end-spacer" />
@@ -603,46 +616,68 @@ export function SubstitutionReviewDrawer({
   );
 }
 
-function ReviewPlayerColumn({ fdrDisplayMode, fixtures, history, idPrefix, player }: { fdrDisplayMode: 'font' | 'fill'; fixtures: ProfileFixture[]; history: SquadApiHistoryResponse | null; idPrefix: string; player: SquadApiPlayer }) {
+const REVIEW_FIXTURE_COUNT = 5;
+const REVIEW_CHART_SLOT_COUNT = REVIEW_FIXTURE_COUNT * 2;
+
+interface ReviewPlayerGroup {
+  id: 'source' | 'target';
+  fixtures: ProfileFixture[];
+  nextFixtures: ProfileNextFixture[];
+  opponent: ReviewOpponentGroup;
+  player: SquadApiPlayer;
+}
+
+interface ReviewOpponentGroup {
+  difficulty: number | null;
+  fixtures: SquadApiOpponentDefensiveHistory[];
+  label: string;
+  name: string;
+}
+
+interface ReviewChartGroupHeader {
+  ariaLabel: string;
+  content: ReactNode;
+  id: string;
+  slotCount: number;
+}
+
+function createReviewPlayerGroup(id: ReviewPlayerGroup['id'], player: SquadApiPlayer, history: SquadApiHistoryResponse | null, fixtures: ProfileFixture[]): ReviewPlayerGroup {
   const nextFixtures = selectNextGameweekFixtures(
     player.next_fixtures?.length ? player.next_fixtures : player.next_fixture ? [player.next_fixture] : [],
   );
-  const defensiveHistoryGroups = history?.opponent_defensive_histories?.length
-    ? history.opponent_defensive_histories
-    : nextFixtures.length > 0 && history?.opponent_defensive_history?.length
-      ? [{
-          opponent_team_id: nextFixtures[0].opponent_team_id,
-          opponent_name: nextFixtures[0].opponent_name,
-          opponent_short_name: nextFixtures[0].opponent_short_name,
-          fixtures: history.opponent_defensive_history,
-        }]
-      : [];
-  return (
-    <article aria-label={`Comparison for ${player.display_name}`} className="player-profile__comparison-player">
-      <div className="player-profile__comparison-identity">
-        <PlayerCard ariaLabel={`Shirt for ${player.display_name}`} className="player-profile__player-card" formPosition="hidden" layout="token" player={toPlayerCardPlayer(player, nextFixtures)} size="xs" />
-      </div>
-      <ChartCard compact idPrefix={`${idPrefix}-form`} title="Form & minutes">
-        {fixtures.length > 0 ? <CombinedFormMinutesChart fixtureCount={5} fixtures={fixtures} fdrDisplayMode={fdrDisplayMode} windowLabel="latest five" /> : <ChartEmpty message="No recent form or minutes history." />}
-      </ChartCard>
-      {defensiveHistoryGroups.length > 0 ? defensiveHistoryGroups.map((group) => {
-        const groupOpponent = group.opponent_name ?? group.opponent_short_name ?? 'Opponent';
-        const upcomingFixture = nextFixtures.find((fixture) => String(fixture.opponent_team_id) === String(group.opponent_team_id));
-        const latestFixture = group.fixtures.at(-1);
-        const groupOpponentShortName = group.opponent_short_name ?? groupOpponent;
-        const opponentDifficulty = upcomingFixture?.difficulty ?? latestFixture?.difficulty ?? null;
-        const opponentIsHome = upcomingFixture?.is_home ?? latestFixture?.is_home ?? false;
-        return <ChartCard
-          ariaLabel={`Points against ${groupOpponent}`}
-          className="player-profile__chart-card--full"
-          heading={<OpponentChartHeading difficulty={opponentDifficulty} headingId={`${idPrefix}-opponent-${group.opponent_team_id}`} label={formatOpponentLabel(groupOpponentShortName, opponentIsHome)} title={fixtureDifficultyTitle(opponentDifficulty)} />}
-          key={group.opponent_team_id}
-        >
-          {group.fixtures.length > 0 ? <DefensiveChart fixtureCount={5} fixtures={group.fixtures} fdrDisplayMode={fdrDisplayMode} /> : <ChartEmpty message={`No cached defensive history is available for ${groupOpponent}.`} />}
-        </ChartCard>;
-      }) : <ChartCard ariaLabel="Upcoming opponent points against" className="player-profile__chart-card--full" title="Opponent points against"><ChartEmpty message="No cached defensive history is available for the next opponent." /></ChartCard>}
-    </article>
-  );
+  const nextOpponent = nextFixtures[0] ?? null;
+  const defensiveGroups = history?.opponent_defensive_histories ?? [];
+  const matchingDefensiveGroup = nextOpponent
+    ? defensiveGroups.find((group) => String(group.opponent_team_id) === String(nextOpponent.opponent_team_id))
+    : defensiveGroups[0];
+  const defensiveFixtures = matchingDefensiveGroup?.fixtures ?? (nextOpponent ? history?.opponent_defensive_history ?? [] : []);
+  const latestFixture = defensiveFixtures.at(-1);
+  const opponentName = nextOpponent?.opponent_name ?? matchingDefensiveGroup?.opponent_name ?? latestFixture?.opponent_name ?? 'Opponent';
+  const opponentShortName = nextOpponent?.opponent_short_name ?? matchingDefensiveGroup?.opponent_short_name ?? latestFixture?.opponent_short_name ?? opponentName;
+  const isHome = nextOpponent?.is_home ?? latestFixture?.is_home ?? false;
+  const difficulty = nextOpponent?.difficulty ?? latestFixture?.difficulty ?? null;
+  return {
+    fixtures,
+    id,
+    nextFixtures,
+    opponent: {
+      difficulty,
+      fixtures: defensiveFixtures.slice(-REVIEW_FIXTURE_COUNT),
+      label: formatOpponentLabel(opponentShortName, isHome),
+      name: opponentName,
+    },
+    player,
+  };
+}
+
+function ReviewChartGroupHeaders({ groups, label }: { groups: ReviewChartGroupHeader[]; label: string }) {
+  const slotCount = groups.reduce((total, group) => total + group.slotCount, 0);
+  return <div aria-label={label} className="player-profile__chart-group-headers" role="group" style={{ '--chart-group-column-count': slotCount } as CSSProperties}>
+    <span aria-hidden="true" className="player-profile__chart-group-axis" />
+    <div className="player-profile__chart-group-columns">
+      {groups.map((group, index) => <div aria-label={group.ariaLabel} className={`player-profile__chart-group-header${index > 0 ? ' is-group-start' : ''}`} key={group.id} style={{ gridColumn: `span ${group.slotCount}` }}>{group.content}</div>)}
+    </div>
+  </div>;
 }
 
 function toTeamSelectionCardPlayer(player: TeamSelectionPlayer): PlayerCardPlayer {
@@ -682,11 +717,12 @@ function ChartCard({ ariaLabel, children, className = '', compact = false, headi
   return <section aria-label={ariaLabel} aria-labelledby={heading ? headingId : undefined} className={`player-profile__card player-profile__chart-card${compact ? ' player-profile__chart-card--compact' : ''} ${className}`.trim()}><div className="player-profile__card-heading">{heading ?? <h2 id={headingId}>{title}</h2>}</div>{children}</section>;
 }
 
-function DefensiveChart({ fixtureCount = PROFILE_CHART_COLUMN_COUNT, fixtures, fdrDisplayMode, onFixtureClick }: { fixtureCount?: number; fixtures: SquadApiOpponentDefensiveHistory[]; fdrDisplayMode: 'font' | 'fill'; onFixtureClick?: (fixture: SquadApiOpponentDefensiveHistory) => void }) {
-  const rawMaxValue = Math.max(80, ...fixtures.map((fixture) => Math.max(fixture.total_points_conceded ?? 0, (fixture.attacking_asset_points ?? 0) + (fixture.defensive_asset_points ?? 0))));
+function DefensiveChart({ fixtureCount = PROFILE_CHART_COLUMN_COUNT, fixtures, fdrDisplayMode, onFixtureClick }: { fixtureCount?: number; fixtures: ReadonlyArray<SquadApiOpponentDefensiveHistory | null>; fdrDisplayMode: 'font' | 'fill'; onFixtureClick?: (fixture: SquadApiOpponentDefensiveHistory) => void }) {
+  const populatedFixtures = fixtures.filter((fixture): fixture is SquadApiOpponentDefensiveHistory => fixture !== null);
+  const rawMaxValue = Math.max(80, ...populatedFixtures.map((fixture) => Math.max(fixture.total_points_conceded ?? 0, (fixture.attacking_asset_points ?? 0) + (fixture.defensive_asset_points ?? 0))));
   const maxValue = Math.ceil(rawMaxValue / 10) * 10;
   const slots = chartFixtureSlots(fixtures, fixtureCount);
-  return <><div aria-label={`Attacking and defensive fantasy points conceded by the opponent, vertical scale 0 to ${maxValue} points`} className="player-profile__chart player-profile__chart--defensive" data-chart-kind="opponent-defence" data-fixture-count={slots.length} data-y-axis-max={maxValue} data-y-axis-min="0" data-y-axis-tick-step="10" role="group" style={{ '--chart-column-count': slots.length } as CSSProperties}><div className="player-profile__chart-layout"><PlayerChartYAxis max={maxValue} step={10} /><div className="player-profile__chart-plot"><PlayerChartGrid max={maxValue} step={10} /><PlayerChartZeroLine /><div className="player-profile__chart-columns">{slots.map((fixture, index) => <DefensiveColumn fixture={fixture} fdrDisplayMode={fdrDisplayMode} maxValue={maxValue} onClick={onFixtureClick} key={fixture?.fixture_id ?? `empty-${index}`} />)}</div></div></div></div><div className="player-profile__legend"><span><i className="player-profile__legend-swatch player-profile__legend-swatch--attack" />Attacking assets</span><span><i className="player-profile__legend-swatch player-profile__legend-swatch--defence" />Defensive assets</span></div></>;
+  return <><div aria-label={`Attacking and defensive fantasy points conceded by the opponent, vertical scale 0 to ${maxValue} points`} className="player-profile__chart player-profile__chart--defensive" data-chart-kind="opponent-defence" data-fixture-count={slots.length} data-y-axis-max={maxValue} data-y-axis-min="0" data-y-axis-tick-step="10" role="group" style={{ '--chart-column-count': slots.length } as CSSProperties}><div className="player-profile__chart-layout"><PlayerChartYAxis max={maxValue} step={10} /><div className="player-profile__chart-plot"><PlayerChartGrid max={maxValue} step={10} /><PlayerChartZeroLine /><div className="player-profile__chart-columns">{slots.map((fixture, index) => <DefensiveColumn fixture={fixture} fdrDisplayMode={fdrDisplayMode} maxValue={maxValue} onClick={onFixtureClick} key={`${fixture?.fixture_id ?? 'empty'}-${index}`} />)}</div></div></div></div><div className="player-profile__legend"><span><i className="player-profile__legend-swatch player-profile__legend-swatch--attack" />Attacking assets</span><span><i className="player-profile__legend-swatch player-profile__legend-swatch--defence" />Defensive assets</span></div></>;
 }
 
 function DefensiveColumn({ fixture, fdrDisplayMode, maxValue, onClick }: { fixture: SquadApiOpponentDefensiveHistory | null; fdrDisplayMode: 'font' | 'fill'; maxValue: number; onClick?: (fixture: SquadApiOpponentDefensiveHistory) => void }) {

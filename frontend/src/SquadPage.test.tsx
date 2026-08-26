@@ -555,8 +555,8 @@ describe('SquadPage', () => {
 
     expect(container.querySelector('.squad-page__drawer--substitution')).not.toBeNull();
     expect(container.querySelectorAll('.player-profile__comparison-player')).toHaveLength(2);
-    expect(container.querySelectorAll('[data-chart-kind="form"] .player-profile__chart-column')).toHaveLength(2);
-    expect(container.querySelectorAll('[data-chart-kind="minutes"] .player-profile__chart-column')).toHaveLength(2);
+    expect(container.querySelectorAll('[data-chart-kind="form"] .player-profile__chart-column')).toHaveLength(16);
+    expect(container.querySelectorAll('[data-chart-kind="minutes"] .player-profile__chart-column')).toHaveLength(16);
     expect(container.querySelector('[aria-label="Substitution review actions"]')).not.toBeNull();
     expect(Array.from(container.querySelectorAll('[data-chart-kind="form"], [data-chart-kind="minutes"]')).every((chart) => chart.getAttribute('aria-label')?.includes('latest four'))).toBe(true);
 

@@ -315,7 +315,7 @@
   align-items: stretch;
   display: grid;
   gap: clamp(0.15rem, 1.2vw, 0.5rem);
-  grid-template-columns: repeat(10, minmax(0, 1fr));
+  grid-template-columns: repeat(8, minmax(0, 1fr));
   min-height: var(--profile-chart-height);
   position: relative;
 }
@@ -481,6 +481,11 @@
   cursor: pointer;
   font: inherit;
   width: 100%;
+}
+
+.player-profile__grouped-bar-empty {
+  background: var(--profile-chart-empty);
+  cursor: default;
 }
 
 .player-profile__grouped-bar-button:focus-visible {
@@ -812,7 +817,7 @@
 
 .player-profile__comparison-player .player-profile__chart-columns {
   gap: 0.18rem;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(8, minmax(0, 1fr));
   min-height: 4.92rem;
 }
 

@@ -1,10 +1,13 @@
 import type { CSSProperties } from 'react';
 
-export const PROFILE_CHART_COLUMN_COUNT = 10;
+export const PROFILE_CHART_COLUMN_COUNT = 8;
 
-export function chartColumnStyle(index: number, fixtureCount: number): CSSProperties | undefined {
-  if (fixtureCount < 1 || fixtureCount > PROFILE_CHART_COLUMN_COUNT) return undefined;
-  return { gridColumnStart: PROFILE_CHART_COLUMN_COUNT - fixtureCount + index + 1 };
+export function chartFixtureSlots<T>(fixtures: ReadonlyArray<T>): Array<T | null> {
+  const visibleFixtures = fixtures.slice(-PROFILE_CHART_COLUMN_COUNT);
+  return [
+    ...Array.from({ length: PROFILE_CHART_COLUMN_COUNT - visibleFixtures.length }, () => null),
+    ...visibleFixtures,
+  ];
 }
 
 export function formatOpponentLabel(shortName: string | null, isHome: boolean): string {

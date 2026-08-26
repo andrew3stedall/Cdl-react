@@ -36,3 +36,7 @@ gha-creds-*.json
 .DS_Store
 .vscode/
 .idea/
+
+# Tauri generated Android and Rust build output
+src-tauri/gen/
+src-tauri/target/

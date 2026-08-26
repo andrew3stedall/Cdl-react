@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Match points-against labels to their attacking/defensive bar colours, keep them clear of the bars, and use the result-track colour for empty chart slots.
 - Reworked the account page into a compact summary with navigable appearance, FDR colour, and attacking-orientation settings subpages.
 - Hide device sign-in setup after a passkey is registered and remove manager role, account ID, and dedicated account-action content from the page.
 - Added 30-day PostgreSQL-backed application sessions with secure persistent cookies.

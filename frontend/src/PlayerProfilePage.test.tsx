@@ -559,6 +559,25 @@ describe('PlayerProfilePage', () => {
     expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__chart-zero-line')).toHaveLength(1);
     expect(Array.from(container.querySelectorAll('[data-chart-kind="combined-form-minutes"], [data-chart-kind="opponent-defence"]')).every((chart) => chart.getAttribute('data-fixture-count') === '10')).toBe(true);
     expect(Array.from(container.querySelectorAll('[data-chart-kind="combined-form-minutes"]')).every((chart) => chart.getAttribute('aria-label')?.includes('latest five per player'))).toBe(true);
+    const combinedColumns = [...container.querySelectorAll<HTMLElement>('[data-chart-kind="combined-form-minutes"] .player-profile__combined-chart-column')];
+    const opponentColumns = [...container.querySelectorAll<HTMLElement>('[data-chart-kind="opponent-defence"] .player-profile__chart-column')];
+    expect(combinedColumns.map((column) => column.style.gridColumn)).toEqual(opponentColumns.map((column) => column.style.gridColumn));
+    expect(combinedColumns[5]?.style.gridColumn).toBe('7');
+
+    const formBar = container.querySelector<HTMLButtonElement>('[data-chart-kind="combined-form-minutes"] button[aria-label*="form details"]');
+    expect(formBar).toBeTruthy();
+    act(() => { formBar?.click(); });
+    await settle();
+    expect(container.querySelector('[data-chart-detail-kind="form"]')).toBeTruthy();
+    expect(container.textContent).toContain('Scoring returns');
+    act(() => { container.querySelector<HTMLButtonElement>('.player-chart-detail-backdrop')?.click(); });
+    await settle();
+
+    const opponentBar = container.querySelector<HTMLButtonElement>('[data-chart-kind="opponent-defence"] button[aria-label*="points-against details"]');
+    expect(opponentBar).toBeTruthy();
+    act(() => { opponentBar?.click(); });
+    await settle();
+    expect(container.querySelector('[data-chart-detail-kind="opponent"]')).toBeTruthy();
     root.unmount();
   });
 

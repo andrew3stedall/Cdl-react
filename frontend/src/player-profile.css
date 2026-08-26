@@ -352,6 +352,12 @@
   line-height: 1.2;
 }
 
+.player-profile__chart--defensive .player-profile__chart-value {
+  font-size: clamp(0.78rem, 2.8vw, 0.95rem);
+  font-weight: 900;
+  line-height: 1.1;
+}
+
 .player-profile__chart-value.is-empty {
   color: var(--profile-muted);
 }
@@ -736,6 +742,16 @@
   --player-profile-drawer-scroll-tail: calc(5rem + var(--cdl-mobile-navigation-clearance));
 }
 
+.player-profile__substitution-shared-chart {
+  --player-chart-group-gap: clamp(0.22rem, 1.4vw, 0.48rem);
+}
+
+.player-profile__substitution-shared-chart .player-profile__chart-columns,
+.player-profile__substitution-shared-chart .player-profile__combined-chart-columns,
+.player-profile__substitution-shared-chart .player-profile__chart-group-columns {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) var(--player-chart-group-gap) repeat(5, minmax(0, 1fr));
+}
+
 .player-profile__comparison-card {
   background: transparent;
   border: 0;
@@ -782,11 +798,6 @@
 
 .player-profile__chart-group-header .player-card__opponent {
   font-size: 0.7rem;
-}
-
-.player-profile__substitution-shared-chart .player-profile__combined-chart-column:nth-child(6),
-.player-profile__substitution-shared-chart .player-profile__chart-column:nth-child(6) {
-  box-shadow: -1px 0 0 color-mix(in srgb, var(--profile-border) 75%, transparent);
 }
 
 .player-profile__review-actions {

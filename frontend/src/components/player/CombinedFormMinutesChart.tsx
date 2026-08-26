@@ -28,13 +28,15 @@ export function CombinedFormMinutesChart({
   fixtures,
   fdrDisplayMode,
   fixtureCount = PROFILE_CHART_COLUMN_COUNT,
+  groupBreakAfter,
   onFixtureClick,
   windowLabel = 'latest eight',
 }: {
   fixtures: ReadonlyArray<CombinedFormMinutesFixture | null>;
   fdrDisplayMode: 'font' | 'fill';
   fixtureCount?: number;
-  onFixtureClick?: (fixture: CombinedFormMinutesFixture) => void;
+  groupBreakAfter?: number;
+  onFixtureClick?: (fixture: CombinedFormMinutesFixture, index: number) => void;
   windowLabel?: string;
 }) {
   const formMax = formChartScaleMax(fixtures.filter((fixture): fixture is CombinedFormMinutesFixture => fixture !== null));
@@ -78,9 +80,11 @@ export function CombinedFormMinutesChart({
                 fixture={fixture}
                 formMax={formMax}
                 fdrDisplayMode={fdrDisplayMode}
+                index={index}
                 key={`${fixture?.fixtureId ?? 'empty'}-${index}`}
                 minutesMax={minutesMax}
                 onFixtureClick={onFixtureClick}
+                style={chartGroupColumnStyle(index, groupBreakAfter)}
               />
             ))}
           </div>
@@ -94,6 +98,7 @@ function CombinedChartColumn({
   fixture,
   formMax,
   fdrDisplayMode,
+  index,
   minutesMax,
   onFixtureClick,
   style,
@@ -101,8 +106,9 @@ function CombinedChartColumn({
   fixture: CombinedFormMinutesFixture | null;
   formMax: number;
   fdrDisplayMode: 'font' | 'fill';
+  index: number;
   minutesMax: number;
-  onFixtureClick?: (fixture: CombinedFormMinutesFixture) => void;
+  onFixtureClick?: (fixture: CombinedFormMinutesFixture, index: number) => void;
   style?: CSSProperties;
 }) {
   const pointsHeight = fixture ? chartBarHeight(fixture.fantasyPoints, formMax) : 100;
@@ -119,7 +125,7 @@ function CombinedChartColumn({
           {fixture ? <button
               aria-label={`View ${formatOpponentLabel(fixture.opponentShortName, fixture.isHome)} form details: ${formatNullableNumber(fixture.fantasyPoints)} points`}
               className={`player-profile__combined-bar player-profile__combined-bar--${pointsTone}`}
-              onClick={() => onFixtureClick?.(fixture)}
+              onClick={() => onFixtureClick?.(fixture, index)}
               style={{ '--bar-height': `${pointsHeight}%` } as CSSProperties}
               type="button"
             >
@@ -136,7 +142,7 @@ function CombinedChartColumn({
           {fixture ? <button
               aria-label={`View ${formatOpponentLabel(fixture.opponentShortName, fixture.isHome)} minutes details: ${formatNullableNumber(fixture.minutesPlayed)} minutes`}
               className="player-profile__combined-bar player-profile__combined-bar--minutes"
-              onClick={() => onFixtureClick?.(fixture)}
+              onClick={() => onFixtureClick?.(fixture, index)}
               style={{ '--bar-height': `${minutesHeight}%` } as CSSProperties}
               type="button"
             /> : <span aria-hidden="true" className="player-profile__combined-bar player-profile__combined-bar--empty player-profile__combined-bar--minutes" style={{ '--bar-height': `${minutesHeight}%` } as CSSProperties} />}
@@ -147,6 +153,11 @@ function CombinedChartColumn({
       </div>
     </div>
   );
+}
+
+function chartGroupColumnStyle(index: number, groupBreakAfter?: number): CSSProperties | undefined {
+  if (groupBreakAfter === undefined) return undefined;
+  return { gridColumn: String(index >= groupBreakAfter ? index + 2 : index + 1) };
 }
 
 function chartBarHeight(value: number | null, maxValue: number): number {

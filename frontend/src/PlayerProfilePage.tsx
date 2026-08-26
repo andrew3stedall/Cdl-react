@@ -77,8 +77,8 @@ type PendingAction = 'history' | 'lineup' | 'remove' | null;
 
 type ProfileFixture = CombinedFormMinutesFixture & { gameweek: number };
 type ChartDetailSelection =
-  | { kind: 'form'; fixture: ProfileFixture }
-  | { kind: 'opponent'; fixture: SquadApiOpponentDefensiveHistory };
+  | { kind: 'form'; fixture: ProfileFixture; playerName?: string }
+  | { kind: 'opponent'; fixture: SquadApiOpponentDefensiveHistory; playerName?: string };
 
 interface ProfileNextFixture {
   fixture_id: number | string;
@@ -533,6 +533,7 @@ export function SubstitutionReviewDrawer({
   const [histories, setHistories] = useState<{ source: SquadApiHistoryResponse | null; target: SquadApiHistoryResponse | null }>({ source: null, target: null });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [chartDetail, setChartDetail] = useState<ChartDetailSelection | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -586,7 +587,7 @@ export function SubstitutionReviewDrawer({
               }))}
               label="Substitution players"
             />
-            {loading ? <ChartEmpty message="Loading the latest five fixtures…" /> : <CombinedFormMinutesChart fixtureCount={REVIEW_CHART_SLOT_COUNT} fixtures={formFixtures} fdrDisplayMode={fdrDisplayMode} windowLabel="latest five per player" />}
+            {loading ? <ChartEmpty message="Loading the latest five fixtures…" /> : <CombinedFormMinutesChart fixtureCount={REVIEW_CHART_SLOT_COUNT} fixtures={formFixtures} fdrDisplayMode={fdrDisplayMode} groupBreakAfter={REVIEW_FIXTURE_COUNT} onFixtureClick={(fixture, index) => setChartDetail({ kind: 'form', fixture: fixture as ProfileFixture, playerName: reviewGroups[index < REVIEW_FIXTURE_COUNT ? 0 : 1]?.player.display_name })} windowLabel="latest five per player" />}
           </ChartCard>
           <ChartCard className="player-profile__substitution-shared-chart" title="Points against">
             <ReviewChartGroupHeaders
@@ -598,7 +599,7 @@ export function SubstitutionReviewDrawer({
               }))}
               label="Upcoming opponents"
             />
-            {loading ? <ChartEmpty message="Loading opponent history…" /> : <DefensiveChart fixtureCount={REVIEW_CHART_SLOT_COUNT} fixtures={opponentFixtures} fdrDisplayMode={fdrDisplayMode} />}
+            {loading ? <ChartEmpty message="Loading opponent history…" /> : <DefensiveChart fixtureCount={REVIEW_CHART_SLOT_COUNT} fixtures={opponentFixtures} fdrDisplayMode={fdrDisplayMode} groupBreakAfter={REVIEW_FIXTURE_COUNT} onFixtureClick={(fixture, index) => setChartDetail({ kind: 'opponent', fixture, playerName: reviewGroups[index < REVIEW_FIXTURE_COUNT ? 0 : 1]?.player.display_name })} />}
           </ChartCard>
           {!loading && error ? <p className="player-profile__inline-error" role="status">{error} Form and minutes may be incomplete.</p> : null}
         </section>
@@ -612,6 +613,17 @@ export function SubstitutionReviewDrawer({
           {pending ? 'Applying…' : 'Confirm sub'}
         </Button>
       </div>
+
+      {chartDetail ? (
+        <PlayerChartDetailDialog
+          kind={chartDetail.kind}
+          onClose={() => setChartDetail(null)}
+          sections={chartDetail.kind === 'form' ? formDetailSections(chartDetail.fixture) : opponentDetailSections(chartDetail.fixture)}
+          subtitle={chartDetail.kind === 'form' ? `${chartDetail.playerName ?? 'Player'} · ${formatOpponentLabel(chartDetail.fixture.opponentShortName, chartDetail.fixture.isHome)}` : `${chartDetail.playerName ? `${chartDetail.playerName} · ` : ''}Points against ${formatOpponentLabel(chartDetail.fixture.opponent_short_name ?? null, chartDetail.fixture.is_home)}`}
+          summary={chartDetail.kind === 'form' ? formDetailSummary(chartDetail.fixture) : opponentDetailSummary(chartDetail.fixture)}
+          title={chartDetail.kind === 'form' ? `GW${chartDetail.fixture.gameweek} · ${formatOpponentLabel(chartDetail.fixture.opponentShortName, chartDetail.fixture.isHome)}` : `${formatOpponentLabel(chartDetail.fixture.opponent_short_name ?? null, chartDetail.fixture.is_home)} · GW${chartDetail.fixture.gameweek ?? '—'}`}
+        />
+      ) : null}
     </main>
   );
 }
@@ -672,12 +684,23 @@ function createReviewPlayerGroup(id: ReviewPlayerGroup['id'], player: SquadApiPl
 
 function ReviewChartGroupHeaders({ groups, label }: { groups: ReviewChartGroupHeader[]; label: string }) {
   const slotCount = groups.reduce((total, group) => total + group.slotCount, 0);
+  let gridColumnStart = 1;
   return <div aria-label={label} className="player-profile__chart-group-headers" role="group" style={{ '--chart-group-column-count': slotCount } as CSSProperties}>
     <span aria-hidden="true" className="player-profile__chart-group-axis" />
     <div className="player-profile__chart-group-columns">
-      {groups.map((group, index) => <div aria-label={group.ariaLabel} className={`player-profile__chart-group-header${index > 0 ? ' is-group-start' : ''}`} key={group.id} style={{ gridColumn: `span ${group.slotCount}` }}>{group.content}</div>)}
+      {groups.map((group, index) => {
+        if (index > 0) gridColumnStart += 1;
+        const style = { gridColumn: `${gridColumnStart} / span ${group.slotCount}` };
+        gridColumnStart += group.slotCount;
+        return <div aria-label={group.ariaLabel} className="player-profile__chart-group-header" key={group.id} style={style}>{group.content}</div>;
+      })}
     </div>
   </div>;
+}
+
+function chartGroupColumnStyle(index: number, groupBreakAfter?: number): CSSProperties | undefined {
+  if (groupBreakAfter === undefined) return undefined;
+  return { gridColumn: String(index >= groupBreakAfter ? index + 2 : index + 1) };
 }
 
 function toTeamSelectionCardPlayer(player: TeamSelectionPlayer): PlayerCardPlayer {
@@ -717,21 +740,21 @@ function ChartCard({ ariaLabel, children, className = '', compact = false, headi
   return <section aria-label={ariaLabel} aria-labelledby={heading ? headingId : undefined} className={`player-profile__card player-profile__chart-card${compact ? ' player-profile__chart-card--compact' : ''} ${className}`.trim()}><div className="player-profile__card-heading">{heading ?? <h2 id={headingId}>{title}</h2>}</div>{children}</section>;
 }
 
-function DefensiveChart({ fixtureCount = PROFILE_CHART_COLUMN_COUNT, fixtures, fdrDisplayMode, onFixtureClick }: { fixtureCount?: number; fixtures: ReadonlyArray<SquadApiOpponentDefensiveHistory | null>; fdrDisplayMode: 'font' | 'fill'; onFixtureClick?: (fixture: SquadApiOpponentDefensiveHistory) => void }) {
+function DefensiveChart({ fixtureCount = PROFILE_CHART_COLUMN_COUNT, fixtures, fdrDisplayMode, groupBreakAfter, onFixtureClick }: { fixtureCount?: number; fixtures: ReadonlyArray<SquadApiOpponentDefensiveHistory | null>; fdrDisplayMode: 'font' | 'fill'; groupBreakAfter?: number; onFixtureClick?: (fixture: SquadApiOpponentDefensiveHistory, index: number) => void }) {
   const populatedFixtures = fixtures.filter((fixture): fixture is SquadApiOpponentDefensiveHistory => fixture !== null);
   const rawMaxValue = Math.max(80, ...populatedFixtures.map((fixture) => Math.max(fixture.total_points_conceded ?? 0, (fixture.attacking_asset_points ?? 0) + (fixture.defensive_asset_points ?? 0))));
   const maxValue = Math.ceil(rawMaxValue / 10) * 10;
   const slots = chartFixtureSlots(fixtures, fixtureCount);
-  return <><div aria-label={`Attacking and defensive fantasy points conceded by the opponent, vertical scale 0 to ${maxValue} points`} className="player-profile__chart player-profile__chart--defensive" data-chart-kind="opponent-defence" data-fixture-count={slots.length} data-y-axis-max={maxValue} data-y-axis-min="0" data-y-axis-tick-step="10" role="group" style={{ '--chart-column-count': slots.length } as CSSProperties}><div className="player-profile__chart-layout"><PlayerChartYAxis max={maxValue} step={10} /><div className="player-profile__chart-plot"><PlayerChartGrid max={maxValue} step={10} /><PlayerChartZeroLine /><div className="player-profile__chart-columns">{slots.map((fixture, index) => <DefensiveColumn fixture={fixture} fdrDisplayMode={fdrDisplayMode} maxValue={maxValue} onClick={onFixtureClick} key={`${fixture?.fixture_id ?? 'empty'}-${index}`} />)}</div></div></div></div><div className="player-profile__legend"><span><i className="player-profile__legend-swatch player-profile__legend-swatch--attack" />Attacking assets</span><span><i className="player-profile__legend-swatch player-profile__legend-swatch--defence" />Defensive assets</span></div></>;
+  return <><div aria-label={`Attacking and defensive fantasy points conceded by the opponent, vertical scale 0 to ${maxValue} points`} className="player-profile__chart player-profile__chart--defensive" data-chart-kind="opponent-defence" data-fixture-count={slots.length} data-y-axis-max={maxValue} data-y-axis-min="0" data-y-axis-tick-step="10" role="group" style={{ '--chart-column-count': slots.length } as CSSProperties}><div className="player-profile__chart-layout"><PlayerChartYAxis max={maxValue} step={10} /><div className="player-profile__chart-plot"><PlayerChartGrid max={maxValue} step={10} /><PlayerChartZeroLine /><div className="player-profile__chart-columns">{slots.map((fixture, index) => <DefensiveColumn fixture={fixture} fdrDisplayMode={fdrDisplayMode} index={index} maxValue={maxValue} onClick={onFixtureClick} style={chartGroupColumnStyle(index, groupBreakAfter)} key={`${fixture?.fixture_id ?? 'empty'}-${index}`} />)}</div></div></div></div><div className="player-profile__legend"><span><i className="player-profile__legend-swatch player-profile__legend-swatch--attack" />Attacking assets</span><span><i className="player-profile__legend-swatch player-profile__legend-swatch--defence" />Defensive assets</span></div></>;
 }
 
-function DefensiveColumn({ fixture, fdrDisplayMode, maxValue, onClick }: { fixture: SquadApiOpponentDefensiveHistory | null; fdrDisplayMode: 'font' | 'fill'; maxValue: number; onClick?: (fixture: SquadApiOpponentDefensiveHistory) => void }) {
+function DefensiveColumn({ fixture, fdrDisplayMode, index = 0, maxValue, onClick, style }: { fixture: SquadApiOpponentDefensiveHistory | null; fdrDisplayMode: 'font' | 'fill'; index?: number; maxValue: number; onClick?: (fixture: SquadApiOpponentDefensiveHistory, index: number) => void; style?: CSSProperties }) {
   const attack = fixture?.attacking_asset_points ?? 0;
   const defence = fixture?.defensive_asset_points ?? 0;
   const hasPoints = fixture !== null && fixture.total_points_conceded !== null && fixture.total_points_conceded !== undefined;
   const attackHeight = groupedAssetBarHeight(attack, maxValue, hasPoints);
   const defenceHeight = groupedAssetBarHeight(defence, maxValue, hasPoints);
-  return <div className="player-profile__chart-column"><span className={`player-profile__chart-value${hasPoints ? '' : ' is-empty'}`}>{formatNullableNumber(fixture?.total_points_conceded)}</span>{fixture ? <button aria-label={`View ${formatOpponentLabel(fixture.opponent_short_name ?? null, fixture.is_home)} points-against details`} className="player-profile__bar-track player-profile__bar-track--grouped player-profile__grouped-bar-button" onClick={() => onClick?.(fixture)} type="button"><span className="player-profile__grouped-bar-wrap player-profile__grouped-bar-wrap--attack"><span aria-hidden="true" className="player-profile__grouped-bar-point-label player-profile__grouped-bar-point-label--attack">{attack}</span><span aria-label={`Attacking assets: ${attack} points`} className="player-profile__grouped-bar player-profile__grouped-bar--attack" style={{ '--bar-height': `${attackHeight}%` } as CSSProperties} /></span><span className="player-profile__grouped-stat-icons"><PlayerStatIcons className="player-profile__stat-icons--compact" position={null} stats={opponentStatSummary(fixture)} /></span><span className="player-profile__grouped-bar-wrap player-profile__grouped-bar-wrap--defence"><span aria-hidden="true" className="player-profile__grouped-bar-point-label player-profile__grouped-bar-point-label--defence">{defence}</span><span aria-label={`Defensive assets: ${defence} points`} className="player-profile__grouped-bar player-profile__grouped-bar--defence" style={{ '--bar-height': `${defenceHeight}%` } as CSSProperties} /></span></button> : <div aria-hidden="true" className="player-profile__bar-track player-profile__bar-track--grouped player-profile__grouped-bar-empty" /> }<span className="player-profile__opponent-label" style={fdrStyleFor(fixture?.difficulty ?? null, fdrDisplayMode)}>{fixture ? formatOpponentLabel(fixture.opponent_short_name ?? null, fixture.is_home) : ''}</span></div>;
+  return <div className="player-profile__chart-column" style={style}><span className={`player-profile__chart-value${hasPoints ? '' : ' is-empty'}`}>{formatNullableNumber(fixture?.total_points_conceded)}</span>{fixture ? <button aria-label={`View ${formatOpponentLabel(fixture.opponent_short_name ?? null, fixture.is_home)} points-against details`} className="player-profile__bar-track player-profile__bar-track--grouped player-profile__grouped-bar-button" onClick={() => onClick?.(fixture, index)} type="button"><span className="player-profile__grouped-bar-wrap player-profile__grouped-bar-wrap--attack"><span aria-hidden="true" className="player-profile__grouped-bar-point-label player-profile__grouped-bar-point-label--attack">{attack}</span><span aria-label={`Attacking assets: ${attack} points`} className="player-profile__grouped-bar player-profile__grouped-bar--attack" style={{ '--bar-height': `${attackHeight}%` } as CSSProperties} /></span><span className="player-profile__grouped-stat-icons"><PlayerStatIcons className="player-profile__stat-icons--compact" position={null} stats={opponentStatSummary(fixture)} /></span><span className="player-profile__grouped-bar-wrap player-profile__grouped-bar-wrap--defence"><span aria-hidden="true" className="player-profile__grouped-bar-point-label player-profile__grouped-bar-point-label--defence">{defence}</span><span aria-label={`Defensive assets: ${defence} points`} className="player-profile__grouped-bar player-profile__grouped-bar--defence" style={{ '--bar-height': `${defenceHeight}%` } as CSSProperties} /></span></button> : <div aria-hidden="true" className="player-profile__bar-track player-profile__bar-track--grouped player-profile__grouped-bar-empty" /> }<span className="player-profile__opponent-label" style={fdrStyleFor(fixture?.difficulty ?? null, fdrDisplayMode)}>{fixture ? formatOpponentLabel(fixture.opponent_short_name ?? null, fixture.is_home) : ''}</span></div>;
 }
 
 function groupedAssetBarHeight(points: number, maxValue: number, hasPoints: boolean): number {

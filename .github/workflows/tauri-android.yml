@@ -64,6 +64,9 @@ jobs:
       - name: Initialise Android project
         run: npm run tauri:android:init -- --ci
 
+      - name: Generate Android launcher assets
+        run: npm run tauri icon frontend/public/pwa-192.png -- --output src-tauri/icons
+
       - name: Build staging APK
         run: npm run tauri android build -- --apk --debug --config src-tauri/tauri.staging.conf.json
 

@@ -27,10 +27,6 @@
   "bundle": {
     "active": true,
     "targets": "all",
-    "icon": [
-      "../frontend/public/pwa-192.png",
-      "../frontend/public/pwa-512.png"
-    ],
     "android": {
       "minSdkVersion": 24
     }

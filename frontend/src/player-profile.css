@@ -737,52 +737,56 @@
 }
 
 .player-profile__comparison-card {
-  padding: var(--profile-review-gap);
-}
-
-.player-profile__comparison-grid {
+  background: transparent;
+  border: 0;
   display: grid;
   gap: var(--profile-review-gap);
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding: 0;
 }
 
-.player-profile__comparison-player {
-  background: color-mix(in srgb, var(--profile-panel) 82%, var(--background));
-  border: 1px solid var(--profile-border);
-  border-radius: calc(var(--radius) - 0.1rem);
+.player-profile__chart-group-headers {
+  display: grid;
+  gap: 0.35rem;
+  grid-template-columns: 1.55rem minmax(0, 1fr);
   min-width: 0;
-  padding: 0.45rem;
 }
 
-.player-profile__comparison-player-heading {
-  align-items: flex-start;
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-  margin-bottom: 0.4rem;
+.player-profile__chart-group-axis {
+  min-width: 0;
 }
 
-.player-profile__comparison-player-heading strong {
-  font-size: 0.68rem;
+.player-profile__chart-group-columns {
+  display: grid;
+  gap: clamp(0.15rem, 1.2vw, 0.5rem);
+  grid-template-columns: repeat(var(--chart-group-column-count), minmax(0, 1fr));
+  min-width: 0;
 }
 
-.player-profile__comparison-identity {
+.player-profile__chart-group-header {
   align-items: center;
   display: flex;
   justify-content: center;
   min-width: 0;
-  padding-bottom: 0.45rem;
 }
 
-.player-profile__comparison-identity .player-card--token {
+.player-profile__chart-group-header.is-group-start {
+  border-left: 1px solid color-mix(in srgb, var(--profile-border) 75%, transparent);
+}
+
+.player-profile__chart-group-header .player-card--token {
   --player-card-size: 3.6rem;
   flex: 0 0 3.6rem;
   height: 3.6rem;
   width: 3.6rem;
 }
 
-.player-profile__comparison-player .player-profile__chart-card {
-  margin-top: var(--profile-review-gap);
+.player-profile__chart-group-header .player-card__opponent {
+  font-size: 0.7rem;
+}
+
+.player-profile__substitution-shared-chart .player-profile__combined-chart-column:nth-child(6),
+.player-profile__substitution-shared-chart .player-profile__chart-column:nth-child(6) {
+  box-shadow: -1px 0 0 color-mix(in srgb, var(--profile-border) 75%, transparent);
 }
 
 .player-profile__review-actions {
@@ -802,6 +806,17 @@
 
 .player-profile__review-actions .ui-button {
   min-height: 2.75rem;
+}
+
+@media (max-width: 32rem) {
+  .player-profile__chart-group-headers {
+    gap: 0.25rem;
+    grid-template-columns: 1.35rem minmax(0, 1fr);
+  }
+
+  .player-profile__chart-group-columns {
+    gap: 0.12rem;
+  }
 }
 
 .player-profile__danger-button {

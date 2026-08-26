@@ -31,13 +31,13 @@ export function CombinedFormMinutesChart({
   onFixtureClick,
   windowLabel = 'latest eight',
 }: {
-  fixtures: CombinedFormMinutesFixture[];
+  fixtures: ReadonlyArray<CombinedFormMinutesFixture | null>;
   fdrDisplayMode: 'font' | 'fill';
   fixtureCount?: number;
   onFixtureClick?: (fixture: CombinedFormMinutesFixture) => void;
   windowLabel?: string;
 }) {
-  const formMax = formChartScaleMax(fixtures);
+  const formMax = formChartScaleMax(fixtures.filter((fixture): fixture is CombinedFormMinutesFixture => fixture !== null));
   const minutesMax = 90;
   const slots = chartFixtureSlots(fixtures, fixtureCount);
   const slotCount = slots.length;
@@ -78,7 +78,7 @@ export function CombinedFormMinutesChart({
                 fixture={fixture}
                 formMax={formMax}
                 fdrDisplayMode={fdrDisplayMode}
-                key={fixture?.fixtureId ?? `empty-${index}`}
+                key={`${fixture?.fixtureId ?? 'empty'}-${index}`}
                 minutesMax={minutesMax}
                 onFixtureClick={onFixtureClick}
               />

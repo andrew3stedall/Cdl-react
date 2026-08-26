@@ -501,7 +501,7 @@ describe('PlayerProfilePage', () => {
     expect(earnedDefensiveContributionPoints(12, 'GKP')).toBe(false);
   });
 
-  test('renders the substitution review as two player columns with only the latest five fixtures', async () => {
+  test('renders the substitution review as shared grouped charts with the latest five fixtures', async () => {
     const squadClient = new MemorySquadClient();
     const target = {
       ...player,
@@ -541,23 +541,24 @@ describe('PlayerProfilePage', () => {
     });
     await settle();
 
-    expect(container.querySelectorAll('.player-profile__comparison-player')).toHaveLength(2);
-    expect(container.querySelectorAll('.player-profile__comparison-player .player-card')).toHaveLength(2);
-    expect(container.querySelectorAll('.player-profile__comparison-player .player-card__opponents')).toHaveLength(2);
-    expect(container.querySelectorAll('.player-profile__comparison-identity h3')).toHaveLength(0);
+    expect(container.querySelectorAll('.player-profile__comparison-player')).toHaveLength(0);
+    expect(container.querySelectorAll('.player-profile__chart-group-header .player-card')).toHaveLength(2);
+    expect(container.querySelectorAll('.player-profile__chart-group-header .player-card__opponents')).toHaveLength(2);
     expect(container.querySelector('.player-profile__comparison-heading')).toBeNull();
     expect(container.querySelectorAll('.player-profile__comparison-player-heading')).toHaveLength(0);
     expect(container.textContent).not.toContain('↔');
     expect(container.textContent).not.toContain('Next:');
+    expect(container.querySelectorAll('[data-chart-kind="combined-form-minutes"]')).toHaveLength(1);
+    expect(container.querySelectorAll('[data-chart-kind="opponent-defence"]')).toHaveLength(1);
     expect(container.querySelectorAll('[data-chart-kind="combined-form-minutes"] .player-profile__combined-chart-column')).toHaveLength(10);
     expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__chart-column')).toHaveLength(10);
-    expect(container.querySelectorAll('[data-chart-kind="combined-form-minutes"] .player-profile__combined-chart-y-axis-scale--positive, [data-chart-kind="combined-form-minutes"] .player-profile__combined-chart-y-axis-scale--negative')).toHaveLength(4);
-    expect(container.querySelectorAll('[data-chart-kind="combined-form-minutes"] .player-profile__chart-gridline')).toHaveLength(6);
-    expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__chart-y-axis')).toHaveLength(2);
-    expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__chart-gridline')).toHaveLength(14);
-    expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__chart-zero-line')).toHaveLength(2);
-    expect(Array.from(container.querySelectorAll('[data-chart-kind="combined-form-minutes"], [data-chart-kind="opponent-defence"]')).every((chart) => chart.getAttribute('data-fixture-count') === '5')).toBe(true);
-    expect(Array.from(container.querySelectorAll('[data-chart-kind="combined-form-minutes"]')).every((chart) => chart.getAttribute('aria-label')?.includes('latest five'))).toBe(true);
+    expect(container.querySelectorAll('[data-chart-kind="combined-form-minutes"] .player-profile__combined-chart-y-axis-scale--positive, [data-chart-kind="combined-form-minutes"] .player-profile__combined-chart-y-axis-scale--negative')).toHaveLength(2);
+    expect(container.querySelectorAll('[data-chart-kind="combined-form-minutes"] .player-profile__chart-gridline')).toHaveLength(3);
+    expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__chart-y-axis')).toHaveLength(1);
+    expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__chart-gridline')).toHaveLength(7);
+    expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__chart-zero-line')).toHaveLength(1);
+    expect(Array.from(container.querySelectorAll('[data-chart-kind="combined-form-minutes"], [data-chart-kind="opponent-defence"]')).every((chart) => chart.getAttribute('data-fixture-count') === '10')).toBe(true);
+    expect(Array.from(container.querySelectorAll('[data-chart-kind="combined-form-minutes"]')).every((chart) => chart.getAttribute('aria-label')?.includes('latest five per player'))).toBe(true);
     root.unmount();
   });
 

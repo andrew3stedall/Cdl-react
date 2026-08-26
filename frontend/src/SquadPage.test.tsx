@@ -554,10 +554,14 @@ describe('SquadPage', () => {
     });
 
     expect(container.querySelector('.squad-page__drawer--substitution')).not.toBeNull();
-    expect(container.querySelectorAll('.player-profile__comparison-player')).toHaveLength(2);
+    expect(container.querySelectorAll('.player-profile__comparison-player')).toHaveLength(0);
+    expect(container.querySelectorAll('.player-profile__chart-group-header .player-card')).toHaveLength(2);
+    expect(container.querySelectorAll('[data-chart-kind="combined-form-minutes"]')).toHaveLength(1);
+    expect(container.querySelectorAll('[data-chart-kind="opponent-defence"]')).toHaveLength(1);
     expect(container.querySelectorAll('[data-chart-kind="combined-form-minutes"] .player-profile__combined-chart-column')).toHaveLength(10);
     expect(container.querySelector('[aria-label="Substitution review actions"]')).not.toBeNull();
-    expect(Array.from(container.querySelectorAll('[data-chart-kind="combined-form-minutes"]')).every((chart) => chart.getAttribute('data-fixture-count') === '5' && chart.getAttribute('aria-label')?.includes('latest five'))).toBe(true);
+    expect(Array.from(container.querySelectorAll('[data-chart-kind="combined-form-minutes"], [data-chart-kind="opponent-defence"]')).every((chart) => chart.getAttribute('data-fixture-count') === '10')).toBe(true);
+    expect(container.querySelector('[data-chart-kind="combined-form-minutes"]')?.getAttribute('aria-label')).toContain('latest five per player');
     expect(container.querySelector('.player-profile__comparison-heading')).toBeNull();
     expect(container.textContent).not.toContain('↔');
 

@@ -2,10 +2,11 @@ import type { CSSProperties } from 'react';
 
 export const PROFILE_CHART_COLUMN_COUNT = 8;
 
-export function chartFixtureSlots<T>(fixtures: ReadonlyArray<T>): Array<T | null> {
-  const visibleFixtures = fixtures.slice(-PROFILE_CHART_COLUMN_COUNT);
+export function chartFixtureSlots<T>(fixtures: ReadonlyArray<T>, slotCount = PROFILE_CHART_COLUMN_COUNT): Array<T | null> {
+  const visibleSlotCount = Math.max(1, Math.floor(slotCount));
+  const visibleFixtures = fixtures.slice(-visibleSlotCount);
   return [
-    ...Array.from({ length: PROFILE_CHART_COLUMN_COUNT - visibleFixtures.length }, () => null),
+    ...Array.from({ length: visibleSlotCount - visibleFixtures.length }, () => null),
     ...visibleFixtures,
   ];
 }

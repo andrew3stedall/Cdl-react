@@ -531,7 +531,7 @@ describe('SquadPage', () => {
     expect(container.querySelector('.squad-page__pitch-field[data-visible-pitch-slice="top"]')).not.toBeNull();
   });
 
-  test('closes the profile, highlights legal swaps, and opens a four-fixture review drawer', async () => {
+  test('closes the profile, highlights legal swaps, and opens a five-fixture review drawer', async () => {
     const { container } = await renderPage();
 
     await act(async () => {
@@ -555,10 +555,11 @@ describe('SquadPage', () => {
 
     expect(container.querySelector('.squad-page__drawer--substitution')).not.toBeNull();
     expect(container.querySelectorAll('.player-profile__comparison-player')).toHaveLength(2);
-    expect(container.querySelectorAll('[data-chart-kind="form"] .player-profile__chart-column')).toHaveLength(16);
-    expect(container.querySelectorAll('[data-chart-kind="minutes"] .player-profile__chart-column')).toHaveLength(16);
+    expect(container.querySelectorAll('[data-chart-kind="combined-form-minutes"] .player-profile__combined-chart-column')).toHaveLength(10);
     expect(container.querySelector('[aria-label="Substitution review actions"]')).not.toBeNull();
-    expect(Array.from(container.querySelectorAll('[data-chart-kind="form"], [data-chart-kind="minutes"]')).every((chart) => chart.getAttribute('aria-label')?.includes('latest four'))).toBe(true);
+    expect(Array.from(container.querySelectorAll('[data-chart-kind="combined-form-minutes"]')).every((chart) => chart.getAttribute('data-fixture-count') === '5' && chart.getAttribute('aria-label')?.includes('latest five'))).toBe(true);
+    expect(container.querySelector('.player-profile__comparison-heading')).toBeNull();
+    expect(container.textContent).not.toContain('↔');
 
     buttonByText(container, 'Confirm sub').click();
     await act(async () => {

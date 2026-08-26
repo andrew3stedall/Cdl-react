@@ -9,6 +9,7 @@ import {
   formChartScaleMax,
   formatNullableNumber,
   formatOpponentLabel,
+  PROFILE_CHART_COLUMN_COUNT,
 } from './player-chart-utils';
 import './combined-form-minutes-chart.css';
 
@@ -26,17 +27,20 @@ export interface CombinedFormMinutesFixture {
 export function CombinedFormMinutesChart({
   fixtures,
   fdrDisplayMode,
+  fixtureCount = PROFILE_CHART_COLUMN_COUNT,
   onFixtureClick,
   windowLabel = 'latest eight',
 }: {
   fixtures: CombinedFormMinutesFixture[];
   fdrDisplayMode: 'font' | 'fill';
+  fixtureCount?: number;
   onFixtureClick?: (fixture: CombinedFormMinutesFixture) => void;
   windowLabel?: string;
 }) {
   const formMax = formChartScaleMax(fixtures);
   const minutesMax = 90;
-  const slots = chartFixtureSlots(fixtures);
+  const slots = chartFixtureSlots(fixtures, fixtureCount);
+  const slotCount = slots.length;
 
   return (
     <div
@@ -47,10 +51,12 @@ export function CombinedFormMinutesChart({
       data-minutes-y-axis-min="0"
       data-minutes-y-axis-tick-step="30"
       data-minutes-y-axis-threshold="60"
+      data-fixture-count={slotCount}
       data-y-axis-max={formMax}
       data-y-axis-min={`-${minutesMax}`}
       data-y-axis-tick-step="5"
       role="group"
+      style={{ '--combined-chart-column-count': slotCount } as CSSProperties}
     >
       <div className="player-profile__combined-chart-layout">
         <div aria-hidden="true" className="player-profile__combined-chart-y-axis">

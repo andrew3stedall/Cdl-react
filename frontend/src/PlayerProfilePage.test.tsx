@@ -501,9 +501,28 @@ describe('PlayerProfilePage', () => {
     expect(earnedDefensiveContributionPoints(12, 'GKP')).toBe(false);
   });
 
-  test('renders the substitution review as two player columns with only the latest four fixtures', async () => {
+  test('renders the substitution review as two player columns with only the latest five fixtures', async () => {
     const squadClient = new MemorySquadClient();
-    const target = { ...player, id: 'fpl-51', display_name: 'Replacement Player' };
+    const target = {
+      ...player,
+      id: 'fpl-51',
+      display_name: 'Replacement Player',
+      next_fixture: {
+        fixture_id: 'fixture-replacement',
+        opponent: { id: 'epl-bha', name: 'Brighton', short_name: 'BHA' },
+        difficulty: history.fixtures[0].difficulty,
+        is_home: history.fixtures[0].is_home,
+      },
+    };
+    const source = {
+      ...player,
+      next_fixture: {
+        fixture_id: 'fixture-source',
+        opponent: { id: 'epl-bha', name: 'Brighton', short_name: 'BHA' },
+        difficulty: history.fixtures[0].difficulty,
+        is_home: history.fixtures[0].is_home,
+      },
+    };
     const container = document.createElement('div');
     document.body.appendChild(container);
     const root: Root = createRoot(container);
@@ -513,7 +532,7 @@ describe('PlayerProfilePage', () => {
           <SubstitutionReviewDrawer
             onCancel={() => undefined}
             onConfirm={() => undefined}
-            sourcePlayer={player}
+            sourcePlayer={source}
             squadClient={squadClient}
             targetPlayer={target}
           />
@@ -526,16 +545,19 @@ describe('PlayerProfilePage', () => {
     expect(container.querySelectorAll('.player-profile__comparison-player .player-card')).toHaveLength(2);
     expect(container.querySelectorAll('.player-profile__comparison-player .player-card__opponents')).toHaveLength(2);
     expect(container.querySelectorAll('.player-profile__comparison-identity h3')).toHaveLength(0);
+    expect(container.querySelector('.player-profile__comparison-heading')).toBeNull();
+    expect(container.querySelectorAll('.player-profile__comparison-player-heading')).toHaveLength(0);
+    expect(container.textContent).not.toContain('↔');
     expect(container.textContent).not.toContain('Next:');
-    expect(container.querySelectorAll('[data-chart-kind="form"] .player-profile__chart-column')).toHaveLength(16);
-    expect(container.querySelectorAll('[data-chart-kind="minutes"] .player-profile__chart-column')).toHaveLength(16);
-    expect(container.querySelectorAll('[data-chart-kind="form"] .player-profile__chart-y-axis')).toHaveLength(2);
-    expect(container.querySelectorAll('[data-chart-kind="minutes"] .player-profile__chart-y-axis')).toHaveLength(2);
-    expect(container.querySelectorAll('[data-chart-kind="form"] .player-profile__chart-gridline')).toHaveLength(2);
-    expect(container.querySelectorAll('[data-chart-kind="minutes"] .player-profile__chart-gridline')).toHaveLength(4);
-    expect(container.querySelectorAll('[data-chart-kind="form"] .player-profile__chart-zero-line')).toHaveLength(2);
-    expect(container.querySelectorAll('[data-chart-kind="minutes"] .player-profile__chart-zero-line')).toHaveLength(2);
-    expect(Array.from(container.querySelectorAll('[data-chart-kind="form"], [data-chart-kind="minutes"]')).every((chart) => chart.getAttribute('aria-label')?.includes('latest four'))).toBe(true);
+    expect(container.querySelectorAll('[data-chart-kind="combined-form-minutes"] .player-profile__combined-chart-column')).toHaveLength(10);
+    expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__chart-column')).toHaveLength(10);
+    expect(container.querySelectorAll('[data-chart-kind="combined-form-minutes"] .player-profile__combined-chart-y-axis-scale--positive, [data-chart-kind="combined-form-minutes"] .player-profile__combined-chart-y-axis-scale--negative')).toHaveLength(4);
+    expect(container.querySelectorAll('[data-chart-kind="combined-form-minutes"] .player-profile__chart-gridline')).toHaveLength(6);
+    expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__chart-y-axis')).toHaveLength(2);
+    expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__chart-gridline')).toHaveLength(14);
+    expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__chart-zero-line')).toHaveLength(2);
+    expect(Array.from(container.querySelectorAll('[data-chart-kind="combined-form-minutes"], [data-chart-kind="opponent-defence"]')).every((chart) => chart.getAttribute('data-fixture-count') === '5')).toBe(true);
+    expect(Array.from(container.querySelectorAll('[data-chart-kind="combined-form-minutes"]')).every((chart) => chart.getAttribute('aria-label')?.includes('latest five'))).toBe(true);
     root.unmount();
   });
 

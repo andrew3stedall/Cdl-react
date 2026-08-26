@@ -315,7 +315,7 @@
   align-items: stretch;
   display: grid;
   gap: clamp(0.15rem, 1.2vw, 0.5rem);
-  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--chart-column-count, 8), minmax(0, 1fr));
   min-height: var(--profile-chart-height);
   position: relative;
 }
@@ -740,19 +740,6 @@
   padding: var(--profile-review-gap);
 }
 
-.player-profile__comparison-heading {
-  align-items: center;
-  display: flex;
-  gap: 0.5rem;
-  justify-content: space-between;
-  margin-bottom: var(--profile-review-gap);
-}
-
-.player-profile__comparison-heading h2 {
-  font-size: 0.9rem;
-  margin: 0.15rem 0 0;
-}
-
 .player-profile__comparison-grid {
   display: grid;
   gap: var(--profile-review-gap);
@@ -782,7 +769,7 @@
 .player-profile__comparison-identity {
   align-items: center;
   display: flex;
-  gap: 0.45rem;
+  justify-content: center;
   min-width: 0;
   padding-bottom: 0.45rem;
 }
@@ -794,53 +781,8 @@
   width: 3.6rem;
 }
 
-.player-profile__comparison-identity .player-card__name {
-  font-size: 0.55rem;
-}
-
-.player-profile__comparison-identity > div:last-child {
-  min-width: 0;
-}
-
-.player-profile__comparison-identity p {
-  display: block;
-  color: var(--profile-muted);
-  font-size: 0.62rem;
-  margin: 0.15rem 0 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .player-profile__comparison-player .player-profile__chart-card {
   margin-top: var(--profile-review-gap);
-  padding: 0.45rem;
-}
-
-.player-profile__comparison-player .player-profile__chart-card .player-profile__card-heading {
-  margin-bottom: 0.35rem;
-}
-
-.player-profile__comparison-player .player-profile__chart-card h2 {
-  font-size: 0.72rem;
-}
-
-.player-profile__comparison-player .player-profile__chart-columns {
-  gap: 0.18rem;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
-  min-height: 4.92rem;
-}
-
-.player-profile__comparison-player .player-profile__chart-column {
-  grid-template-rows: 0.95rem minmax(0, 1fr) 1.2rem;
-}
-
-.player-profile__comparison-player .player-profile__chart-column.is-compact {
-  grid-template-rows: 0.8rem minmax(0, 1fr) 1rem;
-}
-
-.player-profile__comparison-player .player-profile__opponent-label {
-  font-size: 0.55rem;
 }
 
 .player-profile__review-actions {

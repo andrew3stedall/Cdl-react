@@ -2,6 +2,10 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState, type R
 
 import type { AttackDirection, ThemePreset, UserPreferences } from './contracts';
 import {
+  getStoredAccountMotionGestureEnabled,
+  setStoredAccountMotionGestureEnabled,
+} from './account-motion-gesture';
+import {
   defaultFdrScaleName,
   defaultFdrDisplayMode,
   defaultFdrScaleReversed,
@@ -63,6 +67,7 @@ interface ThemePresetContextValue {
   metricCustomColours: MetricPalette;
   customPlayerColourPalettes: PlayerColourPalette[];
   themeColour: string;
+  accountMotionGestureEnabled: boolean;
   preset: ThemePreset;
   setAttackDirection: (direction: AttackDirection) => void;
   setFdrDisplayMode: (mode: FdrDisplayMode) => void;
@@ -81,6 +86,7 @@ interface ThemePresetContextValue {
   savePlayerColourPalette: (palette: Omit<PlayerColourPalette, 'id'>) => Promise<PlayerColourPalette>;
   deletePlayerColourPalette: (paletteId: string) => Promise<void>;
   setThemeColour: (colour: string) => void;
+  setAccountMotionGestureEnabled: (enabled: boolean) => void;
   setPresetName: (presetName: ThemePreset['name']) => void;
   saveStatus: 'idle' | 'saving' | 'saved' | 'error';
 }
@@ -116,6 +122,9 @@ export function ThemePresetProvider({
   const [metricCustomColours, setMetricCustomColoursState] = useState<MetricPalette>(defaultMetricCustomColours);
   const [customPlayerColourPalettes, setCustomPlayerColourPalettes] = useState<PlayerColourPalette[]>([]);
   const [themeColour, setThemeColourState] = useState(defaultThemeColour);
+  const [accountMotionGestureEnabled, setAccountMotionGestureEnabledState] = useState(
+    getStoredAccountMotionGestureEnabled,
+  );
   const [themeClockTick, setThemeClockTick] = useState(() => Date.now());
   const [saveStatus, setSaveStatus] = useState<ThemePresetContextValue['saveStatus']>('idle');
   const latestPreferencesRef = useRef<UserPreferences | null>(null);
@@ -322,6 +331,7 @@ export function ThemePresetProvider({
       metricCustomColours,
       customPlayerColourPalettes,
       themeColour,
+      accountMotionGestureEnabled,
       preset,
       setAttackDirection: (nextAttackDirection) => {
         setAttackDirectionState(nextAttackDirection);
@@ -497,6 +507,10 @@ export function ThemePresetProvider({
           fdrCustomAnchors: customFdrAnchors,
         });
       },
+      setAccountMotionGestureEnabled: (enabled) => {
+        setAccountMotionGestureEnabledState(enabled);
+        setStoredAccountMotionGestureEnabled(enabled);
+      },
       setPresetName: (nextPresetName) => {
         const nextPreset = resolveThemePreset(nextPresetName);
 
@@ -519,7 +533,7 @@ export function ThemePresetProvider({
       saveStatus,
       });
     },
-    [attackDirection, customFdrAnchors, customFdrPalettes, customPlayerColourPalettes, fdrDisplayMode, fdrScale, fdrScaleReversed, metricColourScale, metricColourScaleReversed, metricCustomColours, positionColourMode, positionColourScale, positionCustomColours, preferenceClient, preset, saveStatus, themeColour],
+    [accountMotionGestureEnabled, attackDirection, customFdrAnchors, customFdrPalettes, customPlayerColourPalettes, fdrDisplayMode, fdrScale, fdrScaleReversed, metricColourScale, metricColourScaleReversed, metricCustomColours, positionColourMode, positionColourScale, positionCustomColours, preferenceClient, preset, saveStatus, themeColour],
   );
 
   return <ThemePresetContext.Provider value={value}>{children}</ThemePresetContext.Provider>;

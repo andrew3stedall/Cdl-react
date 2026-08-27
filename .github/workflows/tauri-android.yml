@@ -1,14 +1,6 @@
 name: Tauri Android APK
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - "frontend/**"
-      - "src-tauri/**"
-      - "package.json"
-      - ".github/workflows/tauri-android.yml"
   pull_request:
     paths:
       - "frontend/**"

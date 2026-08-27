@@ -6,6 +6,7 @@ import {
   isMazeComplete,
   mazeDifficultyLabel,
   mazeSizeForLevel,
+  motionVectorFromGravity,
 } from './SensorMazeGame';
 
 describe('sensor maze', () => {
@@ -73,5 +74,24 @@ describe('sensor maze', () => {
     expect(ball.x).toBeGreaterThan(0.5);
     expect(ball.y).toBeGreaterThan(0.5);
     expect(isMazeComplete({ x: 0.5, y: 0.5 }, 1)).toBe(true);
+  });
+
+  test('corrects Android lateral direction after screen rotation', () => {
+    const androidVector = motionVectorFromGravity(4.905, 0, 8.5, 0, 'android');
+    const otherVector = motionVectorFromGravity(4.905, 0, 8.5, 0, 'other');
+
+    expect(androidVector.x).toBeLessThan(0);
+    expect(otherVector.x).toBeGreaterThan(0);
+    expect(androidVector.y).toBe(0);
+  });
+
+  test('builds speed over time and responds more strongly to a larger tilt', () => {
+    const maze = generateMaze(1);
+    const gentleTilt = advanceBall({ x: 0.5, y: 0.5, vx: 0, vy: 0 }, maze, { x: 0.2, y: 0 }, 0.016, 1);
+    const continuedGentleTilt = advanceBall(gentleTilt, maze, { x: 0.2, y: 0 }, 0.016, 1);
+    const steepTilt = advanceBall({ x: 0.5, y: 0.5, vx: 0, vy: 0 }, maze, { x: 0.8, y: 0 }, 0.016, 1);
+
+    expect(continuedGentleTilt.vx).toBeGreaterThan(gentleTilt.vx);
+    expect(steepTilt.vx).toBeGreaterThan(gentleTilt.vx);
   });
 });

@@ -40,6 +40,8 @@ interface MotionVector {
   y: number;
 }
 
+type MotionPlatform = 'android' | 'other';
+
 interface SensorMazeGameProps {
   onClose: () => void;
 }
@@ -59,6 +61,8 @@ const NEIGHBOURS: Array<{ row: number; column: number; wall: Wall; opposite: Wal
 ];
 
 const BALL_RADIUS = 0.18;
+const DEVICE_GRAVITY = 9.81;
+const TILT_DEAD_ZONE = 0.035;
 
 export function mazeSizeForLevel(level: number): number {
   return Math.min(19, 7 + Math.max(0, level - 1) * 2);
@@ -116,21 +120,46 @@ export function readMotionVector(event: DeviceMotionEvent): MotionVector | null 
   const acceleration = event.accelerationIncludingGravity ?? event.acceleration;
   if (!acceleration || acceleration.x === null || acceleration.y === null) return null;
 
-  const angle = getScreenAngle();
-  let x = acceleration.x;
-  let y = acceleration.y;
+  return motionVectorFromGravity(
+    acceleration.x,
+    acceleration.y,
+    acceleration.z,
+    getScreenAngle(),
+    getMotionPlatform(),
+  );
+}
 
-  if (angle === 90) {
-    [x, y] = [acceleration.y, -acceleration.x];
-  } else if (angle === 180) {
-    [x, y] = [-acceleration.x, -acceleration.y];
-  } else if (angle === 270) {
-    [x, y] = [-acceleration.y, acceleration.x];
+export function motionVectorFromGravity(
+  xAcceleration: number,
+  yAcceleration: number,
+  zAcceleration: number | null | undefined,
+  screenAngle: number,
+  platform: MotionPlatform = getMotionPlatform(),
+): MotionVector {
+  let x = xAcceleration;
+  let y = yAcceleration;
+
+  if (screenAngle === 90) {
+    [x, y] = [yAcceleration, -xAcceleration];
+  } else if (screenAngle === 180) {
+    [x, y] = [-xAcceleration, -yAcceleration];
+  } else if (screenAngle === 270) {
+    [x, y] = [-yAcceleration, xAcceleration];
   }
 
+  // Android Chrome reports the lateral gravity component in the opposite
+  // direction to the board's horizontal coordinate. Correct it after the
+  // screen-orientation transform so portrait and landscape behave alike.
+  if (platform === 'android') x *= -1;
+
+  const gravityMagnitude = Math.max(
+    DEVICE_GRAVITY,
+    Math.hypot(xAcceleration, yAcceleration, zAcceleration ?? 0),
+  );
+
   return {
-    x: clamp(x / 3.8, -1, 1),
-    y: clamp(y / 3.8, -1, 1),
+    x: applyTiltDeadZone(x / gravityMagnitude),
+    y: applyTiltDeadZone(y / gravityMagnitude),
   };
 }
 
@@ -143,9 +172,12 @@ export function advanceBall(
 ): BallState {
   const delta = Math.min(deltaSeconds, 0.05);
   const size = maze.length;
-  const acceleration = 4.3 + Math.min(1.2, Math.max(0, level - 1) * 0.12);
-  const friction = Math.pow(0.82, delta * 60);
-  const maxSpeed = 2.1 + Math.min(0.65, Math.max(0, level - 1) * 0.08);
+  // The normalized gravity components are sin(tilt angle), so this produces
+  // small acceleration for gentle tilts and stronger acceleration as the
+  // phone is tilted further. Damping slows the ball when the phone is level.
+  const acceleration = DEVICE_GRAVITY * (1 + Math.min(0.16, Math.max(0, level - 1) * 0.02));
+  const friction = Math.exp(-4.5 * delta);
+  const maxSpeed = 3.2 + Math.min(1.1, Math.max(0, level - 1) * 0.1);
   let vx = clamp((ball.vx + input.x * acceleration * delta) * friction, -maxSpeed, maxSpeed);
   let vy = clamp((ball.vy + input.y * acceleration * delta) * friction, -maxSpeed, maxSpeed);
   const x = resolveHorizontal(ball.x, ball.y, vx * delta, maze);
@@ -438,6 +470,19 @@ function getKeyboardInput(keys: Set<string>): MotionVector {
 function getScreenAngle(): number {
   const angle = window.screen.orientation?.angle ?? Number(window.orientation ?? 0);
   return ((angle % 360) + 360) % 360;
+}
+
+function getMotionPlatform(): MotionPlatform {
+  if (typeof navigator !== 'undefined' && /android/i.test(navigator.userAgent)) return 'android';
+  return 'other';
+}
+
+function applyTiltDeadZone(value: number): number {
+  const clamped = clamp(value, -1, 1);
+  const magnitude = Math.abs(clamped);
+  if (magnitude <= TILT_DEAD_ZONE) return 0;
+
+  return Math.sign(clamped) * ((magnitude - TILT_DEAD_ZONE) / (1 - TILT_DEAD_ZONE));
 }
 
 function clamp(value: number, minimum: number, maximum: number): number {

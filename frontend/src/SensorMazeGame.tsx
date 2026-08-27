@@ -63,6 +63,7 @@ const NEIGHBOURS: Array<{ row: number; column: number; wall: Wall; opposite: Wal
 const BALL_RADIUS = 0.18;
 const DEVICE_GRAVITY = 9.81;
 const TILT_DEAD_ZONE = 0.035;
+const INITIAL_LIVES = 3;
 
 export function mazeSizeForLevel(level: number): number {
   return Math.min(19, 7 + Math.max(0, level - 1) * 2);
@@ -170,6 +171,16 @@ export function advanceBall(
   deltaSeconds: number,
   level: number,
 ): BallState {
+  return advanceBallStep(ball, maze, input, deltaSeconds, level).ball;
+}
+
+export function advanceBallStep(
+  ball: BallState,
+  maze: Maze,
+  input: MotionVector,
+  deltaSeconds: number,
+  level: number,
+): { ball: BallState; hitWall: boolean } {
   const delta = Math.min(deltaSeconds, 0.05);
   const size = maze.length;
   // The normalized gravity components are sin(tilt angle), so this produces
@@ -181,21 +192,30 @@ export function advanceBall(
   let vx = clamp((ball.vx + input.x * acceleration * delta) * friction, -maxSpeed, maxSpeed);
   let vy = clamp((ball.vy + input.y * acceleration * delta) * friction, -maxSpeed, maxSpeed);
   const x = resolveHorizontal(ball.x, ball.y, vx * delta, maze);
+  let hitWall = x.collided;
   if (x.collided) vx = 0;
   const y = resolveVertical(ball.y, x.position, vy * delta, maze);
+  hitWall ||= y.collided;
   if (y.collided) vy = 0;
 
   return {
-    x: clamp(x.position, BALL_RADIUS, size - BALL_RADIUS),
-    y: clamp(y.position, BALL_RADIUS, size - BALL_RADIUS),
-    vx,
-    vy,
+    ball: {
+      x: clamp(x.position, BALL_RADIUS, size - BALL_RADIUS),
+      y: clamp(y.position, BALL_RADIUS, size - BALL_RADIUS),
+      vx,
+      vy,
+    },
+    hitWall,
   };
 }
 
 export function isMazeComplete(ball: Point, size: number): boolean {
   const target = size - 0.5;
   return Math.hypot(ball.x - target, ball.y - target) < 0.34;
+}
+
+export function isInEntryZone(ball: Point): boolean {
+  return ball.x < 1 && ball.y < 1;
 }
 
 export function SensorMazeGame({ onClose }: SensorMazeGameProps) {
@@ -205,9 +225,14 @@ export function SensorMazeGame({ onClose }: SensorMazeGameProps) {
   const [sensorState, setSensorState] = useState<'idle' | 'enabled' | 'denied' | 'unsupported'>('idle');
   const [sensorMessage, setSensorMessage] = useState<string | null>(null);
   const [completed, setCompleted] = useState(false);
+  const [lives, setLives] = useState(INITIAL_LIVES);
+  const [wallHitKey, setWallHitKey] = useState(0);
+  const [gameOver, setGameOver] = useState(false);
   const inputRef = useRef<MotionVector>({ x: 0, y: 0 });
   const ballRef = useRef<BallState>(ball);
   const completedRef = useRef(false);
+  const hasLeftEntryZoneRef = useRef(false);
+  const livesRef = useRef(INITIAL_LIVES);
 
   const resetBall = useCallback(() => {
     const startingBall = createStartingBall();
@@ -215,16 +240,29 @@ export function SensorMazeGame({ onClose }: SensorMazeGameProps) {
     setBall(startingBall);
     setCompleted(false);
     completedRef.current = false;
+    hasLeftEntryZoneRef.current = false;
   }, []);
 
   const nextMaze = useCallback(() => {
     const nextLevel = level + 1;
     setLevel(nextLevel);
     setMaze(generateMaze(mazeSizeForLevel(nextLevel)));
+    livesRef.current = INITIAL_LIVES;
+    setLives(INITIAL_LIVES);
+    setGameOver(false);
     resetBall();
   }, [level, resetBall]);
 
+  const restartMaze = useCallback(() => {
+    livesRef.current = INITIAL_LIVES;
+    setLives(INITIAL_LIVES);
+    setGameOver(false);
+    setMaze(generateMaze(maze.length));
+    resetBall();
+  }, [maze.length, resetBall]);
+
   const nudgeBall = useCallback((x: number, y: number) => {
+    if (gameOver) return;
     const nextBall = {
       ...ballRef.current,
       vx: clamp(ballRef.current.vx + x * 0.42, -2.8, 2.8),
@@ -232,7 +270,21 @@ export function SensorMazeGame({ onClose }: SensorMazeGameProps) {
     };
     ballRef.current = nextBall;
     setBall(nextBall);
-  }, []);
+  }, [gameOver]);
+
+  const handleWallHit = useCallback(() => {
+    livesRef.current = Math.max(0, livesRef.current - 1);
+    setLives(livesRef.current);
+    setWallHitKey((key) => key + 1);
+    if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+      navigator.vibrate([90, 55, 140]);
+    }
+    resetBall();
+    if (livesRef.current === 0) {
+      completedRef.current = true;
+      setGameOver(true);
+    }
+  }, [resetBall]);
 
   const enableMotion = useCallback(async () => {
     const motionEvent = window.DeviceMotionEvent as typeof DeviceMotionEvent & {
@@ -302,12 +354,20 @@ export function SensorMazeGame({ onClose }: SensorMazeGameProps) {
       const delta = (time - previousTime) / 1000;
       previousTime = time;
       if (!completedRef.current) {
-        const nextBall = advanceBall(ballRef.current, maze, inputRef.current, delta, level);
-        ballRef.current = nextBall;
-        setBall(nextBall);
-        if (isMazeComplete(nextBall, maze.length)) {
-          completedRef.current = true;
-          setCompleted(true);
+        const step = advanceBallStep(ballRef.current, maze, inputRef.current, delta, level);
+        if (!hasLeftEntryZoneRef.current && !isInEntryZone(step.ball)) {
+          hasLeftEntryZoneRef.current = true;
+        }
+
+        if (step.hitWall && hasLeftEntryZoneRef.current) {
+          handleWallHit();
+        } else {
+          ballRef.current = step.ball;
+          setBall(step.ball);
+          if (isMazeComplete(step.ball, maze.length)) {
+            completedRef.current = true;
+            setCompleted(true);
+          }
         }
       }
       frame = window.requestAnimationFrame(tick);
@@ -315,7 +375,7 @@ export function SensorMazeGame({ onClose }: SensorMazeGameProps) {
 
     frame = window.requestAnimationFrame(tick);
     return () => window.cancelAnimationFrame(frame);
-  }, [level, maze]);
+  }, [handleWallHit, level, maze]);
 
   useEffect(() => {
     const closeOnEscape = (event: KeyboardEvent) => {
@@ -365,12 +425,20 @@ export function SensorMazeGame({ onClose }: SensorMazeGameProps) {
                   </div>
                 )))}
                 <span aria-label="Ball" className="sensor-maze__ball" />
+                {wallHitKey > 0 ? <span aria-hidden="true" className="sensor-maze__wall-hit-flash" key={wallHitKey} /> : null}
                 {completed ? (
                   <div className="sensor-maze__complete" role="status">
                     <span className="sensor-maze__complete-icon"><Check aria-hidden="true" size={20} /></span>
                     <strong>Maze complete</strong>
                     <span>Level {level + 1} is ready.</span>
                     <Button onClick={nextMaze} type="button">Next maze</Button>
+                  </div>
+                ) : null}
+                {gameOver ? (
+                  <div className="sensor-maze__game-over" role="status">
+                    <strong>Out of lives</strong>
+                    <span>Start a fresh maze and try again.</span>
+                    <Button onClick={restartMaze} type="button">Try again</Button>
                   </div>
                 ) : null}
               </div>
@@ -412,11 +480,20 @@ export function SensorMazeGame({ onClose }: SensorMazeGameProps) {
               <div><span>03</span><p>Every completed maze adds two rows and columns.</p></div>
             </div>
 
-            <Button className="sensor-maze__reset" onClick={resetBall} type="button" variant="ghost">
+            <Button className="sensor-maze__reset" onClick={gameOver ? restartMaze : resetBall} type="button" variant="ghost">
               <RotateCcw aria-hidden="true" size={16} />
-              Reset maze
+              {gameOver ? 'Try again' : 'Reset ball'}
             </Button>
           </aside>
+        </div>
+        <div aria-label={`${lives} of ${INITIAL_LIVES} balls remaining`} className="sensor-maze__lives" role="status">
+          <span className="sensor-maze__lives-label">Lives</span>
+          <span className="sensor-maze__life-balls">
+            {Array.from({ length: INITIAL_LIVES }, (_, index) => (
+              <i aria-hidden="true" className={`sensor-maze__life-ball${index < lives ? ' is-active' : ' is-lost'}`} key={index} />
+            ))}
+          </span>
+          <span className="sensor-maze__lives-copy">{lives} remaining</span>
         </div>
       </section>
     </div>

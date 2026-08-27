@@ -2,7 +2,9 @@ import { describe, expect, test } from 'vitest';
 
 import {
   advanceBall,
+  advanceBallStep,
   generateMaze,
+  isInEntryZone,
   isMazeComplete,
   mazeDifficultyLabel,
   mazeSizeForLevel,
@@ -93,5 +95,14 @@ describe('sensor maze', () => {
 
     expect(continuedGentleTilt.vx).toBeGreaterThan(gentleTilt.vx);
     expect(steepTilt.vx).toBeGreaterThan(gentleTilt.vx);
+  });
+
+  test('reports a wall hit and keeps the entry zone penalty-free', () => {
+    const maze = generateMaze(1);
+    const step = advanceBallStep({ x: 0.78, y: 0.5, vx: 3, vy: 0 }, maze, { x: 0, y: 0 }, 0.016, 1);
+
+    expect(step.hitWall).toBe(true);
+    expect(isInEntryZone({ x: 0.5, y: 0.5 })).toBe(true);
+    expect(isInEntryZone({ x: 1.01, y: 0.5 })).toBe(false);
   });
 });

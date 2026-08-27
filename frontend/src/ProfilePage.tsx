@@ -8,6 +8,7 @@ import {
   ChevronRight,
   Circle,
   Fingerprint,
+  Gamepad2,
   Moon,
   Sun,
   Type,
@@ -55,6 +56,7 @@ import { getThemeMode, themePresets } from './theme-presets';
 import { useThemePreset } from './theme-preset-provider';
 import { getThemeColourForMode, themeColourOptions } from './theme-colours';
 import { getPasskeyStatus, registerPasskey, type PasskeyStatus } from './passkeys';
+import { SensorMazeGame } from './SensorMazeGame';
 import './profile-page.css';
 
 interface ProfilePageProps {
@@ -106,6 +108,7 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
   const [passkeyStatus, setPasskeyStatus] = useState<PasskeyStatus | null>(null);
   const [passkeyPending, setPasskeyPending] = useState(false);
   const [passkeyMessage, setPasskeyMessage] = useState<string | null>(null);
+  const [isSensorMazeOpen, setIsSensorMazeOpen] = useState(false);
   const isAccountSummary = currentPath === '/account' || currentPath === '/profile';
   const isAppearancePage = currentPath === '/account/appearance' || currentPath === '/profile/appearance';
   const isFdrPage = currentPath === '/account/fdr' || currentPath === '/profile/fdr';
@@ -131,7 +134,7 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
   }, [isAccountSummary]);
 
   useEffect(() => {
-    if (!isFdrScaleSheetOpen && !isPositionScaleSheetOpen && !isMetricScaleSheetOpen) return undefined;
+    if (!isFdrScaleSheetOpen && !isPositionScaleSheetOpen && !isMetricScaleSheetOpen && !isSensorMazeOpen) return undefined;
 
     const documentElement = document.documentElement;
     const body = document.body;
@@ -169,7 +172,7 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
       body.style.width = previousBodyWidth;
       window.scrollTo(scrollX, scrollY);
     };
-  }, [isFdrScaleSheetOpen, isMetricScaleSheetOpen, isPositionScaleSheetOpen]);
+  }, [isFdrScaleSheetOpen, isMetricScaleSheetOpen, isPositionScaleSheetOpen, isSensorMazeOpen]);
 
   const user = session.user;
   const selectedFdrScale = getFdrColourScale(fdrScale);
@@ -429,7 +432,29 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
             {attackDirection === 'up' ? <ArrowUp size={42} /> : <ArrowDown size={42} />}
           </span>
         </ProfileSummaryCard>
+
+        <ProfileSummaryCard
+          ariaLabel="Open tilt maze game"
+          onSelect={() => setIsSensorMazeOpen(true)}
+        >
+          <div className="profile-card__header">
+            <div>
+              <p className="profile-card__eyebrow">Motion challenge</p>
+              <h2>Tilt maze</h2>
+            </div>
+            <Gamepad2 aria-hidden="true" className="profile-summary-card__arrow" size={21} />
+          </div>
+          <span className="profile-summary-value">Navigate a ball with your phone</span>
+          <span aria-hidden="true" className="profile-maze-summary-preview">
+            <span className="profile-maze-summary-preview__path" />
+            <span className="profile-maze-summary-preview__ball" />
+            <span className="profile-maze-summary-preview__goal" />
+          </span>
+          <ChevronRight aria-hidden="true" className="profile-summary-card__arrow" size={18} />
+        </ProfileSummaryCard>
       </div>
+
+      {isSensorMazeOpen ? <SensorMazeGame onClose={() => setIsSensorMazeOpen(false)} /> : null}
     </main>
   );
 }

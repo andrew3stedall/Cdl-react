@@ -14,6 +14,7 @@ import {
   Type,
   PaintBucket,
   Palette,
+  Smartphone,
   Trash2,
   X,
 } from 'lucide-react';
@@ -21,6 +22,10 @@ import {
 import { Button } from './components/ui/button';
 import { Card } from './components/ui/card';
 import { Sheet } from './components/ui/sheet';
+import {
+  requestAccountMotionPermission,
+  type MotionPermissionState,
+} from './account-motion-gesture';
 import { PlayerCard } from './components/player/PlayerCard';
 import type { AttackDirection, SessionState, ThemePreset } from './contracts';
 import {
@@ -100,6 +105,8 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
     deletePlayerColourPalette,
     useCustomFdrPalette,
     setThemeColour,
+    accountMotionGestureEnabled,
+    setAccountMotionGestureEnabled,
     setPresetName,
   } = useThemePreset();
   const [isFdrScaleSheetOpen, setIsFdrScaleSheetOpen] = useState(false);
@@ -108,6 +115,7 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
   const [passkeyStatus, setPasskeyStatus] = useState<PasskeyStatus | null>(null);
   const [passkeyPending, setPasskeyPending] = useState(false);
   const [passkeyMessage, setPasskeyMessage] = useState<string | null>(null);
+  const [motionPermissionState, setMotionPermissionState] = useState<MotionPermissionState | null>(null);
   const [isSensorMazeOpen, setIsSensorMazeOpen] = useState(false);
   const isAccountSummary = currentPath === '/account' || currentPath === '/profile';
   const isAppearancePage = currentPath === '/account/appearance' || currentPath === '/profile/appearance';
@@ -185,6 +193,16 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
     .join('') || 'CD';
+
+  const handleMotionGestureToggle = (enabled: boolean) => {
+    setAccountMotionGestureEnabled(enabled);
+    if (!enabled) {
+      setMotionPermissionState(null);
+      return;
+    }
+
+    void requestAccountMotionPermission().then(setMotionPermissionState);
+  };
 
   if (isAppearancePage) {
     return (
@@ -331,6 +349,40 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
             {passkeyPending ? 'Waiting for device verification…' : 'Enable device sign-in'}
           </Button>
           {passkeyMessage ? <p aria-live="polite" className="profile-save-status" role="status">{passkeyMessage}</p> : null}
+        </Card>
+      ) : null}
+
+      {isAccountSummary ? (
+        <Card className="profile-card profile-motion-gesture-card">
+          <div className="profile-card__header">
+            <div>
+              <p className="profile-card__eyebrow">Quick account access</p>
+              <h2>Shake to open Account</h2>
+            </div>
+            <Smartphone aria-hidden="true" className="profile-appearance-icon" size={22} />
+          </div>
+          <p className="profile-card__copy">Shake your phone away and back twice to open this page from anywhere in the app.</p>
+          <label className="profile-motion-toggle">
+            <span>
+              <strong>Motion shortcut</strong>
+              <small>{accountMotionGestureEnabled ? 'Enabled on this device' : 'Disabled on this device'}</small>
+            </span>
+            <input
+              aria-label="Enable shake to open Account"
+              checked={accountMotionGestureEnabled}
+              onChange={(event) => handleMotionGestureToggle(event.target.checked)}
+              type="checkbox"
+            />
+            <span aria-hidden="true" className="profile-motion-toggle__track">
+              <span className="profile-motion-toggle__thumb" />
+            </span>
+          </label>
+          {motionPermissionState === 'denied' ? (
+            <p aria-live="polite" className="profile-motion-status" role="status">Motion access is blocked. Allow motion access in your browser settings to use the shortcut.</p>
+          ) : null}
+          {motionPermissionState === 'unsupported' ? (
+            <p aria-live="polite" className="profile-motion-status" role="status">Motion sensors are not available in this browser.</p>
+          ) : null}
         </Card>
       ) : null}
 

@@ -44,6 +44,82 @@
   gap: 0.8rem;
 }
 
+.profile-motion-gesture-card {
+  gap: 0.8rem;
+}
+
+.profile-motion-toggle {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.profile-motion-toggle > span:first-child {
+  display: grid;
+  gap: 0.18rem;
+}
+
+.profile-motion-toggle strong {
+  font-size: 0.82rem;
+}
+
+.profile-motion-toggle small {
+  color: var(--muted-foreground);
+  font-size: 0.7rem;
+}
+
+.profile-motion-toggle input {
+  height: 1px;
+  opacity: 0;
+  position: absolute;
+  width: 1px;
+}
+
+.profile-motion-toggle__track {
+  align-items: center;
+  background: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 1.7rem;
+  justify-content: flex-start;
+  padding: 0.16rem;
+  transition: background-color 140ms ease, border-color 140ms ease;
+  width: 3.1rem;
+}
+
+.profile-motion-toggle__thumb {
+  background: var(--muted-foreground);
+  border-radius: 50%;
+  height: 1.25rem;
+  transition: background-color 140ms ease, transform 140ms ease;
+  width: 1.25rem;
+}
+
+.profile-motion-toggle input:checked + .profile-motion-toggle__track {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.profile-motion-toggle input:checked + .profile-motion-toggle__track .profile-motion-toggle__thumb {
+  background: var(--primary-foreground);
+  transform: translateX(1.35rem);
+}
+
+.profile-motion-toggle input:focus-visible + .profile-motion-toggle__track {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.profile-motion-status {
+  color: var(--muted-foreground);
+  font-size: 0.7rem;
+  line-height: 1.45;
+}
+
 .profile-direction-grid {
   display: grid;
   gap: 0.65rem;
@@ -1686,6 +1762,28 @@
   z-index: 2;
 }
 
+.sensor-maze__wall-hit-flash {
+  animation: sensor-maze-wall-hit 0.48s steps(2, end) both;
+  background: rgb(220 38 38 / 42%);
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+  z-index: 5;
+}
+
+@keyframes sensor-maze-wall-hit {
+  0%,
+  100% {
+    opacity: 0;
+  }
+
+  18%,
+  42%,
+  66% {
+    opacity: 1;
+  }
+}
+
 .sensor-maze__complete {
   align-items: center;
   background: color-mix(in srgb, var(--background) 94%, var(--primary));
@@ -1722,6 +1820,30 @@
 
 .sensor-maze__complete .ui-button {
   margin-top: 0.25rem;
+}
+
+.sensor-maze__game-over {
+  align-items: center;
+  background: color-mix(in srgb, var(--background) 94%, rgb(220 38 38));
+  border: 1px solid rgb(220 38 38 / 70%);
+  display: grid;
+  gap: 0.45rem;
+  inset: 13%;
+  justify-items: center;
+  padding: 1rem;
+  position: absolute;
+  text-align: center;
+  z-index: 6;
+}
+
+.sensor-maze__game-over strong {
+  color: rgb(220 38 38);
+  font-size: 1rem;
+}
+
+.sensor-maze__game-over span {
+  color: var(--muted-foreground);
+  font-size: 0.76rem;
 }
 
 .sensor-maze__legend {
@@ -1900,6 +2022,56 @@
   justify-self: start;
   padding-left: 0;
   padding-right: 0;
+}
+
+.sensor-maze__lives {
+  align-items: center;
+  border-top: 1px solid var(--border);
+  color: var(--muted-foreground);
+  display: flex;
+  font-size: 0.72rem;
+  gap: 0.65rem;
+  justify-content: center;
+  padding-top: 0.8rem;
+}
+
+.sensor-maze__lives-label {
+  color: var(--foreground);
+  font-weight: 700;
+}
+
+.sensor-maze__life-balls {
+  display: inline-flex;
+  gap: 0.35rem;
+}
+
+.sensor-maze__life-ball {
+  border: 1.5px solid var(--primary);
+  border-radius: 50%;
+  display: inline-block;
+  height: 0.78rem;
+  position: relative;
+  width: 0.78rem;
+}
+
+.sensor-maze__life-ball.is-active {
+  background: var(--primary);
+}
+
+.sensor-maze__life-ball.is-lost {
+  border-color: var(--muted-foreground);
+  opacity: 0.38;
+}
+
+.sensor-maze__life-ball.is-lost::after {
+  background: var(--muted-foreground);
+  content: '';
+  height: 1px;
+  left: -0.12rem;
+  position: absolute;
+  top: 50%;
+  transform: rotate(-45deg);
+  width: 1rem;
 }
 
 @media (max-width: 760px) {

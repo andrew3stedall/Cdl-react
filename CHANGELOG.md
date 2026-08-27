@@ -6,6 +6,7 @@
 - Kept the existing FastAPI/PostgreSQL Cloud Run service as the backend; staging APK builds open the deployed staging app to preserve same-origin cookie authentication.
 - Match points-against labels to their attacking/defensive bar colours, keep them clear of the bars, and use the result-track colour for empty chart slots.
 - Reworked the account page into a compact summary with navigable appearance, FDR colour, and attacking-orientation settings subpages.
+- Added an opt-out device motion shortcut that opens Account after two deliberate forward-and-back shakes from any app page.
 - Hide device sign-in setup after a passkey is registered and remove manager role, account ID, and dedicated account-action content from the page.
 - Added 30-day PostgreSQL-backed application sessions with secure persistent cookies.
 - Added WebAuthn passkey registration and sign-in for device Face ID, fingerprint, or PIN unlock.

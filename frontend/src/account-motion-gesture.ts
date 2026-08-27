@@ -2,7 +2,11 @@ import { useEffect, useRef } from 'react';
 
 export const ACCOUNT_MOTION_GESTURE_STORAGE_KEY = 'cdl-account-motion-gesture-enabled';
 
-const PEAK_THRESHOLD = 5.5;
+// A moderate forward/back movement is usually well below 1 g of linear
+// acceleration. Keep the alternating-direction and timing checks as the
+// primary false-positive protection so the gesture does not need an
+// unnecessarily forceful shake.
+const PEAK_THRESHOLD = 3.2;
 const REARM_THRESHOLD = PEAK_THRESHOLD * 0.45;
 const MIN_PEAK_INTERVAL_MS = 55;
 const MAX_PEAK_INTERVAL_MS = 850;

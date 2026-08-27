@@ -38,6 +38,18 @@ describe('account motion gesture', () => {
     expect(onTrigger).toHaveBeenCalledTimes(1);
   });
 
+  test('recognises a moderate shake without requiring a hard throw', () => {
+    const onTrigger = vi.fn();
+    const detector = createAccountMotionGestureDetector(onTrigger, (() => {
+      let time = 0;
+      return () => (time += 140);
+    })());
+
+    [3.4, 0, -3.4, 0, 3.4, 0, -3.4].forEach((value) => detector.handleMotion(motion(value)));
+
+    expect(onTrigger).toHaveBeenCalledTimes(1);
+  });
+
   test('ignores repeated movement in the same direction', () => {
     const onTrigger = vi.fn();
     const detector = createAccountMotionGestureDetector(onTrigger, (() => {

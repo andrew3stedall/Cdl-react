@@ -74,6 +74,7 @@ def build_manifest(
         "backend_image": backend_image,
         "enable_cloud_run": enable_cloud_run,
         "enable_database_jobs": enable_database_jobs,
+        "enable_scheduled_fpl_refresh": enable_database_jobs,
         "enable_google_sign_in": enable_google_sign_in,
         "project_id": project_id,
     }

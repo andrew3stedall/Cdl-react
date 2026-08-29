@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from datetime import UTC, datetime, timedelta
 from typing import Protocol
 
@@ -40,9 +40,11 @@ class FplDataService:
         self,
         client: FplApiClientProtocol,
         repository: PostgreSQLFplDataRepository,
+        settlement: Callable[[], object] | None = None,
     ) -> None:
         self._client = client
         self._repository = repository
+        self._settlement = settlement
 
     def refresh(self, resources: Iterable[FplRefreshResource]) -> FplRefreshResponse:
         resources = list(resources)
@@ -83,6 +85,8 @@ class FplDataService:
                     error=str(exc),
                 )
                 raise
+        if self._settlement is not None:
+            self._settlement()
         return FplRefreshResponse(resources=results)
 
     def player_history(self, player_id: str) -> FplPlayerHistoryResponse:

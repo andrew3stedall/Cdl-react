@@ -27,6 +27,12 @@ variable "enable_database_jobs" {
   default     = false
 }
 
+variable "enable_scheduled_fpl_refresh" {
+  description = "Run the official FPL refresh and settlement job automatically."
+  type        = bool
+  default     = false
+}
+
 variable "enable_cloud_run" {
   description = "Create the single-service Cloud Run application after database jobs are proven."
   type        = bool

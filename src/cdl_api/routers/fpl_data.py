@@ -17,6 +17,7 @@ from cdl_api.repositories.postgres_fpl_data import (
 )
 from cdl_api.routers.auth import require_authenticated_session
 from cdl_api.services.fpl_data_service import FplDataService
+from cdl_api.services.fpl_settlement import FplSettlementService
 from cdl_api.settings import Settings, get_settings
 
 router = APIRouter(prefix="/fpl", tags=["fpl"])
@@ -28,12 +29,17 @@ def get_fpl_service(settings: Settings = Depends(get_settings)) -> FplDataServic
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Official FPL ingestion requires PostgreSQL repository mode.",
         )
-    repository = PostgreSQLFplDataRepository(build_session_factory(settings))
+    session_factory = build_session_factory(settings)
+    repository = PostgreSQLFplDataRepository(session_factory)
     client = FplApiClient(
         base_url=settings.fpl_api_base_url,
         timeout_seconds=settings.fpl_api_timeout_seconds,
     )
-    return FplDataService(client, repository)
+    return FplDataService(
+        client,
+        repository,
+        settlement=FplSettlementService(session_factory).settle,
+    )
 
 
 def require_fpl_manager(

@@ -55,6 +55,7 @@ def test_manifest_binds_reviewed_plan_backend_and_exact_terraform_inputs(tmp_pat
         "backend_image": "",
         "enable_cloud_run": False,
         "enable_database_jobs": False,
+        "enable_scheduled_fpl_refresh": False,
         "enable_google_sign_in": False,
         "project_id": "cdl-react-staging-ast",
     }

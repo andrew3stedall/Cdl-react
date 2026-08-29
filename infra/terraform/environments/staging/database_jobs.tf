@@ -231,3 +231,41 @@ resource "google_cloud_run_v2_job" "fpl_refresh" {
     google_secret_manager_secret_iam_member.migration_secret_access,
   ]
 }
+
+resource "google_cloud_run_v2_job_iam_member" "fpl_refresh_scheduler_invoker" {
+  count = var.enable_database_jobs && var.enable_scheduled_fpl_refresh ? 1 : 0
+
+  project  = var.project_id
+  location = var.region
+  name     = google_cloud_run_v2_job.fpl_refresh[0].name
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${google_service_account.migration.email}"
+}
+
+resource "google_cloud_scheduler_job" "fpl_refresh" {
+  count = var.enable_database_jobs && var.enable_scheduled_fpl_refresh ? 1 : 0
+
+  project          = var.project_id
+  region           = var.region
+  name             = "${var.name_prefix}-fpl-refresh-schedule"
+  description      = "Refresh official FPL data and settle due CDL selections and results."
+  schedule         = "*/5 * * * *"
+  time_zone        = "Etc/UTC"
+  attempt_deadline = "900s"
+
+  retry_config {
+    retry_count = 1
+  }
+
+  http_target {
+    uri         = "https://run.googleapis.com/apis/run.googleapis.com/v1/projects/${var.project_id}/locations/${var.region}/jobs/${google_cloud_run_v2_job.fpl_refresh[0].name}:run"
+    http_method = "POST"
+
+    oauth_token {
+      service_account_email = google_service_account.migration.email
+      scope                 = "https://www.googleapis.com/auth/cloud-platform"
+    }
+  }
+
+  depends_on = [google_cloud_run_v2_job_iam_member.fpl_refresh_scheduler_invoker]
+}

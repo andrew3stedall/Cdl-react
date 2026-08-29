@@ -18,6 +18,8 @@ STAGING_PUBLIC_INVOKER_ADDRESS = (
 APPROVED_STAGING_RESOURCE_TYPES = {
     "google_artifact_registry_repository",
     "google_cloud_run_v2_job",
+    "google_cloud_run_v2_job_iam_member",
+    "google_cloud_scheduler_job",
     "google_cloud_run_v2_service",
     "google_cloud_run_v2_service_iam_member",
     "google_monitoring_alert_policy",
@@ -33,6 +35,7 @@ APPROVED_STAGING_RESOURCE_TYPES = {
 COST_SENSITIVE_TYPES = {
     "google_artifact_registry_repository": "Artifact Registry storage and network egress",
     "google_cloud_run_v2_job": "Cloud Run job CPU, memory, executions, and network egress",
+    "google_cloud_scheduler_job": "Cloud Scheduler invocations",
     "google_cloud_run_v2_service": (
         "Cloud Run CPU, memory, requests, and network egress when enabled"
     ),

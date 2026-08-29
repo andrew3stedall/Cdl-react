@@ -9,6 +9,7 @@ from cdl_api.database import build_session_factory
 from cdl_api.fpl_client import FplApiClient
 from cdl_api.repositories.postgres_fpl_data import PostgreSQLFplDataRepository
 from cdl_api.services.fpl_data_service import FplDataService
+from cdl_api.services.fpl_settlement import FplSettlementService
 from cdl_api.settings import Settings
 
 
@@ -17,12 +18,14 @@ def main() -> None:
     if settings.repository_mode != "postgres":
         raise RuntimeError("Official FPL refresh requires PostgreSQL repository mode.")
 
+    session_factory = build_session_factory(settings)
     service = FplDataService(
         FplApiClient(
             base_url=settings.fpl_api_base_url,
             timeout_seconds=settings.fpl_api_timeout_seconds,
         ),
-        PostgreSQLFplDataRepository(build_session_factory(settings)),
+        PostgreSQLFplDataRepository(session_factory),
+        settlement=FplSettlementService(session_factory).settle,
     )
     refresh = service.refresh(list(FplRefreshResource))
     status = service.status()

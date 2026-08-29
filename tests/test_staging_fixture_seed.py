@@ -1,9 +1,11 @@
 from collections import Counter
+from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import create_engine, func, select, text
+from sqlalchemy import create_engine, func, insert, select, text
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from cdl_api.repositories.postgres_fpl_data import fpl_gameweeks_table
 from cdl_api.repositories.postgres_league_fixtures import (
     PostgreSQLLeagueRepository,
     cdl_fixtures_table,
@@ -115,3 +117,47 @@ def test_fixture_schedule_seed_is_idempotent_and_exposes_week_one_as_next() -> N
         for team in (fixture.home_team, fixture.away_team)
         if team.id == "team-dicks-dribbling-xi"
     )
+
+
+def test_fixture_views_use_official_current_and_next_fpl_gameweeks() -> None:
+    session_factory = _session_factory()
+    seed_staging_fixture_schedule(session_factory)
+    with session_factory() as session:
+        fpl_gameweeks_table.create(session.get_bind())
+        now = datetime.now(UTC)
+        session.execute(
+            insert(fpl_gameweeks_table),
+            [
+                {
+                    "id": "2",
+                    "name": "Gameweek 2",
+                    "deadline_time": now - timedelta(days=1),
+                    "is_previous": False,
+                    "is_current": True,
+                    "is_next": False,
+                    "finished": False,
+                    "data_checked": False,
+                },
+                {
+                    "id": "3",
+                    "name": "Gameweek 3",
+                    "deadline_time": now + timedelta(days=6),
+                    "is_previous": False,
+                    "is_current": False,
+                    "is_next": True,
+                    "finished": False,
+                    "data_checked": False,
+                },
+            ],
+        )
+        session.commit()
+
+    fixtures = PostgreSQLLeagueRepository(session_factory).list_fixtures()
+    current = [fixture for fixture in fixtures if fixture.is_current]
+    upcoming = [fixture for fixture in fixtures if fixture.is_next]
+    assert len(current) == 4
+    assert {fixture.gameweek.number for fixture in current} == {2}
+    assert len(upcoming) == 4
+    assert {fixture.gameweek.number for fixture in upcoming} == {3}
+    assert all(fixture.gameweek.deadline_at is not None for fixture in upcoming)
+    assert not any(fixture.is_next for fixture in fixtures if fixture.gameweek.number == 1)

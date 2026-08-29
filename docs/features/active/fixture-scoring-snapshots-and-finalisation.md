@@ -15,6 +15,8 @@ Checkpoint 2 complete.
 - Final results freeze a selected score snapshot.
 - Official history should not drift due to later FPL refetches.
 - System finalises results when FPL data is checked and CDL scoring completes.
+- The scheduled official FPL refresh settles each pending CDL fixture from the checked
+  `event-live` payload and stores its response hash with the frozen result.
 - Commissioner can override with audited correction.
 - Bonus points are automatic.
 

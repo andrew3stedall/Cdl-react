@@ -738,6 +738,17 @@ def next_upcoming_gameweek_number(session: Session) -> int | None:
     return int(gameweek_id) if gameweek_id is not None else None
 
 
+def current_gameweek_number(session: Session) -> int | None:
+    """Return the official FPL event currently used for live fixture points."""
+    gameweek_id = session.execute(
+        select(fpl_gameweeks_table.c.id)
+        .where(fpl_gameweeks_table.c.is_current.is_(True))
+        .order_by(fpl_gameweeks_table.c.deadline_time.desc().nulls_last())
+        .limit(1)
+    ).scalar_one_or_none()
+    return int(gameweek_id) if gameweek_id is not None else None
+
+
 def _next_gameweek_fixtures(
     fixtures: list[object],
     *,

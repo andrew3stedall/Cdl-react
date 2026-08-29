@@ -70,7 +70,7 @@ def _patch_service(monkeypatch: pytest.MonkeyPatch, status: FplCacheStatusRespon
     monkeypatch.setattr(refresh_module, "build_session_factory", lambda _: object())
     monkeypatch.setattr(refresh_module, "PostgreSQLFplDataRepository", lambda _: object())
     monkeypatch.setattr(refresh_module, "FplApiClient", lambda **_: object())
-    monkeypatch.setattr(refresh_module, "FplDataService", lambda *_: FakeService())
+    monkeypatch.setattr(refresh_module, "FplDataService", lambda *_, **__: FakeService())
 
 
 def test_refresh_entrypoint_outputs_successful_non_empty_status(

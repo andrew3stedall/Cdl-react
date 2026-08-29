@@ -81,6 +81,7 @@ team_selection_fixture_locks_table = Table(
     metadata,
     Column("id", String(64), primary_key=True),
     Column("season_id", String(64), ForeignKey("seasons.id"), nullable=False),
+    Column("draft_team_id", String(64), ForeignKey("draft_teams.id"), nullable=True),
     Column("gameweek", Integer(), nullable=False),
     Column("fixture_id", String(64), nullable=False),
     Column("fixture_type", String(64), nullable=False),
@@ -151,18 +152,18 @@ class PostgreSQLTeamSelectionRepository(InMemoryTeamSelectionRepository):
             ) = context
             self.manager_team = TeamSummary(id=manager_team_id, name=manager_team_name)
 
-        self.gameweek = GameweekSummary(
-            id="gw-1",
-            name="Gameweek 1",
-            number=1,
-            deadline_at=self._read_next_deadline() or self.gameweek.deadline_at,
-        )
+        default_gameweek = self.gameweek
+        official_gameweek = self._read_next_gameweek()
+        self._official_gameweek_loaded = official_gameweek is not None
+        self.gameweek = official_gameweek or default_gameweek
 
     def get_players(self) -> list[TeamSelectionPlayer]:
         players = self._database_roster()
         if not players:
             return []
         rows = self._lineup_rows()
+        if not rows:
+            rows = self._latest_prior_lineup_rows()
         if not rows:
             return players
 
@@ -225,6 +226,28 @@ class PostgreSQLTeamSelectionRepository(InMemoryTeamSelectionRepository):
     def save_chips(self, chips: list[ChipState]) -> list[ChipState]:
         now = datetime.now(UTC)
         with self._session_factory() as session:
+            existing_rows = _mapping_rows(
+                session.execute(
+                    select(
+                        team_selection_chips_table.c.chip_id,
+                        team_selection_chips_table.c.active_gameweek,
+                        team_selection_chips_table.c.used_gameweek,
+                    ).where(
+                        team_selection_chips_table.c.season_id == DEMO_SEASON_ID,
+                        team_selection_chips_table.c.draft_team_id == self.manager_team.id,
+                    )
+                )
+            )
+            historical_usage = {
+                str(row["chip_id"]): row["used_gameweek"]
+                for row in existing_rows
+                if row["used_gameweek"] is not None
+            }
+            historical_activation = {
+                str(row["chip_id"]): row["active_gameweek"]
+                for row in existing_rows
+                if row["active_gameweek"] is not None
+            }
             session.execute(
                 _remove_existing(team_selection_chips_table).where(
                     team_selection_chips_table.c.season_id == DEMO_SEASON_ID,
@@ -240,10 +263,14 @@ class PostgreSQLTeamSelectionRepository(InMemoryTeamSelectionRepository):
                         chip_id=chip.id,
                         status=chip.status.value,
                         active_gameweek=(
-                            self.gameweek.number if chip.status == ChipStatus.ACTIVE else None
+                            self.gameweek.number
+                            if chip.status == ChipStatus.ACTIVE
+                            else historical_activation.get(chip.id)
                         ),
                         used_gameweek=(
-                            self.gameweek.number if chip.status == ChipStatus.USED else None
+                            historical_usage.get(chip.id, self.gameweek.number)
+                            if chip.status == ChipStatus.USED
+                            else None
                         ),
                         updated_at=now,
                     )
@@ -264,26 +291,44 @@ class PostgreSQLTeamSelectionRepository(InMemoryTeamSelectionRepository):
                 )
                 .where(
                     team_selection_fixture_locks_table.c.season_id == DEMO_SEASON_ID,
+                    (team_selection_fixture_locks_table.c.draft_team_id == self.manager_team.id)
+                    | team_selection_fixture_locks_table.c.draft_team_id.is_(None),
                     team_selection_fixture_locks_table.c.gameweek == self.gameweek.number,
                 )
                 .order_by(team_selection_fixture_locks_table.c.locked_at.desc())
                 .limit(1)
             )
             rows = _mapping_rows(result)
-            if not rows:
-                return None
-            row = rows[0]
-            locked_at = row["locked_at"]
-            return {
-                "id": str(row["id"]),
-                "fixture_id": str(row["fixture_id"]),
-                "fixture_type": str(row["fixture_type"]),
-                "lock_scope": str(row["lock_scope"]),
-                "locked_at": (
-                    locked_at.isoformat() if isinstance(locked_at, datetime) else str(locked_at)
-                ),
-                "reason": str(row["reason"]),
-            }
+            if rows:
+                row = rows[0]
+                locked_at = row["locked_at"]
+                return {
+                    "id": str(row["id"]),
+                    "fixture_id": str(row["fixture_id"]),
+                    "fixture_type": str(row["fixture_type"]),
+                    "lock_scope": str(row["lock_scope"]),
+                    "locked_at": (
+                        locked_at.isoformat()
+                        if isinstance(locked_at, datetime)
+                        else str(locked_at)
+                    ),
+                    "reason": str(row["reason"]),
+                }
+
+        deadline = self.gameweek.deadline_at if self._official_gameweek_loaded else None
+        if deadline is not None:
+            if deadline.tzinfo is None:
+                deadline = deadline.replace(tzinfo=UTC)
+            if datetime.now(UTC) >= deadline:
+                return {
+                    "id": f"fpl-deadline-{self.gameweek.number}",
+                    "fixture_id": f"fpl-gameweek-{self.gameweek.number}",
+                    "fixture_type": "fpl",
+                    "lock_scope": "gameweek",
+                    "locked_at": deadline.isoformat(),
+                    "reason": "FPL deadline passed.",
+                }
+        return None
 
     def fixture_summary(
         self,
@@ -389,6 +434,7 @@ class PostgreSQLTeamSelectionRepository(InMemoryTeamSelectionRepository):
                 insert(team_selection_fixture_locks_table).values(
                     id=lock_id,
                     season_id=DEMO_SEASON_ID,
+                    draft_team_id=self.manager_team.id,
                     gameweek=self.gameweek.number,
                     fixture_id=fixture_id,
                     fixture_type=fixture_type,
@@ -400,7 +446,8 @@ class PostgreSQLTeamSelectionRepository(InMemoryTeamSelectionRepository):
             session.commit()
         return lock_id
 
-    def _lineup_rows(self) -> list[Mapping[str, object]]:
+    def _lineup_rows(self, gameweek: int | None = None) -> list[Mapping[str, object]]:
+        target_gameweek = gameweek if gameweek is not None else self.gameweek.number
         with self._session_factory() as session:
             result = session.execute(
                 select(
@@ -413,7 +460,7 @@ class PostgreSQLTeamSelectionRepository(InMemoryTeamSelectionRepository):
                 .where(
                     team_selection_lineup_slots_table.c.season_id == DEMO_SEASON_ID,
                     team_selection_lineup_slots_table.c.draft_team_id == self.manager_team.id,
-                    team_selection_lineup_slots_table.c.gameweek == self.gameweek.number,
+                    team_selection_lineup_slots_table.c.gameweek == target_gameweek,
                 )
                 .order_by(
                     team_selection_lineup_slots_table.c.slot,
@@ -421,6 +468,70 @@ class PostgreSQLTeamSelectionRepository(InMemoryTeamSelectionRepository):
                 )
             )
             return _mapping_rows(result)
+
+    def _latest_prior_lineup_rows(self) -> list[Mapping[str, object]]:
+        """Roll the latest saved lineup forward into the next editable gameweek."""
+        with self._session_factory() as session:
+            result = session.execute(
+                select(
+                    team_selection_lineup_slots_table.c.gameweek,
+                    team_selection_lineup_slots_table.c.player_id,
+                    team_selection_lineup_slots_table.c.slot,
+                    team_selection_lineup_slots_table.c.slot_order,
+                    team_selection_lineup_slots_table.c.is_captain,
+                    team_selection_lineup_slots_table.c.is_vice_captain,
+                )
+                .where(
+                    team_selection_lineup_slots_table.c.season_id == DEMO_SEASON_ID,
+                    team_selection_lineup_slots_table.c.draft_team_id == self.manager_team.id,
+                    team_selection_lineup_slots_table.c.gameweek < self.gameweek.number,
+                )
+                .order_by(
+                    team_selection_lineup_slots_table.c.gameweek.desc(),
+                    team_selection_lineup_slots_table.c.slot,
+                    team_selection_lineup_slots_table.c.slot_order,
+                )
+            )
+            rows = _mapping_rows(result)
+        if not rows:
+            return []
+        latest_gameweek = rows[0]["gameweek"]
+        return [row for row in rows if row["gameweek"] == latest_gameweek]
+
+    def _read_next_gameweek(self) -> GameweekSummary | None:
+        """Read the official FPL next event, including its own deadline."""
+        try:
+            with self._session_factory() as session:
+                result = session.execute(
+                    select(
+                        fpl_gameweeks_table.c.id,
+                        fpl_gameweeks_table.c.name,
+                        fpl_gameweeks_table.c.deadline_time,
+                        fpl_gameweeks_table.c.is_next,
+                    )
+                    .order_by(
+                        fpl_gameweeks_table.c.is_next.desc(),
+                        fpl_gameweeks_table.c.deadline_time.asc().nulls_last(),
+                    )
+                )
+                rows = _mapping_rows(result)
+        except Exception:
+            return None
+
+        row = next((candidate for candidate in rows if bool(candidate["is_next"])), None)
+        if row is None:
+            return None
+        try:
+            number = int(str(row["id"]))
+        except (TypeError, ValueError):
+            return None
+        deadline = row["deadline_time"]
+        return GameweekSummary(
+            id=f"gw-{number}",
+            name=str(row["name"]),
+            number=number,
+            deadline_at=deadline if isinstance(deadline, datetime) else None,
+        )
 
     def _read_next_deadline(self) -> datetime | None:
         """Use the cached official FPL deadline when it is available."""

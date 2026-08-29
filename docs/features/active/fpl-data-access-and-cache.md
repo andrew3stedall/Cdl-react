@@ -14,6 +14,7 @@ Implemented:
 
 - timeout-bound HTTP access to the official FPL API;
 - automatic staging refresh after migrations during the main-branch rollout;
+- automatic five-minute staging refresh and settlement schedule, independent of app usage;
 - authenticated manager refresh through `POST /api/fpl/refresh`;
 - authenticated cache evidence through `GET /api/fpl/status`;
 - raw response retention with a canonical SHA-256 digest;
@@ -29,6 +30,8 @@ Implemented:
 - next unfinished FPL fixture, opponent, home/away, kickoff and fixture difficulty exposed on Squad player records;
 - lazy `element-summary/{player}` retrieval through
   `GET /api/fpl/players/{player_id}/history`;
+- cached `event/{gameweek}/live` data is used to finalise due CDL fixture results once
+  FPL marks the gameweek finished and checked;
 - six-hour PostgreSQL reuse of cached element-summary payloads so repeated player detail
   views do not make repeated upstream calls;
 - explicit failure when PostgreSQL mode is unavailable or upstream payloads do not
@@ -46,13 +49,12 @@ Legacy note:
 
 Still required:
 
-- `event/{gameweek}/live` ingestion and scoring integration;
+- commissioner-facing refresh controls and live scoring freshness displays;
 - previous-season player history if the product needs more than current-season
   `element-summary` history;
 - named-opponent enrichment in the history response rather than exposing only the
   normalized team identifier internally (the canonical Squad UI currently maps IDs
   against the refreshed club set);
-- commissioner refresh controls and live scoring freshness displays;
 - broader visible source-freshness treatment on player surfaces.
 
 ## Business Rules
@@ -134,7 +136,10 @@ element-summary: 6 hours
 
 Bulk bootstrap/fixture refresh is performed by the staging rollout and can also be
 requested explicitly by an authenticated manager-level user. Element-summary is loaded
-on demand and reused while fresh.
+requested explicitly by an authenticated manager-level user. The staging Cloud Scheduler
+invokes the refresh job every five minutes; that job also locks all team selections and
+chips whose FPL deadline has passed and settles completed CDL results. Element-summary is
+loaded on demand and reused while fresh.
 
 ## Data Access Requirements
 
@@ -161,10 +166,12 @@ Completed for the current player-data slice:
   gameweek 38 price;
 - element-summary history is fetched lazily, normalized, hashed and cached;
 - repeat player detail reads reuse fresh PostgreSQL history cache.
+- every due team has a persisted deadline lock and active chips are finalised for that
+  gameweek even when the manager never opens the app;
+- finalised CDL fixture results retain their event-live response hash and do not drift
+  after later FPL refreshes.
 
 Remaining for the full feature:
 
-- fixture scoring identifies the exact FPL live payload/hash used;
-- final results remain stable after FPL cache changes;
 - `event-live` scoring and freshness are visible in product routes;
 - commissioner-facing refresh/recalculation controls are implemented.

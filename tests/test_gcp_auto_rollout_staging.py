@@ -23,6 +23,9 @@ def test_auto_rollout_is_staging_only_and_failure_closed() -> None:
         '"google_cloud_run_v2_job.database_migration[0]"',
         '"google_cloud_run_v2_job.synthetic_seed[0]"',
         '"google_cloud_run_v2_job.fpl_refresh[0]"',
+        '"google_cloud_run_v2_job_iam_member.fpl_refresh_scheduler_invoker[0]"',
+        '"google_cloud_scheduler_job.fpl_refresh[0]"',
+        'enable_scheduled_fpl_refresh=true',
         '"module.cloud_run_api[0].google_cloud_run_v2_service.this"',
         '"google_secret_manager_secret_iam_member.migration_google_allowed_emails_access"',
         "terraform apply -input=false",
@@ -71,11 +74,36 @@ def test_official_fpl_refresh_job_uses_the_migration_identity_and_database_only(
     assert "CDL_ALLOW_SYNTHETIC_STAGING_SEED" not in section
 
 
+def test_official_fpl_refresh_has_a_deadline_independent_scheduler() -> None:
+    content = DATABASE_JOBS.read_text(encoding="utf-8")
+    section = content.split('resource "google_cloud_scheduler_job" "fpl_refresh"', maxsplit=1)[1]
+
+    for phrase in (
+        "var.enable_database_jobs && var.enable_scheduled_fpl_refresh",
+        'schedule         = "*/5 * * * *"',
+        'time_zone        = "Etc/UTC"',
+        "google_cloud_run_v2_job.fpl_refresh[0].name",
+        "google_service_account.migration.email",
+        'http_method = "POST"',
+    ):
+        assert phrase in section
+
+
 def test_official_fpl_refresh_job_is_exposed_as_a_terraform_output() -> None:
     content = OUTPUTS.read_text(encoding="utf-8")
 
     assert 'output "fpl_refresh_job_name"' in content
     assert "google_cloud_run_v2_job.fpl_refresh[0].name" in content
+
+
+def test_official_fpl_refresh_schedule_is_output_and_verified_after_rollout() -> None:
+    outputs = OUTPUTS.read_text(encoding="utf-8")
+    workflow = WORKFLOW.read_text(encoding="utf-8")
+
+    assert 'output "fpl_refresh_schedule_name"' in outputs
+    assert "google_cloud_scheduler_job.fpl_refresh[0].name" in outputs
+    assert "Verify deadline settlement schedule" in workflow
+    assert 'value(schedule)\')" = "*/5 * * * *"' in workflow
 
 
 def test_manual_database_job_workflow_can_refresh_official_fpl_data() -> None:

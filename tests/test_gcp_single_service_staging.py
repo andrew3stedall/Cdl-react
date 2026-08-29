@@ -83,6 +83,7 @@ def test_database_jobs_are_separate_guarded_terraform_resources() -> None:
         'resource "google_cloud_run_v2_job" "database_migration"',
         'resource "google_cloud_run_v2_job" "synthetic_seed"',
         "var.enable_database_jobs ? 1 : 0",
+        "var.enable_scheduled_fpl_refresh",
         'args    = ["-m", "cdl_api.migrate"]',
         'args    = ["-m", "cdl_api.seed_staging"]',
         'value = "true"',

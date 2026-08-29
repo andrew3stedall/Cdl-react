@@ -286,7 +286,9 @@ class PostgreSQLLeagueRepository:
                 str(payload["id"]): payload
                 for payload in self._payloads(session, epl_fixtures_table)
             }
-            gameweek_deadlines = self._fpl_gameweek_deadlines(session)
+            gameweek_deadlines, current_gameweek, next_gameweek = self._fpl_gameweek_context(
+                session
+            )
 
         fixtures = []
         for payload in fixture_payloads:
@@ -307,6 +309,16 @@ class PostgreSQLLeagueRepository:
             fixture_id = str(payload["id"])
             result = result_payloads.get(fixture_id, {})
             snapshot = snapshot_payloads.get(fixture_id, {})
+            gameweek = payload.get("gameweek", {})
+            gameweek_number = gameweek.get("number") if isinstance(gameweek, Mapping) else None
+            if isinstance(gameweek_number, int):
+                if current_gameweek is not None:
+                    enriched_payload["is_current"] = gameweek_number == current_gameweek
+                if next_gameweek is not None:
+                    enriched_payload["is_next"] = gameweek_number == next_gameweek
+            if result.get("finalised") is True:
+                enriched_payload["status"] = FixtureStatus.COMPLETE.value
+                enriched_payload["detail_available"] = True
             linked_epl_fixtures = []
             for epl_fixture_id in snapshot.get("epl_fixture_ids", []):
                 epl_fixture = epl_fixture_payloads.get(str(epl_fixture_id))
@@ -323,7 +335,6 @@ class PostgreSQLLeagueRepository:
                 chips_played=snapshot.get("chips_played", {}),
                 epl_fixtures=linked_epl_fixtures,
             )
-            gameweek = payload.get("gameweek", {})
             if isinstance(gameweek, Mapping):
                 gameweek = dict(gameweek)
                 if not gameweek.get("deadline_at"):
@@ -363,14 +374,23 @@ class PostgreSQLLeagueRepository:
         return enriched
 
     @staticmethod
-    def _fpl_gameweek_deadlines(session: Session) -> dict[int, object]:
-        """Use the official FPL deadline when the cache is available."""
+    def _fpl_gameweek_context(
+        session: Session,
+    ) -> tuple[dict[int, object], int | None, int | None]:
+        """Use one official FPL event row for deadlines and current/next markers."""
         if not inspect(session.get_bind()).has_table(fpl_gameweeks_table.name):
-            return {}
+            return {}, None, None
         rows = session.execute(
-            select(fpl_gameweeks_table.c.id, fpl_gameweeks_table.c.deadline_time)
+            select(
+                fpl_gameweeks_table.c.id,
+                fpl_gameweeks_table.c.deadline_time,
+                fpl_gameweeks_table.c.is_current,
+                fpl_gameweeks_table.c.is_next,
+            )
         ).mappings()
         deadlines: dict[int, object] = {}
+        current_gameweek = None
+        next_gameweek = None
         for row in rows:
             try:
                 gameweek_number = int(str(row["id"]))
@@ -378,6 +398,16 @@ class PostgreSQLLeagueRepository:
                 continue
             if row["deadline_time"] is not None:
                 deadlines[gameweek_number] = row["deadline_time"]
+            if bool(row["is_current"]):
+                current_gameweek = gameweek_number
+            if bool(row["is_next"]):
+                next_gameweek = gameweek_number
+        return deadlines, current_gameweek, next_gameweek
+
+    @staticmethod
+    def _fpl_gameweek_deadlines(session: Session) -> dict[int, object]:
+        """Compatibility wrapper for callers that only need deadlines."""
+        deadlines, _, _ = PostgreSQLLeagueRepository._fpl_gameweek_context(session)
         return deadlines
 
     def get_fixture(self, fixture_id: str) -> LeagueFixture | None:
@@ -411,6 +441,9 @@ class PostgreSQLLeagueRepository:
                 snapshot_team_ids = {row.team.id for row in snapshot.rows}
                 if snapshot_team_ids and snapshot_team_ids <= active_team_ids:
                     return snapshot
+            fixtures = self.list_fixtures()
+            if fixtures:
+                return _table_from_fixtures(fixtures)
             return LeagueTableResponse(
                 rows=[
                     LeagueTableRow(
@@ -542,3 +575,65 @@ class MissingHeadToHeadSnapshotError(RuntimeError):
 
 class MissingEplFixtureContextError(RuntimeError):
     """Raised when a scoring snapshot references absent EPL fixture context."""
+
+
+def _table_from_fixtures(fixtures: Iterable[LeagueFixture]) -> LeagueTableResponse:
+    """Calculate the active-season table from persisted finalised fixture results."""
+    standings: dict[str, LeagueTableRow] = {}
+    for fixture in fixtures:
+        for team in (fixture.home_team, fixture.away_team):
+            standings.setdefault(
+                team.id,
+                LeagueTableRow(
+                    position=0,
+                    team=team,
+                    played=0,
+                    wins=0,
+                    draws=0,
+                    losses=0,
+                    points_for=0,
+                    points_against=0,
+                    points_difference=0,
+                    league_points=0,
+                ),
+            )
+        if fixture.score.outcome == FixtureOutcome.PENDING:
+            continue
+
+        home = standings[fixture.home_team.id]
+        away = standings[fixture.away_team.id]
+        home_score = fixture.score.home_score or 0
+        away_score = fixture.score.away_score or 0
+        home.played += 1
+        away.played += 1
+        home.points_for += home_score
+        home.points_against += away_score
+        away.points_for += away_score
+        away.points_against += home_score
+        if fixture.score.outcome == FixtureOutcome.HOME_WIN:
+            home.wins += 1
+            away.losses += 1
+            home.league_points += 3
+        elif fixture.score.outcome == FixtureOutcome.AWAY_WIN:
+            away.wins += 1
+            home.losses += 1
+            away.league_points += 3
+        else:
+            home.draws += 1
+            away.draws += 1
+            home.league_points += 1
+            away.league_points += 1
+
+    rows = sorted(
+        standings.values(),
+        key=lambda row: (
+            row.league_points,
+            row.points_for - row.points_against,
+            row.points_for,
+        ),
+        reverse=True,
+    )
+    for position, row in enumerate(rows, start=1):
+        row.position = position
+        row.points_difference = row.points_for - row.points_against
+    return LeagueTableResponse(rows=rows, source="postgresql-current-season")

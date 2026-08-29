@@ -204,6 +204,7 @@ jobs:
           fi
 
           echo "ENABLE_DATABASE_JOBS=${enable_database_jobs}" >> "${GITHUB_ENV}"
+          echo "ENABLE_SCHEDULED_FPL_REFRESH=${enable_database_jobs}" >> "${GITHUB_ENV}"
           echo "ENABLE_CLOUD_RUN=${enable_cloud_run}" >> "${GITHUB_ENV}"
           echo "BACKEND_IMAGE_LABEL=${backend_image_label}" >> "${GITHUB_ENV}"
           echo "ALLOW_PUBLIC_INVOKER=${allow_public_invoker}" >> "${GITHUB_ENV}"
@@ -327,6 +328,7 @@ jobs:
             -out="${RUNNER_TEMP}/recreated.tfplan" \
             -var="project_id=${PROJECT_ID}" \
             -var="enable_database_jobs=${ENABLE_DATABASE_JOBS}" \
+            -var="enable_scheduled_fpl_refresh=${ENABLE_SCHEDULED_FPL_REFRESH}" \
             -var="enable_cloud_run=${ENABLE_CLOUD_RUN}" \
             -var="enable_google_sign_in=${ENABLE_GOOGLE_SIGN_IN}" \
             -var="backend_image=${BACKEND_IMAGE}" \
@@ -396,6 +398,7 @@ jobs:
             -out="${RUNNER_TEMP}/post-apply.tfplan" \
             -var="project_id=${PROJECT_ID}" \
             -var="enable_database_jobs=${ENABLE_DATABASE_JOBS}" \
+            -var="enable_scheduled_fpl_refresh=${ENABLE_SCHEDULED_FPL_REFRESH}" \
             -var="enable_cloud_run=${ENABLE_CLOUD_RUN}" \
             -var="enable_google_sign_in=${ENABLE_GOOGLE_SIGN_IN}" \
             -var="backend_image=${BACKEND_IMAGE}" \

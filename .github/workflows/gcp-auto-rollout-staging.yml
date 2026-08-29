@@ -275,6 +275,7 @@ jobs:
             -out="${RUNNER_TEMP}/auto-rollout.tfplan" \
             -var="project_id=${PROJECT_ID}" \
             -var="enable_database_jobs=true" \
+            -var="enable_scheduled_fpl_refresh=true" \
             -var="enable_cloud_run=true" \
             -var="enable_google_sign_in=true" \
             -var="backend_image=${IMAGE_DIGEST_URI}" \
@@ -317,6 +318,15 @@ jobs:
               "google_cloud_run_v2_job.database_migration[0]": {("update",)},
               "google_cloud_run_v2_job.synthetic_seed[0]": {("update",)},
               "google_cloud_run_v2_job.fpl_refresh[0]": {("create",), ("update",)},
+              "google_cloud_run_v2_job_iam_member.fpl_refresh_scheduler_invoker[0]": {
+                  ("create",),
+                  ("update",),
+              },
+              "google_cloud_scheduler_job.fpl_refresh[0]": {("create",), ("update",)},
+              "google_project_service.required[\"cloudscheduler.googleapis.com\"]": {
+                  ("create",),
+                  ("update",),
+              },
               "module.cloud_run_api[0].google_cloud_run_v2_service.this": {("update",)},
               "google_secret_manager_secret_iam_member.migration_google_allowed_emails_access": {
                   ("create",),
@@ -353,6 +363,7 @@ jobs:
             -out="${RUNNER_TEMP}/post-rollout.tfplan" \
             -var="project_id=${PROJECT_ID}" \
             -var="enable_database_jobs=true" \
+            -var="enable_scheduled_fpl_refresh=true" \
             -var="enable_cloud_run=true" \
             -var="enable_google_sign_in=true" \
             -var="backend_image=${IMAGE_DIGEST_URI}" \
@@ -371,6 +382,7 @@ jobs:
           echo "MIGRATION_JOB=$(terraform output -raw database_migration_job_name)" >> "${GITHUB_ENV}"
           echo "SYNTHETIC_SEED_JOB=$(terraform output -raw synthetic_seed_job_name)" >> "${GITHUB_ENV}"
           echo "FPL_REFRESH_JOB=$(terraform output -raw fpl_refresh_job_name)" >> "${GITHUB_ENV}"
+          echo "FPL_REFRESH_SCHEDULE=$(terraform output -raw fpl_refresh_schedule_name)" >> "${GITHUB_ENV}"
           echo "SERVICE_URL=$(terraform output -raw cloud_run_api_url)" >> "${GITHUB_ENV}"
 
       - name: Verify immutable job images
@@ -433,6 +445,14 @@ jobs:
             --region "${REGION}" \
             --wait
 
+      - name: Verify deadline settlement schedule
+        run: |
+          set -euo pipefail
+          test "$(gcloud scheduler jobs describe "${FPL_REFRESH_SCHEDULE}" \
+            --project "${PROJECT_ID}" \
+            --location "${REGION}" \
+            --format='value(schedule)')" = "*/5 * * * *"
+
       - name: Verify live service and authentication boundary
         run: |
           set -euo pipefail
@@ -473,6 +493,7 @@ jobs:
             echo "- Post-apply no-change plan: passed"
             echo "- Database migration job: completed"
             echo "- Official FPL refresh job: completed with non-empty normalized data"
+            echo "- Deadline settlement schedule: every five minutes"
             echo "- Synthetic seed job: not executed"
             echo "- Staging health check: passed"
             echo "- Unauthenticated FPL status boundary: HTTP 401"

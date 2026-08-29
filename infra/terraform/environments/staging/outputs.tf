@@ -48,6 +48,11 @@ output "fpl_refresh_job_name" {
   value       = try(google_cloud_run_v2_job.fpl_refresh[0].name, null)
 }
 
+output "fpl_refresh_schedule_name" {
+  description = "Cloud Scheduler job that refreshes FPL data and settles deadlines."
+  value       = try(google_cloud_scheduler_job.fpl_refresh[0].name, null)
+}
+
 output "cloud_run_api_url" {
   description = "Single-service Cloud Run URL when enable_cloud_run is true."
   value       = try(module.cloud_run_api[0].service_uri, null)

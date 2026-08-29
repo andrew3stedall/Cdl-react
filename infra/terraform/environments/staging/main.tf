@@ -164,6 +164,14 @@ resource "google_project_iam_member" "cloud_sql_client" {
   member  = "serviceAccount:${each.value}"
 }
 
+resource "google_project_iam_member" "github_deploy_scheduler_admin" {
+  project = var.project_id
+  role    = "roles/cloudscheduler.admin"
+  member  = "serviceAccount:github-deploy@${var.project_id}.iam.gserviceaccount.com"
+
+  depends_on = [google_project_service.required]
+}
+
 module "cloud_run_api" {
   count  = var.enable_cloud_run ? 1 : 0
   source = "../../modules/cloud-run-api"

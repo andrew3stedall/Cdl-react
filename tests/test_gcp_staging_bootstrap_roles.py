@@ -16,6 +16,7 @@ def test_staging_deploy_identity_has_required_domain_roles() -> None:
     required_roles = {
         "roles/artifactregistry.admin",
         "roles/cloudsql.admin",
+        "roles/cloudscheduler.admin",
         "roles/iam.serviceAccountAdmin",
         "roles/iam.serviceAccountUser",
         "roles/logging.configWriter",

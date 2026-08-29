@@ -19,6 +19,7 @@
   --squad-text: var(--foreground);
   --squad-pitch: color-mix(in srgb, var(--primary) 8%, var(--background));
   --fixture-pitch-token-size: clamp(3.2rem, 15vw, 5.2rem);
+  --squad-pitch-token-size: var(--fixture-pitch-token-size);
   --fixture-lineup-row-gap: clamp(0.55rem, 1.4vw, 0.9rem);
   --fixture-lineup-player-gap: clamp(0.12rem, 0.55vw, 0.45rem);
   background: var(--squad-pitch);
@@ -159,14 +160,24 @@
 }
 
 .fixture-squad-pitch__player {
+  align-items: center;
   aspect-ratio: 1;
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
   cursor: default;
+  display: flex;
   flex: 0 1 var(--fixture-pitch-token-size);
   height: var(--fixture-pitch-token-size);
+  justify-content: center;
   margin: 0.2rem 0.05rem;
   max-width: var(--fixture-pitch-token-size);
   min-height: 0;
   min-width: 0;
+  overflow: visible;
+  padding: 0;
+  position: relative;
+  text-align: center;
   width: var(--fixture-pitch-token-size);
 }
 

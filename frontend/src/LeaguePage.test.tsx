@@ -271,6 +271,7 @@ describe('LeaguePage', () => {
     expect(container.querySelector('[aria-label="Andrew starting XI"]')).not.toBeNull();
     expect(container.querySelector('[aria-label="DJ starting XI"]')).not.toBeNull();
     expect(container.querySelectorAll('.fixture-squad-pitch .player-card__shirt-crop img')).toHaveLength(2);
+    expect(container.querySelectorAll('.fixture-squad-pitch .fixture-squad-pitch__player.squad-page__pitch-player')).toHaveLength(2);
     expect(container.querySelectorAll('.fixture-squad-pitch .player-card__form-dots')).toHaveLength(2);
     expect(container.querySelectorAll('.fixture-squad-roster .player-card__form-dots')).toHaveLength(4);
     expect(container.querySelector('.fixture-squad-pitch .player-card__role')?.textContent).toBe('C');

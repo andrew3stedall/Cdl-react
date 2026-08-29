@@ -187,7 +187,7 @@ function FixturePitchPlayer({ player }: { player: FixtureSquadPlayer }) {
 
   return (
     <div
-      className={`fixture-squad-pitch__player position-${fixturePosition(player.position).toLowerCase()} form-band-${formBand(player.form)}`}
+      className={`squad-page__pitch-player fixture-squad-pitch__player position-${fixturePosition(player.position).toLowerCase()} form-band-${formBand(player.form)}`}
       data-player-id={player.id}
       title={`${player.displayName} · ${player.points} pts`}
     >
@@ -224,7 +224,7 @@ function FixtureRosterPlayer({ player }: { player: FixtureSquadPlayer }) {
     : 'Next —';
 
   return (
-    <div className={`fixture-squad-pitch__player position-${fixturePosition(player.position).toLowerCase()} form-band-${formBand(player.form)}`} data-player-id={player.id} title={`${player.displayName} · ${player.points} pts`}>
+    <div className={`squad-page__pitch-player fixture-squad-pitch__player position-${fixturePosition(player.position).toLowerCase()} form-band-${formBand(player.form)}`} data-player-id={player.id} title={`${player.displayName} · ${player.points} pts`}>
       <FixturePlayerToken fixtureLabel={fixtureLabel} player={player} shirtTeam={player.club?.shortName ?? player.club?.name ?? 'unknown'} />
     </div>
   );

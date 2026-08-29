@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { describe, expect, test } from 'vitest';
 
 import { LeaguePage } from './LeaguePage';
+import { sortFixtureBench } from './components/fixture/FixtureSquadComparison';
 import type { FixtureDetailResponse, FixtureSquad, LeagueClient, LeagueSnapshot } from './league-api';
 
 const testGlobal = globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean };
@@ -266,17 +267,33 @@ describe('LeaguePage', () => {
     expect(client.squadRequests).toEqual(['fixture-1301']);
     expect(container.querySelector('[aria-label="Squad comparison"]')?.textContent).toContain('Castle Keeper');
     expect(container.querySelectorAll('.fixture-squad-pitch')).toHaveLength(1);
+    expect(container.querySelectorAll('.fixture-squad-pitch__lineup-panel')).toHaveLength(2);
+    expect(container.querySelector('[aria-label="Andrew starting XI"]')).not.toBeNull();
+    expect(container.querySelector('[aria-label="DJ starting XI"]')).not.toBeNull();
     expect(container.querySelectorAll('.fixture-squad-pitch .player-card__shirt-crop img')).toHaveLength(2);
     expect(container.querySelectorAll('.fixture-squad-pitch .player-card__form-dots')).toHaveLength(2);
     expect(container.querySelectorAll('.fixture-squad-roster .player-card__form-dots')).toHaveLength(4);
     expect(container.querySelector('.fixture-squad-pitch .player-card__role')?.textContent).toBe('C');
     expect(container.querySelector('.fixture-squad-pitch .player-card__opponent--fdr-3')).not.toBeNull();
     expect(container.querySelectorAll('.fixture-squad-roster')).toHaveLength(4);
+    expect(container.textContent).not.toContain('Predict their XI');
     expect(container.textContent).toContain('Andrew');
     expect(container.textContent).toContain('DJ');
     expect(container.textContent).not.toContain('Castle United');
     expect(container.textContent).not.toContain('Drafton Rovers');
     act(() => root.unmount());
+  });
+
+  test('puts the goalkeeper first while preserving the four substitute priorities', () => {
+    const players = [
+      { id: 'mid-1', displayName: 'First outfield substitute', position: 'MID', points: 1, form: 1, slot: 'bench' as const },
+      { id: 'gkp', displayName: 'Bench goalkeeper', position: 'GKP', points: 1, form: 1, slot: 'bench' as const },
+      { id: 'def-1', displayName: 'Second outfield substitute', position: 'DEF', points: 1, form: 1, slot: 'bench' as const },
+      { id: 'fwd-1', displayName: 'Third outfield substitute', position: 'FWD', points: 1, form: 1, slot: 'bench' as const },
+      { id: 'def-2', displayName: 'Fourth outfield substitute', position: 'DEF', points: 1, form: 1, slot: 'bench' as const },
+    ];
+
+    expect(sortFixtureBench(players).map((player) => player.id)).toEqual(['gkp', 'mid-1', 'def-1', 'fwd-1', 'def-2']);
   });
 
   test('opens a prior fixture with the locked players and gameweek points', async () => {

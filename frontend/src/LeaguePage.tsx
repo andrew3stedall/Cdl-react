@@ -15,9 +15,8 @@ import {
 
 import { Button } from './components/ui/button';
 import { Card } from './components/ui/card';
-import { PlayerCard, type PlayerCardPlayer, formBand } from './components/player/PlayerCard';
+import { FixtureSquadComparison } from './components/fixture/FixtureSquadComparison';
 import type { AttackDirection } from './contracts';
-import { fixtureDifficultyTitle } from './SquadPage';
 import {
   HttpLeagueClient,
   type FixtureDetailResponse,
@@ -537,7 +536,7 @@ function FixtureDetailDrawer({ attackDirection, detail, detailStatus, drawerRef,
   const isPreview = fixture.status === 'pending';
   const drawerLabel = isPreview ? (gameweekState === 'underway' ? 'Fixture preview' : 'Upcoming fixture') : fixture.status === 'started' ? 'Live fixture' : 'Finished fixture';
   const hasHistoricalSquads = !isPreview && squads.length === 2;
-  return <><button aria-label="Close fixture detail" className="league-drawer-backdrop" onClick={onClose} type="button" /><aside ref={drawerRef} aria-labelledby="fixture-detail-title" aria-modal="true" className="league-drawer league-drawer--comparison" data-gameweek-state={gameweekState} role="dialog" tabIndex={-1}><header className="league-drawer__header"><div><p className="eyebrow">{drawerLabel}</p><h2 id="fixture-detail-title">{fixtureParticipantName(fixture.homeTeam)} vs {fixtureParticipantName(fixture.awayTeam)}</h2></div><Button aria-label="Close fixture detail" className="shell-icon-button" onClick={onClose} type="button" variant="ghost"><X aria-hidden="true" size={19} /></Button></header><div className="league-drawer__body"><div className="league-drawer__score"><span>{fixture.gameweek.name}</span><strong>{formatScore(fixture)}</strong><StatusBadge status={fixture.status} /></div>{gameweekState === 'underway' && isPreview ? <div className="league-drawer__context"><strong>Gameweek underway</strong><span>This fixture has not started yet. Review both squads before kick-off.</span></div> : null}{gameweekState === 'finished' && isPreview ? <div className="league-drawer__context"><strong>Gameweek finished</strong><span>This fixture did not produce a recorded result.</span></div> : null}{detailStatus === 'loading' ? <p role="status">{isPreview ? 'Loading squad comparison…' : 'Loading players and points…'}</p> : null}{detailStatus === 'error' ? <p className="league-inline-error" role="alert">Fixture detail is temporarily unavailable.</p> : null}{detailStatus === 'loaded' && isPreview && squads.length === 2 ? <SquadComparison attackDirection={attackDirection} squads={squads} /> : null}{detailStatus === 'loaded' && hasHistoricalSquads ? <HistoricalSquadComparison fixture={fixture} squads={squads} /> : null}{detailStatus === 'loaded' && !isPreview && !hasHistoricalSquads ? <div className="league-drawer__context"><strong>Players and points are unavailable</strong><span>The fixture result is available, but its locked gameweek lineup has not been published yet.</span></div> : null}{detailStatus === 'loaded' && !isPreview && detail ? <FixtureScoringSummary detail={detail} fixture={fixture} gameweekState={gameweekState} /> : null}</div></aside></>;
+  return <><button aria-label="Close fixture detail" className="league-drawer-backdrop" onClick={onClose} type="button" /><aside ref={drawerRef} aria-labelledby="fixture-detail-title" aria-modal="true" className="league-drawer league-drawer--comparison" data-gameweek-state={gameweekState} role="dialog" tabIndex={-1}><header className="league-drawer__header"><div><p className="eyebrow">{drawerLabel}</p><h2 id="fixture-detail-title">{fixtureParticipantName(fixture.homeTeam)} vs {fixtureParticipantName(fixture.awayTeam)}</h2></div><Button aria-label="Close fixture detail" className="shell-icon-button" onClick={onClose} type="button" variant="ghost"><X aria-hidden="true" size={19} /></Button></header><div className="league-drawer__body"><div className="league-drawer__score"><span>{fixture.gameweek.name}</span><strong>{formatScore(fixture)}</strong><StatusBadge status={fixture.status} /></div>{gameweekState === 'underway' && isPreview ? <div className="league-drawer__context"><strong>Gameweek underway</strong><span>This fixture has not started yet. Review both squads before kick-off.</span></div> : null}{gameweekState === 'finished' && isPreview ? <div className="league-drawer__context"><strong>Gameweek finished</strong><span>This fixture did not produce a recorded result.</span></div> : null}{detailStatus === 'loading' ? <p role="status">{isPreview ? 'Loading squad comparison…' : 'Loading players and points…'}</p> : null}{detailStatus === 'error' ? <p className="league-inline-error" role="alert">Fixture detail is temporarily unavailable.</p> : null}{detailStatus === 'loaded' && isPreview && squads.length === 2 ? <FixtureSquadComparison attackDirection={attackDirection} squads={squads} /> : null}{detailStatus === 'loaded' && hasHistoricalSquads ? <HistoricalSquadComparison fixture={fixture} squads={squads} /> : null}{detailStatus === 'loaded' && !isPreview && !hasHistoricalSquads ? <div className="league-drawer__context"><strong>Players and points are unavailable</strong><span>The fixture result is available, but its locked gameweek lineup has not been published yet.</span></div> : null}{detailStatus === 'loaded' && !isPreview && detail ? <FixtureScoringSummary detail={detail} fixture={fixture} gameweekState={gameweekState} /> : null}</div></aside></>;
 }
 
 function HistoricalSquadComparison({ fixture, squads }: { fixture: LeagueFixture; squads: FixtureSquad[] }) {
@@ -559,155 +558,6 @@ function FixtureScoringSummary({ detail, fixture, gameweekState }: { detail: Fix
   return <><div className="league-drawer__context"><strong>{roundFinished ? 'Gameweek finished' : 'Gameweek underway'}</strong><span>{roundFinished ? 'The final score and recorded scoring events are shown below.' : isLive ? 'Scores and scoring events can still change before the round is complete.' : 'This fixture has finished, but other gameweek fixtures are still being played.'}</span></div><section><h3>{isLive ? 'Live scoring' : 'Final result'}</h3><p>{detail.notes[0] ?? (isLive ? 'Live scoring detail is available for this fixture.' : 'No additional notes were supplied for this fixture.')}</p></section><section><h3>Recorded events</h3>{detail.events.length ? <ul className="league-event-list">{detail.events.map((event, index) => <li key={`${event.label}-${event.team.id}-${index}`}><span><strong>{event.label}</strong><small>{fixtureParticipantName(event.team)}</small></span><strong>{event.points > 0 ? '+' : ''}{event.points}</strong></li>)}</ul> : <p>No scoring events were supplied.</p>}</section></>;
 }
 
-function SquadComparison({ attackDirection, squads }: { attackDirection: AttackDirection; squads: FixtureSquad[] }) {
-  const userSquad = squads.find((squad) => squad.isUserTeam) ?? squads[0];
-  const opponentSquad = squads.find((squad) => !squad.isUserTeam && squad.team.id !== userSquad?.team.id) ?? squads[1];
-  const [predictedIds, setPredictedIds] = useState<Set<string>>(() => new Set(opponentSquad?.starters.map((player) => player.id) ?? []));
-
-  useEffect(() => {
-    setPredictedIds(new Set(opponentSquad?.starters.map((player) => player.id) ?? []));
-  }, [opponentSquad?.team.id]);
-
-  if (!userSquad || !opponentSquad) return null;
-
-  const opponentPlayers = opponentSquad.players.length ? opponentSquad.players : [...opponentSquad.starters, ...opponentSquad.bench];
-  const predictedPlayers = opponentPlayers.filter((player) => predictedIds.has(player.id));
-  const userOnTop = attackDirection === 'down';
-  const topSquad = userOnTop ? userSquad : opponentSquad;
-  const bottomSquad = userOnTop ? opponentSquad : userSquad;
-  const topStarters = topSquad === opponentSquad ? predictedPlayers : userSquad.starters;
-  const bottomStarters = bottomSquad === opponentSquad ? predictedPlayers : userSquad.starters;
-  const topBench = topSquad === opponentSquad ? opponentSquad.bench : userSquad.bench;
-  const bottomBench = bottomSquad === opponentSquad ? opponentSquad.bench : userSquad.bench;
-  const topReserves = topSquad === opponentSquad ? opponentSquad.reserves : userSquad.reserves;
-  const bottomReserves = bottomSquad === opponentSquad ? opponentSquad.reserves : userSquad.reserves;
-
-  function togglePredictedPlayer(player: FixtureSquad['starters'][number]) {
-    setPredictedIds((current) => {
-      const next = new Set(current);
-      if (next.has(player.id)) {
-        next.delete(player.id);
-        return next;
-      }
-      if (next.size >= 11 || positionCount(next, opponentPlayers, player.position) >= positionMaximum(player.position)) return current;
-      next.add(player.id);
-      return next;
-    });
-  }
-
-  return <section aria-label="Squad comparison" className="fixture-squad-comparison">
-    <div className="fixture-squad-comparison__pitches">
-      <FixtureComparisonPitch bottomSquad={bottomSquad} bottomStarters={bottomStarters} topSquad={topSquad} topStarters={topStarters} />
-    </div>
-    <div className="fixture-squad-rosters">
-      <div className="fixture-squad-rosters__group">
-        <p className="eyebrow">Substitutes</p>
-        <div className="fixture-squad-rosters__columns">
-          <FixtureRosterColumn label="Substitutes" players={topBench} squad={topSquad} />
-          <FixtureRosterColumn label="Substitutes" players={bottomBench} squad={bottomSquad} />
-        </div>
-      </div>
-      <div className="fixture-squad-rosters__group">
-        <p className="eyebrow">Reserves</p>
-        <div className="fixture-squad-rosters__columns">
-          <FixtureRosterColumn label="Reserves" players={topReserves} squad={topSquad} />
-          <FixtureRosterColumn label="Reserves" players={bottomReserves} squad={bottomSquad} />
-        </div>
-      </div>
-    </div>
-    <OpponentPrediction squad={opponentSquad} players={opponentPlayers} predictedIds={predictedIds} onToggle={togglePredictedPlayer} />
-  </section>;
-}
-
-function FixtureComparisonPitch({ bottomSquad, bottomStarters, topSquad, topStarters }: { bottomSquad: FixtureSquad; bottomStarters: FixtureSquad['starters']; topSquad: FixtureSquad; topStarters: FixtureSquad['starters'] }) {
-  return (
-    <article className="fixture-squad-pitch" data-bottom-attack-direction="up" data-bottom-team-role={bottomSquad.isUserTeam ? 'user' : 'opponent'} data-top-attack-direction="down" data-top-team-role={topSquad.isUserTeam ? 'user' : 'opponent'}>
-      <div aria-label={`${fixtureParticipantName(topSquad.team)} and ${fixtureParticipantName(bottomSquad.team)} pitch`} className="fixture-squad-pitch__field">
-        <div aria-hidden="true" className="fixture-squad-pitch__markings"><span /><span /><span /><span /></div>
-        <div className="fixture-squad-pitch__team-label fixture-squad-pitch__team-label--top"><strong>{fixtureParticipantName(topSquad.team)}</strong></div>
-        <div className="fixture-squad-pitch__team-label fixture-squad-pitch__team-label--bottom"><strong>{fixtureParticipantName(bottomSquad.team)}</strong></div>
-        <FixturePitchLineup players={topStarters} side="top" />
-        <FixturePitchLineup players={bottomStarters} side="bottom" />
-      </div>
-    </article>
-  );
-}
-
-function FixturePitchLineup({ players, side }: { players: FixtureSquad['starters']; side: 'top' | 'bottom' }) {
-  const positions = side === 'top' ? ['GKP', 'DEF', 'MID', 'FWD'] : ['FWD', 'MID', 'DEF', 'GKP'];
-  return <div className={`fixture-squad-pitch__lineup fixture-squad-pitch__lineup--${side}`}>{positions.map((position) => <div className={`fixture-squad-pitch__row position-${position.toLowerCase()}`} data-position={position} key={position}>{players.filter((player) => player.position === position).map((player) => <FixturePitchPlayer key={player.id} player={player} />)}</div>)}</div>;
-}
-
-function FixturePitchPlayer({ player }: { player: FixtureSquad['starters'][number] }) {
-  const shirtTeam = player.club?.shortName ?? player.club?.name ?? 'unknown';
-  const fixtureLabel = player.nextOpponent
-    ? player.nextFixtureIsHome === true
-      ? (player.nextOpponent.shortName ?? player.nextOpponent.name).toUpperCase()
-      : (player.nextOpponent.shortName ?? player.nextOpponent.name).toLowerCase()
-    : 'Next —';
-  return <FixturePlayerToken fixtureLabel={fixtureLabel} player={player} shirtTeam={shirtTeam} />;
-}
-
-function FixturePlayerToken({ fixtureLabel, player, shirtTeam }: { fixtureLabel: string; player: FixtureSquad['starters'][number]; shirtTeam: string }) {
-  return <div className={`squad-page__pitch-player fixture-squad-pitch__player position-${player.position.toLowerCase()} form-band-${formBand(player.form)}`} data-player-id={player.id} title={`${player.displayName} · ${player.points} pts`}><PlayerCard formPosition="below" layout="pitch" player={toFixtureCardPlayer(player, fixtureLabel, shirtTeam)} showPositionMarker={false} size="md" /></div>;
-}
-
-function toFixtureCardPlayer(player: FixtureSquad['players'][number], fixtureLabel?: string, shirtTeam?: string): PlayerCardPlayer {
-  const opponent = player.nextOpponent?.shortName ?? player.nextOpponent?.name;
-  const label = fixtureLabel ?? (opponent ? (player.nextFixtureIsHome === true ? opponent.toUpperCase() : opponent.toLowerCase()) : 'Next —');
-  return {
-    captain: player.isCaptain,
-    displayName: player.displayName,
-    fixtures: [{ difficulty: player.nextFixtureDifficulty, label, title: fixtureDifficultyTitle(player.nextFixtureDifficulty) }],
-    form: player.form,
-    position: player.position,
-    team: shirtTeam ?? player.club?.shortName ?? player.club?.name ?? 'unknown',
-    viceCaptain: player.isViceCaptain,
-  };
-}
-
-function FixtureRosterColumn({ label, players, squad }: { label: 'Substitutes' | 'Reserves'; players: FixtureSquad['bench']; squad: FixtureSquad }) {
-  const rowCount = label === 'Substitutes' ? 5 : 4;
-  return <section aria-label={`${fixtureParticipantName(squad.team)} ${label.toLowerCase()}`} className="fixture-squad-roster"><header><strong>{fixtureParticipantName(squad.team)}</strong></header><ol>{Array.from({ length: rowCount }, (_, index) => { const player = players[index]; return <li className={player ? '' : 'is-empty'} key={player?.id ?? `${squad.team.id}-${label}-${index}`}><span className="fixture-squad-roster__number">{index + 1}</span>{player ? <FixtureRosterPlayer player={player} /> : <span className="fixture-squad-roster__empty">Empty slot</span>}</li>; })}</ol></section>;
-}
-
-function FixtureRosterPlayer({ player }: { player: FixtureSquad['bench'][number] }) {
-  const fixtureLabel = player.nextOpponent
-    ? player.nextFixtureIsHome === true
-      ? (player.nextOpponent.shortName ?? player.nextOpponent.name).toUpperCase()
-      : (player.nextOpponent.shortName ?? player.nextOpponent.name).toLowerCase()
-    : 'Next —';
-  return <FixturePlayerToken fixtureLabel={fixtureLabel} player={player} shirtTeam={player.club?.shortName ?? player.club?.name ?? 'unknown'} />;
-}
-
-function OpponentPrediction({ onToggle, players, predictedIds, squad }: { onToggle: (player: FixtureSquad['starters'][number]) => void; players: FixtureSquad['players']; predictedIds: Set<string>; squad: FixtureSquad }) {
-  const counts = positionCounts(predictedIds, players);
-  const isLegal = predictedIds.size === 11 && Object.entries(counts).every(([position, count]) => count >= positionMinimum(position) && count <= positionMaximum(position));
-  return <section aria-label={`${fixtureParticipantName(squad.team)} lineup prediction`} className="fixture-lineup-prediction"><header><div><p className="eyebrow">Opponent squad</p><h3>Predict their XI</h3></div><strong>{predictedIds.size}/11</strong></header><p className="fixture-lineup-prediction__hint">Tap players to add or remove them from the predicted Starting XI.</p><div className="fixture-lineup-prediction__status" data-valid={isLegal ? 'true' : 'false'}>{isLegal ? 'Valid Starting XI' : 'Choose a legal formation to complete your prediction.'}</div><div className="fixture-lineup-prediction__players">{['FWD', 'MID', 'DEF', 'GKP'].map((position) => <div className="fixture-lineup-prediction__group" key={position}><strong>{positionLabel(position)}s</strong><div>{players.filter((player) => player.position === position).map((player) => { const selected = predictedIds.has(player.id); const canAdd = selected || (predictedIds.size < 11 && counts[position] < positionMaximum(position)); return <button aria-label={`${selected ? 'Remove' : 'Add'} ${player.displayName} ${selected ? 'from' : 'to'} predicted XI`} aria-pressed={selected} className={`fixture-lineup-prediction__player${selected ? ' is-selected' : ''}`} disabled={!canAdd} key={player.id} onClick={() => onToggle(player)} title={selected ? `Remove ${player.displayName} from predicted XI` : `Add ${player.displayName} to predicted XI`} type="button"><PlayerCard formPosition="beside" layout="list" player={toFixtureCardPlayer(player)} size="xs" /><small>{selected ? 'Starting' : 'Available'}</small></button>; })}</div></div>)}</div></section>;
-}
-
-function positionCounts(ids: Set<string>, players: FixtureSquad['players']): Record<string, number> {
-  return players.reduce<Record<string, number>>((counts, player) => {
-    if (ids.has(player.id)) counts[player.position] = (counts[player.position] ?? 0) + 1;
-    return counts;
-  }, {});
-}
-
-function positionCount(ids: Set<string>, players: FixtureSquad['players'], position: string): number {
-  return positionCounts(ids, players)[position] ?? 0;
-}
-
-function positionMinimum(position: string): number {
-  return { GKP: 1, DEF: 3, MID: 2, FWD: 1 }[position] ?? 0;
-}
-
-function positionMaximum(position: string): number {
-  return { GKP: 1, DEF: 5, MID: 5, FWD: 3 }[position] ?? 0;
-}
-
-function positionLabel(position: string): string {
-  return { GKP: 'Goalkeeper', DEF: 'Defender', MID: 'Midfielder', FWD: 'Forward' }[position] ?? position;
-}
 
 function SectionHeading({ action, eyebrow, id, title }: { action?: ReactNode; eyebrow: string; id?: string; title: string }) {
   return <header className="league-section-heading"><div><p className="eyebrow">{eyebrow}</p><h2 id={id}>{title}</h2></div>{action ? <div>{action}</div> : null}</header>;

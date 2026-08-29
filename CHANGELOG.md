@@ -8,6 +8,9 @@
 - Added historical fixture squad detail from locked lineups and cached
   gameweek points, including starters, substitutes, reserves, and captain
   markers.
+- Extracted reusable fixture pitch and roster parents, separated each Starting
+  XI into its own contained pitch panel, equalised lineup spacing, enforced
+  goalkeeper-first bench ordering, and removed opponent XI prediction UI.
 - Added a Tauri 2 Android shell and reproducible debug APK workflow around the existing React frontend.
 - Kept the existing FastAPI/PostgreSQL Cloud Run service as the backend; staging APK builds open the deployed staging app to preserve same-origin cookie authentication.
 - Match points-against labels to their attacking/defensive bar colours, keep them clear of the bars, and use the result-track colour for empty chart slots.

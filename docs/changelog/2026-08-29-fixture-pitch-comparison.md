@@ -15,6 +15,9 @@
 - 'FixturePitchView' and 'FixtureLineupPanel' are reusable pitch parents for
   other fixture and matchup surfaces.
 - 'sortFixtureBench' centralises the goalkeeper-first bench presentation rule.
+- Fixture pitch players compose the canonical `PlayerCard` inside the same
+  positioned `squad-page__pitch-player` wrapper used by Squad, keeping the
+  official shirt card contained within each lineup slot.
 
 ## Validation
 

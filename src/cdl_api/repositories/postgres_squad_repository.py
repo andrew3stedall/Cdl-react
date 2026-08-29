@@ -205,7 +205,6 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
     def _invalidate_players_cache(self) -> None:
         self._players_cache = None
 
-
     def fixture_contexts_by_team(self, gameweek_number: int) -> dict[str, list[PlayerNextFixture]]:
         """Return the official FPL fixtures for each club in one gameweek."""
         home_team = epl_teams_table.alias("fixture_context_home_team")

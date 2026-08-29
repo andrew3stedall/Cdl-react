@@ -243,8 +243,6 @@ def fixture_squads(
         )
     return squads
 
-
-
 def _fixture_contexts_for_gameweek(
     squad_repository: SquadRepository,
     gameweek_number: int,
@@ -261,18 +259,49 @@ def _attach_fixture_contexts(
 ) -> list[FixtureSquad]:
     if not fixture_contexts:
         return squads
-
-    def enrich_player(player: FixtureSquadPlayer) -> FixtureSquadPlayer:
-        team_id = player.club.id if player.club is not None else ""
-        return player.model_copy(update={"fixture_fixtures": fixture_contexts.get(team_id, [])})
-
     return [
         squad.model_copy(
             update={
-                "players": [enrich_player(player) for player in squad.players],
-                "starters": [enrich_player(player) for player in squad.starters],
-                "bench": [enrich_player(player) for player in squad.bench],
-                "reserves": [enrich_player(player) for player in squad.reserves],
+                "players": [
+                    player.model_copy(
+                        update={
+                            "fixture_fixtures": fixture_contexts.get(
+                                player.club.id if player.club is not None else "", []
+                            )
+                        }
+                    )
+                    for player in squad.players
+                ],
+                "starters": [
+                    player.model_copy(
+                        update={
+                            "fixture_fixtures": fixture_contexts.get(
+                                player.club.id if player.club is not None else "", []
+                            )
+                        }
+                    )
+                    for player in squad.starters
+                ],
+                "bench": [
+                    player.model_copy(
+                        update={
+                            "fixture_fixtures": fixture_contexts.get(
+                                player.club.id if player.club is not None else "", []
+                            )
+                        }
+                    )
+                    for player in squad.bench
+                ],
+                "reserves": [
+                    player.model_copy(
+                        update={
+                            "fixture_fixtures": fixture_contexts.get(
+                                player.club.id if player.club is not None else "", []
+                            )
+                        }
+                    )
+                    for player in squad.reserves
+                ],
             }
         )
         for squad in squads

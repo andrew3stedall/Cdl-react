@@ -355,7 +355,7 @@ function mapFixtureSquadPlayer(player: ApiFixtureSquadPlayer): FixtureSquadPlaye
     nextFixtureDifficulty: player.next_fixture_difficulty ?? undefined,
     fixtureFixtures: (player.fixture_fixtures ?? []).map((fixture) => ({
       fixtureId: fixture.fixture_id,
-      gameweek: fixture.gameweek ?? null,
+      gameweek: fixture.gameweek?.number ?? null,
       opponent: mapTeam(fixture.opponent),
       difficulty: fixture.difficulty ?? undefined,
       isHome: fixture.is_home,

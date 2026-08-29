@@ -149,52 +149,40 @@ async function renderPage(currentPath = '/league', client = new MemoryLeagueClie
 }
 
 describe('LeaguePage', () => {
-  test('uses the Squad-style contextual header and compact gameweek sections', async () => {
+  test('uses the Squad-style contextual header with a focused round and gameweek carousel', async () => {
     const { container, root } = await renderPage();
 
     expect(container.textContent).toContain('Castle Draft League');
     expect(container.textContent).toContain('Fixtures');
     expect(container.textContent).toContain('Table');
     expect(container.textContent).toContain('Gameweek 12');
-    expect(container.textContent).toContain('Gameweek 13');
-    expect(container.querySelectorAll('.league-gameweek-section')).toHaveLength(2);
-    expect(container.querySelectorAll('.league-fixture-row')).toHaveLength(4);
+    expect(container.textContent).toContain('Round 2');
+    expect(container.textContent).toContain('Gameweeks 8–14');
+    expect(container.textContent).toContain('GW 13');
+    expect(container.querySelectorAll('.league-round-picker__card')).toHaveLength(2);
+    expect(container.querySelector('.league-round-picker__card[aria-current="true"]')?.textContent).toContain('Round 2');
+    expect(container.querySelectorAll('.league-gameweek-section')).toHaveLength(1);
+    expect(container.querySelectorAll('.league-fixture-row')).toHaveLength(2);
     expect(container.querySelector('main.league-page.feature-screen')).toBeNull();
-    expect(container.querySelectorAll('time.league-gameweek-state')).toHaveLength(1);
-    expect(container.querySelector('time.league-gameweek-state')?.getAttribute('dateTime')).toBe('2026-08-21T17:30:00Z');
     expect(container.querySelector('.league-gameweek-state--underway')).not.toBeNull();
-    expect(container.querySelector('.league-gameweek-state--not-started')).not.toBeNull();
     expect(container.textContent).not.toContain('Current gameweek');
     expect(container.textContent).not.toContain('Upcoming gameweek');
-    expect(container.textContent).toContain('Regular season');
     expect(container.textContent).toContain('Semi Final');
     expect(container.textContent).not.toContain('Pending');
     expect(container.textContent).not.toContain('Upcoming');
     expect(container.textContent).not.toContain('Not started');
     expect(container.textContent).not.toContain('In progress');
     expect(container.textContent).not.toContain('Finished');
-    expect(container.textContent).toContain('Warren');
-    expect(container.textContent).toContain('Kevin');
     expect(container.querySelector('nav[aria-label="League navigation"]')).toBeNull();
     expect(container.textContent).not.toContain('Overview stays lightweight');
     act(() => root.unmount());
   });
 
-  test('keeps past results collapsed but makes every completed gameweek available', async () => {
+  test('keeps past results in the selected round and makes each prior gameweek available', async () => {
     const { container, root } = await renderPage();
 
-    expect(container.textContent).toContain('1 gameweek available');
-    expect(container.querySelector('#league-history-panel')).toBeNull();
-
     await act(async () => {
-      container.querySelector<HTMLButtonElement>('button[aria-controls="league-history-panel"]')?.click();
-    });
-
-    expect(container.querySelector('#league-history-panel')).not.toBeNull();
-    expect(container.querySelector<HTMLButtonElement>('.league-history-browser__item')?.textContent).toContain('GW 11');
-
-    await act(async () => {
-      container.querySelector<HTMLButtonElement>('.league-history-browser__item')?.click();
+      container.querySelector<HTMLButtonElement>('.league-gameweek-picker__item')?.click();
     });
 
     expect(container.querySelector('.league-gameweek-section--history')?.textContent).toContain('Gameweek 11');
@@ -202,18 +190,18 @@ describe('LeaguePage', () => {
     act(() => root.unmount());
   });
 
-  test('shows only the selected round while keeping the current round as the default', async () => {
+  test('moves horizontally between rounds while keeping the current round as the default', async () => {
     const { container, root } = await renderPage();
 
-    const semiFinalTab = container.querySelector<HTMLButtonElement>('#league-round-tab-semi-final');
-    expect(semiFinalTab?.getAttribute('aria-selected')).toBe('false');
+    const nextRound = container.querySelector<HTMLButtonElement>('button[aria-label="Next round"]');
+    expect(nextRound?.disabled).toBe(false);
 
     await act(async () => {
-      semiFinalTab?.click();
+      nextRound?.click();
     });
 
-    expect(container.querySelector<HTMLButtonElement>('#league-round-tab-semi-final')?.getAttribute('aria-selected')).toBe('true');
-    expect(container.querySelector('[role="tabpanel"]')?.textContent).toContain('Semi Final');
+    expect(container.querySelector('.league-round-picker__card[aria-current="true"]')?.textContent).toContain('Semi Final');
+    expect(container.querySelector('.league-fixture-round')?.textContent).toContain('Semi Final');
     expect(container.querySelectorAll('.league-gameweek-section')).toHaveLength(1);
     expect(container.querySelectorAll('.league-fixture-row')).toHaveLength(1);
     act(() => root.unmount());
@@ -237,6 +225,7 @@ describe('LeaguePage', () => {
     });
 
     expect(client.detailRequests).toEqual(['fixture-1201']);
+    expect(client.squadRequests).toEqual(['fixture-1201']);
     expect(container.querySelector('[role="dialog"]')?.textContent).toContain('Gameweek underway');
     expect(container.querySelector('[role="dialog"]')?.textContent).toContain('Live scoring');
     expect(container.querySelector('[role="dialog"]')?.textContent).toContain('Scoring detail is available.');
@@ -253,6 +242,7 @@ describe('LeaguePage', () => {
     });
 
     expect(client.detailRequests).toEqual(['fixture-1202']);
+    expect(client.squadRequests).toEqual(['fixture-1202']);
     expect(container.querySelector('[role="dialog"]')?.textContent).toContain('Finished fixture');
     expect(container.querySelector('[role="dialog"]')?.textContent).toContain('Final result');
     act(() => root.unmount());
@@ -260,6 +250,12 @@ describe('LeaguePage', () => {
 
   test('opens an upcoming fixture with both squads on comparison pitches', async () => {
     const { client, container, root } = await renderPage();
+
+    await act(async () => {
+      Array.from(container.querySelectorAll<HTMLButtonElement>('.league-gameweek-picker__item'))
+        .find((button) => button.textContent?.includes('GW 13'))
+        ?.click();
+    });
 
     await act(async () => {
       container.querySelector<HTMLButtonElement>('button[aria-label*="Open preview for Andrew versus DJ"]')?.click();
@@ -280,6 +276,27 @@ describe('LeaguePage', () => {
     expect(container.textContent).toContain('DJ');
     expect(container.textContent).not.toContain('Castle United');
     expect(container.textContent).not.toContain('Drafton Rovers');
+    act(() => root.unmount());
+  });
+
+  test('opens a prior fixture with the locked players and gameweek points', async () => {
+    const { container, root } = await renderPage();
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('.league-gameweek-picker__item')?.click();
+    });
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('button[aria-label*="Open finished fixture for Andrew versus DJ"]')?.click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    const dialog = container.querySelector('[role="dialog"]');
+    expect(dialog?.textContent).toContain('Players and points');
+    expect(dialog?.textContent).toContain('Castle Keeper');
+    expect(dialog?.textContent).toContain('80 pts');
+    expect(dialog?.textContent).toContain('Starting XI');
     act(() => root.unmount());
   });
 

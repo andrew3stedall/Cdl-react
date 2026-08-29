@@ -123,6 +123,22 @@ def fixture_squads(
             status_code=status.HTTP_404_NOT_FOUND,
             content={"detail": "Fixture not found."},
         )
+
+    historical_squad_loader = getattr(
+        team_selection_repository,
+        "get_historical_fixture_squads",
+        None,
+    )
+    if fixture.status != "pending" and historical_squad_loader is not None:
+        historical_squads = historical_squad_loader(fixture)
+        if historical_squads:
+            return historical_squads
+        # Never show today's squad as a completed fixture's lineup. If the
+        # frozen historical record is unavailable, the UI can state that
+        # lineup detail is not yet available instead of showing wrong players.
+        if fixture.status == "complete":
+            return []
+
     players = squad_repository.list_squad_players()
     manager_team = getattr(squad_repository, "manager_team", None)
     user_team_id = manager_team.id if manager_team is not None else None

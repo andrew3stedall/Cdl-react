@@ -1,5 +1,6 @@
 """PostgreSQL-backed team selection and chip persistence."""
 
+import json
 from collections.abc import Callable, Iterable, Mapping
 from datetime import UTC, datetime
 from uuid import uuid4
@@ -19,6 +20,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Session
 
 from cdl_api.contracts.domain import GameweekSummary, TeamSummary
+from cdl_api.contracts.league_models import FixtureSquad, FixtureSquadPlayer, LeagueFixture
 from cdl_api.contracts.team_selection import (
     ChipState,
     ChipStatus,
@@ -26,7 +28,11 @@ from cdl_api.contracts.team_selection import (
     LineupSlot,
     TeamSelectionPlayer,
 )
-from cdl_api.repositories.postgres_fpl_data import fpl_gameweeks_table
+from cdl_api.repositories.postgres_fpl_data import (
+    external_payload_cache_table,
+    fpl_gameweeks_table,
+)
+from cdl_api.repositories.postgres_league_fixtures import fixture_scoring_snapshots_table
 from cdl_api.repositories.postgres_league_fpl import (
     draft_teams_table,
     epl_teams_table,
@@ -181,6 +187,115 @@ class PostgreSQLTeamSelectionRepository(InMemoryTeamSelectionRepository):
         selected_ids = {player.id for player in selected_players}
         selected_players.extend(player for player in players if player.id not in selected_ids)
         return sorted(selected_players, key=self._lineup_sort_key)
+
+    def get_historical_fixture_squads(self, fixture: LeagueFixture) -> list[FixtureSquad]:
+        """Return the locked lineups and gameweek points for a past fixture.
+
+        The live squad read model is intentionally not used here: transfers and
+        current FPL totals can change after a fixture has finished. Historical
+        fixture views must use the lineup saved for that gameweek and the
+        corresponding cached event-live points instead.
+        """
+        team_ids = (fixture.home_team.id, fixture.away_team.id)
+        with self._session_factory() as session:
+            rows = list(
+                session.execute(
+                    select(
+                        team_selection_lineup_slots_table.c.draft_team_id,
+                        team_selection_lineup_slots_table.c.player_id,
+                        team_selection_lineup_slots_table.c.slot,
+                        team_selection_lineup_slots_table.c.slot_order,
+                        team_selection_lineup_slots_table.c.is_captain,
+                        team_selection_lineup_slots_table.c.is_vice_captain,
+                        fpl_players_table.c.web_name,
+                        fpl_players_table.c.position_id,
+                        epl_teams_table.c.id.label("club_id"),
+                        epl_teams_table.c.name.label("club_name"),
+                        epl_teams_table.c.short_name.label("club_short_name"),
+                    )
+                    .join(
+                        fpl_players_table,
+                        team_selection_lineup_slots_table.c.player_id == fpl_players_table.c.id,
+                    )
+                    .join(epl_teams_table, fpl_players_table.c.team_id == epl_teams_table.c.id)
+                    .where(
+                        team_selection_lineup_slots_table.c.season_id == DEMO_SEASON_ID,
+                        team_selection_lineup_slots_table.c.gameweek == fixture.gameweek.number,
+                        team_selection_lineup_slots_table.c.draft_team_id.in_(team_ids),
+                    )
+                    .order_by(
+                        team_selection_lineup_slots_table.c.draft_team_id,
+                        team_selection_lineup_slots_table.c.slot_order,
+                    )
+                ).mappings()
+            )
+            event_payload = session.execute(
+                select(external_payload_cache_table.c.payload_json).where(
+                    external_payload_cache_table.c.resource
+                    == f"event-live:{fixture.gameweek.number}"
+                )
+            ).scalar_one_or_none()
+            snapshot_payload = session.execute(
+                select(fixture_scoring_snapshots_table.c.payload_json).where(
+                    fixture_scoring_snapshots_table.c.id == f"snapshot-{fixture.id}"
+                )
+            ).scalar_one_or_none()
+
+        if not rows:
+            return []
+
+        event_points = _event_live_player_points(event_payload)
+        snapshot_points = _snapshot_player_points(snapshot_payload)
+        rows_by_team: dict[str, list[Mapping[str, object]]] = {team_id: [] for team_id in team_ids}
+        for row in rows:
+            rows_by_team.setdefault(str(row["draft_team_id"]), []).append(row)
+        if any(not rows_by_team.get(team_id) for team_id in team_ids):
+            return []
+
+        teams_by_id = {
+            fixture.home_team.id: fixture.home_team,
+            fixture.away_team.id: fixture.away_team,
+        }
+        squads: list[FixtureSquad] = []
+        for team_id in team_ids:
+            team_rows = rows_by_team[team_id]
+
+            def as_fixture_player(
+                row: Mapping[str, object], owning_team_id: str = team_id
+            ) -> FixtureSquadPlayer:
+                player_id = str(row["player_id"])
+                return FixtureSquadPlayer(
+                    id=player_id,
+                    display_name=str(row["web_name"]),
+                    position=str(row["position_id"]),
+                    club=TeamSummary(
+                        id=str(row["club_id"]),
+                        name=str(row["club_name"]),
+                        short_name=str(row["club_short_name"]),
+                    ),
+                    points=_historical_player_points(
+                        player_id,
+                        event_points,
+                        snapshot_points,
+                        owning_team_id,
+                    ),
+                    slot=str(row["slot"]),
+                    is_captain=bool(row["is_captain"]),
+                    is_vice_captain=bool(row["is_vice_captain"]),
+                )
+
+            players = [as_fixture_player(row) for row in team_rows]
+            squads.append(
+                FixtureSquad(
+                    team=teams_by_id[team_id],
+                    is_user_team=team_id == self.manager_team.id,
+                    players=players,
+                    starters=[player for player in players if player.slot == "starter"],
+                    bench=[player for player in players if player.slot == "bench"],
+                    reserves=[player for player in players if player.slot == "reserve"],
+                )
+            )
+        return squads
 
     def get_chips(self) -> list[ChipState]:
         rows = self._chip_rows()
@@ -578,3 +693,62 @@ class PostgreSQLTeamSelectionRepository(InMemoryTeamSelectionRepository):
             LineupSlot.RESERVE: 2,
         }
         return (slot_order[player.slot], player.slot_order)
+
+
+def _event_live_player_points(payload: object) -> dict[str, int]:
+    if isinstance(payload, str):
+        try:
+            payload = json.loads(payload)
+        except json.JSONDecodeError:
+            return {}
+    if not isinstance(payload, Mapping) or not isinstance(payload.get("elements"), list):
+        return {}
+    points: dict[str, int] = {}
+    for element in payload["elements"]:
+        if not isinstance(element, Mapping) or element.get("id") is None:
+            continue
+        stats = element.get("stats")
+        if not isinstance(stats, Mapping):
+            continue
+        try:
+            value = int(stats.get("total_points", 0) or 0)
+        except (TypeError, ValueError):
+            continue
+        raw_id = str(element["id"])
+        points[raw_id] = value
+        points[f"fpl-{raw_id}"] = value
+    return points
+
+
+def _snapshot_player_points(payload: object) -> dict[str, int]:
+    if isinstance(payload, str):
+        try:
+            payload = json.loads(payload)
+        except json.JSONDecodeError:
+            return {}
+    if not isinstance(payload, Mapping) or not isinstance(payload.get("player_scores"), Mapping):
+        return {}
+    points: dict[str, int] = {}
+    for key, value in payload["player_scores"].items():
+        try:
+            points[str(key)] = int(value)
+        except (TypeError, ValueError):
+            continue
+    return points
+
+
+def _historical_player_points(
+    player_id: str,
+    event_points: Mapping[str, int],
+    snapshot_points: Mapping[str, int],
+    team_id: str,
+) -> int:
+    if player_id in event_points:
+        return event_points[player_id]
+    unprefixed_id = player_id.removeprefix("fpl-")
+    if unprefixed_id in event_points:
+        return event_points[unprefixed_id]
+    for key in (f"{team_id}:{player_id}", f"{team_id}:{unprefixed_id}"):
+        if key in snapshot_points:
+            return snapshot_points[key]
+    return 0

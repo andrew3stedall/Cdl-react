@@ -2,9 +2,19 @@ from types import TracebackType
 from typing import Self
 
 from fastapi.testclient import TestClient
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.pool import StaticPool
 from sqlalchemy.sql.dml import Delete, Insert
 
 from cdl_api.app import create_app
+from cdl_api.contracts.domain import GameweekSummary, TeamSummary
+from cdl_api.contracts.league_models import (
+    FixtureOutcome,
+    FixtureScore,
+    FixtureStatus,
+    LeagueFixture,
+)
 from cdl_api.repositories.postgres_team_selection import PostgreSQLTeamSelectionRepository
 from cdl_api.repositories.team_selection import InMemoryTeamSelectionRepository
 from cdl_api.routers.team_selection import get_team_selection_repository
@@ -151,3 +161,146 @@ def test_postgres_team_selection_fixture_lock_is_persisted() -> None:
 
     assert lock_id.startswith("fixture-lock-")
     assert "team_selection_fixture_locks" in _statement_table_names(session, Insert)
+
+
+def test_postgres_historical_fixture_squads_use_locked_lineup_and_event_points() -> None:
+    engine = create_engine(
+        "sqlite+pysqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                "CREATE TABLE fpl_players ("
+                "id TEXT PRIMARY KEY, web_name TEXT NOT NULL, "
+                "position_id TEXT NOT NULL, team_id TEXT NOT NULL)"
+            )
+        )
+        connection.execute(
+            text(
+                "CREATE TABLE epl_teams ("
+                "id TEXT PRIMARY KEY, name TEXT NOT NULL, short_name TEXT NOT NULL)"
+            )
+        )
+        connection.execute(
+            text(
+                "CREATE TABLE external_payload_cache ("
+                "resource TEXT PRIMARY KEY, payload_json JSON NOT NULL)"
+            )
+        )
+        connection.execute(
+            text(
+                "CREATE TABLE fixture_scoring_snapshots ("
+                "id TEXT PRIMARY KEY, payload_json JSON NOT NULL)"
+            )
+        )
+        connection.execute(
+            text(
+                "CREATE TABLE team_selection_lineup_slots ("
+                "id TEXT PRIMARY KEY, season_id TEXT NOT NULL, "
+                "draft_team_id TEXT NOT NULL, player_id TEXT NOT NULL, "
+                "gameweek INTEGER NOT NULL, slot TEXT NOT NULL, "
+                "slot_order INTEGER NOT NULL, is_captain BOOLEAN NOT NULL, "
+                "is_vice_captain BOOLEAN NOT NULL)"
+            )
+        )
+        connection.execute(
+            text(
+                "INSERT INTO epl_teams (id, name, short_name) VALUES "
+                "('epl-ars', 'Arsenal', 'ARS'), ('epl-che', 'Chelsea', 'CHE')"
+            )
+        )
+        connection.execute(
+            text(
+                "INSERT INTO fpl_players "
+                "(id, web_name, position_id, team_id) VALUES "
+                "('fpl-1', 'Keeper One', 'GKP', 'epl-ars'), "
+                "('fpl-2', 'Forward Two', 'FWD', 'epl-che'), "
+                "('fpl-3', 'Keeper Three', 'GKP', 'epl-ars'), "
+                "('fpl-4', 'Forward Four', 'FWD', 'epl-che')"
+            )
+        )
+        connection.execute(
+            text(
+                "INSERT INTO external_payload_cache "
+                "(resource, payload_json) VALUES ('event-live:1', :payload)"
+            ),
+            {
+                "payload": (
+                    '{"elements": [{"id": 1, "stats": {"total_points": 8}}, '
+                    '{"id": 2, "stats": {"total_points": 5}}, '
+                    '{"id": 3, "stats": {"total_points": 3}}, '
+                    '{"id": 4, "stats": {"total_points": 7}}]}'
+                )
+            },
+        )
+        connection.execute(
+            text(
+                "INSERT INTO team_selection_lineup_slots "
+                "(id, season_id, draft_team_id, player_id, gameweek, slot, "
+                "slot_order, is_captain, is_vice_captain) VALUES "
+                "(:id, :season, :team, :player, 1, :slot, :order, :captain, 0)"
+            ),
+            [
+                {
+                    "id": "lineup-home-1",
+                    "season": "season-cdl-2026-27",
+                    "team": "team-home",
+                    "player": "fpl-1",
+                    "slot": "starter",
+                    "order": 1,
+                    "captain": True,
+                },
+                {
+                    "id": "lineup-home-2",
+                    "season": "season-cdl-2026-27",
+                    "team": "team-home",
+                    "player": "fpl-2",
+                    "slot": "bench",
+                    "order": 2,
+                    "captain": False,
+                },
+                {
+                    "id": "lineup-away-1",
+                    "season": "season-cdl-2026-27",
+                    "team": "team-away",
+                    "player": "fpl-3",
+                    "slot": "starter",
+                    "order": 1,
+                    "captain": False,
+                },
+                {
+                    "id": "lineup-away-2",
+                    "season": "season-cdl-2026-27",
+                    "team": "team-away",
+                    "player": "fpl-4",
+                    "slot": "bench",
+                    "order": 2,
+                    "captain": False,
+                },
+            ],
+        )
+
+    sessions = sessionmaker(bind=engine, class_=Session)
+    repository = object.__new__(PostgreSQLTeamSelectionRepository)
+    repository._session_factory = sessions
+    repository.manager_team = TeamSummary(id="team-home", name="Home")
+    fixture = LeagueFixture(
+        id="fixture-history-1",
+        gameweek=GameweekSummary(id="gw-1", name="Gameweek 1", number=1),
+        home_team=TeamSummary(id="team-home", name="Home"),
+        away_team=TeamSummary(id="team-away", name="Away"),
+        status=FixtureStatus.COMPLETE,
+        kickoff_label="Gameweek 1",
+        round_label="Regular season",
+        score=FixtureScore(home_score=8, away_score=3, outcome=FixtureOutcome.HOME_WIN),
+    )
+
+    squads = repository.get_historical_fixture_squads(fixture)
+
+    assert [squad.team.id for squad in squads] == ["team-home", "team-away"]
+    assert squads[0].starters[0].display_name == "Keeper One"
+    assert squads[0].starters[0].points == 8
+    assert squads[0].bench[0].points == 5
+    assert squads[0].starters[0].is_captain is True

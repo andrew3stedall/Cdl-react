@@ -2,8 +2,12 @@
 
 ## Unreleased
 
-- Reworked League fixtures into one-round-at-a-time browsing with a live/current
-  gameweek focus, compact upcoming schedule, and expandable past-results history.
+- Reworked League fixtures into five chronological seven-gameweek rounds with a
+  horizontal carousel, a focused live/current gameweek, and compact in-round
+  gameweek browsing for upcoming and past results.
+- Added historical fixture squad detail from locked lineups and cached
+  gameweek points, including starters, substitutes, reserves, and captain
+  markers.
 - Added a Tauri 2 Android shell and reproducible debug APK workflow around the existing React frontend.
 - Kept the existing FastAPI/PostgreSQL Cloud Run service as the backend; staging APK builds open the deployed staging app to preserve same-origin cookie authentication.
 - Match points-against labels to their attacking/defensive bar colours, keep them clear of the bars, and use the result-track colour for empty chart slots.

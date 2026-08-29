@@ -55,11 +55,20 @@ export interface FixtureSquadPlayer {
   nextOpponent?: LeagueTeam;
   nextFixtureIsHome?: boolean;
   nextFixtureDifficulty?: number;
+  fixtureFixtures?: FixturePlayerFixture[];
   points: number;
   form: number;
   slot: 'starter' | 'bench' | 'reserve';
   isCaptain?: boolean;
   isViceCaptain?: boolean;
+}
+
+export interface FixturePlayerFixture {
+  fixtureId: string;
+  gameweek: number | null;
+  opponent: LeagueTeam;
+  difficulty?: number;
+  isHome: boolean;
 }
 
 export interface FixtureSquad {
@@ -310,11 +319,20 @@ interface ApiFixtureSquadPlayer {
   next_opponent?: ApiTeam | null;
   next_fixture_is_home?: boolean | null;
   next_fixture_difficulty?: number | null;
+  fixture_fixtures?: ApiFixturePlayerFixture[];
   points: number;
   form: number;
   slot: 'starter' | 'bench' | 'reserve';
   is_captain?: boolean;
   is_vice_captain?: boolean;
+}
+
+interface ApiFixturePlayerFixture {
+  fixture_id: string;
+  gameweek?: number | null;
+  opponent: ApiTeam;
+  difficulty?: number | null;
+  is_home: boolean;
 }
 
 interface ApiFixtureSquad {
@@ -335,6 +353,13 @@ function mapFixtureSquadPlayer(player: ApiFixtureSquadPlayer): FixtureSquadPlaye
     nextOpponent: player.next_opponent ? mapTeam(player.next_opponent) : undefined,
     nextFixtureIsHome: player.next_fixture_is_home ?? undefined,
     nextFixtureDifficulty: player.next_fixture_difficulty ?? undefined,
+    fixtureFixtures: (player.fixture_fixtures ?? []).map((fixture) => ({
+      fixtureId: fixture.fixture_id,
+      gameweek: fixture.gameweek ?? null,
+      opponent: mapTeam(fixture.opponent),
+      difficulty: fixture.difficulty ?? undefined,
+      isHome: fixture.is_home,
+    })),
     points: player.points,
     form: player.form,
     slot: player.slot,

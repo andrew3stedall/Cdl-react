@@ -3,18 +3,22 @@ import { type ReactNode } from 'react';
 import { PlayerCard, type PlayerCardPlayer, formBand } from '../player/PlayerCard';
 import type { AttackDirection } from '../../contracts';
 import { fixtureDifficultyTitle } from '../../SquadPage';
-import type { FixtureSquad, FixtureSquadPlayer } from '../../league-api';
+import type { FixturePlayerFixture, FixtureSquad, FixtureSquadPlayer } from '../../league-api';
 import './fixture-squad-comparison.css';
 
 export interface FixtureSquadComparisonProps {
   attackDirection: AttackDirection;
+  gameweekStatus: FixtureGameweekStatus;
   squads: FixtureSquad[];
 }
+
+export type FixtureGameweekStatus = 'past' | 'current' | 'future';
 
 export interface FixturePitchViewProps {
   attackDirection: AttackDirection;
   bottomSquad: FixtureSquad;
   bottomStarters: FixtureSquad['starters'];
+  gameweekStatus: FixtureGameweekStatus;
   topSquad: FixtureSquad;
   topStarters: FixtureSquad['starters'];
 }
@@ -23,7 +27,7 @@ export interface FixturePitchViewProps {
  * Reusable fixture comparison parent. It owns the pitch, bench, and reserve
  * views so the same fixture presentation can be embedded outside League.
  */
-export function FixtureSquadComparison({ attackDirection, squads }: FixtureSquadComparisonProps) {
+export function FixtureSquadComparison({ attackDirection, gameweekStatus, squads }: FixtureSquadComparisonProps) {
   const userSquad = squads.find((squad) => squad.isUserTeam) ?? squads[0];
   const opponentSquad = squads.find((squad) => !squad.isUserTeam && squad.team.id !== userSquad?.team.id) ?? squads[1];
 
@@ -41,20 +45,21 @@ export function FixtureSquadComparison({ attackDirection, squads }: FixtureSquad
         attackDirection={attackDirection}
         bottomSquad={bottomSquad}
         bottomStarters={bottomStarters}
+        gameweekStatus={gameweekStatus}
         topSquad={topSquad}
         topStarters={topStarters}
       />
       <div className="fixture-squad-rosters">
         <FixtureRosterGroup label="Substitutes">
           <div className="fixture-squad-rosters__columns">
-            <FixtureRosterColumn label="Substitutes" players={sortFixtureBench(topSquad.bench)} squad={topSquad} />
-            <FixtureRosterColumn label="Substitutes" players={sortFixtureBench(bottomSquad.bench)} squad={bottomSquad} />
+            <FixtureRosterColumn gameweekStatus={gameweekStatus} label="Substitutes" players={sortFixtureBench(topSquad.bench)} squad={topSquad} />
+            <FixtureRosterColumn gameweekStatus={gameweekStatus} label="Substitutes" players={sortFixtureBench(bottomSquad.bench)} squad={bottomSquad} />
           </div>
         </FixtureRosterGroup>
         <FixtureRosterGroup label="Reserves">
           <div className="fixture-squad-rosters__columns">
-            <FixtureRosterColumn label="Reserves" players={topSquad.reserves} squad={topSquad} />
-            <FixtureRosterColumn label="Reserves" players={bottomSquad.reserves} squad={bottomSquad} />
+            <FixtureRosterColumn gameweekStatus={gameweekStatus} label="Reserves" players={topSquad.reserves} squad={topSquad} />
+            <FixtureRosterColumn gameweekStatus={gameweekStatus} label="Reserves" players={bottomSquad.reserves} squad={bottomSquad} />
           </div>
         </FixtureRosterGroup>
       </div>
@@ -70,6 +75,7 @@ export function FixturePitchView({
   attackDirection,
   bottomSquad,
   bottomStarters,
+  gameweekStatus,
   topSquad,
   topStarters,
 }: FixturePitchViewProps) {
@@ -88,8 +94,8 @@ export function FixturePitchView({
       >
         <div aria-hidden="true" className="fixture-squad-pitch__markings"><span /><span /><span /><span /></div>
         <div className="fixture-squad-pitch__halves">
-          <FixtureLineupPanel players={topStarters} side="top" squad={topSquad} />
-          <FixtureLineupPanel players={bottomStarters} side="bottom" squad={bottomSquad} />
+          <FixtureLineupPanel gameweekStatus={gameweekStatus} players={topStarters} side="top" squad={topSquad} />
+          <FixtureLineupPanel gameweekStatus={gameweekStatus} players={bottomStarters} side="bottom" squad={bottomSquad} />
         </div>
       </div>
     </article>
@@ -97,10 +103,12 @@ export function FixturePitchView({
 }
 
 export function FixtureLineupPanel({
+  gameweekStatus,
   players,
   side,
   squad,
 }: {
+  gameweekStatus: FixtureGameweekStatus;
   players: FixtureSquad['starters'];
   side: 'top' | 'bottom';
   squad: FixtureSquad;
@@ -120,7 +128,7 @@ export function FixtureLineupPanel({
         {positions.map((position) => (
           <div className={`fixture-squad-pitch__row position-${position.toLowerCase()}`} data-position={position} key={position}>
             {players.filter((player) => fixturePosition(player.position) === position).map((player) => (
-              <FixturePitchPlayer key={player.id} player={player} />
+              <FixturePitchPlayer gameweekStatus={gameweekStatus} key={player.id} player={player} />
             ))}
           </div>
         ))}
@@ -130,10 +138,12 @@ export function FixtureLineupPanel({
 }
 
 export function FixtureRosterColumn({
+  gameweekStatus,
   label,
   players,
   squad,
 }: {
+  gameweekStatus: FixtureGameweekStatus;
   label: 'Substitutes' | 'Reserves';
   players: FixtureSquadPlayer[];
   squad: FixtureSquad;
@@ -150,7 +160,7 @@ export function FixtureRosterColumn({
             <li className={player ? '' : 'is-empty'} key={player?.id ?? `${squad.team.id}-${label}-${index}`}>
               <span className="fixture-squad-roster__number">{index + 1}</span>
               {player
-                ? <FixtureRosterPlayer player={player} />
+                ? <FixtureRosterPlayer gameweekStatus={gameweekStatus} player={player} />
                 : <span className="fixture-squad-roster__empty">Empty slot</span>}
             </li>
           );
@@ -177,13 +187,8 @@ export function sortFixtureBench(players: FixtureSquadPlayer[]): FixtureSquadPla
     .map(({ player }) => player);
 }
 
-function FixturePitchPlayer({ player }: { player: FixtureSquadPlayer }) {
+function FixturePitchPlayer({ gameweekStatus, player }: { gameweekStatus: FixtureGameweekStatus; player: FixtureSquadPlayer }) {
   const shirtTeam = player.club?.shortName ?? player.club?.name ?? 'unknown';
-  const fixtureLabel = player.nextOpponent
-    ? player.nextFixtureIsHome === true
-      ? (player.nextOpponent.shortName ?? player.nextOpponent.name).toUpperCase()
-      : (player.nextOpponent.shortName ?? player.nextOpponent.name).toLowerCase()
-    : 'Next —';
 
   return (
     <div
@@ -191,57 +196,74 @@ function FixturePitchPlayer({ player }: { player: FixtureSquadPlayer }) {
       data-player-id={player.id}
       title={`${player.displayName} · ${player.points} pts`}
     >
-      <FixturePlayerToken fixtureLabel={fixtureLabel} player={player} shirtTeam={shirtTeam} />
+      <FixturePlayerToken gameweekStatus={gameweekStatus} player={player} shirtTeam={shirtTeam} />
     </div>
   );
 }
 
 function FixturePlayerToken({
-  fixtureLabel,
+  gameweekStatus,
   player,
   shirtTeam,
 }: {
-  fixtureLabel: string;
+  gameweekStatus: FixtureGameweekStatus;
   player: FixtureSquadPlayer;
   shirtTeam: string;
 }) {
   return (
     <PlayerCard
-      formPosition="below"
+      formPosition={gameweekStatus === 'future' ? 'below' : 'hidden'}
       layout="pitch"
-      player={toFixtureCardPlayer(player, fixtureLabel, shirtTeam)}
+      player={toFixtureCardPlayer(player, shirtTeam)}
       showPositionMarker={false}
       size="md"
     />
   );
 }
 
-function FixtureRosterPlayer({ player }: { player: FixtureSquadPlayer }) {
-  const fixtureLabel = player.nextOpponent
-    ? player.nextFixtureIsHome === true
-      ? (player.nextOpponent.shortName ?? player.nextOpponent.name).toUpperCase()
-      : (player.nextOpponent.shortName ?? player.nextOpponent.name).toLowerCase()
-    : 'Next —';
-
+function FixtureRosterPlayer({ gameweekStatus, player }: { gameweekStatus: FixtureGameweekStatus; player: FixtureSquadPlayer }) {
   return (
     <div className={`squad-page__pitch-player fixture-squad-pitch__player position-${fixturePosition(player.position).toLowerCase()} form-band-${formBand(player.form)}`} data-player-id={player.id} title={`${player.displayName} · ${player.points} pts`}>
-      <FixturePlayerToken fixtureLabel={fixtureLabel} player={player} shirtTeam={player.club?.shortName ?? player.club?.name ?? 'unknown'} />
+      <FixturePlayerToken gameweekStatus={gameweekStatus} player={player} shirtTeam={player.club?.shortName ?? player.club?.name ?? 'unknown'} />
     </div>
   );
 }
 
-function toFixtureCardPlayer(player: FixtureSquadPlayer, fixtureLabel?: string, shirtTeam?: string): PlayerCardPlayer {
-  const opponent = player.nextOpponent?.shortName ?? player.nextOpponent?.name;
-  const label = fixtureLabel ?? (opponent ? (player.nextFixtureIsHome === true ? opponent.toUpperCase() : opponent.toLowerCase()) : 'Next —');
+function toFixtureCardPlayer(player: FixtureSquadPlayer, shirtTeam?: string): PlayerCardPlayer {
   return {
     captain: player.isCaptain,
     displayName: player.displayName,
-    fixtures: [{ difficulty: player.nextFixtureDifficulty, label, title: fixtureDifficultyTitle(player.nextFixtureDifficulty) }],
+    fixtures: fixtureCardFixtures(player),
     form: player.form,
     position: fixturePosition(player.position),
     team: shirtTeam ?? player.club?.shortName ?? player.club?.name ?? 'unknown',
     viceCaptain: player.isViceCaptain,
   };
+}
+
+function fixtureCardFixtures(player: FixtureSquadPlayer): NonNullable<PlayerCardPlayer['fixtures']> {
+  const fixtureFixtures = player.fixtureFixtures ?? legacyFixtureFallback(player);
+  return fixtureFixtures.map((fixture) => ({
+    difficulty: fixture.difficulty,
+    label: formatFixtureOpponent(fixture.opponent, fixture.isHome),
+    title: fixtureDifficultyTitle(fixture.difficulty),
+  }));
+}
+
+function legacyFixtureFallback(player: FixtureSquadPlayer): FixturePlayerFixture[] {
+  if (!player.nextOpponent && player.nextFixtureDifficulty === undefined) return [];
+  return [{
+    fixtureId: 'legacy-next-fixture',
+    gameweek: null,
+    opponent: player.nextOpponent ?? { id: 'unknown-opponent', name: 'Next opponent', shortName: 'NEXT' },
+    difficulty: player.nextFixtureDifficulty,
+    isHome: player.nextFixtureIsHome === true,
+  }];
+}
+
+function formatFixtureOpponent(opponent: FixturePlayerFixture['opponent'], isHome: boolean): string {
+  const label = opponent.shortName ?? opponent.name;
+  return isHome ? label.toUpperCase() : label.toLowerCase();
 }
 
 function fixturePosition(position: string): string {

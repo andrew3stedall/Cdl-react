@@ -129,10 +129,11 @@ def fixture_squads(
         "get_historical_fixture_squads",
         None,
     )
+    fixture_contexts = _fixture_contexts_for_gameweek(squad_repository, fixture.gameweek.number)
     if fixture.status != "pending" and historical_squad_loader is not None:
         historical_squads = historical_squad_loader(fixture)
         if historical_squads:
-            return historical_squads
+            return _attach_fixture_contexts(historical_squads, fixture_contexts)
         # Never show today's squad as a completed fixture's lineup. If the
         # frozen historical record is unavailable, the UI can state that
         # lineup detail is not yet available instead of showing wrong players.
@@ -212,6 +213,7 @@ def fixture_squads(
                 next_fixture_difficulty=(
                     player.next_fixture.difficulty if player.next_fixture else None
                 ),
+                fixture_fixtures=fixture_contexts.get(player.epl_team.id, []),
                 points=player.points,
                 form=player.form,
                 slot=slot,
@@ -240,6 +242,41 @@ def fixture_squads(
             )
         )
     return squads
+
+
+
+def _fixture_contexts_for_gameweek(
+    squad_repository: SquadRepository,
+    gameweek_number: int,
+) -> dict[str, list[object]]:
+    loader = getattr(squad_repository, "fixture_contexts_by_team", None)
+    if not callable(loader):
+        return {}
+    return loader(gameweek_number)
+
+
+def _attach_fixture_contexts(
+    squads: list[FixtureSquad],
+    fixture_contexts: dict[str, list[object]],
+) -> list[FixtureSquad]:
+    if not fixture_contexts:
+        return squads
+
+    def enrich_player(player: FixtureSquadPlayer) -> FixtureSquadPlayer:
+        team_id = player.club.id if player.club is not None else ""
+        return player.model_copy(update={"fixture_fixtures": fixture_contexts.get(team_id, [])})
+
+    return [
+        squad.model_copy(
+            update={
+                "players": [enrich_player(player) for player in squad.players],
+                "starters": [enrich_player(player) for player in squad.starters],
+                "bench": [enrich_player(player) for player in squad.bench],
+                "reserves": [enrich_player(player) for player in squad.reserves],
+            }
+        )
+        for squad in squads
+    ]
 
 
 @router.get("/table", response_model=LeagueTableResponse)

@@ -205,6 +205,76 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
     def _invalidate_players_cache(self) -> None:
         self._players_cache = None
 
+
+    def fixture_contexts_by_team(self, gameweek_number: int) -> dict[str, list[PlayerNextFixture]]:
+        """Return the official FPL fixtures for each club in one gameweek."""
+        home_team = epl_teams_table.alias("fixture_context_home_team")
+        away_team = epl_teams_table.alias("fixture_context_away_team")
+        try:
+            with self._session_factory() as session:
+                rows = list(
+                    session.execute(
+                        select(
+                            fpl_fixtures_table.c.id,
+                            fpl_fixtures_table.c.gameweek,
+                            fpl_fixtures_table.c.home_team_id,
+                            fpl_fixtures_table.c.away_team_id,
+                            fpl_fixtures_table.c.kickoff_time,
+                            fpl_fixtures_table.c.home_difficulty,
+                            fpl_fixtures_table.c.away_difficulty,
+                            home_team.c.name.label("home_team_name"),
+                            home_team.c.short_name.label("home_team_short_name"),
+                            away_team.c.name.label("away_team_name"),
+                            away_team.c.short_name.label("away_team_short_name"),
+                        )
+                        .join(home_team, fpl_fixtures_table.c.home_team_id == home_team.c.id)
+                        .join(away_team, fpl_fixtures_table.c.away_team_id == away_team.c.id)
+                        .where(fpl_fixtures_table.c.gameweek == gameweek_number)
+                        .order_by(fpl_fixtures_table.c.kickoff_time.asc().nulls_last())
+                    ).mappings()
+                )
+        except SQLAlchemyError:
+            return {}
+
+        fixture_contexts: dict[str, list[PlayerNextFixture]] = {}
+        for row in rows:
+            gameweek = (
+                GameweekSummary(
+                    id=f"gw-{row['gameweek']}",
+                    name=f"Gameweek {row['gameweek']}",
+                    number=int(row["gameweek"]),
+                )
+                if row["gameweek"] is not None
+                else None
+            )
+            home_fixture = PlayerNextFixture(
+                fixture_id=str(row["id"]),
+                gameweek=gameweek,
+                opponent=TeamSummary(
+                    id=str(row["away_team_id"]),
+                    name=str(row["away_team_name"]),
+                    short_name=str(row["away_team_short_name"]),
+                ),
+                difficulty=row["home_difficulty"],
+                is_home=True,
+                kickoff_at=row["kickoff_time"],
+            )
+            away_fixture = PlayerNextFixture(
+                fixture_id=str(row["id"]),
+                gameweek=gameweek,
+                opponent=TeamSummary(
+                    id=str(row["home_team_id"]),
+                    name=str(row["home_team_name"]),
+                    short_name=str(row["home_team_short_name"]),
+                ),
+                difficulty=row["away_difficulty"],
+                is_home=False,
+                kickoff_at=row["kickoff_time"],
+            )
+            fixture_contexts.setdefault(str(row["home_team_id"]), []).append(home_fixture)
+            fixture_contexts.setdefault(str(row["away_team_id"]), []).append(away_fixture)
+        return fixture_contexts
+
     @staticmethod
     def _next_fixtures_by_team(session: Session) -> dict[str, list[PlayerNextFixture]]:
         home_team = epl_teams_table.alias("fixture_home_team")

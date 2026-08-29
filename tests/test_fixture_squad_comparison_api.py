@@ -27,6 +27,25 @@ class MemoryFixtureSquadRepository:
     def list_squad_players(self) -> list[PlayerDetail]:
         return self.players
 
+    def fixture_contexts_by_team(self, gameweek_number: int) -> dict[str, list[PlayerNextFixture]]:
+        opponent = TeamSummary(id="epl-opponent", name="Fixture Opponent", short_name="OPP")
+        return {
+            f"epl-{index}": [
+                PlayerNextFixture(
+                    fixture_id=f"epl-gw-{gameweek_number}-{index}",
+                    gameweek=GameweekSummary(
+                        id=f"gw-{gameweek_number}",
+                        name=f"Gameweek {gameweek_number}",
+                        number=gameweek_number,
+                    ),
+                    opponent=opponent,
+                    difficulty=4,
+                    is_home=index % 2 == 0,
+                )
+            ]
+            for index in range(1, 13)
+        }
+
 
 def _player(team: TeamSummary, index: int, position: str) -> PlayerDetail:
     player_team = TeamSummary(id=f"epl-{index}", name="Club")
@@ -96,6 +115,9 @@ def test_upcoming_fixture_returns_both_squads_with_best_valid_xis() -> None:
     assert payload[0]["starters"][0]["next_opponent"]["short_name"] == "NXT"
     assert payload[0]["starters"][0]["next_fixture_is_home"] is False
     assert payload[0]["starters"][0]["next_fixture_difficulty"] == 3
+    assert payload[0]["starters"][0]["fixture_fixtures"][0]["gameweek"] == 1
+    assert payload[0]["starters"][0]["fixture_fixtures"][0]["opponent"]["short_name"] == "OPP"
+    assert payload[0]["starters"][0]["fixture_fixtures"][0]["difficulty"] == 4
     assert payload[0]["starters"][0]["is_captain"] is False
     assert all(
         sum(player["position"] == position for player in squad["starters"]) == count

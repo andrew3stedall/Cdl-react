@@ -323,6 +323,10 @@ jobs:
                   ("update",),
               },
               "google_cloud_scheduler_job.fpl_refresh[0]": {("create",), ("update",)},
+              "google_project_iam_member.github_deploy_scheduler_admin": {
+                  ("create",),
+                  ("update",),
+              },
               "google_project_service.required[\"cloudscheduler.googleapis.com\"]": {
                   ("create",),
                   ("update",),

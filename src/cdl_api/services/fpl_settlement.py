@@ -48,7 +48,7 @@ class FplSettlementService:
         with self._session_factory() as session:
             due_gameweeks = self._due_gameweeks(session, now)
             locked_teams = self._finalise_due_selections(session, due_gameweeks, now)
-            settled, skipped = self._settle_completed_fixtures(session, now)
+            settled, skipped = self._settle_completed_fixtures(session, now, due_gameweeks)
             session.commit()
         return FplSettlementResult(
             locked_gameweeks=len(due_gameweeks),
@@ -258,9 +258,12 @@ class FplSettlementService:
         cls,
         session: Session,
         now: datetime,
+        due_gameweeks: Mapping[int, datetime],
     ) -> tuple[int, int]:
         ready_gameweeks = cls._ready_gameweeks(session)
-        if not ready_gameweeks:
+        live_gameweeks = set(due_gameweeks)
+        score_gameweeks = ready_gameweeks | live_gameweeks
+        if not score_gameweeks:
             return 0, 0
 
         live_rows = session.execute(
@@ -307,7 +310,7 @@ class FplSettlementService:
                 continue
             fixture_id = str(payload.get("id") or row["id"])
             gameweek = _gameweek_number(payload)
-            if gameweek is None or gameweek not in ready_gameweeks:
+            if gameweek is None or gameweek not in score_gameweeks:
                 continue
             result_row = result_rows.get(fixture_id)
             current_result = result_row[1] if result_row is not None else {}
@@ -319,6 +322,14 @@ class FplSettlementService:
             player_points = _event_player_points(live_payload)
             if not player_points:
                 skipped += 1
+                continue
+            finalised = gameweek in ready_gameweeks
+            if (
+                not finalised
+                and result_row is not None
+                and isinstance(current_result, Mapping)
+                and current_result.get("source_response_sha256") == source_hash
+            ):
                 continue
             home_team = payload.get("home_team")
             away_team = payload.get("away_team")
@@ -346,8 +357,8 @@ class FplSettlementService:
                 "home_score": home_score,
                 "away_score": away_score,
                 "outcome": outcome,
-                "finalised": True,
-                "finalised_at": finalised_at,
+                "finalised": finalised,
+                "finalised_at": finalised_at if finalised else current_result.get("finalised_at"),
                 "gameweek": gameweek,
                 "source_resource": f"event-live:{gameweek}",
                 "source_response_sha256": source_hash,
@@ -362,7 +373,9 @@ class FplSettlementService:
                 "chips_played": chips_played,
                 "source_resource": f"event-live:{gameweek}",
                 "source_response_sha256": source_hash,
-                "finalised_at": finalised_at,
+                "finalised_at": finalised_at
+                if finalised
+                else snapshot_rows.get(fixture_id, {}).get("finalised_at"),
                 "synthetic": False,
             }
             result_id = f"result-{fixture_id}"
@@ -395,7 +408,8 @@ class FplSettlementService:
                     .where(fixture_scoring_snapshots_table.c.id == snapshot_id)
                     .values(payload_json=snapshot_payload)
                 )
-            settled += 1
+            if finalised:
+                settled += 1
         return settled, skipped
 
     @staticmethod

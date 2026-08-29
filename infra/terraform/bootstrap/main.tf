@@ -22,6 +22,7 @@ module "staging" {
   deploy_project_roles = toset([
     "roles/artifactregistry.admin",
     "roles/cloudsql.admin",
+    "roles/cloudscheduler.admin",
     "roles/iam.serviceAccountAdmin",
     "roles/iam.serviceAccountUser",
     "roles/logging.configWriter",

@@ -13,6 +13,9 @@
   goalkeeper-first bench ordering, and removed opponent XI prediction UI.
 - Corrected fixture pitch card containment by restoring the standard Squad
   player wrapper around each reusable `PlayerCard`.
+- Reused the fixture pitch, substitute, and reserve structure for completed
+  gameweeks, showing gameweek points with the Squad form-dot treatment and
+  revealing current-gameweek points only after each player's fixture kickoff.
 - Added a Tauri 2 Android shell and reproducible debug APK workflow around the existing React frontend.
 - Kept the existing FastAPI/PostgreSQL Cloud Run service as the backend; staging APK builds open the deployed staging app to preserve same-origin cookie authentication.
 - Match points-against labels to their attacking/defensive bar colours, keep them clear of the bars, and use the result-track colour for empty chart slots.

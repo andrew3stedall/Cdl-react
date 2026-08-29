@@ -3,6 +3,7 @@ export {
   FixturePitchView,
   FixtureRosterColumn,
   FixtureSquadComparison,
+  shouldShowFixturePoints,
   sortFixtureBench,
 } from './FixtureSquadComparison';
 export type {

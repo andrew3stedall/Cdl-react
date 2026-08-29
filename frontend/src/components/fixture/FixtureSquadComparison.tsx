@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 
 import { PlayerCard, type PlayerCardPlayer, formBand } from '../player/PlayerCard';
 import type { AttackDirection } from '../../contracts';
@@ -9,6 +9,7 @@ import './fixture-squad-comparison.css';
 export interface FixtureSquadComparisonProps {
   attackDirection: AttackDirection;
   gameweekStatus: FixtureGameweekStatus;
+  now?: number;
   squads: FixtureSquad[];
 }
 
@@ -19,6 +20,7 @@ export interface FixturePitchViewProps {
   bottomSquad: FixtureSquad;
   bottomStarters: FixtureSquad['starters'];
   gameweekStatus: FixtureGameweekStatus;
+  now?: number;
   topSquad: FixtureSquad;
   topStarters: FixtureSquad['starters'];
 }
@@ -27,12 +29,20 @@ export interface FixturePitchViewProps {
  * Reusable fixture comparison parent. It owns the pitch, bench, and reserve
  * views so the same fixture presentation can be embedded outside League.
  */
-export function FixtureSquadComparison({ attackDirection, gameweekStatus, squads }: FixtureSquadComparisonProps) {
+export function FixtureSquadComparison({ attackDirection, gameweekStatus, now: nowOverride, squads }: FixtureSquadComparisonProps) {
+  const [clockNow, setClockNow] = useState(() => Date.now());
   const userSquad = squads.find((squad) => squad.isUserTeam) ?? squads[0];
   const opponentSquad = squads.find((squad) => !squad.isUserTeam && squad.team.id !== userSquad?.team.id) ?? squads[1];
 
+  useEffect(() => {
+    if (gameweekStatus !== 'current' || nowOverride !== undefined) return undefined;
+    const timer = window.setInterval(() => setClockNow(Date.now()), 30_000);
+    return () => window.clearInterval(timer);
+  }, [gameweekStatus, nowOverride]);
+
   if (!userSquad || !opponentSquad) return null;
 
+  const now = nowOverride ?? clockNow;
   const userOnTop = attackDirection === 'down';
   const topSquad = userOnTop ? userSquad : opponentSquad;
   const bottomSquad = userOnTop ? opponentSquad : userSquad;
@@ -46,20 +56,21 @@ export function FixtureSquadComparison({ attackDirection, gameweekStatus, squads
         bottomSquad={bottomSquad}
         bottomStarters={bottomStarters}
         gameweekStatus={gameweekStatus}
+        now={now}
         topSquad={topSquad}
         topStarters={topStarters}
       />
       <div className="fixture-squad-rosters">
         <FixtureRosterGroup label="Substitutes">
           <div className="fixture-squad-rosters__columns">
-            <FixtureRosterColumn gameweekStatus={gameweekStatus} label="Substitutes" players={sortFixtureBench(topSquad.bench)} squad={topSquad} />
-            <FixtureRosterColumn gameweekStatus={gameweekStatus} label="Substitutes" players={sortFixtureBench(bottomSquad.bench)} squad={bottomSquad} />
+            <FixtureRosterColumn gameweekStatus={gameweekStatus} label="Substitutes" now={now} players={sortFixtureBench(topSquad.bench)} squad={topSquad} />
+            <FixtureRosterColumn gameweekStatus={gameweekStatus} label="Substitutes" now={now} players={sortFixtureBench(bottomSquad.bench)} squad={bottomSquad} />
           </div>
         </FixtureRosterGroup>
         <FixtureRosterGroup label="Reserves">
           <div className="fixture-squad-rosters__columns">
-            <FixtureRosterColumn gameweekStatus={gameweekStatus} label="Reserves" players={topSquad.reserves} squad={topSquad} />
-            <FixtureRosterColumn gameweekStatus={gameweekStatus} label="Reserves" players={bottomSquad.reserves} squad={bottomSquad} />
+            <FixtureRosterColumn gameweekStatus={gameweekStatus} label="Reserves" now={now} players={topSquad.reserves} squad={topSquad} />
+            <FixtureRosterColumn gameweekStatus={gameweekStatus} label="Reserves" now={now} players={bottomSquad.reserves} squad={bottomSquad} />
           </div>
         </FixtureRosterGroup>
       </div>
@@ -76,6 +87,7 @@ export function FixturePitchView({
   bottomSquad,
   bottomStarters,
   gameweekStatus,
+  now,
   topSquad,
   topStarters,
 }: FixturePitchViewProps) {
@@ -94,8 +106,8 @@ export function FixturePitchView({
       >
         <div aria-hidden="true" className="fixture-squad-pitch__markings"><span /><span /><span /><span /></div>
         <div className="fixture-squad-pitch__halves">
-          <FixtureLineupPanel gameweekStatus={gameweekStatus} players={topStarters} side="top" squad={topSquad} />
-          <FixtureLineupPanel gameweekStatus={gameweekStatus} players={bottomStarters} side="bottom" squad={bottomSquad} />
+          <FixtureLineupPanel gameweekStatus={gameweekStatus} now={now} players={topStarters} side="top" squad={topSquad} />
+          <FixtureLineupPanel gameweekStatus={gameweekStatus} now={now} players={bottomStarters} side="bottom" squad={bottomSquad} />
         </div>
       </div>
     </article>
@@ -104,11 +116,13 @@ export function FixturePitchView({
 
 export function FixtureLineupPanel({
   gameweekStatus,
+  now,
   players,
   side,
   squad,
 }: {
   gameweekStatus: FixtureGameweekStatus;
+  now?: number;
   players: FixtureSquad['starters'];
   side: 'top' | 'bottom';
   squad: FixtureSquad;
@@ -128,7 +142,7 @@ export function FixtureLineupPanel({
         {positions.map((position) => (
           <div className={`fixture-squad-pitch__row position-${position.toLowerCase()}`} data-position={position} key={position}>
             {players.filter((player) => fixturePosition(player.position) === position).map((player) => (
-              <FixturePitchPlayer gameweekStatus={gameweekStatus} key={player.id} player={player} />
+              <FixturePitchPlayer gameweekStatus={gameweekStatus} key={player.id} now={now} player={player} />
             ))}
           </div>
         ))}
@@ -140,11 +154,13 @@ export function FixtureLineupPanel({
 export function FixtureRosterColumn({
   gameweekStatus,
   label,
+  now,
   players,
   squad,
 }: {
   gameweekStatus: FixtureGameweekStatus;
   label: 'Substitutes' | 'Reserves';
+  now?: number;
   players: FixtureSquadPlayer[];
   squad: FixtureSquad;
 }) {
@@ -160,7 +176,7 @@ export function FixtureRosterColumn({
             <li className={player ? '' : 'is-empty'} key={player?.id ?? `${squad.team.id}-${label}-${index}`}>
               <span className="fixture-squad-roster__number">{fixtureRosterSlotLabel(label, index)}</span>
               {player
-                ? <FixtureRosterPlayer gameweekStatus={gameweekStatus} player={player} />
+                ? <FixtureRosterPlayer gameweekStatus={gameweekStatus} now={now} player={player} />
                 : <span className="fixture-squad-roster__empty">Empty slot</span>}
             </li>
           );
@@ -192,60 +208,80 @@ export function sortFixtureBench(players: FixtureSquadPlayer[]): FixtureSquadPla
     .map(({ player }) => player);
 }
 
-function FixturePitchPlayer({ gameweekStatus, player }: { gameweekStatus: FixtureGameweekStatus; player: FixtureSquadPlayer }) {
+function FixturePitchPlayer({ gameweekStatus, now, player }: { gameweekStatus: FixtureGameweekStatus; now?: number; player: FixtureSquadPlayer }) {
   const shirtTeam = player.club?.shortName ?? player.club?.name ?? 'unknown';
+  const showPoints = shouldShowFixturePoints(gameweekStatus, player, now);
+  const showForm = gameweekStatus === 'future';
 
   return (
     <div
       className={`squad-page__pitch-player fixture-squad-pitch__player position-${fixturePosition(player.position).toLowerCase()} form-band-${formBand(player.form)}`}
       data-player-id={player.id}
+      data-points-visible={showPoints ? 'true' : 'false'}
       title={`${player.displayName} · ${player.points} pts`}
     >
-      <FixturePlayerToken gameweekStatus={gameweekStatus} player={player} shirtTeam={shirtTeam} size="md" />
+      <FixturePlayerToken player={player} shirtTeam={shirtTeam} showForm={showForm} showPoints={showPoints} size="md" />
     </div>
   );
 }
 
 function FixturePlayerToken({
-  gameweekStatus,
   player,
   shirtTeam,
+  showForm,
+  showPoints,
   size,
 }: {
-  gameweekStatus: FixtureGameweekStatus;
   player: FixtureSquadPlayer;
   shirtTeam: string;
+  showForm: boolean;
+  showPoints: boolean;
   size: 'sm' | 'md';
 }) {
+  const indicatorValue = showPoints ? player.points : player.form;
+  const indicatorType = showPoints ? 'points' : showForm ? 'form' : undefined;
   return (
     <PlayerCard
-      formPosition={gameweekStatus === 'future' ? 'below' : 'hidden'}
+      data-fixture-metric={indicatorType}
+      formPosition={showForm || showPoints ? 'below' : 'hidden'}
       layout="pitch"
-      player={toFixtureCardPlayer(player, shirtTeam)}
+      player={toFixtureCardPlayer(player, shirtTeam, indicatorValue)}
       showPositionMarker={false}
       size={size}
     />
   );
 }
 
-function FixtureRosterPlayer({ gameweekStatus, player }: { gameweekStatus: FixtureGameweekStatus; player: FixtureSquadPlayer }) {
+function FixtureRosterPlayer({ gameweekStatus, now, player }: { gameweekStatus: FixtureGameweekStatus; now?: number; player: FixtureSquadPlayer }) {
+  const showPoints = shouldShowFixturePoints(gameweekStatus, player, now);
+  const showForm = gameweekStatus === 'future';
   return (
-    <div className={`squad-page__pitch-player fixture-squad-pitch__player compact position-${fixturePosition(player.position).toLowerCase()} form-band-${formBand(player.form)}`} data-player-id={player.id} title={`${player.displayName} · ${player.points} pts`}>
-      <FixturePlayerToken gameweekStatus={gameweekStatus} player={player} shirtTeam={player.club?.shortName ?? player.club?.name ?? 'unknown'} size="sm" />
+    <div className={`squad-page__pitch-player fixture-squad-pitch__player compact position-${fixturePosition(player.position).toLowerCase()} form-band-${formBand(player.form)}`} data-player-id={player.id} data-points-visible={showPoints ? 'true' : 'false'} title={`${player.displayName} · ${player.points} pts`}>
+      <FixturePlayerToken player={player} shirtTeam={player.club?.shortName ?? player.club?.name ?? 'unknown'} showForm={showForm} showPoints={showPoints} size="sm" />
     </div>
   );
 }
 
-function toFixtureCardPlayer(player: FixtureSquadPlayer, shirtTeam?: string): PlayerCardPlayer {
+function toFixtureCardPlayer(player: FixtureSquadPlayer, shirtTeam?: string, indicatorValue: number | null | undefined = player.form): PlayerCardPlayer {
   return {
     captain: player.isCaptain,
     displayName: player.displayName,
     fixtures: fixtureCardFixtures(player),
-    form: player.form,
+    form: indicatorValue,
     position: fixturePosition(player.position),
     team: shirtTeam ?? player.club?.shortName ?? player.club?.name ?? 'unknown',
     viceCaptain: player.isViceCaptain,
   };
+}
+
+export function shouldShowFixturePoints(gameweekStatus: FixtureGameweekStatus, player: FixtureSquadPlayer, now = Date.now()): boolean {
+  if (gameweekStatus === 'past') return true;
+  if (gameweekStatus !== 'current') return false;
+  return (player.fixtureFixtures ?? []).some((fixture) => {
+    if (!fixture.kickoffAt) return false;
+    const kickoff = Date.parse(fixture.kickoffAt);
+    return Number.isFinite(kickoff) && kickoff <= now;
+  });
 }
 
 function fixtureCardFixtures(player: FixtureSquadPlayer): NonNullable<PlayerCardPlayer['fixtures']> {

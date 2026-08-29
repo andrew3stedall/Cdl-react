@@ -12,6 +12,7 @@ const castle = { id: 'castle', name: 'Castle United', shortName: 'CAS', managerN
 const drafton = { id: 'drafton', name: 'Drafton Rovers', shortName: 'DRA', managerName: 'DJ' };
 const keepers = { id: 'keepers', name: 'Keeper City', shortName: 'KPR', managerName: 'Warren' };
 const wildcards = { id: 'wildcards', name: 'Wildcard Athletic', shortName: 'WCA', managerName: 'Kevin' };
+const pastGameweek = { id: 'gw-11', name: 'Gameweek 11', number: 11, deadlineAt: '2026-08-07T17:30:00Z' };
 const gameweek = { id: 'gw-12', name: 'Gameweek 12', number: 12, deadlineAt: '2026-08-14T17:30:00Z' };
 const fixture = {
   id: 'fixture-1201',
@@ -42,6 +43,15 @@ const finishedFixture = {
   score: { homeScore: 48, awayScore: 43, bonusPoints: {}, chipsPlayed: {}, outcome: 'home_win' as const },
 };
 
+const pastFixture = {
+  ...fixture,
+  id: 'fixture-1101',
+  gameweek: pastGameweek,
+  status: 'complete' as const,
+  isCurrent: false,
+  score: { homeScore: 42, awayScore: 39, bonusPoints: {}, chipsPlayed: {}, outcome: 'home_win' as const },
+};
+
 const nextFixture = {
   ...fixture,
   id: 'fixture-1301',
@@ -60,10 +70,18 @@ const secondNextFixture = {
   awayTeam: wildcards,
 };
 
+const semiFinalFixture = {
+  ...nextFixture,
+  id: 'fixture-sf-01',
+  gameweek: { id: 'sf-1', name: 'Semi Final', number: 99 },
+  roundLabel: 'Semi Final',
+  isNext: false,
+};
+
 const snapshot: LeagueSnapshot = {
   currentFixtures: { gameweek, fixtures: [fixture, finishedFixture] },
   nextFixtures: { gameweek: { ...nextFixture.gameweek, deadlineAt: '2026-08-21T17:30:00Z' }, fixtures: [nextFixture] },
-  allFixtures: { gameweek: null, fixtures: [fixture, finishedFixture, nextFixture, secondNextFixture] },
+  allFixtures: { gameweek: null, fixtures: [pastFixture, fixture, finishedFixture, nextFixture, secondNextFixture, semiFinalFixture] },
   table: {
     source: 'service-calculated',
     rows: [{ position: 1, team: castle, played: 1, wins: 1, draws: 0, losses: 0, pointsFor: 58, pointsAgainst: 52, pointsDifference: 6, leaguePoints: 3 }],
@@ -148,7 +166,8 @@ describe('LeaguePage', () => {
     expect(container.querySelector('.league-gameweek-state--not-started')).not.toBeNull();
     expect(container.textContent).not.toContain('Current gameweek');
     expect(container.textContent).not.toContain('Upcoming gameweek');
-    expect(container.textContent).not.toContain('Regular season');
+    expect(container.textContent).toContain('Regular season');
+    expect(container.textContent).toContain('Semi Final');
     expect(container.textContent).not.toContain('Pending');
     expect(container.textContent).not.toContain('Upcoming');
     expect(container.textContent).not.toContain('Not started');
@@ -158,6 +177,45 @@ describe('LeaguePage', () => {
     expect(container.textContent).toContain('Kevin');
     expect(container.querySelector('nav[aria-label="League navigation"]')).toBeNull();
     expect(container.textContent).not.toContain('Overview stays lightweight');
+    act(() => root.unmount());
+  });
+
+  test('keeps past results collapsed but makes every completed gameweek available', async () => {
+    const { container, root } = await renderPage();
+
+    expect(container.textContent).toContain('1 gameweek available');
+    expect(container.querySelector('#league-history-panel')).toBeNull();
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('button[aria-controls="league-history-panel"]')?.click();
+    });
+
+    expect(container.querySelector('#league-history-panel')).not.toBeNull();
+    expect(container.querySelector<HTMLButtonElement>('.league-history-browser__item')?.textContent).toContain('GW 11');
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('.league-history-browser__item')?.click();
+    });
+
+    expect(container.querySelector('.league-gameweek-section--history')?.textContent).toContain('Gameweek 11');
+    expect(container.querySelector<HTMLButtonElement>('button[aria-label*="Open finished fixture for Andrew versus DJ"]')).not.toBeNull();
+    act(() => root.unmount());
+  });
+
+  test('shows only the selected round while keeping the current round as the default', async () => {
+    const { container, root } = await renderPage();
+
+    const semiFinalTab = container.querySelector<HTMLButtonElement>('#league-round-tab-semi-final');
+    expect(semiFinalTab?.getAttribute('aria-selected')).toBe('false');
+
+    await act(async () => {
+      semiFinalTab?.click();
+    });
+
+    expect(container.querySelector<HTMLButtonElement>('#league-round-tab-semi-final')?.getAttribute('aria-selected')).toBe('true');
+    expect(container.querySelector('[role="tabpanel"]')?.textContent).toContain('Semi Final');
+    expect(container.querySelectorAll('.league-gameweek-section')).toHaveLength(1);
+    expect(container.querySelectorAll('.league-fixture-row')).toHaveLength(1);
     act(() => root.unmount());
   });
 

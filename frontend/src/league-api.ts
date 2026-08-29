@@ -329,7 +329,7 @@ interface ApiFixtureSquadPlayer {
 
 interface ApiFixturePlayerFixture {
   fixture_id: string;
-  gameweek?: number | null;
+  gameweek?: ApiGameweek | number | null;
   opponent: ApiTeam;
   difficulty?: number | null;
   is_home: boolean;
@@ -355,7 +355,7 @@ function mapFixtureSquadPlayer(player: ApiFixtureSquadPlayer): FixtureSquadPlaye
     nextFixtureDifficulty: player.next_fixture_difficulty ?? undefined,
     fixtureFixtures: (player.fixture_fixtures ?? []).map((fixture) => ({
       fixtureId: fixture.fixture_id,
-      gameweek: fixture.gameweek?.number ?? null,
+      gameweek: typeof fixture.gameweek === 'number' ? fixture.gameweek : fixture.gameweek?.number ?? null,
       opponent: mapTeam(fixture.opponent),
       difficulty: fixture.difficulty ?? undefined,
       isHome: fixture.is_home,

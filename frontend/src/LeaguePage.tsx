@@ -451,7 +451,7 @@ function RoundCarousel({ rounds, selectedRoundKey, onNext, onPrevious, onSelect 
 }
 
 function GameweekCarousel({ groups, selectedGameweekId, onSelect }: { groups: GameweekGroup[]; selectedGameweekId: string | null; onSelect: (id: string) => void }) {
-  return <section aria-label="Gameweeks in selected round" className="league-gameweek-picker"><div className="league-gameweek-picker__header"><p className="eyebrow">Gameweeks</p><span>Choose one round at a time</span></div><div className="league-gameweek-picker__track" role="list">{groups.map((group) => <button aria-current={group.id === selectedGameweekId ? 'true' : undefined} className={`league-gameweek-picker__item league-gameweek-picker__item--${group.state}${group.id === selectedGameweekId ? ' is-selected' : ''}`} key={group.id} onClick={() => onSelect(group.id)} type="button"><strong>GW {group.gameweek.number}</strong><small>{gameweekPickerLabel(group)}</small></button>)}</div></section>;
+  return <section aria-label="Gameweeks in selected round" className="league-gameweek-picker"><div className="league-gameweek-picker__header"><p className="eyebrow">Gameweeks</p><span>Choose one round at a time</span></div><div aria-label="Gameweeks" className="league-gameweek-picker__track">{groups.map((group) => <button aria-current={group.id === selectedGameweekId ? 'true' : undefined} className={`league-gameweek-picker__item league-gameweek-picker__item--${group.state}${group.id === selectedGameweekId ? ' is-selected' : ''}`} key={group.id} onClick={() => onSelect(group.id)} type="button"><strong>GW {group.gameweek.number}</strong><small>{gameweekPickerLabel(group)}</small></button>)}</div></section>;
 }
 
 function gameweekPickerLabel(group: GameweekGroup): string {

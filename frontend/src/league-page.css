@@ -391,7 +391,7 @@
 }
 
 .league-round-picker__card small {
-  color: var(--muted-foreground);
+  color: var(--foreground);
   font-size: 0.6rem;
 }
 

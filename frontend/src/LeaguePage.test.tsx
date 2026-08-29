@@ -64,6 +64,15 @@ const nextFixture = {
   score: { homeScore: null, awayScore: null, bonusPoints: {}, chipsPlayed: {}, outcome: 'pending' as const },
 };
 
+const currentPendingFixture = {
+  ...fixture,
+  id: 'fixture-1203',
+  status: 'pending' as const,
+  isCurrent: true,
+  detailAvailable: false,
+  score: { homeScore: null, awayScore: null, bonusPoints: {}, chipsPlayed: {}, outcome: 'pending' as const },
+};
+
 const secondNextFixture = {
   ...nextFixture,
   id: 'fixture-1302',
@@ -119,9 +128,11 @@ class MemoryLeagueClient implements LeagueClient {
 
   async getFixtureSquads(fixtureId: string): Promise<FixtureSquad[]> {
     this.squadRequests.push(fixtureId);
+    const castleFixture = { fixtureId: 'fpl-fixture-1301-castle', gameweek: nextFixture.gameweek.number, opponent: drafton, difficulty: 5, isHome: true };
+    const draftonFixture = { fixtureId: 'fpl-fixture-1301-drafton', gameweek: nextFixture.gameweek.number, opponent: castle, difficulty: 2, isHome: false };
     return [
-      { team: castle, isUserTeam: true, players: [{ id: 'castle-1', displayName: 'Castle Keeper', position: 'GKP', points: 80, form: 7, nextFixtureDifficulty: 3, slot: 'starter', club: { id: 'liv', name: 'Liverpool', shortName: 'LIV' }, isCaptain: true }, { id: 'castle-2', displayName: 'Castle Bench', position: 'DEF', points: 60, form: 5, slot: 'bench', club: { id: 'liv', name: 'Liverpool', shortName: 'LIV' } }, { id: 'castle-3', displayName: 'Castle Reserve', position: 'MID', points: 55, form: 3, slot: 'reserve', club: { id: 'liv', name: 'Liverpool', shortName: 'LIV' } }], starters: [{ id: 'castle-1', displayName: 'Castle Keeper', position: 'GKP', points: 80, form: 7, nextFixtureDifficulty: 3, slot: 'starter', club: { id: 'liv', name: 'Liverpool', shortName: 'LIV' }, isCaptain: true }], bench: [{ id: 'castle-2', displayName: 'Castle Bench', position: 'DEF', points: 60, form: 5, slot: 'bench', club: { id: 'liv', name: 'Liverpool', shortName: 'LIV' } }], reserves: [{ id: 'castle-3', displayName: 'Castle Reserve', position: 'MID', points: 55, form: 3, slot: 'reserve', club: { id: 'liv', name: 'Liverpool', shortName: 'LIV' } }] },
-      { team: drafton, isUserTeam: false, players: [{ id: 'drafton-1', displayName: 'Drafton Keeper', position: 'GKP', points: 70, form: 6, slot: 'starter', club: { id: 'ars', name: 'Arsenal', shortName: 'ARS' } }, { id: 'drafton-2', displayName: 'Drafton Defender', position: 'DEF', points: 65, form: 6, slot: 'bench', club: { id: 'ars', name: 'Arsenal', shortName: 'ARS' } }, { id: 'drafton-3', displayName: 'Drafton Reserve', position: 'MID', points: 50, form: 2, slot: 'reserve', club: { id: 'ars', name: 'Arsenal', shortName: 'ARS' } }], starters: [{ id: 'drafton-1', displayName: 'Drafton Keeper', position: 'GKP', points: 70, form: 6, slot: 'starter', club: { id: 'ars', name: 'Arsenal', shortName: 'ARS' } }], bench: [{ id: 'drafton-2', displayName: 'Drafton Defender', position: 'DEF', points: 65, form: 6, slot: 'bench', club: { id: 'ars', name: 'Arsenal', shortName: 'ARS' } }], reserves: [{ id: 'drafton-3', displayName: 'Drafton Reserve', position: 'MID', points: 50, form: 2, slot: 'reserve', club: { id: 'ars', name: 'Arsenal', shortName: 'ARS' } }] },
+      { team: castle, isUserTeam: true, players: [{ id: 'castle-1', displayName: 'Castle Keeper', position: 'GKP', points: 80, form: 7, nextFixtureDifficulty: 3, fixtureFixtures: [castleFixture], slot: 'starter', club: { id: 'liv', name: 'Liverpool', shortName: 'LIV' }, isCaptain: true }, { id: 'castle-2', displayName: 'Castle Bench', position: 'DEF', points: 60, form: 5, slot: 'bench', club: { id: 'liv', name: 'Liverpool', shortName: 'LIV' } }, { id: 'castle-3', displayName: 'Castle Reserve', position: 'MID', points: 55, form: 3, slot: 'reserve', club: { id: 'liv', name: 'Liverpool', shortName: 'LIV' } }], starters: [{ id: 'castle-1', displayName: 'Castle Keeper', position: 'GKP', points: 80, form: 7, nextFixtureDifficulty: 3, fixtureFixtures: [castleFixture], slot: 'starter', club: { id: 'liv', name: 'Liverpool', shortName: 'LIV' }, isCaptain: true }], bench: [{ id: 'castle-2', displayName: 'Castle Bench', position: 'DEF', points: 60, form: 5, slot: 'bench', club: { id: 'liv', name: 'Liverpool', shortName: 'LIV' } }], reserves: [{ id: 'castle-3', displayName: 'Castle Reserve', position: 'MID', points: 55, form: 3, slot: 'reserve', club: { id: 'liv', name: 'Liverpool', shortName: 'LIV' } }] },
+      { team: drafton, isUserTeam: false, players: [{ id: 'drafton-1', displayName: 'Drafton Keeper', position: 'GKP', points: 70, form: 6, fixtureFixtures: [draftonFixture], slot: 'starter', club: { id: 'ars', name: 'Arsenal', shortName: 'ARS' } }, { id: 'drafton-2', displayName: 'Drafton Defender', position: 'DEF', points: 65, form: 6, slot: 'bench', club: { id: 'ars', name: 'Arsenal', shortName: 'ARS' } }, { id: 'drafton-3', displayName: 'Drafton Reserve', position: 'MID', points: 50, form: 2, slot: 'reserve', club: { id: 'ars', name: 'Arsenal', shortName: 'ARS' } }], starters: [{ id: 'drafton-1', displayName: 'Drafton Keeper', position: 'GKP', points: 70, form: 6, fixtureFixtures: [draftonFixture], slot: 'starter', club: { id: 'ars', name: 'Arsenal', shortName: 'ARS' } }], bench: [{ id: 'drafton-2', displayName: 'Drafton Defender', position: 'DEF', points: 65, form: 6, slot: 'bench', club: { id: 'ars', name: 'Arsenal', shortName: 'ARS' } }], reserves: [{ id: 'drafton-3', displayName: 'Drafton Reserve', position: 'MID', points: 50, form: 2, slot: 'reserve', club: { id: 'ars', name: 'Arsenal', shortName: 'ARS' } }] },
     ];
   }
 }
@@ -133,6 +144,16 @@ class FinishedLeagueClient extends MemoryLeagueClient {
       currentFixtures: { gameweek, fixtures: [finishedFixture] },
       nextFixtures: { gameweek: null, fixtures: [] },
       allFixtures: { gameweek: null, fixtures: [finishedFixture] },
+    };
+  }
+}
+
+class CurrentPendingLeagueClient extends MemoryLeagueClient {
+  async getLeagueSnapshot() {
+    return {
+      ...snapshot,
+      currentFixtures: { gameweek, fixtures: [currentPendingFixture] },
+      allFixtures: { gameweek: null, fixtures: [pastFixture, currentPendingFixture, nextFixture, secondNextFixture, semiFinalFixture] },
     };
   }
 }
@@ -275,13 +296,28 @@ describe('LeaguePage', () => {
     expect(container.querySelectorAll('.fixture-squad-pitch .player-card__form-dots')).toHaveLength(2);
     expect(container.querySelectorAll('.fixture-squad-roster .player-card__form-dots')).toHaveLength(4);
     expect(container.querySelector('.fixture-squad-pitch .player-card__role')?.textContent).toBe('C');
-    expect(container.querySelector('.fixture-squad-pitch .player-card__opponent--fdr-3')).not.toBeNull();
+    expect(container.querySelector('[data-player-id="castle-1"] .player-card__opponent')?.textContent).toBe('DRA');
+    expect(container.querySelector('.fixture-squad-pitch .player-card__opponent--fdr-5')).not.toBeNull();
     expect(container.querySelectorAll('.fixture-squad-roster')).toHaveLength(4);
     expect(container.textContent).not.toContain('Predict their XI');
     expect(container.textContent).toContain('Andrew');
     expect(container.textContent).toContain('DJ');
     expect(container.textContent).not.toContain('Castle United');
     expect(container.textContent).not.toContain('Drafton Rovers');
+    act(() => root.unmount());
+  });
+
+  test('hides form gauges for a fixture in the current gameweek', async () => {
+    const { container, root } = await renderPage('/league', new CurrentPendingLeagueClient());
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('button[aria-label*="Open preview for Andrew versus DJ"]')?.click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(container.querySelector('[aria-label="Squad comparison"]')).not.toBeNull();
+    expect(container.querySelectorAll('[aria-label="Squad comparison"] .player-card__form-dots')).toHaveLength(0);
     act(() => root.unmount());
   });
 

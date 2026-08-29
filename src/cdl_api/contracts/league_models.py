@@ -5,6 +5,7 @@ from enum import StrEnum
 from pydantic import BaseModel, Field
 
 from cdl_api.contracts.domain import FixtureSummary, GameweekSummary, TeamSummary
+from cdl_api.contracts.squad import PlayerNextFixture
 
 
 class FixtureStatus(StrEnum):
@@ -60,6 +61,7 @@ class FixtureSquadPlayer(BaseModel):
     next_opponent: TeamSummary | None = None
     next_fixture_is_home: bool | None = None
     next_fixture_difficulty: int | None = None
+    fixture_fixtures: list[PlayerNextFixture] = Field(default_factory=list)
     points: int = 0
     form: float = 0
     slot: str

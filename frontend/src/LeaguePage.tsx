@@ -16,6 +16,7 @@ import {
 import { Button } from './components/ui/button';
 import { Card } from './components/ui/card';
 import { FixtureSquadComparison } from './components/fixture/FixtureSquadComparison';
+import type { FixtureGameweekStatus } from './components/fixture/FixtureSquadComparison';
 import type { AttackDirection } from './contracts';
 import {
   HttpLeagueClient,
@@ -207,6 +208,7 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
           fixture={selectedFixture}
           attackDirection={attackDirection}
           gameweekState={gameweekStateForFixture(selectedFixture, snapshot)}
+          gameweekStatus={fixtureGameweekStatusForFixture(selectedFixture, snapshot)}
           squads={fixtureSquads}
           onClose={() => setSelectedFixture(null)}
           drawerRef={drawerRef}
@@ -532,11 +534,11 @@ function TableRow({ row }: { row: LeagueTableRow }) {
   return <tr><th scope="row"><span className={`league-rank league-rank--${row.position <= 3 ? row.position : 'other'}`}>{row.position}</span></th><th scope="row" className="league-table__team">{row.team.name}</th><td>{row.played}</td><td>{row.wins}-{row.draws}-{row.losses}</td><td>{row.pointsFor}</td><td>{row.pointsAgainst}</td><td>{row.pointsDifference > 0 ? '+' : ''}{row.pointsDifference}</td><td><strong>{row.leaguePoints}</strong></td></tr>;
 }
 
-function FixtureDetailDrawer({ attackDirection, detail, detailStatus, drawerRef, fixture, gameweekState, onClose, squads }: { attackDirection: AttackDirection; detail: FixtureDetailResponse | null; detailStatus: 'idle' | 'loading' | 'loaded' | 'error'; drawerRef: RefObject<HTMLElement | null>; fixture: LeagueFixture; gameweekState: GameweekState; onClose: () => void; squads: FixtureSquad[] }) {
+function FixtureDetailDrawer({ attackDirection, detail, detailStatus, drawerRef, fixture, gameweekState, gameweekStatus, onClose, squads }: { attackDirection: AttackDirection; detail: FixtureDetailResponse | null; detailStatus: 'idle' | 'loading' | 'loaded' | 'error'; drawerRef: RefObject<HTMLElement | null>; fixture: LeagueFixture; gameweekState: GameweekState; gameweekStatus: FixtureGameweekStatus; onClose: () => void; squads: FixtureSquad[] }) {
   const isPreview = fixture.status === 'pending';
   const drawerLabel = isPreview ? (gameweekState === 'underway' ? 'Fixture preview' : 'Upcoming fixture') : fixture.status === 'started' ? 'Live fixture' : 'Finished fixture';
   const hasHistoricalSquads = !isPreview && squads.length === 2;
-  return <><button aria-label="Close fixture detail" className="league-drawer-backdrop" onClick={onClose} type="button" /><aside ref={drawerRef} aria-labelledby="fixture-detail-title" aria-modal="true" className="league-drawer league-drawer--comparison" data-gameweek-state={gameweekState} role="dialog" tabIndex={-1}><header className="league-drawer__header"><div><p className="eyebrow">{drawerLabel}</p><h2 id="fixture-detail-title">{fixtureParticipantName(fixture.homeTeam)} vs {fixtureParticipantName(fixture.awayTeam)}</h2></div><Button aria-label="Close fixture detail" className="shell-icon-button" onClick={onClose} type="button" variant="ghost"><X aria-hidden="true" size={19} /></Button></header><div className="league-drawer__body"><div className="league-drawer__score"><span>{fixture.gameweek.name}</span><strong>{formatScore(fixture)}</strong><StatusBadge status={fixture.status} /></div>{gameweekState === 'underway' && isPreview ? <div className="league-drawer__context"><strong>Gameweek underway</strong><span>This fixture has not started yet. Review both squads before kick-off.</span></div> : null}{gameweekState === 'finished' && isPreview ? <div className="league-drawer__context"><strong>Gameweek finished</strong><span>This fixture did not produce a recorded result.</span></div> : null}{detailStatus === 'loading' ? <p role="status">{isPreview ? 'Loading squad comparison…' : 'Loading players and points…'}</p> : null}{detailStatus === 'error' ? <p className="league-inline-error" role="alert">Fixture detail is temporarily unavailable.</p> : null}{detailStatus === 'loaded' && isPreview && squads.length === 2 ? <FixtureSquadComparison attackDirection={attackDirection} squads={squads} /> : null}{detailStatus === 'loaded' && hasHistoricalSquads ? <HistoricalSquadComparison fixture={fixture} squads={squads} /> : null}{detailStatus === 'loaded' && !isPreview && !hasHistoricalSquads ? <div className="league-drawer__context"><strong>Players and points are unavailable</strong><span>The fixture result is available, but its locked gameweek lineup has not been published yet.</span></div> : null}{detailStatus === 'loaded' && !isPreview && detail ? <FixtureScoringSummary detail={detail} fixture={fixture} gameweekState={gameweekState} /> : null}</div></aside></>;
+  return <><button aria-label="Close fixture detail" className="league-drawer-backdrop" onClick={onClose} type="button" /><aside ref={drawerRef} aria-labelledby="fixture-detail-title" aria-modal="true" className="league-drawer league-drawer--comparison" data-gameweek-state={gameweekState} role="dialog" tabIndex={-1}><header className="league-drawer__header"><div><p className="eyebrow">{drawerLabel}</p><h2 id="fixture-detail-title">{fixtureParticipantName(fixture.homeTeam)} vs {fixtureParticipantName(fixture.awayTeam)}</h2></div><Button aria-label="Close fixture detail" className="shell-icon-button" onClick={onClose} type="button" variant="ghost"><X aria-hidden="true" size={19} /></Button></header><div className="league-drawer__body"><div className="league-drawer__score"><span>{fixture.gameweek.name}</span><strong>{formatScore(fixture)}</strong><StatusBadge status={fixture.status} /></div>{gameweekState === 'underway' && isPreview ? <div className="league-drawer__context"><strong>Gameweek underway</strong><span>This fixture has not started yet. Review both squads before kick-off.</span></div> : null}{gameweekState === 'finished' && isPreview ? <div className="league-drawer__context"><strong>Gameweek finished</strong><span>This fixture did not produce a recorded result.</span></div> : null}{detailStatus === 'loading' ? <p role="status">{isPreview ? 'Loading squad comparison…' : 'Loading players and points…'}</p> : null}{detailStatus === 'error' ? <p className="league-inline-error" role="alert">Fixture detail is temporarily unavailable.</p> : null}{detailStatus === 'loaded' && isPreview && squads.length === 2 ? <FixtureSquadComparison attackDirection={attackDirection} gameweekStatus={gameweekStatus} squads={squads} /> : null}{detailStatus === 'loaded' && hasHistoricalSquads ? <HistoricalSquadComparison fixture={fixture} squads={squads} /> : null}{detailStatus === 'loaded' && !isPreview && !hasHistoricalSquads ? <div className="league-drawer__context"><strong>Players and points are unavailable</strong><span>The fixture result is available, but its locked gameweek lineup has not been published yet.</span></div> : null}{detailStatus === 'loaded' && !isPreview && detail ? <FixtureScoringSummary detail={detail} fixture={fixture} gameweekState={gameweekState} /> : null}</div></aside></>;
 }
 
 function HistoricalSquadComparison({ fixture, squads }: { fixture: LeagueFixture; squads: FixtureSquad[] }) {
@@ -597,6 +599,22 @@ function gameweekStateForFixture(fixture: LeagueFixture, snapshot: LeagueSnapsho
     .filter((candidate, index, candidates) => candidates.findIndex((item) => item.id === candidate.id) === index)
     .filter((candidate) => candidate.gameweek.id === fixture.gameweek.id);
   return getGameweekState(fixtures.length ? fixtures : [fixture]);
+}
+
+function fixtureGameweekStatusForFixture(fixture: LeagueFixture, snapshot: LeagueSnapshot | null): FixtureGameweekStatus {
+  const currentGameweekNumber = snapshot?.currentFixtures.gameweek?.number
+    ?? snapshot?.currentFixtures.fixtures[0]?.gameweek.number
+    ?? null;
+
+  if (currentGameweekNumber !== null) {
+    if (fixture.gameweek.number < currentGameweekNumber) return 'past';
+    if (fixture.gameweek.number === currentGameweekNumber) return 'current';
+    return 'future';
+  }
+
+  if (fixture.status === 'complete') return 'past';
+  if (fixture.status === 'started') return 'current';
+  return 'future';
 }
 
 function GameweekStateBadge({ gameweek, state }: { gameweek: LeagueFixture['gameweek']; state: GameweekState }) {

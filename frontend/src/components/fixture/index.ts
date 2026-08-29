@@ -7,5 +7,6 @@ export {
 } from './FixtureSquadComparison';
 export type {
   FixturePitchViewProps,
+  FixtureGameweekStatus,
   FixtureSquadComparisonProps,
 } from './FixtureSquadComparison';

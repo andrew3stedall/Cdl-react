@@ -115,7 +115,7 @@ def test_upcoming_fixture_returns_both_squads_with_best_valid_xis() -> None:
     assert payload[0]["starters"][0]["next_opponent"]["short_name"] == "NXT"
     assert payload[0]["starters"][0]["next_fixture_is_home"] is False
     assert payload[0]["starters"][0]["next_fixture_difficulty"] == 3
-    assert payload[0]["starters"][0]["fixture_fixtures"][0]["gameweek"] == 1
+    assert payload[0]["starters"][0]["fixture_fixtures"][0]["gameweek"]["number"] == 1
     assert payload[0]["starters"][0]["fixture_fixtures"][0]["opponent"]["short_name"] == "OPP"
     assert payload[0]["starters"][0]["fixture_fixtures"][0]["difficulty"] == 4
     assert payload[0]["starters"][0]["is_captain"] is False

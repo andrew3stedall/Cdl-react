@@ -18,10 +18,15 @@
 - Fixture pitch players compose the canonical `PlayerCard` inside the same
   positioned `squad-page__pitch-player` wrapper used by Squad, keeping the
   official shirt card contained within each lineup slot.
+- Completed fixture gameweeks reuse the same pitch, substitute, and reserve
+  structure, with the standard five-dot indicator driven by each player's
+  gameweek points.
+- Current gameweeks show that points indicator only after the player's
+  selected-gameweek fixture kickoff, while future gameweeks retain form dots.
 
 ## Validation
 
 - Frontend typecheck passed.
 - Frontend lint passed.
-- Frontend tests: 143 passed.
+- Frontend tests: 146 passed.
 - Frontend production build passed.

@@ -69,6 +69,7 @@ export interface FixturePlayerFixture {
   opponent: LeagueTeam;
   difficulty?: number;
   isHome: boolean;
+  kickoffAt?: string | null;
 }
 
 export interface FixtureSquad {
@@ -333,6 +334,7 @@ interface ApiFixturePlayerFixture {
   opponent: ApiTeam;
   difficulty?: number | null;
   is_home: boolean;
+  kickoff_at?: string | null;
 }
 
 interface ApiFixtureSquad {
@@ -359,6 +361,7 @@ function mapFixtureSquadPlayer(player: ApiFixtureSquadPlayer): FixtureSquadPlaye
       opponent: mapTeam(fixture.opponent),
       difficulty: fixture.difficulty ?? undefined,
       isHome: fixture.is_home,
+      kickoffAt: fixture.kickoff_at ?? null,
     })),
     points: player.points,
     form: player.form,

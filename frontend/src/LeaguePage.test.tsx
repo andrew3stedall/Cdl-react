@@ -295,9 +295,12 @@ describe('LeaguePage', () => {
     expect(container.querySelectorAll('.fixture-squad-pitch .fixture-squad-pitch__player.squad-page__pitch-player')).toHaveLength(2);
     expect(container.querySelectorAll('.fixture-squad-pitch .player-card__form-dots')).toHaveLength(2);
     expect(container.querySelectorAll('.fixture-squad-roster .player-card__form-dots')).toHaveLength(4);
+    expect(container.querySelectorAll('.fixture-squad-roster .player-card--size-sm')).toHaveLength(4);
     expect(container.querySelector('.fixture-squad-pitch .player-card__role')?.textContent).toBe('C');
     expect(container.querySelector('[data-player-id="castle-1"] .player-card__opponent')?.textContent).toBe('DRA');
     expect(container.querySelector('.fixture-squad-pitch .player-card__opponent--fdr-5')).not.toBeNull();
+    expect([...container.querySelectorAll('[aria-label="Andrew substitutes"] .fixture-squad-roster__number')].map((node) => node.textContent)).toEqual(['GK', '1', '2', '3', '4']);
+    expect([...container.querySelectorAll('[aria-label="Andrew reserves"] .fixture-squad-roster__number')].map((node) => node.textContent)).toEqual(['1', '2', '3', '4']);
     expect(container.querySelectorAll('.fixture-squad-roster')).toHaveLength(4);
     expect(container.textContent).not.toContain('Predict their XI');
     expect(container.textContent).toContain('Andrew');

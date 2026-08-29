@@ -295,8 +295,9 @@ class FplSettlementService:
             and row["payload_json"].get("fixture_id") is not None
         }
         fixture_rows = list(
-            session.execute(select(cdl_fixtures_table.c.id, cdl_fixtures_table.c.payload_json))
-            .mappings()
+            session.execute(
+                select(cdl_fixtures_table.c.id, cdl_fixtures_table.c.payload_json)
+            ).mappings()
         )
         settled = skipped = 0
         for row in fixture_rows:
@@ -310,12 +311,8 @@ class FplSettlementService:
                 continue
             result_row = result_rows.get(fixture_id)
             current_result = result_row[1] if result_row is not None else {}
-            if (
-                result_row is not None
-                and (
-                    not isinstance(current_result, Mapping)
-                    or current_result.get("finalised") is True
-                )
+            if result_row is not None and (
+                not isinstance(current_result, Mapping) or current_result.get("finalised") is True
             ):
                 continue
             live_payload, source_hash = live_payloads.get(gameweek, (None, ""))
@@ -471,9 +468,7 @@ class FplSettlementService:
             team_rows = by_team[team_id]
             starters = [row for row in team_rows if row["slot"] == "starter"]
             chip_ids = {
-                str(row["chip_id"])
-                for row in chip_rows
-                if str(row["draft_team_id"]) == team_id
+                str(row["chip_id"]) for row in chip_rows if str(row["draft_team_id"]) == team_id
             }
             scoring_rows = starters
             if "bench-boost" in chip_ids:

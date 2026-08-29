@@ -25,7 +25,7 @@ def test_auto_rollout_is_staging_only_and_failure_closed() -> None:
         '"google_cloud_run_v2_job.fpl_refresh[0]"',
         '"google_cloud_run_v2_job_iam_member.fpl_refresh_scheduler_invoker[0]"',
         '"google_cloud_scheduler_job.fpl_refresh[0]"',
-        'enable_scheduled_fpl_refresh=true',
+        "enable_scheduled_fpl_refresh=true",
         '"module.cloud_run_api[0].google_cloud_run_v2_service.this"',
         '"google_secret_manager_secret_iam_member.migration_google_allowed_emails_access"',
         "terraform apply -input=false",

@@ -13,9 +13,9 @@ def test_team_selection_persistence_tables_exist() -> None:
 
 
 def test_deadline_lock_migration_scopes_locks_to_each_draft_team() -> None:
-    content = Path(
-        "migrations/versions/0022_team_selection_lock_owner.py"
-    ).read_text(encoding="utf-8")
+    content = Path("migrations/versions/0022_team_selection_lock_owner.py").read_text(
+        encoding="utf-8"
+    )
 
     assert 'down_revision: str | None = "0021_player_custom_palettes"' in content
     assert '"draft_team_id"' in content

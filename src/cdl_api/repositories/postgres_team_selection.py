@@ -308,9 +308,7 @@ class PostgreSQLTeamSelectionRepository(InMemoryTeamSelectionRepository):
                     "fixture_type": str(row["fixture_type"]),
                     "lock_scope": str(row["lock_scope"]),
                     "locked_at": (
-                        locked_at.isoformat()
-                        if isinstance(locked_at, datetime)
-                        else str(locked_at)
+                        locked_at.isoformat() if isinstance(locked_at, datetime) else str(locked_at)
                     ),
                     "reason": str(row["reason"]),
                 }
@@ -508,8 +506,7 @@ class PostgreSQLTeamSelectionRepository(InMemoryTeamSelectionRepository):
                         fpl_gameweeks_table.c.name,
                         fpl_gameweeks_table.c.deadline_time,
                         fpl_gameweeks_table.c.is_next,
-                    )
-                    .order_by(
+                    ).order_by(
                         fpl_gameweeks_table.c.is_next.desc(),
                         fpl_gameweeks_table.c.deadline_time.asc().nulls_last(),
                     )

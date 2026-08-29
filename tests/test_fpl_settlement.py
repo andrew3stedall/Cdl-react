@@ -51,10 +51,7 @@ def _session_factory() -> sessionmaker[Session]:
             "fixture_scoring_snapshots",
         ):
             connection.execute(
-                text(
-                    f"CREATE TABLE {table_name} ("
-                    "id TEXT PRIMARY KEY, payload_json JSON NOT NULL)"
-                )
+                text(f"CREATE TABLE {table_name} (id TEXT PRIMARY KEY, payload_json JSON NOT NULL)")
             )
         connection.execute(
             text(
@@ -249,12 +246,10 @@ def test_settlement_locks_all_teams_marks_chips_used_and_freezes_results() -> No
                     team_selection_lineup_slots_table.c.draft_team_id == "team-home",
                     team_selection_lineup_slots_table.c.gameweek == 1,
                 )
-                ).scalar()
+            ).scalar()
             is not None
         )
-        result_payload = session.execute(
-            select(fixture_results_table.c.payload_json)
-        ).scalar_one()
+        result_payload = session.execute(select(fixture_results_table.c.payload_json)).scalar_one()
         assert result_payload["finalised"] is True
         assert (result_payload["home_score"], result_payload["away_score"]) == (13, 12)
         snapshot_payload = session.execute(
@@ -266,7 +261,7 @@ def test_settlement_locks_all_teams_marks_chips_used_and_freezes_results() -> No
             "team-away": [],
         }
         next_rows = session.execute(
-                select(team_selection_lineup_slots_table.c.id).where(
+            select(team_selection_lineup_slots_table.c.id).where(
                 team_selection_lineup_slots_table.c.gameweek == 3
             )
         ).all()

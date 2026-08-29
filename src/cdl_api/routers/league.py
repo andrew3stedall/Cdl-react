@@ -243,6 +243,7 @@ def fixture_squads(
         )
     return squads
 
+
 def _fixture_contexts_for_gameweek(
     squad_repository: SquadRepository,
     gameweek_number: int,

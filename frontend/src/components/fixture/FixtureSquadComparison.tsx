@@ -158,7 +158,7 @@ export function FixtureRosterColumn({
           const player = players[index];
           return (
             <li className={player ? '' : 'is-empty'} key={player?.id ?? `${squad.team.id}-${label}-${index}`}>
-              <span className="fixture-squad-roster__number">{index + 1}</span>
+              <span className="fixture-squad-roster__number">{fixtureRosterSlotLabel(label, index)}</span>
               {player
                 ? <FixtureRosterPlayer gameweekStatus={gameweekStatus} player={player} />
                 : <span className="fixture-squad-roster__empty">Empty slot</span>}
@@ -168,6 +168,11 @@ export function FixtureRosterColumn({
       </ol>
     </section>
   );
+}
+
+function fixtureRosterSlotLabel(label: 'Substitutes' | 'Reserves', index: number): string {
+  if (label === 'Substitutes' && index === 0) return 'GK';
+  return String(label === 'Substitutes' ? index : index + 1);
 }
 
 /**
@@ -196,7 +201,7 @@ function FixturePitchPlayer({ gameweekStatus, player }: { gameweekStatus: Fixtur
       data-player-id={player.id}
       title={`${player.displayName} · ${player.points} pts`}
     >
-      <FixturePlayerToken gameweekStatus={gameweekStatus} player={player} shirtTeam={shirtTeam} />
+      <FixturePlayerToken gameweekStatus={gameweekStatus} player={player} shirtTeam={shirtTeam} size="md" />
     </div>
   );
 }
@@ -205,10 +210,12 @@ function FixturePlayerToken({
   gameweekStatus,
   player,
   shirtTeam,
+  size,
 }: {
   gameweekStatus: FixtureGameweekStatus;
   player: FixtureSquadPlayer;
   shirtTeam: string;
+  size: 'sm' | 'md';
 }) {
   return (
     <PlayerCard
@@ -216,15 +223,15 @@ function FixturePlayerToken({
       layout="pitch"
       player={toFixtureCardPlayer(player, shirtTeam)}
       showPositionMarker={false}
-      size="md"
+      size={size}
     />
   );
 }
 
 function FixtureRosterPlayer({ gameweekStatus, player }: { gameweekStatus: FixtureGameweekStatus; player: FixtureSquadPlayer }) {
   return (
-    <div className={`squad-page__pitch-player fixture-squad-pitch__player position-${fixturePosition(player.position).toLowerCase()} form-band-${formBand(player.form)}`} data-player-id={player.id} title={`${player.displayName} · ${player.points} pts`}>
-      <FixturePlayerToken gameweekStatus={gameweekStatus} player={player} shirtTeam={player.club?.shortName ?? player.club?.name ?? 'unknown'} />
+    <div className={`squad-page__pitch-player fixture-squad-pitch__player compact position-${fixturePosition(player.position).toLowerCase()} form-band-${formBand(player.form)}`} data-player-id={player.id} title={`${player.displayName} · ${player.points} pts`}>
+      <FixturePlayerToken gameweekStatus={gameweekStatus} player={player} shirtTeam={player.club?.shortName ?? player.club?.name ?? 'unknown'} size="sm" />
     </div>
   );
 }

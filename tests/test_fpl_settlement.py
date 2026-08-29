@@ -135,18 +135,22 @@ def test_settlement_locks_all_teams_marks_chips_used_and_freezes_results() -> No
             ],
         )
         session.execute(
-            insert(external_payload_cache_table).values(
-                resource="event-live:1",
-                endpoint="https://fantasy.premierleague.com/api/event/1/live/",
-                payload_json={
-                    "elements": [
-                        {"id": player_id, "stats": {"total_points": 1}}
-                        for player_id in range(1, 23)
-                    ]
-                },
-                response_sha256="b" * 64,
-                fetched_at=now,
-            )
+            insert(external_payload_cache_table),
+            [
+                {
+                    "resource": f"event-live:{gameweek}",
+                    "endpoint": f"https://fantasy.premierleague.com/api/event/{gameweek}/live/",
+                    "payload_json": {
+                        "elements": [
+                            {"id": player_id, "stats": {"total_points": 1}}
+                            for player_id in range(1, 23)
+                        ]
+                    },
+                    "response_sha256": chr(96 + gameweek) * 64,
+                    "fetched_at": now,
+                }
+                for gameweek in (1, 2)
+            ],
         )
         fixture_payload = {
             "id": "fixture-1",
@@ -163,6 +167,14 @@ def test_settlement_locks_all_teams_marks_chips_used_and_freezes_results() -> No
         }
         session.execute(
             insert(cdl_fixtures_table).values(id="fixture-1", payload_json=fixture_payload)
+        )
+        fixture_two_payload = {
+            **fixture_payload,
+            "id": "fixture-2",
+            "gameweek": {"id": "gw-2", "name": "Gameweek 2", "number": 2},
+        }
+        session.execute(
+            insert(cdl_fixtures_table).values(id="fixture-2", payload_json=fixture_two_payload)
         )
         session.execute(
             insert(fixture_results_table).values(
@@ -249,11 +261,24 @@ def test_settlement_locks_all_teams_marks_chips_used_and_freezes_results() -> No
             ).scalar()
             is not None
         )
-        result_payload = session.execute(select(fixture_results_table.c.payload_json)).scalar_one()
-        assert result_payload["finalised"] is True
-        assert (result_payload["home_score"], result_payload["away_score"]) == (13, 12)
+        result_payloads = {
+            row["fixture_id"]: row
+            for row in session.execute(select(fixture_results_table.c.payload_json)).scalars()
+        }
+        assert result_payloads["fixture-1"]["finalised"] is True
+        assert (
+            result_payloads["fixture-1"]["home_score"],
+            result_payloads["fixture-1"]["away_score"],
+        ) == (13, 12)
+        assert result_payloads["fixture-2"]["finalised"] is False
+        assert (
+            result_payloads["fixture-2"]["home_score"],
+            result_payloads["fixture-2"]["away_score"],
+        ) == (12, 12)
         snapshot_payload = session.execute(
-            select(fixture_scoring_snapshots_table.c.payload_json)
+            select(fixture_scoring_snapshots_table.c.payload_json).where(
+                fixture_scoring_snapshots_table.c.id == "snapshot-fixture-1"
+            )
         ).scalar_one()
         assert snapshot_payload["epl_fixture_ids"] == ["epl-1"]
         assert snapshot_payload["chips_played"] == {

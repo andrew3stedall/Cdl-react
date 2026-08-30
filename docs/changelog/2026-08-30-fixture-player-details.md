@@ -21,6 +21,9 @@
   the carousel instead of extending the page.
 - Increased the round tween range and side-slide exposure so neighbouring
   rounds visibly fade and scale into focus during horizontal scrolling.
+- Reduced carousel/card spacing and tightened the fixed gameweek viewport so
+  adjacent rounds and the active round's fixtures use the available space more
+  effectively on mobile.
 
 ## Validation
 

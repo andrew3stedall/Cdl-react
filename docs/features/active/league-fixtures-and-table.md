@@ -24,11 +24,14 @@ toggle and notifications; fixture rows are grouped by current and upcoming
 gameweek instead of being split across a contextual navigation menu.
 
 Fixture browsing uses nested looping carousels: rounds move horizontally, and
-gameweeks within the selected round move vertically. Each round, gameweek, and
-fixture is rendered by its own React component. A gameweek slide contains its
-complete fixture list, so fixture rows do not introduce a second nested scroll
-area. Adjacent slides fade with an opacity transition while the selected slide
-remains fully opaque.
+each round component owns its gameweek carousel, which moves vertically. Each
+round, gameweek, and fixture is rendered by its own React component. A gameweek
+slide contains its complete fixture list, so fixture rows do not introduce a
+second nested scroll area. The selected gameweek index is shared while moving
+between rounds, so the second gameweek in one seven-gameweek round opens the
+second gameweek in the next round. Adjacent slides fade with an opacity
+transition while the selected slide remains fully opaque, and navigation
+buttons overlay the rails without reserving large layout columns.
 
 ## Business Rules
 
@@ -68,6 +71,8 @@ remains fully opaque.
 - League standings.
 - Fixture detail drawer.
 - Looping horizontal round carousel and looping vertical gameweek carousel.
+- Each round slide contains its own vertical gameweek carousel and preserves
+  the relative gameweek index when the horizontal round changes.
 - Independent round, gameweek, and fixture components with a complete fixture
   list visible in the selected gameweek slide.
 

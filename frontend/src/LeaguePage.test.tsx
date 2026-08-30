@@ -101,6 +101,17 @@ const snapshot: LeagueSnapshot = {
   headToHead: { records: [] },
 };
 
+const relativeGameweekOne = { ...pastFixture, id: 'fixture-0101', gameweek: { id: 'gw-1', name: 'Gameweek 1', number: 1 }, isCurrent: true, isNext: false };
+const relativeGameweekTwo = { ...nextFixture, id: 'fixture-0201', gameweek: { id: 'gw-2', name: 'Gameweek 2', number: 2 }, isCurrent: false, isNext: true };
+const relativeGameweekEight = { ...nextFixture, id: 'fixture-0801', gameweek: { id: 'gw-8', name: 'Gameweek 8', number: 8 }, isCurrent: false, isNext: false };
+const relativeGameweekNine = { ...nextFixture, id: 'fixture-0901', gameweek: { id: 'gw-9', name: 'Gameweek 9', number: 9 }, isCurrent: false, isNext: false };
+const relativeIndexSnapshot: LeagueSnapshot = {
+  ...snapshot,
+  currentFixtures: { gameweek: relativeGameweekOne.gameweek, fixtures: [relativeGameweekOne] },
+  nextFixtures: { gameweek: relativeGameweekTwo.gameweek, fixtures: [relativeGameweekTwo] },
+  allFixtures: { gameweek: null, fixtures: [relativeGameweekOne, relativeGameweekTwo, relativeGameweekEight, relativeGameweekNine] },
+};
+
 class MemoryNotificationsClient {
   async getNotifications() {
     return {
@@ -196,6 +207,12 @@ class CurrentPendingLeagueClient extends MemoryLeagueClient {
   }
 }
 
+class RelativeIndexLeagueClient extends MemoryLeagueClient {
+  async getLeagueSnapshot() {
+    return relativeIndexSnapshot;
+  }
+}
+
 async function renderPage(currentPath = '/league', client = new MemoryLeagueClient(), attackDirection: 'up' | 'down' = 'up') {
   const container = document.createElement('div');
   document.body.append(container);
@@ -209,7 +226,15 @@ async function renderPage(currentPath = '/league', client = new MemoryLeagueClie
 }
 
 function activeGameweekSection(container: HTMLElement): HTMLElement | null {
-  return container.querySelector<HTMLElement>('.league-gameweek-carousel__item[data-carousel-active="true"] .league-gameweek-section');
+  return activeRound(container)?.querySelector<HTMLElement>('.league-gameweek-carousel__item[data-carousel-active="true"] .league-gameweek-section') ?? null;
+}
+
+function activeRound(container: HTMLElement): HTMLElement | null {
+  return container.querySelector<HTMLElement>('.league-round-carousel__item[data-carousel-active="true"]');
+}
+
+function activeGameweekCarousel(container: HTMLElement): HTMLElement | null {
+  return activeRound(container)?.querySelector<HTMLElement>('.league-gameweek-carousel') ?? null;
 }
 
 describe('LeaguePage', () => {
@@ -226,7 +251,9 @@ describe('LeaguePage', () => {
     expect(container.querySelectorAll('.league-round-picker__card')).toHaveLength(2);
     expect(container.querySelector('.league-round-picker__card[aria-current="true"]')?.textContent).toContain('Round 2');
     expect(container.querySelectorAll('.league-round-carousel__item')).toHaveLength(2);
-    expect(container.querySelectorAll('.league-gameweek-carousel__item')).toHaveLength(3);
+    expect(container.querySelectorAll('.league-gameweek-carousel__item')).toHaveLength(4);
+    expect(container.querySelectorAll('.league-round-carousel__item > .league-fixture-round .league-gameweek-carousel')).toHaveLength(2);
+    expect(activeGameweekCarousel(container)?.querySelectorAll('.league-gameweek-carousel__item')).toHaveLength(3);
     expect(activeGameweekSection(container)?.querySelectorAll('.league-fixture-row')).toHaveLength(2);
     expect(container.querySelector('main.league-page.feature-screen')).toBeNull();
     expect(container.querySelector('.league-gameweek-state--underway')).not.toBeNull();
@@ -247,7 +274,7 @@ describe('LeaguePage', () => {
     const { container, root } = await renderPage();
 
     const roundCarousel = container.querySelector('.league-round-carousel');
-    const gameweekCarousel = container.querySelector('.league-gameweek-carousel');
+    const gameweekCarousel = activeGameweekCarousel(container);
     expect(roundCarousel?.classList.contains('ui-carousel--horizontal')).toBe(true);
     expect(gameweekCarousel?.classList.contains('ui-carousel--vertical')).toBe(true);
     expect(roundCarousel?.querySelector('button[aria-label="Previous round"]')).not.toHaveProperty('disabled', true);
@@ -266,7 +293,7 @@ describe('LeaguePage', () => {
     const { container, root } = await renderPage();
 
     await act(async () => {
-      container.querySelector<HTMLButtonElement>('button[aria-label="Previous gameweek"]')?.click();
+      activeGameweekCarousel(container)?.querySelector<HTMLButtonElement>('button[aria-label="Previous gameweek"]')?.click();
     });
 
     expect(activeGameweekSection(container)?.textContent).toContain('Gameweek 11');
@@ -285,9 +312,25 @@ describe('LeaguePage', () => {
     });
 
     expect(container.querySelector('.league-round-picker__card[aria-current="true"]')?.textContent).toContain('Semi Final');
-    expect(container.querySelector('.league-fixture-round')?.textContent).toContain('Semi Final');
-    expect(container.querySelectorAll('.league-gameweek-carousel__item')).toHaveLength(1);
+    expect(activeRound(container)?.querySelector('.league-fixture-round')?.textContent).toContain('Semi Final');
+    expect(activeGameweekCarousel(container)?.querySelectorAll('.league-gameweek-carousel__item')).toHaveLength(1);
     expect(activeGameweekSection(container)?.querySelectorAll('.league-fixture-row')).toHaveLength(1);
+    act(() => root.unmount());
+  });
+
+  test('persists the relative gameweek index when changing rounds', async () => {
+    const { container, root } = await renderPage('/league', new RelativeIndexLeagueClient());
+
+    await act(async () => {
+      activeGameweekCarousel(container)?.querySelector<HTMLButtonElement>('button[aria-label="Next gameweek"]')?.click();
+    });
+    expect(activeGameweekSection(container)?.textContent).toContain('GW 2');
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('button[aria-label="Next round"]')?.click();
+    });
+
+    expect(activeGameweekSection(container)?.textContent).toContain('GW 9');
     act(() => root.unmount());
   });
 
@@ -402,7 +445,7 @@ describe('LeaguePage', () => {
     const { container, root } = await renderPage();
 
     await act(async () => {
-      container.querySelector<HTMLButtonElement>('button[aria-label="Previous gameweek"]')?.click();
+      activeGameweekCarousel(container)?.querySelector<HTMLButtonElement>('button[aria-label="Previous gameweek"]')?.click();
     });
 
     await act(async () => {
@@ -425,7 +468,7 @@ describe('LeaguePage', () => {
     const { container, root } = await renderPage();
 
     await act(async () => {
-      container.querySelector<HTMLButtonElement>('button[aria-label="Next gameweek"]')?.click();
+      activeGameweekCarousel(container)?.querySelector<HTMLButtonElement>('button[aria-label="Next gameweek"]')?.click();
     });
 
     await act(async () => {
@@ -467,9 +510,7 @@ describe('LeaguePage', () => {
     const { container, root } = await renderPage();
 
     await act(async () => {
-      Array.from(container.querySelectorAll<HTMLButtonElement>('.league-gameweek-picker__item'))
-        .find((button) => button.textContent?.includes('GW 13'))
-        ?.click();
+      activeGameweekCarousel(container)?.querySelector<HTMLButtonElement>('button[aria-label="Next gameweek"]')?.click();
     });
 
     await act(async () => {

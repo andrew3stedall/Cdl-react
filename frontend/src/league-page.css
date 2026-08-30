@@ -256,7 +256,12 @@
 }
 
 .league-round-carousel {
-  padding: 0 2.8rem;
+  height: var(--league-round-carousel-height);
+}
+
+.league-round-carousel > .ui-carousel__viewport,
+.league-round-carousel > .ui-carousel__viewport > .ui-carousel__container {
+  height: 100%;
 }
 
 .league-round-carousel__track {
@@ -264,8 +269,9 @@
   gap: 0.45rem;
 }
 
-.league-round-carousel .ui-carousel__item {
-  flex-basis: min(10.5rem, 72vw);
+.league-round-carousel > .ui-carousel__viewport > .ui-carousel__container > .ui-carousel__item {
+  flex-basis: 100%;
+  height: 100%;
 }
 
 .league-round-picker__hint,
@@ -337,7 +343,12 @@
 .league-fixture-round__summary {
   gap: 0.5rem;
   justify-content: space-between;
-  padding: 0 0.2rem;
+  padding: 0 0.2rem 0.55rem;
+}
+
+.league-fixture-round__summary > span {
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
 }
 
 .league-fixture-round__summary span:last-child {
@@ -372,7 +383,7 @@
 .league-gameweek-carousel {
   height: var(--league-gameweek-carousel-height);
   min-height: 21rem;
-  padding: 0.08rem 3rem 0.08rem 0.08rem;
+  padding: 0.08rem;
 }
 
 .league-gameweek-carousel__track {

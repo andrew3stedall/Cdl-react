@@ -6,6 +6,9 @@
   carousels: rounds loop horizontally, gameweeks loop vertically, and each
   slide fades with opacity while keeping every fixture in the selected
   gameweek visible.
+- Nested each round's gameweek carousel inside its round slide, preserved the
+  relative gameweek index between rounds, and moved compact navigation controls
+  onto the carousel rails.
 - Split League fixture rendering into reusable round, gameweek, and fixture
   components without changing fixture drawer or scoring behaviour.
 - Reworked League fixtures into five chronological seven-gameweek rounds with a

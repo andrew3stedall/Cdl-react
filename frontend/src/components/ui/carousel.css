@@ -1,0 +1,78 @@
+.ui-carousel {
+  min-width: 0;
+  position: relative;
+}
+
+.ui-carousel__viewport {
+  overflow: hidden;
+  width: 100%;
+}
+
+.ui-carousel__container {
+  display: flex;
+  height: 100%;
+}
+
+.ui-carousel__container--vertical {
+  flex-direction: column;
+}
+
+.ui-carousel__item {
+  flex: 0 0 100%;
+  min-width: 0;
+}
+
+.ui-carousel__item--vertical {
+  min-height: 100%;
+}
+
+.ui-carousel__button {
+  align-items: center;
+  background: var(--secondary);
+  border: 1px solid var(--border);
+  border-radius: 0.55rem;
+  color: var(--primary);
+  cursor: pointer;
+  display: inline-flex;
+  height: 2.4rem;
+  justify-content: center;
+  padding: 0;
+  position: absolute;
+  width: 2.4rem;
+  z-index: 1;
+}
+
+.ui-carousel__button:hover:not(:disabled),
+.ui-carousel__button:focus-visible {
+  border-color: var(--primary);
+  outline: none;
+}
+
+.ui-carousel__button:disabled {
+  color: var(--muted-foreground);
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.ui-carousel--horizontal .ui-carousel__button {
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.ui-carousel--horizontal .ui-carousel__button--previous {
+  left: 0;
+}
+
+.ui-carousel--horizontal .ui-carousel__button--next {
+  right: 0;
+}
+
+.ui-carousel--vertical .ui-carousel__button--previous {
+  right: 0.25rem;
+  top: 0.25rem;
+}
+
+.ui-carousel--vertical .ui-carousel__button--next {
+  bottom: 0.25rem;
+  right: 0.25rem;
+}

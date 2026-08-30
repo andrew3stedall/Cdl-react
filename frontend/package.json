@@ -19,7 +19,9 @@
     "lucide-react": "latest",
     "class-variance-authority": "latest",
     "clsx": "latest",
-    "tailwind-merge": "latest"
+    "tailwind-merge": "latest",
+    "embla-carousel": "^8.6.0",
+    "embla-carousel-react": "^8.6.0"
   },
   "devDependencies": {
     "@types/react": "latest",

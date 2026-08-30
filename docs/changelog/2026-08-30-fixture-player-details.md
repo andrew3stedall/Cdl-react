@@ -36,6 +36,8 @@
 - Simplified round headers to the round number with a teal active-round LED.
 - Simplified gameweek headers to the gameweek number and deadline time while
   retaining the existing state colour treatment.
+- Added a fixed lower peek for the next gameweek, with the same scale and
+  opacity tween treatment as the round carousel.
 
 ## Validation
 
@@ -46,5 +48,6 @@
 - Added coverage for the removed carousel headers and bounded gameweek
   viewport.
 - Added coverage for the compact round and gameweek header content.
+- Added coverage for the nested gameweek tween styles.
 - `git diff --check`
 - Frontend lint, tests, typecheck, and production build passed.

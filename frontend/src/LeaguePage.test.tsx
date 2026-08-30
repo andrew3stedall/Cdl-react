@@ -239,6 +239,8 @@ describe('LeaguePage', () => {
     expect(container.querySelector('.league-gameweek-carousel__viewport')?.getAttribute('style')).toBeNull();
     expect(container.querySelector('.league-round-slide__content')?.getAttribute('style')).toContain('transform: scale(1)');
     expect(container.querySelector('.league-round-carousel__slide:not([aria-current="true"]) .league-round-slide__content')?.getAttribute('style')).toContain('opacity:');
+    expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__slide[aria-current="true"] .league-gameweek-slide__content')?.getAttribute('style')).toContain('transform: scale(1)');
+    expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__slide:not([aria-current="true"]) .league-gameweek-slide__content')?.getAttribute('style')).toContain('opacity:');
     expect(container.querySelectorAll('.league-fixture-row--compact')).toHaveLength(0);
     expect(container.querySelectorAll('.league-round-carousel__slide[aria-current="true"] .league-fixture-row__team')).toHaveLength(10);
     expect(container.querySelector('button[aria-label="Previous round"]')).toBeNull();

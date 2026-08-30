@@ -236,7 +236,6 @@
   display: flex;
 }
 
-.league-fixture-round__meta,
 .league-upcoming-rail > div:first-child > span {
   color: var(--muted-foreground);
   font-size: 0.68rem;
@@ -282,28 +281,30 @@
 .league-fixture-round__header {
   gap: 0.75rem;
   justify-content: space-between;
+  min-height: 1.45rem;
+}
+
+.league-fixture-round__title {
+  align-items: center;
+  display: flex;
+  gap: 0.45rem;
 }
 
 .league-fixture-round__header h2 {
-  font-size: clamp(1.15rem, 4vw, 1.45rem);
-  letter-spacing: -0.025em;
+  font-size: 0.9rem;
+  letter-spacing: 0.015em;
   margin: 0;
 }
 
-.league-fixture-round__meta {
-  display: grid;
+.league-round-active-led {
+  animation: league-pulse 1.8s ease-in-out infinite;
+  background: var(--primary);
+  border-radius: 50%;
+  box-shadow: 0 0 0 0.16rem color-mix(in srgb, var(--primary) 18%, transparent);
+  display: inline-block;
   flex: 0 0 auto;
-  gap: 0.18rem;
-  text-align: right;
-}
-
-.league-fixture-round__meta strong {
-  color: var(--foreground);
-  font-size: 0.8rem;
-}
-
-.league-fixture-round__meta span {
-  font-size: 0.6rem;
+  height: 0.46rem;
+  width: 0.46rem;
 }
 
 .league-gameweek-carousel {
@@ -348,13 +349,6 @@
   gap: 0.15rem;
   padding: 0;
   text-align: left;
-}
-
-.league-gameweek-section__heading .eyebrow {
-  min-height: 1em;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .league-gameweek-section__heading:focus-visible {

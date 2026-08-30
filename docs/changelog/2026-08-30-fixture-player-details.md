@@ -33,6 +33,9 @@
 - Extended the round carousel through the shell's horizontal inset and reduced
   its slide basis so adjacent rounds remain visibly inside the viewport without
   introducing horizontal page overflow.
+- Simplified round headers to the round number with a teal active-round LED.
+- Simplified gameweek headers to the gameweek number and deadline time while
+  retaining the existing state colour treatment.
 
 ## Validation
 
@@ -42,5 +45,6 @@
   relative gameweek index persistence.
 - Added coverage for the removed carousel headers and bounded gameweek
   viewport.
+- Added coverage for the compact round and gameweek header content.
 - `git diff --check`
 - Frontend lint, tests, typecheck, and production build passed.

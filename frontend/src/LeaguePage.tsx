@@ -540,14 +540,6 @@ function defaultGameweekForRound(round: FixtureRoundGroup): GameweekGroup | null
     ?? null;
 }
 
-function primaryGameweekLabel(group: GameweekGroup): string {
-  if (group.isCurrent && group.state === 'underway') return 'Live now';
-  if (group.isCurrent) return 'Current gameweek';
-  if (group.isNext) return 'Up next';
-  if (group.state === 'finished') return 'Latest result';
-  return 'Round focus';
-}
-
 function firstGameweekNumber(round: FixtureRoundGroup): number {
   return round.gameweeks[0]?.gameweek.number ?? Number.MAX_SAFE_INTEGER;
 }
@@ -621,7 +613,7 @@ function RoundCarousel({ onOpenFixture, rounds }: { onOpenFixture: (fixture: Lea
               <div
                 aria-current={isSelected ? 'true' : undefined}
                 aria-hidden={!isSelected}
-                aria-label={`${round.label}, ${round.subLabel}`}
+                aria-label={`${round.label} fixtures`}
                 aria-roledescription="slide"
                 className={`league-round-carousel__slide${isSelected ? ' is-selected' : ''}`}
                 data-round-index={roundIndex}
@@ -636,13 +628,9 @@ function RoundCarousel({ onOpenFixture, rounds }: { onOpenFixture: (fixture: Lea
                 <div className="league-round-slide__content">
                   <div aria-label={`${round.label} fixtures`} className="league-fixture-round" id={`league-round-panel-${round.key}`}>
                     <header className="league-fixture-round__header">
-                      <div>
-                        <p className="eyebrow">{round.isCurrent ? `Live · ${round.label}` : round.label}</p>
-                        <h2>{round.subLabel}</h2>
-                      </div>
-                      <div className="league-fixture-round__meta">
-                        <strong>{round.expectedGameweeks} gameweeks</strong>
-                        <span>{round.gameweeks.length}/{round.expectedGameweeks} available</span>
+                      <div className="league-fixture-round__title">
+                        {round.isCurrent ? <span aria-label="Active round" className="league-round-active-led" role="img" title="Active round" /> : null}
+                        <h2>{round.label}</h2>
                       </div>
                     </header>
                     <GameweekCarousel
@@ -736,7 +724,6 @@ function GameweekCarousel({ groups, isActive, onIndexChange, onOpenFixture, roun
                 <div className="league-gameweek-slide__content">
                   <GameweekSection
                     group={group}
-                    label={primaryGameweekLabel(group)}
                     onOpenFixture={onOpenFixture}
                     onSelectGameweek={() => gameweekApi?.scrollTo(index, true)}
                     variant={sectionVariant}
@@ -836,12 +823,11 @@ function useScaleOpacityTween(emblaApi: EmblaCarouselType | undefined, contentSe
   }, [emblaApi, setTweenFactors, setTweenNodes, tweenScaleAndOpacity]);
 }
 
-function GameweekSection({ group, label, onOpenFixture, onSelectGameweek, variant }: { group: GameweekGroup; label: string; onOpenFixture: (fixture: LeagueFixture) => void; onSelectGameweek: () => void; variant: 'focus' | 'upcoming' | 'history' }) {
+function GameweekSection({ group, onOpenFixture, onSelectGameweek, variant }: { group: GameweekGroup; onOpenFixture: (fixture: LeagueFixture) => void; onSelectGameweek: () => void; variant: 'focus' | 'upcoming' | 'history' }) {
   return (
     <section aria-labelledby={`league-gameweek-${variant}-${group.gameweek.id}`} className={`league-gameweek-section league-gameweek-section--${variant}`}>
       <header className="league-gameweek-section__header">
         <button aria-label={`Select ${group.gameweek.name}`} className="league-gameweek-section__heading" onClick={onSelectGameweek} type="button">
-          <span className="eyebrow">{label}</span>
           <span aria-level={2} className="league-gameweek-section__title" id={`league-gameweek-${variant}-${group.gameweek.id}`} role="heading">{group.gameweek.name}</span>
         </button>
         <GameweekStateBadge gameweek={group.gameweek} state={group.state} />
@@ -977,12 +963,8 @@ function fixtureGameweekStatusForFixture(fixture: LeagueFixture, snapshot: Leagu
 }
 
 function GameweekStateBadge({ gameweek, state }: { gameweek: LeagueFixture['gameweek']; state: GameweekState }) {
-  if (state === 'not-started') {
-    return <time className="league-gameweek-state league-gameweek-state--not-started" dateTime={gameweek.deadlineAt ?? undefined}><span aria-hidden="true" />{formatDeadline(gameweek.deadlineAt)}</time>;
-  }
-
-  const label = state === 'finished' ? 'Finalised' : 'Live';
-  return <span className={`league-gameweek-state league-gameweek-state--${state}`}><span aria-hidden="true" />{label}</span>;
+  const deadlineLabel = formatDeadline(gameweek.deadlineAt);
+  return <time aria-label={`Deadline ${deadlineLabel}`} className={`league-gameweek-state league-gameweek-state--${state}`} dateTime={gameweek.deadlineAt ?? undefined}><span aria-hidden="true" />{deadlineLabel}</time>;
 }
 
 function formatScore(fixture: LeagueFixture): string {

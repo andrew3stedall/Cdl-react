@@ -217,9 +217,17 @@ describe('LeaguePage', () => {
     expect(container.textContent).toContain('Table');
     expect(container.textContent).toContain('Gameweek 12');
     expect(container.textContent).toContain('Round 2');
-    expect(container.textContent).toContain('Gameweeks 8–14');
+    expect(container.textContent).not.toContain('Gameweeks 8–14');
+    expect(container.textContent).not.toContain('7 gameweeks');
+    expect(container.textContent).not.toContain('available');
     expect(container.querySelectorAll('.league-round-carousel__slide')).toHaveLength(2);
     expect(container.querySelector('.league-round-carousel__slide[aria-current="true"]')?.textContent).toContain('Round 2');
+    expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-round-active-led')).not.toBeNull();
+    expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-fixture-round__header')?.textContent?.trim()).toBe('Round 2');
+    const selectedGameweekHeader = container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__slide[aria-current="true"] .league-gameweek-section__header');
+    expect(selectedGameweekHeader?.textContent).toContain('Gameweek 12');
+    expect(selectedGameweekHeader?.textContent).not.toContain('Current gameweek');
+    expect(selectedGameweekHeader?.textContent).not.toContain('Live');
     expect(container.querySelectorAll('.league-round-carousel__slide[aria-current="true"] .league-gameweek-section')).toHaveLength(3);
     expect(container.querySelectorAll('.league-round-carousel__slide[aria-current="true"] .league-fixture-row')).toHaveLength(5);
     expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__slide[aria-current="true"]')?.textContent).toContain('Gameweek 12');
@@ -305,7 +313,10 @@ describe('LeaguePage', () => {
   test('marks a completed gameweek as finalised', async () => {
     const { container, root } = await renderPage('/league', new FinishedLeagueClient());
 
-    expect(container.querySelector('.league-gameweek-state--finished')?.textContent).toContain('Finalised');
+    const finishedDeadline = container.querySelector('.league-gameweek-state--finished');
+    expect(finishedDeadline?.tagName).toBe('TIME');
+    expect(finishedDeadline?.getAttribute('aria-label')).toContain('Deadline');
+    expect(finishedDeadline?.textContent).not.toContain('Finalised');
     expect(container.textContent).not.toContain('Finished');
     act(() => root.unmount());
   });

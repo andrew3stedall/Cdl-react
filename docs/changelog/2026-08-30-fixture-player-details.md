@@ -30,6 +30,9 @@
 - Adjusted the bounded gameweek viewport for the taller stacked fixture rows.
 - Kept every gameweek card at the same bounded height and normalized its
   heading line so status changes cannot change the card geometry.
+- Extended the round carousel through the shell's horizontal inset and reduced
+  its slide basis so adjacent rounds remain visibly inside the viewport without
+  introducing horizontal page overflow.
 
 ## Validation
 

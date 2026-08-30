@@ -666,8 +666,9 @@ function GameweekCarousel({ groups, isActive, onIndexChange, onOpenFixture, roun
   const [gameweekViewportRef, gameweekApi] = useEmblaCarousel(gameweekOptions);
   const [selectedIndex, setSelectedIndex] = useState(initialIndex);
   const fixtureRows = Math.max(...groups.map((group) => group.fixtures.length), 1);
+  const gameweekCardHeight = Math.max(10.5, 2.9 + fixtureRows * 4.95);
   const carouselStyle = {
-    '--league-gameweek-carousel-height': `${Math.max(13, 5.3 + fixtureRows * 5.05)}rem`,
+    '--league-gameweek-carousel-height': `${gameweekCardHeight}rem`,
   } as CSSProperties;
 
   const handleGameweekSelect = useCallback((api: EmblaCarouselType) => {

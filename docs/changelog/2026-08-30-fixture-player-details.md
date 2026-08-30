@@ -43,6 +43,8 @@
   opacity transition.
 - Reduced the nested lower peek and added a small gap between gameweek cards
   so the carousel no longer reads as bottom padding.
+- Tightened the equal-height gameweek card calculation to remove unused space
+  after the final fixture while retaining enough room for the stacked rows.
 
 ## Validation
 

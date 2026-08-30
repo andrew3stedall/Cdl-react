@@ -308,13 +308,14 @@
 }
 
 .league-gameweek-carousel {
-  --league-gameweek-carousel-peek: 1.85rem;
+  --league-gameweek-carousel-peek: 1.1rem;
+  --league-gameweek-carousel-slide-gap: 0.45rem;
   display: block;
   min-width: 0;
 }
 
 .league-gameweek-carousel__viewport {
-  height: calc(var(--league-gameweek-carousel-height, 29rem) + var(--league-gameweek-carousel-peek));
+  height: calc(var(--league-gameweek-carousel-height, 29rem) + var(--league-gameweek-carousel-slide-gap) + var(--league-gameweek-carousel-peek));
   overflow: hidden;
   touch-action: pan-x pinch-zoom;
 }
@@ -324,6 +325,7 @@
   flex-direction: column;
   height: var(--league-gameweek-carousel-height, 29rem);
   min-height: 0;
+  row-gap: var(--league-gameweek-carousel-slide-gap);
 }
 
 .league-gameweek-carousel__slide {

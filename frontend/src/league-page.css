@@ -219,17 +219,10 @@
 }
 
 .league-round-carousel {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  display: grid;
-  gap: 0.7rem;
+  display: block;
   min-width: 0;
-  overflow: hidden;
-  padding: 0.8rem 0;
 }
 
-.league-round-carousel__header,
 .league-fixture-round__header,
 .league-history-browser__title,
 .league-history-browser__action,
@@ -238,19 +231,6 @@
   display: flex;
 }
 
-.league-round-carousel__header {
-  gap: 0.75rem;
-  justify-content: space-between;
-  padding: 0 0.8rem;
-}
-
-.league-round-carousel__header h2 {
-  font-size: 1rem;
-  letter-spacing: -0.015em;
-  margin: 0;
-}
-
-.league-round-carousel__header > span,
 .league-fixture-round__meta,
 .league-upcoming-rail > div:first-child > span {
   color: var(--muted-foreground);
@@ -259,7 +239,6 @@
 
 .league-round-carousel__viewport {
   overflow: hidden;
-  padding: 0 0.55rem;
   touch-action: pan-y pinch-zoom;
 }
 
@@ -321,41 +300,13 @@
   font-size: 0.6rem;
 }
 
-.league-round-carousel__hint {
-  color: var(--muted-foreground);
-  font-size: 0.64rem;
-  margin: 0;
-  text-align: center;
-}
-
 .league-gameweek-carousel {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  display: grid;
-  gap: 0.55rem;
+  display: block;
   min-width: 0;
-  overflow: hidden;
-  padding: 0.7rem;
-}
-
-.league-gameweek-carousel__header {
-  align-items: center;
-  display: flex;
-  justify-content: space-between;
-}
-
-.league-gameweek-carousel__header .eyebrow {
-  margin: 0;
-}
-
-.league-gameweek-carousel__header > span {
-  color: var(--muted-foreground);
-  font-size: 0.6rem;
 }
 
 .league-gameweek-carousel__viewport {
-  min-height: 29rem;
+  height: var(--league-gameweek-carousel-height, 29rem);
   overflow: hidden;
   touch-action: pan-x pinch-zoom;
 }
@@ -363,14 +314,16 @@
 .league-gameweek-carousel__track {
   display: flex;
   flex-direction: column;
-  min-height: 100%;
+  height: 100%;
+  min-height: 0;
 }
 
 .league-gameweek-carousel__slide {
   flex: 0 0 100%;
-  min-height: 29rem;
+  height: 100%;
+  min-height: 0;
   min-width: 0;
-  padding: 0.08rem;
+  padding: 0;
 }
 
 .league-gameweek-slide__content {

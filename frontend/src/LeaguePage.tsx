@@ -1,4 +1,4 @@
-import { type ReactNode, type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type CSSProperties, type ReactNode, type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Bell,
   CalendarDays,
@@ -610,18 +610,8 @@ function RoundCarousel({ onOpenFixture, rounds }: { onOpenFixture: (fixture: Lea
     setSelectedGameweekIndex((index) => Math.min(index, maximumIndex));
   }, [rounds]);
 
-  const selectedRound = rounds[selectedRoundIndex] ?? rounds[initialRoundIndex] ?? rounds[0];
-
   return (
     <section aria-label="Fixture rounds" aria-roledescription="carousel" className="league-round-carousel" role="region">
-      <header className="league-round-carousel__header">
-        <div>
-          <p className="eyebrow">Fixture rounds</p>
-          <h2>{selectedRound.label}</h2>
-        </div>
-        <span aria-live="polite">{selectedRoundIndex + 1} of {rounds.length}</span>
-      </header>
-
       <div aria-label="Fixture round slides" className="league-round-carousel__viewport" ref={roundViewportRef}>
         <div className="league-round-carousel__track">
           {rounds.map((round, roundIndex) => {
@@ -672,7 +662,6 @@ function RoundCarousel({ onOpenFixture, rounds }: { onOpenFixture: (fixture: Lea
           })}
         </div>
       </div>
-      <p className="league-round-carousel__hint">Swipe horizontally to move between rounds</p>
     </section>
   );
 }
@@ -687,6 +676,10 @@ function GameweekCarousel({ groups, isActive, onIndexChange, onOpenFixture, roun
   }), [groups.length, initialIndex]);
   const [gameweekViewportRef, gameweekApi] = useEmblaCarousel(gameweekOptions);
   const [selectedIndex, setSelectedIndex] = useState(initialIndex);
+  const fixtureRows = Math.max(...groups.map((group) => group.fixtures.length), 1);
+  const carouselStyle = {
+    '--league-gameweek-carousel-height': `${Math.max(21, 8.5 + fixtureRows * 4.15)}rem`,
+  } as CSSProperties;
 
   const handleGameweekSelect = useCallback((api: EmblaCarouselType) => {
     const index = api.selectedScrollSnap();
@@ -720,11 +713,7 @@ function GameweekCarousel({ groups, isActive, onIndexChange, onOpenFixture, roun
   if (groups.length === 0) return null;
 
   return (
-    <section aria-label={`Gameweeks in ${roundLabel}`} className="league-gameweek-carousel">
-      <header className="league-gameweek-carousel__header">
-        <p className="eyebrow">Gameweeks</p>
-        <span>Swipe vertically to browse this round</span>
-      </header>
+    <section aria-label={`Gameweeks in ${roundLabel}`} className="league-gameweek-carousel" style={carouselStyle}>
       <div aria-label="Gameweek slides" className="league-gameweek-carousel__viewport" ref={gameweekViewportRef}>
         <div className="league-gameweek-carousel__track">
           {groups.map((group, index) => {

@@ -14,6 +14,11 @@
   carousel.
 - Preserved the relative gameweek position while changing rounds, removed
   round navigation arrows, and added Embla-style scale and opacity tweening.
+- Removed the redundant round and gameweek chrome so the selected round uses
+  the available body width directly.
+- Constrained the vertical gameweek carousel to one fixed-height viewport,
+  sized from the largest fixture list in the round, so gameweeks scroll within
+  the carousel instead of extending the page.
 
 ## Validation
 
@@ -21,5 +26,7 @@
   player profiles.
 - Added coverage for the round-as-slide layout, arrow-free navigation, and
   relative gameweek index persistence.
+- Added coverage for the removed carousel headers and bounded gameweek
+  viewport.
 - `git diff --check`
 - Frontend lint, tests, typecheck, and production build passed.

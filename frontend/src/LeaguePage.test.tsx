@@ -5,6 +5,7 @@ import { describe, expect, test } from 'vitest';
 import { LeaguePage } from './LeaguePage';
 import { shouldShowFixturePoints, sortFixtureBench } from './components/fixture/FixtureSquadComparison';
 import type { FixtureDetailResponse, FixtureSquad, LeagueClient, LeagueSnapshot } from './league-api';
+import type { SquadApiHistoryResponse } from './squad-api';
 
 const testGlobal = globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean };
 testGlobal.IS_REACT_ACT_ENVIRONMENT = true;
@@ -105,6 +106,40 @@ class MemoryNotificationsClient {
     return {
       notifications: [{ id: 'notice-1', title: 'Fixture update', message: 'Gameweek 12 is underway.', action_href: '/league', kind: 'fixture' }],
       proposed_trade_count: 0,
+    };
+  }
+
+  async getPlayerHistory(playerId: string): Promise<SquadApiHistoryResponse> {
+    return {
+      player_id: playerId,
+      fetched_at: '2026-08-14T18:00:00Z',
+      response_sha256: 'history-sha',
+      history: [{
+        gameweek: 12,
+        fixture_id: 12001,
+        opponent_team_id: 101,
+        total_points: 8,
+        minutes: 90,
+        goals_scored: 1,
+        assists: 0,
+        clean_sheets: 0,
+        saves: 0,
+        yellow_cards: 0,
+        red_cards: 0,
+        own_goals: 0,
+        bonus: 2,
+        bps: 30,
+        expected_goals: 0.75,
+        expected_assists: 0.1,
+        value: 10,
+        was_home: true,
+        kickoff_time: '2026-08-14T18:00:00Z',
+        opponent_name: 'Arsenal',
+        opponent_short_name: 'ARS',
+        difficulty: 3,
+        defensive_contributions: 0,
+      }],
+      fixtures: [],
     };
   }
 }
@@ -381,6 +416,60 @@ describe('LeaguePage', () => {
 
     expect(container.querySelectorAll('[aria-label="Squad comparison"] [data-fixture-metric="form"]')).toHaveLength(6);
     expect(container.querySelectorAll('[aria-label="Squad comparison"] [data-fixture-metric="points"]')).toHaveLength(0);
+    act(() => root.unmount());
+  });
+
+  test('opens a live fixture player with their points breakdown', async () => {
+    const { container, root } = await renderPage();
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('button[aria-label*="Open live fixture for Andrew versus DJ"]')?.click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('button[aria-label="View Castle Keeper points breakdown"]')?.click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    const detail = container.querySelector('.player-chart-detail-layer');
+    expect(detail?.textContent).toContain('Gameweek 12 · Castle Keeper');
+    expect(detail?.textContent).toContain('Fantasy points');
+    expect(detail?.textContent).toContain('Minutes');
+    expect(detail?.textContent).toContain('Goals');
+    expect(detail?.textContent).toContain('+6');
+    act(() => root.unmount());
+  });
+
+  test('opens an upcoming fixture player in a read-only profile drawer', async () => {
+    const { container, root } = await renderPage();
+
+    await act(async () => {
+      Array.from(container.querySelectorAll<HTMLButtonElement>('.league-gameweek-picker__item'))
+        .find((button) => button.textContent?.includes('GW 13'))
+        ?.click();
+    });
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('button[aria-label*="Open preview for Andrew versus DJ"]')?.click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('button[aria-label="View Castle Keeper player profile"]')?.click();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    const profile = container.querySelector('[data-presentation="drawer"]');
+    expect(profile).not.toBeNull();
+    expect(profile?.textContent).toContain('Castle Keeper');
+    expect(profile?.querySelector('.player-profile__action-bar')).toBeNull();
+    expect(profile?.querySelector('[aria-label="Open player actions"]')).toBeNull();
     act(() => root.unmount());
   });
 

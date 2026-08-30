@@ -182,6 +182,24 @@
   font-weight: 800;
 }
 
+.fixture-squad-player-button {
+  background: transparent;
+  border: 0;
+  color: inherit;
+  cursor: pointer;
+  display: block;
+  font: inherit;
+  height: 100%;
+  padding: 0;
+  width: 100%;
+}
+
+.fixture-squad-player-button:focus-visible {
+  border-radius: 999px;
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
 .fixture-squad-rosters {
   border-top: 1px solid var(--border);
   display: grid;

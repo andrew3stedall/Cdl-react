@@ -183,6 +183,9 @@ export interface SquadClient {
   applyChanges(addPlayerIds: string[], removePlayerIds: string[]): Promise<SquadApiSummary>;
 }
 
+export type PlayerProfileSquadClient = Pick<SquadClient, 'getPlayerHistory'> &
+  Partial<Pick<SquadClient, 'getPlayer' | 'getChanges' | 'applyChanges'>>;
+
 export class SquadApiError extends Error {
   constructor(
     message: string,

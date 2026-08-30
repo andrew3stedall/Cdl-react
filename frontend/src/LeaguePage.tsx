@@ -762,8 +762,10 @@ function gameweekIndexForRound(round: Pick<FixtureRoundGroup, 'gameweeks'> | und
   return Math.min(Math.max(preferredIndex, 0), round.gameweeks.length - 1);
 }
 
-const ROUND_TWEEN_FACTOR_BASE = 0.1;
-const ROUND_OPACITY_TWEEN_FACTOR_BASE = 0.32;
+const ROUND_TWEEN_FACTOR_BASE = 0.14;
+const ROUND_OPACITY_TWEEN_FACTOR_BASE = 0.45;
+const ROUND_MIN_SCALE = 0.8;
+const ROUND_MIN_OPACITY = 0.34;
 
 function numberWithinRange(number: number, min: number, max: number): number {
   return Math.min(Math.max(number, min), max);
@@ -807,8 +809,8 @@ function useScaleOpacityTween(emblaApi: EmblaCarouselType | undefined, contentSe
 
         const tweenNode = tweenNodes.current[slideIndex];
         if (!tweenNode) return;
-        const scale = numberWithinRange(1 - Math.abs(diffToTarget * scaleFactor.current), 0.86, 1);
-        const opacity = numberWithinRange(1 - Math.abs(diffToTarget * opacityFactor.current), 0.42, 1);
+        const scale = numberWithinRange(1 - Math.abs(diffToTarget * scaleFactor.current), ROUND_MIN_SCALE, 1);
+        const opacity = numberWithinRange(1 - Math.abs(diffToTarget * opacityFactor.current), ROUND_MIN_OPACITY, 1);
         tweenNode.style.transform = `scale(${scale})`;
         tweenNode.style.opacity = `${opacity}`;
       });

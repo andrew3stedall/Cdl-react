@@ -249,7 +249,7 @@
 }
 
 .league-round-carousel__slide {
-  flex: 0 0 92%;
+  flex: 0 0 90%;
   min-width: 0;
   padding: 0.12rem 0.35rem;
 }
@@ -257,6 +257,7 @@
 .league-round-slide__content {
   min-width: 0;
   transform-origin: center center;
+  width: 100%;
   will-change: transform, opacity;
 }
 

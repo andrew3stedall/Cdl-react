@@ -19,6 +19,8 @@
 - Constrained the vertical gameweek carousel to one fixed-height viewport,
   sized from the largest fixture list in the round, so gameweeks scroll within
   the carousel instead of extending the page.
+- Increased the round tween range and side-slide exposure so neighbouring
+  rounds visibly fade and scale into focus during horizontal scrolling.
 
 ## Validation
 

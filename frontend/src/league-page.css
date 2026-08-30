@@ -6,7 +6,7 @@
   gap: 0.9rem;
   min-height: 100%;
   min-width: 0;
-  padding: clamp(1rem, 2.4vw, 1.65rem);
+  padding: clamp(1rem, 2.4vw, 1.65rem) 0 1.65rem;
 }
 
 .league-page h1,
@@ -27,7 +27,7 @@
   display: flex;
   justify-content: space-between;
   min-height: 4.2rem;
-  padding: 0.15rem 0.2rem 0.35rem;
+  padding: 0.15rem clamp(0.72rem, 2.4vw, 1.65rem) 0.35rem;
 }
 
 .league-page__brand-lockup {
@@ -328,6 +328,7 @@
 }
 
 .league-gameweek-slide__content {
+  height: 100%;
   min-width: 0;
   transform-origin: center center;
   will-change: transform, opacity;
@@ -342,6 +343,13 @@
   gap: 0.15rem;
   padding: 0;
   text-align: left;
+}
+
+.league-gameweek-section__heading .eyebrow {
+  min-height: 1em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .league-gameweek-section__heading:focus-visible {
@@ -365,6 +373,7 @@
   min-width: 0;
   overflow: hidden;
   padding: 0.7rem 0.75rem 0;
+  height: 100%;
 }
 
 .league-gameweek-section__header {
@@ -377,14 +386,6 @@
 
 .league-gameweek-section--focus {
   border-color: var(--primary);
-}
-
-.league-gameweek-section--focus .league-gameweek-section__title {
-  font-size: clamp(1.2rem, 3.5vw, 1.45rem);
-}
-
-.league-gameweek-section--focus .league-fixture-row {
-  min-height: 4.1rem;
 }
 
 .league-gameweek-section--upcoming {
@@ -404,7 +405,6 @@
 
 .league-gameweek-section--history {
   background: var(--surface);
-  margin-top: 0.7rem;
 }
 
 .league-upcoming-rail {
@@ -1054,6 +1054,7 @@
 }
 
 .league-fixture-row {
+  align-items: center;
   border-bottom: 1px solid var(--border);
   background: transparent;
   border-left: 0;
@@ -1063,29 +1064,50 @@
   cursor: pointer;
   gap: 0.75rem;
   font: inherit;
-  min-height: 3.7rem;
-  padding: 0.7rem 0;
+  min-height: 4.8rem;
+  padding: 0.5rem 0;
   text-align: left;
   width: 100%;
 }
 
-.league-fixture-row--compact {
-  min-height: 3.15rem;
-  padding-bottom: 0.5rem;
-  padding-top: 0.5rem;
+.league-fixture-row__teams {
+  display: grid;
+  flex: 1;
+  gap: 0.3rem;
+  min-width: 0;
 }
 
-.league-fixture-row--compact .league-team-mark {
-  height: 1.7rem;
-  width: 1.7rem;
+.league-fixture-row__team {
+  align-items: center;
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-width: 0;
 }
 
-.league-fixture-row--compact .league-team-line strong {
-  font-size: 0.73rem;
+.league-fixture-row__team-name {
+  align-items: center;
+  display: flex;
+  gap: 0.45rem;
+  min-width: 0;
 }
 
-.league-fixture-row--compact .league-score strong {
-  font-size: 0.94rem;
+.league-fixture-row__team .league-team-mark {
+  height: 1.75rem;
+  width: 1.75rem;
+}
+
+.league-fixture-row__team-name strong {
+  font-size: 0.8rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.league-fixture-row__team-score {
+  font-size: 0.95rem;
+  min-width: 1.15rem;
+  text-align: right;
 }
 
 .league-fixture-row:last-child {
@@ -1726,7 +1748,7 @@
     border-radius: 0;
     gap: 0.5rem;
     min-height: 100dvh;
-    padding: 0.75rem 0.72rem 5rem;
+    padding: 0 0 5rem;
   }
 
   .league-page__hero {
@@ -1802,36 +1824,6 @@
   .league-stat-grid,
   .league-page__columns--secondary {
     grid-template-columns: 1fr;
-  }
-
-  .league-fixture-row {
-    align-items: stretch;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-
-  .league-fixture-row > .league-fixture-teams {
-    align-self: center;
-  }
-
-  .league-fixture-row__result {
-    align-items: flex-end;
-  }
-
-  .league-fixture-row > .league-fixture-teams {
-    grid-column: 1;
-    grid-row: 1;
-  }
-
-  .league-fixture-row__arrow {
-    align-self: center;
-    grid-column: 2;
-    grid-row: 1;
-    justify-self: end;
-  }
-
-  .league-fixture-row__placeholder {
-    display: none;
   }
 
   .league-panel__header {

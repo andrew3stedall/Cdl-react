@@ -24,6 +24,12 @@
 - Reduced carousel/card spacing and tightened the fixed gameweek viewport so
   adjacent rounds and the active round's fixtures use the available space more
   effectively on mobile.
+- Removed League page outer padding from the carousel surface, made all
+  gameweeks use the same fixture-row sizing, and stacked each fixture's teams
+  into separate sub-rows.
+- Adjusted the bounded gameweek viewport for the taller stacked fixture rows.
+- Kept every gameweek card at the same bounded height and normalized its
+  heading line so status changes cannot change the card geometry.
 
 ## Validation
 

@@ -678,7 +678,7 @@ function GameweekCarousel({ groups, isActive, onIndexChange, onOpenFixture, roun
   const [selectedIndex, setSelectedIndex] = useState(initialIndex);
   const fixtureRows = Math.max(...groups.map((group) => group.fixtures.length), 1);
   const carouselStyle = {
-    '--league-gameweek-carousel-height': `${Math.max(13, 5.3 + fixtureRows * 4.15)}rem`,
+    '--league-gameweek-carousel-height': `${Math.max(13, 5.3 + fixtureRows * 5.05)}rem`,
   } as CSSProperties;
 
   const handleGameweekSelect = useCallback((api: EmblaCarouselType) => {
@@ -847,7 +847,7 @@ function GameweekSection({ group, label, onOpenFixture, onSelectGameweek, varian
         <GameweekStateBadge gameweek={group.gameweek} state={group.state} />
       </header>
       <div className="league-fixture-list">
-        {group.fixtures.map((fixture) => <FixtureListRow compact={variant !== 'focus'} fixture={fixture} key={fixture.id} onOpen={onOpenFixture} />)}
+        {group.fixtures.map((fixture) => <FixtureListRow fixture={fixture} key={fixture.id} onOpen={onOpenFixture} />)}
       </div>
     </section>
   );
@@ -883,23 +883,22 @@ function TableView({ onReload, snapshot }: { onReload: () => void; snapshot: Lea
   );
 }
 
-function FixtureListRow({ compact = false, fixture, onOpen }: { compact?: boolean; fixture: LeagueFixture; onOpen: (fixture: LeagueFixture) => void }) {
+function FixtureListRow({ fixture, onOpen }: { fixture: LeagueFixture; onOpen: (fixture: LeagueFixture) => void }) {
   const action = fixture.status === 'pending' ? 'Open preview' : fixture.status === 'started' ? 'Open live fixture' : 'Open finished fixture';
   return (
-    <button aria-label={`${action} for ${fixtureParticipantName(fixture.homeTeam)} versus ${fixtureParticipantName(fixture.awayTeam)}`} className={`league-fixture-row${compact ? ' league-fixture-row--compact' : ''}`} onClick={() => onOpen(fixture)} type="button">
-      <FixtureTeams fixture={fixture} compact />
+    <button aria-label={`${action} for ${fixtureParticipantName(fixture.homeTeam)} versus ${fixtureParticipantName(fixture.awayTeam)}`} className="league-fixture-row" onClick={() => onOpen(fixture)} type="button">
+      <div className="league-fixture-row__teams">
+        <div className="league-fixture-row__team">
+          <div className="league-fixture-row__team-name"><span className="league-team-mark">{teamInitials(fixture.homeTeam)}</span><strong>{fixtureParticipantName(fixture.homeTeam)}</strong></div>
+          <strong className="league-fixture-row__team-score">{fixture.score.homeScore ?? '—'}</strong>
+        </div>
+        <div className="league-fixture-row__team">
+          <div className="league-fixture-row__team-name"><span className="league-team-mark">{teamInitials(fixture.awayTeam)}</span><strong>{fixtureParticipantName(fixture.awayTeam)}</strong></div>
+          <strong className="league-fixture-row__team-score">{fixture.score.awayScore ?? '—'}</strong>
+        </div>
+      </div>
       <ChevronRight aria-hidden="true" className="league-fixture-row__arrow" size={17} />
     </button>
-  );
-}
-
-function FixtureTeams({ compact = false, fixture }: { compact?: boolean; fixture: LeagueFixture }) {
-  return (
-    <div className={`league-fixture-teams${compact ? ' league-fixture-teams--compact' : ''}`}>
-      <div className="league-team-line"><span className="league-team-mark">{teamInitials(fixture.homeTeam)}</span><strong>{fixtureParticipantName(fixture.homeTeam)}</strong></div>
-      <div className="league-score"><strong>{fixture.score.homeScore ?? '—'}</strong><span>{' - '}</span><strong>{fixture.score.awayScore ?? '—'}</strong></div>
-      <div className="league-team-line league-team-line--away"><strong>{fixtureParticipantName(fixture.awayTeam)}</strong><span className="league-team-mark">{teamInitials(fixture.awayTeam)}</span></div>
-    </div>
   );
 }
 

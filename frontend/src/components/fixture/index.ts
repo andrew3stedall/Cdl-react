@@ -9,5 +9,6 @@ export {
 export type {
   FixturePitchViewProps,
   FixtureGameweekStatus,
+  FixturePlayerInteraction,
   FixtureSquadComparisonProps,
 } from './FixtureSquadComparison';

@@ -40,7 +40,7 @@ import {
   type SquadApiPlayer,
   type SquadApiUpcomingFixture,
   type SquadApiSummary,
-  type SquadClient,
+  type PlayerProfileSquadClient,
 } from './squad-api';
 import {
   HttpTeamSelectionClient,
@@ -66,7 +66,8 @@ interface PlayerProfilePageProps {
   onTrade?: () => void;
   playerId: string;
   presentation?: 'page' | 'drawer';
-  squadClient?: SquadClient;
+  showActions?: boolean;
+  squadClient?: PlayerProfileSquadClient;
   teamSelectionClient?: TeamSelectionClient;
 }
 
@@ -75,7 +76,7 @@ type Captaincy = 'captain' | 'vice_captain' | null;
 type ActionSheet = 'bench' | 'remove' | null;
 type PendingAction = 'history' | 'lineup' | 'remove' | null;
 
-type ProfileFixture = CombinedFormMinutesFixture & { gameweek: number };
+export type ProfileFixture = CombinedFormMinutesFixture & { gameweek: number };
 type ChartDetailSelection =
   | { kind: 'form'; fixture: ProfileFixture; playerName?: string }
   | { kind: 'opponent'; fixture: SquadApiOpponentDefensiveHistory; playerName?: string };
@@ -103,6 +104,7 @@ export function PlayerProfilePage({
   onTrade,
   playerId,
   presentation = 'page',
+  showActions = true,
   squadClient = defaultSquadClient,
   teamSelectionClient = defaultTeamSelectionClient,
 }: PlayerProfilePageProps) {
@@ -131,8 +133,13 @@ export function PlayerProfilePage({
     setHistoryError(null);
     setSelectionError(null);
     setNotice(null);
+    const playerPromise = initialPlayer
+      ? Promise.resolve(initialPlayer)
+      : squadClient.getPlayer
+        ? squadClient.getPlayer(playerId)
+        : Promise.reject(new Error('Player could not be loaded.'));
     void Promise.allSettled([
-      initialPlayer ? Promise.resolve(initialPlayer) : squadClient.getPlayer(playerId),
+      playerPromise,
       squadClient.getPlayerHistory(playerId),
       initialSelection !== undefined ? Promise.resolve(initialSelection) : teamSelectionClient.getTeamSelection(),
     ]).then(([playerResult, historyResult, selectionResult]) => {
@@ -286,6 +293,11 @@ export function PlayerProfilePage({
     setReplacementId(null);
     setPendingAction('remove');
     setNotice(null);
+    if (!squadClient.getChanges) {
+      setNotice('Player management is unavailable from this view.');
+      setPendingAction(null);
+      return;
+    }
     try {
       const changes = await squadClient.getChanges();
       const availablePlayers = Array.isArray(changes.available_to_add) ? changes.available_to_add : [];
@@ -302,6 +314,10 @@ export function PlayerProfilePage({
 
   async function confirmRemoval() {
     if (!selectedReplacement || !player) return;
+    if (!squadClient.applyChanges) {
+      setNotice('Player management is unavailable from this view.');
+      return;
+    }
     setPendingAction('remove');
     setNotice(null);
     try {
@@ -346,6 +362,7 @@ export function PlayerProfilePage({
     <main
       aria-label={`Player profile for ${player.display_name}`}
       className={`player-profile${presentation === 'drawer' ? ' player-profile--drawer' : ''}`}
+      data-actions-visible={showActions}
       data-presentation={presentation}
     >
       {presentation === 'drawer' ? <span aria-hidden="true" className="player-profile__sheet-handle" /> : null}
@@ -361,24 +378,26 @@ export function PlayerProfilePage({
           player={toPlayerCardPlayer(player, nextFixtures, captaincy)}
           size="md"
         />
-        <div className="player-profile__overflow-wrap">
-          <button
-            aria-expanded={overflowOpen}
-            aria-label="Open player actions"
-            className="player-profile__icon-button"
-            onClick={() => setOverflowOpen((current) => !current)}
-            type="button"
-          >
-            <Ellipsis aria-hidden="true" size={21} />
-          </button>
-          {overflowOpen ? (
-            <div className="player-profile__overflow-menu" role="menu">
-              <button onClick={goBack} role="menuitem" type="button">Return to squad</button>
-              {onCompare ? <button onClick={onCompare} role="menuitem" type="button">Compare player</button> : null}
-              {onTrade ? <button onClick={onTrade} role="menuitem" type="button">Draft trade</button> : null}
-            </div>
-          ) : null}
-        </div>
+        {showActions ? (
+          <div className="player-profile__overflow-wrap">
+            <button
+              aria-expanded={overflowOpen}
+              aria-label="Open player actions"
+              className="player-profile__icon-button"
+              onClick={() => setOverflowOpen((current) => !current)}
+              type="button"
+            >
+              <Ellipsis aria-hidden="true" size={21} />
+            </button>
+            {overflowOpen ? (
+              <div className="player-profile__overflow-menu" role="menu">
+                <button onClick={goBack} role="menuitem" type="button">Return to squad</button>
+                {onCompare ? <button onClick={onCompare} role="menuitem" type="button">Compare player</button> : null}
+                {onTrade ? <button onClick={onTrade} role="menuitem" type="button">Draft trade</button> : null}
+              </div>
+            ) : null}
+          </div>
+        ) : <span aria-hidden="true" />}
       </header>
 
       <div className="player-profile__content">
@@ -412,35 +431,37 @@ export function PlayerProfilePage({
       {presentation === 'drawer' ? <div aria-hidden="true" className="player-profile__scroll-end-spacer" /> : null}
       </div>
 
-      <div aria-label="Squad-management actions" className="player-profile__action-bar" role="toolbar">
-        <ActionButton
-          disabled={isLocked || selectedLineupPlayer === null || pendingAction !== null}
-          icon={Repeat2}
-          label="Sub"
-          onClick={onStartSubstitution ?? openBenchActions}
-        />
-        <ActionButton
-          danger
-          disabled={player.status !== 'owned' || pendingAction !== null}
-          icon={CircleX}
-          label={pendingAction === 'remove' ? 'Loading…' : 'Remove'}
-          onClick={() => void openRemoveActions()}
-        />
-        <ActionButton
-          active={captaincy === 'captain'}
-          disabled={isLocked || squadStatus !== 'starter' || captaincy === 'captain' || pendingAction !== null}
-          visual={<PlayerRoleBadge role="captain" />}
-          label="Captain"
-          onClick={() => changeCaptaincy('captain')}
-        />
-        <ActionButton
-          active={captaincy === 'vice_captain'}
-          disabled={isLocked || squadStatus !== 'starter' || captaincy === 'vice_captain' || pendingAction !== null}
-          visual={<PlayerRoleBadge role="vice" />}
-          label="Vice"
-          onClick={() => changeCaptaincy('vice_captain')}
-        />
-      </div>
+      {showActions ? (
+        <div aria-label="Squad-management actions" className="player-profile__action-bar" role="toolbar">
+          <ActionButton
+            disabled={isLocked || selectedLineupPlayer === null || pendingAction !== null}
+            icon={Repeat2}
+            label="Sub"
+            onClick={onStartSubstitution ?? openBenchActions}
+          />
+          <ActionButton
+            danger
+            disabled={player.status !== 'owned' || pendingAction !== null}
+            icon={CircleX}
+            label={pendingAction === 'remove' ? 'Loading…' : 'Remove'}
+            onClick={() => void openRemoveActions()}
+          />
+          <ActionButton
+            active={captaincy === 'captain'}
+            disabled={isLocked || squadStatus !== 'starter' || captaincy === 'captain' || pendingAction !== null}
+            visual={<PlayerRoleBadge role="captain" />}
+            label="Captain"
+            onClick={() => changeCaptaincy('captain')}
+          />
+          <ActionButton
+            active={captaincy === 'vice_captain'}
+            disabled={isLocked || squadStatus !== 'starter' || captaincy === 'vice_captain' || pendingAction !== null}
+            visual={<PlayerRoleBadge role="vice" />}
+            label="Vice"
+            onClick={() => changeCaptaincy('vice_captain')}
+          />
+        </div>
+      ) : null}
 
       {actionSheet === 'bench' ? (
         <ActionDialog labelledBy="player-profile-substitution-title" onClose={() => setActionSheet(null)} title="Choose substitution">
@@ -524,7 +545,7 @@ export function SubstitutionReviewDrawer({
   pending?: boolean;
   sourceLabel?: string;
   sourcePlayer: SquadApiPlayer;
-  squadClient?: SquadClient;
+  squadClient?: PlayerProfileSquadClient;
   targetLabel?: string;
   targetPlayer: SquadApiPlayer;
 }) {
@@ -803,7 +824,7 @@ const oppositionDetailCategoryOrder = [
   'saves',
 ] as const;
 
-function formDetailSummary(fixture: ProfileFixture): PlayerChartDetailSummaryItem[] {
+export function formDetailSummary(fixture: ProfileFixture): PlayerChartDetailSummaryItem[] {
   return [
     { label: 'Fantasy points', value: formatNullableNumber(fixture.fantasyPoints) },
     { label: 'Minutes', value: formatNullableNumber(fixture.minutesPlayed) },
@@ -811,7 +832,7 @@ function formDetailSummary(fixture: ProfileFixture): PlayerChartDetailSummaryIte
   ];
 }
 
-function formDetailSections(fixture: ProfileFixture): PlayerChartDetailSection[] {
+export function formDetailSections(fixture: ProfileFixture): PlayerChartDetailSection[] {
   const position = fixture.position?.toUpperCase() ?? '';
   const minutes = fixture.minutesPlayed ?? 0;
   const goalPoints = position === 'GKP' || position === 'DEF' ? 6 : position === 'MID' ? 5 : 4;
@@ -970,7 +991,7 @@ function selectNextGameweekFixtures(
   return normalized.filter((fixture) => fixture.gameweek === nextGameweek);
 }
 
-function mapHistoryFixture(row: SquadApiHistoryResponse['history'][number], position: string | null = null): ProfileFixture {
+export function mapHistoryFixture(row: SquadApiHistoryResponse['history'][number], position: string | null = null): ProfileFixture {
   return {
     fixtureId: String(row.fixture_id),
     gameweek: row.gameweek,

@@ -54,6 +54,10 @@
   width: 100%;
 }
 
+.player-profile--drawer[data-actions-visible='false'] .player-profile__content {
+  --player-profile-drawer-scroll-tail: 1rem;
+}
+
 .player-profile--drawer .player-profile__scroll-end-spacer {
   display: none;
 }

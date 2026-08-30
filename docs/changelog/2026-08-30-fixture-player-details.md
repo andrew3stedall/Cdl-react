@@ -9,10 +9,17 @@
   with minutes, returns, and signed fantasy-point values.
 - Upcoming fixture players now open the shared player profile sheet in read-only
   mode, without squad-management actions.
+- Reworked fixture rounds into a horizontal, looped Embla carousel where each
+  slide owns the complete round layout and its nested vertical gameweek
+  carousel.
+- Preserved the relative gameweek position while changing rounds, removed
+  round navigation arrows, and added Embla-style scale and opacity tweening.
 
 ## Validation
 
 - Added League page coverage for live points breakdown and read-only upcoming
   player profiles.
+- Added coverage for the round-as-slide layout, arrow-free navigation, and
+  relative gameweek index persistence.
 - `git diff --check`
 - Frontend lint, tests, typecheck, and production build passed.

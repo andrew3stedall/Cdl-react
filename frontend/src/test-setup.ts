@@ -1,51 +1,63 @@
-if (!window.matchMedia) {
+if (typeof window !== 'undefined') {
+  window.scrollTo = () => undefined;
+}
+
+if (typeof window !== 'undefined' && !window.matchMedia) {
   Object.defineProperty(window, 'matchMedia', {
     configurable: true,
-    value: (query: string) => ({
-      addEventListener: () => undefined,
-      addListener: () => undefined,
-      dispatchEvent: () => false,
+    value: (query: string): MediaQueryList => ({
       matches: false,
       media: query,
       onchange: null,
-      removeEventListener: () => undefined,
+      addListener: () => undefined,
       removeListener: () => undefined,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      dispatchEvent: () => false,
     }),
   });
 }
 
-if (!globalThis.IntersectionObserver) {
-  class IntersectionObserverMock {
-    callback: IntersectionObserverCallback;
-
-    constructor(callback: IntersectionObserverCallback) {
-      this.callback = callback;
+if (typeof window !== 'undefined' && !window.ResizeObserver) {
+  class TestResizeObserver {
+    disconnect(): void {
+      return undefined;
     }
 
-    disconnect() {}
+    observe(): void {
+      return undefined;
+    }
 
-    observe(target: Element) {
-      this.callback([{ isIntersecting: true, target } as IntersectionObserverEntry], this as unknown as IntersectionObserver);
+    unobserve(): void {
+      return undefined;
+    }
+  }
+
+  window.ResizeObserver = TestResizeObserver;
+}
+
+if (typeof window !== 'undefined' && !window.IntersectionObserver) {
+  class TestIntersectionObserver {
+    readonly root = null;
+    readonly rootMargin = '';
+    readonly thresholds: number[] = [];
+
+    disconnect(): void {
+      return undefined;
+    }
+
+    observe(): void {
+      return undefined;
     }
 
     takeRecords(): IntersectionObserverEntry[] {
       return [];
     }
 
-    unobserve() {}
+    unobserve(): void {
+      return undefined;
+    }
   }
 
-  Object.defineProperty(globalThis, 'IntersectionObserver', { configurable: true, value: IntersectionObserverMock });
-}
-
-if (!globalThis.ResizeObserver) {
-  class ResizeObserverMock {
-    disconnect() {}
-
-    observe() {}
-
-    unobserve() {}
-  }
-
-  Object.defineProperty(globalThis, 'ResizeObserver', { configurable: true, value: ResizeObserverMock });
+  window.IntersectionObserver = TestIntersectionObserver as unknown as typeof IntersectionObserver;
 }

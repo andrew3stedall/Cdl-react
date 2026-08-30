@@ -255,95 +255,29 @@
   font-size: 0.68rem;
 }
 
-.league-round-picker__tabs {
-  display: flex;
-  gap: 0.45rem;
-  max-width: 100%;
-  overflow-x: auto;
-  padding: 0.08rem;
-  scrollbar-width: thin;
+.league-round-carousel {
+  padding: 0 2.8rem;
 }
 
-.league-round-picker__tab {
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 0.65rem;
-  color: var(--muted-foreground);
-  cursor: pointer;
-  display: grid;
-  flex: 0 0 auto;
-  gap: 0.12rem;
-  min-width: 8rem;
-  padding: 0.55rem 0.7rem;
-  text-align: left;
-}
-
-.league-round-picker__tab strong {
-  color: var(--foreground);
-  font-size: 0.72rem;
-  white-space: nowrap;
-}
-
-.league-round-picker__tab small {
-  font-size: 0.61rem;
-}
-
-.league-round-picker__tab:hover,
-.league-round-picker__tab:focus-visible,
-.league-round-picker__tab.is-selected {
-  background: var(--secondary);
-  border-color: var(--primary);
-  outline: none;
-}
-
-.league-round-picker__tab.is-selected strong,
-.league-round-picker__tab.is-selected small {
-  color: var(--primary);
-}
-
-.league-round-picker__carousel {
+.league-round-carousel__track {
   align-items: stretch;
-  display: grid;
   gap: 0.45rem;
-  grid-template-columns: auto minmax(0, 1fr) auto;
 }
 
-.league-round-picker__control {
-  align-items: center;
-  align-self: center;
-  background: var(--secondary);
-  border: 1px solid var(--border);
-  border-radius: 0.55rem;
-  color: var(--primary);
-  cursor: pointer;
-  display: inline-flex;
-  height: 2.4rem;
-  justify-content: center;
-  padding: 0;
-  width: 2.4rem;
+.league-round-carousel .ui-carousel__item {
+  flex-basis: min(10.5rem, 72vw);
 }
 
-.league-round-picker__control:hover:not(:disabled),
-.league-round-picker__control:focus-visible {
-  border-color: var(--primary);
-  outline: none;
-}
-
-.league-round-picker__control:disabled {
+.league-round-picker__hint,
+.league-gameweek-picker__header > span {
   color: var(--muted-foreground);
-  cursor: not-allowed;
-  opacity: 0.45;
+  font-size: 0.6rem;
 }
 
-.league-round-picker__track {
-  align-items: stretch;
-  display: flex;
-  gap: 0.45rem;
-  min-width: 0;
-  overflow-x: auto;
-  padding: 0.08rem;
-  scroll-snap-type: x proximity;
-  scrollbar-width: thin;
+.league-round-picker__hint {
+  display: block;
+  margin: 0.05rem 0 0;
+  text-align: center;
 }
 
 .league-round-picker__card {
@@ -435,64 +369,27 @@
   font-size: 0.6rem;
 }
 
-.league-gameweek-picker__track {
-  display: flex;
-  gap: 0.35rem;
-  min-width: 0;
-  overflow-x: auto;
-  padding: 0.08rem;
-  scrollbar-width: thin;
+.league-gameweek-carousel {
+  height: var(--league-gameweek-carousel-height);
+  min-height: 21rem;
+  padding: 0.08rem 3rem 0.08rem 0.08rem;
 }
 
-.league-gameweek-picker__item {
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: 0.55rem;
-  color: var(--muted-foreground);
-  cursor: pointer;
-  display: grid;
-  flex: 0 0 4.25rem;
-  gap: 0.12rem;
-  padding: 0.45rem 0.5rem;
-  text-align: left;
+.league-gameweek-carousel__track {
+  gap: 0.7rem;
 }
 
-.league-gameweek-picker__item:hover,
-.league-gameweek-picker__item:focus-visible,
-.league-gameweek-picker__item.is-selected {
-  background: var(--secondary);
-  border-color: var(--primary);
-  outline: none;
+.league-gameweek-carousel .ui-carousel__viewport,
+.league-gameweek-carousel .ui-carousel__container {
+  height: 100%;
 }
 
-.league-gameweek-picker__item strong {
-  color: var(--foreground);
-  font-size: 0.72rem;
+.league-gameweek-carousel .ui-carousel__item {
+  height: 100%;
 }
 
-.league-gameweek-picker__item small {
-  color: var(--muted-foreground);
-  font-size: 0.56rem;
-}
-
-.league-gameweek-picker__item--underway strong,
-.league-gameweek-picker__item--underway small {
-  color: var(--ring);
-}
-
-.league-gameweek-picker__item--finished strong,
-.league-gameweek-picker__item--finished small {
-  color: var(--cdl-fdr-2);
-}
-
-.league-gameweek-picker__item--not-started strong,
-.league-gameweek-picker__item--not-started small {
-  color: var(--cdl-fdr-4);
-}
-
-.league-gameweek-picker__item.is-selected strong,
-.league-gameweek-picker__item.is-selected small {
-  color: var(--primary);
+.league-gameweek-carousel .league-gameweek-section {
+  height: 100%;
 }
 
 .league-gameweek-section {
@@ -516,6 +413,16 @@
   font-size: 1.05rem;
   letter-spacing: -0.015em;
   margin: 0;
+}
+
+.league-gameweek-section__number {
+  color: var(--primary);
+  display: block;
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  margin-bottom: 0.18rem;
+  text-transform: uppercase;
 }
 
 .league-gameweek-section--focus {
@@ -547,7 +454,7 @@
 
 .league-gameweek-section--history {
   background: var(--surface);
-  margin-top: 0.7rem;
+  margin-top: 0;
 }
 
 .league-upcoming-rail {

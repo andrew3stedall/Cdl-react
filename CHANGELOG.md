@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Replaced the League fixtures and gameweek pickers with shadcn-style Embla
+  carousels: rounds loop horizontally, gameweeks loop vertically, and each
+  slide fades with opacity while keeping every fixture in the selected
+  gameweek visible.
+- Split League fixture rendering into reusable round, gameweek, and fixture
+  components without changing fixture drawer or scoring behaviour.
 - Reworked League fixtures into five chronological seven-gameweek rounds with a
   horizontal carousel, a focused live/current gameweek, and compact in-round
   gameweek browsing for upcoming and past results.

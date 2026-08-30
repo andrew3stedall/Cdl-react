@@ -23,6 +23,13 @@ Users enter a single League workspace. The header provides a Fixtures/Table
 toggle and notifications; fixture rows are grouped by current and upcoming
 gameweek instead of being split across a contextual navigation menu.
 
+Fixture browsing uses nested looping carousels: rounds move horizontally, and
+gameweeks within the selected round move vertically. Each round, gameweek, and
+fixture is rendered by its own React component. A gameweek slide contains its
+complete fixture list, so fixture rows do not introduce a second nested scroll
+area. Adjacent slides fade with an opacity transition while the selected slide
+remains fully opaque.
+
 ## Business Rules
 
 - Current fixtures appear first, followed by upcoming gameweeks.
@@ -60,6 +67,9 @@ gameweek instead of being split across a contextual navigation menu.
 - Upcoming squad preview, live fixture detail, and finished fixture detail.
 - League standings.
 - Fixture detail drawer.
+- Looping horizontal round carousel and looping vertical gameweek carousel.
+- Independent round, gameweek, and fixture components with a complete fixture
+  list visible in the selected gameweek slide.
 
 ## UI Requirements
 

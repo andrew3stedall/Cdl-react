@@ -38,6 +38,11 @@
   retaining the existing state colour treatment.
 - Added a fixed lower peek for the next gameweek, with the same scale and
   opacity tween treatment as the round carousel.
+- Made gameweek heading and controlled index changes use Embla's animated
+  scroll path, with a slightly longer duration for a smoother scale and
+  opacity transition.
+- Reduced the nested lower peek and added a small gap between gameweek cards
+  so the carousel no longer reads as bottom padding.
 
 ## Validation
 

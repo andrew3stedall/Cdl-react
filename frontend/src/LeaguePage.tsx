@@ -659,6 +659,7 @@ function GameweekCarousel({ groups, isActive, onIndexChange, onOpenFixture, roun
   const gameweekOptions = useMemo(() => ({
     align: 'start' as const,
     axis: 'y' as const,
+    duration: 40,
     loop: groups.length > 1,
     startIndex: initialIndex,
   }), [groups.length, initialIndex]);
@@ -694,7 +695,7 @@ function GameweekCarousel({ groups, isActive, onIndexChange, onOpenFixture, roun
     const nextIndex = Math.min(selectedGameweekIndex, Math.max(groups.length - 1, 0));
     setSelectedIndex(nextIndex);
     if (gameweekApi.selectedScrollSnap() !== nextIndex) {
-      gameweekApi.scrollTo(nextIndex, true);
+      gameweekApi.scrollTo(nextIndex);
     }
   }, [gameweekApi, groups.length, selectedGameweekIndex]);
 
@@ -725,7 +726,7 @@ function GameweekCarousel({ groups, isActive, onIndexChange, onOpenFixture, roun
                   <GameweekSection
                     group={group}
                     onOpenFixture={onOpenFixture}
-                    onSelectGameweek={() => gameweekApi?.scrollTo(index, true)}
+                    onSelectGameweek={() => gameweekApi?.scrollTo(index)}
                     variant={sectionVariant}
                   />
                 </div>

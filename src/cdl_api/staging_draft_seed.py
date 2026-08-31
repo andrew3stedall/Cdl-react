@@ -55,12 +55,13 @@ TEAM_IDS = (
 # Wilde. Values are zero-based indexes into TEAM_IDS.
 DRAFT_ORDER_TEAM_INDICES = (0, 3, 5, 4, 1, 7, 2, 6)
 
-# The staging league is a controlled review fixture. The two reviewer emails
-# are read from the protected Google sign-in allowlist at seed time; they are
+# The staging league is a controlled review fixture. Reviewer emails are read
+# from the protected Google sign-in allowlist at seed time; they are
 # intentionally not committed to this public repository.
 STAGING_MANAGER_TEAM_IDS = (
     "team-stan-still-sells-tik",
     "team-wilde-boars",
+    "team-bayer-neverlusen",
 )
 
 SQUAD_SIZE = 20
@@ -650,11 +651,11 @@ def resolve_staging_manager_context(
 
 
 def staging_manager_assignments(allowed_emails: str) -> dict[str, str]:
-    """Map the two protected staging reviewer entries to their draft teams."""
+    """Map the three protected staging reviewer entries to their draft teams."""
     emails = tuple(email.strip().lower() for email in allowed_emails.split(",") if email.strip())
     if len(emails) != len(STAGING_MANAGER_TEAM_IDS):
         raise RuntimeError(
-            "Staging reviewer allowlist must contain exactly two email addresses "
+            "Staging reviewer allowlist must contain exactly three email addresses "
             "for the controlled two-team reviewer fixture."
         )
     return dict(zip(STAGING_MANAGER_TEAM_IDS, emails, strict=True))

@@ -656,7 +656,7 @@ def staging_manager_assignments(allowed_emails: str) -> dict[str, str]:
     if len(emails) != len(STAGING_MANAGER_TEAM_IDS):
         raise RuntimeError(
             "Staging reviewer allowlist must contain exactly three email addresses "
-            "for the controlled two-team reviewer fixture."
+            "for the controlled three-team reviewer fixture."
         )
     return dict(zip(STAGING_MANAGER_TEAM_IDS, emails, strict=True))
 

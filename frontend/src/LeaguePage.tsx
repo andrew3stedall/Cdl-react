@@ -566,7 +566,7 @@ function RoundCarousel({ onOpenFixture, rounds }: { onOpenFixture: (fixture: Lea
   const [selectedGameweekIndex, setSelectedGameweekIndex] = useState(initialGameweekIndex);
   const roundOptions = useMemo(() => ({
     align: 'center' as const,
-    containScroll: 'keepSnaps' as const,
+    containScroll: false as const,
     loop: false,
     startIndex: initialRoundIndex,
   }), [initialRoundIndex]);

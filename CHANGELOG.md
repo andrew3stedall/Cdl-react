@@ -8,6 +8,8 @@
   gameweek visible.
 - Widened the round slides while tightening the spacing between them and added
   one filled-or-hollow navigation dot per round below the carousel.
+- Added matching terminal insets so the first and last rounds centre on the
+  same focal line when selected.
 - Nested each round's gameweek carousel inside its round slide, preserved the
   relative gameweek index between rounds, and moved compact navigation controls
   onto the carousel rails.

@@ -16,6 +16,8 @@
   round remains visible at the viewport edge.
 - Added a small slide overlap to bring adjacent round cards closer together
   without changing their width or terminal centering.
+- Increased the slide overlap to 0.4rem per side for a more visible adjacent
+  round peek.
 - Nested each round's gameweek carousel inside its round slide, preserved the
   relative gameweek index between rounds, and moved compact navigation controls
   onto the carousel rails.

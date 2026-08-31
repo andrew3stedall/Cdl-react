@@ -224,7 +224,7 @@
 
 .league-round-carousel {
   --league-round-carousel-slide-width: 82%;
-  --league-round-carousel-slide-overlap: 0.2rem;
+  --league-round-carousel-slide-overlap: 0.4rem;
   --league-round-carousel-edge-inset: calc((100% - var(--league-round-carousel-slide-width)) / 2);
   display: block;
   min-width: 0;

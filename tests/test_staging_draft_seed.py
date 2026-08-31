@@ -186,7 +186,9 @@ def test_seed_is_idempotent_and_persists_valid_position_counts() -> None:
         )
     session_factory = sessionmaker(bind=engine, class_=Session)
 
-    reviewer_allowlist = "reviewer.one@example.com,reviewer.two@example.com"
+    reviewer_allowlist = (
+        "reviewer.one@example.com,reviewer.two@example.com,reviewer.three@example.com"
+    )
     first = seed_staging_snake_draft(
         session_factory,
         google_allowed_emails=reviewer_allowlist,
@@ -224,6 +226,7 @@ def test_seed_is_idempotent_and_persists_valid_position_counts() -> None:
         assert manager_assignments == {
             "Stan Still Sells Tik": "reviewer.one@example.com",
             "Wilde Boars": "reviewer.two@example.com",
+            "Bayer Neverlusen": "reviewer.three@example.com",
         }
         team_counts = dict(
             session.execute(
@@ -261,10 +264,20 @@ def test_seed_is_idempotent_and_persists_valid_position_counts() -> None:
         session_factory,
         user_id="staging:reviewer.two@example.com",
     )
+    kevin_squad = PostgreSQLSquadRepository(
+        session_factory,
+        user_id="staging:reviewer.three@example.com",
+    )
+    kevin_selection = PostgreSQLTeamSelectionRepository(
+        session_factory,
+        user_id="staging:reviewer.three@example.com",
+    )
     assert andrew_squad.manager_team.name == "Stan Still Sells Tik"
     assert dj_squad.manager_team.name == "Wilde Boars"
+    assert kevin_squad.manager_team.name == "Bayer Neverlusen"
     assert andrew_selection.manager_team.name == "Stan Still Sells Tik"
     assert dj_selection.manager_team.name == "Wilde Boars"
+    assert kevin_selection.manager_team.name == "Bayer Neverlusen"
     persisted_counts = {
         team_id: {position: 0 for position in POSITION_LIMITS} for team_id in TEAM_IDS
     }

@@ -566,14 +566,20 @@ function RoundCarousel({ onOpenFixture, rounds }: { onOpenFixture: (fixture: Lea
   const [selectedGameweekIndex, setSelectedGameweekIndex] = useState(initialGameweekIndex);
   const roundOptions = useMemo(() => ({
     align: 'center' as const,
-    loop: rounds.length > 1,
+    containScroll: 'keepSnaps' as const,
+    loop: false,
     startIndex: initialRoundIndex,
-  }), [initialRoundIndex, rounds.length]);
+  }), [initialRoundIndex]);
   const [roundViewportRef, roundApi] = useEmblaCarousel(roundOptions);
 
   const handleRoundSelect = useCallback((api: EmblaCarouselType) => {
     setSelectedRoundIndex(api.selectedScrollSnap());
   }, []);
+
+  const handleRoundNavigation = useCallback((roundIndex: number) => {
+    roundApi?.scrollTo(roundIndex);
+    setSelectedRoundIndex(roundIndex);
+  }, [roundApi]);
 
   useScaleOpacityTween(roundApi, '.league-round-slide__content');
 
@@ -621,7 +627,7 @@ function RoundCarousel({ onOpenFixture, rounds }: { onOpenFixture: (fixture: Lea
                 onClick={(event) => {
                   const target = event.target as HTMLElement;
                   if (target.closest('button, a, input, select, textarea')) return;
-                  roundApi?.scrollTo(roundIndex);
+                  handleRoundNavigation(roundIndex);
                 }}
                 role="group"
               >
@@ -650,6 +656,22 @@ function RoundCarousel({ onOpenFixture, rounds }: { onOpenFixture: (fixture: Lea
           })}
         </div>
       </div>
+      <nav aria-label="Round navigation" className="league-round-carousel__dots">
+        {rounds.map((round, roundIndex) => {
+          const isSelected = roundIndex === selectedRoundIndex;
+          return (
+            <button
+              aria-current={isSelected ? 'true' : undefined}
+              aria-label={`Go to ${round.label}`}
+              className={`league-round-carousel__dot${isSelected ? ' is-selected' : ''}`}
+              data-round-index={roundIndex}
+              key={round.key}
+              onClick={() => handleRoundNavigation(roundIndex)}
+              type="button"
+            />
+          );
+        })}
+      </nav>
     </section>
   );
 }

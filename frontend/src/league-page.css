@@ -253,9 +253,9 @@
 }
 
 .league-round-carousel__slide {
-  flex: 0 0 72%;
+  flex: 0 0 78%;
   min-width: 0;
-  padding: 0.1rem 0.15rem;
+  padding: 0.1rem 0.08rem;
 }
 
 .league-round-slide__content {
@@ -276,6 +276,42 @@
 
 .league-round-carousel__slide.is-selected .league-fixture-round {
   border-color: var(--primary);
+}
+
+.league-round-carousel__dots {
+  align-items: center;
+  display: flex;
+  gap: 0.45rem;
+  justify-content: center;
+  padding: 0.65rem 0 0.1rem;
+}
+
+.league-round-carousel__dot {
+  background: transparent;
+  border: 1px solid var(--muted-foreground);
+  border-radius: 999px;
+  cursor: pointer;
+  height: 0.48rem;
+  padding: 0;
+  transition: background-color 180ms ease, border-color 180ms ease, transform 180ms ease;
+  width: 0.48rem;
+}
+
+.league-round-carousel__dot:hover,
+.league-round-carousel__dot:focus-visible {
+  border-color: var(--primary);
+  outline: none;
+}
+
+.league-round-carousel__dot:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 0.2rem;
+}
+
+.league-round-carousel__dot.is-selected {
+  background: var(--primary);
+  border-color: var(--primary);
+  transform: scale(1.15);
 }
 
 .league-fixture-round__header {
@@ -352,6 +388,13 @@
   gap: 0.15rem;
   padding: 0;
   text-align: left;
+}
+
+.league-gameweek-section__heading .eyebrow {
+  min-height: 1em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .league-gameweek-section__heading:focus-visible {

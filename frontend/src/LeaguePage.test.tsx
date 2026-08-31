@@ -239,6 +239,9 @@ describe('LeaguePage', () => {
     expect(container.querySelector('.league-gameweek-carousel__viewport')?.getAttribute('style')).toBeNull();
     expect(container.querySelector('.league-round-slide__content')?.getAttribute('style')).toContain('transform: scale(1)');
     expect(container.querySelector('.league-round-carousel__slide:not([aria-current="true"]) .league-round-slide__content')?.getAttribute('style')).toContain('opacity:');
+    expect(container.querySelectorAll('.league-round-carousel__dot')).toHaveLength(2);
+    expect(container.querySelector('.league-round-carousel__dot.is-selected')?.getAttribute('aria-label')).toBe('Go to Round 2');
+    expect(container.querySelectorAll('.league-round-carousel__dot:not(.is-selected)')).toHaveLength(1);
     expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__slide[aria-current="true"] .league-gameweek-slide__content')?.getAttribute('style')).toContain('transform: scale(1)');
     expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__slide:not([aria-current="true"]) .league-gameweek-slide__content')?.getAttribute('style')).toContain('opacity:');
     expect(container.querySelectorAll('.league-fixture-row--compact')).toHaveLength(0);
@@ -284,9 +287,31 @@ describe('LeaguePage', () => {
     });
 
     expect(container.querySelector('.league-round-carousel__slide[aria-current="true"]')?.textContent).toContain('Semi Final');
+    expect(container.querySelector('.league-round-carousel__dot.is-selected')?.getAttribute('aria-label')).toBe('Go to Semi Final');
     expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-fixture-round')?.textContent).toContain('Semi Final');
     expect(container.querySelectorAll('.league-round-carousel__slide[aria-current="true"] .league-gameweek-section')).toHaveLength(1);
     expect(container.querySelectorAll('.league-round-carousel__slide[aria-current="true"] .league-fixture-row')).toHaveLength(1);
+    act(() => root.unmount());
+  });
+
+  test('uses the round dots to navigate without wrapping', async () => {
+    const { container, root } = await renderPage();
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('.league-round-carousel__dot[aria-label="Go to Semi Final"]')?.click();
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    });
+
+    expect(container.querySelector('.league-round-carousel__slide[aria-current="true"]')?.textContent).toContain('Semi Final');
+    expect(container.querySelector('.league-round-carousel__dot.is-selected')?.getAttribute('aria-label')).toBe('Go to Semi Final');
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('.league-round-carousel__dot[aria-label="Go to Round 2"]')?.click();
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    });
+
+    expect(container.querySelector('.league-round-carousel__slide[aria-current="true"]')?.textContent).toContain('Round 2');
+    expect(container.querySelector('.league-round-carousel__dot.is-selected')?.getAttribute('aria-label')).toBe('Go to Round 2');
     act(() => root.unmount());
   });
 

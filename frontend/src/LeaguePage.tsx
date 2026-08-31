@@ -11,7 +11,7 @@ import {
   Table2,
   X,
 } from 'lucide-react';
-import type { EmblaCarouselType, EmblaEventType } from 'embla-carousel';
+import type { EmblaCarouselType } from 'embla-carousel';
 import useEmblaCarousel from 'embla-carousel-react';
 
 import { Button } from './components/ui/button';
@@ -701,8 +701,8 @@ function GameweekCarousel({ expectedGameweeks, groups, isActive, onIndexChange, 
   const handleGameweekSelect = useCallback((api: EmblaCarouselType) => {
     const index = api.selectedScrollSnap();
     setSelectedIndex(index);
-    if (isActive && groups.length > selectedGameweekIndex) onIndexChange(index);
-  }, [groups.length, isActive, onIndexChange, selectedGameweekIndex]);
+    if (isActive) onIndexChange(index);
+  }, [isActive, onIndexChange]);
 
   useScaleOpacityTween(gameweekApi, '.league-gameweek-slide__content');
 
@@ -840,35 +840,18 @@ function useScaleOpacityTween(emblaApi: EmblaCarouselType | undefined, contentSe
     opacityFactor.current = ROUND_OPACITY_TWEEN_FACTOR_BASE * api.scrollSnapList().length;
   }, []);
 
-  const tweenScaleAndOpacity = useCallback((api: EmblaCarouselType, eventName?: EmblaEventType): void => {
-    const engine = api.internalEngine();
+  const tweenScaleAndOpacity = useCallback((api: EmblaCarouselType): void => {
+    const snapList = api.scrollSnapList();
     const scrollProgress = api.scrollProgress();
-    const slidesInView = api.slidesInView();
-    const isScrollEvent = eventName === 'scroll';
 
-    api.scrollSnapList().forEach((scrollSnap, snapIndex) => {
-      const slidesInSnap = engine.slideRegistry[snapIndex] ?? [];
-      slidesInSnap.forEach((slideIndex) => {
-        if (isScrollEvent && !slidesInView.includes(slideIndex)) return;
-
-        let diffToTarget = scrollSnap - scrollProgress;
-        if (engine.options.loop) {
-          engine.slideLooper.loopPoints.forEach((loopItem) => {
-            const target = loopItem.target();
-            if (slideIndex !== loopItem.index || target === 0) return;
-            const sign = Math.sign(target);
-            if (sign === -1) diffToTarget = scrollSnap - (1 + scrollProgress);
-            if (sign === 1) diffToTarget = scrollSnap + (1 - scrollProgress);
-          });
-        }
-
-        const tweenNode = tweenNodes.current[slideIndex];
-        if (!tweenNode) return;
-        const scale = numberWithinRange(1 - Math.abs(diffToTarget * scaleFactor.current), ROUND_MIN_SCALE, 1);
-        const opacity = numberWithinRange(1 - Math.abs(diffToTarget * opacityFactor.current), ROUND_MIN_OPACITY, 1);
-        tweenNode.style.transform = `scale(${scale})`;
-        tweenNode.style.opacity = `${opacity}`;
-      });
+    tweenNodes.current.forEach((tweenNode, slideIndex) => {
+      const scrollSnap = snapList[slideIndex];
+      if (scrollSnap === undefined) return;
+      const distanceFromFocus = Math.abs(scrollSnap - scrollProgress);
+      const scale = numberWithinRange(1 - distanceFromFocus * scaleFactor.current, ROUND_MIN_SCALE, 1);
+      const opacity = numberWithinRange(1 - distanceFromFocus * opacityFactor.current, ROUND_MIN_OPACITY, 1);
+      tweenNode.style.transform = `scale(${scale})`;
+      tweenNode.style.opacity = `${opacity}`;
     });
   }, []);
 

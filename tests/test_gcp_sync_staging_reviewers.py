@@ -1,3 +1,5 @@
+"""Contract coverage for the protected staging reviewer sync workflow."""
+
 from pathlib import Path
 
 

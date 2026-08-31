@@ -35,16 +35,25 @@ transition while the selected slide remains fully opaque. Round slides are
 widened to keep adjacent rounds partly visible, and filled-or-hollow
 navigation dots below the carousel show and select the active round.
 
+Fixture squad review supports both pitch and list presentations through the
+same compact pitch/list toggle treatment used on Squad. Pitch remains the
+default presentation, while the selected fixture-review view is retained
+locally between fixture openings. List view keeps both teams visible side by
+side and groups each roster into Starting XI, Substitutes, and Reserves. Past
+and started-player rows show gameweek points; future rows show form; current
+players whose kick-off has not passed remain unscored.
+
 Selecting a player from a current or previous gameweek opens that player's
 scoring breakdown for the selected gameweek, including the existing fantasy
 points and scoring-return detail. Only future gameweeks open the read-only full
-player profile.
+player profile. The same interaction applies from pitch and list fixture views.
 
 ## Business Rules
 
 - Current fixtures appear first, followed by upcoming gameweeks.
 - Fixture rows are compact and open a state-aware drawer.
 - Started fixtures can expose detail views.
+- Fixture squad review can switch between pitch and two-column list views without changing player interaction behaviour.
 - Player taps in current and past gameweeks open the selected gameweek's scoring breakdown, regardless of whether the CDL head-to-head fixture itself has started.
 - Player taps in future gameweeks open the read-only player profile.
 - Bonus points, chips, win, draw, and fixture ownership states affect display.
@@ -77,6 +86,8 @@ player profile.
 
 - Current and upcoming gameweek fixture sections.
 - Upcoming squad preview, live fixture detail, and finished fixture detail.
+- Pitch/list toggle inside fixture squad review using the Squad toggle treatment.
+- Two-column fixture list view with Starting XI, Substitutes, and Reserves for both teams.
 - Current and past fixture player selections route to gameweek scoring detail; future fixture player selections route to a read-only player profile.
 - League standings.
 - Fixture detail drawer.
@@ -92,6 +103,7 @@ player profile.
 - Use shadcn/ui tables, cards, badges, dialogs, tabs, and filters.
 - Visual presets must support compact league-table mode.
 - Bonus point, chip, win, draw, started, and pending states must use documented badge variants.
+- Fixture list rows must stay compact enough for both team columns to remain visible on mobile-width fixture drawers.
 
 ## Data Access Requirements
 
@@ -113,8 +125,9 @@ player profile.
 - Users can view current, next, and all CDL fixtures.
 - Users can view league standings.
 - Users can open fixture details for started fixtures.
-- Selecting a player from the current or any prior gameweek opens that gameweek's points breakdown rather than the full profile.
-- Selecting a player from a future gameweek continues to open the read-only player profile.
+- Users can switch a fixture squad review between pitch and list views, with both teams remaining visible in list mode.
+- Selecting a player from the current or any prior gameweek opens that gameweek's points breakdown rather than the full profile from either fixture view.
+- Selecting a player from a future gameweek continues to open the read-only player profile from either fixture view.
 - Knockout and head-to-head data are accessible where available.
 
 ## Test Requirements
@@ -122,6 +135,7 @@ player profile.
 - Unit tests for fixture and table services.
 - Integration tests for fixture and table endpoints.
 - React tests for fixture list rendering and detail interactions.
+- React regression coverage for fixture pitch/list toggling, two-team list rendering, metric state, and list-row player interactions.
 - React regression coverage for a current-gameweek CDL fixture that is still pending but must open player scoring detail.
 - Characterisation tests for legacy `getFixtureResultData.php` response shape.
 - A clean migrated PostgreSQL test for started and pending fixture behaviour.

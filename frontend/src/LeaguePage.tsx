@@ -691,8 +691,10 @@ function GameweekCarousel({ expectedGameweeks, groups, isActive, onIndexChange, 
   const [selectedIndex, setSelectedIndex] = useState(initialIndex);
   const fixtureRows = Math.max(...groups.map((group) => group.fixtures.length), 1);
   const gameweekCardHeight = Math.max(10.5, 2.9 + fixtureRows * 4.95);
+  const gameweekTrackHeight = gameweekCardHeight * groups.length + 0.45 * Math.max(groups.length - 1, 0);
   const carouselStyle = {
     '--league-gameweek-carousel-height': `${gameweekCardHeight}rem`,
+    '--league-gameweek-carousel-track-height': `${gameweekTrackHeight}rem`,
   } as CSSProperties;
   const indicatorCount = Math.max(expectedGameweeks, groups.length, 1);
   const selectedGroup = groups[selectedIndex];
@@ -722,9 +724,11 @@ function GameweekCarousel({ expectedGameweeks, groups, isActive, onIndexChange, 
     if (!gameweekApi) return;
     const nextIndex = Math.min(selectedGameweekIndex, Math.max(groups.length - 1, 0));
     setSelectedIndex(nextIndex);
-    if (gameweekApi.selectedScrollSnap() !== nextIndex) {
-      gameweekApi.scrollTo(nextIndex);
-    }
+    // A round switch can leave Embla's selected snap correct while its
+    // rendered location is still at the previous round's first slide. A
+    // jump is appropriate for this state synchronization; user navigation
+    // continues to use Embla's animated scrollTo calls.
+    gameweekApi.scrollTo(nextIndex, true);
   }, [gameweekApi, groups.length, selectedGameweekIndex]);
 
   if (groups.length === 0) return null;

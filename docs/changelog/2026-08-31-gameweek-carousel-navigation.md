@@ -13,6 +13,9 @@
   receives full scale and opacity during selection.
 - Kept the active dot and focused card on the same in-round gameweek index,
   including when a partial fixture snapshot omits weeks.
+- Gave the vertical track an explicit full-content height and force-synchronised
+  its initial snap position so a focused gameweek cannot render three cards too
+  low after a round change.
 
 ## Validation
 

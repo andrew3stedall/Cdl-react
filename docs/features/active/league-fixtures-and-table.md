@@ -72,7 +72,7 @@ navigation dots below the carousel show and select the active round.
 - Upcoming squad preview, live fixture detail, and finished fixture detail.
 - League standings.
 - Fixture detail drawer.
-- Non-looping horizontal round carousel and looping vertical gameweek carousel.
+- Non-looping horizontal round carousel and non-looping vertical gameweek carousel.
 - One active/inactive navigation dot per round below the round carousel.
 - Each round slide contains its own vertical gameweek carousel and preserves
   the relative gameweek index when the horizontal round changes.

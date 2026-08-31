@@ -679,22 +679,24 @@ function RoundCarousel({ onOpenFixture, rounds }: { onOpenFixture: (fixture: Lea
 
 function GameweekCarousel({ expectedGameweeks, groups, isActive, onIndexChange, onOpenFixture, roundLabel, selectedGameweekIndex }: { expectedGameweeks: number; groups: GameweekGroup[]; isActive: boolean; onIndexChange: (index: number) => void; onOpenFixture: (fixture: LeagueFixture) => void; roundLabel: string; selectedGameweekIndex: number }) {
   const initialIndex = gameweekIndexForRound({ gameweeks: groups }, selectedGameweekIndex);
+  // Embla reads startIndex only when it is created. Keeping that initial value
+  // stable is important: updating it after every select causes a re-init that
+  // can leave the visual transform and selected snap out of sync.
+  const initialEmblaIndex = useRef(initialIndex).current;
   const gameweekOptions = useMemo(() => ({
     align: 'center' as const,
     axis: 'y' as const,
     containScroll: false as const,
     duration: 68,
     loop: false,
-    startIndex: initialIndex,
-  }), [groups.length, initialIndex]);
+    startIndex: initialEmblaIndex,
+  }), [initialEmblaIndex]);
   const [gameweekViewportRef, gameweekApi] = useEmblaCarousel(gameweekOptions);
   const [selectedIndex, setSelectedIndex] = useState(initialIndex);
   const fixtureRows = Math.max(...groups.map((group) => group.fixtures.length), 1);
   const gameweekCardHeight = Math.max(10.5, 2.9 + fixtureRows * 4.95);
-  const gameweekTrackHeight = gameweekCardHeight * groups.length + 0.45 * Math.max(groups.length - 1, 0);
   const carouselStyle = {
     '--league-gameweek-carousel-height': `${gameweekCardHeight}rem`,
-    '--league-gameweek-carousel-track-height': `${gameweekTrackHeight}rem`,
   } as CSSProperties;
   const indicatorCount = Math.max(expectedGameweeks, groups.length, 1);
   const selectedGroup = groups[selectedIndex];
@@ -722,13 +724,13 @@ function GameweekCarousel({ expectedGameweeks, groups, isActive, onIndexChange, 
 
   useEffect(() => {
     if (!gameweekApi) return;
-    const nextIndex = Math.min(selectedGameweekIndex, Math.max(groups.length - 1, 0));
+    const nextIndex = gameweekIndexForRound({ gameweeks: groups }, selectedGameweekIndex);
     setSelectedIndex(nextIndex);
-    // A round switch can leave Embla's selected snap correct while its
-    // rendered location is still at the previous round's first slide. A
-    // jump is appropriate for this state synchronization; user navigation
-    // continues to use Embla's animated scrollTo calls.
-    gameweekApi.scrollTo(nextIndex, true);
+    if (gameweekApi.selectedScrollSnap() !== nextIndex) {
+      // This is only for synchronizing a round change or reloaded fixture
+      // data. User swipes and dot taps retain Embla's eased animation.
+      gameweekApi.scrollTo(nextIndex, true);
+    }
   }, [gameweekApi, groups.length, selectedGameweekIndex]);
 
   if (groups.length === 0) return null;

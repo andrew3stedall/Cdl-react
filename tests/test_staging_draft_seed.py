@@ -39,9 +39,7 @@ EXPECTED_POSITION_COUNTS = (
 
 
 def test_staging_manager_assignments_require_three_ordered_reviewers() -> None:
-    assert staging_manager_assignments(
-        "one@example.com,two@example.com,kev.koden@gmail.com"
-    ) == {
+    assert staging_manager_assignments("one@example.com,two@example.com,kev.koden@gmail.com") == {
         "team-stan-still-sells-tik": "one@example.com",
         "team-wilde-boars": "two@example.com",
         "team-bayer-neverlusen": "kev.koden@gmail.com",

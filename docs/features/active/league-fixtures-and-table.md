@@ -35,11 +35,18 @@ transition while the selected slide remains fully opaque. Round slides are
 widened to keep adjacent rounds partly visible, and filled-or-hollow
 navigation dots below the carousel show and select the active round.
 
+Selecting a player from a current or previous gameweek opens that player's
+scoring breakdown for the selected gameweek, including the existing fantasy
+points and scoring-return detail. Only future gameweeks open the read-only full
+player profile.
+
 ## Business Rules
 
 - Current fixtures appear first, followed by upcoming gameweeks.
 - Fixture rows are compact and open a state-aware drawer.
 - Started fixtures can expose detail views.
+- Player taps in current and past gameweeks open the selected gameweek's scoring breakdown, regardless of whether the CDL head-to-head fixture itself has started.
+- Player taps in future gameweeks open the read-only player profile.
 - Bonus points, chips, win, draw, and fixture ownership states affect display.
 - Knockout and table-round data must be preserved.
 
@@ -70,6 +77,7 @@ navigation dots below the carousel show and select the active round.
 
 - Current and upcoming gameweek fixture sections.
 - Upcoming squad preview, live fixture detail, and finished fixture detail.
+- Current and past fixture player selections route to gameweek scoring detail; future fixture player selections route to a read-only player profile.
 - League standings.
 - Fixture detail drawer.
 - Non-looping horizontal round carousel and non-looping vertical gameweek carousel.
@@ -105,6 +113,8 @@ navigation dots below the carousel show and select the active round.
 - Users can view current, next, and all CDL fixtures.
 - Users can view league standings.
 - Users can open fixture details for started fixtures.
+- Selecting a player from the current or any prior gameweek opens that gameweek's points breakdown rather than the full profile.
+- Selecting a player from a future gameweek continues to open the read-only player profile.
 - Knockout and head-to-head data are accessible where available.
 
 ## Test Requirements
@@ -112,6 +122,7 @@ navigation dots below the carousel show and select the active round.
 - Unit tests for fixture and table services.
 - Integration tests for fixture and table endpoints.
 - React tests for fixture list rendering and detail interactions.
+- React regression coverage for a current-gameweek CDL fixture that is still pending but must open player scoring detail.
 - Characterisation tests for legacy `getFixtureResultData.php` response shape.
 - A clean migrated PostgreSQL test for started and pending fixture behaviour.
 - A clean migrated PostgreSQL test proving the standings response identifies its

@@ -118,7 +118,7 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
   }, [squadClient, reloadKey]);
 
   useEffect(() => {
-    if (!selectedFixturePlayer || selectedFixturePlayer.fixture.status === 'pending') {
+    if (!selectedFixturePlayer || fixtureGameweekStatusForFixture(selectedFixturePlayer.fixture, snapshot) === 'future') {
       setFixturePlayerHistory(null);
       setFixturePlayerDetailStatus('idle');
       return;
@@ -141,7 +141,7 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
     return () => {
       isActive = false;
     };
-  }, [selectedFixturePlayer, squadClient]);
+  }, [selectedFixturePlayer, snapshot, squadClient]);
 
   useEffect(() => {
     if (!selectedFixture) {
@@ -195,6 +195,10 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
   useEffect(() => {
     if (selectedFixture) drawerRef.current?.focus();
   }, [selectedFixture]);
+
+  const selectedFixturePlayerGameweekStatus = selectedFixturePlayer
+    ? fixtureGameweekStatusForFixture(selectedFixturePlayer.fixture, snapshot)
+    : null;
 
   return (
     <main aria-labelledby="league-title" className="league-page">
@@ -267,7 +271,7 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
         />
       ) : null}
 
-      {selectedFixturePlayer?.fixture.status === 'pending' ? (
+      {selectedFixturePlayer && selectedFixturePlayerGameweekStatus === 'future' ? (
         <FixturePlayerProfileLayer
           player={selectedFixturePlayer.player}
           fixture={selectedFixturePlayer.fixture}
@@ -275,7 +279,7 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
           squadClient={squadClient}
         />
       ) : null}
-      {selectedFixturePlayer && selectedFixturePlayer.fixture.status !== 'pending' ? (
+      {selectedFixturePlayer && selectedFixturePlayerGameweekStatus !== 'future' ? (
         <FixturePlayerPointsLayer
           detailStatus={fixturePlayerDetailStatus}
           fixture={selectedFixturePlayer.fixture}
@@ -942,7 +946,7 @@ function FixtureDetailDrawer({ attackDirection, detail, detailStatus, drawerRef,
   const isPreview = fixture.status === 'pending';
   const drawerLabel = isPreview ? (gameweekState === 'underway' ? 'Fixture preview' : 'Upcoming fixture') : fixture.status === 'started' ? 'Live fixture' : 'Finished fixture';
   const hasComparisonSquads = squads.length === 2;
-  return <><button aria-label="Close fixture detail" className="league-drawer-backdrop" onClick={onClose} type="button" /><aside ref={drawerRef} aria-labelledby="fixture-detail-title" aria-modal="true" className="league-drawer league-drawer--comparison" data-gameweek-state={gameweekState} role="dialog" tabIndex={-1}><header className="league-drawer__header"><div><p className="eyebrow">{drawerLabel}</p><h2 id="fixture-detail-title">{fixtureParticipantName(fixture.homeTeam)} vs {fixtureParticipantName(fixture.awayTeam)}</h2></div><Button aria-label="Close fixture detail" className="shell-icon-button" onClick={onClose} type="button" variant="ghost"><X aria-hidden="true" size={19} /></Button></header><div className="league-drawer__body"><div className="league-drawer__score"><span>{fixture.gameweek.name}</span><strong>{formatScore(fixture)}</strong><StatusBadge status={fixture.status} /></div>{gameweekState === 'underway' && isPreview ? <div className="league-drawer__context"><strong>Gameweek underway</strong><span>This fixture has not started yet. Review both squads before kick-off.</span></div> : null}{gameweekState === 'finished' && isPreview ? <div className="league-drawer__context"><strong>Gameweek finished</strong><span>This fixture did not produce a recorded result.</span></div> : null}{detailStatus === 'loading' ? <p role="status">{isPreview ? 'Loading squad comparison…' : 'Loading players and points…'}</p> : null}{detailStatus === 'error' ? <p className="league-inline-error" role="alert">Fixture detail is temporarily unavailable.</p> : null}{detailStatus === 'loaded' && hasComparisonSquads ? <FixtureSquadComparison attackDirection={attackDirection} gameweekStatus={gameweekStatus} onPlayerClick={onPlayerClick} playerInteraction={isPreview ? 'profile' : 'points'} squads={squads} /> : null}{detailStatus === 'loaded' && !isPreview && !hasComparisonSquads ? <div className="league-drawer__context"><strong>Players and points are unavailable</strong><span>The fixture result is available, but its locked gameweek lineup has not been published yet.</span></div> : null}{detailStatus === 'loaded' && !isPreview && detail ? <FixtureScoringSummary detail={detail} fixture={fixture} gameweekState={gameweekState} /> : null}</div></aside></>;
+  return <><button aria-label="Close fixture detail" className="league-drawer-backdrop" onClick={onClose} type="button" /><aside ref={drawerRef} aria-labelledby="fixture-detail-title" aria-modal="true" className="league-drawer league-drawer--comparison" data-gameweek-state={gameweekState} role="dialog" tabIndex={-1}><header className="league-drawer__header"><div><p className="eyebrow">{drawerLabel}</p><h2 id="fixture-detail-title">{fixtureParticipantName(fixture.homeTeam)} vs {fixtureParticipantName(fixture.awayTeam)}</h2></div><Button aria-label="Close fixture detail" className="shell-icon-button" onClick={onClose} type="button" variant="ghost"><X aria-hidden="true" size={19} /></Button></header><div className="league-drawer__body"><div className="league-drawer__score"><span>{fixture.gameweek.name}</span><strong>{formatScore(fixture)}</strong><StatusBadge status={fixture.status} /></div>{gameweekState === 'underway' && isPreview ? <div className="league-drawer__context"><strong>Gameweek underway</strong><span>This fixture has not started yet. Review both squads before kick-off.</span></div> : null}{gameweekState === 'finished' && isPreview ? <div className="league-drawer__context"><strong>Gameweek finished</strong><span>This fixture did not produce a recorded result.</span></div> : null}{detailStatus === 'loading' ? <p role="status">{isPreview ? 'Loading squad comparison…' : 'Loading players and points…'}</p> : null}{detailStatus === 'error' ? <p className="league-inline-error" role="alert">Fixture detail is temporarily unavailable.</p> : null}{detailStatus === 'loaded' && hasComparisonSquads ? <FixtureSquadComparison attackDirection={attackDirection} gameweekStatus={gameweekStatus} onPlayerClick={onPlayerClick} playerInteraction={gameweekStatus === 'future' ? 'profile' : 'points'} squads={squads} /> : null}{detailStatus === 'loaded' && !isPreview && !hasComparisonSquads ? <div className="league-drawer__context"><strong>Players and points are unavailable</strong><span>The fixture result is available, but its locked gameweek lineup has not been published yet.</span></div> : null}{detailStatus === 'loaded' && !isPreview && detail ? <FixtureScoringSummary detail={detail} fixture={fixture} gameweekState={gameweekState} /> : null}</div></aside></>;
 }
 
 function FixtureScoringSummary({ detail, fixture, gameweekState }: { detail: FixtureDetailResponse; fixture: LeagueFixture; gameweekState: GameweekState }) {

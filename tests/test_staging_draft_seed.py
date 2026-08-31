@@ -1,3 +1,4 @@
+import pytest
 from sqlalchemy import create_engine, func, select, text
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -22,6 +23,7 @@ from cdl_api.staging_draft_seed import (
     draft_board,
     seed_staging_snake_draft,
     snake_team_index,
+    staging_manager_assignments,
 )
 
 EXPECTED_POSITION_COUNTS = (
@@ -34,6 +36,17 @@ EXPECTED_POSITION_COUNTS = (
     (2, 7, 8, 3),
     (2, 7, 7, 4),
 )
+
+
+def test_staging_manager_assignments_require_three_ordered_reviewers() -> None:
+    assert staging_manager_assignments("one@example.com,two@example.com,kev.koden@gmail.com") == {
+        "team-stan-still-sells-tik": "one@example.com",
+        "team-wilde-boars": "two@example.com",
+        "team-bayer-neverlusen": "kev.koden@gmail.com",
+    }
+
+    with pytest.raises(RuntimeError, match="exactly three email addresses"):
+        staging_manager_assignments("one@example.com,two@example.com")
 
 
 def test_draft_pool_matches_the_captured_160_pick_board() -> None:
@@ -186,7 +199,9 @@ def test_seed_is_idempotent_and_persists_valid_position_counts() -> None:
         )
     session_factory = sessionmaker(bind=engine, class_=Session)
 
-    reviewer_allowlist = "reviewer.one@example.com,reviewer.two@example.com"
+    reviewer_allowlist = (
+        "reviewer.one@example.com,reviewer.two@example.com,reviewer.three@example.com"
+    )
     first = seed_staging_snake_draft(
         session_factory,
         google_allowed_emails=reviewer_allowlist,
@@ -224,6 +239,7 @@ def test_seed_is_idempotent_and_persists_valid_position_counts() -> None:
         assert manager_assignments == {
             "Stan Still Sells Tik": "reviewer.one@example.com",
             "Wilde Boars": "reviewer.two@example.com",
+            "Bayer Neverlusen": "reviewer.three@example.com",
         }
         team_counts = dict(
             session.execute(
@@ -261,10 +277,20 @@ def test_seed_is_idempotent_and_persists_valid_position_counts() -> None:
         session_factory,
         user_id="staging:reviewer.two@example.com",
     )
+    kevin_squad = PostgreSQLSquadRepository(
+        session_factory,
+        user_id="staging:reviewer.three@example.com",
+    )
+    kevin_selection = PostgreSQLTeamSelectionRepository(
+        session_factory,
+        user_id="staging:reviewer.three@example.com",
+    )
     assert andrew_squad.manager_team.name == "Stan Still Sells Tik"
     assert dj_squad.manager_team.name == "Wilde Boars"
+    assert kevin_squad.manager_team.name == "Bayer Neverlusen"
     assert andrew_selection.manager_team.name == "Stan Still Sells Tik"
     assert dj_selection.manager_team.name == "Wilde Boars"
+    assert kevin_selection.manager_team.name == "Bayer Neverlusen"
     persisted_counts = {
         team_id: {position: 0 for position in POSITION_LIMITS} for team_id in TEAM_IDS
     }

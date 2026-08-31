@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       google_allowed_emails:
-        description: Comma-separated exact Google email allowlist for the two staging reviewers
+        description: Comma-separated exact Google email allowlist for the three staging reviewers
         required: true
         type: string
       confirm_reviewer_sync:
@@ -57,8 +57,8 @@ jobs:
               for email in os.environ["GOOGLE_ALLOWED_EMAILS"].split(",")
               if email.strip()
           )
-          if len(emails) != 2 or any("@" not in email for email in emails):
-              raise SystemExit("Exactly two valid reviewer email addresses are required.")
+          if len(emails) != 3 or any("@" not in email for email in emails):
+              raise SystemExit("Exactly three valid reviewer email addresses are required.")
           PY
 
       - name: Authenticate to Google Cloud

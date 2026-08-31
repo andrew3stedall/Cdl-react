@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Expanded the protected staging reviewer workflow to three accounts and mapped the third reviewer to Bayer Neverlusen in the synthetic staging draft seed.
+
 - Replaced the League fixtures and gameweek pickers with shadcn-style Embla
   carousels: rounds move horizontally without looping, gameweeks move vertically
   without looping, and each slide fades with opacity while keeping every fixture

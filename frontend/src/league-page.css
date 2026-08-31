@@ -425,8 +425,9 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  height: var(--league-gameweek-carousel-track-height, 29rem);
+  height: auto;
   min-height: 0;
+  padding-block: var(--league-gameweek-carousel-peek);
   row-gap: var(--league-gameweek-carousel-slide-gap);
 }
 

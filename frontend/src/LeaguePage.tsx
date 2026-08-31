@@ -641,6 +641,7 @@ function RoundCarousel({ onOpenFixture, rounds }: { onOpenFixture: (fixture: Lea
                     </header>
                     <GameweekCarousel
                     groups={round.gameweeks}
+                    expectedGameweeks={round.expectedGameweeks}
                     isActive={isSelected}
                     onIndexChange={(index) => {
                         if (isSelected) setSelectedGameweekIndex(index);
@@ -676,13 +677,14 @@ function RoundCarousel({ onOpenFixture, rounds }: { onOpenFixture: (fixture: Lea
   );
 }
 
-function GameweekCarousel({ groups, isActive, onIndexChange, onOpenFixture, roundLabel, selectedGameweekIndex }: { groups: GameweekGroup[]; isActive: boolean; onIndexChange: (index: number) => void; onOpenFixture: (fixture: LeagueFixture) => void; roundLabel: string; selectedGameweekIndex: number }) {
+function GameweekCarousel({ expectedGameweeks, groups, isActive, onIndexChange, onOpenFixture, roundLabel, selectedGameweekIndex }: { expectedGameweeks: number; groups: GameweekGroup[]; isActive: boolean; onIndexChange: (index: number) => void; onOpenFixture: (fixture: LeagueFixture) => void; roundLabel: string; selectedGameweekIndex: number }) {
   const initialIndex = gameweekIndexForRound({ gameweeks: groups }, selectedGameweekIndex);
   const gameweekOptions = useMemo(() => ({
-    align: 'start' as const,
+    align: 'center' as const,
     axis: 'y' as const,
-    duration: 40,
-    loop: groups.length > 1,
+    containScroll: false as const,
+    duration: 68,
+    loop: false,
     startIndex: initialIndex,
   }), [groups.length, initialIndex]);
   const [gameweekViewportRef, gameweekApi] = useEmblaCarousel(gameweekOptions);
@@ -692,6 +694,9 @@ function GameweekCarousel({ groups, isActive, onIndexChange, onOpenFixture, roun
   const carouselStyle = {
     '--league-gameweek-carousel-height': `${gameweekCardHeight}rem`,
   } as CSSProperties;
+  const indicatorCount = Math.max(expectedGameweeks, groups.length, 1);
+  const selectedGroup = groups[selectedIndex];
+  const selectedIndicatorIndex = selectedGroup ? gameweekIndicatorIndex(selectedGroup) : selectedIndex;
 
   const handleGameweekSelect = useCallback((api: EmblaCarouselType) => {
     const index = api.selectedScrollSnap();
@@ -726,6 +731,29 @@ function GameweekCarousel({ groups, isActive, onIndexChange, onOpenFixture, roun
 
   return (
     <section aria-label={`Gameweeks in ${roundLabel}`} className="league-gameweek-carousel" style={carouselStyle}>
+      <div className="league-gameweek-carousel__header">
+        <p className="eyebrow">Gameweeks</p>
+        <nav aria-label={`Gameweek navigation for ${roundLabel}`} className="league-gameweek-carousel__dots">
+          {Array.from({ length: indicatorCount }, (_, indicatorIndex) => {
+            const groupIndex = groups.findIndex((group) => gameweekIndicatorIndex(group) === indicatorIndex);
+            const isSelected = indicatorIndex === selectedIndicatorIndex;
+            return (
+              <button
+                aria-current={isSelected ? 'true' : undefined}
+                aria-label={`Go to ${gameweekNavigationLabel(groups, indicatorIndex)}`}
+                className={`league-gameweek-carousel__dot${isSelected ? ' is-selected' : ''}`}
+                data-gameweek-index={indicatorIndex}
+                disabled={groupIndex < 0}
+                key={`${roundLabel}-${indicatorIndex}`}
+                onClick={() => {
+                  if (groupIndex >= 0) gameweekApi?.scrollTo(groupIndex);
+                }}
+                type="button"
+              />
+            );
+          })}
+        </nav>
+      </div>
       <div aria-label="Gameweek slides" className="league-gameweek-carousel__viewport" ref={gameweekViewportRef}>
         <div className="league-gameweek-carousel__track">
           {groups.map((group, index) => {
@@ -760,6 +788,22 @@ function GameweekCarousel({ groups, isActive, onIndexChange, onOpenFixture, roun
       </div>
     </section>
   );
+}
+
+function gameweekIndicatorIndex(group: GameweekGroup): number {
+  if (group.gameweek.number <= 35) return (group.gameweek.number - 1) % 7;
+  return 0;
+}
+
+function gameweekNavigationLabel(groups: GameweekGroup[], indicatorIndex: number): string {
+  const group = groups.find((candidate) => gameweekIndicatorIndex(candidate) === indicatorIndex);
+  if (group) return group.gameweek.name;
+
+  const firstGameweekNumber = groups[0]?.gameweek.number ?? 1;
+  const roundStart = firstGameweekNumber <= 35
+    ? Math.floor((firstGameweekNumber - 1) / 7) * 7 + 1
+    : firstGameweekNumber;
+  return `Gameweek ${roundStart + indicatorIndex}`;
 }
 
 function defaultGameweekIndex(round: FixtureRoundGroup | undefined): number {

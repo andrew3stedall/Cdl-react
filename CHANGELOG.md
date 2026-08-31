@@ -23,6 +23,8 @@
   per-round gameweek navigation dots.
 - Corrected gameweek tweening to map each slide directly to its Embla snap and
   kept the selected navigation dot tied to the same in-round gameweek index.
+- Corrected nested gameweek scroll geometry so the selected card is physically
+  aligned with its dot after round changes and initial loading.
 - Nested each round's gameweek carousel inside its round slide, preserved the
   relative gameweek index between rounds, and moved compact navigation controls
   onto the carousel rails.

@@ -25,6 +25,8 @@
   kept the selected navigation dot tied to the same in-round gameweek index.
 - Stabilized nested gameweek initialization and scroll synchronization so the
   selected card, its transform, and its in-round navigation dot stay aligned.
+- Kept the vertical Embla track at the viewport height so the first gameweek
+  remains in view instead of being translated below the clipped carousel.
 - Nested each round's gameweek carousel inside its round slide, preserved the
   relative gameweek index between rounds, and moved compact navigation controls
   onto the carousel rails.

@@ -224,6 +224,7 @@
 
 .league-round-carousel {
   --league-round-carousel-slide-width: 82%;
+  --league-round-carousel-slide-overlap: 0.2rem;
   --league-round-carousel-edge-inset: calc((100% - var(--league-round-carousel-slide-width)) / 2);
   display: block;
   min-width: 0;
@@ -257,6 +258,7 @@
 .league-round-carousel__slide {
   flex: 0 0 var(--league-round-carousel-slide-width);
   min-width: 0;
+  margin-inline: calc(-1 * var(--league-round-carousel-slide-overlap));
   padding: 0.1rem 0;
 }
 

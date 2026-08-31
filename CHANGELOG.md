@@ -14,6 +14,8 @@
   centred edge slides retain the intended wider card treatment.
 - Tightened the horizontal space between round cards so more of the adjacent
   round remains visible at the viewport edge.
+- Added a small slide overlap to bring adjacent round cards closer together
+  without changing their width or terminal centering.
 - Nested each round's gameweek carousel inside its round slide, preserved the
   relative gameweek index between rounds, and moved compact navigation controls
   onto the carousel rails.

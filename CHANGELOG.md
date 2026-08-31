@@ -12,6 +12,8 @@
   same focal line when selected.
 - Increased the round slide width again after adding terminal insets so the
   centred edge slides retain the intended wider card treatment.
+- Tightened the horizontal space between round cards so more of the adjacent
+  round remains visible at the viewport edge.
 - Nested each round's gameweek carousel inside its round slide, preserved the
   relative gameweek index between rounds, and moved compact navigation controls
   onto the carousel rails.

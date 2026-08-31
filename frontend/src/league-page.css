@@ -257,7 +257,7 @@
 .league-round-carousel__slide {
   flex: 0 0 var(--league-round-carousel-slide-width);
   min-width: 0;
-  padding: 0.1rem 0.08rem;
+  padding: 0.1rem 0;
 }
 
 .league-round-carousel__slide:first-child {

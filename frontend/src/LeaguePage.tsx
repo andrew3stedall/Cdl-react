@@ -532,14 +532,6 @@ function fixtureRoundDescriptor(fixture: LeagueFixture): FixtureRoundDescriptor 
   };
 }
 
-function defaultGameweekForRound(round: FixtureRoundGroup): GameweekGroup | null {
-  return round.gameweeks.find((gameweek) => gameweek.isCurrent)
-    ?? round.gameweeks.find((gameweek) => gameweek.isNext)
-    ?? round.gameweeks.find((gameweek) => gameweek.state === 'not-started')
-    ?? round.gameweeks[round.gameweeks.length - 1]
-    ?? null;
-}
-
 function firstGameweekNumber(round: FixtureRoundGroup): number {
   return round.gameweeks[0]?.gameweek.number ?? Number.MAX_SAFE_INTEGER;
 }
@@ -561,7 +553,10 @@ function fixturesForGameweek(
 
 function RoundCarousel({ onOpenFixture, rounds }: { onOpenFixture: (fixture: LeagueFixture) => void; rounds: FixtureRoundGroup[] }) {
   const initialRoundIndex = Math.max(0, rounds.findIndex((round) => round.isCurrent));
-  const initialGameweekIndex = defaultGameweekIndex(rounds[initialRoundIndex]);
+  // Open each round on its first gameweek. This gives the bounded carousel a
+  // deterministic zero-offset starting position while the page header still
+  // identifies the current gameweek.
+  const initialGameweekIndex = 0;
   const [selectedRoundIndex, setSelectedRoundIndex] = useState(initialRoundIndex);
   const [selectedGameweekIndex, setSelectedGameweekIndex] = useState(initialGameweekIndex);
   const roundOptions = useMemo(() => ({
@@ -810,12 +805,6 @@ function gameweekNavigationLabel(groups: GameweekGroup[], indicatorIndex: number
     ? Math.floor((firstGameweekNumber - 1) / 7) * 7 + 1
     : firstGameweekNumber;
   return `Gameweek ${roundStart + indicatorIndex}`;
-}
-
-function defaultGameweekIndex(round: FixtureRoundGroup | undefined): number {
-  if (!round || round.gameweeks.length === 0) return 0;
-  const defaultGameweek = defaultGameweekForRound(round);
-  return Math.max(0, round.gameweeks.findIndex((group) => group.id === defaultGameweek?.id));
 }
 
 function gameweekIndexForRound(round: Pick<FixtureRoundGroup, 'gameweeks'> | undefined, preferredIndex: number): number {

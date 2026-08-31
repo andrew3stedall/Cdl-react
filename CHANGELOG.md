@@ -27,6 +27,8 @@
   selected card, its transform, and its in-round navigation dot stay aligned.
 - Kept the vertical Embla track at the viewport height so the first gameweek
   remains in view instead of being translated below the clipped carousel.
+- Opened each round on its first gameweek so the initial card starts centered
+  at full focus and can be scrolled forward through the round.
 - Nested each round's gameweek carousel inside its round slide, preserved the
   relative gameweek index between rounds, and moved compact navigation controls
   onto the carousel rails.

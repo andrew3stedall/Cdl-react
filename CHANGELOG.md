@@ -383,7 +383,7 @@
 ### Added
 
 - Added issue #63 PostgreSQL persistence for users, sessions, and user preferences.
-- Added append-only `0002_auth_preferences` migration after the #61 baseline migration.
+- Added an append-only `0002_auth_preferences` migration after the #61 baseline migration.
 - Added PostgreSQL-backed auth/session and preference repositories.
 - Wired `postgres` repository mode through the repository factory while preserving default `memory` mode.
 - Added wiki documentation for auth/session/preference tables, repository modes, and the #64 handoff.
@@ -409,14 +409,14 @@
 
 ### Added
 
-- Added issue #60 production persistence architecture decision record.
+- Added the issue #60 production persistence architecture decision record.
 - Confirmed Cloud SQL for PostgreSQL, Alembic-managed migrations, local/CI PostgreSQL, and a settings-driven repository factory as the first production persistence path.
 - Documented deferred database alternatives and the dependency handoff to #61 and #62.
 - Updated the production database/GCP wiki with the ADR path and the #78 GCP bootstrap gate.
 
 ### Validation
 
-- Added tests for the issue #60 feature document, production persistence ADR, deferred alternatives, wiki ADR link, and GCP gate.
+- Added documentation tests for the issue #60 feature document, production persistence ADR, deferred alternatives, wiki ADR link, and GCP gate.
 
 ## 2026-06-07 - Plan production backend database and GCP infrastructure
 
@@ -492,7 +492,7 @@
 
 ### Validation
 
-- Added backend service tests for catalog/config exposure, filtered widget queries, filter validation, and drill-down rows.
+- Added backend service tests for catalog/config exposure, filtered widget queries, filter validation, and drill-down context.
 - Added backend API integration tests for config/catalog endpoints, widget query validation, drill-down rows, and missing-widget errors.
 - Added frontend tests for dashboard rendering, filter re-query behaviour, drill-down flows, and shell/session route behaviour.
 

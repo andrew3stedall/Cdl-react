@@ -22,6 +22,7 @@ from cdl_api.staging_draft_seed import (
     draft_board,
     seed_staging_snake_draft,
     snake_team_index,
+    staging_manager_assignments,
 )
 
 EXPECTED_POSITION_COUNTS = (
@@ -34,6 +35,21 @@ EXPECTED_POSITION_COUNTS = (
     (2, 7, 8, 3),
     (2, 7, 7, 4),
 )
+
+
+def test_staging_manager_assignments_require_three_ordered_reviewers() -> None:
+    assert staging_manager_assignments(
+        "one@example.com,two@example.com,kev.koden@gmail.com"
+    ) == {
+        "team-stan-still-sells-tik": "one@example.com",
+        "team-wilde-boars": "two@example.com",
+        "team-bayer-neverlusen": "kev.koden@gmail.com",
+    }
+
+    import pytest
+
+    with pytest.raises(RuntimeError, match="exactly three email addresses"):
+        staging_manager_assignments("one@example.com,two@example.com")
 
 
 def test_draft_pool_matches_the_captured_160_pick_board() -> None:

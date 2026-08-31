@@ -265,6 +265,19 @@ describe('LeaguePage', () => {
     act(() => root.unmount());
   });
 
+  test('keeps gameweek navigation dots aligned with the selected gameweek', async () => {
+    const { container, root } = await renderPage();
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__dot[aria-label="Go to Gameweek 13"]')?.click();
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    });
+
+    expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__dot.is-selected')?.getAttribute('aria-label')).toBe('Go to Gameweek 13');
+    expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__slide[aria-current="true"]')?.textContent).toContain('Gameweek 13');
+    act(() => root.unmount());
+  });
+
   test('keeps past results in the selected round and makes each prior gameweek available', async () => {
     const { container, root } = await renderPage();
 

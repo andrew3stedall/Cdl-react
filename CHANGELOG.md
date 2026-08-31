@@ -21,6 +21,8 @@
 - Smoothed the nested gameweek carousel with a longer settle duration, centred
   its slides so adjacent weeks peek above and below, and added horizontal
   per-round gameweek navigation dots.
+- Corrected gameweek tweening to map each slide directly to its Embla snap and
+  kept the selected navigation dot tied to the same in-round gameweek index.
 - Nested each round's gameweek carousel inside its round slide, preserved the
   relative gameweek index between rounds, and moved compact navigation controls
   onto the carousel rails.

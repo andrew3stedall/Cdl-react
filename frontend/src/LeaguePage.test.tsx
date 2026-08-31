@@ -453,6 +453,30 @@ describe('LeaguePage', () => {
     act(() => root.unmount());
   });
 
+  test('opens a pending current-gameweek player with their points breakdown', async () => {
+    const { container, root } = await renderPage('/league', new CurrentPendingLeagueClient());
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('button[aria-label*="Open preview for Andrew versus DJ"]')?.click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(container.querySelector<HTMLButtonElement>('button[aria-label="View Castle Keeper points breakdown"]')).not.toBeNull();
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('button[aria-label="View Castle Keeper points breakdown"]')?.click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    const detail = container.querySelector('.player-chart-detail-layer');
+    expect(detail?.textContent).toContain('Gameweek 12 · Castle Keeper');
+    expect(detail?.textContent).toContain('Fantasy points');
+    expect(container.querySelector('[data-presentation="drawer"]')).toBeNull();
+    act(() => root.unmount());
+  });
+
   test('puts the goalkeeper first while preserving the four substitute priorities', () => {
     const players = [
       { id: 'mid-1', displayName: 'First outfield substitute', position: 'MID', points: 1, form: 1, slot: 'bench' as const },

@@ -10,6 +10,8 @@
   one filled-or-hollow navigation dot per round below the carousel.
 - Added matching terminal insets so the first and last rounds centre on the
   same focal line when selected.
+- Increased the round slide width again after adding terminal insets so the
+  centred edge slides retain the intended wider card treatment.
 - Nested each round's gameweek carousel inside its round slide, preserved the
   relative gameweek index between rounds, and moved compact navigation controls
   onto the carousel rails.

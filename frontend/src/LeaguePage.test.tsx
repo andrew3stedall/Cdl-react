@@ -234,7 +234,9 @@ describe('LeaguePage', () => {
     expect(container.querySelectorAll('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__slide')).toHaveLength(3);
     expect(container.querySelector('.league-round-carousel__header')).toBeNull();
     expect(container.querySelector('.league-round-carousel__hint')).toBeNull();
-    expect(container.querySelector('.league-gameweek-carousel__header')).toBeNull();
+    expect(container.querySelector('.league-gameweek-carousel__header')).not.toBeNull();
+    expect(container.querySelectorAll('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__dot')).toHaveLength(7);
+    expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__dot.is-selected')?.getAttribute('aria-label')).toBe('Go to Gameweek 12');
     expect(container.querySelector('.league-gameweek-carousel')?.getAttribute('style')).toContain('--league-gameweek-carousel-height');
     expect(container.querySelector('.league-gameweek-carousel__viewport')?.getAttribute('style')).toBeNull();
     expect(container.querySelector('.league-round-slide__content')?.getAttribute('style')).toContain('transform: scale(1)');

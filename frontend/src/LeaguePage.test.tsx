@@ -237,7 +237,9 @@ describe('LeaguePage', () => {
     expect(container.querySelector('.league-gameweek-carousel__header')).not.toBeNull();
     expect(container.querySelectorAll('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__dot')).toHaveLength(7);
     expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__dot.is-selected')?.getAttribute('aria-label')).toBe('Go to Gameweek 12');
+    expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__dot.is-selected')?.getAttribute('data-gameweek-index')).toBe('4');
     expect(container.querySelector('.league-gameweek-carousel')?.getAttribute('style')).toContain('--league-gameweek-carousel-height');
+    expect(container.querySelector('.league-gameweek-carousel')?.getAttribute('style')).toContain('--league-gameweek-carousel-track-height');
     expect(container.querySelector('.league-gameweek-carousel__viewport')?.getAttribute('style')).toBeNull();
     expect(container.querySelector('.league-round-slide__content')?.getAttribute('style')).toContain('transform: scale(1)');
     expect(container.querySelector('.league-round-carousel__slide:not([aria-current="true"]) .league-round-slide__content')?.getAttribute('style')).toContain('opacity:');
@@ -274,6 +276,7 @@ describe('LeaguePage', () => {
     });
 
     expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__dot.is-selected')?.getAttribute('aria-label')).toBe('Go to Gameweek 13');
+    expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__dot.is-selected')?.getAttribute('data-gameweek-index')).toBe('5');
     expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__slide[aria-current="true"]')?.textContent).toContain('Gameweek 13');
     act(() => root.unmount());
   });

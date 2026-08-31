@@ -46,8 +46,6 @@ def test_staging_manager_assignments_require_three_ordered_reviewers() -> None:
         "team-bayer-neverlusen": "kev.koden@gmail.com",
     }
 
-    import pytest
-
     with pytest.raises(RuntimeError, match="exactly three email addresses"):
         staging_manager_assignments("one@example.com,two@example.com")
 

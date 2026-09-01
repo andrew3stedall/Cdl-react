@@ -507,6 +507,8 @@ describe('LeaguePage', () => {
     expect(dialog?.textContent).toContain('Castle Keeper');
     expect(dialog?.textContent).toContain('Starting XI');
     expect(dialog?.querySelectorAll('[data-fixture-metric="points"]')).toHaveLength(6);
+    expect(dialog?.querySelectorAll('.player-card__points')).toHaveLength(6);
+    expect(dialog?.querySelector('[data-player-id="castle-1"] .player-card__points')?.textContent).toBe('80');
     expect(dialog?.querySelectorAll('.fixture-squad-pitch .player-card__form-dots')).toHaveLength(2);
     expect(dialog?.querySelectorAll('.fixture-squad-roster .player-card__form-dots')).toHaveLength(4);
     act(() => root.unmount());

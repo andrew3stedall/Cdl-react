@@ -29,6 +29,7 @@ export interface PlayerCardProps extends Omit<HTMLAttributes<HTMLSpanElement>, '
   layout?: PlayerCardLayout;
   size?: PlayerCardSize;
   formPosition?: PlayerCardFormPosition;
+  points?: number | null;
   showOpponent?: boolean;
   showPositionMarker?: boolean;
   ariaLabel?: string;
@@ -40,6 +41,7 @@ export function PlayerCard({
   formPosition = 'hidden',
   layout = 'list',
   player,
+  points = null,
   showOpponent = true,
   showPositionMarker = false,
   size = 'sm',
@@ -51,13 +53,14 @@ export function PlayerCard({
     `player-card--${layout}`,
     `player-card--size-${size}`,
     `player-card--form-${formPosition}`,
+    points !== null && points !== undefined ? 'player-card--has-points' : '',
     formClass,
     className,
   ].filter(Boolean).join(' ');
 
   return (
     <span aria-label={ariaLabel} className={classes} {...rest}>
-      <PlayerToken player={player} showOpponent={showOpponent} showPositionMarker={showPositionMarker} />
+      <PlayerToken points={points} player={player} showOpponent={showOpponent} showPositionMarker={showPositionMarker} />
       {formPosition !== 'hidden' ? <FormDots className="player-card__form" value={player.form} /> : null}
     </span>
   );
@@ -87,7 +90,7 @@ export function OpponentFdrBadge({
   );
 }
 
-function PlayerToken({ player, showOpponent, showPositionMarker }: { player: PlayerCardPlayer; showOpponent: boolean; showPositionMarker: boolean }) {
+function PlayerToken({ points, player, showOpponent, showPositionMarker }: { points: number | null; player: PlayerCardPlayer; showOpponent: boolean; showPositionMarker: boolean }) {
   const fixtures = player.fixtures ?? [];
   const chance = player.availabilityChance;
   const hasAvailabilityWarning = typeof chance === 'number' && Number.isFinite(chance) && chance < 100;
@@ -99,6 +102,7 @@ function PlayerToken({ player, showOpponent, showPositionMarker }: { player: Pla
       <span aria-hidden="true" className="player-card__shirt-crop">
         <TeamShirt large team={player.team} />
       </span>
+      {points !== null && points !== undefined ? <strong aria-label={`${points} fantasy points`} className="player-card__points">{points}</strong> : null}
       <strong className="player-card__name">{shortPlayerName(player.displayName)}</strong>
       {showOpponent ? (
         <small

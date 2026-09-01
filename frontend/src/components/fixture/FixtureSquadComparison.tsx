@@ -501,6 +501,7 @@ function FixturePlayerToken({
       layout="pitch"
       player={toFixtureCardPlayer(player, shirtTeam, indicatorValue)}
       points={showPoints ? player.points : null}
+      pointsMultiplier={showPoints ? player.pointsMultiplier : null}
       showPositionMarker={false}
       size={size}
     />

@@ -30,6 +30,7 @@ export interface PlayerCardProps extends Omit<HTMLAttributes<HTMLSpanElement>, '
   size?: PlayerCardSize;
   formPosition?: PlayerCardFormPosition;
   points?: number | null;
+  pointsMultiplier?: number | null;
   showOpponent?: boolean;
   showPositionMarker?: boolean;
   ariaLabel?: string;
@@ -42,6 +43,7 @@ export function PlayerCard({
   layout = 'list',
   player,
   points = null,
+  pointsMultiplier = null,
   showOpponent = true,
   showPositionMarker = false,
   size = 'sm',
@@ -60,7 +62,7 @@ export function PlayerCard({
 
   return (
     <span aria-label={ariaLabel} className={classes} {...rest}>
-      <PlayerToken points={points} player={player} showOpponent={showOpponent} showPositionMarker={showPositionMarker} />
+      <PlayerToken points={points} pointsMultiplier={pointsMultiplier} player={player} showOpponent={showOpponent} showPositionMarker={showPositionMarker} />
       {formPosition !== 'hidden' ? <FormDots className="player-card__form" value={player.form} /> : null}
     </span>
   );
@@ -90,7 +92,7 @@ export function OpponentFdrBadge({
   );
 }
 
-function PlayerToken({ points, player, showOpponent, showPositionMarker }: { points: number | null; player: PlayerCardPlayer; showOpponent: boolean; showPositionMarker: boolean }) {
+function PlayerToken({ points, pointsMultiplier, player, showOpponent, showPositionMarker }: { points: number | null; pointsMultiplier: number | null; player: PlayerCardPlayer; showOpponent: boolean; showPositionMarker: boolean }) {
   const fixtures = player.fixtures ?? [];
   const chance = player.availabilityChance;
   const hasAvailabilityWarning = typeof chance === 'number' && Number.isFinite(chance) && chance < 100;
@@ -102,7 +104,7 @@ function PlayerToken({ points, player, showOpponent, showPositionMarker }: { poi
       <span aria-hidden="true" className="player-card__shirt-crop">
         <TeamShirt large team={player.team} />
       </span>
-      {points !== null && points !== undefined ? <strong aria-label={`${points} fantasy points`} className="player-card__points">{points}</strong> : null}
+      {points !== null && points !== undefined ? <strong aria-label={`${points}${pointsMultiplier && pointsMultiplier > 1 ? ` points multiplied by ${pointsMultiplier}` : ' fantasy points'}`} className="player-card__points">{points}{pointsMultiplier && pointsMultiplier > 1 ? ` ×${pointsMultiplier}` : ''}</strong> : null}
       <strong className="player-card__name">{shortPlayerName(player.displayName)}</strong>
       {showOpponent ? (
         <small

@@ -215,6 +215,7 @@ def fixture_squads(
                 ),
                 fixture_fixtures=fixture_contexts.get(player.epl_team.id, []),
                 points=player.points,
+                points_multiplier=2 if selection and selection.is_captain else 1,
                 form=player.form,
                 slot=slot,
                 is_captain=bool(selection and selection.is_captain),

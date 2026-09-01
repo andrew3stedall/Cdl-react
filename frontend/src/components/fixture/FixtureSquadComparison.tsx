@@ -264,6 +264,7 @@ function FixturePlayerToken({
       formPosition={showForm || showPoints ? 'below' : 'hidden'}
       layout="pitch"
       player={toFixtureCardPlayer(player, shirtTeam, indicatorValue)}
+      points={showPoints ? player.points : null}
       showPositionMarker={false}
       size={size}
     />

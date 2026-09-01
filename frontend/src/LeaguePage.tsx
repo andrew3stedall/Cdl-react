@@ -540,14 +540,6 @@ function defaultGameweekForRound(round: FixtureRoundGroup): GameweekGroup | null
     ?? null;
 }
 
-function primaryGameweekLabel(group: GameweekGroup): string {
-  if (group.isCurrent && group.state === 'underway') return 'Live now';
-  if (group.isCurrent) return 'Current gameweek';
-  if (group.isNext) return 'Up next';
-  if (group.state === 'finished') return 'Latest result';
-  return 'Round focus';
-}
-
 function firstGameweekNumber(round: FixtureRoundGroup): number {
   return round.gameweeks[0]?.gameweek.number ?? Number.MAX_SAFE_INTEGER;
 }
@@ -574,14 +566,20 @@ function RoundCarousel({ onOpenFixture, rounds }: { onOpenFixture: (fixture: Lea
   const [selectedGameweekIndex, setSelectedGameweekIndex] = useState(initialGameweekIndex);
   const roundOptions = useMemo(() => ({
     align: 'center' as const,
-    loop: rounds.length > 1,
+    containScroll: false as const,
+    loop: false,
     startIndex: initialRoundIndex,
-  }), [initialRoundIndex, rounds.length]);
+  }), [initialRoundIndex]);
   const [roundViewportRef, roundApi] = useEmblaCarousel(roundOptions);
 
   const handleRoundSelect = useCallback((api: EmblaCarouselType) => {
     setSelectedRoundIndex(api.selectedScrollSnap());
   }, []);
+
+  const handleRoundNavigation = useCallback((roundIndex: number) => {
+    roundApi?.scrollTo(roundIndex);
+    setSelectedRoundIndex(roundIndex);
+  }, [roundApi]);
 
   useScaleOpacityTween(roundApi, '.league-round-slide__content');
 
@@ -621,7 +619,7 @@ function RoundCarousel({ onOpenFixture, rounds }: { onOpenFixture: (fixture: Lea
               <div
                 aria-current={isSelected ? 'true' : undefined}
                 aria-hidden={!isSelected}
-                aria-label={`${round.label}, ${round.subLabel}`}
+                aria-label={`${round.label} fixtures`}
                 aria-roledescription="slide"
                 className={`league-round-carousel__slide${isSelected ? ' is-selected' : ''}`}
                 data-round-index={roundIndex}
@@ -629,20 +627,16 @@ function RoundCarousel({ onOpenFixture, rounds }: { onOpenFixture: (fixture: Lea
                 onClick={(event) => {
                   const target = event.target as HTMLElement;
                   if (target.closest('button, a, input, select, textarea')) return;
-                  roundApi?.scrollTo(roundIndex);
+                  handleRoundNavigation(roundIndex);
                 }}
                 role="group"
               >
                 <div className="league-round-slide__content">
                   <div aria-label={`${round.label} fixtures`} className="league-fixture-round" id={`league-round-panel-${round.key}`}>
                     <header className="league-fixture-round__header">
-                      <div>
-                        <p className="eyebrow">{round.isCurrent ? `Live · ${round.label}` : round.label}</p>
-                        <h2>{round.subLabel}</h2>
-                      </div>
-                      <div className="league-fixture-round__meta">
-                        <strong>{round.expectedGameweeks} gameweeks</strong>
-                        <span>{round.gameweeks.length}/{round.expectedGameweeks} available</span>
+                      <div className="league-fixture-round__title">
+                        {round.isCurrent ? <span aria-label="Active round" className="league-round-active-led" role="img" title="Active round" /> : null}
+                        <h2>{round.label}</h2>
                       </div>
                     </header>
                     <GameweekCarousel
@@ -662,6 +656,22 @@ function RoundCarousel({ onOpenFixture, rounds }: { onOpenFixture: (fixture: Lea
           })}
         </div>
       </div>
+      <nav aria-label="Round navigation" className="league-round-carousel__dots">
+        {rounds.map((round, roundIndex) => {
+          const isSelected = roundIndex === selectedRoundIndex;
+          return (
+            <button
+              aria-current={isSelected ? 'true' : undefined}
+              aria-label={`Go to ${round.label}`}
+              className={`league-round-carousel__dot${isSelected ? ' is-selected' : ''}`}
+              data-round-index={roundIndex}
+              key={round.key}
+              onClick={() => handleRoundNavigation(roundIndex)}
+              type="button"
+            />
+          );
+        })}
+      </nav>
     </section>
   );
 }
@@ -671,14 +681,16 @@ function GameweekCarousel({ groups, isActive, onIndexChange, onOpenFixture, roun
   const gameweekOptions = useMemo(() => ({
     align: 'start' as const,
     axis: 'y' as const,
+    duration: 40,
     loop: groups.length > 1,
     startIndex: initialIndex,
   }), [groups.length, initialIndex]);
   const [gameweekViewportRef, gameweekApi] = useEmblaCarousel(gameweekOptions);
   const [selectedIndex, setSelectedIndex] = useState(initialIndex);
   const fixtureRows = Math.max(...groups.map((group) => group.fixtures.length), 1);
+  const gameweekCardHeight = Math.max(10.5, 2.9 + fixtureRows * 4.95);
   const carouselStyle = {
-    '--league-gameweek-carousel-height': `${Math.max(21, 8.5 + fixtureRows * 4.15)}rem`,
+    '--league-gameweek-carousel-height': `${gameweekCardHeight}rem`,
   } as CSSProperties;
 
   const handleGameweekSelect = useCallback((api: EmblaCarouselType) => {
@@ -706,7 +718,7 @@ function GameweekCarousel({ groups, isActive, onIndexChange, onOpenFixture, roun
     const nextIndex = Math.min(selectedGameweekIndex, Math.max(groups.length - 1, 0));
     setSelectedIndex(nextIndex);
     if (gameweekApi.selectedScrollSnap() !== nextIndex) {
-      gameweekApi.scrollTo(nextIndex, true);
+      gameweekApi.scrollTo(nextIndex);
     }
   }, [gameweekApi, groups.length, selectedGameweekIndex]);
 
@@ -736,9 +748,8 @@ function GameweekCarousel({ groups, isActive, onIndexChange, onOpenFixture, roun
                 <div className="league-gameweek-slide__content">
                   <GameweekSection
                     group={group}
-                    label={primaryGameweekLabel(group)}
                     onOpenFixture={onOpenFixture}
-                    onSelectGameweek={() => gameweekApi?.scrollTo(index, true)}
+                    onSelectGameweek={() => gameweekApi?.scrollTo(index)}
                     variant={sectionVariant}
                   />
                 </div>
@@ -836,18 +847,17 @@ function useScaleOpacityTween(emblaApi: EmblaCarouselType | undefined, contentSe
   }, [emblaApi, setTweenFactors, setTweenNodes, tweenScaleAndOpacity]);
 }
 
-function GameweekSection({ group, label, onOpenFixture, onSelectGameweek, variant }: { group: GameweekGroup; label: string; onOpenFixture: (fixture: LeagueFixture) => void; onSelectGameweek: () => void; variant: 'focus' | 'upcoming' | 'history' }) {
+function GameweekSection({ group, onOpenFixture, onSelectGameweek, variant }: { group: GameweekGroup; onOpenFixture: (fixture: LeagueFixture) => void; onSelectGameweek: () => void; variant: 'focus' | 'upcoming' | 'history' }) {
   return (
     <section aria-labelledby={`league-gameweek-${variant}-${group.gameweek.id}`} className={`league-gameweek-section league-gameweek-section--${variant}`}>
       <header className="league-gameweek-section__header">
         <button aria-label={`Select ${group.gameweek.name}`} className="league-gameweek-section__heading" onClick={onSelectGameweek} type="button">
-          <span className="eyebrow">{label}</span>
           <span aria-level={2} className="league-gameweek-section__title" id={`league-gameweek-${variant}-${group.gameweek.id}`} role="heading">{group.gameweek.name}</span>
         </button>
         <GameweekStateBadge gameweek={group.gameweek} state={group.state} />
       </header>
       <div className="league-fixture-list">
-        {group.fixtures.map((fixture) => <FixtureListRow compact={variant !== 'focus'} fixture={fixture} key={fixture.id} onOpen={onOpenFixture} />)}
+        {group.fixtures.map((fixture) => <FixtureListRow fixture={fixture} key={fixture.id} onOpen={onOpenFixture} />)}
       </div>
     </section>
   );
@@ -883,23 +893,22 @@ function TableView({ onReload, snapshot }: { onReload: () => void; snapshot: Lea
   );
 }
 
-function FixtureListRow({ compact = false, fixture, onOpen }: { compact?: boolean; fixture: LeagueFixture; onOpen: (fixture: LeagueFixture) => void }) {
+function FixtureListRow({ fixture, onOpen }: { fixture: LeagueFixture; onOpen: (fixture: LeagueFixture) => void }) {
   const action = fixture.status === 'pending' ? 'Open preview' : fixture.status === 'started' ? 'Open live fixture' : 'Open finished fixture';
   return (
-    <button aria-label={`${action} for ${fixtureParticipantName(fixture.homeTeam)} versus ${fixtureParticipantName(fixture.awayTeam)}`} className={`league-fixture-row${compact ? ' league-fixture-row--compact' : ''}`} onClick={() => onOpen(fixture)} type="button">
-      <FixtureTeams fixture={fixture} compact />
+    <button aria-label={`${action} for ${fixtureParticipantName(fixture.homeTeam)} versus ${fixtureParticipantName(fixture.awayTeam)}`} className="league-fixture-row" onClick={() => onOpen(fixture)} type="button">
+      <div className="league-fixture-row__teams">
+        <div className="league-fixture-row__team">
+          <div className="league-fixture-row__team-name"><span className="league-team-mark">{teamInitials(fixture.homeTeam)}</span><strong>{fixtureParticipantName(fixture.homeTeam)}</strong></div>
+          <strong className="league-fixture-row__team-score">{fixture.score.homeScore ?? '—'}</strong>
+        </div>
+        <div className="league-fixture-row__team">
+          <div className="league-fixture-row__team-name"><span className="league-team-mark">{teamInitials(fixture.awayTeam)}</span><strong>{fixtureParticipantName(fixture.awayTeam)}</strong></div>
+          <strong className="league-fixture-row__team-score">{fixture.score.awayScore ?? '—'}</strong>
+        </div>
+      </div>
       <ChevronRight aria-hidden="true" className="league-fixture-row__arrow" size={17} />
     </button>
-  );
-}
-
-function FixtureTeams({ compact = false, fixture }: { compact?: boolean; fixture: LeagueFixture }) {
-  return (
-    <div className={`league-fixture-teams${compact ? ' league-fixture-teams--compact' : ''}`}>
-      <div className="league-team-line"><span className="league-team-mark">{teamInitials(fixture.homeTeam)}</span><strong>{fixtureParticipantName(fixture.homeTeam)}</strong></div>
-      <div className="league-score"><strong>{fixture.score.homeScore ?? '—'}</strong><span>{' - '}</span><strong>{fixture.score.awayScore ?? '—'}</strong></div>
-      <div className="league-team-line league-team-line--away"><strong>{fixtureParticipantName(fixture.awayTeam)}</strong><span className="league-team-mark">{teamInitials(fixture.awayTeam)}</span></div>
-    </div>
   );
 }
 
@@ -978,12 +987,8 @@ function fixtureGameweekStatusForFixture(fixture: LeagueFixture, snapshot: Leagu
 }
 
 function GameweekStateBadge({ gameweek, state }: { gameweek: LeagueFixture['gameweek']; state: GameweekState }) {
-  if (state === 'not-started') {
-    return <time className="league-gameweek-state league-gameweek-state--not-started" dateTime={gameweek.deadlineAt ?? undefined}><span aria-hidden="true" />{formatDeadline(gameweek.deadlineAt)}</time>;
-  }
-
-  const label = state === 'finished' ? 'Finalised' : 'Live';
-  return <span className={`league-gameweek-state league-gameweek-state--${state}`}><span aria-hidden="true" />{label}</span>;
+  const deadlineLabel = formatDeadline(gameweek.deadlineAt);
+  return <time aria-label={`Deadline ${deadlineLabel}`} className={`league-gameweek-state league-gameweek-state--${state}`} dateTime={gameweek.deadlineAt ?? undefined}><span aria-hidden="true" />{deadlineLabel}</time>;
 }
 
 function formatScore(fixture: LeagueFixture): string {

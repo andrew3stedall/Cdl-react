@@ -3,9 +3,21 @@
 ## Unreleased
 
 - Replaced the League fixtures and gameweek pickers with shadcn-style Embla
-  carousels: rounds loop horizontally, gameweeks loop vertically, and each
+  carousels: rounds move horizontally without looping, gameweeks loop vertically, and each
   slide fades with opacity while keeping every fixture in the selected
   gameweek visible.
+- Widened the round slides while tightening the spacing between them and added
+  one filled-or-hollow navigation dot per round below the carousel.
+- Added matching terminal insets so the first and last rounds centre on the
+  same focal line when selected.
+- Increased the round slide width again after adding terminal insets so the
+  centred edge slides retain the intended wider card treatment.
+- Tightened the horizontal space between round cards so more of the adjacent
+  round remains visible at the viewport edge.
+- Added a small slide overlap to bring adjacent round cards closer together
+  without changing their width or terminal centering.
+- Increased the slide overlap to 0.4rem per side for a more visible adjacent
+  round peek.
 - Nested each round's gameweek carousel inside its round slide, preserved the
   relative gameweek index between rounds, and moved compact navigation controls
   onto the carousel rails.

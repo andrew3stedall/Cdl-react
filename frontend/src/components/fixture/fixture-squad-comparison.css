@@ -24,7 +24,7 @@
   background: var(--squad-pitch);
   border: 1px solid color-mix(in srgb, var(--primary) 40%, transparent);
   border-radius: 1rem;
-  height: clamp(56rem, 184vw, 72rem);
+  height: clamp(52rem, 172vw, 68rem);
   margin: 0.55rem 0;
   overflow: hidden;
   position: relative;
@@ -285,7 +285,7 @@
 
 @media (max-width: 560px) {
   .fixture-squad-pitch__field {
-    height: 52rem;
+    height: 48rem;
   }
 
   .fixture-squad-pitch__player small {

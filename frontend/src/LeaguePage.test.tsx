@@ -217,9 +217,17 @@ describe('LeaguePage', () => {
     expect(container.textContent).toContain('Table');
     expect(container.textContent).toContain('Gameweek 12');
     expect(container.textContent).toContain('Round 2');
-    expect(container.textContent).toContain('Gameweeks 8–14');
+    expect(container.textContent).not.toContain('Gameweeks 8–14');
+    expect(container.textContent).not.toContain('7 gameweeks');
+    expect(container.textContent).not.toContain('available');
     expect(container.querySelectorAll('.league-round-carousel__slide')).toHaveLength(2);
     expect(container.querySelector('.league-round-carousel__slide[aria-current="true"]')?.textContent).toContain('Round 2');
+    expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-round-active-led')).not.toBeNull();
+    expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-fixture-round__header')?.textContent?.trim()).toBe('Round 2');
+    const selectedGameweekHeader = container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__slide[aria-current="true"] .league-gameweek-section__header');
+    expect(selectedGameweekHeader?.textContent).toContain('Gameweek 12');
+    expect(selectedGameweekHeader?.textContent).not.toContain('Current gameweek');
+    expect(selectedGameweekHeader?.textContent).not.toContain('Live');
     expect(container.querySelectorAll('.league-round-carousel__slide[aria-current="true"] .league-gameweek-section')).toHaveLength(3);
     expect(container.querySelectorAll('.league-round-carousel__slide[aria-current="true"] .league-fixture-row')).toHaveLength(5);
     expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__slide[aria-current="true"]')?.textContent).toContain('Gameweek 12');
@@ -231,6 +239,13 @@ describe('LeaguePage', () => {
     expect(container.querySelector('.league-gameweek-carousel__viewport')?.getAttribute('style')).toBeNull();
     expect(container.querySelector('.league-round-slide__content')?.getAttribute('style')).toContain('transform: scale(1)');
     expect(container.querySelector('.league-round-carousel__slide:not([aria-current="true"]) .league-round-slide__content')?.getAttribute('style')).toContain('opacity:');
+    expect(container.querySelectorAll('.league-round-carousel__dot')).toHaveLength(2);
+    expect(container.querySelector('.league-round-carousel__dot.is-selected')?.getAttribute('aria-label')).toBe('Go to Round 2');
+    expect(container.querySelectorAll('.league-round-carousel__dot:not(.is-selected)')).toHaveLength(1);
+    expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__slide[aria-current="true"] .league-gameweek-slide__content')?.getAttribute('style')).toContain('transform: scale(1)');
+    expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__slide:not([aria-current="true"]) .league-gameweek-slide__content')?.getAttribute('style')).toContain('opacity:');
+    expect(container.querySelectorAll('.league-fixture-row--compact')).toHaveLength(0);
+    expect(container.querySelectorAll('.league-round-carousel__slide[aria-current="true"] .league-fixture-row__team')).toHaveLength(10);
     expect(container.querySelector('button[aria-label="Previous round"]')).toBeNull();
     expect(container.querySelector('button[aria-label="Next round"]')).toBeNull();
     expect(container.querySelector('main.league-page.feature-screen')).toBeNull();
@@ -272,9 +287,31 @@ describe('LeaguePage', () => {
     });
 
     expect(container.querySelector('.league-round-carousel__slide[aria-current="true"]')?.textContent).toContain('Semi Final');
+    expect(container.querySelector('.league-round-carousel__dot.is-selected')?.getAttribute('aria-label')).toBe('Go to Semi Final');
     expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-fixture-round')?.textContent).toContain('Semi Final');
     expect(container.querySelectorAll('.league-round-carousel__slide[aria-current="true"] .league-gameweek-section')).toHaveLength(1);
     expect(container.querySelectorAll('.league-round-carousel__slide[aria-current="true"] .league-fixture-row')).toHaveLength(1);
+    act(() => root.unmount());
+  });
+
+  test('uses the round dots to navigate without wrapping', async () => {
+    const { container, root } = await renderPage();
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('.league-round-carousel__dot[aria-label="Go to Semi Final"]')?.click();
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    });
+
+    expect(container.querySelector('.league-round-carousel__slide[aria-current="true"]')?.textContent).toContain('Semi Final');
+    expect(container.querySelector('.league-round-carousel__dot.is-selected')?.getAttribute('aria-label')).toBe('Go to Semi Final');
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('.league-round-carousel__dot[aria-label="Go to Round 2"]')?.click();
+      await new Promise((resolve) => setTimeout(resolve, 500));
+    });
+
+    expect(container.querySelector('.league-round-carousel__slide[aria-current="true"]')?.textContent).toContain('Round 2');
+    expect(container.querySelector('.league-round-carousel__dot.is-selected')?.getAttribute('aria-label')).toBe('Go to Round 2');
     act(() => root.unmount());
   });
 
@@ -303,7 +340,10 @@ describe('LeaguePage', () => {
   test('marks a completed gameweek as finalised', async () => {
     const { container, root } = await renderPage('/league', new FinishedLeagueClient());
 
-    expect(container.querySelector('.league-gameweek-state--finished')?.textContent).toContain('Finalised');
+    const finishedDeadline = container.querySelector('.league-gameweek-state--finished');
+    expect(finishedDeadline?.tagName).toBe('TIME');
+    expect(finishedDeadline?.getAttribute('aria-label')).toContain('Deadline');
+    expect(finishedDeadline?.textContent).not.toContain('Finalised');
     expect(container.textContent).not.toContain('Finished');
     act(() => root.unmount());
   });
@@ -425,6 +465,8 @@ describe('LeaguePage', () => {
     expect(dialog?.textContent).toContain('Castle Keeper');
     expect(dialog?.textContent).toContain('Starting XI');
     expect(dialog?.querySelectorAll('[data-fixture-metric="points"]')).toHaveLength(6);
+    expect(dialog?.querySelectorAll('.player-card__points')).toHaveLength(6);
+    expect(dialog?.querySelector('[data-player-id="castle-1"] .player-card__points')?.textContent).toBe('80');
     expect(dialog?.querySelectorAll('.fixture-squad-pitch .player-card__form-dots')).toHaveLength(2);
     expect(dialog?.querySelectorAll('.fixture-squad-roster .player-card__form-dots')).toHaveLength(4);
     act(() => root.unmount());

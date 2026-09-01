@@ -39,6 +39,7 @@ describe('PlayerCard', () => {
               position: 'FWD',
               team: 'ARS',
             }}
+            points={8}
           />
           <PlayerCard
             formPosition="beside"
@@ -53,6 +54,8 @@ describe('PlayerCard', () => {
     expect(container.querySelectorAll('.player-card__token--with-opponent')).toHaveLength(2);
     expect(container.querySelectorAll('.player-card__shirt-crop img')).toHaveLength(2);
     expect(container.querySelectorAll('.player-card__name')).toHaveLength(2);
+    expect(container.querySelectorAll('.player-card__points')).toHaveLength(1);
+    expect(container.querySelector('.player-card__points')?.textContent).toBe('8');
     expect(container.querySelectorAll('.player-card__opponent--fdr-3')).toHaveLength(2);
     expect(container.querySelector('.player-card--pitch.player-card--form-below')).not.toBeNull();
     expect(container.querySelector('.player-card--list.player-card--form-beside')).not.toBeNull();

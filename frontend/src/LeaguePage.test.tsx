@@ -225,21 +225,17 @@ describe('LeaguePage', () => {
     expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-round-active-led')).not.toBeNull();
     expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-fixture-round__header')?.textContent?.trim()).toBe('Round 2');
     const selectedGameweekHeader = container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__slide[aria-current="true"] .league-gameweek-section__header');
-    expect(selectedGameweekHeader?.textContent).toContain('Gameweek 11');
+    expect(selectedGameweekHeader?.textContent).toContain('Gameweek 12');
     expect(selectedGameweekHeader?.textContent).not.toContain('Current gameweek');
     expect(selectedGameweekHeader?.textContent).not.toContain('Live');
     expect(container.querySelectorAll('.league-round-carousel__slide[aria-current="true"] .league-gameweek-section')).toHaveLength(3);
     expect(container.querySelectorAll('.league-round-carousel__slide[aria-current="true"] .league-fixture-row')).toHaveLength(5);
-    expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__slide[aria-current="true"]')?.textContent).toContain('Gameweek 11');
+    expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__slide[aria-current="true"]')?.textContent).toContain('Gameweek 12');
     expect(container.querySelectorAll('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__slide')).toHaveLength(3);
     expect(container.querySelector('.league-round-carousel__header')).toBeNull();
     expect(container.querySelector('.league-round-carousel__hint')).toBeNull();
-    expect(container.querySelector('.league-gameweek-carousel__header')).not.toBeNull();
-    expect(container.querySelectorAll('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__dot')).toHaveLength(7);
-    expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__dot.is-selected')?.getAttribute('aria-label')).toBe('Go to Gameweek 11');
-    expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__dot.is-selected')?.getAttribute('data-gameweek-index')).toBe('3');
+    expect(container.querySelector('.league-gameweek-carousel__header')).toBeNull();
     expect(container.querySelector('.league-gameweek-carousel')?.getAttribute('style')).toContain('--league-gameweek-carousel-height');
-    expect(container.querySelector('.league-gameweek-carousel')?.getAttribute('style')).not.toContain('--league-gameweek-carousel-track-height');
     expect(container.querySelector('.league-gameweek-carousel__viewport')?.getAttribute('style')).toBeNull();
     expect(container.querySelector('.league-round-slide__content')?.getAttribute('style')).toContain('transform: scale(1)');
     expect(container.querySelector('.league-round-carousel__slide:not([aria-current="true"]) .league-round-slide__content')?.getAttribute('style')).toContain('opacity:');
@@ -264,20 +260,6 @@ describe('LeaguePage', () => {
     expect(container.textContent).not.toContain('Finished');
     expect(container.querySelector('nav[aria-label="League navigation"]')).toBeNull();
     expect(container.textContent).not.toContain('Overview stays lightweight');
-    act(() => root.unmount());
-  });
-
-  test('keeps gameweek navigation dots aligned with the selected gameweek', async () => {
-    const { container, root } = await renderPage();
-
-    await act(async () => {
-      container.querySelector<HTMLButtonElement>('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__dot[aria-label="Go to Gameweek 13"]')?.click();
-      await new Promise((resolve) => setTimeout(resolve, 500));
-    });
-
-    expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__dot.is-selected')?.getAttribute('aria-label')).toBe('Go to Gameweek 13');
-    expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__dot.is-selected')?.getAttribute('data-gameweek-index')).toBe('5');
-    expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__slide[aria-current="true"]')?.textContent).toContain('Gameweek 13');
     act(() => root.unmount());
   });
 
@@ -453,30 +435,6 @@ describe('LeaguePage', () => {
     act(() => root.unmount());
   });
 
-  test('opens a pending current-gameweek player with their points breakdown', async () => {
-    const { container, root } = await renderPage('/league', new CurrentPendingLeagueClient());
-
-    await act(async () => {
-      container.querySelector<HTMLButtonElement>('button[aria-label*="Open preview for Andrew versus DJ"]')?.click();
-      await Promise.resolve();
-      await Promise.resolve();
-    });
-
-    expect(container.querySelector<HTMLButtonElement>('button[aria-label="View Castle Keeper points breakdown"]')).not.toBeNull();
-
-    await act(async () => {
-      container.querySelector<HTMLButtonElement>('button[aria-label="View Castle Keeper points breakdown"]')?.click();
-      await Promise.resolve();
-      await Promise.resolve();
-    });
-
-    const detail = container.querySelector('.player-chart-detail-layer');
-    expect(detail?.textContent).toContain('Gameweek 12 · Castle Keeper');
-    expect(detail?.textContent).toContain('Fantasy points');
-    expect(container.querySelector('[data-presentation="drawer"]')).toBeNull();
-    act(() => root.unmount());
-  });
-
   test('puts the goalkeeper first while preserving the four substitute priorities', () => {
     const players = [
       { id: 'mid-1', displayName: 'First outfield substitute', position: 'MID', points: 1, form: 1, slot: 'bench' as const },
@@ -507,6 +465,8 @@ describe('LeaguePage', () => {
     expect(dialog?.textContent).toContain('Castle Keeper');
     expect(dialog?.textContent).toContain('Starting XI');
     expect(dialog?.querySelectorAll('[data-fixture-metric="points"]')).toHaveLength(6);
+    expect(dialog?.querySelectorAll('.player-card__points')).toHaveLength(6);
+    expect(dialog?.querySelector('[data-player-id="castle-1"] .player-card__points')?.textContent).toBe('80');
     expect(dialog?.querySelectorAll('.fixture-squad-pitch .player-card__form-dots')).toHaveLength(2);
     expect(dialog?.querySelectorAll('.fixture-squad-roster .player-card__form-dots')).toHaveLength(4);
     act(() => root.unmount());

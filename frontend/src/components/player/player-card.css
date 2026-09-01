@@ -180,6 +180,7 @@
 }
 
 .player-card__name,
+.player-card__points,
 .player-card__opponents {
   left: 0;
   max-width: none;
@@ -195,6 +196,15 @@
   font-size: clamp(0.55rem, 1.65vw, 0.7rem);
   line-height: 1;
   top: 66%;
+  transform: translateY(-50%);
+}
+
+.player-card__points {
+  color: var(--primary);
+  font-size: clamp(0.52rem, 1.45vw, 0.64rem);
+  line-height: 1;
+  text-align: center;
+  top: 55%;
   transform: translateY(-50%);
 }
 

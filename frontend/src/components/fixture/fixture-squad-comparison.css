@@ -375,6 +375,10 @@
   padding: 0.55rem 0.35rem 0.35rem;
 }
 
+.fixture-squad-pitch__lineup-panel--top {
+  padding-top: 0.2rem;
+}
+
 .fixture-squad-pitch__lineup-panel--bottom {
   grid-template-rows: minmax(0, 1fr) auto;
   padding-bottom: 0.55rem;

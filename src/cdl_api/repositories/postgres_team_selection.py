@@ -279,6 +279,10 @@ class PostgreSQLTeamSelectionRepository(InMemoryTeamSelectionRepository):
                         snapshot_points,
                         owning_team_id,
                     ),
+                    points_multiplier=_historical_points_multiplier(
+                        row,
+                        fixture.score.chips_played.get(owning_team_id, []),
+                    ),
                     slot=str(row["slot"]),
                     is_captain=bool(row["is_captain"]),
                     is_vice_captain=bool(row["is_vice_captain"]),
@@ -752,3 +756,12 @@ def _historical_player_points(
         if key in snapshot_points:
             return snapshot_points[key]
     return 0
+
+
+def _historical_points_multiplier(row: Mapping[str, object], chips: list[str]) -> int:
+    """Return the multiplier applied to a locked lineup player."""
+    if bool(row["is_captain"]):
+        return 3 if any(chip.lower() == "triple captain" for chip in chips) else 2
+    if bool(row["is_vice_captain"]) and any(chip.lower() == "dual captain" for chip in chips):
+        return 2
+    return 1

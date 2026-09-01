@@ -57,6 +57,7 @@ export interface FixtureSquadPlayer {
   nextFixtureDifficulty?: number;
   fixtureFixtures?: FixturePlayerFixture[];
   points: number;
+  pointsMultiplier?: number;
   form: number;
   slot: 'starter' | 'bench' | 'reserve';
   isCaptain?: boolean;
@@ -322,6 +323,7 @@ interface ApiFixtureSquadPlayer {
   next_fixture_difficulty?: number | null;
   fixture_fixtures?: ApiFixturePlayerFixture[];
   points: number;
+  points_multiplier?: number;
   form: number;
   slot: 'starter' | 'bench' | 'reserve';
   is_captain?: boolean;
@@ -364,6 +366,7 @@ function mapFixtureSquadPlayer(player: ApiFixtureSquadPlayer): FixtureSquadPlaye
       kickoffAt: fixture.kickoff_at ?? null,
     })),
     points: player.points,
+    pointsMultiplier: player.points_multiplier ?? 1,
     form: player.form,
     slot: player.slot,
     isCaptain: player.is_captain === true,

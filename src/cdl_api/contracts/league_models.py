@@ -63,6 +63,7 @@ class FixtureSquadPlayer(BaseModel):
     next_fixture_difficulty: int | None = None
     fixture_fixtures: list[PlayerNextFixture] = Field(default_factory=list)
     points: int = 0
+    points_multiplier: int = 1
     form: float = 0
     slot: str
     is_captain: bool = False

@@ -100,4 +100,24 @@ describe('PlayerCard', () => {
     expect(opponents[1]?.className).toContain('player-card__opponents--single');
     expect(opponents[1]?.getAttribute('data-fixture-count')).toBe('1');
   });
+
+  test('shows a points multiplier only when it is greater than one', () => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    mountedRoots.push({ container, root });
+
+    act(() => {
+      root.render(
+        <>
+          <PlayerCard layout="pitch" player={{ displayName: 'Captain', team: 'ARS' }} points={8} pointsMultiplier={2} />
+          <PlayerCard layout="pitch" player={{ displayName: 'Player', team: 'ARS' }} points={6} pointsMultiplier={1} />
+        </>,
+      );
+    });
+
+    expect(container.querySelectorAll('.player-card__points')[0]?.textContent).toBe('8 ×2');
+    expect(container.querySelectorAll('.player-card__points')[1]?.textContent).toBe('6');
+    expect(container.querySelector('.player-card__points')?.getAttribute('aria-label')).toBe('8 points multiplied by 2');
+  });
 });

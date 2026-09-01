@@ -206,9 +206,10 @@
 .player-card__points {
   color: var(--primary);
   font-size: clamp(0.52rem, 1.45vw, 0.64rem);
+  font-weight: 800;
   line-height: 1;
   text-align: center;
-  top: 55%;
+  top: 52%;
   transform: translateY(-50%);
 }
 

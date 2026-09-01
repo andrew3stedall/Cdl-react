@@ -141,6 +141,10 @@
   background: transparent;
 }
 
+.player-card--pitch .player-card__shirt-crop {
+  height: 48%;
+}
+
 .player-card__shirt-crop {
   height: 52%;
   left: 50%;

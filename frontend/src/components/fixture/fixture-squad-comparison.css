@@ -222,7 +222,8 @@
 }
 
 .fixture-squad-list__slot,
-.fixture-squad-list__role {
+.fixture-squad-list__role,
+.fixture-squad-list__substitution {
   align-items: center;
   border: 1px solid var(--border);
   border-radius: 999px;
@@ -235,6 +236,17 @@
   justify-content: center;
   min-width: 0.82rem;
   padding: 0 0.14rem;
+}
+
+.fixture-squad-list__substitution {
+  border-color: var(--primary);
+  color: var(--primary);
+  font-size: 0.38rem;
+}
+
+.fixture-squad-list__substitution--out {
+  border-color: var(--muted-foreground);
+  color: var(--muted-foreground);
 }
 
 .fixture-squad-list__role {
@@ -473,6 +485,35 @@
   border-radius: 999px;
   outline: 2px solid var(--ring);
   outline-offset: 2px;
+}
+
+.fixture-squad-player-card--substituted-in::after,
+.fixture-squad-player-card--substituted-out::after {
+  align-items: center;
+  background: var(--primary);
+  border: 1px solid var(--primary);
+  border-radius: 999px;
+  color: var(--primary-foreground);
+  content: 'IN';
+  display: inline-flex;
+  font-size: 0.38rem;
+  font-weight: 900;
+  height: 0.82rem;
+  justify-content: center;
+  left: 0.12rem;
+  line-height: 1;
+  min-width: 0.82rem;
+  padding: 0 0.12rem;
+  position: absolute;
+  top: 0.12rem;
+  z-index: 6;
+}
+
+.fixture-squad-player-card--substituted-out::after {
+  background: var(--secondary);
+  border-color: var(--border);
+  color: var(--muted-foreground);
+  content: 'OUT';
 }
 
 .fixture-squad-rosters {

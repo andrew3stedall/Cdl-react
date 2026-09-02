@@ -68,6 +68,8 @@ class FixtureSquadPlayer(BaseModel):
     slot: str
     is_captain: bool = False
     is_vice_captain: bool = False
+    is_substituted_in: bool = False
+    is_substituted_out: bool = False
 
 
 class FixtureSquad(BaseModel):

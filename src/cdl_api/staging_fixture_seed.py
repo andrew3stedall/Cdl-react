@@ -22,6 +22,7 @@ from cdl_api.repositories.postgres_league_fixtures import (
     fixture_scoring_snapshots_table,
 )
 from cdl_api.repositories.postgres_league_fpl import draft_teams_table
+from cdl_api.repositories.postgres_team_selection import lineup_substitutions_table
 from cdl_api.staging_draft_seed import LEAGUE_ID
 
 SCHEDULE_ID_PREFIX = "staging-schedule-"
@@ -247,6 +248,12 @@ def seed_staging_fixture_schedule(
                 fixture_results_table.c.id.like(f"result-{SCHEDULE_ID_PREFIX}%")
             )
         )
+        if session.get_bind().dialect.name == "postgresql":
+            session.execute(
+                delete(lineup_substitutions_table).where(
+                    lineup_substitutions_table.c.fixture_id.like(f"{SCHEDULE_ID_PREFIX}%")
+                )
+            )
         session.execute(
             delete(cdl_fixtures_table).where(cdl_fixtures_table.c.id.like(f"{SCHEDULE_ID_PREFIX}%"))
         )

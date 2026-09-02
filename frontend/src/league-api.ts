@@ -62,6 +62,8 @@ export interface FixtureSquadPlayer {
   slot: 'starter' | 'bench' | 'reserve';
   isCaptain?: boolean;
   isViceCaptain?: boolean;
+  isSubstitutedIn?: boolean;
+  isSubstitutedOut?: boolean;
 }
 
 export interface FixturePlayerFixture {
@@ -328,6 +330,8 @@ interface ApiFixtureSquadPlayer {
   slot: 'starter' | 'bench' | 'reserve';
   is_captain?: boolean;
   is_vice_captain?: boolean;
+  is_substituted_in?: boolean;
+  is_substituted_out?: boolean;
 }
 
 interface ApiFixturePlayerFixture {
@@ -371,6 +375,8 @@ function mapFixtureSquadPlayer(player: ApiFixtureSquadPlayer): FixtureSquadPlaye
     slot: player.slot,
     isCaptain: player.is_captain === true,
     isViceCaptain: player.is_vice_captain === true,
+    isSubstitutedIn: player.is_substituted_in === true,
+    isSubstitutedOut: player.is_substituted_out === true,
   };
 }
 

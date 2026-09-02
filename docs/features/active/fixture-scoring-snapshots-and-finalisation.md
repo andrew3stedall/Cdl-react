@@ -17,6 +17,10 @@ Checkpoint 2 complete.
 - System finalises results when FPL data is checked and CDL scoring completes.
 - The scheduled official FPL refresh settles each pending CDL fixture from the checked
   `event-live` payload and stores its response hash with the frozen result.
+- Final settlement applies automatic substitutions for zero-minute starters using
+  playing bench players in bench order, subject to goalkeeper and formation rules.
+- The frozen snapshot stores the applied substitutions so historical fixture detail
+  remains explainable without recalculating the lineup.
 - Commissioner can override with audited correction.
 - Bonus points are automatic.
 

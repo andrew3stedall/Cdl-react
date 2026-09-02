@@ -261,6 +261,8 @@ function FixtureListPlayer({
         <span className="fixture-squad-list__name-row">
           {slotLabel ? <span className="fixture-squad-list__slot">{slotLabel}</span> : null}
           <strong>{player.displayName}</strong>
+          {player.isSubstitutedIn ? <span className="fixture-squad-list__substitution fixture-squad-list__substitution--in">IN</span> : null}
+          {player.isSubstitutedOut ? <span className="fixture-squad-list__substitution fixture-squad-list__substitution--out">OUT</span> : null}
           {player.isCaptain ? <span className="fixture-squad-list__role">C</span> : null}
           {player.isViceCaptain ? <span className="fixture-squad-list__role fixture-squad-list__role--vice">VC</span> : null}
         </span>
@@ -496,6 +498,8 @@ function FixturePlayerToken({
   const indicatorType = showPoints ? 'points' : showForm ? 'form' : undefined;
   return (
     <PlayerCard
+      ariaLabel={`${player.displayName}${player.isSubstitutedIn ? ' · automatic substitute' : player.isSubstitutedOut ? ' · replaced by automatic substitute' : ''}`}
+      className={player.isSubstitutedIn ? 'fixture-squad-player-card--substituted-in' : player.isSubstitutedOut ? 'fixture-squad-player-card--substituted-out' : ''}
       data-fixture-metric={indicatorType}
       formPosition={showForm || showPoints ? 'below' : 'hidden'}
       layout="pitch"

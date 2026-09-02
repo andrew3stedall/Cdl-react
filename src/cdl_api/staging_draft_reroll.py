@@ -130,6 +130,11 @@ def reroll_staging_draft_assignments(session_factory: object) -> StagingDraftRer
             text("DELETE FROM team_selection_lineup_slots WHERE season_id = :season_id"),
             {"season_id": SEASON_ID},
         )
+        if session.get_bind().dialect.name == "postgresql":
+            session.execute(
+                text("DELETE FROM lineup_substitutions WHERE season_id = :season_id"),
+                {"season_id": SEASON_ID},
+            )
         position_counts = _read_position_counts(session)
         _validate_position_counts(position_counts)
         session.commit()

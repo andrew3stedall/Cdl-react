@@ -216,7 +216,7 @@ def test_postgres_historical_fixture_squads_use_locked_lineup_and_event_points()
                 "INSERT INTO fpl_players "
                 "(id, web_name, position_id, team_id) VALUES "
                 "('fpl-1', 'Keeper One', 'GKP', 'epl-ars'), "
-                "('fpl-2', 'Forward Two', 'FWD', 'epl-che'), "
+                "('fpl-2', 'Keeper Two', 'GKP', 'epl-che'), "
                 "('fpl-3', 'Keeper Three', 'GKP', 'epl-ars'), "
                 "('fpl-4', 'Forward Four', 'FWD', 'epl-che')"
             )
@@ -232,6 +232,19 @@ def test_postgres_historical_fixture_squads_use_locked_lineup_and_event_points()
                     '{"id": 2, "stats": {"total_points": 5}}, '
                     '{"id": 3, "stats": {"total_points": 3}}, '
                     '{"id": 4, "stats": {"total_points": 7}}]}'
+                )
+            },
+        )
+        connection.execute(
+            text(
+                "INSERT INTO fixture_scoring_snapshots (id, payload_json) "
+                "VALUES ('snapshot-fixture-history-1', :payload)"
+            ),
+            {
+                "payload": (
+                    '{"fixture_id": "fixture-history-1", "substitutions": '
+                    '{"team-home": [{"starter_player_id": "fpl-1", '
+                    '"substitute_player_id": "fpl-2"}], "team-away": []}}'
                 )
             },
         )
@@ -304,3 +317,5 @@ def test_postgres_historical_fixture_squads_use_locked_lineup_and_event_points()
     assert squads[0].starters[0].points == 8
     assert squads[0].bench[0].points == 5
     assert squads[0].starters[0].is_captain is True
+    assert squads[0].starters[0].is_substituted_out is True
+    assert squads[0].bench[0].is_substituted_in is True

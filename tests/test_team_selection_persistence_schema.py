@@ -9,6 +9,7 @@ def test_team_selection_persistence_tables_exist() -> None:
         "team_selection_chips",
         "team_selection_fixture_locks",
         "team_selection_audit_events",
+        "lineup_substitutions",
     }
 
 

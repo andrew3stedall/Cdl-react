@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -18,11 +19,16 @@ from cdl_api.repositories.postgres_league_fixtures import (
     fixture_results_table,
     fixture_scoring_snapshots_table,
 )
-from cdl_api.repositories.postgres_league_fpl import draft_teams_table
+from cdl_api.repositories.postgres_league_fpl import draft_teams_table, fpl_players_table
 from cdl_api.repositories.postgres_team_selection import (
+    lineup_substitutions_table,
     team_selection_chips_table,
     team_selection_fixture_locks_table,
     team_selection_lineup_slots_table,
+)
+from cdl_api.services.substitution_engine import (
+    LineupPlayer,
+    apply_automatic_substitutions,
 )
 from cdl_api.staging_draft_seed import LEAGUE_ID, SEASON_ID
 
@@ -320,6 +326,7 @@ class FplSettlementService:
                 continue
             live_payload, source_hash = live_payloads.get(gameweek, (None, ""))
             player_points = _event_player_points(live_payload)
+            player_minutes = _event_player_minutes(live_payload)
             if not player_points:
                 skipped += 1
                 continue
@@ -338,11 +345,18 @@ class FplSettlementService:
                 continue
             home_id = str(home_team.get("id", ""))
             away_id = str(away_team.get("id", ""))
-            scores = cls._team_scores(session, gameweek, (home_id, away_id), player_points)
+            scores = cls._team_scores(
+                session,
+                gameweek,
+                (home_id, away_id),
+                player_points,
+                player_minutes,
+                apply_substitutions=finalised,
+            )
             if scores is None:
                 skipped += 1
                 continue
-            home_score, away_score, player_scores, chips_played = scores
+            home_score, away_score, player_scores, chips_played, substitutions = scores
             outcome = (
                 "home_win"
                 if home_score > away_score
@@ -371,6 +385,7 @@ class FplSettlementService:
                 "away_score": away_score,
                 "player_scores": player_scores,
                 "chips_played": chips_played,
+                "substitutions": substitutions,
                 "source_resource": f"event-live:{gameweek}",
                 "source_response_sha256": source_hash,
                 "finalised_at": finalised_at
@@ -409,6 +424,14 @@ class FplSettlementService:
                     .values(payload_json=snapshot_payload)
                 )
             if finalised:
+                cls._persist_substitutions(
+                    session,
+                    fixture_id=fixture_id,
+                    gameweek=gameweek,
+                    substitutions=substitutions,
+                    created_at=now,
+                )
+            if finalised:
                 settled += 1
         return settled, skipped
 
@@ -431,7 +454,19 @@ class FplSettlementService:
         gameweek: int,
         team_ids: tuple[str, str],
         player_points: Mapping[str, int],
-    ) -> tuple[int, int, dict[str, int], dict[str, list[str]]] | None:
+        player_minutes: Mapping[str, int],
+        *,
+        apply_substitutions: bool,
+    ) -> (
+        tuple[
+            int,
+            int,
+            dict[str, int],
+            dict[str, list[str]],
+            dict[str, list[dict[str, object]]],
+        ]
+        | None
+    ):
         rows = list(
             session.execute(
                 select(
@@ -441,10 +476,16 @@ class FplSettlementService:
                     team_selection_lineup_slots_table.c.slot_order,
                     team_selection_lineup_slots_table.c.is_captain,
                     team_selection_lineup_slots_table.c.is_vice_captain,
-                ).where(
+                    fpl_players_table.c.position_id,
+                )
+                .where(
                     team_selection_lineup_slots_table.c.season_id == SEASON_ID,
                     team_selection_lineup_slots_table.c.gameweek == gameweek,
                     team_selection_lineup_slots_table.c.draft_team_id.in_(team_ids),
+                )
+                .join(
+                    fpl_players_table,
+                    team_selection_lineup_slots_table.c.player_id == fpl_players_table.c.id,
                 )
             ).mappings()
         )
@@ -478,6 +519,9 @@ class FplSettlementService:
 
         totals: dict[str, int] = {}
         player_scores: dict[str, int] = {}
+        substitutions_by_team: dict[str, list[dict[str, object]]] = {
+            team_id: [] for team_id in team_ids
+        }
         for team_id in team_ids:
             team_rows = by_team[team_id]
             starters = [row for row in team_rows if row["slot"] == "starter"]
@@ -495,6 +539,33 @@ class FplSettlementService:
                         int(row.get("slot_order", 0)),
                     ),
                 )[:11]
+            elif apply_substitutions:
+                lineup = [
+                    LineupPlayer(
+                        player_id=str(row["player_id"]),
+                        position=str(row["position_id"]),
+                        slot=str(row["slot"]),
+                        slot_order=int(row["slot_order"]),
+                    )
+                    for row in team_rows
+                ]
+                scoring_starters, applied_substitutions = apply_automatic_substitutions(
+                    lineup,
+                    player_minutes,
+                )
+                rows_by_player_id = {str(row["player_id"]): row for row in team_rows}
+                scoring_rows = [rows_by_player_id[player.player_id] for player in scoring_starters]
+                substitutions_by_team[team_id] = [
+                    {
+                        "starter_player_id": substitution.starter_player_id,
+                        "substitute_player_id": substitution.substitute_player_id,
+                        "starter_slot_order": substitution.starter_slot_order,
+                        "bench_order": substitution.bench_order,
+                        "reason": substitution.reason,
+                        "formation_preserved": substitution.formation_preserved,
+                    }
+                    for substitution in applied_substitutions
+                ]
 
             captain = next((row for row in starters if row["is_captain"]), None)
             vice_captain = next((row for row in starters if row["is_vice_captain"]), None)
@@ -523,7 +594,60 @@ class FplSettlementService:
                 player_scores[f"{team_id}:{player_id}"] = final_points
                 total += final_points
             totals[team_id] = total
-        return totals[team_ids[0]], totals[team_ids[1]], player_scores, chips_by_team
+        return (
+            totals[team_ids[0]],
+            totals[team_ids[1]],
+            player_scores,
+            chips_by_team,
+            substitutions_by_team,
+        )
+
+    @staticmethod
+    def _persist_substitutions(
+        session: Session,
+        *,
+        fixture_id: str,
+        gameweek: int,
+        substitutions: Mapping[str, list[dict[str, object]]],
+        created_at: datetime,
+    ) -> None:
+        """Persist final scoring substitutions as an idempotent audit trail."""
+
+        snapshot_id = f"snapshot-{fixture_id}"
+        existing_id = session.execute(
+            select(lineup_substitutions_table.c.id)
+            .where(
+                lineup_substitutions_table.c.season_id == SEASON_ID,
+                lineup_substitutions_table.c.fixture_id == fixture_id,
+            )
+            .limit(1)
+        ).scalar_one_or_none()
+        if existing_id is not None:
+            return
+
+        for team_id, team_substitutions in substitutions.items():
+            for index, substitution in enumerate(team_substitutions, start=1):
+                substitution_id = (
+                    "substitution-"
+                    + hashlib.sha256(f"{fixture_id}:{team_id}:{index}".encode()).hexdigest()[:48]
+                )
+                session.execute(
+                    insert(lineup_substitutions_table).values(
+                        id=substitution_id,
+                        season_id=SEASON_ID,
+                        draft_team_id=team_id,
+                        gameweek=gameweek,
+                        fixture_id=fixture_id,
+                        snapshot_id=snapshot_id,
+                        starter_player_id=substitution["starter_player_id"],
+                        substitute_player_id=substitution["substitute_player_id"],
+                        starter_slot_order=substitution["starter_slot_order"],
+                        bench_order=substitution["bench_order"],
+                        reason=substitution["reason"],
+                        formation_preserved=substitution["formation_preserved"],
+                        created_at=created_at,
+                    )
+                )
 
 
 def _gameweek_number(payload: Mapping[str, object]) -> int | None:
@@ -553,6 +677,25 @@ def _event_player_points(payload: object) -> dict[str, int]:
         except (TypeError, ValueError):
             continue
     return points
+
+
+def _event_player_minutes(payload: object) -> dict[str, int]:
+    """Read only explicit minutes values from an event-live payload."""
+
+    if not isinstance(payload, Mapping) or not isinstance(payload.get("elements"), list):
+        return {}
+    minutes: dict[str, int] = {}
+    for element in payload["elements"]:
+        if not isinstance(element, Mapping) or element.get("id") is None:
+            continue
+        stats = element.get("stats")
+        if not isinstance(stats, Mapping) or stats.get("minutes") is None:
+            continue
+        try:
+            minutes[str(element["id"])] = int(stats["minutes"] or 0)
+        except (TypeError, ValueError):
+            continue
+    return minutes
 
 
 def _chip_display_name(chip_id: str) -> str:

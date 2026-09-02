@@ -109,11 +109,30 @@ team_selection_audit_events_table = Table(
     Column("created_at", DateTime(timezone=True), nullable=False),
 )
 
+lineup_substitutions_table = Table(
+    "lineup_substitutions",
+    metadata,
+    Column("id", String(64), primary_key=True),
+    Column("season_id", String(64), ForeignKey("seasons.id"), nullable=False),
+    Column("draft_team_id", String(64), ForeignKey("draft_teams.id"), nullable=False),
+    Column("gameweek", Integer(), nullable=False),
+    Column("fixture_id", String(64), nullable=False),
+    Column("snapshot_id", String(64), nullable=False),
+    Column("starter_player_id", String(64), ForeignKey("fpl_players.id"), nullable=False),
+    Column("substitute_player_id", String(64), ForeignKey("fpl_players.id"), nullable=False),
+    Column("starter_slot_order", Integer(), nullable=False),
+    Column("bench_order", Integer(), nullable=False),
+    Column("reason", String(64), nullable=False),
+    Column("formation_preserved", Boolean(), nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+)
+
 TEAM_SELECTION_PERSISTENCE_TABLES = (
     team_selection_lineup_slots_table,
     team_selection_chips_table,
     team_selection_fixture_locks_table,
     team_selection_audit_events_table,
+    lineup_substitutions_table,
 )
 
 DEMO_SEASON_ID = SEASON_ID
@@ -246,6 +265,17 @@ class PostgreSQLTeamSelectionRepository(InMemoryTeamSelectionRepository):
 
         event_points = _event_live_player_points(event_payload)
         snapshot_points = _snapshot_player_points(snapshot_payload)
+        snapshot_substitutions = _snapshot_substitutions(snapshot_payload)
+        substituted_in_ids = {
+            str(row["substitute_player_id"])
+            for row in snapshot_substitutions
+            if row.get("substitute_player_id") is not None
+        }
+        substituted_out_ids = {
+            str(row["starter_player_id"])
+            for row in snapshot_substitutions
+            if row.get("starter_player_id") is not None
+        }
         rows_by_team: dict[str, list[Mapping[str, object]]] = {team_id: [] for team_id in team_ids}
         for row in rows:
             rows_by_team.setdefault(str(row["draft_team_id"]), []).append(row)
@@ -286,6 +316,8 @@ class PostgreSQLTeamSelectionRepository(InMemoryTeamSelectionRepository):
                     slot=str(row["slot"]),
                     is_captain=bool(row["is_captain"]),
                     is_vice_captain=bool(row["is_vice_captain"]),
+                    is_substituted_in=player_id in substituted_in_ids,
+                    is_substituted_out=player_id in substituted_out_ids,
                 )
 
             players = [as_fixture_player(row) for row in team_rows]
@@ -739,6 +771,25 @@ def _snapshot_player_points(payload: object) -> dict[str, int]:
         except (TypeError, ValueError):
             continue
     return points
+
+
+def _snapshot_substitutions(payload: object) -> list[Mapping[str, object]]:
+    if isinstance(payload, str):
+        try:
+            payload = json.loads(payload)
+        except json.JSONDecodeError:
+            return []
+    if not isinstance(payload, Mapping):
+        return []
+    substitutions = payload.get("substitutions")
+    if not isinstance(substitutions, Mapping):
+        return []
+    rows: list[Mapping[str, object]] = []
+    for team_rows in substitutions.values():
+        if not isinstance(team_rows, list):
+            continue
+        rows.extend(row for row in team_rows if isinstance(row, Mapping))
+    return rows
 
 
 def _historical_player_points(

@@ -6,7 +6,13 @@ Define ordinary bench substitution rules, valid formation constraints, and expla
 
 ## Status
 
-Checkpoint 2 complete.
+Checkpoint 3 complete.
+
+Automatic substitutions are applied by the official FPL settlement job when a
+CDL gameweek is finished and its data is checked. The locked lineup remains the
+historical source of truth, while the frozen scoring snapshot records the
+effective replacements and the `lineup_substitutions` table stores the audit
+trail.
 
 ## Business Rules
 

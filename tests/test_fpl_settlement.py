@@ -14,6 +14,7 @@ from cdl_api.repositories.postgres_league_fixtures import (
     fixture_scoring_snapshots_table,
 )
 from cdl_api.repositories.postgres_team_selection import (
+    lineup_substitutions_table,
     team_selection_chips_table,
     team_selection_fixture_locks_table,
     team_selection_lineup_slots_table,
@@ -54,6 +55,9 @@ def _session_factory() -> sessionmaker[Session]:
                 text(f"CREATE TABLE {table_name} (id TEXT PRIMARY KEY, payload_json JSON NOT NULL)")
             )
         connection.execute(
+            text("CREATE TABLE fpl_players (id TEXT PRIMARY KEY, position_id TEXT NOT NULL)")
+        )
+        connection.execute(
             text(
                 "CREATE TABLE team_selection_lineup_slots ("
                 "id TEXT PRIMARY KEY, season_id TEXT NOT NULL, draft_team_id TEXT NOT NULL, "
@@ -81,6 +85,17 @@ def _session_factory() -> sessionmaker[Session]:
         )
         connection.execute(
             text(
+                "CREATE TABLE lineup_substitutions ("
+                "id TEXT PRIMARY KEY, season_id TEXT NOT NULL, draft_team_id TEXT NOT NULL, "
+                "gameweek INTEGER NOT NULL, fixture_id TEXT NOT NULL, snapshot_id TEXT NOT NULL, "
+                "starter_player_id TEXT NOT NULL, substitute_player_id TEXT NOT NULL, "
+                "starter_slot_order INTEGER NOT NULL, bench_order INTEGER NOT NULL, "
+                "reason TEXT NOT NULL, formation_preserved BOOLEAN NOT NULL, "
+                "created_at DATETIME NOT NULL)"
+            )
+        )
+        connection.execute(
+            text(
                 "CREATE TABLE draft_teams ("
                 "id TEXT PRIMARY KEY, league_id TEXT NOT NULL, name TEXT NOT NULL)"
             )
@@ -91,6 +106,35 @@ def _session_factory() -> sessionmaker[Session]:
                 "('team-home', :league, 'Home'), ('team-away', :league, 'Away')"
             ),
             {"league": LEAGUE_ID},
+        )
+        connection.execute(
+            text("INSERT INTO fpl_players (id, position_id) VALUES (:id, :position)"),
+            [
+                {
+                    "id": f"fpl-{player_id}",
+                    "position": (
+                        "GKP"
+                        if player_id in (1, 12)
+                        else "DEF"
+                        if player_id in (*range(2, 6), *range(13, 17))
+                        else "MID"
+                        if player_id in (*range(6, 10), *range(17, 21))
+                        else {
+                            23: "GKP",
+                            24: "DEF",
+                            25: "MID",
+                            26: "FWD",
+                            27: "DEF",
+                            28: "GKP",
+                            29: "DEF",
+                            30: "MID",
+                            31: "FWD",
+                            32: "DEF",
+                        }.get(player_id, "FWD")
+                    ),
+                }
+                for player_id in range(1, 33)
+            ],
         )
     return sessionmaker(bind=engine, class_=Session)
 
@@ -281,6 +325,7 @@ def test_settlement_locks_all_teams_marks_chips_used_and_freezes_results() -> No
             )
         ).scalar_one()
         assert snapshot_payload["epl_fixture_ids"] == ["epl-1"]
+        assert snapshot_payload["substitutions"] == {"team-home": [], "team-away": []}
         assert snapshot_payload["chips_played"] == {
             "team-home": ["Triple Captain"],
             "team-away": [],
@@ -295,3 +340,113 @@ def test_settlement_locks_all_teams_marks_chips_used_and_freezes_results() -> No
     second = FplSettlementService(sessions).settle()
     assert second.locked_teams == 0
     assert second.settled_fixtures == 0
+
+
+def test_final_team_scores_apply_automatic_substitutions() -> None:
+    sessions = _session_factory()
+    now = datetime.now(UTC)
+    lineup_rows = []
+    for team_id, starters, bench in (
+        ("team-home", range(1, 12), range(23, 28)),
+        ("team-away", range(12, 23), range(28, 33)),
+    ):
+        lineup_rows.extend(
+            {
+                "id": f"lineup-{team_id}-{player_id}",
+                "season_id": SEASON_ID,
+                "draft_team_id": team_id,
+                "player_id": f"fpl-{player_id}",
+                "gameweek": 1,
+                "slot": "starter",
+                "slot_order": slot_order,
+                "is_captain": False,
+                "is_vice_captain": False,
+                "locked_at": now,
+                "updated_at": now,
+            }
+            for slot_order, player_id in enumerate(starters, start=1)
+        )
+        lineup_rows.extend(
+            {
+                "id": f"lineup-{team_id}-{player_id}",
+                "season_id": SEASON_ID,
+                "draft_team_id": team_id,
+                "player_id": f"fpl-{player_id}",
+                "gameweek": 1,
+                "slot": "bench",
+                "slot_order": slot_order,
+                "is_captain": False,
+                "is_vice_captain": False,
+                "locked_at": now,
+                "updated_at": now,
+            }
+            for slot_order, player_id in enumerate(bench)
+        )
+    with sessions() as session:
+        session.execute(insert(team_selection_lineup_slots_table), lineup_rows)
+        session.commit()
+
+    player_points = {
+        str(player_id): (2 if player_id in (24, 25) else 1) for player_id in range(1, 33)
+    }
+    player_minutes = {str(player_id): 90 for player_id in range(1, 33)}
+    player_minutes.update({"2": 0, "10": 0, "23": 0})
+
+    with sessions() as session:
+        scores = FplSettlementService._team_scores(
+            session,
+            1,
+            ("team-home", "team-away"),
+            player_points,
+            player_minutes,
+            apply_substitutions=True,
+        )
+
+    assert scores is not None
+    assert scores[0:2] == (13, 11)
+    assert scores[4]["team-home"] == [
+        {
+            "starter_player_id": "fpl-2",
+            "substitute_player_id": "fpl-24",
+            "starter_slot_order": 2,
+            "bench_order": 1,
+            "reason": "starter_did_not_play",
+            "formation_preserved": True,
+        },
+        {
+            "starter_player_id": "fpl-10",
+            "substitute_player_id": "fpl-25",
+            "starter_slot_order": 10,
+            "bench_order": 2,
+            "reason": "starter_did_not_play",
+            "formation_preserved": True,
+        },
+    ]
+
+    with sessions() as session:
+        FplSettlementService._persist_substitutions(
+            session,
+            fixture_id="fixture-automatic-substitution",
+            gameweek=1,
+            substitutions=scores[4],
+            created_at=now,
+        )
+        session.commit()
+        FplSettlementService._persist_substitutions(
+            session,
+            fixture_id="fixture-automatic-substitution",
+            gameweek=1,
+            substitutions=scores[4],
+            created_at=now,
+        )
+        substitution_ids = (
+            session.execute(
+                select(lineup_substitutions_table.c.id).where(
+                    lineup_substitutions_table.c.fixture_id == "fixture-automatic-substitution"
+                )
+            )
+            .scalars()
+            .all()
+        )
+        assert len(substitution_ids) == 2
+        assert all(len(substitution_id) == 61 for substitution_id in substitution_ids)

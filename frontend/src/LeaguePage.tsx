@@ -1,4 +1,4 @@
-import { type CSSProperties, type ReactNode, type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type CSSProperties, type ReactNode, type RefObject, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   Bell,
   CalendarDays,
@@ -693,10 +693,10 @@ function GameweekCarousel({ expectedGameweeks, groups, isActive, onIndexChange, 
   }), [initialEmblaIndex]);
   const [gameweekViewportRef, gameweekApi] = useEmblaCarousel(gameweekOptions);
   const [selectedIndex, setSelectedIndex] = useState(initialIndex);
-  const fixtureRows = Math.max(...groups.map((group) => group.fixtures.length), 1);
-  const gameweekCardHeight = Math.max(10.5, 2.9 + fixtureRows * 4.95);
+  const [measuredCardHeight, setMeasuredCardHeight] = useState<number | null>(null);
+  const gameweekCarouselRef = useRef<HTMLElement | null>(null);
   const carouselStyle = {
-    '--league-gameweek-carousel-height': `${gameweekCardHeight}rem`,
+    '--league-gameweek-carousel-height': measuredCardHeight ? `${measuredCardHeight}px` : '10.5rem',
   } as CSSProperties;
   const indicatorCount = Math.max(expectedGameweeks, groups.length, 1);
   const selectedGroup = groups[selectedIndex];
@@ -733,10 +733,37 @@ function GameweekCarousel({ expectedGameweeks, groups, isActive, onIndexChange, 
     }
   }, [gameweekApi, groups.length, selectedGameweekIndex]);
 
+  useLayoutEffect(() => {
+    const carousel = gameweekCarouselRef.current;
+    if (!carousel) return undefined;
+
+    const measureCards = () => {
+      const cards = Array.from(carousel.querySelectorAll<HTMLElement>('.league-gameweek-section'));
+      const cardHeight = Math.max(...cards.map((card) => card.offsetHeight), 0);
+      if (!cardHeight) return;
+
+      const rootFontSize = Number.parseFloat(window.getComputedStyle(carousel).fontSize) || 16;
+      const minimumHeight = 10.5 * rootFontSize;
+      const nextHeight = Math.max(minimumHeight, cardHeight);
+      setMeasuredCardHeight((currentHeight) => currentHeight === nextHeight ? currentHeight : nextHeight);
+    };
+
+    measureCards();
+    if (typeof ResizeObserver === 'undefined') return undefined;
+
+    const observer = new ResizeObserver(measureCards);
+    carousel.querySelectorAll<HTMLElement>('.league-gameweek-section').forEach((card) => observer.observe(card));
+    return () => observer.disconnect();
+  }, [groups]);
+
+  useEffect(() => {
+    if (gameweekApi && measuredCardHeight !== null) gameweekApi.reInit();
+  }, [gameweekApi, measuredCardHeight]);
+
   if (groups.length === 0) return null;
 
   return (
-    <section aria-label={`Gameweeks in ${roundLabel}`} className="league-gameweek-carousel" style={carouselStyle}>
+    <section aria-label={`Gameweeks in ${roundLabel}`} className="league-gameweek-carousel" ref={gameweekCarouselRef} style={carouselStyle}>
       <div className="league-gameweek-carousel__header">
         <p className="eyebrow">Gameweeks</p>
         <nav aria-label={`Gameweek navigation for ${roundLabel}`} className="league-gameweek-carousel__dots">

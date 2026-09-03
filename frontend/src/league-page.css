@@ -1044,18 +1044,21 @@
 
 .league-team-mark {
   align-items: center;
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 1.95rem;
+  justify-content: center;
+  width: 1.95rem;
+}
+
+.league-team-mark.team-crest--fallback {
   background: var(--secondary);
   border: 1px solid var(--border);
   border-radius: 50%;
   color: var(--primary);
-  display: inline-flex;
-  flex: 0 0 auto;
   font-size: 0.59rem;
   font-weight: 850;
-  height: 1.95rem;
-  justify-content: center;
   letter-spacing: 0.02em;
-  width: 1.95rem;
 }
 
 .league-score {

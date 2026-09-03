@@ -19,6 +19,7 @@ import {
 
 import { Button } from './components/ui/button';
 import { Card } from './components/ui/card';
+import { TeamCrest } from './components/team/TeamCrest';
 import type { SessionState } from './contracts';
 import type { LeagueClient, LeagueFixture, LeagueTableRow } from './league-api';
 import { HttpLeagueClient } from './league-api';
@@ -279,7 +280,7 @@ function FixtureSpotlight({ context, fixture, formFixtures, gameweek, managerTea
       </div>
       <div className="manager-desk__fixture-spotlight-teams">
         <div className="manager-desk__fixture-spotlight-team manager-desk__fixture-spotlight-team--own">
-          <span className="manager-desk__fixture-badge">{getInitials(ownTeam?.name ?? managerTeam.name)}</span>
+          <TeamCrest className="manager-desk__fixture-badge" team={ownTeam ?? managerTeam} />
           <strong>{ownTeam?.name ?? 'Your team'}</strong>
           <small>You</small>
         </div>
@@ -295,7 +296,7 @@ function FixtureSpotlight({ context, fixture, formFixtures, gameweek, managerTea
           )}
         </div>
         <div className="manager-desk__fixture-spotlight-team manager-desk__fixture-spotlight-team--opponent">
-          <span className="manager-desk__fixture-badge manager-desk__fixture-badge--muted">{getInitials(opponent?.name ?? 'Opponent')}</span>
+          <TeamCrest className="manager-desk__fixture-badge manager-desk__fixture-badge--muted" team={opponent ?? { name: 'Opponent' }} />
           <strong>{opponent?.name ?? 'Opponent'}</strong>
           <small>Opponent</small>
         </div>

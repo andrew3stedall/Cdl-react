@@ -283,7 +283,7 @@
   border-radius: var(--radius);
   gap: 0.55rem;
   overflow: hidden;
-  padding: 0.7rem 0.7rem 0.75rem;
+  padding: 0.7rem 0.7rem 0.95rem;
 }
 
 .league-round-carousel__slide.is-selected .league-fixture-round {

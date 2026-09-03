@@ -425,21 +425,23 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  min-height: 100%;
+  /* Embla measures this element as its viewport; slides may overflow it. */
+  height: 100%;
+  min-height: 0;
   padding-block: var(--league-gameweek-carousel-peek);
   row-gap: var(--league-gameweek-carousel-slide-gap);
 }
 
 .league-gameweek-carousel__slide {
-  flex: 0 0 auto;
-  height: auto;
+  flex: 0 0 var(--league-gameweek-carousel-height, 29rem);
+  height: var(--league-gameweek-carousel-height, 29rem);
   min-height: 0;
   min-width: 0;
   padding: 0;
 }
 
 .league-gameweek-slide__content {
-  height: auto;
+  height: 100%;
   min-width: 0;
   transform-origin: center top;
   will-change: transform, opacity;
@@ -481,10 +483,10 @@
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  height: auto;
   min-width: 0;
   overflow: hidden;
   padding: 0.7rem 0.75rem 0;
+  height: 100%;
 }
 
 .league-gameweek-section__header {

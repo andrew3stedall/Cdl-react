@@ -252,6 +252,12 @@ function FixtureListPlayer({
   const fixtures = fixtureCardFixtures(player);
   const firstFixture = fixtures[0] ?? null;
   const metric = showPoints ? 'points' : showForm ? 'form' : 'pending';
+  const substitutionStateClass = player.isSubstitutedOut ? ' fixture-squad-list__player--substituted-out' : '';
+  const substitutionStateLabel = player.isSubstitutedIn
+    ? ' · automatic substitute'
+    : player.isSubstitutedOut
+      ? ' · replaced by automatic substitute'
+      : '';
   const content = (
     <>
       <span className="fixture-squad-list__shirt">
@@ -291,7 +297,7 @@ function FixtureListPlayer({
 
   if (!onPlayerClick) {
     return (
-      <div className={`fixture-squad-list__player position-${fixturePosition(player.position).toLowerCase()}`} data-player-id={player.id}>
+      <div className={`fixture-squad-list__player${substitutionStateClass} position-${fixturePosition(player.position).toLowerCase()}`} data-player-id={player.id}>
         {content}
       </div>
     );
@@ -299,8 +305,8 @@ function FixtureListPlayer({
 
   return (
     <button
-      aria-label={`View ${player.displayName} ${playerInteraction === 'points' ? 'points breakdown' : 'player profile'}`}
-      className={`fixture-squad-list__player fixture-squad-list__player--button position-${fixturePosition(player.position).toLowerCase()}`}
+      aria-label={`View ${player.displayName} ${playerInteraction === 'points' ? 'points breakdown' : 'player profile'}${substitutionStateLabel}`}
+      className={`fixture-squad-list__player fixture-squad-list__player--button${substitutionStateClass} position-${fixturePosition(player.position).toLowerCase()}`}
       data-player-id={player.id}
       onClick={() => onPlayerClick(player)}
       type="button"

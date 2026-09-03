@@ -153,6 +153,11 @@
 .fixture-squad-list__player.position-mid { --fixture-list-position: var(--cdl-position-mid, #397d9b); }
 .fixture-squad-list__player.position-fwd { --fixture-list-position: var(--cdl-position-fwd, #a2784c); }
 
+.fixture-squad-list__player--substituted-out {
+  filter: grayscale(1);
+  opacity: 0.48;
+}
+
 .fixture-squad-list__player--button {
   cursor: pointer;
   font: inherit;
@@ -514,6 +519,11 @@
   border-color: var(--border);
   color: var(--muted-foreground);
   content: 'OUT';
+}
+
+.fixture-squad-player-card--substituted-out {
+  filter: grayscale(1);
+  opacity: 0.48;
 }
 
 .fixture-squad-rosters {

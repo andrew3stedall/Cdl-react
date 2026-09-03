@@ -76,6 +76,7 @@ function squads(): FixtureSquad[] {
 async function renderComparison(
   gameweekStatus: 'past' | 'current' | 'future' = 'past',
   onPlayerClick?: (player: FixtureSquadPlayer) => void,
+  fixtureSquads: FixtureSquad[] = squads(),
 ) {
   const container = document.createElement('div');
   document.body.append(container);
@@ -88,7 +89,7 @@ async function renderComparison(
         now={Date.parse('2026-08-31T10:00:00Z')}
         onPlayerClick={onPlayerClick}
         playerInteraction={gameweekStatus === 'future' ? 'profile' : 'points'}
-        squads={squads()}
+        squads={fixtureSquads}
       />,
     );
   });
@@ -131,6 +132,32 @@ describe('FixtureSquadComparison', () => {
     expect(container.textContent).toContain('Beta Forward');
     expect(container.querySelector('[data-player-id="alpha-gk"] [data-fixture-list-metric="points"]')?.textContent).toContain('8');
     expect(window.localStorage.getItem('cdl:fixture-review-view')).toBe('list');
+
+    await act(async () => root.unmount());
+  });
+
+  test('keeps substitution players in their original slots while dimming only the replaced player', async () => {
+    const fixtureSquads = squads();
+    fixtureSquads[0].starters.find((entry) => entry.id === 'alpha-gk')!.isSubstitutedOut = true;
+    fixtureSquads[0].bench[0].isSubstitutedIn = true;
+
+    const { container, root } = await renderComparison('past', undefined, fixtureSquads);
+    expect(container.querySelector('[data-player-id="alpha-gk"] .fixture-squad-player-card--substituted-out')).not.toBeNull();
+    expect(container.querySelector('[data-player-id="alpha-def"] .fixture-squad-player-card--substituted-in')).not.toBeNull();
+
+    await act(async () => container.querySelector<HTMLButtonElement>('button[aria-label="View as list"]')?.click());
+
+    const replacedRow = container.querySelector('[data-player-id="alpha-gk"]');
+    const substituteRow = container.querySelector('[data-player-id="alpha-def"]');
+
+    expect(replacedRow?.classList.contains('fixture-squad-list__player--substituted-out')).toBe(true);
+    expect(substituteRow?.classList.contains('fixture-squad-list__player--substituted-out')).toBe(false);
+    expect(replacedRow?.textContent).toContain('Alpha Keeper');
+    expect(replacedRow?.textContent).toContain('8');
+    expect(substituteRow?.textContent).toContain('Alpha Defender');
+    expect(substituteRow?.textContent).toContain('4');
+    expect(container.querySelector('.fixture-squad-list__substitution--in')?.textContent).toBe('IN');
+    expect(container.querySelector('.fixture-squad-list__substitution--out')?.textContent).toBe('OUT');
 
     await act(async () => root.unmount());
   });

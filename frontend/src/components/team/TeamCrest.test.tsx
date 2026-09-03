@@ -11,13 +11,14 @@ describe('teamCrestAsset', () => {
     expect(teamCrestAsset({ id: 'team-wilde-boars', name: 'Wilde Boars' })).toBe('wilde-boars');
     expect(teamCrestAsset({ id: 'team-exeter-gently', name: 'Exeter Gently' })).toBe('exeter-gently');
     expect(teamCrestAsset({ id: 'team-dicks-dribbling-xi', name: 'Dicks Dribbling XI' })).toBe('dicks-dribbling-xi');
+    expect(teamCrestAsset({ id: 'team-sporting-lesbians', name: 'Sporting Lesbians' })).toBe('sporting-lesbians');
   });
 
   test('also resolves preview team ids by their stable team name', () => {
     expect(teamCrestAsset({ id: 'team-1', name: 'Exeter Gently' })).toBe('exeter-gently');
   });
 
-  test('returns no crest for the team without a supplied screenshot', () => {
-    expect(teamCrestAsset({ id: 'team-sporting-lesbians', name: 'Sporting Lesbians' })).toBeNull();
+  test('resolves a crest by name when a stable id is unavailable', () => {
+    expect(teamCrestAsset({ name: 'Sporting Lesbians' })).toBe('sporting-lesbians');
   });
 });

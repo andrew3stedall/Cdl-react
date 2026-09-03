@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1536 1281" role="img" aria-labelledby="title">
+  <title id="title">Sporting Lesbians crest</title>
+  <defs>
+    <filter id="light-crest" color-interpolation-filters="sRGB">
+      <feColorMatrix type="matrix" values="0.2126 0.7152 0.0722 0 0 0.2126 0.7152 0.0722 0 0 0.2126 0.7152 0.0722 0 0 0.2126 0.7152 0.0722 0 0" />
+    </filter>
+  </defs>
+  <image filter="url(#light-crest)" height="1281" preserveAspectRatio="none" width="1536" xlink:href="sporting-lesbians-source.jpg" />
+</svg>

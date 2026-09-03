@@ -1,0 +1,27 @@
+.team-crest {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 1.95rem;
+  justify-content: center;
+  width: 1.95rem;
+}
+
+.team-crest img {
+  display: block;
+  height: 100%;
+  object-fit: contain;
+  width: 100%;
+}
+
+.team-crest__on-dark {
+  display: none;
+}
+
+:root[data-theme-mode='dark'] .team-crest__on-light {
+  display: none;
+}
+
+:root[data-theme-mode='dark'] .team-crest__on-dark {
+  display: block;
+}

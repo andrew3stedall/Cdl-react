@@ -337,6 +337,17 @@
   color: var(--foreground);
 }
 
+.manager-desk__fixture-badge:not(.team-crest--fallback) {
+  background: transparent;
+  border-color: transparent;
+}
+
+.manager-desk__fixture-badge:not(.team-crest--fallback) img {
+  height: 100%;
+  object-fit: contain;
+  width: 100%;
+}
+
 .manager-desk__fixture-vs {
   color: var(--muted-foreground);
   font-size: 0.75rem;

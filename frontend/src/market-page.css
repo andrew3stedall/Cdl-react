@@ -85,6 +85,11 @@
   width: 2.55rem;
 }
 
+.market-page__context .market-page__team-mark:not(.team-crest--fallback) {
+  background: transparent;
+  border-color: transparent;
+}
+
 .market-page__status,
 .market-page__error {
   align-items: center;

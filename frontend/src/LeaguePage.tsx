@@ -19,6 +19,7 @@ import { Card } from './components/ui/card';
 import { FixtureSquadComparison } from './components/fixture/FixtureSquadComparison';
 import type { FixtureGameweekStatus } from './components/fixture/FixtureSquadComparison';
 import { PlayerChartDetailDialog } from './components/player/PlayerChartDetailDialog';
+import { TeamCrest } from './components/team/TeamCrest';
 import type { AttackDirection } from './contracts';
 import {
   formDetailSections,
@@ -925,11 +926,11 @@ function FixtureListRow({ fixture, onOpen }: { fixture: LeagueFixture; onOpen: (
     <button aria-label={`${action} for ${fixtureParticipantName(fixture.homeTeam)} versus ${fixtureParticipantName(fixture.awayTeam)}`} className="league-fixture-row" onClick={() => onOpen(fixture)} type="button">
       <div className="league-fixture-row__teams">
         <div className="league-fixture-row__team">
-          <div className="league-fixture-row__team-name"><span className="league-team-mark">{teamInitials(fixture.homeTeam)}</span><strong>{fixtureParticipantName(fixture.homeTeam)}</strong></div>
+          <div className="league-fixture-row__team-name"><TeamCrest className="league-team-mark" team={fixture.homeTeam} /><strong>{fixtureParticipantName(fixture.homeTeam)}</strong></div>
           <strong className="league-fixture-row__team-score">{fixture.score.homeScore ?? '—'}</strong>
         </div>
         <div className="league-fixture-row__team">
-          <div className="league-fixture-row__team-name"><span className="league-team-mark">{teamInitials(fixture.awayTeam)}</span><strong>{fixtureParticipantName(fixture.awayTeam)}</strong></div>
+          <div className="league-fixture-row__team-name"><TeamCrest className="league-team-mark" team={fixture.awayTeam} /><strong>{fixtureParticipantName(fixture.awayTeam)}</strong></div>
           <strong className="league-fixture-row__team-score">{fixture.score.awayScore ?? '—'}</strong>
         </div>
       </div>
@@ -1045,10 +1046,6 @@ function sortFixtures(fixtures: LeagueFixture[]): LeagueFixture[] {
 
 function tableSourceLabel(source: string): string {
   return source === 'service-calculated' ? 'Calculated snapshot' : 'Persisted snapshot';
-}
-
-function teamInitials(team: LeagueFixture['homeTeam']): string {
-  return fixtureParticipantName(team).slice(0, 3).toUpperCase();
 }
 
 function fixtureParticipantName(team: LeagueFixture['homeTeam']): string {

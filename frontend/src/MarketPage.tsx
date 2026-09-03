@@ -16,6 +16,7 @@ import {
 
 import { Button } from './components/ui/button';
 import { FormDots, PlayerCard, type PlayerCardPlayer } from './components/player/PlayerCard';
+import { TeamCrest } from './components/team/TeamCrest';
 import type { ThemePreset } from './contracts';
 import { availabilityIssueLabel, hasAvailabilityIssue } from './player-availability';
 import type { SquadApiPlayer } from './squad-api';
@@ -321,7 +322,7 @@ export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps)
           <p className="market-page__intro">Search the player pool, weigh the evidence, and keep your next squad decision focused.</p>
         </div>
         <div aria-label="Market context" className="market-page__context">
-          <span aria-hidden="true" className="market-page__team-mark">{initials(managerTeam)}</span>
+          <TeamCrest className="market-page__team-mark" team={{ name: managerTeam }} />
           <div><strong>{managerTeam}</strong><span>{gameweek}</span></div>
         </div>
       </header>
@@ -705,10 +706,6 @@ function positionLabel(position: string): string {
 function normalizePosition(position: string): string {
   const normalized = position.trim().toUpperCase();
   return normalized === 'GK' ? 'GKP' : normalized;
-}
-
-function initials(name: string): string {
-  return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'CD';
 }
 
 function numberOrNull(value: number | null | undefined): number | null {

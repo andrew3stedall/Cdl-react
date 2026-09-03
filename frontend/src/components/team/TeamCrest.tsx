@@ -13,6 +13,7 @@ export type TeamCrestAsset =
   | 'exeter-gently'
   | 'koden-all-stars'
   | 'stan-still-sells-tik'
+  | 'sporting-lesbians'
   | 'wilde-boars';
 
 const teamCrestAssets: Record<string, TeamCrestAsset> = {
@@ -22,6 +23,7 @@ const teamCrestAssets: Record<string, TeamCrestAsset> = {
   'team-exeter-gently': 'exeter-gently',
   'team-koden-all-stars': 'koden-all-stars',
   'team-stan-still-sells-tik': 'stan-still-sells-tik',
+  'team-sporting-lesbians': 'sporting-lesbians',
   'team-wilde-boars': 'wilde-boars',
 };
 
@@ -32,6 +34,7 @@ const teamCrestAssetsByName: Record<string, TeamCrestAsset> = {
   'exeter gently': 'exeter-gently',
   'koden all stars': 'koden-all-stars',
   'stan still sells tik': 'stan-still-sells-tik',
+  'sporting lesbians': 'sporting-lesbians',
   'wilde boars': 'wilde-boars',
 };
 

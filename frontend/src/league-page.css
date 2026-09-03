@@ -1046,9 +1046,9 @@
   align-items: center;
   display: inline-flex;
   flex: 0 0 auto;
-  height: 1.95rem;
+  height: 2.25rem;
   justify-content: center;
-  width: 1.95rem;
+  width: 2.25rem;
 }
 
 .league-team-mark.team-crest--fallback {
@@ -1209,8 +1209,8 @@
 }
 
 .league-fixture-row__team .league-team-mark {
-  height: 1.75rem;
-  width: 1.75rem;
+  height: 2rem;
+  width: 2rem;
 }
 
 .league-fixture-row__team-name strong {
@@ -2012,8 +2012,8 @@
   }
 
   .league-team-mark {
-    height: 1.8rem;
-    width: 1.8rem;
+    height: 2.05rem;
+    width: 2.05rem;
   }
 
   .league-fixture-card__footer {

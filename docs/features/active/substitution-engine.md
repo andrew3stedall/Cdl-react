@@ -55,6 +55,8 @@ commissioner_override
 - Fixture detail substitution explanation.
 - Team selection guidance showing bench order.
 - Visual indication when bench player entered scoring lineup.
+- Keep every player in their locked starter, bench, or reserve slot in fixture views; update displayed points from the effective scoring result.
+- Render an applied substitute normally after entering, while a replaced starter is greyscaled and shown at reduced opacity.
 
 ## Data Access Requirements
 

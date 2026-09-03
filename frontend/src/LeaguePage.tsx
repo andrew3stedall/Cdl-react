@@ -693,10 +693,12 @@ function GameweekCarousel({ expectedGameweeks, groups, isActive, onIndexChange, 
   }), [initialEmblaIndex]);
   const [gameweekViewportRef, gameweekApi] = useEmblaCarousel(gameweekOptions);
   const [selectedIndex, setSelectedIndex] = useState(initialIndex);
+  const fixtureRows = Math.max(...groups.map((group) => group.fixtures.length), 1);
+  const gameweekCardHeight = Math.max(10.5, 2.9 + fixtureRows * 4.95);
   const [measuredCardHeight, setMeasuredCardHeight] = useState<number | null>(null);
   const gameweekCarouselRef = useRef<HTMLElement | null>(null);
   const carouselStyle = {
-    '--league-gameweek-carousel-height': measuredCardHeight ? `${measuredCardHeight}px` : '10.5rem',
+    '--league-gameweek-carousel-height': measuredCardHeight ? `${measuredCardHeight}px` : `${gameweekCardHeight}rem`,
   } as CSSProperties;
   const indicatorCount = Math.max(expectedGameweeks, groups.length, 1);
   const selectedGroup = groups[selectedIndex];
@@ -739,25 +741,34 @@ function GameweekCarousel({ expectedGameweeks, groups, isActive, onIndexChange, 
 
     const measureCards = () => {
       const cards = Array.from(carousel.querySelectorAll<HTMLElement>('.league-gameweek-section'));
-      const cardHeight = Math.max(...cards.map((card) => card.offsetHeight), 0);
-      if (!cardHeight) return;
-
       const rootFontSize = Number.parseFloat(window.getComputedStyle(carousel).fontSize) || 16;
-      const minimumHeight = 10.5 * rootFontSize;
-      const nextHeight = Math.max(minimumHeight, cardHeight);
-      setMeasuredCardHeight((currentHeight) => currentHeight === nextHeight ? currentHeight : nextHeight);
+      const fallbackHeight = gameweekCardHeight * rootFontSize;
+      const requiredHeight = Math.max(...cards.map((card) => {
+        const styles = window.getComputedStyle(card);
+        const verticalPadding = Number.parseFloat(styles.paddingTop) + Number.parseFloat(styles.paddingBottom);
+        return card.scrollHeight - verticalPadding;
+      }), fallbackHeight);
+
+      setMeasuredCardHeight((currentHeight) => {
+        if (requiredHeight <= fallbackHeight + 1) return currentHeight === null ? currentHeight : null;
+        const nextHeight = Math.ceil(requiredHeight);
+        return currentHeight === nextHeight ? currentHeight : nextHeight;
+      });
     };
 
     measureCards();
     if (typeof ResizeObserver === 'undefined') return undefined;
 
     const observer = new ResizeObserver(measureCards);
-    carousel.querySelectorAll<HTMLElement>('.league-gameweek-section').forEach((card) => observer.observe(card));
+    carousel.querySelectorAll<HTMLElement>('.league-fixture-list').forEach((list) => observer.observe(list));
     return () => observer.disconnect();
-  }, [groups]);
+  }, [gameweekCardHeight, groups]);
 
   useEffect(() => {
-    if (gameweekApi && measuredCardHeight !== null) gameweekApi.reInit();
+    if (!gameweekApi || measuredCardHeight === null) return;
+    const selectedSnap = gameweekApi.selectedScrollSnap();
+    gameweekApi.reInit();
+    if (gameweekApi.selectedScrollSnap() !== selectedSnap) gameweekApi.scrollTo(selectedSnap, true);
   }, [gameweekApi, measuredCardHeight]);
 
   if (groups.length === 0) return null;

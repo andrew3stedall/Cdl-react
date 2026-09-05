@@ -2,6 +2,7 @@ import { type HTMLAttributes } from 'react';
 
 import { officialFplShirtUrl } from '../../fpl-shirt-assets';
 import './player-card.css';
+import './player-card-presentation.css';
 
 export interface PlayerCardFixture {
   label: string;

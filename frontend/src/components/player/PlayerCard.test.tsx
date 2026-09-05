@@ -100,7 +100,7 @@ describe('PlayerCard', () => {
     expect(opponents[1]?.className).toContain('player-card__opponents--single');
     expect(opponents[1]?.getAttribute('data-fixture-count')).toBe('1');
   });
-});
+
   test('shows a points multiplier only when it is greater than one', () => {
     const container = document.createElement('div');
     document.body.appendChild(container);
@@ -121,3 +121,27 @@ describe('PlayerCard', () => {
     expect(container.querySelector('.player-card__points')?.getAttribute('aria-label')).toBe('8 points multiplied by 2');
   });
 
+  test('keeps ordinary pitch shirts full while cropping points cards unless explicitly overridden', () => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    mountedRoots.push({ container, root });
+
+    act(() => {
+      root.render(
+        <>
+          <PlayerCard layout="pitch" player={{ displayName: 'Squad player', team: 'ARS' }} />
+          <PlayerCard layout="pitch" player={{ displayName: 'Fixture player', team: 'ARS' }} points={6} />
+          <PlayerCard cropShirt layout="pitch" player={{ displayName: 'Forced crop', team: 'ARS' }} />
+          <PlayerCard cropShirt={false} layout="pitch" player={{ displayName: 'Forced full', team: 'ARS' }} points={6} />
+        </>,
+      );
+    });
+
+    const cards = container.querySelectorAll('.player-card--pitch');
+    expect(cards[0]?.className).toContain('player-card--shirt-full');
+    expect(cards[1]?.className).toContain('player-card--shirt-cropped');
+    expect(cards[2]?.className).toContain('player-card--shirt-cropped');
+    expect(cards[3]?.className).toContain('player-card--shirt-full');
+  });
+});

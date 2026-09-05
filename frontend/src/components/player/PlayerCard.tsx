@@ -2,6 +2,7 @@ import { type HTMLAttributes } from 'react';
 
 import { officialFplShirtUrl } from '../../fpl-shirt-assets';
 import './player-card.css';
+import './player-card-presentation.css';
 
 export interface PlayerCardFixture {
   label: string;
@@ -29,6 +30,7 @@ export interface PlayerCardProps extends Omit<HTMLAttributes<HTMLSpanElement>, '
   layout?: PlayerCardLayout;
   size?: PlayerCardSize;
   formPosition?: PlayerCardFormPosition;
+  cropShirt?: boolean;
   points?: number | null;
   pointsMultiplier?: number | null;
   showOpponent?: boolean;
@@ -39,6 +41,7 @@ export interface PlayerCardProps extends Omit<HTMLAttributes<HTMLSpanElement>, '
 export function PlayerCard({
   ariaLabel,
   className = '',
+  cropShirt,
   formPosition = 'hidden',
   layout = 'list',
   player,
@@ -50,12 +53,15 @@ export function PlayerCard({
   ...rest
 }: PlayerCardProps) {
   const formClass = `form-band-${formBand(player.form)}`;
+  const hasPoints = points !== null && points !== undefined;
+  const shouldCropShirt = cropShirt ?? (layout === 'pitch' ? hasPoints : true);
   const classes = [
     'player-card',
     `player-card--${layout}`,
     `player-card--size-${size}`,
     `player-card--form-${formPosition}`,
-    points !== null && points !== undefined ? 'player-card--has-points' : '',
+    shouldCropShirt ? 'player-card--shirt-cropped' : 'player-card--shirt-full',
+    hasPoints ? 'player-card--has-points' : '',
     formClass,
     className,
   ].filter(Boolean).join(' ');

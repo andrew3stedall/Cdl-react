@@ -1,0 +1,17 @@
+.player-card__points-placeholder {
+  color: var(--primary);
+  font-size: clamp(0.52rem, 1.45vw, 0.64rem);
+  font-weight: 800;
+  left: 0;
+  line-height: 1;
+  max-width: none;
+  overflow: hidden;
+  position: absolute;
+  right: 0;
+  text-align: center;
+  text-overflow: ellipsis;
+  top: 52%;
+  transform: translateY(-50%);
+  white-space: nowrap;
+  z-index: 2;
+}

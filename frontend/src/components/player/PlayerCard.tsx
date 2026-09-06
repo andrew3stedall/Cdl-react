@@ -84,7 +84,7 @@ export function PlayerCard({
         showOpponent={showOpponent}
         showPositionMarker={showPositionMarker}
       />
-      {formPosition !== 'hidden' ? <FormDots className="player-card__form" value={player.form} /> : null}
+      {formPosition !== 'hidden' && !hasPointsPlaceholder ? <FormDots className="player-card__form" value={player.form} /> : null}
     </span>
   );
 }

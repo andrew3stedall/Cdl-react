@@ -789,7 +789,11 @@
 
 @media (max-width: 700px) {
   .manager-desk {
-    padding: 1rem;
+    border: 0;
+    border-radius: 0;
+    gap: 0.72rem;
+    min-height: 100dvh;
+    padding: 0.75rem 0.72rem 5rem;
   }
 
   .manager-desk__stats {
@@ -1214,4 +1218,17 @@
   .manager-desk__fixture-form-score-list { gap: 0.2rem; }
   .manager-desk__form-score > strong { min-width: 1.8rem; }
   .manager-desk__fixture-row-team { gap: 0.4rem; }
+}
+
+
+@media (max-width: 780px) {
+  .shell-main:has(.manager-desk) {
+    background: var(--background);
+  }
+
+  .shell-main:has(.manager-desk) > .shell-content {
+    background: var(--background);
+    max-width: none;
+    padding: 0 0 calc(2rem + var(--cdl-mobile-navigation-clearance));
+  }
 }

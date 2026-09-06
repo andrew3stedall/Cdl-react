@@ -9,6 +9,10 @@ from cdl_api.repositories.fdr_custom_palettes import (
     PostgreSQLFdrCustomPaletteRepository,
 )
 from cdl_api.repositories.league_repository import LeagueRepository
+from cdl_api.repositories.live_league import (
+    LiveAwarePostgreSQLLeagueRepository,
+    LiveAwarePostgreSQLTeamSelectionRepository,
+)
 from cdl_api.repositories.passkeys import (
     InMemoryAuthChallengeRepository,
     InMemoryPasskeyRepository,
@@ -21,16 +25,12 @@ from cdl_api.repositories.postgres_auth import (
     PostgreSQLSessionRepository,
     PostgreSQLUserRepository,
 )
-from cdl_api.repositories.postgres_league_fixtures import PostgreSQLLeagueRepository
 from cdl_api.repositories.postgres_passkeys import (
     PostgreSQLAuthChallengeRepository,
     PostgreSQLPasskeyRepository,
 )
 from cdl_api.repositories.postgres_preferences import PostgreSQLUserPreferenceRepository
 from cdl_api.repositories.postgres_squad_repository import PostgreSQLSquadRepository
-from cdl_api.repositories.postgres_team_selection import (
-    PostgreSQLTeamSelectionRepository,
-)
 from cdl_api.repositories.preferences import InMemoryUserPreferenceRepository
 from cdl_api.repositories.squad import InMemorySquadRepository
 from cdl_api.repositories.team_selection import InMemoryTeamSelectionRepository
@@ -77,7 +77,7 @@ def build_repositories(settings: Settings) -> RepositoryBundle:
         session_factory = build_session_factory(settings)
         users = PostgreSQLUserRepository(session_factory)
         squad = PostgreSQLSquadRepository(session_factory)
-        league = PostgreSQLLeagueRepository(session_factory)
+        league = LiveAwarePostgreSQLLeagueRepository(session_factory)
         return RepositoryBundle(
             users=users,
             sessions=PostgreSQLSessionRepository(session_factory),
@@ -85,7 +85,7 @@ def build_repositories(settings: Settings) -> RepositoryBundle:
             fdr_custom_palettes=PostgreSQLFdrCustomPaletteRepository(session_factory),
             player_colour_palettes=PostgreSQLPlayerColourPaletteRepository(session_factory),
             squad=squad,
-            team_selection=PostgreSQLTeamSelectionRepository(session_factory),
+            team_selection=LiveAwarePostgreSQLTeamSelectionRepository(session_factory),
             league=league,
             passkeys=PostgreSQLPasskeyRepository(session_factory),
             auth_challenges=PostgreSQLAuthChallengeRepository(session_factory),

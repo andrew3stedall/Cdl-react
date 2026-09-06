@@ -247,11 +247,12 @@ function FixtureListPlayer({
   playerInteraction: FixturePlayerInteraction;
   slotLabel?: string;
 }) {
-  const showPoints = shouldShowFixturePoints(gameweekStatus, player, now);
+  const pointsPlaceholder = fixturePointsPlaceholder(gameweekStatus, player, now);
+  const showPoints = shouldShowFixturePoints(gameweekStatus, player, now) && pointsPlaceholder === null;
   const showForm = gameweekStatus === 'future';
   const fixtures = fixtureCardFixtures(player);
   const firstFixture = fixtures[0] ?? null;
-  const metric = showPoints ? 'points' : showForm ? 'form' : 'pending';
+  const metric = showPoints || pointsPlaceholder !== null ? 'points' : showForm ? 'form' : 'pending';
   const substitutionStateClass = player.isSubstitutedOut ? ' fixture-squad-list__player--substituted-out' : '';
   const substitutionStateLabel = player.isSubstitutedIn
     ? ' · automatic substitute'
@@ -283,14 +284,17 @@ function FixtureListPlayer({
             <strong>{player.points ?? 0}</strong>
             <small>pts</small>
           </>
+        ) : pointsPlaceholder !== null ? (
+          <>
+            <strong aria-label={fixturePointsPlaceholderLabel(pointsPlaceholder)}>{pointsPlaceholder}</strong>
+            <small>pts</small>
+          </>
         ) : showForm ? (
           <>
             <FormDots value={player.form} />
             <small>form</small>
           </>
-        ) : (
-          <span aria-label="Fixture not started">—</span>
-        )}
+        ) : null}
       </span>
     </>
   );
@@ -471,16 +475,22 @@ export function sortFixtureBench(players: FixtureSquadPlayer[]): FixtureSquadPla
 
 function FixturePitchPlayer({ gameweekStatus, now, onPlayerClick, player, playerInteraction }: { gameweekStatus: FixtureGameweekStatus; now?: number; onPlayerClick?: (player: FixtureSquadPlayer) => void; player: FixtureSquadPlayer; playerInteraction: FixturePlayerInteraction }) {
   const shirtTeam = player.club?.shortName ?? player.club?.name ?? 'unknown';
-  const showPoints = shouldShowFixturePoints(gameweekStatus, player, now);
+  const pointsPlaceholder = fixturePointsPlaceholder(gameweekStatus, player, now);
+  const showPoints = shouldShowFixturePoints(gameweekStatus, player, now) && pointsPlaceholder === null;
   const showForm = gameweekStatus === 'future';
-  const token = <FixturePlayerToken player={player} shirtTeam={shirtTeam} showForm={showForm} showPoints={showPoints} size="md" />;
+  const token = <FixturePlayerToken player={player} pointsPlaceholder={pointsPlaceholder} shirtTeam={shirtTeam} showForm={showForm} showPoints={showPoints} size="md" />;
+  const pointsTitle = pointsPlaceholder === '…'
+    ? 'points pending'
+    : pointsPlaceholder === '-'
+      ? 'did not play'
+      : `${player.points} pts`;
 
   return (
     <div
       className={`squad-page__pitch-player fixture-squad-pitch__player position-${fixturePosition(player.position).toLowerCase()} form-band-${formBand(player.form)}`}
       data-player-id={player.id}
       data-points-visible={showPoints ? 'true' : 'false'}
-      title={`${player.displayName} · ${player.points} pts`}
+      title={`${player.displayName} · ${pointsTitle}`}
     >
       {onPlayerClick ? <button aria-label={`View ${player.displayName} ${playerInteraction === 'points' ? 'points breakdown' : 'player profile'}`} className="fixture-squad-player-button" onClick={() => onPlayerClick(player)} type="button">{token}</button> : token}
     </div>
@@ -489,29 +499,41 @@ function FixturePitchPlayer({ gameweekStatus, now, onPlayerClick, player, player
 
 function FixturePlayerToken({
   player,
+  pointsPlaceholder,
   shirtTeam,
   showForm,
   showPoints,
   size,
 }: {
   player: FixtureSquadPlayer;
+  pointsPlaceholder: string | null;
   shirtTeam: string;
   showForm: boolean;
   showPoints: boolean;
   size: 'sm' | 'md';
 }) {
-  const indicatorValue = showPoints ? player.points : player.form;
-  const indicatorType = showPoints ? 'points' : showForm ? 'form' : undefined;
+  const indicatorValue = showPoints ? player.points : showForm ? player.form : null;
+  const indicatorType = showPoints
+    ? 'points'
+    : pointsPlaceholder === '…'
+      ? 'pending'
+      : pointsPlaceholder === '-'
+        ? 'did-not-play'
+        : showForm
+          ? 'form'
+          : undefined;
   return (
     <PlayerCard
       ariaLabel={`${player.displayName}${player.isSubstitutedIn ? ' · automatic substitute' : player.isSubstitutedOut ? ' · replaced by automatic substitute' : ''}`}
       className={player.isSubstitutedIn ? 'fixture-squad-player-card--substituted-in' : player.isSubstitutedOut ? 'fixture-squad-player-card--substituted-out' : ''}
       data-fixture-metric={indicatorType}
-      formPosition={showForm || showPoints ? 'below' : 'hidden'}
+      formPosition={showForm || showPoints || pointsPlaceholder !== null ? 'below' : 'hidden'}
       layout="pitch"
       player={toFixtureCardPlayer(player, shirtTeam, indicatorValue)}
       points={showPoints ? player.points : null}
       pointsMultiplier={showPoints ? player.pointsMultiplier : null}
+      pointsPlaceholder={pointsPlaceholder}
+      pointsPlaceholderLabel={pointsPlaceholder === null ? undefined : fixturePointsPlaceholderLabel(pointsPlaceholder)}
       showPositionMarker={false}
       size={size}
     />
@@ -519,11 +541,17 @@ function FixturePlayerToken({
 }
 
 function FixtureRosterPlayer({ gameweekStatus, now, onPlayerClick, player, playerInteraction }: { gameweekStatus: FixtureGameweekStatus; now?: number; onPlayerClick?: (player: FixtureSquadPlayer) => void; player: FixtureSquadPlayer; playerInteraction: FixturePlayerInteraction }) {
-  const showPoints = shouldShowFixturePoints(gameweekStatus, player, now);
+  const pointsPlaceholder = fixturePointsPlaceholder(gameweekStatus, player, now);
+  const showPoints = shouldShowFixturePoints(gameweekStatus, player, now) && pointsPlaceholder === null;
   const showForm = gameweekStatus === 'future';
-  const token = <FixturePlayerToken player={player} shirtTeam={player.club?.shortName ?? player.club?.name ?? 'unknown'} showForm={showForm} showPoints={showPoints} size="sm" />;
+  const token = <FixturePlayerToken player={player} pointsPlaceholder={pointsPlaceholder} shirtTeam={player.club?.shortName ?? player.club?.name ?? 'unknown'} showForm={showForm} showPoints={showPoints} size="sm" />;
+  const pointsTitle = pointsPlaceholder === '…'
+    ? 'points pending'
+    : pointsPlaceholder === '-'
+      ? 'did not play'
+      : `${player.points} pts`;
   return (
-    <div className={`squad-page__pitch-player fixture-squad-pitch__player compact position-${fixturePosition(player.position).toLowerCase()} form-band-${formBand(player.form)}`} data-player-id={player.id} data-points-visible={showPoints ? 'true' : 'false'} title={`${player.displayName} · ${player.points} pts`}>
+    <div className={`squad-page__pitch-player fixture-squad-pitch__player compact position-${fixturePosition(player.position).toLowerCase()} form-band-${formBand(player.form)}`} data-player-id={player.id} data-points-visible={showPoints ? 'true' : 'false'} title={`${player.displayName} · ${pointsTitle}`}>
       {onPlayerClick ? <button aria-label={`View ${player.displayName} ${playerInteraction === 'points' ? 'points breakdown' : 'player profile'}`} className="fixture-squad-player-button" onClick={() => onPlayerClick(player)} type="button">{token}</button> : token}
     </div>
   );
@@ -544,11 +572,25 @@ function toFixtureCardPlayer(player: FixtureSquadPlayer, shirtTeam?: string, ind
 export function shouldShowFixturePoints(gameweekStatus: FixtureGameweekStatus, player: FixtureSquadPlayer, now = Date.now()): boolean {
   if (gameweekStatus === 'past') return true;
   if (gameweekStatus !== 'current') return false;
+  if (player.hasStartedFixture === true) return true;
   return (player.fixtureFixtures ?? []).some((fixture) => {
     if (!fixture.kickoffAt) return false;
     const kickoff = Date.parse(fixture.kickoffAt);
     return Number.isFinite(kickoff) && kickoff <= now;
   });
+}
+
+export function fixturePointsPlaceholder(gameweekStatus: FixtureGameweekStatus, player: FixtureSquadPlayer, now = Date.now()): string | null {
+  if (gameweekStatus === 'future') return null;
+  const didNotPlay = player.minutes === 0
+    && (gameweekStatus === 'past' || player.allFixturesFinished === true);
+  if (didNotPlay) return '-';
+  if (gameweekStatus === 'current' && !shouldShowFixturePoints(gameweekStatus, player, now)) return '…';
+  return null;
+}
+
+function fixturePointsPlaceholderLabel(placeholder: string): string {
+  return placeholder === '-' ? 'Did not play' : 'Fantasy points pending';
 }
 
 function fixtureCardFixtures(player: FixtureSquadPlayer): NonNullable<PlayerCardPlayer['fixtures']> {

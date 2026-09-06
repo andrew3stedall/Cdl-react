@@ -11,7 +11,7 @@ The `App Screenshots` workflow provides repeatable visual evidence of the curren
 5. Open the completed run.
 6. Download the `app-screenshots` artifact.
 
-The workflow also runs on pull requests so layout regressions are caught before merge.
+The workflow is manual-only. It does not run as part of pull requests or the automatic staging rollout; invoke it independently when visual evidence is needed.
 
 ## Browser interaction check
 

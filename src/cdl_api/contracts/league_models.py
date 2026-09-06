@@ -64,6 +64,9 @@ class FixtureSquadPlayer(BaseModel):
     fixture_fixtures: list[PlayerNextFixture] = Field(default_factory=list)
     points: int = 0
     points_multiplier: int = 1
+    minutes: int | None = None
+    has_started_fixture: bool | None = None
+    all_fixtures_finished: bool | None = None
     form: float = 0
     slot: str
     is_captain: bool = False

@@ -697,8 +697,7 @@ def seed_staging_snake_draft(
 
         manager_assignments = staging_manager_assignments(google_allowed_emails)
         assigned_user_nicknames = {
-            email: TEAM_MANAGER_NICKNAMES[team_id]
-            for team_id, email in manager_assignments.items()
+            email: TEAM_MANAGER_NICKNAMES[team_id] for team_id, email in manager_assignments.items()
         }
         assigned_users = {}
         for email in manager_assignments.values():

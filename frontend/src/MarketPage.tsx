@@ -17,6 +17,7 @@ import {
 import { Button } from './components/ui/button';
 import { FormDots, PlayerCard, type PlayerCardPlayer } from './components/player/PlayerCard';
 import { TeamCrest } from './components/team/TeamCrest';
+import { PageHero } from './components/ui/page-hero';
 import type { ThemePreset } from './contracts';
 import { availabilityIssueLabel, hasAvailabilityIssue } from './player-availability';
 import type { SquadApiPlayer } from './squad-api';
@@ -315,17 +316,18 @@ export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps)
 
   return (
     <main aria-labelledby="market-page-title" className="feature-screen market-page" data-density={preset.tokens.density}>
-      <header className="market-page__header">
-        <div>
-          <p className="eyebrow">Market</p>
-          <h1 id="market-page-title">Find your next move</h1>
-          <p className="market-page__intro">Search the player pool, weigh the evidence, and keep your next squad decision focused.</p>
-        </div>
-        <div aria-label="Market context" className="market-page__context">
-          <TeamCrest className="market-page__team-mark" team={{ name: managerTeam }} />
-          <div><strong>{managerTeam}</strong><span>{gameweek}</span></div>
-        </div>
-      </header>
+      <PageHero
+        actions={(
+          <div aria-label="Market context" className="market-page__context">
+            <TeamCrest className="market-page__team-mark" team={{ name: managerTeam }} />
+            <div><strong>{managerTeam}</strong></div>
+          </div>
+        )}
+        actionsLabel="Market team context"
+        context={gameweek}
+        title="Find your next move"
+        titleId="market-page-title"
+      />
 
       {error ? (
         <div className="market-page__error" role="alert">

@@ -19,6 +19,7 @@ import {
 import { Button } from './components/ui/button';
 import { Card } from './components/ui/card';
 import { TeamCrest } from './components/team/TeamCrest';
+import { PageHero } from './components/ui/page-hero';
 import type { SessionState } from './contracts';
 import type { LeagueClient, LeagueFixture, LeagueTableRow } from './league-api';
 import { HttpLeagueClient } from './league-api';
@@ -116,19 +117,13 @@ export function ManagerDeskPage({
 
   return (
     <main aria-labelledby="manager-desk-title" className="feature-screen manager-desk">
-      <header className="manager-desk__header">
-        <div>
-          <h1 id="manager-desk-title">Gaffers Desk</h1>
-          {data ? (
-            <div className="manager-desk__season-line">
-              <span>{data.gameweek.name}</span>
-              <span aria-hidden="true">·</span>
-              <span>{contextLabel(data.context)}</span>
-            </div>
-          ) : null}
-        </div>
-        <ManagerAccountSection onNavigate={onNavigate} onSignOut={onSignOut} session={session} />
-      </header>
+      <PageHero
+        actions={<ManagerAccountSection onNavigate={onNavigate} onSignOut={onSignOut} session={session} />}
+        actionsLabel="Desk account actions"
+        context={data?.gameweek.name ?? 'Manager workspace'}
+        title="Gaffers Desk"
+        titleId="manager-desk-title"
+      />
 
       {errors.length > 0 ? (
         <div className="manager-desk__data-note" role="status">
@@ -570,6 +565,5 @@ function scoreForTeam(fixture: LeagueFixture, teamId: string): number | null { r
 
 function resultForFixture(fixture: LeagueFixture, teamId: string): 'W' | 'D' | 'L' | 'P' { if (fixture.status === 'pending' || fixture.score.outcome === 'pending') return 'P'; if (fixture.score.outcome === 'draw') return 'D'; const home = fixture.homeTeam.id === teamId; return fixture.score.outcome === (home ? 'home_win' : 'away_win') ? 'W' : 'L'; }
 
-function contextLabel(context: ManagerDeskContext): string { if (context === 'live') return 'Live now'; if (context === 'finalised') return 'Finalised'; return 'Before deadline'; }
 
 function getInitials(value: string): string { return value.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'CD'; }

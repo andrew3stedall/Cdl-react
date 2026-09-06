@@ -347,6 +347,75 @@
   padding: clamp(0.85rem, 2vw, 1.5rem) clamp(0.85rem, 2.4vw, 2rem) 2rem;
 }
 
+/* Shared page hero. Keep its critical geometry in the shell stylesheet so
+   route-specific CSS cannot cause a first-paint layout shift. */
+.cdl-page-hero {
+  align-items: center;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  min-height: 4.2rem;
+  padding: 0.15rem 0.2rem 0.35rem;
+}
+
+.cdl-page-hero__brand-lockup {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.cdl-page-hero__brand-mark {
+  align-items: center;
+  background: var(--primary);
+  border: 1px solid var(--primary);
+  border-radius: var(--radius);
+  color: var(--primary-foreground);
+  display: inline-flex;
+  flex: 0 0 auto;
+  height: 3rem;
+  justify-content: center;
+  width: 2.65rem;
+}
+
+.cdl-page-hero__copy {
+  min-width: 0;
+}
+
+.cdl-page-hero__brand-name {
+  color: var(--primary);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.055em;
+  margin: 0 0 0.1rem;
+  text-transform: uppercase;
+}
+
+.cdl-page-hero h1 {
+  color: var(--foreground);
+  font-size: clamp(1.65rem, 5vw, 2.25rem);
+  letter-spacing: -0.04em;
+  line-height: 1;
+  margin: 0;
+}
+
+.cdl-page-hero__context {
+  align-items: center;
+  color: var(--muted-foreground);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.7rem;
+  gap: 0.2rem;
+  margin: 0.28rem 0 0;
+}
+
+.cdl-page-hero__actions {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  gap: 0.5rem;
+}
+
 @media (max-width: 1100px) {
   .app-shell {
     grid-template-columns: 13.5rem minmax(0, 1fr);
@@ -376,6 +445,28 @@
 
   .shell-content {
     padding: 0.75rem 0.75rem calc(2rem + var(--cdl-mobile-navigation-clearance));
+  }
+
+  .cdl-page-hero {
+    min-height: 3.8rem;
+  }
+
+  .cdl-page-hero__brand-mark {
+    height: 2.65rem;
+    width: 2.35rem;
+  }
+
+  .cdl-page-hero__brand-name {
+    font-size: 0.64rem;
+  }
+
+  .cdl-page-hero h1 {
+    font-size: 1.6rem;
+  }
+
+  .cdl-page-hero__context-team,
+  .cdl-page-hero__context-separator {
+    display: none;
   }
 }
 

@@ -102,7 +102,8 @@ describe('live fixture point presentation', () => {
     const card = container.querySelector('[data-player-id="pending-player"] .player-card');
 
     expect(card?.classList.contains('player-card--shirt-cropped')).toBe(true);
-    expect(card?.querySelector('.player-card__points')?.textContent).toBe('…');
+    expect(card?.querySelector('.player-card__points-placeholder')?.textContent).toBe('…');
+    expect(card?.querySelector('.player-card__points')).toBeNull();
     expect(fixturePointsPlaceholder('current', pending, now)).toBe('…');
 
     await act(async () => root.unmount());
@@ -117,7 +118,7 @@ describe('live fixture point presentation', () => {
     );
 
     const { container, root } = await renderCurrent(noShow);
-    expect(container.querySelector('[data-player-id="no-show"] .player-card__points')?.textContent).toBe('-');
+    expect(container.querySelector('[data-player-id="no-show"] .player-card__points-placeholder')?.textContent).toBe('-');
 
     await act(async () => container.querySelector<HTMLButtonElement>('button[aria-label="View as list"]')?.click());
     expect(container.querySelector('[data-player-id="no-show"] [data-fixture-list-metric="points"] strong')?.textContent).toBe('-');

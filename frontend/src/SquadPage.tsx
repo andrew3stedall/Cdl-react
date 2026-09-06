@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 
 import { Button } from './components/ui/button';
+import { PageHero } from './components/ui/page-hero';
 import { FormDots, PlayerCard, type PlayerCardPlayer, formBand } from './components/player/PlayerCard';
 import type { AttackDirection, ThemePreset } from './contracts';
 import { availabilityChance, getAvailabilityIssue, hasAvailabilityIssue } from './player-availability';
@@ -795,67 +796,71 @@ export function SquadPage({
 
   return (
     <main aria-labelledby="squad-title" className="squad-page" data-density={preset.tokens.density}>
-      <header className="squad-page__hero">
-        <div className="squad-page__brand-lockup">
-          <span aria-hidden="true" className="squad-page__brand-mark"><Shield size={25} /></span>
-          <div>
-            <p className="squad-page__brand-name">Castle Draft League</p>
-            <h1 id="squad-title">Squad</h1>
-            <p className="squad-page__team-name">{managerTeam.name} · {gameweek}</p>
+      <PageHero
+        actions={(
+          <div aria-label="Squad utilities" className="squad-page__hero-icons">
+            <div aria-label="Squad view" className="squad-page__view-toggle" role="group">
+              <button
+                aria-label="View as pitch"
+                aria-pressed={squadView === 'pitch'}
+                disabled={!lineupAvailable}
+                onClick={() => setSquadView('pitch')}
+                title="Pitch view"
+                type="button"
+              >
+                <SoccerPitchIcon />
+              </button>
+              <button
+                aria-label="View as list"
+                aria-pressed={squadView === 'list'}
+                onClick={() => setSquadView('list')}
+                title="List view"
+                type="button"
+              >
+                <List aria-hidden="true" size={18} />
+              </button>
+            </div>
+            <div className="squad-page__notifications">
+              <button
+                aria-expanded={notificationsOpen}
+                aria-label={`Notifications${notifications.length ? `, ${notifications.length} unread` : ''}`}
+                className="squad-page__icon-button"
+                onClick={() => setNotificationsOpen((open) => !open)}
+                title="Notifications"
+                type="button"
+              >
+                <Bell size={20} />
+                {notifications.length ? <span className="squad-page__notification-count">{notifications.length}</span> : null}
+              </button>
+              {notificationsOpen ? (
+                <div aria-label="Notifications" className="squad-page__notifications-popover" role="dialog">
+                  <div className="squad-page__notifications-heading"><strong>Notifications</strong><span>{notifications.length}</span></div>
+                  {notifications.length === 0 ? <p className="squad-page__empty-copy">You are all caught up.</p> : notifications.map((notification) => (
+                    <a
+                      href={notification.action_href}
+                      key={notification.id}
+                      className="squad-page__notification"
+                      onClick={(event) => navigateInternally(event, notification.action_href)}
+                    >
+                      <strong>{notification.title}</strong><span>{notification.message}</span>
+                    </a>
+                  ))}
+                </div>
+              ) : null}
+            </div>
           </div>
-        </div>
-        <div aria-label="Squad utilities" className="squad-page__hero-icons">
-          <div aria-label="Squad view" className="squad-page__view-toggle" role="group">
-            <button
-              aria-label="View as pitch"
-              aria-pressed={squadView === 'pitch'}
-              disabled={!lineupAvailable}
-              onClick={() => setSquadView('pitch')}
-              title="Pitch view"
-              type="button"
-            >
-              <SoccerPitchIcon />
-            </button>
-            <button
-              aria-label="View as list"
-              aria-pressed={squadView === 'list'}
-              onClick={() => setSquadView('list')}
-              title="List view"
-              type="button"
-            >
-              <List aria-hidden="true" size={18} />
-            </button>
-          </div>
-          <div className="squad-page__notifications">
-            <button
-              aria-expanded={notificationsOpen}
-              aria-label={`Notifications${notifications.length ? `, ${notifications.length} unread` : ''}`}
-              className="squad-page__icon-button"
-              onClick={() => setNotificationsOpen((open) => !open)}
-              title="Notifications"
-              type="button"
-            >
-              <Bell size={20} />
-              {notifications.length ? <span className="squad-page__notification-count">{notifications.length}</span> : null}
-            </button>
-            {notificationsOpen ? (
-              <div aria-label="Notifications" className="squad-page__notifications-popover" role="dialog">
-                <div className="squad-page__notifications-heading"><strong>Notifications</strong><span>{notifications.length}</span></div>
-                {notifications.length === 0 ? <p className="squad-page__empty-copy">You are all caught up.</p> : notifications.map((notification) => (
-                  <a
-                    href={notification.action_href}
-                    key={notification.id}
-                    className="squad-page__notification"
-                    onClick={(event) => navigateInternally(event, notification.action_href)}
-                  >
-                    <strong>{notification.title}</strong><span>{notification.message}</span>
-                  </a>
-                ))}
-              </div>
-            ) : null}
-          </div>
-        </div>
-      </header>
+        )}
+        actionsLabel="Squad utilities"
+        context={(
+          <>
+            <span className="cdl-page-hero__context-team">{managerTeam.name}</span>
+            <span aria-hidden="true" className="cdl-page-hero__context-separator">·</span>
+            <span>{gameweek}</span>
+          </>
+        )}
+        title="Squad"
+        titleId="squad-title"
+      />
 
       <section aria-label="Matchweek controls" className="squad-page__matchweek-controls">
         <div className="squad-page__deadline">

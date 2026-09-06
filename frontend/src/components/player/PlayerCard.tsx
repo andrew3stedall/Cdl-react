@@ -33,6 +33,8 @@ export interface PlayerCardProps extends Omit<HTMLAttributes<HTMLSpanElement>, '
   cropShirt?: boolean;
   points?: number | null;
   pointsMultiplier?: number | null;
+  pointsPlaceholder?: string | null;
+  pointsPlaceholderLabel?: string;
   showOpponent?: boolean;
   showPositionMarker?: boolean;
   ariaLabel?: string;
@@ -47,6 +49,8 @@ export function PlayerCard({
   player,
   points = null,
   pointsMultiplier = null,
+  pointsPlaceholder = null,
+  pointsPlaceholderLabel,
   showOpponent = true,
   showPositionMarker = false,
   size = 'sm',
@@ -54,21 +58,31 @@ export function PlayerCard({
 }: PlayerCardProps) {
   const formClass = `form-band-${formBand(player.form)}`;
   const hasPoints = points !== null && points !== undefined;
-  const shouldCropShirt = cropShirt ?? (layout === 'pitch' ? hasPoints : true);
+  const hasPointsPlaceholder = pointsPlaceholder !== null && pointsPlaceholder !== undefined;
+  const hasPointsDisplay = hasPoints || hasPointsPlaceholder;
+  const shouldCropShirt = cropShirt ?? (layout === 'pitch' ? hasPointsDisplay : true);
   const classes = [
     'player-card',
     `player-card--${layout}`,
     `player-card--size-${size}`,
     `player-card--form-${formPosition}`,
     shouldCropShirt ? 'player-card--shirt-cropped' : 'player-card--shirt-full',
-    hasPoints ? 'player-card--has-points' : '',
+    hasPointsDisplay ? 'player-card--has-points' : '',
     formClass,
     className,
   ].filter(Boolean).join(' ');
 
   return (
     <span aria-label={ariaLabel} className={classes} {...rest}>
-      <PlayerToken points={points} pointsMultiplier={pointsMultiplier} player={player} showOpponent={showOpponent} showPositionMarker={showPositionMarker} />
+      <PlayerToken
+        points={points}
+        pointsMultiplier={pointsMultiplier}
+        pointsPlaceholder={pointsPlaceholder}
+        pointsPlaceholderLabel={pointsPlaceholderLabel}
+        player={player}
+        showOpponent={showOpponent}
+        showPositionMarker={showPositionMarker}
+      />
       {formPosition !== 'hidden' ? <FormDots className="player-card__form" value={player.form} /> : null}
     </span>
   );
@@ -98,11 +112,34 @@ export function OpponentFdrBadge({
   );
 }
 
-function PlayerToken({ points, pointsMultiplier, player, showOpponent, showPositionMarker }: { points: number | null; pointsMultiplier: number | null; player: PlayerCardPlayer; showOpponent: boolean; showPositionMarker: boolean }) {
+function PlayerToken({
+  points,
+  pointsMultiplier,
+  pointsPlaceholder,
+  pointsPlaceholderLabel,
+  player,
+  showOpponent,
+  showPositionMarker,
+}: {
+  points: number | null;
+  pointsMultiplier: number | null;
+  pointsPlaceholder: string | null;
+  pointsPlaceholderLabel?: string;
+  player: PlayerCardPlayer;
+  showOpponent: boolean;
+  showPositionMarker: boolean;
+}) {
   const fixtures = player.fixtures ?? [];
   const chance = player.availabilityChance;
   const hasAvailabilityWarning = typeof chance === 'number' && Number.isFinite(chance) && chance < 100;
   const positionClass = player.position ? ` position-${normalizePosition(player.position).toLowerCase()}` : '';
+  const hasPoints = points !== null && points !== undefined;
+  const pointsDisplay = hasPoints
+    ? `${points}${pointsMultiplier && pointsMultiplier > 1 ? ` ×${pointsMultiplier}` : ''}`
+    : pointsPlaceholder;
+  const pointsLabel = hasPoints
+    ? `${points}${pointsMultiplier && pointsMultiplier > 1 ? ` points multiplied by ${pointsMultiplier}` : ' fantasy points'}`
+    : pointsPlaceholderLabel ?? 'Fantasy points pending';
 
   return (
     <span aria-label={`Shirt for ${player.displayName}`} className={`player-card__token${showOpponent ? ' player-card__token--with-opponent' : ''}${positionClass}`} role="img">
@@ -110,7 +147,7 @@ function PlayerToken({ points, pointsMultiplier, player, showOpponent, showPosit
       <span aria-hidden="true" className="player-card__shirt-crop">
         <TeamShirt large team={player.team} />
       </span>
-      {points !== null && points !== undefined ? <strong aria-label={`${points}${pointsMultiplier && pointsMultiplier > 1 ? ` points multiplied by ${pointsMultiplier}` : ' fantasy points'}`} className="player-card__points">{points}{pointsMultiplier && pointsMultiplier > 1 ? ` ×${pointsMultiplier}` : ''}</strong> : null}
+      {pointsDisplay !== null && pointsDisplay !== undefined ? <strong aria-label={pointsLabel} className="player-card__points">{pointsDisplay}</strong> : null}
       <strong className="player-card__name">{shortPlayerName(player.displayName)}</strong>
       {showOpponent ? (
         <small

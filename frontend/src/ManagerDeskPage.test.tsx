@@ -214,8 +214,8 @@ describe('ManagerDeskPage', () => {
     expect(container.querySelector('h1')?.textContent).toBe('Gaffers Desk');
     expect(container.textContent).not.toContain('Manager workspace');
     expect(container.textContent).not.toContain('Good to see you, Alex');
-    expect(container.querySelector('.manager-desk__header h1')?.textContent).toBe('Gaffers Desk');
-    expect(container.querySelector('.manager-desk__header > .manager-account-menu')).not.toBeNull();
+    expect(container.querySelector('.cdl-page-hero h1')?.textContent).toBe('Gaffers Desk');
+    expect(container.querySelector('.cdl-page-hero .manager-account-menu')).not.toBeNull();
     expect(container.textContent).toContain('Review your starting XI');
     expect(container.textContent).toContain('Check squad availability');
     expect(container.textContent).toContain('Review fixture difficulty');

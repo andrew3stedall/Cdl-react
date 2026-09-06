@@ -16,8 +16,8 @@ from cdl_api.contracts.league_models import (
 from cdl_api.contracts.session import SessionUser
 from cdl_api.database import build_session_factory
 from cdl_api.repositories.factory import build_repositories
+from cdl_api.repositories.live_league import LiveAwarePostgreSQLTeamSelectionRepository
 from cdl_api.repositories.postgres_squad_repository import PostgreSQLSquadRepository
-from cdl_api.repositories.postgres_team_selection import PostgreSQLTeamSelectionRepository
 from cdl_api.repositories.squad import SquadRepository
 from cdl_api.repositories.team_selection import InMemoryTeamSelectionRepository
 from cdl_api.routers.auth import get_optional_authenticated_session
@@ -56,7 +56,7 @@ def get_fixture_team_selection_repository(
     user: SessionUser | None = Depends(get_optional_authenticated_session),
 ) -> InMemoryTeamSelectionRepository:
     if settings.repository_mode == "postgres":
-        return PostgreSQLTeamSelectionRepository(
+        return LiveAwarePostgreSQLTeamSelectionRepository(
             build_session_factory(settings),
             user_id=user.id if user is not None else None,
         )
@@ -134,11 +134,9 @@ def fixture_squads(
         historical_squads = historical_squad_loader(fixture)
         if historical_squads:
             return _attach_fixture_contexts(historical_squads, fixture_contexts)
-        # Never show today's squad as a completed fixture's lineup. If the
-        # frozen historical record is unavailable, the UI can state that
-        # lineup detail is not yet available instead of showing wrong players.
-        if fixture.status == "complete":
-            return []
+        # Once a gameweek has started, never fall back to today's mutable squad
+        # or season totals. Missing locked data should be explicit rather than wrong.
+        return []
 
     players = squad_repository.list_squad_players()
     manager_team = getattr(squad_repository, "manager_team", None)

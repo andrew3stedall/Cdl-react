@@ -1,13 +1,13 @@
 .player-card--pitch.player-card--shirt-full .player-card__shirt-crop {
-  height: 64%;
-  overflow: visible;
-  top: 0.05rem;
+  height: 52%;
+  overflow: hidden;
+  top: 0.2rem;
 }
 
 .player-card--pitch.player-card--shirt-full .player-card__shirt-crop > .player-card__shirt.large {
-  height: 100%;
+  height: 200%;
 }
 
 .player-card--pitch.player-card--shirt-full.player-card--size-xs .player-card__shirt-crop > .player-card__shirt.large {
-  height: 100%;
+  height: 165%;
 }

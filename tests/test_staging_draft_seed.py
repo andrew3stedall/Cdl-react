@@ -250,6 +250,18 @@ def test_seed_is_idempotent_and_persists_valid_position_counts() -> None:
             ).all()
         )
         assert manager_names == TEAM_MANAGER_NICKNAMES
+        user_names = dict(
+            session.execute(
+                select(users_table.c.email, users_table.c.display_name).where(
+                    users_table.c.email.in_(manager_assignments.values())
+                )
+            ).all()
+        )
+        assert user_names == {
+            "reviewer.one@example.com": "Andrew",
+            "reviewer.two@example.com": "DJ",
+            "reviewer.three@example.com": "Kev",
+        }
         team_counts = dict(
             session.execute(
                 select(

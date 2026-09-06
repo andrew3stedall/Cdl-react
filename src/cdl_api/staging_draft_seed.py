@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 from sqlalchemy import delete, insert, select, update
 from sqlalchemy.orm import Session
 
+from cdl_api.manager_nicknames import TEAM_MANAGER_NICKNAMES
 from cdl_api.repositories.postgres_auth import users_table
 from cdl_api.repositories.postgres_league_fpl import (
     draft_teams_table,
@@ -49,19 +50,6 @@ TEAM_IDS = (
     "team-wilde-boars",
     "team-class-of-84",
 )
-
-# Manager names shown in the league UI are the managers' league nicknames,
-# rather than their Google account display names.
-TEAM_MANAGER_NICKNAMES = {
-    "team-stan-still-sells-tik": "Andrew",
-    "team-wilde-boars": "DJ",
-    "team-bayer-neverlusen": "Kev",
-    "team-class-of-84": "Warren",
-    "team-sporting-lesbians": "Daniel",
-    "team-dicks-dribbling-xi": "Rich",
-    "team-koden-all-stars": "Nath",
-    "team-exeter-gently": "Dilson",
-}
 
 # The screenshots show the first-round manager order, which differs from the
 # display order above: Exeter, Dicks, Bayer, Sporting, Stan, Class, Koden,
@@ -707,10 +695,13 @@ def seed_staging_snake_draft(
             },
         )
 
-        assigned_users = {}
         manager_assignments = staging_manager_assignments(google_allowed_emails)
+        assigned_user_nicknames = {
+            email: TEAM_MANAGER_NICKNAMES[team_id] for team_id, email in manager_assignments.items()
+        }
+        assigned_users = {}
         for email in manager_assignments.values():
-            preferred_name = email.split("@", maxsplit=1)[0].replace(".", " ").title()
+            manager_nickname = assigned_user_nicknames[email]
             user_row = (
                 session.execute(
                     select(users_table.c.id, users_table.c.display_name).where(
@@ -726,25 +717,24 @@ def seed_staging_snake_draft(
                     insert(users_table).values(
                         id=user_id,
                         email=email,
-                        display_name=preferred_name,
+                        display_name=manager_nickname,
                         roles=["manager"],
                     )
                 )
                 assigned_users[email] = {
                     "id": user_id,
-                    "display_name": preferred_name,
+                    "display_name": manager_nickname,
                 }
             else:
                 user_id = str(user_row["id"])
-                display_name = str(user_row["display_name"] or preferred_name)
                 session.execute(
                     update(users_table)
                     .where(users_table.c.id == user_id)
-                    .values(display_name=display_name, roles=["manager"])
+                    .values(display_name=manager_nickname, roles=["manager"])
                 )
                 assigned_users[email] = {
                     "id": user_id,
-                    "display_name": display_name,
+                    "display_name": manager_nickname,
                 }
 
         for index, (team_id, team_name) in enumerate(zip(TEAM_IDS, TEAM_NAMES, strict=True), 1):

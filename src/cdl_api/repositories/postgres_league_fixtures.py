@@ -19,6 +19,7 @@ from cdl_api.contracts.league_models import (
     LeagueTableResponse,
     LeagueTableRow,
 )
+from cdl_api.manager_nicknames import manager_nickname_for_team
 from cdl_api.repositories.league_repository import LeagueRepository
 from cdl_api.repositories.postgres_fpl_data import fpl_gameweeks_table
 from cdl_api.repositories.postgres_league_fpl import draft_teams_table, managers_table
@@ -354,11 +355,25 @@ class PostgreSQLLeagueRepository:
         if not inspect(session.get_bind()).has_table(managers_table.name):
             return {}
         rows = session.execute(
-            select(draft_teams_table.c.id, managers_table.c.display_name)
+            select(
+                draft_teams_table.c.id,
+                draft_teams_table.c.name,
+                managers_table.c.display_name,
+            )
             .outerjoin(managers_table, draft_teams_table.c.manager_id == managers_table.c.id)
             .where(draft_teams_table.c.league_id == LEAGUE_ID)
         ).mappings()
-        return {str(row["id"]): str(row["display_name"]) for row in rows if row["display_name"]}
+        manager_names = {}
+        for row in rows:
+            team_id = str(row["id"])
+            nickname = manager_nickname_for_team(
+                team_id,
+                str(row["name"]) if row["name"] else None,
+                str(row["display_name"]) if row["display_name"] else None,
+            )
+            if nickname:
+                manager_names[team_id] = nickname
+        return manager_names
 
     @staticmethod
     def _with_manager_name(
@@ -372,6 +387,38 @@ class PostgreSQLLeagueRepository:
         if team_id in manager_names:
             enriched["manager_name"] = manager_names[team_id]
         return enriched
+
+    @classmethod
+    def _normalize_snapshot_teams(
+        cls,
+        payload: Mapping[str, object],
+        manager_names: dict[str, str],
+    ) -> dict[str, object]:
+        normalized = dict(payload)
+        rows = normalized.get("rows")
+        if isinstance(rows, list):
+            normalized["rows"] = [
+                {
+                    **row,
+                    "team": cls._with_manager_name(row.get("team"), manager_names),
+                }
+                if isinstance(row, Mapping)
+                else row
+                for row in rows
+            ]
+        return normalized
+
+    @classmethod
+    def _normalize_head_to_head_record(
+        cls,
+        payload: Mapping[str, object],
+        manager_names: dict[str, str],
+    ) -> dict[str, object]:
+        return {
+            **payload,
+            "team": cls._with_manager_name(payload.get("team"), manager_names),
+            "opponent": cls._with_manager_name(payload.get("opponent"), manager_names),
+        }
 
     @staticmethod
     def _fpl_gameweek_context(
@@ -432,12 +479,15 @@ class PostgreSQLLeagueRepository:
                     .order_by(draft_teams_table.c.name)
                 ).mappings()
             )
+            manager_names = self._manager_names(session)
             payloads = self._payloads(session, league_table_snapshots_table)
 
         if active_teams:
             active_team_ids = {str(team["id"]) for team in active_teams}
             for payload in reversed(payloads):
-                snapshot = LeagueTableResponse.model_validate(payload)
+                snapshot = LeagueTableResponse.model_validate(
+                    self._normalize_snapshot_teams(payload, manager_names)
+                )
                 snapshot_team_ids = {row.team.id for row in snapshot.rows}
                 if snapshot_team_ids and snapshot_team_ids <= active_team_ids:
                     return snapshot
@@ -467,12 +517,15 @@ class PostgreSQLLeagueRepository:
             raise MissingLeagueTableSnapshotError(
                 "PostgreSQL mode requires a persisted league table snapshot."
             )
-        return LeagueTableResponse.model_validate(payloads[-1])
+        return LeagueTableResponse.model_validate(
+            self._normalize_snapshot_teams(payloads[-1], manager_names)
+        )
 
     def get_knockout_snapshot(self) -> KnockoutResponse:
         """Return persisted knockout matches without fixture-derived fallback."""
         with self._session_factory() as session:
             payloads = self._payloads(session, knockout_matches_table)
+            manager_names = self._manager_names(session)
 
         if not payloads and self._active_team_ids():
             return KnockoutResponse(rounds=[], matches=[])
@@ -503,7 +556,7 @@ class PostgreSQLLeagueRepository:
                         "id": fixture_id,
                         "round_label": payload["round_label"],
                         "fixture": fixture,
-                        "winner": payload.get("winner"),
+                        "winner": self._with_manager_name(payload.get("winner"), manager_names),
                     }
                 )
             )
@@ -513,6 +566,7 @@ class PostgreSQLLeagueRepository:
         """Return persisted matchup records without fixture-result fallback."""
         with self._session_factory() as session:
             payloads = self._payloads(session, head_to_head_records_table)
+            manager_names = self._manager_names(session)
 
         active_team_ids = self._active_team_ids()
         if not payloads and active_team_ids:
@@ -521,7 +575,12 @@ class PostgreSQLLeagueRepository:
             raise MissingHeadToHeadSnapshotError(
                 "PostgreSQL mode requires persisted head-to-head records."
             )
-        records = [HeadToHeadRecord.model_validate(payload) for payload in payloads]
+        records = [
+            HeadToHeadRecord.model_validate(
+                self._normalize_head_to_head_record(payload, manager_names)
+            )
+            for payload in payloads
+        ]
         if active_team_ids:
             records = [
                 record

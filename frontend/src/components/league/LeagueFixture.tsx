@@ -1,6 +1,7 @@
 import { ChevronRight } from 'lucide-react';
 
 import type { LeagueFixture } from '../../league-api';
+import { managerNicknameForTeam } from '../../manager-nicknames';
 import { TeamCrest } from '../team/TeamCrest';
 
 export function LeagueFixture({ compact = false, fixture, onOpen }: { compact?: boolean; fixture: LeagueFixture; onOpen: (fixture: LeagueFixture) => void }) {
@@ -24,5 +25,5 @@ function FixtureTeams({ compact = false, fixture }: { compact?: boolean; fixture
 }
 
 export function fixtureParticipantName(team: LeagueFixture['homeTeam']): string {
-  return team.managerName ?? team.name;
+  return managerNicknameForTeam(team);
 }

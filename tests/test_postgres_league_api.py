@@ -150,14 +150,18 @@ def test_sqlite_repository_enriches_fixture_teams_with_current_manager_names() -
         connection.execute(
             text(
                 "INSERT INTO managers (id, display_name) VALUES "
-                "('manager-castle', 'Andrew'), ('manager-drafton', 'DJ')"
+                "('manager-castle', 'Richard'), ('manager-drafton', 'Nielsen'), "
+                "('manager-rich', 'Richard'), ('manager-nath', 'Nielsen')"
             )
         )
         connection.execute(
             text(
                 "INSERT INTO draft_teams (id, league_id, manager_id, name) VALUES "
                 "('castle', 'league-cdl-2026-27', 'manager-castle', 'Castle United'), "
-                "('drafton', 'league-cdl-2026-27', 'manager-drafton', 'Drafton Rovers')"
+                "('drafton', 'league-cdl-2026-27', 'manager-drafton', 'Drafton Rovers'), "
+                "('team-dicks-dribbling-xi', 'league-cdl-2026-27', 'manager-rich', "
+                "'Dicks Dribbling XI'), "
+                "('team-koden-all-stars', 'league-cdl-2026-27', 'manager-nath', 'Koden All Stars')"
             )
         )
 
@@ -168,8 +172,14 @@ def test_sqlite_repository_enriches_fixture_teams_with_current_manager_names() -
     fixture = repository.get_fixture("fixture-1201")
 
     assert fixture is not None
-    assert fixture.home_team.manager_name == "Andrew"
-    assert fixture.away_team.manager_name == "DJ"
+    assert fixture.home_team.manager_name == "Rich"
+    assert fixture.away_team.manager_name == "Nath"
+
+    with session_factory() as session:
+        manager_names = repository._manager_names(session)
+
+    assert manager_names["team-dicks-dribbling-xi"] == "Rich"
+    assert manager_names["team-koden-all-stars"] == "Nath"
 
 
 def test_sqlite_repository_rejects_broken_epl_scoring_context() -> None:

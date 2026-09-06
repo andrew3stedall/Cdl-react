@@ -62,6 +62,7 @@ import { useThemePreset } from './theme-preset-provider';
 import { getThemeColourForMode, themeColourOptions } from './theme-colours';
 import { getPasskeyStatus, registerPasskey, type PasskeyStatus } from './passkeys';
 import { SensorMazeGame } from './SensorMazeGame';
+import { managerNicknameForName } from './manager-nicknames';
 import './profile-page.css';
 
 interface ProfilePageProps {
@@ -186,7 +187,7 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
   const selectedFdrScale = getFdrColourScale(fdrScale);
   const selectedFdrScaleNumber = getFdrScaleOptionNumber(fdrScale);
   const themeMode = getThemeMode(preset);
-  const displayName = user?.displayName ?? 'Authenticated user';
+  const displayName = managerNicknameForName(user?.displayName) ?? 'Authenticated user';
   const initials = displayName
     .split(/\s+/)
     .filter(Boolean)

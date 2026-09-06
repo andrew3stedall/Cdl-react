@@ -3,6 +3,7 @@ import { LogOut, UserRound } from 'lucide-react';
 import { Button } from './components/ui/button';
 import { Card } from './components/ui/card';
 import type { SessionState } from './contracts';
+import { managerNicknameForName } from './manager-nicknames';
 
 interface ManagerAccountSectionProps {
   onNavigate: (href: string) => void;
@@ -15,7 +16,7 @@ export function ManagerAccountSection({
   onSignOut,
   session,
 }: ManagerAccountSectionProps) {
-  const displayName = session.user?.displayName ?? 'Authenticated user';
+  const displayName = managerNicknameForName(session.user?.displayName) ?? 'Authenticated user';
   const initials = displayName
     .split(/\s+/)
     .filter(Boolean)

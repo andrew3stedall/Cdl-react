@@ -5,6 +5,7 @@ import { FormDots, OpponentFdrBadge, PlayerCard, TeamShirt, type PlayerCardPlaye
 import type { AttackDirection } from '../../contracts';
 import { fixtureDifficultyTitle } from '../../SquadPage';
 import type { FixturePlayerFixture, FixtureSquad, FixtureSquadPlayer } from '../../league-api';
+import { managerNicknameForTeam } from '../../manager-nicknames';
 import './fixture-squad-comparison.css';
 
 export interface FixtureSquadComparisonProps {
@@ -628,7 +629,7 @@ function fixturePosition(position: string): string {
 }
 
 function fixtureTeamDisplayName(team: FixtureSquad['team']): string {
-  return team.managerName ?? team.name;
+  return managerNicknameForTeam(team);
 }
 
 function FixtureRosterGroup({ children, label }: { children: ReactNode; label: string }) {

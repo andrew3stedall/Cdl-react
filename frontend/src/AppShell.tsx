@@ -30,6 +30,7 @@ import {
   utilityNavigationItems,
 } from './navigation';
 import { useThemePreset } from './theme-preset-provider';
+import { managerNicknameForName } from './manager-nicknames';
 
 interface AppShellProps {
   children: ReactNode;
@@ -66,7 +67,7 @@ export function AppShell({
   const { preset } = useThemePreset();
   const contextNavigation = getContextNavigation(currentPath);
   const activePage = getNavigationItemByPath(currentPath) ?? primaryNavigationItems[0];
-  const displayName = session.user?.displayName ?? 'Authenticated user';
+  const displayName = managerNicknameForName(session.user?.displayName) ?? 'Authenticated user';
   const isManagersDesk = currentPath === '/' || currentPath === '/dashboard';
   const initials = displayName
     .split(/\s+/)

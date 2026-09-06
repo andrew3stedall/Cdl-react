@@ -18,22 +18,22 @@ class LeagueRepository:
     def __init__(self) -> None:
         self._teams = {
             "castle": TeamSummary(
-                id="castle", name="Castle United", short_name="CAS", manager_name="Castle Manager"
+                id="castle", name="Castle United", short_name="CAS", manager_name="Andrew"
             ),
             "drafton": TeamSummary(
                 id="drafton",
                 name="Drafton Rovers",
                 short_name="DRA",
-                manager_name="Drafton Manager",
+                manager_name="DJ",
             ),
             "keepers": TeamSummary(
-                id="keepers", name="Keeper City", short_name="KPR", manager_name="Keeper Manager"
+                id="keepers", name="Keeper City", short_name="KPR", manager_name="Warren"
             ),
             "wildcards": TeamSummary(
                 id="wildcards",
                 name="Wildcard Athletic",
                 short_name="WCA",
-                manager_name="Wildcard Manager",
+                manager_name="Kev",
             ),
         }
         self._gameweeks = {

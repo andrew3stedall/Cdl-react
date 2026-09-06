@@ -18,6 +18,7 @@ import { Button } from './components/ui/button';
 import { Card } from './components/ui/card';
 import { FixtureSquadComparison } from './components/fixture/FixtureSquadComparison';
 import type { FixtureGameweekStatus } from './components/fixture/FixtureSquadComparison';
+import { managerNicknameForTeam } from './manager-nicknames';
 import { PlayerChartDetailDialog } from './components/player/PlayerChartDetailDialog';
 import { TeamCrest } from './components/team/TeamCrest';
 import type { AttackDirection } from './contracts';
@@ -1090,5 +1091,5 @@ function tableSourceLabel(source: string): string {
 }
 
 function fixtureParticipantName(team: LeagueFixture['homeTeam']): string {
-  return team.managerName ?? team.name;
+  return managerNicknameForTeam(team);
 }

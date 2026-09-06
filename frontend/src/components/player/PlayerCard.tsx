@@ -3,6 +3,7 @@ import { type HTMLAttributes } from 'react';
 import { officialFplShirtUrl } from '../../fpl-shirt-assets';
 import './player-card.css';
 import './player-card-presentation.css';
+import './player-card-point-placeholder.css';
 
 export interface PlayerCardFixture {
   label: string;
@@ -147,7 +148,7 @@ function PlayerToken({
       <span aria-hidden="true" className="player-card__shirt-crop">
         <TeamShirt large team={player.team} />
       </span>
-      {pointsDisplay !== null && pointsDisplay !== undefined ? <strong aria-label={pointsLabel} className="player-card__points">{pointsDisplay}</strong> : null}
+      {pointsDisplay !== null && pointsDisplay !== undefined ? <strong aria-label={pointsLabel} className={hasPoints ? 'player-card__points' : 'player-card__points-placeholder'}>{pointsDisplay}</strong> : null}
       <strong className="player-card__name">{shortPlayerName(player.displayName)}</strong>
       {showOpponent ? (
         <small

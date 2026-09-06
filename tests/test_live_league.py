@@ -1,3 +1,5 @@
+from pytest import MonkeyPatch
+
 from cdl_api.contracts.domain import GameweekSummary, TeamSummary
 from cdl_api.contracts.league_models import (
     FixtureScore,
@@ -28,7 +30,7 @@ def _fixture(*, is_current: bool, status: FixtureStatus) -> LeagueFixture:
     )
 
 
-def test_current_pending_fixture_is_exposed_as_started(monkeypatch) -> None:
+def test_current_pending_fixture_is_exposed_as_started(monkeypatch: MonkeyPatch) -> None:
     pending = _fixture(is_current=True, status=FixtureStatus.PENDING)
     monkeypatch.setattr(PostgreSQLLeagueRepository, "list_fixtures", lambda self: [pending])
     repository = object.__new__(LiveAwarePostgreSQLLeagueRepository)
@@ -38,7 +40,7 @@ def test_current_pending_fixture_is_exposed_as_started(monkeypatch) -> None:
     assert fixture.status == FixtureStatus.STARTED
 
 
-def test_non_current_pending_fixture_stays_pending(monkeypatch) -> None:
+def test_non_current_pending_fixture_stays_pending(monkeypatch: MonkeyPatch) -> None:
     pending = _fixture(is_current=False, status=FixtureStatus.PENDING)
     monkeypatch.setattr(PostgreSQLLeagueRepository, "list_fixtures", lambda self: [pending])
     repository = object.__new__(LiveAwarePostgreSQLLeagueRepository)

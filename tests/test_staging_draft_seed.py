@@ -17,6 +17,7 @@ from cdl_api.staging_draft_seed import (
     PRIMARY_TEAM_ID,
     SQUAD_SIZE,
     TEAM_IDS,
+    TEAM_MANAGER_NICKNAMES,
     allocation_position_counts,
     captured_draft_team_index,
     constrained_snake_allocation,
@@ -241,6 +242,13 @@ def test_seed_is_idempotent_and_persists_valid_position_counts() -> None:
             "Wilde Boars": "reviewer.two@example.com",
             "Bayer Neverlusen": "reviewer.three@example.com",
         }
+        manager_names = dict(
+            session.execute(
+                select(draft_teams_table.c.id, managers_table.c.display_name)
+                .join(managers_table, draft_teams_table.c.manager_id == managers_table.c.id)
+            ).all()
+        )
+        assert manager_names == TEAM_MANAGER_NICKNAMES
         team_counts = dict(
             session.execute(
                 select(
@@ -319,3 +327,4 @@ def test_seed_is_idempotent_and_persists_valid_position_counts() -> None:
     assert sum(player.slot == "starter" for player in team_selection) == 11
     assert sum(player.slot == "bench" for player in team_selection) == 4
     assert sum(player.slot == "reserve" for player in team_selection) == 5
+

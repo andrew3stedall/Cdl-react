@@ -10,7 +10,12 @@ from collections.abc import Mapping
 from sqlalchemy import inspect, select
 from sqlalchemy.exc import SQLAlchemyError
 
-from cdl_api.contracts.league_models import FixtureSquad, FixtureSquadPlayer, FixtureStatus
+from cdl_api.contracts.league_models import (
+    FixtureSquad,
+    FixtureSquadPlayer,
+    FixtureStatus,
+    LeagueFixture,
+)
 from cdl_api.repositories.postgres_fpl_data import (
     external_payload_cache_table,
     fpl_fixtures_table,
@@ -22,7 +27,7 @@ from cdl_api.repositories.postgres_team_selection import PostgreSQLTeamSelection
 class LiveAwarePostgreSQLLeagueRepository(PostgreSQLLeagueRepository):
     """Resolve current CDL fixtures as live once the official FPL GW is current."""
 
-    def list_fixtures(self):  # type: ignore[no-untyped-def]
+    def list_fixtures(self) -> list[LeagueFixture]:
         fixtures = super().list_fixtures()
         return [
             fixture.model_copy(update={"status": FixtureStatus.STARTED})
@@ -35,7 +40,7 @@ class LiveAwarePostgreSQLLeagueRepository(PostgreSQLLeagueRepository):
 class LiveAwarePostgreSQLTeamSelectionRepository(PostgreSQLTeamSelectionRepository):
     """Add event minutes and EPL fixture lifecycle to locked gameweek squads."""
 
-    def get_historical_fixture_squads(self, fixture):  # type: ignore[no-untyped-def]
+    def get_historical_fixture_squads(self, fixture: LeagueFixture) -> list[FixtureSquad]:
         squads = super().get_historical_fixture_squads(fixture)
         if not squads:
             return squads

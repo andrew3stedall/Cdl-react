@@ -7,7 +7,6 @@ import {
   ChevronRight,
   CircleAlert,
   ClipboardCheck,
-  Clock3,
   Search,
   ShieldAlert,
   ShieldCheck,
@@ -24,6 +23,7 @@ import type { SessionState } from './contracts';
 import type { LeagueClient, LeagueFixture, LeagueTableRow } from './league-api';
 import { HttpLeagueClient } from './league-api';
 import { ManagerAccountSection } from './ManagerAccountSection';
+import { managerNicknameForTeam } from './manager-nicknames';
 import {
   defaultManagerDeskClient,
   type ManagerDeskClient,
@@ -142,7 +142,7 @@ export function ManagerDeskPage({
 
       {data ? (
         <>
-          <FixtureFocus data={data} managerTeam={data.selection.managerTeam} now={now} onNavigate={onNavigate} />
+          <FixtureFocus data={data} managerTeam={data.selection.managerTeam} onNavigate={onNavigate} />
 
           <PriorityStack
             data={data}
@@ -182,10 +182,9 @@ export function ManagerDeskPage({
   );
 }
 
-function FixtureFocus({ data, managerTeam, now, onNavigate }: {
+function FixtureFocus({ data, managerTeam, onNavigate }: {
   data: ManagerDeskSnapshot;
   managerTeam: { id: string; name: string };
-  now: number;
   onNavigate: (href: string) => void;
 }) {
   const fixture = data.context === 'pre_deadline' ? data.nextFixture : data.currentFixture;
@@ -200,8 +199,6 @@ function FixtureFocus({ data, managerTeam, now, onNavigate }: {
         formFixtures={data.formFixtures}
         gameweek={fixture?.gameweek.name ?? data.gameweek.name}
         managerTeam={managerTeam}
-        now={now}
-        selection={data.selection}
         onNavigate={onNavigate}
       />
       <section aria-labelledby="manager-desk-other-fixtures-title" className="manager-desk__fixture-others">
@@ -234,14 +231,12 @@ function FixtureFocus({ data, managerTeam, now, onNavigate }: {
   );
 }
 
-function FixtureSpotlight({ context, fixture, formFixtures, gameweek, managerTeam, now, selection, onNavigate }: {
+function FixtureSpotlight({ context, fixture, formFixtures, gameweek, managerTeam, onNavigate }: {
   context: ManagerDeskContext;
   fixture: LeagueFixture | null;
   formFixtures: LeagueFixture[];
   gameweek: string;
   managerTeam: { id: string; name: string };
-  now: number;
-  selection: TeamSelectionSnapshot;
   onNavigate: (href: string) => void;
 }) {
   if (!fixture) {
@@ -264,10 +259,8 @@ function FixtureSpotlight({ context, fixture, formFixtures, gameweek, managerTea
   const opponent = ownTeam ? (fixture.homeTeam.id === ownTeam.id ? fixture.awayTeam : fixture.homeTeam) : null;
   const ownScore = ownTeam ? scoreForTeam(fixture, ownTeam.id) : null;
   const opponentScore = opponent ? scoreForTeam(fixture, opponent.id) : null;
-  const captain = selection.players.find((player) => player.captain);
-  const starters = selection.players.filter((player) => player.slot === 'starter');
   const ownForm = ownTeam ? formForTeam(ownTeam.id, formFixtures) : [];
-  const urgency = context === 'pre_deadline' ? urgencyForDeadline(fixture.gameweek.deadlineAt ?? null, now) : 'normal';
+  const opponentForm = opponent ? formForTeam(opponent.id, formFixtures) : [];
 
   return (
     <Card className={`manager-desk__fixture-spotlight manager-desk__fixture-spotlight--${context}`}>
@@ -281,62 +274,64 @@ function FixtureSpotlight({ context, fixture, formFixtures, gameweek, managerTea
       <div className="manager-desk__fixture-spotlight-teams">
         <div className="manager-desk__fixture-spotlight-team manager-desk__fixture-spotlight-team--own">
           <TeamCrest className="manager-desk__fixture-badge" team={ownTeam ?? managerTeam} />
-          <strong>{ownTeam?.name ?? 'Your team'}</strong>
-          <small>You</small>
-        </div>
-        <div className="manager-desk__fixture-centre">
-          {context === 'pre_deadline' ? (
-            <span className="manager-desk__fixture-vs">vs</span>
-          ) : (
-            <div className="manager-desk__fixture-score">
-              <strong>{ownScore ?? '—'}</strong>
-              <span>–</span>
-              <strong>{opponentScore ?? '—'}</strong>
-            </div>
-          )}
+          <span className="manager-desk__fixture-team-copy">
+            <strong>{managerNicknameForTeam(ownTeam ?? managerTeam)}</strong>
+            <small>You</small>
+          </span>
+          <strong className="manager-desk__fixture-team-score">{ownScore ?? '—'}</strong>
         </div>
         <div className="manager-desk__fixture-spotlight-team manager-desk__fixture-spotlight-team--opponent">
           <TeamCrest className="manager-desk__fixture-badge manager-desk__fixture-badge--muted" team={opponent ?? { name: 'Opponent' }} />
-          <strong>{opponent?.name ?? 'Opponent'}</strong>
-          <small>Opponent</small>
+          <span className="manager-desk__fixture-team-copy">
+            <strong>{opponent ? managerNicknameForTeam(opponent) : 'Opponent'}</strong>
+            <small>Opponent</small>
+          </span>
+          <strong className="manager-desk__fixture-team-score">{opponentScore ?? '—'}</strong>
         </div>
       </div>
-
-      {context === 'live' ? (
-        <div className="manager-desk__fixture-insights" aria-label="Live fixture information">
-          <FixtureInsight label="Live now" value={fixture.kickoffLabel || 'In progress'} />
-          <FixtureInsight label="Yet to play" value={`${starters.length} XI players`} />
-          <FixtureInsight label="Captain" value={captain?.name ?? 'Not set'} />
+      <div aria-label="Last five fixture scores" className="manager-desk__fixture-form-rows">
+        <div className="manager-desk__fixture-form-heading">
+          <span>Last 5 fixtures</span>
+          <span>Points</span>
         </div>
-      ) : null}
-
-      {context === 'pre_deadline' ? (
-        <div className="manager-desk__fixture-planning">
-          <div>
-            <span className="manager-desk__fixture-planning-label"><Clock3 aria-hidden="true" size={16} /> Deadline</span>
-            <strong>{formatCountdown(fixture.gameweek.deadlineAt ?? null, now)}</strong>
-            <small>{urgency === 'low' ? 'Normal planning' : urgency === 'high' ? 'Plan soon' : 'Action needed soon'}</small>
-          </div>
-          <div className="manager-desk__fixture-form-block">
-            <span>Last 5 gameweeks</span>
-            <FormBlocks form={ownForm} />
-          </div>
-        </div>
-      ) : null}
-
-      <div className="manager-desk__fixture-spotlight-footer">
-        <span>{context === 'finalised' ? 'Scores only · gameweek complete' : context === 'live' ? 'Live scores can still change' : 'Review your XI before the deadline'}</span>
-        <Button onClick={() => onNavigate(context === 'pre_deadline' ? '/team-selection' : '/league')} type="button" variant="secondary">
-          {context === 'pre_deadline' ? 'Review team' : context === 'live' ? 'View live fixture' : 'View final result'}
-          <ArrowRight aria-hidden="true" size={16} />
-        </Button>
+        <FixtureFormRow form={ownForm} team={ownTeam ?? managerTeam} />
+        {opponent ? <FixtureFormRow form={opponentForm} team={opponent} /> : null}
       </div>
     </Card>
   );
 }
 
-function FixtureInsight({ label, value }: { label: string; value: string }) {
-  return <div className="manager-desk__fixture-insight"><span>{label}</span><strong>{value}</strong></div>;
+function FixtureFormRow({ form, team }: { form: TeamForm[]; team: { id?: string; name: string; managerName?: string } }) {
+  const nickname = managerNicknameForTeam(team);
+  const scores = form.slice(-5);
+  return (
+    <div className="manager-desk__fixture-form-row">
+      <strong className="manager-desk__fixture-form-team">{nickname}</strong>
+      <div className="manager-desk__fixture-form-score-list">
+        {Array.from({ length: 5 }, (_, index) => (
+          <FormScore item={scores[index]} key={scores[index]?.key ?? `empty-${index}`} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function FormScore({ item }: { item?: TeamForm }) {
+  const bonus = item?.bonusPoints ?? 0;
+  const markerCount = Math.min(Math.abs(bonus), 3);
+  const resultLabel = item ? `${item.result === 'P' ? 'pending' : item.result === 'W' ? 'win' : item.result === 'L' ? 'loss' : 'draw'}, ${item.points ?? 'no'} points` : 'No result';
+  const bonusLabel = bonus === 0 ? '' : `, ${bonus > 0 ? '+' : ''}${bonus} bonus point${Math.abs(bonus) === 1 ? '' : 's'}`;
+  return (
+    <span aria-label={`${item?.gameweek ?? 'Fixture'}: ${resultLabel}${bonusLabel}`} className={`manager-desk__form-score${item ? ` manager-desk__form-score--${item.result.toLowerCase()}` : ' manager-desk__form-score--empty'}`}>
+      <span aria-hidden="true" className="manager-desk__form-score-markers manager-desk__form-score-markers--above">
+        {bonus > 0 ? Array.from({ length: markerCount }, (_, index) => <i key={index} />) : null}
+      </span>
+      <strong>{item?.points ?? '—'}</strong>
+      <span aria-hidden="true" className="manager-desk__form-score-markers manager-desk__form-score-markers--below">
+        {bonus < 0 ? Array.from({ length: markerCount }, (_, index) => <i key={index} />) : null}
+      </span>
+    </span>
+  );
 }
 
 function OtherFixtureRow({ context, fixture, formFixtures, onNavigate }: {
@@ -345,19 +340,20 @@ function OtherFixtureRow({ context, fixture, formFixtures, onNavigate }: {
   formFixtures: LeagueFixture[];
   onNavigate: (href: string) => void;
 }) {
+  const homeName = managerNicknameForTeam(fixture.homeTeam);
+  const awayName = managerNicknameForTeam(fixture.awayTeam);
   return (
-    <button className="manager-desk__fixture-row" onClick={() => onNavigate('/league')} type="button">
-      <span className="manager-desk__fixture-row-team">{fixture.homeTeam.shortName ?? fixture.homeTeam.name}</span>
-      {context === 'pre_deadline' ? (
-        <span className="manager-desk__fixture-row-form" aria-label={`${fixture.homeTeam.name} and ${fixture.awayTeam.name} last five gameweeks`}>
-          <FormDots form={formForTeam(fixture.homeTeam.id, formFixtures)} />
-          <span className="manager-desk__fixture-row-vs">vs</span>
-          <FormDots form={formForTeam(fixture.awayTeam.id, formFixtures)} />
+    <button aria-label={`View fixture: ${homeName} versus ${awayName}`} className="manager-desk__fixture-row" onClick={() => onNavigate('/league')} type="button">
+      <span className="manager-desk__fixture-row-teams">
+        <span className="manager-desk__fixture-row-team">
+          <span>{homeName}</span>
+          {context === 'pre_deadline' ? <FormDots form={formForTeam(fixture.homeTeam.id, formFixtures)} /> : <strong className="manager-desk__fixture-row-score">{fixture.score.homeScore ?? '—'}</strong>}
         </span>
-      ) : (
-        <strong className="manager-desk__fixture-row-score">{fixture.score.homeScore ?? '—'} – {fixture.score.awayScore ?? '—'}</strong>
-      )}
-      <span className="manager-desk__fixture-row-team manager-desk__fixture-row-team--away">{fixture.awayTeam.shortName ?? fixture.awayTeam.name}</span>
+        <span className="manager-desk__fixture-row-team">
+          <span>{awayName}</span>
+          {context === 'pre_deadline' ? <FormDots form={formForTeam(fixture.awayTeam.id, formFixtures)} /> : <strong className="manager-desk__fixture-row-score">{fixture.score.awayScore ?? '—'}</strong>}
+        </span>
+      </span>
       <ChevronRight aria-hidden="true" size={16} />
     </button>
   );
@@ -480,7 +476,9 @@ function FormDots({ form }: { form: TeamForm[] }) {
 
 interface TeamForm {
   key: string;
+  gameweek: string;
   points: number | null;
+  bonusPoints: number;
   result: 'W' | 'D' | 'L' | 'P';
 }
 
@@ -490,7 +488,9 @@ function formForTeam(teamId: string, fixtures: LeagueFixture[]): TeamForm[] {
     .sort((left, right) => left.gameweek.number - right.gameweek.number)
     .map((fixture) => ({
       key: fixture.id,
+      gameweek: fixture.gameweek.name,
       points: scoreForTeam(fixture, teamId),
+      bonusPoints: fixture.score.bonusPoints[teamId] ?? 0,
       result: resultForFixture(fixture, teamId),
     }));
 }

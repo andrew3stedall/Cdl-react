@@ -1041,3 +1041,177 @@
   .manager-desk__form-dot { height: 0.5rem; width: 0.5rem; }
   .manager-desk__fixture-row-team { font-size: 0.7rem; }
 }
+
+/* Combined fixture surface: the featured matchup keeps its taller presence while
+   the supporting fixtures share the same surface underneath it. */
+.manager-desk__fixture-focus {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.manager-desk__fixture-spotlight,
+.manager-desk__fixture-others {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+
+.manager-desk__fixture-spotlight {
+  border-left: 3px solid var(--primary);
+  min-height: clamp(24rem, 62vw, 31rem);
+}
+
+.manager-desk__fixture-spotlight--finalised { border-left-color: var(--muted-foreground); }
+
+.manager-desk__fixture-spotlight-teams {
+  display: grid;
+  gap: 0;
+  grid-template-columns: 1fr;
+}
+
+.manager-desk__fixture-spotlight-team {
+  align-items: center;
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  min-width: 0;
+  padding: 0.8rem 0;
+}
+
+.manager-desk__fixture-spotlight-team + .manager-desk__fixture-spotlight-team {
+  border-top: 1px solid var(--border);
+}
+
+.manager-desk__fixture-spotlight-team--opponent {
+  justify-items: start;
+  text-align: left;
+}
+
+.manager-desk__fixture-spotlight-team strong {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.manager-desk__fixture-team-copy {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.manager-desk__fixture-team-copy small { color: var(--muted-foreground); font-size: 0.72rem; }
+.manager-desk__fixture-team-score { color: var(--primary); font-size: clamp(1.8rem, 5vw, 3rem); letter-spacing: -0.07em; line-height: 1; }
+.manager-desk__fixture-spotlight-team--opponent .manager-desk__fixture-team-score { color: var(--foreground); }
+
+.manager-desk__fixture-form-rows {
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 0.35rem;
+  padding-top: 0.85rem;
+}
+
+.manager-desk__fixture-form-heading,
+.manager-desk__fixture-form-row {
+  align-items: center;
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: minmax(5.5rem, 0.8fr) minmax(0, 2fr);
+}
+
+.manager-desk__fixture-form-heading {
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.manager-desk__fixture-form-heading > span:last-child { text-align: center; }
+.manager-desk__fixture-form-team { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.manager-desk__fixture-form-score-list {
+  align-items: center;
+  display: grid;
+  gap: 0.35rem;
+  grid-template-columns: repeat(5, minmax(2.1rem, 1fr));
+}
+
+.manager-desk__form-score {
+  align-items: center;
+  display: grid;
+  grid-template-rows: 0.55rem 1.9rem 0.55rem;
+  justify-items: center;
+  min-width: 0;
+}
+
+.manager-desk__form-score > strong {
+  align-items: center;
+  border: 1px solid var(--border);
+  border-radius: 0.45rem;
+  display: flex;
+  font-size: 0.78rem;
+  height: 1.9rem;
+  justify-content: center;
+  min-width: 2.1rem;
+  padding: 0 0.2rem;
+  width: 100%;
+}
+
+.manager-desk__form-score--w > strong { background: color-mix(in srgb, var(--primary) 14%, transparent); border-color: var(--primary); color: var(--primary); }
+.manager-desk__form-score--d > strong { background: color-mix(in srgb, var(--muted-foreground) 12%, transparent); border-color: var(--muted-foreground); color: var(--foreground); }
+.manager-desk__form-score--l > strong { background: color-mix(in srgb, var(--destructive) 12%, transparent); border-color: var(--destructive); color: var(--destructive); }
+.manager-desk__form-score--p > strong, .manager-desk__form-score--empty > strong { color: var(--muted-foreground); }
+
+.manager-desk__form-score-markers {
+  align-items: center;
+  display: flex;
+  gap: 0.12rem;
+  height: 0.55rem;
+}
+
+.manager-desk__form-score-markers i {
+  background: var(--primary);
+  border: 1px solid var(--primary);
+  border-radius: 50%;
+  display: block;
+  height: 0.32rem;
+  width: 0.32rem;
+}
+
+.manager-desk__form-score-markers--below i { background: transparent; border-color: var(--destructive); }
+
+.manager-desk__fixture-others { border-top: 1px solid var(--border); }
+
+.manager-desk__fixture-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-height: 0;
+  padding: 0.6rem 0;
+}
+
+.manager-desk__fixture-row-teams { display: grid; min-width: 0; }
+
+.manager-desk__fixture-row-team {
+  align-items: center;
+  display: flex;
+  gap: 0.65rem;
+  justify-content: space-between;
+  min-height: 1.65rem;
+  min-width: 0;
+}
+
+.manager-desk__fixture-row-team + .manager-desk__fixture-row-team { border-top: 1px solid color-mix(in srgb, var(--border) 65%, transparent); }
+.manager-desk__fixture-row-team > span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.manager-desk__fixture-row-score { min-width: 2rem; text-align: right; }
+.manager-desk__fixture-row .manager-desk__form-dots { flex: 0 0 auto; }
+
+@media (max-width: 520px) {
+  .manager-desk__fixture-spotlight { min-height: 24rem; }
+  .manager-desk__fixture-form-heading,
+  .manager-desk__fixture-form-row { gap: 0.45rem; grid-template-columns: minmax(4rem, 0.75fr) minmax(0, 2fr); }
+  .manager-desk__fixture-form-score-list { gap: 0.2rem; }
+  .manager-desk__form-score > strong { min-width: 1.8rem; }
+  .manager-desk__fixture-row-team { gap: 0.4rem; }
+}

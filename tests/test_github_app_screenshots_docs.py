@@ -19,6 +19,8 @@ def test_screenshot_runbook_explains_github_artifacts() -> None:
     assert "App Screenshots" in content
     assert "app-screenshots" in content
     assert "does not require GCP" in content
+    assert "manual-only" in content
+    assert "does not run as part of pull requests or the automatic staging rollout" in content
     assert "/team-selection" in content
     assert "mobile" in content
     assert "tablet" in content
@@ -28,6 +30,8 @@ def test_screenshot_runbook_explains_github_artifacts() -> None:
 
 def test_screenshot_workflow_uploads_artifact_without_deploying() -> None:
     content = WORKFLOW.read_text(encoding="utf-8")
+    assert "workflow_dispatch:" in content
+    assert "pull_request:" not in content
     assert "actions/upload-artifact" in content
     assert "axe-core" in content
     assert "Test primary interactions" in content

@@ -4,7 +4,8 @@ import { describe, expect, test } from 'vitest';
 
 import type { SessionState } from './contracts';
 import { ManagerDeskPage } from './ManagerDeskPage';
-import type { LeagueClient, LeagueSnapshot } from './league-api';
+import type { LeagueClient, LeagueFixture, LeagueSnapshot } from './league-api';
+import type { ManagerDeskClient, ManagerDeskSnapshot } from './manager-desk-api';
 import type {
   SquadApiHistoryResponse,
   SquadApiSummary,
@@ -146,10 +147,39 @@ class MemorySquadClient implements SquadClient {
   async applyChanges() { return this.summary; }
 }
 
+function scoredFixture(
+  gameweekNumber: number,
+  homeScore: number,
+  awayScore: number,
+  outcome: LeagueFixture['score']['outcome'],
+  bonusPoints: Record<string, number> = {},
+): LeagueFixture {
+  return {
+    id: `fixture-${gameweekNumber}`,
+    gameweek: { id: `gw-${gameweekNumber}`, name: `Gameweek ${gameweekNumber}`, number: gameweekNumber },
+    homeTeam: { id: 'team-stan-still-sells-tik', name: 'Stan Still Sells Tik', shortName: 'SSS' },
+    awayTeam: { id: 'team-wilde-boars', name: 'Wilde Boars', shortName: 'WIL' },
+    status: gameweekNumber === 5 ? 'started' : 'complete',
+    kickoffLabel: 'Live now',
+    roundLabel: 'League',
+    isCurrent: gameweekNumber === 5,
+    isNext: false,
+    detailAvailable: true,
+    score: { homeScore, awayScore, bonusPoints, chipsPlayed: {}, outcome },
+  };
+}
+
+class MemoryManagerDeskClient implements ManagerDeskClient {
+  constructor(private readonly snapshot: ManagerDeskSnapshot) {}
+
+  async getDesk() { return this.snapshot; }
+}
+
 function renderPage(
   onNavigate: (href: string) => void = () => undefined,
   squadClient: SquadClient = new MemorySquadClient(),
   onSignOut: () => void = () => undefined,
+  deskClient?: ManagerDeskClient,
 ) {
   const container = document.createElement('div');
   document.body.append(container);
@@ -158,6 +188,7 @@ function renderPage(
     root.render(
       <ThemePresetProvider initialPresetName="teal-light">
         <ManagerDeskPage
+        deskClient={deskClient}
         leagueClient={new MemoryLeagueClient()}
         onNavigate={onNavigate}
         onSignOut={onSignOut}
@@ -202,6 +233,64 @@ describe('ManagerDeskPage', () => {
       teamButton?.click();
     });
     expect(destinations).toContain('/team-selection');
+  });
+
+  test('uses nicknames and stacked score history on the combined fixture surface', async () => {
+    const formFixtures = [
+      scoredFixture(1, 20, 10, 'home_win'),
+      scoredFixture(2, 12, 12, 'draw', { 'team-stan-still-sells-tik': 2 }),
+      scoredFixture(3, 8, 14, 'away_win', { 'team-stan-still-sells-tik': -1 }),
+      scoredFixture(4, 31, 22, 'home_win'),
+      scoredFixture(5, 24, 20, 'home_win'),
+    ];
+    const currentFixture = formFixtures[4];
+    const otherFixture: LeagueFixture = {
+      ...currentFixture,
+      id: 'fixture-other',
+      homeTeam: { id: 'team-bayer-neverlusen', name: 'Bayer Neverlusen' },
+      awayTeam: { id: 'team-class-of-84', name: 'Class of 84' },
+      status: 'complete',
+      isCurrent: false,
+      score: { homeScore: 43, awayScore: 6, bonusPoints: {}, chipsPlayed: {}, outcome: 'home_win' },
+    };
+    const liveSelection = { ...selection, managerTeam: { id: 'team-stan-still-sells-tik', name: 'Stan Still Sells Tik' } };
+    const liveSnapshot: ManagerDeskSnapshot = {
+      context: 'live',
+      gameweek: currentFixture.gameweek,
+      selection: liveSelection,
+      squad: { summary: { ...squad, manager_team: { id: 'team-stan-still-sells-tik', name: 'Stan Still Sells Tik' } }, notifications: { notifications: [], proposed_trade_count: 0 } },
+      currentFixture,
+      nextFixture: null,
+      currentFixtures: [currentFixture, otherFixture],
+      nextFixtures: [],
+      recentFixtures: formFixtures,
+      formFixtures,
+      leagueTable: league.table,
+      availablePlayers: [],
+      drawDeadlineAt: null,
+      interestCount: 0,
+    };
+    const { container } = renderPage(() => undefined, new MemorySquadClient(), () => undefined, new MemoryManagerDeskClient(liveSnapshot));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect(container.textContent).toContain('Andrew');
+    expect(container.textContent).toContain('DJ');
+    expect(container.textContent).toContain('Kev');
+    expect(container.textContent).toContain('Warren');
+    expect(container.textContent).not.toContain('Stan Still Sells Tik');
+    expect(container.textContent).not.toContain('Wilde Boars');
+    expect(container.textContent).not.toContain('Live scores can still change');
+    expect(container.textContent).not.toContain('View live fixture');
+    expect(container.querySelectorAll('.manager-desk__fixture-form-row')).toHaveLength(2);
+    expect(container.querySelectorAll('.manager-desk__fixture-row-team')).toHaveLength(2);
+    expect(container.querySelector('.manager-desk__form-score--w')).not.toBeNull();
+    expect(container.querySelector('.manager-desk__form-score--d')).not.toBeNull();
+    expect(container.querySelector('.manager-desk__form-score--l')).not.toBeNull();
+    expect(container.querySelector('[aria-label*="+2 bonus points"]')).not.toBeNull();
+    expect(container.querySelector('.manager-desk__form-score-markers--below i')).not.toBeNull();
   });
 
   test('keeps account actions behind the compact header profile menu', async () => {

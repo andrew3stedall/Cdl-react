@@ -244,8 +244,9 @@ def test_seed_is_idempotent_and_persists_valid_position_counts() -> None:
         }
         manager_names = dict(
             session.execute(
-                select(draft_teams_table.c.id, managers_table.c.display_name)
-                .join(managers_table, draft_teams_table.c.manager_id == managers_table.c.id)
+                select(draft_teams_table.c.id, managers_table.c.display_name).join(
+                    managers_table, draft_teams_table.c.manager_id == managers_table.c.id
+                )
             ).all()
         )
         assert manager_names == TEAM_MANAGER_NICKNAMES
@@ -327,4 +328,4 @@ def test_seed_is_idempotent_and_persists_valid_position_counts() -> None:
     assert sum(player.slot == "starter" for player in team_selection) == 11
     assert sum(player.slot == "bench" for player in team_selection) == 4
     assert sum(player.slot == "reserve" for player in team_selection) == 5
-
+\n

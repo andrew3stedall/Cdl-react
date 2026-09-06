@@ -254,11 +254,15 @@ function FixtureSpotlight({ context, fixture, formFixtures, gameweek, managerTea
   const opponent = ownTeam ? (fixture.homeTeam.id === ownTeam.id ? fixture.awayTeam : fixture.homeTeam) : null;
   const ownScore = ownTeam ? scoreForTeam(fixture, ownTeam.id) : null;
   const opponentScore = opponent ? scoreForTeam(fixture, opponent.id) : null;
-  const ownForm = ownTeam ? formForTeam(ownTeam.id, formFixtures) : [];
-  const opponentForm = opponent ? formForTeam(opponent.id, formFixtures) : [];
+  const previousFixtures = formFixtures.filter((candidate) => candidate.id !== fixture.id);
+  const ownForm = ownTeam ? formForTeam(ownTeam.id, previousFixtures) : [];
+  const opponentForm = opponent ? formForTeam(opponent.id, previousFixtures) : [];
 
   return (
-    <Card className={`manager-desk__fixture-spotlight manager-desk__fixture-spotlight--${context}`}>
+    <Card
+      className={`manager-desk__fixture-spotlight manager-desk__fixture-spotlight--${context}`}
+      style={{ gap: '0.65rem', minHeight: 'unset', padding: 'clamp(0.9rem, 2.6vw, 1.35rem)' }}
+    >
       <div className="manager-desk__fixture-spotlight-topline">
         <span className="manager-desk__fixture-kicker">
           <span className={`manager-desk__status-dot manager-desk__status-dot--${context}`} aria-hidden="true" />
@@ -266,47 +270,68 @@ function FixtureSpotlight({ context, fixture, formFixtures, gameweek, managerTea
         </span>
         <span className="manager-desk__fixture-gameweek">{gameweek}</span>
       </div>
-      <div className="manager-desk__fixture-spotlight-teams">
-        <div className="manager-desk__fixture-spotlight-team manager-desk__fixture-spotlight-team--own">
-          <TeamCrest className="manager-desk__fixture-badge" team={ownTeam ?? managerTeam} />
-          <span className="manager-desk__fixture-team-copy">
-            <strong>{managerNicknameForTeam(ownTeam ?? managerTeam)}</strong>
-            <small>You</small>
-          </span>
-          <strong className="manager-desk__fixture-team-score">{ownScore ?? '—'}</strong>
-        </div>
-        <div className="manager-desk__fixture-spotlight-team manager-desk__fixture-spotlight-team--opponent">
-          <TeamCrest className="manager-desk__fixture-badge manager-desk__fixture-badge--muted" team={opponent ?? { name: 'Opponent' }} />
-          <span className="manager-desk__fixture-team-copy">
-            <strong>{opponent ? managerNicknameForTeam(opponent) : 'Opponent'}</strong>
-            <small>Opponent</small>
-          </span>
-          <strong className="manager-desk__fixture-team-score">{opponentScore ?? '—'}</strong>
-        </div>
-      </div>
-      <div aria-label="Last five fixture scores" className="manager-desk__fixture-form-rows">
-        <div className="manager-desk__fixture-form-heading">
-          <span>Last 5 fixtures</span>
-          <span>Points</span>
-        </div>
-        <FixtureFormRow form={ownForm} team={ownTeam ?? managerTeam} />
-        {opponent ? <FixtureFormRow form={opponentForm} team={opponent} /> : null}
+      <div aria-label="Fixture scores and previous five gameweeks" className="manager-desk__fixture-spotlight-teams">
+        <FixtureFormRow
+          currentScore={ownScore}
+          form={ownForm}
+          isOwn
+          team={ownTeam ?? managerTeam}
+        />
+        {opponent ? (
+          <FixtureFormRow
+            currentScore={opponentScore}
+            form={opponentForm}
+            team={opponent}
+          />
+        ) : null}
       </div>
     </Card>
   );
 }
 
-function FixtureFormRow({ form, team }: { form: TeamForm[]; team: { id?: string; name: string; managerName?: string } }) {
+function FixtureFormRow({ currentScore, form, isOwn = false, team }: {
+  currentScore: number | null;
+  form: TeamForm[];
+  isOwn?: boolean;
+  team: { id?: string; name: string; managerName?: string };
+}) {
   const nickname = managerNicknameForTeam(team);
   const scores = form.slice(-5);
   return (
-    <div className="manager-desk__fixture-form-row">
-      <strong className="manager-desk__fixture-form-team">{nickname}</strong>
-      <div className="manager-desk__fixture-form-score-list">
+    <div
+      aria-label={`${nickname}: previous five gameweek points, oldest to newest, then this gameweek`}
+      className={`manager-desk__fixture-spotlight-team manager-desk__fixture-form-row${isOwn ? ' manager-desk__fixture-spotlight-team--own' : ' manager-desk__fixture-spotlight-team--opponent'}`}
+      style={{
+        gap: '0.45rem',
+        gridTemplateColumns: '3rem minmax(2.9rem, 0.7fr) minmax(0, 2.4fr) minmax(2rem, auto)',
+        justifyItems: 'stretch',
+        padding: '0.7rem 0',
+        textAlign: 'left',
+      }}
+    >
+      <TeamCrest
+        className={`manager-desk__fixture-badge${isOwn ? '' : ' manager-desk__fixture-badge--muted'}`}
+        team={team}
+      />
+      <strong className="manager-desk__fixture-form-team" style={{ alignSelf: 'center', fontSize: '0.95rem' }}>
+        {nickname}
+      </strong>
+      <div
+        aria-label="Previous five gameweek points, oldest to newest"
+        className="manager-desk__fixture-form-score-list"
+        style={{ gap: '0.12rem', gridTemplateColumns: 'repeat(5, minmax(1.65rem, 1fr))' }}
+      >
         {Array.from({ length: 5 }, (_, index) => (
           <FormScore item={scores[index]} key={scores[index]?.key ?? `empty-${index}`} />
         ))}
       </div>
+      <strong
+        aria-label={`This gameweek: ${currentScore ?? 'no score'}`}
+        className="manager-desk__fixture-team-score"
+        style={{ alignSelf: 'center', fontSize: 'clamp(1.25rem, 4vw, 1.8rem)', minWidth: '2rem', textAlign: 'right' }}
+      >
+        {currentScore ?? '—'}
+      </strong>
     </div>
   );
 }
@@ -321,7 +346,7 @@ function FormScore({ item }: { item?: TeamForm }) {
       <span aria-hidden="true" className="manager-desk__form-score-markers manager-desk__form-score-markers--above">
         {bonus > 0 ? Array.from({ length: markerCount }, (_, index) => <i key={index} />) : null}
       </span>
-      <strong>{item?.points ?? '—'}</strong>
+      <strong style={{ fontSize: '0.72rem', height: '1.75rem', minWidth: '1.65rem' }}>{item?.points ?? '—'}</strong>
       <span aria-hidden="true" className="manager-desk__form-score-markers manager-desk__form-score-markers--below">
         {bonus < 0 ? Array.from({ length: markerCount }, (_, index) => <i key={index} />) : null}
       </span>

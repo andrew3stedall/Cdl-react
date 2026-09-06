@@ -50,6 +50,19 @@ TEAM_IDS = (
     "team-class-of-84",
 )
 
+# Manager names shown in the league UI are the managers' league nicknames,
+# rather than their Google account display names.
+TEAM_MANAGER_NICKNAMES = {
+    "team-stan-still-sells-tik": "Andrew",
+    "team-wilde-boars": "DJ",
+    "team-bayer-neverlusen": "Kev",
+    "team-class-of-84": "Warren",
+    "team-sporting-lesbians": "Daniel",
+    "team-dicks-dribbling-xi": "Rich",
+    "team-koden-all-stars": "Nath",
+    "team-exeter-gently": "Dilson",
+}
+
 # The screenshots show the first-round manager order, which differs from the
 # display order above: Exeter, Dicks, Bayer, Sporting, Stan, Class, Koden,
 # Wilde. Values are zero-based indexes into TEAM_IDS.
@@ -738,7 +751,7 @@ def seed_staging_snake_draft(
             manager_id = f"manager-{index}"
             assigned_email = manager_assignments.get(team_id)
             assigned_user = assigned_users.get(assigned_email) if assigned_email else None
-            manager_name = assigned_user["display_name"] if assigned_user else f"Manager {index}"
+            manager_name = TEAM_MANAGER_NICKNAMES[team_id]
             _upsert(
                 session,
                 managers_table,
@@ -863,3 +876,4 @@ def seed_staging_snake_draft(
         ownerships=len(allocations),
         position_counts=allocation_position_counts(allocations),
     )
+

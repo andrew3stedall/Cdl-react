@@ -328,4 +328,3 @@ def test_seed_is_idempotent_and_persists_valid_position_counts() -> None:
     assert sum(player.slot == "starter" for player in team_selection) == 11
     assert sum(player.slot == "bench" for player in team_selection) == 4
     assert sum(player.slot == "reserve" for player in team_selection) == 5
-\n

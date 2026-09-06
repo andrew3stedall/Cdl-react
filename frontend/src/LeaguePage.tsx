@@ -7,7 +7,6 @@ import {
   Clock3,
   Info,
   RefreshCw,
-  Shield,
   Table2,
   X,
 } from 'lucide-react';
@@ -21,6 +20,7 @@ import type { FixtureGameweekStatus } from './components/fixture/FixtureSquadCom
 import { managerNicknameForTeam } from './manager-nicknames';
 import { PlayerChartDetailDialog } from './components/player/PlayerChartDetailDialog';
 import { TeamCrest } from './components/team/TeamCrest';
+import { PageHero } from './components/ui/page-hero';
 import type { AttackDirection } from './contracts';
 import {
   formDetailSections,
@@ -206,35 +206,33 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
 
   return (
     <main aria-labelledby="league-title" className="league-page">
-      <header className="league-page__hero">
-        <div className="league-page__brand-lockup">
-          <span aria-hidden="true" className="league-page__brand-mark"><Shield size={25} /></span>
-          <div>
-            <p className="league-page__brand-name">Castle Draft League</p>
-            <h1 id="league-title">League</h1>
-            <p className="league-page__context-name">{snapshot?.currentFixtures.gameweek?.name ?? 'Competition workspace'}</p>
+      <PageHero
+        actions={(
+          <div aria-label="League utilities" className="league-page__hero-icons">
+            <div aria-label="League view" className="league-page__view-toggle" role="group">
+              <button aria-label="View fixtures" aria-pressed={view === 'fixtures'} onClick={() => setView('fixtures')} title="Fixtures" type="button">
+                <CalendarDays aria-hidden="true" size={18} />
+                <span>Fixtures</span>
+              </button>
+              <button aria-label="View table" aria-pressed={view === 'table'} onClick={() => setView('table')} title="Table" type="button">
+                <Table2 aria-hidden="true" size={18} />
+                <span>Table</span>
+              </button>
+            </div>
+            <div className="league-page__notifications">
+              <button aria-expanded={notificationsOpen} aria-label={`Notifications${notifications.length ? `, ${notifications.length} unread` : ''}`} className="league-page__icon-button" onClick={() => setNotificationsOpen((open) => !open)} title="Notifications" type="button">
+                <Bell aria-hidden="true" size={20} />
+                {notifications.length ? <span className="league-page__notification-count">{notifications.length}</span> : null}
+              </button>
+              {notificationsOpen ? <NotificationPopover notifications={notifications} onNavigate={onNavigate} /> : null}
+            </div>
           </div>
-        </div>
-        <div aria-label="League utilities" className="league-page__hero-icons">
-          <div aria-label="League view" className="league-page__view-toggle" role="group">
-            <button aria-label="View fixtures" aria-pressed={view === 'fixtures'} onClick={() => setView('fixtures')} title="Fixtures" type="button">
-              <CalendarDays aria-hidden="true" size={18} />
-              <span>Fixtures</span>
-            </button>
-            <button aria-label="View table" aria-pressed={view === 'table'} onClick={() => setView('table')} title="Table" type="button">
-              <Table2 aria-hidden="true" size={18} />
-              <span>Table</span>
-            </button>
-          </div>
-          <div className="league-page__notifications">
-            <button aria-expanded={notificationsOpen} aria-label={`Notifications${notifications.length ? `, ${notifications.length} unread` : ''}`} className="league-page__icon-button" onClick={() => setNotificationsOpen((open) => !open)} title="Notifications" type="button">
-              <Bell aria-hidden="true" size={20} />
-              {notifications.length ? <span className="league-page__notification-count">{notifications.length}</span> : null}
-            </button>
-            {notificationsOpen ? <NotificationPopover notifications={notifications} onNavigate={onNavigate} /> : null}
-          </div>
-        </div>
-      </header>
+        )}
+        actionsLabel="League utilities"
+        context={snapshot?.currentFixtures.gameweek?.name ?? 'Competition workspace'}
+        title="League"
+        titleId="league-title"
+      />
 
       {status === 'loading' ? <LeagueLoadingState /> : null}
       {status === 'error' ? (

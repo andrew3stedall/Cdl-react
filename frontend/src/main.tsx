@@ -17,6 +17,7 @@ import './application-shell.css';
 import './squad-management-responsive.css';
 import './login-page.css';
 import './squad-page-a11y.css';
+import './manager-desk-fixture-layout.css';
 
 function getInitialPath() {
   const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, '');

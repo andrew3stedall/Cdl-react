@@ -182,137 +182,122 @@ function FixtureFocus({ data, managerTeam, onNavigate }: {
   managerTeam: { id: string; name: string };
   onNavigate: (href: string) => void;
 }) {
-  const fixture = data.context === 'pre_deadline' ? data.nextFixture : data.currentFixture;
   const fixtures = data.context === 'pre_deadline' ? data.nextFixtures : data.currentFixtures;
-  const otherFixtures = fixtures.filter((candidate) => candidate.id !== fixture?.id);
+  const requestedFeatured = data.context === 'pre_deadline' ? data.nextFixture : data.currentFixture;
+  const featuredFixture = requestedFeatured ?? fixtures.find((candidate) => Boolean(teamForFixture(candidate, managerTeam.id, managerTeam.name))) ?? null;
+  const orderedFixtures = featuredFixture
+    ? [featuredFixture, ...fixtures.filter((candidate) => candidate.id !== featuredFixture.id)]
+    : fixtures;
+  const gameweek = featuredFixture?.gameweek.name ?? orderedFixtures[0]?.gameweek.name ?? data.gameweek.name;
+  const statusLabel = data.context === 'live' ? 'Live now' : data.context === 'finalised' ? 'Finalised' : 'Next fixture';
 
   return (
-    <section aria-labelledby="manager-desk-fixture-focus-title" className={`manager-desk__fixture-focus manager-desk__fixture-focus--${data.context}`}>
-      <FixtureSpotlight
-        context={data.context}
-        fixture={fixture}
-        formFixtures={data.formFixtures}
-        gameweek={fixture?.gameweek.name ?? data.gameweek.name}
-        managerTeam={managerTeam}
-        onNavigate={onNavigate}
-      />
-      <section aria-labelledby="manager-desk-other-fixtures-title" className="manager-desk__fixture-others">
-        <div className="manager-desk__fixture-others-heading">
+    <section
+      aria-labelledby="manager-desk-fixture-focus-title"
+      className={`manager-desk__fixture-focus manager-desk__fixture-focus--${data.context}`}
+      style={{ display: 'grid', gap: 0, overflow: 'hidden' }}
+    >
+      <div className="manager-desk__fixture-spotlight-topline" style={{ padding: '1rem 1rem 0.7rem' }}>
+        <span className="manager-desk__fixture-kicker" id="manager-desk-fixture-focus-title">
+          <span className={`manager-desk__status-dot manager-desk__status-dot--${data.context}`} aria-hidden="true" />
+          {statusLabel}
+        </span>
+        <span className="manager-desk__fixture-gameweek">{gameweek}</span>
+      </div>
+
+      {orderedFixtures.length > 0 ? (
+        <div aria-label="Gameweek fixtures" style={{ display: 'grid' }}>
+          {orderedFixtures.map((fixture, index) => (
+            <FixtureMatchup
+              featured={fixture.id === featuredFixture?.id}
+              fixture={fixture}
+              formFixtures={data.formFixtures}
+              key={fixture.id}
+              separated={index > 0}
+            />
+          ))}
+        </div>
+      ) : (
+        <div
+          className="manager-desk__fixture-spotlight--empty"
+          style={{ alignItems: 'center', display: 'grid', gap: '0.75rem', gridTemplateColumns: 'auto minmax(0, 1fr) auto', padding: '1rem' }}
+        >
+          <CalendarClock aria-hidden="true" size={24} />
           <div>
-            <p className="eyebrow">League context</p>
-            <h2 id="manager-desk-other-fixtures-title">Other fixtures</h2>
+            <strong>Fixture details are not available yet</strong>
+            <p className="manager-desk__empty-message" style={{ margin: '0.2rem 0 0' }}>Open the league view when the next schedule is published.</p>
           </div>
-          <Button onClick={() => onNavigate('/league')} type="button" variant="ghost">
-            View all <ArrowRight aria-hidden="true" size={15} />
+          <Button onClick={() => onNavigate('/league')} type="button" variant="secondary">
+            View fixtures <ArrowRight aria-hidden="true" size={16} />
           </Button>
         </div>
-        {otherFixtures.length > 0 ? (
-          <div className="manager-desk__fixture-row-list">
-            {otherFixtures.map((otherFixture) => (
-              <OtherFixtureRow
-                context={data.context}
-                fixture={otherFixture}
-                formFixtures={data.formFixtures}
-                key={otherFixture.id}
-                onNavigate={onNavigate}
-              />
-            ))}
-          </div>
-        ) : (
-          <p className="manager-desk__empty-message">No other fixtures are available for this gameweek.</p>
-        )}
-      </section>
+      )}
     </section>
   );
 }
 
-function FixtureSpotlight({ context, fixture, formFixtures, gameweek, managerTeam, onNavigate }: {
-  context: ManagerDeskContext;
-  fixture: LeagueFixture | null;
+function FixtureMatchup({ featured, fixture, formFixtures, separated }: {
+  featured: boolean;
+  fixture: LeagueFixture;
   formFixtures: LeagueFixture[];
-  gameweek: string;
-  managerTeam: { id: string; name: string };
-  onNavigate: (href: string) => void;
+  separated: boolean;
 }) {
-  if (!fixture) {
-    return (
-      <Card className="manager-desk__fixture-spotlight manager-desk__fixture-spotlight--empty">
-        <CalendarClock aria-hidden="true" size={24} />
-        <div>
-          <span className="manager-desk__fixture-kicker">Next fixture</span>
-          <h2 id="manager-desk-fixture-focus-title">Fixture details are not available yet</h2>
-          <p>Open the league view when the next schedule is published.</p>
-        </div>
-        <Button onClick={() => onNavigate('/league')} type="button" variant="secondary">
-          View fixtures <ArrowRight aria-hidden="true" size={16} />
-        </Button>
-      </Card>
-    );
-  }
-
-  const ownTeam = teamForFixture(fixture, managerTeam.id, managerTeam.name);
-  const opponent = ownTeam ? (fixture.homeTeam.id === ownTeam.id ? fixture.awayTeam : fixture.homeTeam) : null;
-  const ownScore = ownTeam ? scoreForTeam(fixture, ownTeam.id) : null;
-  const opponentScore = opponent ? scoreForTeam(fixture, opponent.id) : null;
   const previousFixtures = formFixtures.filter((candidate) => candidate.id !== fixture.id);
-  const ownForm = ownTeam ? formForTeam(ownTeam.id, previousFixtures) : [];
-  const opponentForm = opponent ? formForTeam(opponent.id, previousFixtures) : [];
-
+  const homeName = managerNicknameForTeam(fixture.homeTeam);
+  const awayName = managerNicknameForTeam(fixture.awayTeam);
   return (
-    <Card
-      className={`manager-desk__fixture-spotlight manager-desk__fixture-spotlight--${context}`}
-      style={{ gap: '0.65rem', minHeight: 'unset', padding: 'clamp(0.9rem, 2.6vw, 1.35rem)' }}
+    <div
+      aria-label={`${homeName} versus ${awayName}`}
+      className={featured ? 'manager-desk__fixture-matchup manager-desk__fixture-matchup--featured' : 'manager-desk__fixture-matchup'}
+      style={{ borderTop: separated ? '1px solid var(--border)' : undefined, display: 'grid' }}
     >
-      <div className="manager-desk__fixture-spotlight-topline">
-        <span className="manager-desk__fixture-kicker">
-          <span className={`manager-desk__status-dot manager-desk__status-dot--${context}`} aria-hidden="true" />
-          {context === 'live' ? 'Live now' : context === 'finalised' ? 'Finalised' : 'Next fixture'}
-        </span>
-        <span className="manager-desk__fixture-gameweek">{gameweek}</span>
-      </div>
-      <div aria-label="Fixture scores and previous five gameweeks" className="manager-desk__fixture-spotlight-teams">
-        <FixtureFormRow
-          currentScore={ownScore}
-          form={ownForm}
-          isOwn
-          team={ownTeam ?? managerTeam}
-        />
-        {opponent ? (
-          <FixtureFormRow
-            currentScore={opponentScore}
-            form={opponentForm}
-            team={opponent}
-          />
-        ) : null}
-      </div>
-    </Card>
+      <FixtureTeamRow
+        currentScore={scoreForTeam(fixture, fixture.homeTeam.id)}
+        featured={featured}
+        form={formForTeam(fixture.homeTeam.id, previousFixtures)}
+        team={fixture.homeTeam}
+      />
+      <FixtureTeamRow
+        currentScore={scoreForTeam(fixture, fixture.awayTeam.id)}
+        featured={featured}
+        form={formForTeam(fixture.awayTeam.id, previousFixtures)}
+        second
+        team={fixture.awayTeam}
+      />
+    </div>
   );
 }
 
-function FixtureFormRow({ currentScore, form, isOwn = false, team }: {
+function FixtureTeamRow({ currentScore, featured, form, second = false, team }: {
   currentScore: number | null;
+  featured: boolean;
   form: TeamForm[];
-  isOwn?: boolean;
+  second?: boolean;
   team: { id?: string; name: string; managerName?: string };
 }) {
   const nickname = managerNicknameForTeam(team);
   const scores = form.slice(-5);
+  const legacyRowClass = featured ? 'manager-desk__fixture-form-row' : 'manager-desk__fixture-row-team';
   return (
     <div
       aria-label={`${nickname}: previous five gameweek points, oldest to newest, then this gameweek`}
-      className={`manager-desk__fixture-spotlight-team manager-desk__fixture-form-row${isOwn ? ' manager-desk__fixture-spotlight-team--own' : ' manager-desk__fixture-spotlight-team--opponent'}`}
+      className={`manager-desk__fixture-team-row ${legacyRowClass}${featured ? ' manager-desk__fixture-spotlight-team--own' : ''}`}
       style={{
+        alignItems: 'center',
+        borderTop: second ? '1px solid color-mix(in srgb, var(--border) 65%, transparent)' : undefined,
+        display: 'grid',
         gap: '0.45rem',
-        gridTemplateColumns: '3rem minmax(2.9rem, 0.7fr) minmax(0, 2.4fr) minmax(2rem, auto)',
-        justifyItems: 'stretch',
-        padding: '0.7rem 0',
+        gridTemplateColumns: featured
+          ? '3rem minmax(2.8rem, 0.65fr) minmax(8.25rem, 2.4fr) minmax(2rem, auto)'
+          : '2.25rem minmax(2.8rem, 0.65fr) minmax(8.25rem, 2.4fr) minmax(2rem, auto)',
+        minHeight: featured ? '5rem' : '3.7rem',
+        minWidth: 0,
+        overflow: 'hidden',
+        padding: featured ? '0.65rem 1rem' : '0.45rem 1rem',
         textAlign: 'left',
       }}
     >
-      <TeamCrest
-        className={`manager-desk__fixture-badge${isOwn ? '' : ' manager-desk__fixture-badge--muted'}`}
-        team={team}
-      />
+      <TeamCrest className="manager-desk__fixture-badge" team={team} />
       <strong className="manager-desk__fixture-form-team" style={{ alignSelf: 'center', fontSize: '0.95rem' }}>
         {nickname}
       </strong>
@@ -328,7 +313,7 @@ function FixtureFormRow({ currentScore, form, isOwn = false, team }: {
       <strong
         aria-label={`This gameweek: ${currentScore ?? 'no score'}`}
         className="manager-desk__fixture-team-score"
-        style={{ alignSelf: 'center', fontSize: 'clamp(1.25rem, 4vw, 1.8rem)', minWidth: '2rem', textAlign: 'right' }}
+        style={{ alignSelf: 'center', color: 'var(--primary)', fontSize: 'clamp(1.25rem, 4vw, 1.8rem)', minWidth: '2rem', textAlign: 'right' }}
       >
         {currentScore ?? '—'}
       </strong>
@@ -351,31 +336,6 @@ function FormScore({ item }: { item?: TeamForm }) {
         {bonus < 0 ? Array.from({ length: markerCount }, (_, index) => <i key={index} />) : null}
       </span>
     </span>
-  );
-}
-
-function OtherFixtureRow({ context, fixture, formFixtures, onNavigate }: {
-  context: ManagerDeskContext;
-  fixture: LeagueFixture;
-  formFixtures: LeagueFixture[];
-  onNavigate: (href: string) => void;
-}) {
-  const homeName = managerNicknameForTeam(fixture.homeTeam);
-  const awayName = managerNicknameForTeam(fixture.awayTeam);
-  return (
-    <button aria-label={`View fixture: ${homeName} versus ${awayName}`} className="manager-desk__fixture-row" onClick={() => onNavigate('/league')} type="button">
-      <span className="manager-desk__fixture-row-teams">
-        <span className="manager-desk__fixture-row-team">
-          <span>{homeName}</span>
-          {context === 'pre_deadline' ? <FormDots form={formForTeam(fixture.homeTeam.id, formFixtures)} /> : <strong className="manager-desk__fixture-row-score">{fixture.score.homeScore ?? '—'}</strong>}
-        </span>
-        <span className="manager-desk__fixture-row-team">
-          <span>{awayName}</span>
-          {context === 'pre_deadline' ? <FormDots form={formForTeam(fixture.awayTeam.id, formFixtures)} /> : <strong className="manager-desk__fixture-row-score">{fixture.score.awayScore ?? '—'}</strong>}
-        </span>
-      </span>
-      <ChevronRight aria-hidden="true" size={16} />
-    </button>
   );
 }
 
@@ -488,10 +448,6 @@ function PanelHeading({ icon, label, title, action, onAction }: { icon: ReactNod
 
 function FormBlocks({ form }: { form: TeamForm[] }) {
   return <div className="manager-desk__form-blocks">{form.slice(-5).map((item) => <span className={`manager-desk__form-block manager-desk__form-block--${item.result.toLowerCase()}`} key={item.key}>{item.points ?? '—'}</span>)}</div>;
-}
-
-function FormDots({ form }: { form: TeamForm[] }) {
-  return <span className="manager-desk__form-dots">{Array.from({ length: 5 }, (_, index) => { const item = form.slice(-5)[index]; return <span aria-label={item ? `${item.result}${item.points === null ? '' : `, ${item.points} points`}` : 'No result'} className={`manager-desk__form-dot${item ? ` manager-desk__form-dot--${item.result.toLowerCase()}` : ''}`} key={item?.key ?? `empty-${index}`} />; })}</span>;
 }
 
 interface TeamForm {

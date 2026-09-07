@@ -11,7 +11,7 @@
   display: grid !important;
   grid-template-columns: var(--desk-fixture-crest-column) minmax(0, 1fr) 1.5rem !important;
   grid-template-rows: auto auto !important;
-  min-height: 4.15rem !important;
+  min-height: 3.85rem !important;
   overflow: visible !important;
   padding: 0.48rem 1rem !important;
   position: relative;
@@ -57,7 +57,7 @@
   grid-column: 2;
   grid-row: 2;
   grid-template-columns: repeat(5, 1.45rem) !important;
-  justify-self: start;
+  justify-self: end;
   width: max-content;
 }
 
@@ -99,12 +99,55 @@
   width: 0.25rem;
 }
 
-/* Mirror the second team so its points sit next to the first team's points and
-   its identity anchors the bottom of the fixture. */
-.manager-desk__fixture-matchup > .manager-desk__fixture-team-row:nth-child(2) {
-  border-top: 0 !important;
+/* The featured matchup gets 1.5x larger historical score cells while keeping
+   the current-gameweek score at the common fixture-board size. */
+.manager-desk__fixture-matchup--featured .manager-desk__fixture-team-row > .manager-desk__fixture-form-score-list {
+  grid-template-columns: repeat(5, 2.175rem) !important;
 }
 
+.manager-desk__fixture-matchup--featured .manager-desk__fixture-team-row .manager-desk__form-score {
+  grid-template-rows: 0.54rem 2.25rem 0.54rem;
+}
+
+.manager-desk__fixture-matchup--featured .manager-desk__fixture-team-row .manager-desk__form-score > strong {
+  font-size: 0.99rem !important;
+  height: 2.25rem !important;
+  min-width: 2.175rem !important;
+  width: 2.175rem !important;
+}
+
+.manager-desk__fixture-matchup--featured .manager-desk__fixture-team-row .manager-desk__form-score-markers {
+  height: 0.54rem;
+}
+
+.manager-desk__fixture-matchup--featured .manager-desk__fixture-team-row .manager-desk__form-score-markers i {
+  height: 0.375rem;
+  width: 0.375rem;
+}
+
+/* Keep the spacing between separate fixtures unchanged while collapsing the
+   dead space around the divider between the two opponents. */
+.manager-desk__fixture-matchup > .manager-desk__fixture-team-row:first-child {
+  padding-bottom: 0.06rem !important;
+}
+
+.manager-desk__fixture-matchup > .manager-desk__fixture-team-row:nth-child(2) {
+  border-top: 0 !important;
+  padding-top: 0.06rem !important;
+}
+
+.manager-desk__fixture-matchup--featured > .manager-desk__fixture-team-row:first-child {
+  padding-bottom: 0.06rem !important;
+  padding-top: 0.62rem !important;
+}
+
+.manager-desk__fixture-matchup--featured > .manager-desk__fixture-team-row:nth-child(2) {
+  padding-bottom: 0.62rem !important;
+  padding-top: 0.06rem !important;
+}
+
+/* Mirror the second team so its points sit next to the first team's points and
+   its identity anchors the bottom of the fixture. */
 .manager-desk__fixture-matchup > .manager-desk__fixture-team-row:nth-child(2)::before {
   background: color-mix(in srgb, var(--border) 65%, transparent);
   content: '';
@@ -144,6 +187,15 @@
   .manager-desk__fixture-team-row > .manager-desk__fixture-team-score {
     min-width: 1.4rem !important;
     width: 1.4rem !important;
+  }
+
+  .manager-desk__fixture-matchup--featured .manager-desk__fixture-team-row > .manager-desk__fixture-form-score-list {
+    grid-template-columns: repeat(5, 2.1rem) !important;
+  }
+
+  .manager-desk__fixture-matchup--featured .manager-desk__fixture-team-row .manager-desk__form-score > strong {
+    min-width: 2.1rem !important;
+    width: 2.1rem !important;
   }
 
   .manager-desk__fixture-matchup > .manager-desk__fixture-team-row:nth-child(2)::before {

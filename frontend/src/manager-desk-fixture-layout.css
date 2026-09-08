@@ -38,15 +38,7 @@
 }
 
 .manager-desk__fixture-feature-label {
-  align-items: center;
-  color: var(--primary);
-  display: flex;
-  font-size: 0.72rem;
-  font-weight: 800;
-  gap: 0.4rem;
-  letter-spacing: 0.09em;
-  padding: 0.65rem 0.8rem 0;
-  text-transform: uppercase;
+  display: none;
 }
 
 .manager-desk__fixture-board {
@@ -78,13 +70,13 @@
 }
 
 .manager-desk__fixture-manager > .manager-desk__fixture-badge {
-  height: clamp(2.6rem, 8.5vw, 3.25rem) !important;
-  width: clamp(2.6rem, 8.5vw, 3.25rem) !important;
+  height: clamp(3rem, 9.6vw, 3.65rem) !important;
+  width: clamp(3rem, 9.6vw, 3.65rem) !important;
 }
 
 .manager-desk__fixture-matchup--featured .manager-desk__fixture-manager > .manager-desk__fixture-badge {
-  height: clamp(3.35rem, 11vw, 4.35rem) !important;
-  width: clamp(3.35rem, 11vw, 4.35rem) !important;
+  height: clamp(3.75rem, 12vw, 4.8rem) !important;
+  width: clamp(3.75rem, 12vw, 4.8rem) !important;
 }
 
 .manager-desk__fixture-manager-name {
@@ -121,7 +113,7 @@
   min-width: 1.85rem;
   padding: 0 0.35rem;
   position: absolute;
-  top: 0;
+  top: -0.18rem;
 }
 
 .manager-desk__fixture-manager--home .manager-desk__fixture-position {
@@ -136,25 +128,31 @@
   font-size: 0.72rem;
   height: 1.6rem;
   min-width: 2rem;
+  top: -0.2rem;
 }
 
 .manager-desk__fixture-comparison {
   display: grid;
   gap: 0;
+  justify-items: center;
   min-width: 0;
+  width: 100%;
 }
 
 .manager-desk__fixture-comparison-row {
   align-items: center;
   display: grid;
-  gap: 0.22rem;
-  grid-template-columns: minmax(1.9rem, 1fr) minmax(2.1rem, auto) minmax(1.9rem, 1fr);
-  min-height: 1.38rem;
+  gap: 0.12rem;
+  grid-template-columns: 1.55rem 1.85rem 1.55rem;
+  justify-content: center;
+  min-height: 1.18rem;
+  width: 100%;
 }
 
 .manager-desk__fixture-comparison-row--current {
   border-bottom: 1px solid color-mix(in srgb, var(--primary) 28%, var(--border));
   margin-bottom: 0.08rem;
+  min-height: 1.38rem;
   padding-bottom: 0.18rem;
 }
 
@@ -166,7 +164,7 @@
   font-weight: 700;
   justify-content: center;
   letter-spacing: 0.04em;
-  min-width: 2.1rem;
+  min-width: 1.85rem;
   text-transform: uppercase;
 }
 
@@ -196,6 +194,17 @@
   min-width: 0 !important;
   padding: 0 !important;
   width: 1.12rem !important;
+}
+
+.manager-desk__fixture-comparison-row:not(.manager-desk__fixture-comparison-row--current) .manager-desk__form-score {
+  grid-template-rows: 0.1rem 0.96rem 0.1rem !important;
+}
+
+.manager-desk__fixture-comparison-row:not(.manager-desk__fixture-comparison-row--current) .manager-desk__form-score > strong {
+  border-radius: 0.3rem;
+  font-size: 0.58rem !important;
+  height: 0.96rem !important;
+  width: 0.96rem !important;
 }
 
 .manager-desk__fixture-comparison .manager-desk__form-score--w > strong {
@@ -239,6 +248,15 @@
   width: 0.12rem;
 }
 
+.manager-desk__fixture-comparison-row:not(.manager-desk__fixture-comparison-row--current) .manager-desk__form-score-markers,
+.manager-desk__fixture-comparison-row:not(.manager-desk__fixture-comparison-row--current) .manager-desk__form-score-markers i {
+  height: 0.1rem;
+}
+
+.manager-desk__fixture-comparison-row:not(.manager-desk__fixture-comparison-row--current) .manager-desk__form-score-markers i {
+  width: 0.1rem;
+}
+
 .manager-desk__fixture-comparison .manager-desk__form-score--w .manager-desk__form-score-markers {
   color: var(--primary);
 }
@@ -252,6 +270,10 @@
 }
 
 .manager-desk__fixture-matchup--featured .manager-desk__fixture-comparison-row {
+  min-height: 1.52rem;
+}
+
+.manager-desk__fixture-matchup--featured .manager-desk__fixture-comparison-row--current {
   min-height: 1.82rem;
 }
 
@@ -272,6 +294,26 @@
 .manager-desk__fixture-matchup--featured .manager-desk__fixture-comparison .manager-desk__form-score-markers i {
   height: 0.16rem;
   width: 0.16rem;
+}
+
+.manager-desk__fixture-matchup--featured .manager-desk__fixture-comparison-row:not(.manager-desk__fixture-comparison-row--current) .manager-desk__form-score {
+  grid-template-rows: 0.13rem 1.24rem 0.13rem !important;
+}
+
+.manager-desk__fixture-matchup--featured .manager-desk__fixture-comparison-row:not(.manager-desk__fixture-comparison-row--current) .manager-desk__form-score > strong {
+  border-radius: 0.32rem;
+  font-size: 0.74rem !important;
+  height: 1.24rem !important;
+  width: 1.24rem !important;
+}
+
+.manager-desk__fixture-matchup--featured .manager-desk__fixture-comparison-row:not(.manager-desk__fixture-comparison-row--current) .manager-desk__form-score-markers {
+  height: 0.13rem;
+}
+
+.manager-desk__fixture-matchup--featured .manager-desk__fixture-comparison-row:not(.manager-desk__fixture-comparison-row--current) .manager-desk__form-score-markers i {
+  height: 0.13rem;
+  width: 0.13rem;
 }
 
 .manager-desk__fixture-matchup--featured .manager-desk__fixture-comparison-label {
@@ -320,12 +362,12 @@
   }
 
   .manager-desk__fixture-comparison-row {
-    gap: 0.16rem;
-    grid-template-columns: minmax(1.6rem, 1fr) 1.9rem minmax(1.6rem, 1fr);
+    gap: 0.1rem;
+    grid-template-columns: 1.5rem 1.75rem 1.5rem;
   }
 
   .manager-desk__fixture-comparison-label {
-    min-width: 1.9rem;
+    min-width: 1.75rem;
   }
 
   .manager-desk__fixture-manager-record {

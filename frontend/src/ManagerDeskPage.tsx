@@ -190,14 +190,14 @@ function FixtureFocus({ data, managerTeam, onNavigate }: {
     : fixtures;
   const gameweek = featuredFixture?.gameweek.name ?? orderedFixtures[0]?.gameweek.name ?? data.gameweek.name;
   const statusLabel = data.context === 'live' ? 'Live now' : data.context === 'finalised' ? 'Finalised' : 'Next fixture';
+  const showCurrentScore = data.context !== 'pre_deadline';
 
   return (
     <section
       aria-labelledby="manager-desk-fixture-focus-title"
       className={`manager-desk__fixture-focus manager-desk__fixture-focus--${data.context}`}
-      style={{ display: 'grid', gap: 0, overflow: 'hidden' }}
     >
-      <div className="manager-desk__fixture-spotlight-topline" style={{ padding: '1rem 1rem 0.7rem' }}>
+      <div className="manager-desk__fixture-spotlight-topline">
         <span className="manager-desk__fixture-kicker" id="manager-desk-fixture-focus-title">
           <span className={`manager-desk__status-dot manager-desk__status-dot--${data.context}`} aria-hidden="true" />
           {statusLabel}
@@ -206,27 +206,22 @@ function FixtureFocus({ data, managerTeam, onNavigate }: {
       </div>
 
       {orderedFixtures.length > 0 ? (
-        <div aria-label="Gameweek fixtures" style={{ display: 'grid' }}>
-          {orderedFixtures.map((fixture, index) => (
+        <div aria-label="Gameweek fixtures" className="manager-desk__fixture-list">
+          {orderedFixtures.map((fixture) => (
             <FixtureMatchup
               featured={fixture.id === featuredFixture?.id}
               fixture={fixture}
               formFixtures={data.formFixtures}
               key={fixture.id}
-              separated={index > 0}
+              leagueRows={data.leagueTable.rows}
+              showCurrentScore={showCurrentScore}
             />
           ))}
         </div>
       ) : (
-        <div
-          className="manager-desk__fixture-spotlight--empty"
-          style={{ alignItems: 'center', display: 'grid', gap: '0.75rem', gridTemplateColumns: 'auto minmax(0, 1fr) auto', padding: '1rem' }}
-        >
+        <div className="manager-desk__fixture-spotlight--empty">
           <CalendarClock aria-hidden="true" size={24} />
-          <div>
-            <strong>Fixture details are not available yet</strong>
-            <p className="manager-desk__empty-message" style={{ margin: '0.2rem 0 0' }}>Open the league view when the next schedule is published.</p>
-          </div>
+          <strong>Fixture details are not available yet</strong>
           <Button onClick={() => onNavigate('/league')} type="button" variant="secondary">
             View fixtures <ArrowRight aria-hidden="true" size={16} />
           </Button>
@@ -236,107 +231,171 @@ function FixtureFocus({ data, managerTeam, onNavigate }: {
   );
 }
 
-function FixtureMatchup({ featured, fixture, formFixtures, separated }: {
+function FixtureMatchup({ featured, fixture, formFixtures, leagueRows, showCurrentScore }: {
   featured: boolean;
   fixture: LeagueFixture;
   formFixtures: LeagueFixture[];
-  separated: boolean;
+  leagueRows: LeagueTableRow[];
+  showCurrentScore: boolean;
 }) {
   const previousFixtures = formFixtures.filter((candidate) => candidate.id !== fixture.id);
+  const homeForm = formForTeam(fixture.homeTeam.id, previousFixtures);
+  const awayForm = formForTeam(fixture.awayTeam.id, previousFixtures);
+  const gameweeks = recentComparisonGameweeks(homeForm, awayForm);
+  const homeRow = findTeamRow(leagueRows, fixture.homeTeam.id, fixture.homeTeam.name);
+  const awayRow = findTeamRow(leagueRows, fixture.awayTeam.id, fixture.awayTeam.name);
   const homeName = managerNicknameForTeam(fixture.homeTeam);
   const awayName = managerNicknameForTeam(fixture.awayTeam);
+  const currentVisible = showCurrentScore && fixture.status !== 'pending';
+  const legacyRowClass = featured ? 'manager-desk__fixture-form-row' : 'manager-desk__fixture-row-team';
+
   return (
-    <div
+    <article
       aria-label={`${homeName} versus ${awayName}`}
       className={featured ? 'manager-desk__fixture-matchup manager-desk__fixture-matchup--featured' : 'manager-desk__fixture-matchup'}
-      style={{ borderTop: separated ? '1px solid var(--border)' : undefined, display: 'grid' }}
     >
-      <FixtureTeamRow
-        currentScore={scoreForTeam(fixture, fixture.homeTeam.id)}
-        featured={featured}
-        form={formForTeam(fixture.homeTeam.id, previousFixtures)}
-        team={fixture.homeTeam}
-      />
-      <FixtureTeamRow
-        currentScore={scoreForTeam(fixture, fixture.awayTeam.id)}
-        featured={featured}
-        form={formForTeam(fixture.awayTeam.id, previousFixtures)}
-        second
-        team={fixture.awayTeam}
-      />
-    </div>
+      {featured ? (
+        <div className="manager-desk__fixture-feature-label">
+          <Star aria-hidden="true" size={16} />
+          <span>Your fixture</span>
+        </div>
+      ) : null}
+
+      <div className="manager-desk__fixture-board">
+        <FixtureManager
+          className={legacyRowClass}
+          featured={featured}
+          form={homeForm}
+          leagueRow={homeRow}
+          side="home"
+          team={fixture.homeTeam}
+        />
+
+        <div className="manager-desk__fixture-comparison" aria-label="Gameweek point comparison">
+          {currentVisible ? (
+            <FixtureComparisonRow
+              awayBonus={fixture.score.bonusPoints[fixture.awayTeam.id] ?? 0}
+              awayPoints={scoreForTeam(fixture, fixture.awayTeam.id)}
+              current
+              homeBonus={fixture.score.bonusPoints[fixture.homeTeam.id] ?? 0}
+              homePoints={scoreForTeam(fixture, fixture.homeTeam.id)}
+              label={`GW${fixture.gameweek.number}`}
+            />
+          ) : null}
+          {gameweeks.map((gameweekNumber, index) => {
+            const homeItem = gameweekNumber === null ? undefined : homeForm.find((item) => item.gameweekNumber === gameweekNumber);
+            const awayItem = gameweekNumber === null ? undefined : awayForm.find((item) => item.gameweekNumber === gameweekNumber);
+            return (
+              <FixtureComparisonRow
+                awayBonus={awayItem?.bonusPoints ?? 0}
+                awayPoints={awayItem?.points ?? null}
+                homeBonus={homeItem?.bonusPoints ?? 0}
+                homePoints={homeItem?.points ?? null}
+                key={gameweekNumber ?? `empty-${index}`}
+                label={gameweekNumber === null ? '' : `GW${gameweekNumber}`}
+              />
+            );
+          })}
+        </div>
+
+        <FixtureManager
+          className={legacyRowClass}
+          featured={featured}
+          form={awayForm}
+          leagueRow={awayRow}
+          side="away"
+          team={fixture.awayTeam}
+        />
+      </div>
+    </article>
   );
 }
 
-function FixtureTeamRow({ currentScore, featured, form, second = false, team }: {
-  currentScore: number | null;
+function FixtureManager({ className, featured, form, leagueRow, side, team }: {
+  className: string;
   featured: boolean;
   form: TeamForm[];
-  second?: boolean;
+  leagueRow: LeagueTableRow | null;
+  side: 'home' | 'away';
   team: { id?: string; name: string; managerName?: string };
 }) {
   const nickname = managerNicknameForTeam(team);
-  const scores = form.slice(-5);
-  const legacyRowClass = featured ? 'manager-desk__fixture-form-row' : 'manager-desk__fixture-row-team';
+  const record = leagueRow
+    ? `${leagueRow.wins}W ${leagueRow.draws}D ${leagueRow.losses}L`
+    : recordForTeam(form);
   return (
-    <div
-      aria-label={`${nickname}: previous five gameweek points, oldest to newest, then this gameweek`}
-      className={`manager-desk__fixture-team-row ${legacyRowClass}${featured ? ' manager-desk__fixture-spotlight-team--own' : ''}`}
-      style={{
-        alignItems: 'center',
-        borderTop: second ? '1px solid color-mix(in srgb, var(--border) 65%, transparent)' : undefined,
-        display: 'grid',
-        gap: '0.45rem',
-        gridTemplateColumns: featured
-          ? '3rem minmax(2.8rem, 0.65fr) minmax(8.25rem, 2.4fr) minmax(2rem, auto)'
-          : '2.25rem minmax(2.8rem, 0.65fr) minmax(8.25rem, 2.4fr) minmax(2rem, auto)',
-        minHeight: featured ? '5rem' : '3.7rem',
-        minWidth: 0,
-        overflow: 'hidden',
-        padding: featured ? '0.65rem 1rem' : '0.45rem 1rem',
-        textAlign: 'left',
-      }}
-    >
+    <div className={`manager-desk__fixture-manager manager-desk__fixture-manager--${side} ${className}`}>
+      {leagueRow ? <span className="manager-desk__fixture-position">#{leagueRow.position}</span> : null}
       <TeamCrest className="manager-desk__fixture-badge" team={team} />
-      <strong className="manager-desk__fixture-form-team" style={{ alignSelf: 'center', fontSize: '0.95rem' }}>
-        {nickname}
-      </strong>
-      <div
-        aria-label="Previous five gameweek points, oldest to newest"
-        className="manager-desk__fixture-form-score-list"
-        style={{ gap: '0.12rem', gridTemplateColumns: 'repeat(5, minmax(1.65rem, 1fr))' }}
-      >
-        {Array.from({ length: 5 }, (_, index) => (
-          <FormScore item={scores[index]} key={scores[index]?.key ?? `empty-${index}`} />
-        ))}
-      </div>
-      <strong
-        aria-label={`This gameweek: ${currentScore ?? 'no score'}`}
-        className="manager-desk__fixture-team-score"
-        style={{ alignSelf: 'center', color: 'var(--primary)', fontSize: 'clamp(1.25rem, 4vw, 1.8rem)', minWidth: '2rem', textAlign: 'right' }}
-      >
-        {currentScore ?? '—'}
-      </strong>
+      <strong className="manager-desk__fixture-manager-name">{nickname}</strong>
+      <span className="manager-desk__fixture-manager-record">{record}</span>
+      {featured ? <span className="sr-only">Featured fixture manager</span> : null}
     </div>
   );
 }
 
-function FormScore({ item }: { item?: TeamForm }) {
-  const bonus = item?.bonusPoints ?? 0;
-  const markerCount = Math.min(Math.abs(bonus), 3);
-  const resultLabel = item ? `${item.result === 'P' ? 'pending' : item.result === 'W' ? 'win' : item.result === 'L' ? 'loss' : 'draw'}, ${item.points ?? 'no'} points` : 'No result';
-  const bonusLabel = bonus === 0 ? '' : `, ${bonus > 0 ? '+' : ''}${bonus} bonus point${Math.abs(bonus) === 1 ? '' : 's'}`;
+function FixtureComparisonRow({ awayBonus, awayPoints, current = false, homeBonus, homePoints, label }: {
+  awayBonus: number;
+  awayPoints: number | null;
+  current?: boolean;
+  homeBonus: number;
+  homePoints: number | null;
+  label: string;
+}) {
+  const homeResult = comparisonResultForPoints(homePoints, awayPoints);
+  const awayResult = comparisonResultForPoints(awayPoints, homePoints);
   return (
-    <span aria-label={`${item?.gameweek ?? 'Fixture'}: ${resultLabel}${bonusLabel}`} className={`manager-desk__form-score${item ? ` manager-desk__form-score--${item.result.toLowerCase()}` : ' manager-desk__form-score--empty'}`}>
+    <div className={`manager-desk__fixture-comparison-row${current ? ' manager-desk__fixture-comparison-row--current' : ''}${label ? '' : ' manager-desk__fixture-comparison-row--empty'}`}>
+      <ComparisonScore bonus={homeBonus} points={homePoints} result={homeResult} />
+      <span className="manager-desk__fixture-comparison-label">{label}</span>
+      <ComparisonScore bonus={awayBonus} points={awayPoints} result={awayResult} />
+    </div>
+  );
+}
+
+function ComparisonScore({ bonus, points, result }: {
+  bonus: number;
+  points: number | null;
+  result: 'W' | 'D' | 'L' | 'P';
+}) {
+  const markerCount = Math.min(Math.abs(bonus), 3);
+  const bonusLabel = bonus === 0 ? '' : `, ${bonus > 0 ? '+' : ''}${bonus} bonus point${Math.abs(bonus) === 1 ? '' : 's'}`;
+  const resultLabel = result === 'P' ? 'no comparison' : result === 'W' ? 'win' : result === 'L' ? 'loss' : 'draw';
+  return (
+    <span
+      aria-label={`${points ?? 'No'} points, ${resultLabel}${bonusLabel}`}
+      className={`manager-desk__form-score manager-desk__form-score--${result.toLowerCase()}${points === null ? ' manager-desk__form-score--empty' : ''}`}
+    >
       <span aria-hidden="true" className="manager-desk__form-score-markers manager-desk__form-score-markers--above">
         {bonus > 0 ? Array.from({ length: markerCount }, (_, index) => <i key={index} />) : null}
       </span>
-      <strong style={{ fontSize: '0.72rem', height: '1.75rem', minWidth: '1.65rem' }}>{item?.points ?? '—'}</strong>
+      <strong>{points ?? ''}</strong>
       <span aria-hidden="true" className="manager-desk__form-score-markers manager-desk__form-score-markers--below">
         {bonus < 0 ? Array.from({ length: markerCount }, (_, index) => <i key={index} />) : null}
       </span>
     </span>
   );
+}
+
+function recentComparisonGameweeks(homeForm: TeamForm[], awayForm: TeamForm[]): Array<number | null> {
+  const gameweeks = Array.from(new Set([...homeForm, ...awayForm].map((item) => item.gameweekNumber)))
+    .sort((left, right) => right - left)
+    .slice(0, 5);
+  return [...Array.from({ length: Math.max(0, 5 - gameweeks.length) }, () => null), ...gameweeks];
+}
+
+function comparisonResultForPoints(points: number | null, opponentPoints: number | null): 'W' | 'D' | 'L' | 'P' {
+  if (points === null || opponentPoints === null) return 'P';
+  if (points === opponentPoints) return 'D';
+  return points > opponentPoints ? 'W' : 'L';
+}
+
+function recordForTeam(form: TeamForm[]): string {
+  const completed = form.filter((item) => item.result !== 'P');
+  const wins = completed.filter((item) => item.result === 'W').length;
+  const draws = completed.filter((item) => item.result === 'D').length;
+  const losses = completed.filter((item) => item.result === 'L').length;
+  return `${wins}W ${draws}D ${losses}L`;
 }
 
 function PriorityStack({ data, flaggedPlayers, isEditable, notifications, now, onNavigate }: {
@@ -393,11 +452,11 @@ function PriorityStack({ data, flaggedPlayers, isEditable, notifications, now, o
   });
 
   if (items.length === 0) {
-    return <section aria-label="Manager priorities" className="manager-desk__priority-stack manager-desk__priority-stack--clear"><div className="manager-desk__all-clear"><CheckCircle2 aria-hidden="true" size={20} /><div><strong>You are all caught up</strong><span>No urgent actions for this gameweek.</span></div></div></section>;
+    return <section aria-label="Manager priorities" className="manager-desk__priority-stack manager-desk__priority-stack--clear"><div className="manager-desk__all-clear"><CheckCircle2 aria-hidden="true" size={20} /><strong>All clear</strong></div></section>;
   }
 
   items.sort((left, right) => priorityRank(left.priority) - priorityRank(right.priority));
-  return <section aria-labelledby="manager-desk-priority-title" className="manager-desk__priority-stack"><div className="manager-desk__priority-heading"><div><p className="eyebrow">Adaptive priorities</p><h2 id="manager-desk-priority-title">What needs your attention</h2></div><span>{items.length}</span></div><div className="manager-desk__priority-list">{items.map((item) => <div className={`manager-desk__priority-item manager-desk__priority-item--${item.priority}`} key={item.key}>{item.content}</div>)}</div></section>;
+  return <section aria-labelledby="manager-desk-priority-title" className="manager-desk__priority-stack"><div className="manager-desk__priority-heading"><h2 id="manager-desk-priority-title">Adaptive priorities</h2><span>{items.length}</span></div><div className="manager-desk__priority-list">{items.map((item) => <div className={`manager-desk__priority-item manager-desk__priority-item--${item.priority}`} key={item.key}>{item.content}</div>)}</div></section>;
 }
 
 function InjuryAlertCard({ flaggedPlayers, selection, onNavigate }: { flaggedPlayers: SquadApiPlayer[]; selection: TeamSelectionSnapshot; onNavigate: (href: string) => void }) {
@@ -453,6 +512,7 @@ function FormBlocks({ form }: { form: TeamForm[] }) {
 interface TeamForm {
   key: string;
   gameweek: string;
+  gameweekNumber: number;
   points: number | null;
   bonusPoints: number;
   result: 'W' | 'D' | 'L' | 'P';
@@ -465,6 +525,7 @@ function formForTeam(teamId: string, fixtures: LeagueFixture[]): TeamForm[] {
     .map((fixture) => ({
       key: fixture.id,
       gameweek: fixture.gameweek.name,
+      gameweekNumber: fixture.gameweek.number,
       points: scoreForTeam(fixture, teamId),
       bonusPoints: fixture.score.bonusPoints[teamId] ?? 0,
       result: resultForFixture(fixture, teamId),
@@ -545,6 +606,5 @@ function teamForFixture(fixture: LeagueFixture, teamId: string, teamName: string
 function scoreForTeam(fixture: LeagueFixture, teamId: string): number | null { return fixture.homeTeam.id === teamId ? fixture.score.homeScore : fixture.awayTeam.id === teamId ? fixture.score.awayScore : null; }
 
 function resultForFixture(fixture: LeagueFixture, teamId: string): 'W' | 'D' | 'L' | 'P' { if (fixture.status === 'pending' || fixture.score.outcome === 'pending') return 'P'; if (fixture.score.outcome === 'draw') return 'D'; const home = fixture.homeTeam.id === teamId; return fixture.score.outcome === (home ? 'home_win' : 'away_win') ? 'W' : 'L'; }
-
 
 function getInitials(value: string): string { return value.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'CD'; }

@@ -43,6 +43,11 @@ import {
   type PositionPalette,
   type PositionColourScaleName,
 } from './player-colour-scales';
+import {
+  defaultResultColours,
+  resolveResultColours,
+  type ResultColourPalette,
+} from './result-colours';
 import { getThemeMode, getThemePresetClassName, resolveThemePreset } from './theme-presets';
 import { getStoredThemePreset, setThemePresetCookie } from './theme-cookie';
 import {
@@ -65,6 +70,7 @@ interface ThemePresetContextValue {
   metricColourScale: MetricColourScaleName;
   metricColourScaleReversed: boolean;
   metricCustomColours: MetricPalette;
+  resultColours: ResultColourPalette;
   customPlayerColourPalettes: PlayerColourPalette[];
   themeColour: string;
   accountMotionGestureEnabled: boolean;
@@ -83,6 +89,7 @@ interface ThemePresetContextValue {
   setMetricColourScale: (scale: MetricColourScaleName) => void;
   setMetricColourScaleReversed: (reversed: boolean) => void;
   useCustomMetricColours: (colours: MetricPalette) => void;
+  setResultColours: (colours: ResultColourPalette) => void;
   savePlayerColourPalette: (palette: Omit<PlayerColourPalette, 'id'>) => Promise<PlayerColourPalette>;
   deletePlayerColourPalette: (paletteId: string) => Promise<void>;
   setThemeColour: (colour: string) => void;
@@ -120,6 +127,7 @@ export function ThemePresetProvider({
   const [metricColourScale, setMetricColourScaleState] = useState<MetricColourScaleName>(defaultMetricColourScale);
   const [metricColourScaleReversed, setMetricColourScaleReversedState] = useState(defaultMetricColourScaleReversed);
   const [metricCustomColours, setMetricCustomColoursState] = useState<MetricPalette>(defaultMetricCustomColours);
+  const [resultColours, setResultColoursState] = useState<ResultColourPalette>(defaultResultColours);
   const [customPlayerColourPalettes, setCustomPlayerColourPalettes] = useState<PlayerColourPalette[]>([]);
   const [themeColour, setThemeColourState] = useState(defaultThemeColour);
   const [accountMotionGestureEnabled, setAccountMotionGestureEnabledState] = useState(
@@ -161,6 +169,7 @@ export function ThemePresetProvider({
           setMetricColourScaleState(resolveMetricColourScale(preferences.metricColourScale));
           setMetricColourScaleReversedState(preferences.metricColourScaleReversed ?? defaultMetricColourScaleReversed);
           setMetricCustomColoursState(resolveMetricPalette(preferences.metricCustomColours));
+          setResultColoursState(resolveResultColours(preferences.resultColours));
           setThemeColourState(resolveThemeBaseColour(preferences.lightThemeColour ?? preferences.darkThemeColour));
           setCustomFdrAnchorsState(resolveFdrCustomAnchors(preferences.fdrCustomAnchors));
           latestPreferencesRef.current = preferences;
@@ -255,6 +264,9 @@ export function ThemePresetProvider({
     });
     root.style.setProperty('--cdl-radius', preset.tokens.radius);
     root.style.setProperty('--radius', preset.tokens.radius);
+    root.style.setProperty('--cdl-result-win', resultColours.win);
+    root.style.setProperty('--cdl-result-draw', resultColours.draw);
+    root.style.setProperty('--cdl-result-loss', resultColours.loss);
     fdrPalette.forEach((color, index) => {
       root.style.setProperty(`--cdl-fdr-${index + 1}`, color);
       root.style.setProperty(`--cdl-fdr-fill-${index + 1}`, fdrFillPalette[index]);
@@ -272,7 +284,7 @@ export function ThemePresetProvider({
     root.dataset.positionColourMode = positionColourMode;
     root.dataset.metricColourScale = metricColourScale;
     root.dataset.metricColourScaleReversed = String(metricColourScaleReversed);
-  }, [customFdrAnchors, fdrDisplayMode, fdrScale, fdrScaleReversed, metricColourScale, metricColourScaleReversed, metricCustomColours, positionColourMode, positionColourScale, positionCustomColours, preset]);
+  }, [customFdrAnchors, fdrDisplayMode, fdrScale, fdrScaleReversed, metricColourScale, metricColourScaleReversed, metricCustomColours, positionColourMode, positionColourScale, positionCustomColours, preset, resultColours]);
 
   const savePreference = (preferences: UserPreferences) => {
     const enrichedPreferences: UserPreferences = {
@@ -280,6 +292,7 @@ export function ThemePresetProvider({
       positionColourMode: preferences.positionColourMode ?? positionColourMode,
       positionCustomColours: preferences.positionCustomColours ?? positionCustomColours,
       metricCustomColours: preferences.metricCustomColours ?? metricCustomColours,
+      resultColours: preferences.resultColours ?? resultColours,
     };
     latestPreferencesRef.current = enrichedPreferences;
     setSaveStatus('saving');
@@ -297,7 +310,7 @@ export function ThemePresetProvider({
   const value = useMemo<ThemePresetContextValue>(
     () => {
       const savePreferencePatch = (patch: Partial<UserPreferences>) => {
-      const basePreferences = latestPreferencesRef.current ?? {
+        const basePreferences = latestPreferencesRef.current ?? {
           themePreset: preset.name,
           attackDirection,
           fdrScale,
@@ -309,6 +322,7 @@ export function ThemePresetProvider({
           metricColourScale,
           metricColourScaleReversed,
           metricCustomColours,
+          resultColours,
           lightThemeColour: themeColour,
           darkThemeColour: getThemeColourForMode(themeColour, 'dark'),
           fdrCustomAnchors: customFdrAnchors,
@@ -329,6 +343,7 @@ export function ThemePresetProvider({
       metricColourScale,
       metricColourScaleReversed,
       metricCustomColours,
+      resultColours,
       customPlayerColourPalettes,
       themeColour,
       accountMotionGestureEnabled,
@@ -475,6 +490,11 @@ export function ThemePresetProvider({
         setMetricColourScaleState('Custom');
         savePreferencePatch({ metricColourScale: 'Custom', metricCustomColours: resolvedColours });
       },
+      setResultColours: (nextColours) => {
+        const resolvedColours = resolveResultColours(nextColours);
+        setResultColoursState(resolvedColours);
+        savePreferencePatch({ resultColours: resolvedColours });
+      },
       savePlayerColourPalette: async (palette) => {
         if (!preferenceClient.createPlayerColourPalette) {
           throw new Error('No player colour palette store is available.');
@@ -533,7 +553,7 @@ export function ThemePresetProvider({
       saveStatus,
       });
     },
-    [accountMotionGestureEnabled, attackDirection, customFdrAnchors, customFdrPalettes, customPlayerColourPalettes, fdrDisplayMode, fdrScale, fdrScaleReversed, metricColourScale, metricColourScaleReversed, metricCustomColours, positionColourMode, positionColourScale, positionCustomColours, preferenceClient, preset, saveStatus, themeColour],
+    [accountMotionGestureEnabled, attackDirection, customFdrAnchors, customFdrPalettes, customPlayerColourPalettes, fdrDisplayMode, fdrScale, fdrScaleReversed, metricColourScale, metricColourScaleReversed, metricCustomColours, positionColourMode, positionColourScale, positionCustomColours, preferenceClient, preset, resultColours, saveStatus, themeColour],
   );
 
   return <ThemePresetContext.Provider value={value}>{children}</ThemePresetContext.Provider>;

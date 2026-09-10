@@ -57,13 +57,15 @@
 
 .manager-desk__fixture-manager {
   align-items: center;
+  align-content: center;
+  align-self: stretch;
   display: grid;
   gap: 0.2rem;
   grid-auto-flow: row;
   grid-template-columns: minmax(0, 1fr);
   justify-items: center;
   min-width: 0;
-  padding-top: 0.25rem;
+  padding-top: 0;
   position: relative;
   text-align: center;
   width: 100%;
@@ -103,17 +105,17 @@
   align-items: center;
   background: color-mix(in srgb, var(--primary) 8%, var(--surface));
   border: 1px solid color-mix(in srgb, var(--primary) 55%, var(--border));
-  border-radius: 0.38rem;
+  border-radius: 0.3rem;
   color: var(--primary);
   display: inline-flex;
-  font-size: 0.6rem;
+  font-size: 0.54rem;
   font-weight: 800;
-  height: 1.22rem;
+  height: 0.98rem;
   justify-content: center;
-  min-width: 1.62rem;
-  padding: 0 0.25rem;
+  min-width: 1.38rem;
+  padding: 0 0.18rem;
   position: absolute;
-  top: -0.08rem;
+  top: 0;
 }
 
 .manager-desk__fixture-manager--home .manager-desk__fixture-position {
@@ -125,10 +127,10 @@
 }
 
 .manager-desk__fixture-matchup--featured .manager-desk__fixture-position {
-  font-size: 0.64rem;
-  height: 1.38rem;
-  min-width: 1.76rem;
-  top: -0.1rem;
+  font-size: 0.58rem;
+  height: 1.1rem;
+  min-width: 1.5rem;
+  top: 0;
 }
 
 .manager-desk__fixture-comparison {
@@ -357,9 +359,9 @@
   }
 
   .manager-desk__fixture-position {
-    font-size: 0.56rem;
-    height: 1.12rem;
-    min-width: 1.5rem;
+    font-size: 0.52rem;
+    height: 0.92rem;
+    min-width: 1.3rem;
   }
 
   .manager-desk__fixture-comparison-row {

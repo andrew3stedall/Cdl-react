@@ -1,0 +1,246 @@
+:root {
+  --cdl-result-win: #22c55e;
+  --cdl-result-draw: #f59e0b;
+  --cdl-result-loss: #f43f5e;
+}
+
+/* Result colours are semantic UI tokens. They deliberately do not inherit the theme accent. */
+.manager-desk__form-score--w > strong,
+.manager-desk__fixture-comparison .manager-desk__form-score--w > strong {
+  background: color-mix(in srgb, var(--cdl-result-win) 11%, var(--surface));
+  border-color: color-mix(in srgb, var(--cdl-result-win) 74%, var(--border));
+  color: color-mix(in srgb, var(--cdl-result-win) 78%, var(--foreground));
+}
+
+.manager-desk__form-score--d > strong,
+.manager-desk__fixture-comparison .manager-desk__form-score--d > strong {
+  background: color-mix(in srgb, var(--cdl-result-draw) 10%, var(--surface));
+  border-color: color-mix(in srgb, var(--cdl-result-draw) 68%, var(--border));
+  color: color-mix(in srgb, var(--cdl-result-draw) 76%, var(--foreground));
+}
+
+.manager-desk__form-score--l > strong,
+.manager-desk__fixture-comparison .manager-desk__form-score--l > strong {
+  background: color-mix(in srgb, var(--cdl-result-loss) 10%, var(--surface));
+  border-color: color-mix(in srgb, var(--cdl-result-loss) 70%, var(--border));
+  color: color-mix(in srgb, var(--cdl-result-loss) 78%, var(--foreground));
+}
+
+.manager-desk__form-score--w .manager-desk__form-score-markers,
+.manager-desk__fixture-comparison .manager-desk__form-score--w .manager-desk__form-score-markers {
+  color: var(--cdl-result-win);
+}
+
+.manager-desk__form-score--d .manager-desk__form-score-markers,
+.manager-desk__fixture-comparison .manager-desk__form-score--d .manager-desk__form-score-markers {
+  color: var(--cdl-result-draw);
+}
+
+.manager-desk__form-score--l .manager-desk__form-score-markers,
+.manager-desk__fixture-comparison .manager-desk__form-score--l .manager-desk__form-score-markers {
+  color: var(--cdl-result-loss);
+}
+
+.manager-desk__form-block--w {
+  background: color-mix(in srgb, var(--cdl-result-win) 13%, transparent) !important;
+  border-color: color-mix(in srgb, var(--cdl-result-win) 70%, var(--border)) !important;
+  color: color-mix(in srgb, var(--cdl-result-win) 78%, var(--foreground)) !important;
+}
+
+.manager-desk__form-block--d {
+  background: color-mix(in srgb, var(--cdl-result-draw) 12%, transparent) !important;
+  border-color: color-mix(in srgb, var(--cdl-result-draw) 66%, var(--border)) !important;
+  color: color-mix(in srgb, var(--cdl-result-draw) 74%, var(--foreground)) !important;
+}
+
+.manager-desk__form-block--l {
+  background: color-mix(in srgb, var(--cdl-result-loss) 12%, transparent) !important;
+  border-color: color-mix(in srgb, var(--cdl-result-loss) 68%, var(--border)) !important;
+  color: color-mix(in srgb, var(--cdl-result-loss) 78%, var(--foreground)) !important;
+}
+
+.result-colour-settings {
+  display: grid;
+  gap: 1rem;
+}
+
+.result-colour-settings__presets {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.result-colour-settings__preset {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 0.15rem);
+  color: var(--foreground);
+  cursor: pointer;
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  padding: 0.72rem;
+  text-align: left;
+}
+
+.result-colour-settings__preset:hover,
+.result-colour-settings__preset:focus-visible,
+.result-colour-settings__preset.is-selected {
+  border-color: var(--primary);
+  outline: none;
+}
+
+.result-colour-settings__preset-copy {
+  display: grid;
+  gap: 0.14rem;
+}
+
+.result-colour-settings__preset-copy small,
+.result-colour-settings__intro,
+.result-colour-settings__custom-label small {
+  color: var(--muted-foreground);
+  line-height: 1.35;
+}
+
+.result-colour-settings__swatches,
+.result-colour-summary-preview {
+  display: flex;
+  gap: 0.28rem;
+}
+
+.result-colour-settings__swatches i,
+.result-colour-summary-preview i {
+  background: var(--result-colour);
+  border: 1px solid color-mix(in srgb, var(--result-colour) 72%, var(--border));
+  border-radius: 0.32rem;
+  display: block;
+  height: 1.25rem;
+  width: 1.25rem;
+}
+
+.result-colour-settings__custom {
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 0.6rem;
+  padding-top: 0.95rem;
+}
+
+.result-colour-settings__custom-label {
+  display: grid;
+  gap: 0.12rem;
+}
+
+.result-colour-settings__picker-row {
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.result-colour-settings__picker {
+  align-items: center;
+  background: var(--secondary);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 0.15rem);
+  display: grid;
+  gap: 0.45rem;
+  justify-items: stretch;
+  padding: 0.62rem;
+}
+
+.result-colour-settings__picker > span {
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.result-colour-settings__picker input[type='color'] {
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  height: 2.25rem;
+  padding: 0;
+  width: 100%;
+}
+
+.result-colour-settings__picker small {
+  color: var(--muted-foreground);
+  font-size: 0.66rem;
+  font-variant-numeric: tabular-nums;
+  text-transform: uppercase;
+}
+
+.result-colour-preview {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 0.05rem);
+  display: grid;
+  gap: 0.7rem;
+  padding: 0.85rem;
+}
+
+.result-colour-preview__header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.result-colour-preview__header small {
+  color: var(--muted-foreground);
+}
+
+.result-colour-preview__scores {
+  display: grid;
+  gap: 0.55rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.result-colour-preview__score {
+  align-items: center;
+  display: grid;
+  gap: 0.36rem;
+  justify-items: center;
+}
+
+.result-colour-preview__score > strong {
+  align-items: center;
+  background: color-mix(in srgb, var(--result-colour) 11%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--result-colour) 72%, var(--border));
+  border-radius: 0.38rem;
+  color: color-mix(in srgb, var(--result-colour) 78%, var(--foreground));
+  display: inline-flex;
+  font-size: 0.86rem;
+  height: 2rem;
+  justify-content: center;
+  width: 2rem;
+}
+
+.result-colour-preview__score span {
+  color: var(--muted-foreground);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.result-colour-summary-preview {
+  margin-top: 0.25rem;
+}
+
+.result-colour-summary-preview i {
+  height: 0.8rem;
+  width: 2.2rem;
+}
+
+@media (max-width: 520px) {
+  .result-colour-settings__picker-row {
+    grid-template-columns: 1fr;
+  }
+
+  .result-colour-settings__picker {
+    grid-template-columns: 3.5rem minmax(0, 1fr) 4.8rem;
+    align-items: center;
+  }
+
+  .result-colour-settings__picker input[type='color'] {
+    height: 2rem;
+  }
+}

@@ -291,6 +291,11 @@ describe('ManagerDeskPage', () => {
     expect(container.querySelector('.manager-desk__form-score--l')).not.toBeNull();
     expect(container.querySelector('[aria-label*="+2 bonus points"]')).not.toBeNull();
     expect(container.querySelector('.manager-desk__form-score-markers--below i')).not.toBeNull();
+
+    const featuredComparisonLabels = [...container.querySelectorAll<HTMLElement>(
+      '.manager-desk__fixture-matchup--featured .manager-desk__fixture-comparison-label',
+    )].map((label) => label.textContent);
+    expect(featuredComparisonLabels).toEqual(['GW5', '', 'GW1', 'GW2', 'GW3', 'GW4']);
   });
 
   test('keeps account actions behind the compact header profile menu', async () => {

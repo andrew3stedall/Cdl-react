@@ -1,40 +1,4 @@
-"""Theme and FDR colour preference contract models."""
-
-from typing import Literal
-
-from pydantic import BaseModel, Field
-
-
-class ThemePreset(BaseModel):
-    name: str
-    label: str
-    description: str = ""
-    is_default: bool = False
-    tokens: dict[str, object] = Field(default_factory=dict)
-
-
-class FdrCustomPaletteCreate(BaseModel):
-    name: str = Field(min_length=1, max_length=80)
-    mode: Literal["anchors", "all"] = "anchors"
-    min: str = Field(pattern=r"^#[0-9A-Fa-f]{6}$")
-    second: str = Field(pattern=r"^#[0-9A-Fa-f]{6}$")
-    mid: str = Field(pattern=r"^#[0-9A-Fa-f]{6}$")
-    fourth: str = Field(pattern=r"^#[0-9A-Fa-f]{6}$")
-    max: str = Field(pattern=r"^#[0-9A-Fa-f]{6}$")
-
-
-class FdrCustomPalette(FdrCustomPaletteCreate):
-    id: str
-
-
-class PlayerColourPaletteCreate(BaseModel):
-    name: str = Field(min_length=1, max_length=80)
-    family: Literal["position", "metric"]
-    colours: list[str] = Field(min_length=4, max_length=5)
-
-
-class PlayerColourPalette(PlayerColourPaletteCreate):
-    id: str
+from pydantic import BaseModel
 
 
 class UserPreferences(BaseModel):
@@ -56,6 +20,9 @@ class UserPreferences(BaseModel):
     metric_custom_3: str = "#A3C635"
     metric_custom_4: str = "#F59E0B"
     metric_custom_5: str = "#DC2626"
+    result_win_colour: str = "#22C55E"
+    result_draw_colour: str = "#F59E0B"
+    result_loss_colour: str = "#F43F5E"
     light_theme_colour: str = "#0F766E"
     dark_theme_colour: str = "#2DD4BF"
     fdr_custom_min: str = "#2166AC"

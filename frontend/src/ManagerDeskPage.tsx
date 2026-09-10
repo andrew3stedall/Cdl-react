@@ -289,8 +289,10 @@ function FixtureMatchup({ featured, fixture, formFixtures, leagueRows, showCurre
               <FixtureComparisonRow
                 awayBonus={awayItem?.bonusPoints ?? 0}
                 awayPoints={awayItem?.points ?? null}
+                awayResult={awayItem?.result}
                 homeBonus={homeItem?.bonusPoints ?? 0}
                 homePoints={homeItem?.points ?? null}
+                homeResult={homeItem?.result}
                 key={gameweekNumber ?? `empty-${index}`}
                 label={gameweekNumber === null ? '' : `GW${gameweekNumber}`}
               />
@@ -334,21 +336,23 @@ function FixtureManager({ className, featured, form, leagueRow, side, team }: {
   );
 }
 
-function FixtureComparisonRow({ awayBonus, awayPoints, current = false, homeBonus, homePoints, label }: {
+function FixtureComparisonRow({ awayBonus, awayPoints, awayResult, current = false, homeBonus, homePoints, homeResult, label }: {
   awayBonus: number;
   awayPoints: number | null;
+  awayResult?: TeamForm['result'];
   current?: boolean;
   homeBonus: number;
   homePoints: number | null;
+  homeResult?: TeamForm['result'];
   label: string;
 }) {
-  const homeResult = comparisonResultForPoints(homePoints, awayPoints);
-  const awayResult = comparisonResultForPoints(awayPoints, homePoints);
+  const homeDisplayResult = homeResult ?? comparisonResultForPoints(homePoints, awayPoints);
+  const awayDisplayResult = awayResult ?? comparisonResultForPoints(awayPoints, homePoints);
   return (
     <div className={`manager-desk__fixture-comparison-row${current ? ' manager-desk__fixture-comparison-row--current' : ''}${label ? '' : ' manager-desk__fixture-comparison-row--empty'}`}>
-      <ComparisonScore bonus={homeBonus} points={homePoints} result={homeResult} />
+      <ComparisonScore bonus={homeBonus} points={homePoints} result={homeDisplayResult} />
       <span className="manager-desk__fixture-comparison-label">{label}</span>
-      <ComparisonScore bonus={awayBonus} points={awayPoints} result={awayResult} />
+      <ComparisonScore bonus={awayBonus} points={awayPoints} result={awayDisplayResult} />
     </div>
   );
 }

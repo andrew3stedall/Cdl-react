@@ -298,6 +298,63 @@ describe('ManagerDeskPage', () => {
     expect(featuredComparisonLabels).toEqual(['GW5', '', 'GW1', 'GW2', 'GW3', 'GW4']);
   });
 
+  test('colours prior scores by each team’s own fixture result', async () => {
+    const homeTeam = { id: 'team-featured-home', name: 'Home Team', shortName: 'HOM' };
+    const awayTeam = { id: 'team-featured-away', name: 'Away Team', shortName: 'AWY' };
+    const previousFixtures: LeagueFixture[] = [
+      {
+        ...scoredFixture(1, 20, 30, 'away_win'),
+        id: 'fixture-home-history-1',
+        homeTeam,
+        awayTeam: { id: 'team-opponent-1', name: 'Opponent One' },
+      },
+      {
+        ...scoredFixture(1, 15, 5, 'home_win'),
+        id: 'fixture-away-history-1',
+        homeTeam: awayTeam,
+        awayTeam: { id: 'team-opponent-2', name: 'Opponent Two' },
+      },
+    ];
+    const nextFixture: LeagueFixture = {
+      ...scoredFixture(2, 0, 0, 'pending'),
+      id: 'fixture-featured-next',
+      gameweek: { id: 'gw-2', name: 'Gameweek 2', number: 2 },
+      homeTeam,
+      awayTeam,
+      status: 'pending',
+      isCurrent: false,
+      isNext: true,
+      score: { homeScore: null, awayScore: null, bonusPoints: {}, chipsPlayed: {}, outcome: 'pending' },
+    };
+    const snapshot: ManagerDeskSnapshot = {
+      context: 'pre_deadline',
+      gameweek: nextFixture.gameweek,
+      selection: { ...selection, managerTeam: homeTeam, gameweek: nextFixture.gameweek },
+      squad: { summary: { ...squad, manager_team: homeTeam }, notifications: { notifications: [], proposed_trade_count: 0 } },
+      currentFixture: null,
+      nextFixture,
+      currentFixtures: [],
+      nextFixtures: [nextFixture],
+      recentFixtures: previousFixtures,
+      formFixtures: previousFixtures,
+      leagueTable: { source: 'test', rows: [] },
+      availablePlayers: [],
+      drawDeadlineAt: null,
+      interestCount: 0,
+    };
+    const { container } = renderPage(() => undefined, new MemorySquadClient(), () => undefined, new MemoryManagerDeskClient(snapshot));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    const rows = [...container.querySelectorAll<HTMLElement>('.manager-desk__fixture-matchup--featured .manager-desk__fixture-comparison-row')];
+    const gameweekOne = rows.find((row) => row.querySelector('.manager-desk__fixture-comparison-label')?.textContent === 'GW1');
+    const scores = gameweekOne?.querySelectorAll('.manager-desk__form-score');
+    expect(scores?.[0].classList).toContain('manager-desk__form-score--l');
+    expect(scores?.[1].classList).toContain('manager-desk__form-score--w');
+  });
+
   test('keeps account actions behind the compact header profile menu', async () => {
     const destinations: string[] = [];
     let signOutCount = 0;

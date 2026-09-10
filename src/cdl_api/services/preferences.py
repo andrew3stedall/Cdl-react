@@ -50,6 +50,9 @@ class UserPreferenceService:
             or preferences.metric_colour_scale not in SUPPORTED_METRIC_COLOUR_SCALES
             or not THEME_COLOUR_PATTERN.fullmatch(preferences.light_theme_colour)
             or not THEME_COLOUR_PATTERN.fullmatch(preferences.dark_theme_colour)
+            or not THEME_COLOUR_PATTERN.fullmatch(preferences.result_win_colour)
+            or not THEME_COLOUR_PATTERN.fullmatch(preferences.result_draw_colour)
+            or not THEME_COLOUR_PATTERN.fullmatch(preferences.result_loss_colour)
             or not THEME_COLOUR_PATTERN.fullmatch(preferences.fdr_custom_min)
             or not THEME_COLOUR_PATTERN.fullmatch(preferences.fdr_custom_second)
             or not THEME_COLOUR_PATTERN.fullmatch(preferences.fdr_custom_mid)

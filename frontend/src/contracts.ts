@@ -7,6 +7,7 @@ import type {
   PositionColourScaleName,
   PositionPalette,
 } from './player-colour-scales';
+import type { ResultColourPalette } from './result-colours';
 
 export interface ApiErrorResponse {
   code: 'validation_error' | 'unauthenticated' | 'forbidden' | 'not_found' | 'conflict' | 'server_error';
@@ -86,6 +87,7 @@ export interface UserPreferences {
   metricColourScale?: MetricColourScaleName;
   metricColourScaleReversed?: boolean;
   metricCustomColours?: MetricPalette;
+  resultColours?: ResultColourPalette;
   lightThemeColour?: string;
   darkThemeColour?: string;
   fdrCustomAnchors?: {

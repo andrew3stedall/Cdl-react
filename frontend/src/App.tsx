@@ -27,6 +27,7 @@ import { isSquadRoute } from './navigation';
 import { PlayerProfilePage } from './PlayerProfilePage';
 import type { PreferenceClient } from './preferences-api';
 import { ProfilePage } from './ProfilePage';
+import { ResultColourProfilePage } from './ResultColourProfilePage';
 import { loginWithPasskey } from './passkeys';
 import { RulesPage } from './RulesPage';
 import { SquadWorkspacePage } from './SquadWorkspacePage';
@@ -474,6 +475,10 @@ function AppRouteContent({
 
   if (currentPath.startsWith('/account') || currentPath.startsWith('/profile')) {
     routeContent = <ProfilePage currentPath={currentPath} onNavigate={onNavigate} session={activeSession} />;
+  }
+
+  if (currentPath === '/account/result-colours' || currentPath === '/profile/result-colours') {
+    routeContent = <ResultColourProfilePage onNavigate={onNavigate} />;
   }
 
   if (currentPath.startsWith('/rules')) {

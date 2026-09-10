@@ -379,7 +379,7 @@ function ComparisonScore({ bonus, points, result }: {
 
 function recentComparisonGameweeks(homeForm: TeamForm[], awayForm: TeamForm[]): Array<number | null> {
   const gameweeks = Array.from(new Set([...homeForm, ...awayForm].map((item) => item.gameweekNumber)))
-    .sort((left, right) => right - left)
+    .sort((left, right) => left - right)
     .slice(0, 5);
   return [...Array.from({ length: Math.max(0, 5 - gameweeks.length) }, () => null), ...gameweeks];
 }

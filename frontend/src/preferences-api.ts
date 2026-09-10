@@ -25,6 +25,7 @@ import {
   type PlayerColourPalette,
   type PlayerPosition,
 } from './player-colour-scales';
+import { defaultResultColours, resolveResultColours } from './result-colours';
 import { resolveThemePreset } from './theme-presets';
 import { getStoredThemePreset, setThemePresetCookie } from './theme-cookie';
 import {
@@ -53,6 +54,9 @@ interface ApiUserPreferences {
   metric_custom_3?: string;
   metric_custom_4?: string;
   metric_custom_5?: string;
+  result_win_colour?: string;
+  result_draw_colour?: string;
+  result_loss_colour?: string;
   light_theme_colour?: string;
   dark_theme_colour?: string;
   fdr_custom_min?: string;
@@ -148,6 +152,11 @@ function fromApiPreferences(preferences: ApiUserPreferences): UserPreferences {
       preferences.metric_custom_4 ?? defaultMetricCustomColours[3],
       preferences.metric_custom_5 ?? defaultMetricCustomColours[4],
     ]),
+    resultColours: resolveResultColours({
+      win: preferences.result_win_colour,
+      draw: preferences.result_draw_colour,
+      loss: preferences.result_loss_colour,
+    }),
     lightThemeColour: resolveThemeBaseColour(preferences.light_theme_colour ?? preferences.dark_theme_colour),
     darkThemeColour: resolveThemeColour(preferences.light_theme_colour ?? preferences.dark_theme_colour, 'dark'),
     fdrCustomAnchors: resolveFdrCustomAnchors({
@@ -161,6 +170,7 @@ function fromApiPreferences(preferences: ApiUserPreferences): UserPreferences {
 }
 
 function toApiPreferences(preferences: UserPreferences): ApiUserPreferences {
+  const resultColours = resolveResultColours(preferences.resultColours);
   return {
     theme_preset: preferences.themePreset,
     attack_direction: preferences.attackDirection,
@@ -180,6 +190,9 @@ function toApiPreferences(preferences: UserPreferences): ApiUserPreferences {
     metric_custom_3: preferences.metricCustomColours?.[2] ?? defaultMetricCustomColours[2],
     metric_custom_4: preferences.metricCustomColours?.[3] ?? defaultMetricCustomColours[3],
     metric_custom_5: preferences.metricCustomColours?.[4] ?? defaultMetricCustomColours[4],
+    result_win_colour: resultColours.win,
+    result_draw_colour: resultColours.draw,
+    result_loss_colour: resultColours.loss,
     light_theme_colour: resolveThemeBaseColour(preferences.lightThemeColour ?? defaultThemeColour),
     dark_theme_colour: getThemeColourForMode(preferences.lightThemeColour ?? defaultThemeColour, 'dark'),
     fdr_custom_min: preferences.fdrCustomAnchors?.min ?? defaultFdrCustomAnchors.min,
@@ -303,6 +316,9 @@ export class LocalStoragePreferenceClient implements PreferenceClient {
   private readonly metricColourScaleStorageKey = 'cdl-metric-colour-scale';
   private readonly metricColourScaleReversedStorageKey = 'cdl-metric-colour-scale-reversed';
   private readonly metricCustomColoursStorageKey = 'cdl-metric-custom-colours';
+  private readonly resultWinColourStorageKey = 'cdl-result-win-colour';
+  private readonly resultDrawColourStorageKey = 'cdl-result-draw-colour';
+  private readonly resultLossColourStorageKey = 'cdl-result-loss-colour';
   private readonly lightThemeColourStorageKey = 'cdl-light-theme-colour';
   private readonly darkThemeColourStorageKey = 'cdl-dark-theme-colour';
   private readonly fdrCustomMinStorageKey = 'cdl-fdr-custom-min';
@@ -332,6 +348,11 @@ export class LocalStoragePreferenceClient implements PreferenceClient {
         ? localStorage.getItem(this.metricColourScaleReversedStorageKey) === 'true'
         : defaultMetricColourScaleReversed,
       metricCustomColours: readStoredMetricColours(localStorage.getItem(this.metricCustomColoursStorageKey)),
+      resultColours: resolveResultColours({
+        win: localStorage.getItem(this.resultWinColourStorageKey) ?? undefined,
+        draw: localStorage.getItem(this.resultDrawColourStorageKey) ?? undefined,
+        loss: localStorage.getItem(this.resultLossColourStorageKey) ?? undefined,
+      }),
       lightThemeColour: resolveThemeBaseColour(localStorage.getItem(this.lightThemeColourStorageKey) ?? defaultThemeColour),
       darkThemeColour: resolveThemeColour(localStorage.getItem(this.lightThemeColourStorageKey) ?? defaultThemeColour, 'dark'),
       fdrCustomAnchors: resolveFdrCustomAnchors({
@@ -357,6 +378,10 @@ export class LocalStoragePreferenceClient implements PreferenceClient {
     localStorage.setItem(this.metricColourScaleStorageKey, preferences.metricColourScale ?? defaultMetricColourScale);
     localStorage.setItem(this.metricColourScaleReversedStorageKey, String(preferences.metricColourScaleReversed ?? defaultMetricColourScaleReversed));
     localStorage.setItem(this.metricCustomColoursStorageKey, JSON.stringify(resolveMetricPalette(preferences.metricCustomColours)));
+    const resultColours = resolveResultColours(preferences.resultColours);
+    localStorage.setItem(this.resultWinColourStorageKey, resultColours.win ?? defaultResultColours.win);
+    localStorage.setItem(this.resultDrawColourStorageKey, resultColours.draw ?? defaultResultColours.draw);
+    localStorage.setItem(this.resultLossColourStorageKey, resultColours.loss ?? defaultResultColours.loss);
     const themeColour = resolveThemeBaseColour(preferences.lightThemeColour ?? defaultThemeColour);
     localStorage.setItem(this.lightThemeColourStorageKey, themeColour);
     localStorage.setItem(this.darkThemeColourStorageKey, getThemeColourForMode(themeColour, 'dark'));

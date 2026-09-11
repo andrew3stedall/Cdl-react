@@ -543,9 +543,7 @@ def test_settlement_repairs_a_finalised_fixture_missing_substitution_pass() -> N
             "synthetic": False,
         }
         session.execute(
-            insert(cdl_fixtures_table).values(
-                id="fixture-repair", payload_json=fixture_payload
-            )
+            insert(cdl_fixtures_table).values(id="fixture-repair", payload_json=fixture_payload)
         )
         session.execute(
             insert(fixture_results_table).values(
@@ -589,11 +587,15 @@ def test_settlement_repairs_a_finalised_fixture_missing_substitution_pass() -> N
                 fixture_scoring_snapshots_table.c.id == "snapshot-fixture-repair"
             )
         ).scalar_one()
-        substitution_rows = session.execute(
-            select(lineup_substitutions_table.c.starter_player_id).where(
-                lineup_substitutions_table.c.fixture_id == "fixture-repair"
+        substitution_rows = (
+            session.execute(
+                select(lineup_substitutions_table.c.starter_player_id).where(
+                    lineup_substitutions_table.c.fixture_id == "fixture-repair"
+                )
             )
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
 
     assert (result_payload["home_score"], result_payload["away_score"]) == (13, 11)
     assert result_payload["finalised_at"] == "2026-09-01T00:00:00+00:00"

@@ -326,6 +326,7 @@ def test_settlement_locks_all_teams_marks_chips_used_and_freezes_results() -> No
         ).scalar_one()
         assert snapshot_payload["epl_fixture_ids"] == ["epl-1"]
         assert snapshot_payload["substitutions"] == {"team-home": [], "team-away": []}
+        assert snapshot_payload["automatic_substitution_version"] == 1
         assert snapshot_payload["chips_played"] == {
             "team-home": ["Triple Captain"],
             "team-away": [],
@@ -432,6 +433,13 @@ def test_final_team_scores_apply_automatic_substitutions() -> None:
             created_at=now,
         )
         session.commit()
+        session.execute(
+            lineup_substitutions_table.delete().where(
+                lineup_substitutions_table.c.fixture_id == "fixture-automatic-substitution",
+                lineup_substitutions_table.c.starter_player_id == "fpl-10",
+            )
+        )
+        session.commit()
         FplSettlementService._persist_substitutions(
             session,
             fixture_id="fixture-automatic-substitution",
@@ -450,3 +458,164 @@ def test_final_team_scores_apply_automatic_substitutions() -> None:
         )
         assert len(substitution_ids) == 2
         assert all(len(substitution_id) == 61 for substitution_id in substitution_ids)
+
+
+def test_settlement_repairs_a_finalised_fixture_missing_substitution_pass() -> None:
+    sessions = _session_factory()
+    now = datetime.now(UTC)
+    lineup_rows = []
+    for team_id, starters, bench in (
+        ("team-home", range(1, 12), range(23, 28)),
+        ("team-away", range(12, 23), range(28, 33)),
+    ):
+        lineup_rows.extend(
+            {
+                "id": f"lineup-{team_id}-repair-{player_id}",
+                "season_id": SEASON_ID,
+                "draft_team_id": team_id,
+                "player_id": f"fpl-{player_id}",
+                "gameweek": 1,
+                "slot": "starter",
+                "slot_order": slot_order,
+                "is_captain": False,
+                "is_vice_captain": False,
+                "locked_at": now,
+                "updated_at": now,
+            }
+            for slot_order, player_id in enumerate(starters, start=1)
+        )
+        lineup_rows.extend(
+            {
+                "id": f"lineup-{team_id}-repair-{player_id}",
+                "season_id": SEASON_ID,
+                "draft_team_id": team_id,
+                "player_id": f"fpl-{player_id}",
+                "gameweek": 1,
+                "slot": "bench",
+                "slot_order": slot_order,
+                "is_captain": False,
+                "is_vice_captain": False,
+                "locked_at": now,
+                "updated_at": now,
+            }
+            for slot_order, player_id in enumerate(bench)
+        )
+
+    with sessions() as session:
+        session.execute(
+            insert(fpl_gameweeks_table).values(
+                id="1",
+                name="Gameweek 1",
+                deadline_time=now - timedelta(hours=1),
+                is_previous=True,
+                is_current=False,
+                is_next=False,
+                finished=True,
+                data_checked=True,
+            )
+        )
+        session.execute(
+            insert(external_payload_cache_table).values(
+                resource="event-live:1",
+                endpoint="https://fantasy.premierleague.com/api/event/1/live/",
+                payload_json={
+                    "elements": [
+                        {
+                            "id": player_id,
+                            "stats": {
+                                "total_points": 2 if player_id in (24, 25) else 1,
+                                "minutes": 0 if player_id in (2, 10, 23) else 90,
+                            },
+                        }
+                        for player_id in range(1, 33)
+                    ]
+                },
+                response_sha256="r" * 64,
+                fetched_at=now,
+            )
+        )
+        fixture_payload = {
+            "id": "fixture-repair",
+            "gameweek": {"id": "gw-1", "name": "Gameweek 1", "number": 1},
+            "home_team": {"id": "team-home", "name": "Home"},
+            "away_team": {"id": "team-away", "name": "Away"},
+            "status": "pending",
+            "synthetic": False,
+        }
+        session.execute(
+            insert(cdl_fixtures_table).values(id="fixture-repair", payload_json=fixture_payload)
+        )
+        session.execute(
+            insert(fixture_results_table).values(
+                id="result-fixture-repair",
+                payload_json={
+                    "fixture_id": "fixture-repair",
+                    "home_score": 11,
+                    "away_score": 11,
+                    "outcome": "draw",
+                    "finalised": True,
+                    "finalised_at": "2026-09-01T00:00:00+00:00",
+                    "source_response_sha256": "old" * 16,
+                    "synthetic": False,
+                },
+            )
+        )
+        session.execute(
+            insert(fixture_scoring_snapshots_table).values(
+                id="snapshot-fixture-repair",
+                payload_json={
+                    "fixture_id": "fixture-repair",
+                    "substitutions": {"team-home": [], "team-away": []},
+                    "synthetic": False,
+                },
+            )
+        )
+        session.execute(insert(team_selection_lineup_slots_table), lineup_rows)
+        session.commit()
+
+    result = FplSettlementService(sessions).settle()
+
+    assert result.settled_fixtures == 1
+    with sessions() as session:
+        result_payload = session.execute(
+            select(fixture_results_table.c.payload_json).where(
+                fixture_results_table.c.id == "result-fixture-repair"
+            )
+        ).scalar_one()
+        snapshot_payload = session.execute(
+            select(fixture_scoring_snapshots_table.c.payload_json).where(
+                fixture_scoring_snapshots_table.c.id == "snapshot-fixture-repair"
+            )
+        ).scalar_one()
+        substitution_rows = (
+            session.execute(
+                select(lineup_substitutions_table.c.starter_player_id).where(
+                    lineup_substitutions_table.c.fixture_id == "fixture-repair"
+                )
+            )
+            .scalars()
+            .all()
+        )
+
+    assert (result_payload["home_score"], result_payload["away_score"]) == (13, 11)
+    assert result_payload["finalised_at"] == "2026-09-01T00:00:00+00:00"
+    assert snapshot_payload["automatic_substitution_version"] == 1
+    assert snapshot_payload["substitutions"]["team-home"] == [
+        {
+            "starter_player_id": "fpl-2",
+            "substitute_player_id": "fpl-24",
+            "starter_slot_order": 2,
+            "bench_order": 1,
+            "reason": "starter_did_not_play",
+            "formation_preserved": True,
+        },
+        {
+            "starter_player_id": "fpl-10",
+            "substitute_player_id": "fpl-25",
+            "starter_slot_order": 10,
+            "bench_order": 2,
+            "reason": "starter_did_not_play",
+            "formation_preserved": True,
+        },
+    ]
+    assert substitution_rows == ["fpl-2", "fpl-10"]

@@ -62,7 +62,9 @@ import { useThemePreset } from './theme-preset-provider';
 import { getThemeColourForMode, themeColourOptions } from './theme-colours';
 import { getPasskeyStatus, registerPasskey, type PasskeyStatus } from './passkeys';
 import { SensorMazeGame } from './SensorMazeGame';
+import { getResultColourPaletteLabel } from './result-colours';
 import { managerNicknameForName } from './manager-nicknames';
+import { ResultColourSummaryPreview } from './ResultColourSettings';
 import './profile-page.css';
 
 interface ProfilePageProps {
@@ -85,6 +87,7 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
     metricColourScale,
     metricColourScaleReversed,
     metricCustomColours,
+    resultColours,
     customPlayerColourPalettes,
     themeColour,
     preset,
@@ -315,7 +318,7 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
       <header className="profile-page__header">
         <p className="eyebrow">Account</p>
         <h1 id="account-title">Account</h1>
-        <p>Manage your identity, workspace appearance, player colours, pitch orientation, and FDR colours.</p>
+        <p>Manage your identity, workspace appearance, player colours, result colours, pitch orientation, and FDR colours.</p>
       </header>
 
       {isAccountSummary && passkeyStatus?.enabled && passkeyStatus.registeredCount === 0 ? (
@@ -443,6 +446,21 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
           </div>
           <span className="profile-summary-value">{metricColourScale === 'Custom' ? 'Custom' : getMetricColourScale(metricColourScale).label} · {metricColourScaleReversed ? 'Reversed' : 'Low to high'}</span>
           <MetricPaletteBar customColours={metricCustomColours} metricColourScale={metricColourScale} metricColourScaleReversed={metricColourScaleReversed} mode={themeMode} />
+        </ProfileSummaryCard>
+
+        <ProfileSummaryCard
+          ariaLabel="Open result colour settings"
+          onSelect={() => onNavigate('/account/result-colours')}
+        >
+          <div className="profile-card__header">
+            <div>
+              <p className="profile-card__eyebrow">Match results</p>
+              <h2>Result colours</h2>
+            </div>
+            <ChevronRight aria-hidden="true" className="profile-summary-card__arrow" size={18} />
+          </div>
+          <span className="profile-summary-value">{getResultColourPaletteLabel(resultColours)} · Win / Draw / Loss</span>
+          <ResultColourSummaryPreview colours={resultColours} />
         </ProfileSummaryCard>
 
         <ProfileSummaryCard

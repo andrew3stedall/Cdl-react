@@ -1,4 +1,4 @@
-import { LogOut, Palette, UserRound } from 'lucide-react';
+import { LogOut, UserRound } from 'lucide-react';
 
 import { Button } from './components/ui/button';
 import { Card } from './components/ui/card';
@@ -38,10 +38,6 @@ export function ManagerAccountSection({
           <Button onClick={() => onNavigate('/account')} type="button" variant="secondary">
             <UserRound aria-hidden="true" size={17} />
             Account
-          </Button>
-          <Button onClick={() => onNavigate('/account/result-colours')} type="button" variant="secondary">
-            <Palette aria-hidden="true" size={17} />
-            Result colours
           </Button>
           <Button onClick={onSignOut} type="button" variant="ghost">
             <LogOut aria-hidden="true" size={17} />

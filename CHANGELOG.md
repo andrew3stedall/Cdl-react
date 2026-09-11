@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Fixed player profile fixture detail sheets so the fixed mobile navigation no
+  longer covers their content and touch scrolling stays inside the sheet.
+
 - Expanded the protected staging reviewer workflow to three accounts and mapped the third reviewer to Bayer Neverlusen in the synthetic staging draft seed.
 
 - Replaced the League fixtures and gameweek pickers with shadcn-style Embla

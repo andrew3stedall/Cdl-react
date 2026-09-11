@@ -459,6 +459,10 @@ describe('PlayerProfilePage', () => {
       formBar?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     });
     expect(container.querySelector('[data-chart-detail-kind="form"]')).toBeTruthy();
+    expect(container.querySelector('.player-chart-detail__body')).toBeTruthy();
+    expect(document.documentElement.style.overflow).toBe('hidden');
+    expect(document.body.style.overflow).toBe('hidden');
+    expect(document.body.style.position).toBe('fixed');
     expect(container.textContent).toContain('Scoring returns');
     expect(container.textContent).toContain('Goals');
     expect(container.textContent).toContain('Minutes90+2');
@@ -468,6 +472,9 @@ describe('PlayerProfilePage', () => {
     act(() => {
       container.querySelector('.player-chart-detail-backdrop')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     });
+    expect(document.documentElement.style.overflow).toBe('');
+    expect(document.body.style.overflow).toBe('');
+    expect(document.body.style.position).toBe('');
     expect(container.querySelector('[data-chart-detail-kind="form"]')).toBeNull();
 
     const opponentBar = container.querySelector('button[aria-label*="points-against details"]');

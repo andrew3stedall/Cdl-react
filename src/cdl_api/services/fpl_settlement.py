@@ -32,6 +32,8 @@ from cdl_api.services.substitution_engine import (
 )
 from cdl_api.staging_draft_seed import LEAGUE_ID, SEASON_ID
 
+AUTOMATIC_SUBSTITUTION_VERSION = 1
+
 
 @dataclass(frozen=True)
 class FplSettlementResult:
@@ -320,9 +322,23 @@ class FplSettlementService:
                 continue
             result_row = result_rows.get(fixture_id)
             current_result = result_row[1] if result_row is not None else {}
-            if result_row is not None and (
-                not isinstance(current_result, Mapping) or current_result.get("finalised") is True
-            ):
+            snapshot_payload = snapshot_rows.get(fixture_id, {})
+            was_finalised = (
+                isinstance(current_result, Mapping) and current_result.get("finalised") is True
+            )
+            synthetic_fixture = (
+                isinstance(current_result, Mapping) and current_result.get("synthetic") is True
+            ) or (
+                isinstance(snapshot_payload, Mapping) and snapshot_payload.get("synthetic") is True
+            )
+            needs_automatic_substitution_repair = (
+                was_finalised
+                and not synthetic_fixture
+                and isinstance(snapshot_payload, Mapping)
+                and snapshot_payload.get("automatic_substitution_version")
+                != AUTOMATIC_SUBSTITUTION_VERSION
+            )
+            if was_finalised and not needs_automatic_substitution_repair:
                 continue
             live_payload, source_hash = live_payloads.get(gameweek, (None, ""))
             player_points = _event_player_points(live_payload)
@@ -330,7 +346,10 @@ class FplSettlementService:
             if not player_points:
                 skipped += 1
                 continue
-            finalised = gameweek in ready_gameweeks
+            # A previously finalised result is repaired with the latest
+            # substitution-aware calculation, even if the current scheduler
+            # pass no longer sees the gameweek in the ready set.
+            finalised = gameweek in ready_gameweeks or was_finalised
             if (
                 not finalised
                 and result_row is not None
@@ -364,7 +383,11 @@ class FplSettlementService:
                 if away_score > home_score
                 else "draw"
             )
-            finalised_at = now.isoformat()
+            finalised_at = (
+                current_result.get("finalised_at")
+                if was_finalised and isinstance(current_result.get("finalised_at"), str)
+                else now.isoformat()
+            )
             result_payload = {
                 **dict(current_result),
                 "fixture_id": fixture_id,
@@ -376,10 +399,15 @@ class FplSettlementService:
                 "gameweek": gameweek,
                 "source_resource": f"event-live:{gameweek}",
                 "source_response_sha256": source_hash,
+                "automatic_substitution_version": (
+                    AUTOMATIC_SUBSTITUTION_VERSION
+                    if finalised
+                    else current_result.get("automatic_substitution_version")
+                ),
                 "synthetic": False,
             }
             snapshot_payload = {
-                **dict(snapshot_rows.get(fixture_id, {})),
+                **dict(snapshot_payload),
                 "fixture_id": fixture_id,
                 "home_score": home_score,
                 "away_score": away_score,
@@ -388,6 +416,11 @@ class FplSettlementService:
                 "substitutions": substitutions,
                 "source_resource": f"event-live:{gameweek}",
                 "source_response_sha256": source_hash,
+                "automatic_substitution_version": (
+                    AUTOMATIC_SUBSTITUTION_VERSION
+                    if finalised
+                    else snapshot_payload.get("automatic_substitution_version")
+                ),
                 "finalised_at": finalised_at
                 if finalised
                 else snapshot_rows.get(fixture_id, {}).get("finalised_at"),
@@ -611,43 +644,90 @@ class FplSettlementService:
         substitutions: Mapping[str, list[dict[str, object]]],
         created_at: datetime,
     ) -> None:
-        """Persist final scoring substitutions as an idempotent audit trail."""
+        """Reconcile final scoring substitutions as an idempotent audit trail."""
 
         snapshot_id = f"snapshot-{fixture_id}"
-        existing_id = session.execute(
-            select(lineup_substitutions_table.c.id)
-            .where(
-                lineup_substitutions_table.c.season_id == SEASON_ID,
-                lineup_substitutions_table.c.fixture_id == fixture_id,
-            )
-            .limit(1)
-        ).scalar_one_or_none()
-        if existing_id is not None:
-            return
-
+        existing_rows = list(
+            session.execute(
+                select(
+                    lineup_substitutions_table.c.draft_team_id,
+                    lineup_substitutions_table.c.starter_player_id,
+                    lineup_substitutions_table.c.substitute_player_id,
+                    lineup_substitutions_table.c.starter_slot_order,
+                    lineup_substitutions_table.c.bench_order,
+                    lineup_substitutions_table.c.reason,
+                    lineup_substitutions_table.c.formation_preserved,
+                )
+                .where(
+                    lineup_substitutions_table.c.season_id == SEASON_ID,
+                    lineup_substitutions_table.c.fixture_id == fixture_id,
+                )
+            ).mappings()
+        )
+        desired_rows: list[tuple[str, dict[str, object]]] = []
         for team_id, team_substitutions in substitutions.items():
             for index, substitution in enumerate(team_substitutions, start=1):
                 substitution_id = (
                     "substitution-"
                     + hashlib.sha256(f"{fixture_id}:{team_id}:{index}".encode()).hexdigest()[:48]
                 )
-                session.execute(
-                    insert(lineup_substitutions_table).values(
-                        id=substitution_id,
-                        season_id=SEASON_ID,
-                        draft_team_id=team_id,
-                        gameweek=gameweek,
-                        fixture_id=fixture_id,
-                        snapshot_id=snapshot_id,
-                        starter_player_id=substitution["starter_player_id"],
-                        substitute_player_id=substitution["substitute_player_id"],
-                        starter_slot_order=substitution["starter_slot_order"],
-                        bench_order=substitution["bench_order"],
-                        reason=substitution["reason"],
-                        formation_preserved=substitution["formation_preserved"],
-                        created_at=created_at,
+                desired_rows.append(
+                    (
+                        substitution_id,
+                        {
+                            "draft_team_id": team_id,
+                            "starter_player_id": substitution["starter_player_id"],
+                            "substitute_player_id": substitution["substitute_player_id"],
+                            "starter_slot_order": substitution["starter_slot_order"],
+                            "bench_order": substitution["bench_order"],
+                            "reason": substitution["reason"],
+                            "formation_preserved": substitution["formation_preserved"],
+                        },
                     )
                 )
+
+        def substitution_key(row: Mapping[str, object]) -> tuple[object, ...]:
+            return (
+                str(row["draft_team_id"]),
+                str(row["starter_player_id"]),
+                str(row["substitute_player_id"]),
+                int(row["starter_slot_order"]),
+                int(row["bench_order"]),
+                str(row["reason"]),
+                bool(row["formation_preserved"]),
+            )
+
+        existing_keys = sorted(substitution_key(row) for row in existing_rows)
+        desired_keys = sorted(substitution_key(row) for _, row in desired_rows)
+        if existing_keys == desired_keys:
+            return
+
+        if existing_rows:
+            session.execute(
+                lineup_substitutions_table.delete().where(
+                    lineup_substitutions_table.c.season_id == SEASON_ID,
+                    lineup_substitutions_table.c.fixture_id == fixture_id,
+                )
+            )
+
+        for substitution_id, substitution in desired_rows:
+            session.execute(
+                insert(lineup_substitutions_table).values(
+                    id=substitution_id,
+                    season_id=SEASON_ID,
+                    draft_team_id=substitution["draft_team_id"],
+                    gameweek=gameweek,
+                    fixture_id=fixture_id,
+                    snapshot_id=snapshot_id,
+                    starter_player_id=substitution["starter_player_id"],
+                    substitute_player_id=substitution["substitute_player_id"],
+                    starter_slot_order=substitution["starter_slot_order"],
+                    bench_order=substitution["bench_order"],
+                    reason=substitution["reason"],
+                    formation_preserved=substitution["formation_preserved"],
+                    created_at=created_at,
+                )
+            )
 
 
 def _gameweek_number(payload: Mapping[str, object]) -> int | None:
@@ -678,31 +758,3 @@ def _event_player_points(payload: object) -> dict[str, int]:
             continue
     return points
 
-
-def _event_player_minutes(payload: object) -> dict[str, int]:
-    """Read only explicit minutes values from an event-live payload."""
-
-    if not isinstance(payload, Mapping) or not isinstance(payload.get("elements"), list):
-        return {}
-    minutes: dict[str, int] = {}
-    for element in payload["elements"]:
-        if not isinstance(element, Mapping) or element.get("id") is None:
-            continue
-        stats = element.get("stats")
-        if not isinstance(stats, Mapping) or stats.get("minutes") is None:
-            continue
-        try:
-            minutes[str(element["id"])] = int(stats["minutes"] or 0)
-        except (TypeError, ValueError):
-            continue
-    return minutes
-
-
-def _chip_display_name(chip_id: str) -> str:
-    return {
-        "triple-captain": "Triple Captain",
-        "dual-captain": "Dual Captain",
-        "auto-captain": "Auto Captain",
-        "bench-boost": "Bench Boost",
-        "best-xi": "Best XI",
-    }.get(chip_id, chip_id)

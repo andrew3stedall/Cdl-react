@@ -657,8 +657,7 @@ class FplSettlementService:
                     lineup_substitutions_table.c.bench_order,
                     lineup_substitutions_table.c.reason,
                     lineup_substitutions_table.c.formation_preserved,
-                )
-                .where(
+                ).where(
                     lineup_substitutions_table.c.season_id == SEASON_ID,
                     lineup_substitutions_table.c.fixture_id == fixture_id,
                 )

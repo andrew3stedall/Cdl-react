@@ -210,6 +210,7 @@ describe('AppShell integration', () => {
     expect(container.textContent).not.toContain('Profile & preferences');
     expect(container.textContent).not.toContain('Refresh data');
     expect(container.textContent).toContain('Sign out');
+    expect(container.textContent).not.toContain('Result colours');
     expect(container.querySelector('nav[aria-label="Global mobile navigation"]')).not.toBeNull();
 
     const accountMenu = container.querySelector<HTMLElement>('.manager-account-menu');
@@ -302,6 +303,7 @@ describe('AppShell integration', () => {
     expect(container.querySelector('.profile-page')?.textContent).not.toContain('Role');
     expect(container.querySelector('[aria-label="Open workspace appearance settings"]')).not.toBeNull();
     expect(container.querySelector('[aria-label="Open FDR colour scale settings"]')).not.toBeNull();
+    expect(container.querySelector('[aria-label="Open result colour settings"]')).not.toBeNull();
     expect(container.querySelector('[aria-label^="Current attacking orientation"]')).not.toBeNull();
     expect(container.querySelector('.profile-page .profile-preset-option')).toBeNull();
     expect(container.querySelector('.profile-page .profile-direction-option')).toBeNull();

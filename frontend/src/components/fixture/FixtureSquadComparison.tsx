@@ -15,6 +15,9 @@ export interface FixtureSquadComparisonProps {
   onPlayerClick?: (player: FixtureSquadPlayer) => void;
   playerInteraction?: FixturePlayerInteraction;
   squads: FixtureSquad[];
+  view?: FixtureSquadView;
+  onViewChange?: (view: FixtureSquadView) => void;
+  showViewToggle?: boolean;
 }
 
 export type FixtureGameweekStatus = 'past' | 'current' | 'future';
@@ -33,10 +36,10 @@ export interface FixturePitchViewProps {
   topStarters: FixtureSquad['starters'];
 }
 
-const FIXTURE_REVIEW_VIEW_STORAGE_KEY = 'cdl:fixture-review-view';
+export const FIXTURE_REVIEW_VIEW_STORAGE_KEY = 'cdl:fixture-review-view';
 const fixtureListPositionOrder = ['GKP', 'DEF', 'MID', 'FWD'] as const;
 
-function getStoredFixtureReviewView(): FixtureSquadView {
+export function getStoredFixtureReviewView(): FixtureSquadView {
   try {
     return window.localStorage.getItem(FIXTURE_REVIEW_VIEW_STORAGE_KEY) === 'list' ? 'list' : 'pitch';
   } catch {
@@ -49,9 +52,10 @@ function getStoredFixtureReviewView(): FixtureSquadView {
  * bench, and reserve views so the same fixture presentation can be embedded
  * outside League.
  */
-export function FixtureSquadComparison({ attackDirection, gameweekStatus, now: nowOverride, onPlayerClick, playerInteraction = 'points', squads }: FixtureSquadComparisonProps) {
+export function FixtureSquadComparison({ attackDirection, gameweekStatus, now: nowOverride, onPlayerClick, onViewChange, playerInteraction = 'points', showViewToggle = true, squads, view: controlledView }: FixtureSquadComparisonProps) {
   const [clockNow, setClockNow] = useState(() => Date.now());
-  const [view, setView] = useState<FixtureSquadView>(getStoredFixtureReviewView);
+  const [storedView, setStoredView] = useState<FixtureSquadView>(getStoredFixtureReviewView);
+  const view = controlledView ?? storedView;
   const userSquad = squads.find((squad) => squad.isUserTeam) ?? squads[0];
   const opponentSquad = squads.find((squad) => !squad.isUserTeam && squad.team.id !== userSquad?.team.id) ?? squads[1];
 
@@ -69,6 +73,11 @@ export function FixtureSquadComparison({ attackDirection, gameweekStatus, now: n
     }
   }, [view]);
 
+  function changeView(nextView: FixtureSquadView) {
+    if (controlledView === undefined) setStoredView(nextView);
+    onViewChange?.(nextView);
+  }
+
   if (!userSquad || !opponentSquad) return null;
 
   const now = nowOverride ?? clockNow;
@@ -80,28 +89,7 @@ export function FixtureSquadComparison({ attackDirection, gameweekStatus, now: n
 
   return (
     <section aria-label="Squad comparison" className="fixture-squad-comparison">
-      <div className="fixture-squad-comparison__toolbar">
-        <div aria-label="Fixture squad view" className="fixture-squad-comparison__view-toggle" role="group">
-          <button
-            aria-label="View as pitch"
-            aria-pressed={view === 'pitch'}
-            onClick={() => setView('pitch')}
-            title="Pitch view"
-            type="button"
-          >
-            <SoccerPitchIcon />
-          </button>
-          <button
-            aria-label="View as list"
-            aria-pressed={view === 'list'}
-            onClick={() => setView('list')}
-            title="List view"
-            type="button"
-          >
-            <List aria-hidden="true" size={18} />
-          </button>
-        </div>
-      </div>
+      {showViewToggle ? <div className="fixture-squad-comparison__toolbar"><FixtureSquadViewToggle onViewChange={changeView} view={view} /></div> : null}
 
       {view === 'pitch' ? (
         <>
@@ -141,6 +129,19 @@ export function FixtureSquadComparison({ attackDirection, gameweekStatus, now: n
         />
       )}
     </section>
+  );
+}
+
+export function FixtureSquadViewToggle({ onViewChange, view }: { onViewChange: (view: FixtureSquadView) => void; view: FixtureSquadView }) {
+  return (
+    <div aria-label="Fixture squad view" className="fixture-squad-comparison__view-toggle" role="group">
+      <button aria-label="View as pitch" aria-pressed={view === 'pitch'} onClick={() => onViewChange('pitch')} title="Pitch view" type="button">
+        <SoccerPitchIcon />
+      </button>
+      <button aria-label="View as list" aria-pressed={view === 'list'} onClick={() => onViewChange('list')} title="List view" type="button">
+        <List aria-hidden="true" size={18} />
+      </button>
+    </div>
   );
 }
 

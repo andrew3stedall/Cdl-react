@@ -3,6 +3,8 @@ export {
   FixturePitchView,
   FixtureRosterColumn,
   FixtureSquadComparison,
+  FixtureSquadViewToggle,
+  getStoredFixtureReviewView,
   shouldShowFixturePoints,
   sortFixtureBench,
 } from './FixtureSquadComparison';
@@ -11,4 +13,5 @@ export type {
   FixtureGameweekStatus,
   FixturePlayerInteraction,
   FixtureSquadComparisonProps,
+  FixtureSquadView,
 } from './FixtureSquadComparison';

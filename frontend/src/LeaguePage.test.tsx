@@ -1,6 +1,6 @@
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
-import { describe, expect, test } from 'vitest';
+import { beforeEach, describe, expect, test } from 'vitest';
 
 import { LeaguePage } from './LeaguePage';
 import { shouldShowFixturePoints, sortFixtureBench } from './components/fixture/FixtureSquadComparison';
@@ -209,6 +209,11 @@ async function renderPage(currentPath = '/league', client = new MemoryLeagueClie
 }
 
 describe('LeaguePage', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+    document.body.innerHTML = '';
+  });
+
   test('uses the Squad-style contextual header with a focused round and gameweek carousel', async () => {
     const { container, root } = await renderPage();
 
@@ -503,6 +508,12 @@ describe('LeaguePage', () => {
     });
 
     const dialog = container.querySelector('[role="dialog"]');
+    const drawerHeader = dialog?.querySelector('.league-drawer__header--comparison');
+    expect(drawerHeader?.textContent).toContain('Gameweek 11');
+    expect(drawerHeader?.textContent).toContain('42 - 39');
+    expect(drawerHeader?.querySelector('button[aria-label="View as pitch"]')).not.toBeNull();
+    expect(dialog?.querySelector('.league-drawer__body > .league-drawer__score')).toBeNull();
+    expect(dialog?.querySelector('.league-drawer__body .fixture-squad-comparison__view-toggle')).toBeNull();
     expect(dialog?.querySelector('[aria-label="Squad comparison"]')).not.toBeNull();
     expect(dialog?.textContent).toContain('Castle Keeper');
     expect(dialog?.textContent).toContain('Starting XI');
@@ -511,6 +522,12 @@ describe('LeaguePage', () => {
     expect(dialog?.querySelector('[data-player-id="castle-1"] .player-card__points')?.textContent).toBe('80');
     expect(dialog?.querySelectorAll('.fixture-squad-pitch .player-card__form-dots')).toHaveLength(2);
     expect(dialog?.querySelectorAll('.fixture-squad-roster .player-card__form-dots')).toHaveLength(4);
+
+    await act(async () => {
+      dialog?.querySelector<HTMLButtonElement>('button[aria-label="View as list"]')?.click();
+    });
+    expect(dialog?.querySelector('.fixture-squad-list')).not.toBeNull();
+    expect(dialog?.querySelector('.league-drawer__header button[aria-label="View as list"]')?.getAttribute('aria-pressed')).toBe('true');
     act(() => root.unmount());
   });
 

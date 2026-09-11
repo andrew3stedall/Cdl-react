@@ -758,3 +758,31 @@ def _event_player_points(payload: object) -> dict[str, int]:
             continue
     return points
 
+
+def _event_player_minutes(payload: object) -> dict[str, int]:
+    """Read only explicit minutes values from an event-live payload."""
+
+    if not isinstance(payload, Mapping) or not isinstance(payload.get("elements"), list):
+        return {}
+    minutes: dict[str, int] = {}
+    for element in payload["elements"]:
+        if not isinstance(element, Mapping) or element.get("id") is None:
+            continue
+        stats = element.get("stats")
+        if not isinstance(stats, Mapping) or stats.get("minutes") is None:
+            continue
+        try:
+            minutes[str(element["id"])] = int(stats["minutes"] or 0)
+        except (TypeError, ValueError):
+            continue
+    return minutes
+
+
+def _chip_display_name(chip_id: str) -> str:
+    return {
+        "triple-captain": "Triple Captain",
+        "dual-captain": "Dual Captain",
+        "auto-captain": "Auto Captain",
+        "bench-boost": "Bench Boost",
+        "best-xi": "Best XI",
+    }.get(chip_id, chip_id)

@@ -382,6 +382,7 @@ describe('ManagerDeskPage', () => {
     expect(accountMenu?.open).toBe(true);
     expect(accountMenu?.querySelector('button')?.textContent).toContain('Account');
     expect(accountMenu?.textContent).toContain('Sign out');
+    expect(accountMenu?.textContent).not.toContain('Result colours');
 
     await act(async () => {
       accountMenu?.querySelector<HTMLButtonElement>('button')?.click();

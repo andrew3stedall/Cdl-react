@@ -382,6 +382,7 @@ describe('LeaguePage', () => {
 
     const activeSlide = container.querySelector('.league-gameweek-carousel__slide[aria-current="true"]');
     expect(activeSlide?.querySelector('.league-gameweek-fixture--spotlight')).not.toBeNull();
+    expect(activeSlide?.querySelector('.league-gameweek-fixture__topline')).toBeNull();
     expect(activeSlide?.querySelector('.league-gameweek-fixture--spotlight')?.textContent).not.toContain('Gameweek 12');
     expect(activeSlide?.querySelector('.league-gameweek-team__chips')?.textContent).toContain('Triple Captain');
     expect(activeSlide?.textContent).toContain('0 players yet to play');

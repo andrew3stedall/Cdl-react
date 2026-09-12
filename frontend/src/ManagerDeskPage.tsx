@@ -7,6 +7,7 @@ import {
   ChevronRight,
   CircleAlert,
   ClipboardCheck,
+  LampDesk,
   Search,
   ShieldAlert,
   ShieldCheck,
@@ -118,20 +119,20 @@ export function ManagerDeskPage({
   );
 
   return (
-    <main aria-labelledby="team-title" className="feature-screen manager-desk">
+    <main aria-labelledby="manager-desk-title" className="feature-screen manager-desk">
       <PageHero
         actions={(
           <PageHeroControls>
             <PageHeroViewToggle
-              ariaLabel="Team and profile"
+              ariaLabel="Desk and profile"
               onChange={(nextPage) => {
                 if (nextPage === 'profile') onNavigate('/profile');
               }}
               options={[
-                { value: 'team', label: 'Team', icon: <Users aria-hidden="true" size={17} /> },
+                { value: 'desk', label: 'Desk', icon: <LampDesk aria-hidden="true" size={17} /> },
                 { value: 'profile', label: 'Profile', icon: <UserRound aria-hidden="true" size={17} /> },
               ]}
-              value="team"
+              value="desk"
             />
             <PageHeroNotificationButton
               notifications={notifications.map((notification) => ({ id: notification.id, title: notification.title, message: notification.message, actionHref: notification.action_href }))}
@@ -142,9 +143,9 @@ export function ManagerDeskPage({
             <ManagerAccountSection onNavigate={onNavigate} onSignOut={onSignOut} session={session} />
           </PageHeroControls>
         )}
-        actionsLabel="Team utilities"
-        title="Team"
-        titleId="team-title"
+        actionsLabel="Desk utilities"
+        title="Gaffers Desk"
+        titleId="manager-desk-title"
       />
 
       {errors.length > 0 ? (

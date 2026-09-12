@@ -22,14 +22,16 @@ const accountNavigationItem: NavigationItem = {
 };
 
 const squadRouteAliases = ['/squad', '/squad-management', '/team-selection'];
-const teamRouteAliases = ['/', '/team', '/dashboard'];
+// `/team` remains a compatibility alias for links created during the initial
+// landing-page rollout. The product destination is still the Desk.
+const deskRouteAliases = ['/', '/dashboard', '/team'];
 
 export const primaryNavigationItems: NavigationItem[] = [
   {
-    label: 'Team',
-    href: '/team',
+    label: 'Desk',
+    href: '/dashboard',
     featureKey: 'dashboard',
-    description: 'Your team, fixture, league position and priorities',
+    description: 'Your fixture, league position and priorities',
   },
   {
     label: 'Squad',
@@ -67,8 +69,8 @@ export function isSquadRoute(path: string): boolean {
   return squadRouteAliases.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
 }
 
-export function isTeamRoute(path: string): boolean {
-  return teamRouteAliases.some((prefix) => path === prefix || (prefix !== '/' && path.startsWith(`${prefix}/`)));
+export function isDeskRoute(path: string): boolean {
+  return deskRouteAliases.some((prefix) => path === prefix || (prefix !== '/' && path.startsWith(`${prefix}/`)));
 }
 
 export function isProfileRoute(path: string): boolean {
@@ -76,7 +78,7 @@ export function isProfileRoute(path: string): boolean {
 }
 
 export function isRouteActive(currentPath: string, itemHref: string): boolean {
-  if ((itemHref === '/team' || itemHref === '/dashboard') && isTeamRoute(currentPath)) {
+  if ((itemHref === '/' || itemHref === '/dashboard') && isDeskRoute(currentPath)) {
     return true;
   }
 
@@ -133,8 +135,8 @@ export function getNavigationItemByPath(path: string): NavigationItem | undefine
     return accountNavigationItem;
   }
 
-  if (isTeamRoute(path)) {
-    return primaryNavigationItems.find((item) => item.href === '/team');
+  if (isDeskRoute(path)) {
+    return primaryNavigationItems.find((item) => item.href === '/dashboard');
   }
 
   if (path === '/fdr' || path.startsWith('/fdr/')) {

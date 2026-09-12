@@ -356,7 +356,7 @@
 }
 
 .league-gameweek-carousel {
-  --league-gameweek-carousel-peek: 1.15rem;
+  --league-gameweek-carousel-peek: 0.35rem;
   --league-gameweek-carousel-slide-gap: 0.45rem;
   display: block;
   min-width: 0;
@@ -482,10 +482,12 @@
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  box-sizing: border-box;
+  height: auto;
   min-width: 0;
+  min-height: 100%;
   overflow: hidden;
   padding: 0.7rem 0.75rem 0;
-  height: 100%;
 }
 
 .league-gameweek-section__header {

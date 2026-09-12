@@ -834,6 +834,7 @@ function GameweekCarousel({ allFixtures, expectedGameweeks, groups, isActive, le
   return (
     <section aria-label={`Gameweeks in ${roundLabel}`} className="league-gameweek-carousel" ref={gameweekCarouselRef} style={carouselStyle}>
       <div className="league-gameweek-carousel__header">
+        <p className="eyebrow">Gameweeks</p>
         <nav aria-label={`Gameweek navigation for ${roundLabel}`} className="league-gameweek-carousel__dots">
           {Array.from({ length: indicatorCount }, (_, indicatorIndex) => {
             const groupIndex = groups.findIndex((group) => gameweekIndicatorIndex(group) === indicatorIndex);
@@ -1035,6 +1036,7 @@ function GameweekSpotlightFixture({ allFixtures, fixture, group, onOpen, positio
   const isUpcoming = group.state === 'not-started';
   return (
     <button aria-label={`${fixtureActionLabel(fixture)} for ${fixtureParticipantName(fixture.homeTeam)} versus ${fixtureParticipantName(fixture.awayTeam)}`} className={`league-fixture-row league-gameweek-fixture league-gameweek-fixture--spotlight league-gameweek-fixture--${group.state}`} onClick={() => onOpen(fixture)} type="button">
+      <div className="league-gameweek-fixture__topline"><span>{fixture.kickoffLabel || fixture.gameweek.name}</span></div>
       <div className="league-gameweek-fixture__teams">
         <GameweekTeam team={fixture.homeTeam} align="home" chipNames={chipNamesForTeam(fixture, fixture.homeTeam, group.state)} position={positions.get(fixture.homeTeam.id)} progress={progress?.home} />
         <div className="league-gameweek-fixture__centre">

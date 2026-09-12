@@ -497,7 +497,7 @@ function DiscoveryPanel({
         <span className="market-page__data-note"><Shield aria-hidden="true" size={14} /> Official FPL evidence</span>
       </div>
 
-      {loading ? <div className="market-page__empty" role="status"><Search aria-hidden="true" size={22} /><strong>Loading the player pool</strong><span>Pulling the latest available market evidence.</span></div> : null}
+      {loading ? <MarketLoadingTable /> : null}
       {!loading && filteredPlayers.length === 0 ? <div className="market-page__empty"><Search aria-hidden="true" size={22} /><strong>No players match these filters</strong><span>Clear a filter or broaden your search to keep exploring.</span>{hasFilters ? <Button onClick={onClearFilters} type="button" variant="secondary">Clear filters</Button> : null}</div> : null}
       {!loading && filteredPlayers.length > 0 ? (
         <div className="market-page__table-wrap">
@@ -530,6 +530,39 @@ function DiscoveryPanel({
           </table>
         </div>
       ) : null}
+    </div>
+  );
+}
+
+function MarketLoadingTable() {
+  return (
+    <div aria-label="Loading market players" className="market-page__table-wrap market-page__table-wrap--loading" role="status">
+      <table aria-hidden="true" className="market-page__player-table">
+        <thead>
+          <tr>
+            <th scope="col">Player</th>
+            <th scope="col">Pts</th>
+            <th scope="col">Form</th>
+            <th scope="col">xG / xA</th>
+            <th scope="col">Next</th>
+            <th scope="col">Status</th>
+            <th scope="col"><span className="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          {Array.from({ length: 7 }, (_, index) => (
+            <tr className="market-page__loading-row" key={index}>
+              <td><span className="market-page__loading-block market-page__loading-block--player" /></td>
+              <td><span className="market-page__loading-block market-page__loading-block--number" /></td>
+              <td><span className="market-page__loading-block market-page__loading-block--number" /></td>
+              <td><span className="market-page__loading-block" /></td>
+              <td><span className="market-page__loading-block market-page__loading-block--fixture" /></td>
+              <td><span className="market-page__loading-block market-page__loading-block--status" /></td>
+              <td><span className="market-page__loading-block market-page__loading-block--action" /></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

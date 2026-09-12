@@ -5,6 +5,7 @@ import {
   getActiveContextItem,
   getContextNavigation,
   getNavigationItemByPath,
+  getPageRouteKey,
   isDeskRoute,
   isPrimaryNavigationItemActive,
   isRouteActive,
@@ -86,5 +87,15 @@ describe('navigation configuration', () => {
     expect(getNavigationItemByPath('/profile')?.label).toBe('Profile');
     expect(getNavigationItemByPath('/modernisation/checkpoint-1')).toBeUndefined();
     expect(getNavigationItemByPath('/modernisation/checkpoint-5')).toBeUndefined();
+  });
+
+  test('groups nested paths under stable page cache identities', () => {
+    expect(getPageRouteKey('/')).toBe('desk');
+    expect(getPageRouteKey('/dashboard/analytics')).toBe('analytics');
+    expect(getPageRouteKey('/squad-management')).toBe('squad');
+    expect(getPageRouteKey('/scouting/interests')).toBe('market');
+    expect(getPageRouteKey('/league/table')).toBe('league');
+    expect(getPageRouteKey('/profile/result-colours')).toBe('result-colours');
+    expect(getPageRouteKey('/players/player-1')).toBe('player-profile');
   });
 });

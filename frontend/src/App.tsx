@@ -1,4 +1,4 @@
-import { type FormEvent, useCallback, useEffect, useState } from 'react';
+import { type FormEvent, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import {
   canAccessProtectedRoute,
@@ -23,7 +23,7 @@ import { MarketPage } from './MarketPage';
 import { ManagerDeskPage } from './ManagerDeskPage';
 import type { ManagerDeskClient } from './manager-desk-api';
 import { ModernisationCheckpointPage } from './ModernisationCheckpointPage';
-import { isSquadRoute } from './navigation';
+import { getPageRouteKey, isSquadRoute } from './navigation';
 import { PlayerProfilePage } from './PlayerProfilePage';
 import type { PreferenceClient } from './preferences-api';
 import { ProfilePage } from './ProfilePage';
@@ -461,60 +461,67 @@ function AppRouteContent({
   teamSelectionClient,
 }: AppRouteContentProps) {
   const { attackDirection, preset } = useThemePreset();
-  let routeContent = (
-    <ManagerDeskPage
-      deskClient={managerDeskClient}
-      leagueClient={leagueClient}
-      onNavigate={onNavigate}
-      onSignOut={onSignOut}
-      session={activeSession}
-      squadClient={squadClient}
-      teamSelectionClient={teamSelectionClient}
-    />
-  );
+  const activeRouteKey = getPageRouteKey(currentPath);
+  const [routePaths, setRoutePaths] = useState<Record<string, string>>(() => ({
+    [activeRouteKey]: currentPath,
+  }));
+  const previousRouteKey = useRef(activeRouteKey);
+  const scrollPositions = useRef(new Map<string, number>());
 
-  if (currentPath.startsWith('/account') || currentPath.startsWith('/profile')) {
-    routeContent = <ProfilePage currentPath={currentPath} onNavigate={onNavigate} session={activeSession} squadClient={squadClient} />;
-  }
+  // Browser history restoration runs before async page data exists. On a
+  // fresh app mount that can restore a stale offset into the loading state,
+  // then move the page again when the Desk content expands. SPA navigation
+  // owns scroll restoration below, so disable the browser's competing policy
+  // and start every app load at the top.
+  useLayoutEffect(() => {
+    const previousScrollRestoration = window.history.scrollRestoration;
+    window.history.scrollRestoration = 'manual';
+    try {
+      window.scrollTo({ behavior: 'auto', left: 0, top: 0 });
+    } catch {
+      // Isolated DOM environments may not implement scrollTo.
+    }
 
-  if (currentPath === '/account/result-colours' || currentPath === '/profile/result-colours') {
-    routeContent = <ResultColourProfilePage onNavigate={onNavigate} />;
-  }
+    return () => {
+      window.history.scrollRestoration = previousScrollRestoration;
+    };
+  }, []);
 
-  if (currentPath.startsWith('/rules')) {
-    routeContent = <RulesPage categories={['squads', 'trades']} sections={featuredRules} preset={preset} />;
-  }
+  // Keep the last path for each page identity. This lets nested page paths
+  // (for example League fixtures/table) share one mounted page instance.
+  useEffect(() => {
+    setRoutePaths((current) => {
+      if (current[activeRouteKey] === currentPath) return current;
+      return { ...current, [activeRouteKey]: currentPath };
+    });
+  }, [activeRouteKey, currentPath]);
 
-  if (currentPath.startsWith('/league')) {
-    routeContent = <LeaguePage attackDirection={attackDirection} currentPath={currentPath} leagueClient={leagueClient} onNavigate={onNavigate} squadClient={squadClient} teamSelectionClient={teamSelectionClient} />;
-  }
+  // Remember each page's scroll position while it is active and restore it
+  // before the browser paints when the user returns to that page.
+  useEffect(() => {
+    const handleScroll = () => {
+      scrollPositions.current.set(activeRouteKey, window.scrollY);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [activeRouteKey]);
 
-  if (currentPath.startsWith('/modernisation/checkpoint-1')) {
-    routeContent = <ModernisationCheckpointPage />;
-  }
+  useLayoutEffect(() => {
+    const previousKey = previousRouteKey.current;
+    if (previousKey === activeRouteKey) return;
 
-  if (currentPath.startsWith('/modernisation/checkpoint-2')) {
-    routeContent = <ModernisationCheckpointPage checkpoint={2} />;
-  }
+    scrollPositions.current.set(previousKey, window.scrollY);
+    previousRouteKey.current = activeRouteKey;
+    const targetScrollTop = scrollPositions.current.get(activeRouteKey) ?? 0;
+    try {
+      window.scrollTo({ behavior: 'auto', left: 0, top: targetScrollTop });
+    } catch {
+      // Isolated DOM environments may not implement scrollTo.
+    }
+  }, [activeRouteKey]);
 
-  if (currentPath.startsWith('/modernisation/checkpoint-3')) {
-    routeContent = <ModernisationCheckpointPage checkpoint={3} />;
-  }
-
-  if (currentPath.startsWith('/modernisation/checkpoint-4')) {
-    routeContent = <ModernisationCheckpointPage checkpoint={4} />;
-  }
-
-  if (currentPath.startsWith('/modernisation/checkpoint-5')) {
-    routeContent = <ModernisationCheckpointPage checkpoint={5} />;
-  }
-
-  if (currentPath.startsWith('/dashboard/analytics') || currentPath.startsWith('/analytics')) {
-    routeContent = <AnalyticsDashboardPage dashboardClient={dashboardClient} />;
-  }
-
-  if (currentPath === '/dashboard' || currentPath === '/team' || currentPath === '/') {
-    routeContent = (
+  const renderRouteContent = (path: string) => {
+    let routeContent = (
       <ManagerDeskPage
         deskClient={managerDeskClient}
         leagueClient={leagueClient}
@@ -525,31 +532,105 @@ function AppRouteContent({
         teamSelectionClient={teamSelectionClient}
       />
     );
-  }
 
-  if (currentPath.startsWith('/fdr')) {
-    routeContent = <FixtureDifficultyPage fdrClient={fdrClient} />;
-  }
+    if (path.startsWith('/account') || path.startsWith('/profile')) {
+      routeContent = <ProfilePage currentPath={path} onNavigate={onNavigate} session={activeSession} squadClient={squadClient} />;
+    }
 
-  if (currentPath.startsWith('/scouting')) {
-    routeContent = <MarketPage currentPath={currentPath} onNavigate={onNavigate} preset={preset} />;
-  }
+    if (path === '/account/result-colours' || path === '/profile/result-colours') {
+      routeContent = <ResultColourProfilePage onNavigate={onNavigate} />;
+    }
 
-  const playerProfileMatch = currentPath.match(/^\/players\/([^/]+)$/);
-  if (playerProfileMatch) {
-    routeContent = (
-      <PlayerProfilePage
-        onNavigate={onNavigate}
-        playerId={decodeURIComponent(playerProfileMatch[1])}
-        squadClient={squadClient}
-        teamSelectionClient={teamSelectionClient}
-      />
-    );
-  }
+    if (path.startsWith('/rules')) {
+      routeContent = <RulesPage categories={['squads', 'trades']} sections={featuredRules} preset={preset} />;
+    }
 
-  if (isSquadRoute(currentPath)) {
-    routeContent = <SquadWorkspacePage attackDirection={attackDirection} onNavigate={onNavigate} preset={preset} squadClient={squadClient} teamSelectionClient={teamSelectionClient} />;
-  }
+    if (path.startsWith('/league')) {
+      routeContent = <LeaguePage attackDirection={attackDirection} currentPath={path} leagueClient={leagueClient} onNavigate={onNavigate} squadClient={squadClient} teamSelectionClient={teamSelectionClient} />;
+    }
 
-  return routeContent;
+    if (path.startsWith('/modernisation/checkpoint-1')) {
+      routeContent = <ModernisationCheckpointPage />;
+    }
+
+    if (path.startsWith('/modernisation/checkpoint-2')) {
+      routeContent = <ModernisationCheckpointPage checkpoint={2} />;
+    }
+
+    if (path.startsWith('/modernisation/checkpoint-3')) {
+      routeContent = <ModernisationCheckpointPage checkpoint={3} />;
+    }
+
+    if (path.startsWith('/modernisation/checkpoint-4')) {
+      routeContent = <ModernisationCheckpointPage checkpoint={4} />;
+    }
+
+    if (path.startsWith('/modernisation/checkpoint-5')) {
+      routeContent = <ModernisationCheckpointPage checkpoint={5} />;
+    }
+
+    if (path.startsWith('/dashboard/analytics') || path.startsWith('/analytics')) {
+      routeContent = <AnalyticsDashboardPage dashboardClient={dashboardClient} />;
+    }
+
+    if (path === '/dashboard' || path === '/team' || path === '/') {
+      routeContent = (
+        <ManagerDeskPage
+          deskClient={managerDeskClient}
+          leagueClient={leagueClient}
+          onNavigate={onNavigate}
+          onSignOut={onSignOut}
+          session={activeSession}
+          squadClient={squadClient}
+          teamSelectionClient={teamSelectionClient}
+        />
+      );
+    }
+
+    if (path.startsWith('/fdr')) {
+      routeContent = <FixtureDifficultyPage fdrClient={fdrClient} />;
+    }
+
+    if (path.startsWith('/scouting')) {
+      routeContent = <MarketPage currentPath={path} onNavigate={onNavigate} preset={preset} />;
+    }
+
+    const playerProfileMatch = path.match(/^\/players\/([^/]+)$/);
+    if (playerProfileMatch) {
+      routeContent = (
+        <PlayerProfilePage
+          onNavigate={onNavigate}
+          playerId={decodeURIComponent(playerProfileMatch[1])}
+          squadClient={squadClient}
+          teamSelectionClient={teamSelectionClient}
+        />
+      );
+    }
+
+    if (isSquadRoute(path)) {
+      routeContent = <SquadWorkspacePage attackDirection={attackDirection} onNavigate={onNavigate} preset={preset} squadClient={squadClient} teamSelectionClient={teamSelectionClient} />;
+    }
+
+    return routeContent;
+  };
+
+  const pathsToRender = { ...routePaths, [activeRouteKey]: currentPath };
+  return (
+    <div className="app-route-cache">
+      {Object.entries(pathsToRender).map(([routeKey, path]) => {
+        const isActive = routeKey === activeRouteKey;
+        return (
+          <div
+            aria-hidden={isActive ? undefined : true}
+            className="app-route-cache__entry"
+            data-route-key={routeKey}
+            hidden={!isActive}
+            key={routeKey}
+          >
+            {renderRouteContent(path)}
+          </div>
+        );
+      })}
+    </div>
+  );
 }

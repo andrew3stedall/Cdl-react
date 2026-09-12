@@ -396,6 +396,8 @@ describe('LeaguePage', () => {
     expect(historySlide?.querySelector('.league-gameweek-section--history')).not.toBeNull();
     expect(historySlide?.querySelector('.league-gameweek-fixture--spotlight')?.textContent).toContain('42');
     expect(historySlide?.querySelector('.league-gameweek-fixture--spotlight')?.textContent).toContain('#1');
+    expect(historySlide?.querySelector('.league-gameweek-score__value--w')?.textContent).toBe('42');
+    expect(historySlide?.querySelector('.league-gameweek-score__value--l')?.textContent).toBe('39');
     expect(historySlide?.textContent).not.toContain('Final result');
 
     await act(async () => {
@@ -405,6 +407,8 @@ describe('LeaguePage', () => {
     expect(upcomingSlide?.querySelector('.league-gameweek-section--upcoming')).not.toBeNull();
     expect(upcomingSlide?.querySelectorAll('.league-form-point')).not.toHaveLength(0);
     expect(upcomingSlide?.querySelectorAll('.league-form-point--empty')).not.toHaveLength(0);
+    expect(upcomingSlide?.querySelector('.league-form-point--w')).not.toBeNull();
+    expect(upcomingSlide?.querySelector('.league-form-point--l')).not.toBeNull();
     expect(upcomingSlide?.textContent).not.toContain('Next fixture');
     expect(upcomingSlide?.textContent).not.toContain('Last five gameweeks');
     act(() => root.unmount());

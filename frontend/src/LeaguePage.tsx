@@ -1072,7 +1072,13 @@ function GameweekTeam({ align, chipNames, position, progress, team }: { align: '
 }
 
 function FixtureScoreDisplay({ compact = false, fixture }: { compact?: boolean; fixture: LeagueFixture }) {
-  return <div className={`league-gameweek-score${compact ? ' league-gameweek-score--compact' : ''}`}><strong>{fixture.score.homeScore ?? '—'}</strong><span>–</span><strong>{fixture.score.awayScore ?? '—'}</strong></div>;
+  const homeResult = resultForFixture(fixture, fixture.homeTeam.id);
+  const awayResult = resultForFixture(fixture, fixture.awayTeam.id);
+  return <div className={`league-gameweek-score${compact ? ' league-gameweek-score--compact' : ''}`}><strong className={scoreResultClass(homeResult)}>{fixture.score.homeScore ?? '—'}</strong><span>–</span><strong className={scoreResultClass(awayResult)}>{fixture.score.awayScore ?? '—'}</strong></div>;
+}
+
+function scoreResultClass(result: 'W' | 'D' | 'L' | 'P'): string {
+  return result === 'P' ? '' : `league-gameweek-score__value--${result.toLowerCase()}`;
 }
 
 interface FormEntry {

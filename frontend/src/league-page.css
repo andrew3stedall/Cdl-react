@@ -1414,6 +1414,18 @@
   letter-spacing: -0.06em;
 }
 
+.league-gameweek-score__value--w {
+  color: color-mix(in srgb, var(--cdl-result-win) 84%, var(--foreground));
+}
+
+.league-gameweek-score__value--d {
+  color: color-mix(in srgb, var(--cdl-result-draw) 82%, var(--foreground));
+}
+
+.league-gameweek-score__value--l {
+  color: color-mix(in srgb, var(--cdl-result-loss) 84%, var(--foreground));
+}
+
 .league-gameweek-score span {
   color: var(--muted-foreground);
   font-size: 0.95rem;
@@ -1506,15 +1518,15 @@
 
 .league-form-comparison {
   display: grid;
-  gap: 0.12rem;
-  min-width: 4.9rem;
+  gap: 0.1rem;
+  min-width: 4.55rem;
 }
 
 .league-form-comparison__row {
   align-items: center;
   display: grid;
-  gap: 0.18rem;
-  grid-template-columns: 1.95rem 1.7rem 1.95rem;
+  gap: 0.14rem;
+  grid-template-columns: 1.25rem 1.45rem 1.25rem;
   justify-content: center;
 }
 
@@ -1530,29 +1542,30 @@
   border: 1px solid var(--border);
   border-radius: 0.35rem;
   display: inline-flex;
-  font-size: 0.56rem;
+  font-size: 0.5rem;
   font-weight: 850;
-  height: 1.38rem;
+  height: 1.25rem;
   justify-content: center;
-  min-width: 1.95rem;
-  padding: 0 0.18rem;
+  min-width: 1.25rem;
+  padding: 0;
 }
 
 .league-form-point--w {
-  background: color-mix(in srgb, var(--primary) 14%, transparent);
-  border-color: var(--primary);
-  color: var(--primary);
+  background: color-mix(in srgb, var(--cdl-result-win) 13%, transparent);
+  border-color: color-mix(in srgb, var(--cdl-result-win) 70%, var(--border));
+  color: color-mix(in srgb, var(--cdl-result-win) 80%, var(--foreground));
 }
 
 .league-form-point--d {
-  background: color-mix(in srgb, var(--muted-foreground) 12%, transparent);
-  border-color: var(--muted-foreground);
+  background: color-mix(in srgb, var(--cdl-result-draw) 12%, transparent);
+  border-color: color-mix(in srgb, var(--cdl-result-draw) 66%, var(--border));
+  color: color-mix(in srgb, var(--cdl-result-draw) 76%, var(--foreground));
 }
 
 .league-form-point--l {
-  background: color-mix(in srgb, var(--destructive) 12%, transparent);
-  border-color: var(--destructive);
-  color: var(--destructive);
+  background: color-mix(in srgb, var(--cdl-result-loss) 12%, transparent);
+  border-color: color-mix(in srgb, var(--cdl-result-loss) 68%, var(--border));
+  color: color-mix(in srgb, var(--cdl-result-loss) 80%, var(--foreground));
 }
 
 .league-form-point--empty {
@@ -1565,8 +1578,8 @@
 }
 
 .league-form-strip .league-form-point {
-  font-size: 0.48rem;
-  height: 1.35rem;
+  font-size: 0.46rem;
+  height: 1.25rem;
   min-width: 1.25rem;
   padding: 0;
 }

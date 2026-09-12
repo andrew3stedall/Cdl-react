@@ -803,8 +803,8 @@ function GameweekCarousel({ allFixtures, expectedGameweeks, groups, isActive, le
       const fallbackHeight = gameweekCardHeight * rootFontSize;
       const requiredHeight = Math.max(...cards.map((card) => {
         const styles = window.getComputedStyle(card);
-        const verticalPadding = Number.parseFloat(styles.paddingTop) + Number.parseFloat(styles.paddingBottom);
-        return card.scrollHeight - verticalPadding;
+        const borderHeight = Number.parseFloat(styles.borderTopWidth) + Number.parseFloat(styles.borderBottomWidth);
+        return card.scrollHeight + borderHeight;
       }), fallbackHeight);
 
       setMeasuredCardHeight((currentHeight) => {
@@ -818,7 +818,7 @@ function GameweekCarousel({ allFixtures, expectedGameweeks, groups, isActive, le
     if (typeof ResizeObserver === 'undefined') return undefined;
 
     const observer = new ResizeObserver(measureCards);
-    carousel.querySelectorAll<HTMLElement>('.league-gameweek-fixture-board, .league-fixture-list').forEach((list) => observer.observe(list));
+    carousel.querySelectorAll<HTMLElement>('.league-gameweek-section, .league-gameweek-fixture-board, .league-fixture-list').forEach((list) => observer.observe(list));
     return () => observer.disconnect();
   }, [gameweekCardHeight, groups]);
 
@@ -1035,7 +1035,6 @@ function GameweekSpotlightFixture({ allFixtures, fixture, group, onOpen, positio
   const isUpcoming = group.state === 'not-started';
   return (
     <button aria-label={`${fixtureActionLabel(fixture)} for ${fixtureParticipantName(fixture.homeTeam)} versus ${fixtureParticipantName(fixture.awayTeam)}`} className={`league-fixture-row league-gameweek-fixture league-gameweek-fixture--spotlight league-gameweek-fixture--${group.state}`} onClick={() => onOpen(fixture)} type="button">
-      {fixture.kickoffLabel ? <div className="league-gameweek-fixture__topline"><span>{fixture.kickoffLabel}</span></div> : null}
       <div className="league-gameweek-fixture__teams">
         <GameweekTeam team={fixture.homeTeam} align="home" chipNames={chipNamesForTeam(fixture, fixture.homeTeam, group.state)} position={positions.get(fixture.homeTeam.id)} progress={progress?.home} />
         <div className="league-gameweek-fixture__centre">

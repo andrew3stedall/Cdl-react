@@ -240,6 +240,9 @@ describe('LeaguePage', () => {
     expect(container.querySelector('.league-round-carousel__header')).toBeNull();
     expect(container.querySelector('.league-round-carousel__hint')).toBeNull();
     expect(container.querySelector('.league-gameweek-carousel__header')).not.toBeNull();
+    expect(container.querySelector('.league-gameweek-carousel__header .eyebrow')).toBeNull();
+    expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__header')).not.toBeNull();
+    expect(container.querySelector('.league-gameweek-fixture--spotlight .league-gameweek-fixture__topline')).toBeNull();
     expect(container.querySelectorAll('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__dot')).toHaveLength(7);
     expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__dot.is-selected')?.getAttribute('aria-label')).toBe('Go to Gameweek 12');
     expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__dot.is-selected')?.getAttribute('data-gameweek-index')).toBe('4');

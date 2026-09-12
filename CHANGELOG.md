@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Refined the League fixture carousel by removing the redundant primary-fixture
+  gameweek label, matching its padding to supporting fixtures, applying the
+  restrained Desk-style highlight, and aligning gameweek dots with the round
+  heading.
+
 - Fixed player profile fixture detail sheets so the fixed mobile navigation no
   longer covers their content and touch scrolling stays inside the sheet.
 

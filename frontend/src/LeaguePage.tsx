@@ -2,7 +2,6 @@ import { type CSSProperties, type ReactNode, type RefObject, useCallback, useEff
 import {
   Bell,
   CalendarDays,
-  ChevronRight,
   CircleAlert,
   Clock3,
   Info,
@@ -36,6 +35,7 @@ import {
   type FixtureSquadPlayer,
   type LeagueClient,
   type LeagueFixture,
+  type LeagueTeam,
   type LeagueSnapshot,
   type LeagueTableRow,
 } from './league-api';
@@ -46,12 +46,14 @@ import {
   type SquadApiPlayer,
   type SquadClient,
 } from './squad-api';
+import { HttpTeamSelectionClient, type TeamSelectionClient } from './team-selection-api';
 import './league-page.css';
 
 const GAMEWEEK_HEIGHT_SCALE = 1.1;
 
 const defaultLeagueClient = new HttpLeagueClient();
 const defaultSquadClient = new HttpSquadClient();
+const defaultTeamSelectionClient = new HttpTeamSelectionClient();
 
 type LeagueView = 'fixtures' | 'table';
 type GameweekState = 'not-started' | 'underway' | 'finished';
@@ -62,9 +64,10 @@ interface LeaguePageProps {
   leagueClient?: LeagueClient;
   onNavigate: (href: string) => void;
   squadClient?: Pick<SquadClient, 'getNotifications' | 'getPlayerHistory'>;
+  teamSelectionClient?: Pick<TeamSelectionClient, 'getTeamSelection'>;
 }
 
-export function LeaguePage({ attackDirection = 'up', currentPath = window.location.pathname, leagueClient = defaultLeagueClient, onNavigate = () => undefined, squadClient = defaultSquadClient }: LeaguePageProps) {
+export function LeaguePage({ attackDirection = 'up', currentPath = window.location.pathname, leagueClient = defaultLeagueClient, onNavigate = () => undefined, squadClient = defaultSquadClient, teamSelectionClient = defaultTeamSelectionClient }: LeaguePageProps) {
   const [snapshot, setSnapshot] = useState<LeagueSnapshot | null>(null);
   const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
   const [reloadKey, setReloadKey] = useState(0);
@@ -78,6 +81,7 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
   const [fixtureSquads, setFixtureSquads] = useState<FixtureSquad[]>([]);
   const [fixturePlayerHistory, setFixturePlayerHistory] = useState<SquadApiHistoryResponse | null>(null);
   const [fixturePlayerDetailStatus, setFixturePlayerDetailStatus] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
+  const [managerTeamId, setManagerTeamId] = useState<string | null>(null);
   const drawerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -120,6 +124,20 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
       isActive = false;
     };
   }, [squadClient, reloadKey]);
+
+  useEffect(() => {
+    let isActive = true;
+    void teamSelectionClient.getTeamSelection()
+      .then((selection) => {
+        if (isActive) setManagerTeamId(selection.managerTeam.id);
+      })
+      .catch(() => {
+        if (isActive) setManagerTeamId(null);
+      });
+    return () => {
+      isActive = false;
+    };
+  }, [reloadKey, teamSelectionClient]);
 
   useEffect(() => {
     if (!selectedFixturePlayer || fixtureGameweekStatusForFixture(selectedFixturePlayer.fixture, snapshot) === 'future') {
@@ -251,6 +269,8 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
 
       {snapshot ? (
         <LeagueContent
+          leagueClient={leagueClient}
+          managerTeamId={managerTeamId}
           onOpenFixture={openFixture}
           onReload={() => setReloadKey((key) => key + 1)}
           snapshot={snapshot}
@@ -406,11 +426,15 @@ function toProfilePlayer(player: FixtureSquadPlayer): SquadApiPlayer {
 }
 
 function LeagueContent({
+  leagueClient,
+  managerTeamId,
   onOpenFixture,
   onReload,
   snapshot,
   view,
 }: {
+  leagueClient: LeagueClient;
+  managerTeamId: string | null;
   onOpenFixture: (fixture: LeagueFixture) => void;
   onReload: () => void;
   snapshot: LeagueSnapshot;
@@ -418,16 +442,17 @@ function LeagueContent({
 }) {
   return view === 'table'
     ? <TableView onReload={onReload} snapshot={snapshot} />
-    : <FixturesView onOpenFixture={onOpenFixture} snapshot={snapshot} />;
+    : <FixturesView leagueClient={leagueClient} managerTeamId={managerTeamId} onOpenFixture={onOpenFixture} snapshot={snapshot} />;
 }
 
-function FixturesView({ onOpenFixture, snapshot }: { onOpenFixture: (fixture: LeagueFixture) => void; snapshot: LeagueSnapshot }) {
+function FixturesView({ leagueClient, managerTeamId, onOpenFixture, snapshot }: { leagueClient: LeagueClient; managerTeamId: string | null; onOpenFixture: (fixture: LeagueFixture) => void; snapshot: LeagueSnapshot }) {
   const rounds = useMemo(() => groupFixturesByRound(snapshot), [snapshot]);
+  const allFixtures = useMemo(() => fixturesFromSnapshot(snapshot), [snapshot]);
   if (rounds.length === 0) {
     return <section aria-label="League fixtures" className="league-gameweek-list"><EmptyState message="No league fixtures are available yet." /></section>;
   }
 
-  return <section aria-label="League fixtures" className="league-fixtures-view"><RoundCarousel onOpenFixture={onOpenFixture} rounds={rounds} /></section>;
+  return <section aria-label="League fixtures" className="league-fixtures-view"><RoundCarousel allFixtures={allFixtures} leagueClient={leagueClient} managerTeamId={managerTeamId} onOpenFixture={onOpenFixture} rounds={rounds} /></section>;
 }
 
 interface GameweekGroup {
@@ -449,11 +474,7 @@ interface FixtureRoundGroup {
 }
 
 function groupFixturesByRound(snapshot: LeagueSnapshot): FixtureRoundGroup[] {
-  const allFixtures = uniqueFixtures([
-    ...snapshot.allFixtures.fixtures,
-    ...snapshot.currentFixtures.fixtures,
-    ...snapshot.nextFixtures.fixtures,
-  ]);
+  const allFixtures = fixturesFromSnapshot(snapshot);
   const currentGameweek = snapshot.currentFixtures.gameweek
     ?? snapshot.currentFixtures.fixtures[0]?.gameweek
     ?? allFixtures.find((fixture) => fixture.isCurrent)?.gameweek
@@ -488,18 +509,18 @@ function groupFixturesByRound(snapshot: LeagueSnapshot): FixtureRoundGroup[] {
         : hasNextMarker && gameweek.id === nextGameweek?.id
           ? fixturesForGameweek(allFixtures, gameweek, snapshot.nextFixtures.fixtures)
           : fixtures;
-      return {
-        gameweek,
-        fixtures: sortFixtures(resolvedFixtures),
-        id,
-        isCurrent: hasCurrentMarker,
-        isNext: hasNextMarker,
-        state: getGameweekState(resolvedFixtures),
-      } satisfies GameweekGroup;
+        return {
+          gameweek,
+          fixtures: sortFixtures(resolvedFixtures),
+          id,
+          isCurrent: hasCurrentMarker,
+          isNext: hasNextMarker,
+          state: getGameweekState(resolvedFixtures, gameweek, hasCurrentMarker),
+        } satisfies GameweekGroup;
     }).sort((left, right) => left.gameweek.number - right.gameweek.number || left.gameweek.name.localeCompare(right.gameweek.name));
     return {
       gameweeks: mappedGameweeks,
-      isCurrent: mappedGameweeks.some((gameweek) => gameweek.isCurrent),
+      isCurrent: mappedGameweeks.some((gameweek) => gameweek.isCurrent && gameweek.state === 'underway'),
       expectedGameweeks: descriptor.expectedGameweeks,
       key: descriptor.key,
       label: descriptor.label,
@@ -508,6 +529,13 @@ function groupFixturesByRound(snapshot: LeagueSnapshot): FixtureRoundGroup[] {
   });
 
   return rounds.sort((left, right) => firstGameweekNumber(left) - firstGameweekNumber(right) || left.label.localeCompare(right.label));
+}
+
+function fixturesFromSnapshot(snapshot: LeagueSnapshot): LeagueFixture[] {
+  const fixturesById = new Map(snapshot.allFixtures.fixtures.map((fixture) => [fixture.id, fixture]));
+  snapshot.currentFixtures.fixtures.forEach((fixture) => fixturesById.set(fixture.id, fixture));
+  snapshot.nextFixtures.fixtures.forEach((fixture) => fixturesById.set(fixture.id, fixture));
+  return [...fixturesById.values()];
 }
 
 interface FixtureRoundDescriptor {
@@ -557,12 +585,10 @@ function fixturesForGameweek(
   return matchingFixtures.length ? matchingFixtures : uniqueFixtures(fallback);
 }
 
-function RoundCarousel({ onOpenFixture, rounds }: { onOpenFixture: (fixture: LeagueFixture) => void; rounds: FixtureRoundGroup[] }) {
-  const initialRoundIndex = Math.max(0, rounds.findIndex((round) => round.isCurrent));
-  // Open each round on its first gameweek. This gives the bounded carousel a
-  // deterministic zero-offset starting position while the page header still
-  // identifies the current gameweek.
-  const initialGameweekIndex = 0;
+function RoundCarousel({ allFixtures, leagueClient, managerTeamId, onOpenFixture, rounds }: { allFixtures: LeagueFixture[]; leagueClient: LeagueClient; managerTeamId: string | null; onOpenFixture: (fixture: LeagueFixture) => void; rounds: FixtureRoundGroup[] }) {
+  const defaultSelection = useMemo(() => defaultCarouselSelection(rounds), [rounds]);
+  const initialRoundIndex = defaultSelection.roundIndex;
+  const initialGameweekIndex = defaultSelection.gameweekIndex;
   const [selectedRoundIndex, setSelectedRoundIndex] = useState(initialRoundIndex);
   const [selectedGameweekIndex, setSelectedGameweekIndex] = useState(initialGameweekIndex);
   const roundOptions = useMemo(() => ({
@@ -609,6 +635,10 @@ function RoundCarousel({ onOpenFixture, rounds }: { onOpenFixture: (fixture: Lea
     setSelectedGameweekIndex((index) => Math.min(index, maximumIndex));
   }, [rounds]);
 
+  useEffect(() => {
+    setSelectedGameweekIndex(initialGameweekIndex);
+  }, [initialGameweekIndex]);
+
   return (
     <section aria-label="Fixture rounds" aria-roledescription="carousel" className="league-round-carousel" role="region">
       <div aria-label="Fixture round slides" className="league-round-carousel__viewport" ref={roundViewportRef}>
@@ -643,7 +673,10 @@ function RoundCarousel({ onOpenFixture, rounds }: { onOpenFixture: (fixture: Lea
                     <GameweekCarousel
                     groups={round.gameweeks}
                     expectedGameweeks={round.expectedGameweeks}
+                    allFixtures={allFixtures}
                     isActive={isSelected}
+                    leagueClient={leagueClient}
+                    managerTeamId={managerTeamId}
                     onIndexChange={(index) => {
                         if (isSelected) setSelectedGameweekIndex(index);
                       }}
@@ -678,7 +711,30 @@ function RoundCarousel({ onOpenFixture, rounds }: { onOpenFixture: (fixture: Lea
   );
 }
 
-function GameweekCarousel({ expectedGameweeks, groups, isActive, onIndexChange, onOpenFixture, roundLabel, selectedGameweekIndex }: { expectedGameweeks: number; groups: GameweekGroup[]; isActive: boolean; onIndexChange: (index: number) => void; onOpenFixture: (fixture: LeagueFixture) => void; roundLabel: string; selectedGameweekIndex: number }) {
+interface CarouselSelection {
+  gameweekIndex: number;
+  roundIndex: number;
+}
+
+function defaultCarouselSelection(rounds: FixtureRoundGroup[]): CarouselSelection {
+  const groups = rounds.flatMap((round, roundIndex) => round.gameweeks.map((gameweek, gameweekIndex) => ({ gameweek, gameweekIndex, roundIndex })));
+  const active = groups
+    .filter(({ gameweek }) => gameweek.isCurrent && gameweek.state === 'underway')
+    .sort((left, right) => right.gameweek.gameweek.number - left.gameweek.gameweek.number)[0];
+  const completed = groups
+    .filter(({ gameweek }) => gameweek.state === 'finished')
+    .sort((left, right) => right.gameweek.gameweek.number - left.gameweek.gameweek.number)[0];
+  const fallback = groups
+    .filter(({ gameweek }) => gameweek.isCurrent || gameweek.state === 'not-started')
+    .sort((left, right) => left.gameweek.gameweek.number - right.gameweek.gameweek.number)[0]
+    ?? groups[0];
+  const selected = active ?? completed ?? fallback;
+  return selected
+    ? { gameweekIndex: selected.gameweekIndex, roundIndex: selected.roundIndex }
+    : { gameweekIndex: 0, roundIndex: 0 };
+}
+
+function GameweekCarousel({ allFixtures, expectedGameweeks, groups, isActive, leagueClient, managerTeamId, onIndexChange, onOpenFixture, roundLabel, selectedGameweekIndex }: { allFixtures: LeagueFixture[]; expectedGameweeks: number; groups: GameweekGroup[]; isActive: boolean; leagueClient: LeagueClient; managerTeamId: string | null; onIndexChange: (index: number) => void; onOpenFixture: (fixture: LeagueFixture) => void; roundLabel: string; selectedGameweekIndex: number }) {
   const initialIndex = gameweekIndexForRound({ gameweeks: groups }, selectedGameweekIndex);
   // Embla reads startIndex only when it is created. Keeping that initial value
   // stable is important: updating it after every select causes a re-init that
@@ -762,7 +818,7 @@ function GameweekCarousel({ expectedGameweeks, groups, isActive, onIndexChange, 
     if (typeof ResizeObserver === 'undefined') return undefined;
 
     const observer = new ResizeObserver(measureCards);
-    carousel.querySelectorAll<HTMLElement>('.league-fixture-list').forEach((list) => observer.observe(list));
+    carousel.querySelectorAll<HTMLElement>('.league-gameweek-fixture-board, .league-fixture-list').forEach((list) => observer.observe(list));
     return () => observer.disconnect();
   }, [gameweekCardHeight, groups]);
 
@@ -822,6 +878,10 @@ function GameweekCarousel({ expectedGameweeks, groups, isActive, onIndexChange, 
                 <div className="league-gameweek-slide__content">
                   <GameweekSection
                     group={group}
+                    allFixtures={allFixtures}
+                    isSelected={isSelected}
+                    leagueClient={leagueClient}
+                    managerTeamId={managerTeamId}
                     onOpenFixture={onOpenFixture}
                     onSelectGameweek={() => gameweekApi?.scrollTo(index)}
                     variant={sectionVariant}
@@ -914,7 +974,37 @@ function useScaleOpacityTween(emblaApi: EmblaCarouselType | undefined, contentSe
   }, [emblaApi, setTweenFactors, setTweenNodes, tweenScaleAndOpacity]);
 }
 
-function GameweekSection({ group, onOpenFixture, onSelectGameweek, variant }: { group: GameweekGroup; onOpenFixture: (fixture: LeagueFixture) => void; onSelectGameweek: () => void; variant: 'focus' | 'upcoming' | 'history' }) {
+function GameweekSection({ allFixtures, group, isSelected, leagueClient, managerTeamId, onOpenFixture, onSelectGameweek, variant }: { allFixtures: LeagueFixture[]; group: GameweekGroup; isSelected: boolean; leagueClient: LeagueClient; managerTeamId: string | null; onOpenFixture: (fixture: LeagueFixture) => void; onSelectGameweek: () => void; variant: 'focus' | 'upcoming' | 'history' }) {
+  const [activeProgress, setActiveProgress] = useState<Record<string, ActiveFixtureProgress>>({});
+  const positions = useMemo(() => standingsBeforeGameweek(allFixtures, group.gameweek.number), [allFixtures, group.gameweek.number]);
+  const primaryFixture = useMemo(() => primaryFixtureForTeam(group.fixtures, managerTeamId), [group.fixtures, managerTeamId]);
+  const otherFixtures = useMemo(() => group.fixtures.filter((fixture) => fixture.id !== primaryFixture?.id), [group.fixtures, primaryFixture?.id]);
+
+  useEffect(() => {
+    if (!isSelected || group.state !== 'underway' || !leagueClient.getFixtureSquads) {
+      setActiveProgress({});
+      return undefined;
+    }
+
+    let isActive = true;
+    const loadProgress = async () => {
+      const results = await Promise.allSettled(group.fixtures.filter((fixture) => fixture.status !== 'complete').map(async (fixture) => {
+        const squads = await leagueClient.getFixtureSquads?.(fixture.id);
+        return [fixture.id, squads ? activeProgressForFixture(fixture, squads) : null] as const;
+      }));
+      if (!isActive) return;
+      const progress: Record<string, ActiveFixtureProgress> = {};
+      results.forEach((result) => {
+        if (result.status === 'fulfilled' && result.value[1]) progress[result.value[0]] = result.value[1];
+      });
+      setActiveProgress(progress);
+    };
+    void loadProgress();
+    return () => {
+      isActive = false;
+    };
+  }, [group.fixtures, group.state, isSelected, leagueClient]);
+
   return (
     <section aria-labelledby={`league-gameweek-${variant}-${group.gameweek.id}`} className={`league-gameweek-section league-gameweek-section--${variant}`}>
       <header className="league-gameweek-section__header">
@@ -923,11 +1013,215 @@ function GameweekSection({ group, onOpenFixture, onSelectGameweek, variant }: { 
         </button>
         <GameweekStateBadge gameweek={group.gameweek} state={group.state} />
       </header>
-      <div className="league-fixture-list">
-        {group.fixtures.map((fixture) => <FixtureListRow fixture={fixture} key={fixture.id} onOpen={onOpenFixture} />)}
+      <div className="league-gameweek-fixture-board">
+        {primaryFixture ? <GameweekSpotlightFixture allFixtures={allFixtures} fixture={primaryFixture} group={group} onOpen={onOpenFixture} positions={positions} progress={activeProgress[primaryFixture.id]} /> : null}
+        <div aria-label="Other fixtures" className="league-gameweek-other-fixtures">
+          {otherFixtures.map((fixture) => <GameweekFixtureRow allFixtures={allFixtures} fixture={fixture} group={group} key={fixture.id} onOpen={onOpenFixture} positions={positions} progress={activeProgress[fixture.id]} />)}
+        </div>
       </div>
     </section>
   );
+}
+
+interface ActiveFixtureProgress {
+  away: TeamProgress;
+  home: TeamProgress;
+}
+
+interface TeamProgress {
+  yetToPlay: number | null;
+}
+
+function GameweekSpotlightFixture({ allFixtures, fixture, group, onOpen, positions, progress }: { allFixtures: LeagueFixture[]; fixture: LeagueFixture; group: GameweekGroup; onOpen: (fixture: LeagueFixture) => void; positions: Map<string, number>; progress?: ActiveFixtureProgress }) {
+  const isUpcoming = group.state === 'not-started';
+  return (
+    <button aria-label={`${fixtureActionLabel(fixture)} for ${fixtureParticipantName(fixture.homeTeam)} versus ${fixtureParticipantName(fixture.awayTeam)}`} className={`league-fixture-row league-gameweek-fixture league-gameweek-fixture--spotlight league-gameweek-fixture--${group.state}`} onClick={() => onOpen(fixture)} type="button">
+      <div className="league-gameweek-fixture__topline"><span className="league-gameweek-fixture__kicker">{isUpcoming ? 'Next fixture' : group.state === 'underway' ? 'Live fixture' : 'Final result'}</span><span>{fixture.kickoffLabel || fixture.gameweek.name}</span></div>
+      <div className="league-gameweek-fixture__teams">
+        <GameweekTeam team={fixture.homeTeam} align="home" chipNames={chipNamesForTeam(fixture, fixture.homeTeam, group.state)} position={positions.get(fixture.homeTeam.id)} progress={progress?.home} />
+        <div className="league-gameweek-fixture__centre">
+          {isUpcoming ? <FormComparison allFixtures={allFixtures} homeTeam={fixture.homeTeam} targetGameweek={group.gameweek.number} awayTeam={fixture.awayTeam} /> : <FixtureScoreDisplay fixture={fixture} />}
+        </div>
+        <GameweekTeam align="away" chipNames={chipNamesForTeam(fixture, fixture.awayTeam, group.state)} position={positions.get(fixture.awayTeam.id)} progress={progress?.away} team={fixture.awayTeam} />
+      </div>
+      {isUpcoming ? <span className="league-gameweek-fixture__form-caption">Last five gameweeks</span> : null}
+    </button>
+  );
+}
+
+function GameweekFixtureRow({ allFixtures, fixture, group, onOpen, positions, progress }: { allFixtures: LeagueFixture[]; fixture: LeagueFixture; group: GameweekGroup; onOpen: (fixture: LeagueFixture) => void; positions: Map<string, number>; progress?: ActiveFixtureProgress }) {
+  const isUpcoming = group.state === 'not-started';
+  return (
+    <button aria-label={`${fixtureActionLabel(fixture)} for ${fixtureParticipantName(fixture.homeTeam)} versus ${fixtureParticipantName(fixture.awayTeam)}`} className={`league-fixture-row league-gameweek-fixture-row league-gameweek-fixture-row--${group.state}`} onClick={() => onOpen(fixture)} type="button">
+      <GameweekTeam team={fixture.homeTeam} align="home" chipNames={chipNamesForTeam(fixture, fixture.homeTeam, group.state)} position={positions.get(fixture.homeTeam.id)} progress={progress?.home} />
+      <div className="league-gameweek-fixture-row__centre">
+        {isUpcoming ? <FormRowSummary allFixtures={allFixtures} awayTeam={fixture.awayTeam} homeTeam={fixture.homeTeam} targetGameweek={group.gameweek.number} /> : <FixtureScoreDisplay fixture={fixture} compact />}
+      </div>
+      <GameweekTeam align="away" chipNames={chipNamesForTeam(fixture, fixture.awayTeam, group.state)} position={positions.get(fixture.awayTeam.id)} progress={progress?.away} team={fixture.awayTeam} />
+    </button>
+  );
+}
+
+function GameweekTeam({ align, chipNames, position, progress, team }: { align: 'away' | 'home'; chipNames: string[]; position?: number; progress?: TeamProgress; team: LeagueTeam }) {
+  return (
+    <div className={`league-gameweek-team league-gameweek-team--${align}`}>
+      <span className="league-gameweek-team__position">#{position ?? '—'}</span>
+      <TeamCrest className="league-gameweek-team__crest" team={team} />
+      <strong>{fixtureParticipantName(team)}</strong>
+      {progress ? <small className="league-gameweek-team__progress">{formatPlayersYetToPlay(progress.yetToPlay)}</small> : null}
+      {chipNames.length > 0 ? <span className="league-gameweek-team__chips">{chipNames.join(' · ')}</span> : null}
+    </div>
+  );
+}
+
+function FixtureScoreDisplay({ compact = false, fixture }: { compact?: boolean; fixture: LeagueFixture }) {
+  return <div className={`league-gameweek-score${compact ? ' league-gameweek-score--compact' : ''}`}><strong>{fixture.score.homeScore ?? '—'}</strong><span>–</span><strong>{fixture.score.awayScore ?? '—'}</strong></div>;
+}
+
+interface FormEntry {
+  gameweek: number;
+  key: string;
+  points: number | null;
+  result: 'W' | 'D' | 'L' | 'P';
+}
+
+function formGameweekNumbers(fixtures: LeagueFixture[], targetGameweek: number): Array<number | null> {
+  const completedNumbers = Array.from(new Set(
+    fixtures
+      .filter((fixture) => fixture.status !== 'pending' && fixture.gameweek.number < targetGameweek)
+      .map((fixture) => fixture.gameweek.number),
+  )).sort((left, right) => left - right).slice(-5);
+  return [...Array.from({ length: Math.max(0, 5 - completedNumbers.length) }, () => null), ...completedNumbers];
+}
+
+function formEntryForTeam(teamId: string, gameweek: number, fixtures: LeagueFixture[]): FormEntry | null {
+  const fixture = fixtures.find((candidate) => candidate.gameweek.number === gameweek
+    && candidate.status !== 'pending'
+    && (candidate.homeTeam.id === teamId || candidate.awayTeam.id === teamId));
+  if (!fixture) return null;
+  return {
+    gameweek,
+    key: fixture.id,
+    points: scoreForTeam(fixture, teamId),
+    result: resultForFixture(fixture, teamId),
+  };
+}
+
+function FormComparison({ allFixtures, awayTeam, homeTeam, targetGameweek }: { allFixtures: LeagueFixture[]; awayTeam: LeagueTeam; homeTeam: LeagueTeam; targetGameweek: number }) {
+  const gameweeks = formGameweekNumbers(allFixtures, targetGameweek);
+  return <div aria-label={`${fixtureParticipantName(homeTeam)} and ${fixtureParticipantName(awayTeam)} recent form`} className="league-form-comparison">{gameweeks.map((gameweek, index) => { const home = gameweek === null ? null : formEntryForTeam(homeTeam.id, gameweek, allFixtures); const away = gameweek === null ? null : formEntryForTeam(awayTeam.id, gameweek, allFixtures); return <div className="league-form-comparison__row" key={`${gameweek ?? 'empty'}-${index}`}><FormPointBlock entry={home} /><span>{gameweek === null ? '' : `GW${gameweek}`}</span><FormPointBlock entry={away} /></div>; })}</div>;
+}
+
+function FormStrip({ allFixtures, targetGameweek, team }: { allFixtures: LeagueFixture[]; targetGameweek: number; team: LeagueTeam }) {
+  return <span aria-label={`${fixtureParticipantName(team)} last five gameweeks`} className="league-form-strip">{formGameweekNumbers(allFixtures, targetGameweek).map((gameweek, index) => <FormPointBlock entry={gameweek === null ? null : formEntryForTeam(team.id, gameweek, allFixtures)} key={`${gameweek ?? 'empty'}-${index}`} />)}</span>;
+}
+
+function FormRowSummary({ allFixtures, awayTeam, homeTeam, targetGameweek }: { allFixtures: LeagueFixture[]; awayTeam: LeagueTeam; homeTeam: LeagueTeam; targetGameweek: number }) {
+  return <div aria-label={`${fixtureParticipantName(homeTeam)} and ${fixtureParticipantName(awayTeam)} recent form`} className="league-form-row-summary"><FormStrip allFixtures={allFixtures} targetGameweek={targetGameweek} team={homeTeam} /><span aria-hidden="true">vs</span><FormStrip allFixtures={allFixtures} targetGameweek={targetGameweek} team={awayTeam} /></div>;
+}
+
+function FormPointBlock({ entry }: { entry: FormEntry | null }) {
+  return <span aria-label={entry ? `${entry.result}, ${entry.points ?? 'no'} points` : 'No result'} className={`league-form-point${entry ? ` league-form-point--${entry.result.toLowerCase()}` : ' league-form-point--empty'}`}>{entry?.points ?? ''}</span>;
+}
+
+function formatPlayersYetToPlay(value: number | null | undefined): string {
+  if (value === null || value === undefined) return 'Players yet to play —';
+  return `${value} player${value === 1 ? '' : 's'} yet to play`;
+}
+
+function primaryFixtureForTeam(fixtures: LeagueFixture[], managerTeamId: string | null): LeagueFixture | null {
+  if (fixtures.length === 0) return null;
+  return (managerTeamId
+    ? fixtures.find((fixture) => fixture.homeTeam.id === managerTeamId || fixture.awayTeam.id === managerTeamId)
+    : null)
+    ?? fixtures.find((fixture) => [fixture.homeTeam, fixture.awayTeam].some((team) => team.managerName?.toLocaleLowerCase() === 'andrew'))
+    ?? fixtures[0];
+}
+
+interface StandingAccumulator {
+  team: LeagueTeam;
+  leaguePoints: number;
+  pointsFor: number;
+  pointsAgainst: number;
+}
+
+function standingsBeforeGameweek(fixtures: LeagueFixture[], gameweekNumber: number): Map<string, number> {
+  const standings = new Map<string, StandingAccumulator>();
+  fixtures.forEach((fixture) => {
+    [fixture.homeTeam, fixture.awayTeam].forEach((team) => {
+      if (!standings.has(team.id)) standings.set(team.id, { team, leaguePoints: 0, pointsFor: 0, pointsAgainst: 0 });
+    });
+  });
+
+  fixtures
+    .filter((fixture) => fixture.status === 'complete' && fixture.gameweek.number < gameweekNumber && fixture.score.outcome !== 'pending')
+    .sort((left, right) => left.gameweek.number - right.gameweek.number || left.id.localeCompare(right.id))
+    .forEach((fixture) => {
+      const home = standings.get(fixture.homeTeam.id);
+      const away = standings.get(fixture.awayTeam.id);
+      if (!home || !away) return;
+      const homeScore = fixture.score.homeScore ?? 0;
+      const awayScore = fixture.score.awayScore ?? 0;
+      home.pointsFor += homeScore;
+      home.pointsAgainst += awayScore;
+      away.pointsFor += awayScore;
+      away.pointsAgainst += homeScore;
+      if (fixture.score.outcome === 'home_win') home.leaguePoints += 3;
+      else if (fixture.score.outcome === 'away_win') away.leaguePoints += 3;
+      else {
+        home.leaguePoints += 1;
+        away.leaguePoints += 1;
+      }
+    });
+
+  const ordered = [...standings.values()].sort((left, right) => (
+    right.leaguePoints - left.leaguePoints
+    || (right.pointsFor - right.pointsAgainst) - (left.pointsFor - left.pointsAgainst)
+    || right.pointsFor - left.pointsFor
+  ));
+  return new Map(ordered.map((standing, index) => [standing.team.id, index + 1]));
+}
+
+function chipNamesForTeam(fixture: LeagueFixture, team: LeagueTeam, state: GameweekState): string[] {
+  if (state === 'not-started') return [];
+  const targetName = team.name.trim().toLocaleLowerCase();
+  const entry = Object.entries(fixture.score.chipsPlayed).find(([key]) => key === team.id || key === team.name || key.trim().toLocaleLowerCase() === targetName);
+  return entry?.[1] ?? [];
+}
+
+function activeProgressForFixture(fixture: LeagueFixture, squads: FixtureSquad[]): ActiveFixtureProgress {
+  const homeSquad = squads.find((squad) => squad.team.id === fixture.homeTeam.id);
+  const awaySquad = squads.find((squad) => squad.team.id === fixture.awayTeam.id);
+  return {
+    home: teamProgressForSquad(homeSquad),
+    away: teamProgressForSquad(awaySquad),
+  };
+}
+
+function teamProgressForSquad(squad: FixtureSquad | undefined): TeamProgress {
+  if (!squad) return { yetToPlay: null };
+  const players = squad.starters.length > 0 ? squad.starters : squad.players;
+  let yetToPlay = 0;
+  let hasUnknownStart = false;
+  players.forEach((player) => {
+    const hasStarted = playerHasStartedFixture(player);
+    if (hasStarted === null) hasUnknownStart = true;
+    else if (!hasStarted) yetToPlay += 1;
+  });
+  return { yetToPlay: hasUnknownStart ? null : yetToPlay };
+}
+
+function playerHasStartedFixture(player: FixtureSquadPlayer): boolean | null {
+  if (player.hasStartedFixture !== null && player.hasStartedFixture !== undefined) return player.hasStartedFixture;
+  const kickoffs = (player.fixtureFixtures ?? [])
+    .map((fixture) => fixture.kickoffAt ? Date.parse(fixture.kickoffAt) : Number.NaN)
+    .filter((kickoff) => Number.isFinite(kickoff));
+  if (kickoffs.length === 0) return null;
+  return kickoffs.some((kickoff) => kickoff <= Date.now());
+}
+
+function fixtureActionLabel(fixture: LeagueFixture): string {
+  return fixture.status === 'pending' ? 'Open preview' : fixture.status === 'started' ? 'Open live fixture' : 'Open finished fixture';
 }
 
 function TableView({ onReload, snapshot }: { onReload: () => void; snapshot: LeagueSnapshot }) {
@@ -957,25 +1251,6 @@ function TableView({ onReload, snapshot }: { onReload: () => void; snapshot: Lea
         <Button onClick={onReload} type="button" variant="secondary"><RefreshCw aria-hidden="true" size={15} /> Refresh table</Button>
       </Card>
     </div>
-  );
-}
-
-function FixtureListRow({ fixture, onOpen }: { fixture: LeagueFixture; onOpen: (fixture: LeagueFixture) => void }) {
-  const action = fixture.status === 'pending' ? 'Open preview' : fixture.status === 'started' ? 'Open live fixture' : 'Open finished fixture';
-  return (
-    <button aria-label={`${action} for ${fixtureParticipantName(fixture.homeTeam)} versus ${fixtureParticipantName(fixture.awayTeam)}`} className="league-fixture-row" onClick={() => onOpen(fixture)} type="button">
-      <div className="league-fixture-row__teams">
-        <div className="league-fixture-row__team">
-          <div className="league-fixture-row__team-name"><TeamCrest className="league-team-mark" team={fixture.homeTeam} /><strong>{fixtureParticipantName(fixture.homeTeam)}</strong></div>
-          <strong className="league-fixture-row__team-score">{fixture.score.homeScore ?? '—'}</strong>
-        </div>
-        <div className="league-fixture-row__team">
-          <div className="league-fixture-row__team-name"><TeamCrest className="league-team-mark" team={fixture.awayTeam} /><strong>{fixtureParticipantName(fixture.awayTeam)}</strong></div>
-          <strong className="league-fixture-row__team-score">{fixture.score.awayScore ?? '—'}</strong>
-        </div>
-      </div>
-      <ChevronRight aria-hidden="true" className="league-fixture-row__arrow" size={17} />
-    </button>
   );
 }
 
@@ -1063,18 +1338,18 @@ function leagueViewFromPath(pathname: string): LeagueView {
   return 'fixtures';
 }
 
-function getGameweekState(fixtures: LeagueFixture[]): GameweekState {
-  if (!fixtures.some((fixture) => fixture.status !== 'pending')) return 'not-started';
-  if (fixtures.every((fixture) => fixture.status === 'complete')) return 'finished';
-  return 'underway';
+function getGameweekState(fixtures: LeagueFixture[], gameweek?: LeagueFixture['gameweek'] | null, isCurrent = false): GameweekState {
+  if (fixtures.length > 0 && fixtures.every((fixture) => fixture.status === 'complete')) return 'finished';
+  if (fixtures.some((fixture) => fixture.status !== 'pending')) return 'underway';
+  if (isCurrent && deadlinePassed(gameweek?.deadlineAt)) return 'underway';
+  return 'not-started';
 }
 
 function gameweekStateForFixture(fixture: LeagueFixture, snapshot: LeagueSnapshot | null): GameweekState {
   if (!snapshot) return fixture.status === 'complete' ? 'finished' : fixture.status === 'started' ? 'underway' : 'not-started';
-  const fixtures = [...snapshot.allFixtures.fixtures, ...snapshot.currentFixtures.fixtures, ...snapshot.nextFixtures.fixtures]
-    .filter((candidate, index, candidates) => candidates.findIndex((item) => item.id === candidate.id) === index)
+  const fixtures = fixturesFromSnapshot(snapshot)
     .filter((candidate) => candidate.gameweek.id === fixture.gameweek.id);
-  return getGameweekState(fixtures.length ? fixtures : [fixture]);
+  return getGameweekState(fixtures.length ? fixtures : [fixture], fixture.gameweek, fixture.isCurrent || fixture.gameweek.id === snapshot.currentFixtures.gameweek?.id);
 }
 
 function fixtureGameweekStatusForFixture(fixture: LeagueFixture, snapshot: LeagueSnapshot | null): FixtureGameweekStatus {
@@ -1103,6 +1378,17 @@ function formatScore(fixture: LeagueFixture): string {
   return `${fixture.score.homeScore} - ${fixture.score.awayScore}`;
 }
 
+function scoreForTeam(fixture: LeagueFixture, teamId: string): number | null {
+  return fixture.homeTeam.id === teamId ? fixture.score.homeScore : fixture.awayTeam.id === teamId ? fixture.score.awayScore : null;
+}
+
+function resultForFixture(fixture: LeagueFixture, teamId: string): 'W' | 'D' | 'L' | 'P' {
+  if (fixture.status === 'pending' || fixture.score.outcome === 'pending') return 'P';
+  if (fixture.score.outcome === 'draw') return 'D';
+  const home = fixture.homeTeam.id === teamId;
+  return fixture.score.outcome === (home ? 'home_win' : 'away_win') ? 'W' : 'L';
+}
+
 function formatDeadline(deadlineAt?: string | null): string {
   if (!deadlineAt) return 'Deadline pending';
   const deadline = new Date(deadlineAt);
@@ -1114,6 +1400,12 @@ function formatDeadline(deadlineAt?: string | null): string {
     month: 'short',
     weekday: 'short',
   }).format(deadline);
+}
+
+function deadlinePassed(deadlineAt?: string | null): boolean {
+  if (!deadlineAt) return false;
+  const timestamp = Date.parse(deadlineAt);
+  return Number.isFinite(timestamp) && timestamp <= Date.now();
 }
 
 function uniqueFixtures(fixtures: LeagueFixture[]): LeagueFixture[] {

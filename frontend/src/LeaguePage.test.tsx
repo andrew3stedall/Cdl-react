@@ -230,19 +230,19 @@ describe('LeaguePage', () => {
     expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-round-active-led')).not.toBeNull();
     expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-fixture-round__header')?.textContent?.trim()).toBe('Round 2');
     const selectedGameweekHeader = container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__slide[aria-current="true"] .league-gameweek-section__header');
-    expect(selectedGameweekHeader?.textContent).toContain('Gameweek 11');
+    expect(selectedGameweekHeader?.textContent).toContain('Gameweek 12');
     expect(selectedGameweekHeader?.textContent).not.toContain('Current gameweek');
     expect(selectedGameweekHeader?.textContent).not.toContain('Live');
     expect(container.querySelectorAll('.league-round-carousel__slide[aria-current="true"] .league-gameweek-section')).toHaveLength(3);
     expect(container.querySelectorAll('.league-round-carousel__slide[aria-current="true"] .league-fixture-row')).toHaveLength(5);
-    expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__slide[aria-current="true"]')?.textContent).toContain('Gameweek 11');
+    expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__slide[aria-current="true"]')?.textContent).toContain('Gameweek 12');
     expect(container.querySelectorAll('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__slide')).toHaveLength(3);
     expect(container.querySelector('.league-round-carousel__header')).toBeNull();
     expect(container.querySelector('.league-round-carousel__hint')).toBeNull();
     expect(container.querySelector('.league-gameweek-carousel__header')).not.toBeNull();
     expect(container.querySelectorAll('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__dot')).toHaveLength(7);
-    expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__dot.is-selected')?.getAttribute('aria-label')).toBe('Go to Gameweek 11');
-    expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__dot.is-selected')?.getAttribute('data-gameweek-index')).toBe('3');
+    expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__dot.is-selected')?.getAttribute('aria-label')).toBe('Go to Gameweek 12');
+    expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__dot.is-selected')?.getAttribute('data-gameweek-index')).toBe('4');
     expect(container.querySelector('.league-gameweek-carousel')?.getAttribute('style')).toContain('--league-gameweek-carousel-height: 14.63rem');
     expect(container.querySelector('.league-gameweek-carousel')?.getAttribute('style')).not.toContain('--league-gameweek-carousel-track-height');
     expect(container.querySelector('.league-gameweek-carousel__viewport')?.getAttribute('style')).toBeNull();
@@ -254,7 +254,7 @@ describe('LeaguePage', () => {
     expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__slide[aria-current="true"] .league-gameweek-slide__content')?.getAttribute('style')).toContain('transform: scale(1)');
     expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__slide:not([aria-current="true"]) .league-gameweek-slide__content')?.getAttribute('style')).toContain('opacity:');
     expect(container.querySelectorAll('.league-fixture-row--compact')).toHaveLength(0);
-    expect(container.querySelectorAll('.league-round-carousel__slide[aria-current="true"] .league-fixture-row__team')).toHaveLength(10);
+    expect(container.querySelectorAll('.league-round-carousel__slide[aria-current="true"] .league-gameweek-team')).toHaveLength(10);
     expect(container.querySelector('button[aria-label="Previous round"]')).toBeNull();
     expect(container.querySelector('button[aria-label="Next round"]')).toBeNull();
     expect(container.querySelector('main.league-page.feature-screen')).toBeNull();
@@ -371,6 +371,38 @@ describe('LeaguePage', () => {
     act(() => root.unmount());
   });
 
+  test('anchors the manager fixture and renders the correct content for active, past and upcoming weeks', async () => {
+    const { container, root } = await renderPage();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    const activeSlide = container.querySelector('.league-gameweek-carousel__slide[aria-current="true"]');
+    expect(activeSlide?.querySelector('.league-gameweek-fixture--spotlight')).not.toBeNull();
+    expect(activeSlide?.querySelector('.league-gameweek-team__chips')?.textContent).toContain('Triple Captain');
+    expect(activeSlide?.textContent).toContain('0 players yet to play');
+    expect(activeSlide?.textContent).toContain('1 player yet to play');
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('button[aria-label="Select Gameweek 11"]')?.click();
+    });
+    const historySlide = container.querySelector('.league-gameweek-carousel__slide[aria-current="true"]');
+    expect(historySlide?.querySelector('.league-gameweek-section--history')).not.toBeNull();
+    expect(historySlide?.querySelector('.league-gameweek-fixture--spotlight')?.textContent).toContain('42');
+    expect(historySlide?.querySelector('.league-gameweek-fixture--spotlight')?.textContent).toContain('#1');
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('button[aria-label="Select Gameweek 13"]')?.click();
+    });
+    const upcomingSlide = container.querySelector('.league-gameweek-carousel__slide[aria-current="true"]');
+    expect(upcomingSlide?.querySelector('.league-gameweek-section--upcoming')).not.toBeNull();
+    expect(upcomingSlide?.querySelectorAll('.league-form-point')).not.toHaveLength(0);
+    expect(upcomingSlide?.querySelectorAll('.league-form-point--empty')).not.toHaveLength(0);
+    act(() => root.unmount());
+  });
+
   test('opens a started fixture as live scoring detail', async () => {
     const { client, container, root } = await renderPage();
 
@@ -381,7 +413,7 @@ describe('LeaguePage', () => {
     });
 
     expect(client.detailRequests).toEqual(['fixture-1201']);
-    expect(client.squadRequests).toEqual(['fixture-1201']);
+    expect(client.squadRequests).toEqual(['fixture-1201', 'fixture-1201']);
     expect(container.querySelector('[role="dialog"]')?.textContent).toContain('Gameweek underway');
     expect(container.querySelector('[role="dialog"]')?.textContent).toContain('Live scoring');
     expect(container.querySelector('[role="dialog"]')?.textContent).toContain('Scoring detail is available.');
@@ -400,7 +432,7 @@ describe('LeaguePage', () => {
     });
 
     expect(client.detailRequests).toEqual(['fixture-1202']);
-    expect(client.squadRequests).toEqual(['fixture-1202']);
+    expect(client.squadRequests).toEqual(['fixture-1201', 'fixture-1202']);
     expect(container.querySelector('[role="dialog"]')?.textContent).toContain('Finished fixture');
     expect(container.querySelector('[role="dialog"]')?.textContent).toContain('Final result');
     act(() => root.unmount());
@@ -419,7 +451,7 @@ describe('LeaguePage', () => {
       await Promise.resolve();
     });
 
-    expect(client.squadRequests).toEqual(['fixture-1301']);
+    expect(client.squadRequests).toEqual(['fixture-1201', 'fixture-1301']);
     expect(container.querySelector('[aria-label="Squad comparison"]')?.textContent).toContain('Castle Keeper');
     expect(container.querySelectorAll('.fixture-squad-pitch')).toHaveLength(1);
     expect(container.querySelectorAll('.fixture-squad-pitch__lineup-panel')).toHaveLength(2);

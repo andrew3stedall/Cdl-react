@@ -20,24 +20,9 @@
   opacity: 1;
 }
 
-/* Desk uses clear result colours rather than washed-out foreground mixes. */
-.league-form-point--w {
-  background: color-mix(in srgb, var(--primary) 10%, var(--surface));
-  border-color: color-mix(in srgb, var(--primary) 74%, var(--border));
-  color: var(--primary);
-}
-
-.league-form-point--l {
-  background: color-mix(in srgb, var(--destructive) 9%, var(--surface));
-  border-color: color-mix(in srgb, var(--destructive) 68%, var(--border));
-  color: var(--destructive);
-}
-
-.league-form-point--d {
-  background: color-mix(in srgb, var(--muted-foreground) 9%, var(--surface));
-  border-color: color-mix(in srgb, var(--muted-foreground) 48%, var(--border));
-  color: var(--foreground);
-}
+/* Result colours are provided by the user's Account palette and are defined
+   by the shared League result styles. Keep this file limited to Desk layout
+   polish so it cannot override those semantic tokens. */
 
 .league-gameweek-team__record {
   color: var(--muted-foreground);

@@ -384,6 +384,7 @@ describe('LeaguePage', () => {
     expect(activeSlide?.querySelector('.league-gameweek-team__chips')?.textContent).toContain('Triple Captain');
     expect(activeSlide?.textContent).toContain('0 players yet to play');
     expect(activeSlide?.textContent).toContain('1 player yet to play');
+    expect(activeSlide?.textContent).not.toContain('Live fixture');
 
     await act(async () => {
       container.querySelector<HTMLButtonElement>('button[aria-label="Select Gameweek 11"]')?.click();
@@ -392,6 +393,7 @@ describe('LeaguePage', () => {
     expect(historySlide?.querySelector('.league-gameweek-section--history')).not.toBeNull();
     expect(historySlide?.querySelector('.league-gameweek-fixture--spotlight')?.textContent).toContain('42');
     expect(historySlide?.querySelector('.league-gameweek-fixture--spotlight')?.textContent).toContain('#1');
+    expect(historySlide?.textContent).not.toContain('Final result');
 
     await act(async () => {
       container.querySelector<HTMLButtonElement>('button[aria-label="Select Gameweek 13"]')?.click();
@@ -400,6 +402,8 @@ describe('LeaguePage', () => {
     expect(upcomingSlide?.querySelector('.league-gameweek-section--upcoming')).not.toBeNull();
     expect(upcomingSlide?.querySelectorAll('.league-form-point')).not.toHaveLength(0);
     expect(upcomingSlide?.querySelectorAll('.league-form-point--empty')).not.toHaveLength(0);
+    expect(upcomingSlide?.textContent).not.toContain('Next fixture');
+    expect(upcomingSlide?.textContent).not.toContain('Last five gameweeks');
     act(() => root.unmount());
   });
 

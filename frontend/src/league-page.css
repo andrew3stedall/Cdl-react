@@ -1293,9 +1293,9 @@
   border-radius: 0.85rem;
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary) 12%, transparent), 0 0.55rem 1.4rem color-mix(in srgb, var(--primary) 7%, transparent);
   display: grid;
-  gap: 0.7rem;
-  min-height: 14rem;
-  padding: 0.7rem 0.65rem 0.65rem;
+  gap: 0.52rem;
+  min-height: 12.8rem;
+  padding: 0.56rem 0.58rem 0.52rem;
   text-align: initial;
 }
 
@@ -1315,14 +1315,9 @@
   display: flex;
   font-size: 0.59rem;
   gap: 0.5rem;
-  justify-content: space-between;
+  justify-content: flex-end;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-}
-
-.league-gameweek-fixture__kicker {
-  color: var(--primary);
-  font-weight: 850;
 }
 
 .league-gameweek-fixture__teams {
@@ -1336,7 +1331,7 @@
 .league-gameweek-fixture__centre {
   align-items: center;
   display: grid;
-  gap: 0.5rem;
+  gap: 0.35rem;
   justify-items: center;
   min-width: 5.4rem;
 }
@@ -1370,9 +1365,9 @@
 }
 
 .league-gameweek-team__crest {
-  height: 3.25rem;
+  height: 3.6rem;
   margin: 0.2rem 0 0.08rem;
-  width: 3.25rem;
+  width: 3.6rem;
 }
 
 .league-gameweek-team > strong {
@@ -1430,12 +1425,6 @@
   font-size: 0.66rem;
 }
 
-.league-gameweek-fixture__form-caption {
-  color: var(--muted-foreground);
-  font-size: 0.58rem;
-  text-align: center;
-}
-
 .league-gameweek-live-summary {
   color: var(--muted-foreground);
   display: grid;
@@ -1486,9 +1475,9 @@
 }
 
 .league-gameweek-fixture-row .league-gameweek-team__crest {
-  height: 2rem;
+  height: 2.2rem;
   margin: 0.18rem 0 0.04rem;
-  width: 2rem;
+  width: 2.2rem;
 }
 
 .league-gameweek-fixture-row .league-gameweek-team > strong {
@@ -1510,15 +1499,15 @@
 
 .league-form-comparison {
   display: grid;
-  gap: 0.18rem;
-  min-width: 5.4rem;
+  gap: 0.12rem;
+  min-width: 4.9rem;
 }
 
 .league-form-comparison__row {
   align-items: center;
   display: grid;
-  gap: 0.25rem;
-  grid-template-columns: 2.25rem 2.1rem 2.25rem;
+  gap: 0.18rem;
+  grid-template-columns: 1.95rem 1.7rem 1.95rem;
   justify-content: center;
 }
 
@@ -1534,11 +1523,11 @@
   border: 1px solid var(--border);
   border-radius: 0.35rem;
   display: inline-flex;
-  font-size: 0.62rem;
+  font-size: 0.56rem;
   font-weight: 850;
-  height: 1.6rem;
+  height: 1.38rem;
   justify-content: center;
-  min-width: 2.25rem;
+  min-width: 1.95rem;
   padding: 0 0.18rem;
 }
 

@@ -1036,7 +1036,7 @@ function GameweekSpotlightFixture({ allFixtures, fixture, group, onOpen, positio
   const isUpcoming = group.state === 'not-started';
   return (
     <button aria-label={`${fixtureActionLabel(fixture)} for ${fixtureParticipantName(fixture.homeTeam)} versus ${fixtureParticipantName(fixture.awayTeam)}`} className={`league-fixture-row league-gameweek-fixture league-gameweek-fixture--spotlight league-gameweek-fixture--${group.state}`} onClick={() => onOpen(fixture)} type="button">
-      <div className="league-gameweek-fixture__topline"><span className="league-gameweek-fixture__kicker">{isUpcoming ? 'Next fixture' : group.state === 'underway' ? 'Live fixture' : 'Final result'}</span><span>{fixture.kickoffLabel || fixture.gameweek.name}</span></div>
+      <div className="league-gameweek-fixture__topline"><span>{fixture.kickoffLabel || fixture.gameweek.name}</span></div>
       <div className="league-gameweek-fixture__teams">
         <GameweekTeam team={fixture.homeTeam} align="home" chipNames={chipNamesForTeam(fixture, fixture.homeTeam, group.state)} position={positions.get(fixture.homeTeam.id)} progress={progress?.home} />
         <div className="league-gameweek-fixture__centre">
@@ -1044,7 +1044,6 @@ function GameweekSpotlightFixture({ allFixtures, fixture, group, onOpen, positio
         </div>
         <GameweekTeam align="away" chipNames={chipNamesForTeam(fixture, fixture.awayTeam, group.state)} position={positions.get(fixture.awayTeam.id)} progress={progress?.away} team={fixture.awayTeam} />
       </div>
-      {isUpcoming ? <span className="league-gameweek-fixture__form-caption">Last five gameweeks</span> : null}
     </button>
   );
 }
@@ -1113,7 +1112,7 @@ function FormComparison({ allFixtures, awayTeam, homeTeam, targetGameweek }: { a
 }
 
 function FormStrip({ allFixtures, targetGameweek, team }: { allFixtures: LeagueFixture[]; targetGameweek: number; team: LeagueTeam }) {
-  return <span aria-label={`${fixtureParticipantName(team)} last five gameweeks`} className="league-form-strip">{formGameweekNumbers(allFixtures, targetGameweek).map((gameweek, index) => <FormPointBlock entry={gameweek === null ? null : formEntryForTeam(team.id, gameweek, allFixtures)} key={`${gameweek ?? 'empty'}-${index}`} />)}</span>;
+  return <span aria-label={`${fixtureParticipantName(team)} recent form`} className="league-form-strip">{formGameweekNumbers(allFixtures, targetGameweek).map((gameweek, index) => <FormPointBlock entry={gameweek === null ? null : formEntryForTeam(team.id, gameweek, allFixtures)} key={`${gameweek ?? 'empty'}-${index}`} />)}</span>;
 }
 
 function FormRowSummary({ allFixtures, awayTeam, homeTeam, targetGameweek }: { allFixtures: LeagueFixture[]; awayTeam: LeagueTeam; homeTeam: LeagueTeam; targetGameweek: number }) {

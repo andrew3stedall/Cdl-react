@@ -1311,9 +1311,13 @@
 }
 
 .league-gameweek-fixture--spotlight {
+  align-content: center;
   background: color-mix(in srgb, var(--primary) 7%, var(--surface));
   border-color: color-mix(in srgb, var(--primary) 70%, var(--border));
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary) 14%, transparent), 0 0.55rem 1.4rem color-mix(in srgb, var(--primary) 8%, transparent);
+  box-sizing: border-box;
+  height: 8.4rem;
+  min-height: 8.4rem;
 }
 
 .league-gameweek-fixture__topline {

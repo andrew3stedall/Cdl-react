@@ -347,8 +347,8 @@
 .squad-page__chip-toggle .chip-icon {
   color: var(--squad-text);
   display: block;
-  height: 1.35rem;
-  width: 1.35rem;
+  height: 1.75rem;
+  width: 1.75rem;
 }
 
 .squad-page__chip-toggle.is-active {

@@ -1269,8 +1269,8 @@ function ChipGlyph({ chip }: { chip: TeamSelectionChip }) {
   if (name.includes('dual')) return <ChipIcon variant="dual-captain" />;
   if (name.includes('bench')) return <ChipIcon variant="bench-boost" />;
   if (name.includes('auto')) return <ChipIcon variant="auto-captain" />;
-  if (name.includes('best')) return <Trophy aria-hidden="true" size={18} />;
-  return <WandSparkles aria-hidden="true" size={18} />;
+  if (name.includes('best')) return <Trophy aria-hidden="true" className="chip-icon" size={18} />;
+  return <WandSparkles aria-hidden="true" className="chip-icon" size={18} />;
 }
 
 function SoccerPitchIcon() {

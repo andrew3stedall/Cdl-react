@@ -673,7 +673,7 @@ describe('LeaguePage', () => {
     });
 
     expect(container.querySelector('[aria-label="Notifications"][role="dialog"]')?.textContent).toContain('Fixture update');
-    expect(container.querySelector('.league-page__notification-count')?.textContent).toBe('1');
+    expect(container.querySelector('.cdl-page-hero__notification-count')?.textContent).toBe('1');
     act(() => root.unmount());
   });
 });

@@ -273,6 +273,15 @@ textarea:focus-visible {
   padding: clamp(1rem, 2.4vw, 1.5rem);
 }
 
+/* Main pages share the same canvas as Squad and League. Their cards provide
+   the surface contrast; the page itself should not introduce another tint. */
+.feature-screen {
+  background: var(--background);
+  border: 0;
+  border-radius: 0;
+  color: var(--foreground);
+}
+
 .feature-screen > * {
   min-width: 0;
 }

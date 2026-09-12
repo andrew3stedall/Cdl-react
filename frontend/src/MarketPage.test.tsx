@@ -70,9 +70,11 @@ describe('MarketPage', () => {
   test('frames discovery around evidence and action rather than squad management', async () => {
     const { container } = await renderPage();
 
-    expect(container.querySelector('h1')?.textContent).toBe('Find your next move');
+    expect(container.querySelector('h1')?.textContent).toBe('Market');
     expect(container.textContent).toContain('Official FPL evidence');
     expect(container.textContent).toContain('Casey Midfielder');
+    expect(container.querySelector('.cdl-page-hero__view-toggle')).not.toBeNull();
+    expect(container.querySelector('button[aria-label="Discovery"]')?.getAttribute('aria-pressed')).toBe('true');
     expect(container.textContent).not.toContain('Squad management');
     expect(container.querySelector('[aria-label="Market actions"]')).toBeNull();
     expect(container.textContent).not.toContain('Find an upgrade');

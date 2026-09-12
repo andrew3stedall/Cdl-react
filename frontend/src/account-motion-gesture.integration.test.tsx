@@ -44,8 +44,8 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('account motion navigation', () => {
-  test('opens Account after two alternating forward/back cycles from another page', async () => {
+describe('profile motion navigation', () => {
+  test('opens Profile after two alternating forward/back cycles from another page', async () => {
     const addEventListener = vi.spyOn(window, 'addEventListener');
     const container = document.createElement('div');
     document.body.append(container);
@@ -65,7 +65,7 @@ describe('account motion navigation', () => {
       await Promise.resolve();
     });
 
-    expect(container.querySelector('main[aria-labelledby="account-title"]')).not.toBeNull();
+    expect(container.querySelector('main[aria-labelledby="profile-title"]')).not.toBeNull();
   });
 
   test('does not add a listener when the shortcut is disabled', async () => {
@@ -86,7 +86,7 @@ describe('account motion navigation', () => {
       await Promise.resolve();
     });
 
-    expect(container.querySelector('main[aria-labelledby="account-title"]')).toBeNull();
+    expect(container.querySelector('main[aria-labelledby="profile-title"]')).toBeNull();
     expect(container.textContent).toContain('Rules Knowledge Base');
   });
 });

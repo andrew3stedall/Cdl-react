@@ -211,10 +211,12 @@ describe('ManagerDeskPage', () => {
       await Promise.resolve();
     });
 
-    expect(container.querySelector('h1')?.textContent).toBe('Gaffers Desk');
+    expect(container.querySelector('h1')?.textContent).toBe('Team');
     expect(container.textContent).not.toContain('Manager workspace');
     expect(container.textContent).not.toContain('Good to see you, Alex');
-    expect(container.querySelector('.cdl-page-hero h1')?.textContent).toBe('Gaffers Desk');
+    expect(container.querySelector('.cdl-page-hero h1')?.textContent).toBe('Team');
+    expect(container.querySelector('.cdl-page-hero__context')).toBeNull();
+    expect(container.querySelector('button[aria-label="Team"]')?.getAttribute('aria-pressed')).toBe('true');
     expect(container.querySelector('.cdl-page-hero .manager-account-menu')).not.toBeNull();
     expect(container.textContent).toContain('Review your starting XI');
     expect(container.textContent).toContain('Check squad availability');
@@ -225,7 +227,7 @@ describe('ManagerDeskPage', () => {
     expect(container.textContent).not.toContain('Refresh data');
     expect(container.querySelector('[aria-label="Account settings"]')).toBeNull();
     expect(container.querySelector('[aria-label="Account menu for Alex Manager"]')).not.toBeNull();
-    expect(container.querySelector('[aria-label="Account menu"]')?.textContent).toContain('Account');
+    expect(container.querySelector('[aria-label="Account menu"]')?.textContent).toContain('Profile');
 
     const teamButton = [...container.querySelectorAll<HTMLButtonElement>('button')]
       .find((button) => button.textContent?.includes('Review team'));
@@ -380,14 +382,14 @@ describe('ManagerDeskPage', () => {
     });
 
     expect(accountMenu?.open).toBe(true);
-    expect(accountMenu?.querySelector('button')?.textContent).toContain('Account');
+    expect(accountMenu?.querySelector('button')?.textContent).toContain('Profile');
     expect(accountMenu?.textContent).toContain('Sign out');
     expect(accountMenu?.textContent).not.toContain('Result colours');
 
     await act(async () => {
       accountMenu?.querySelector<HTMLButtonElement>('button')?.click();
     });
-    expect(destinations).toContain('/account');
+    expect(destinations).toContain('/profile');
 
     await act(async () => {
       [...(accountMenu?.querySelectorAll<HTMLButtonElement>('button') ?? [])]

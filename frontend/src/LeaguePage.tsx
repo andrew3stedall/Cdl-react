@@ -1,6 +1,5 @@
 import { type CSSProperties, type ReactNode, type RefObject, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
-  Bell,
   CalendarDays,
   CircleAlert,
   Clock3,
@@ -19,7 +18,7 @@ import type { FixtureGameweekStatus, FixtureSquadView } from './components/fixtu
 import { managerNicknameForTeam } from './manager-nicknames';
 import { PlayerChartDetailDialog } from './components/player/PlayerChartDetailDialog';
 import { TeamCrest } from './components/team/TeamCrest';
-import { PageHero } from './components/ui/page-hero';
+import { PageHero, PageHeroControls, PageHeroNotificationButton, PageHeroViewToggle } from './components/ui/page-hero';
 import type { AttackDirection } from './contracts';
 import {
   formDetailSections,
@@ -226,28 +225,25 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
     <main aria-labelledby="league-title" className="league-page">
       <PageHero
         actions={(
-          <div aria-label="League utilities" className="league-page__hero-icons">
-            <div aria-label="League view" className="league-page__view-toggle" role="group">
-              <button aria-label="View fixtures" aria-pressed={view === 'fixtures'} onClick={() => setView('fixtures')} title="Fixtures" type="button">
-                <CalendarDays aria-hidden="true" size={18} />
-                <span>Fixtures</span>
-              </button>
-              <button aria-label="View table" aria-pressed={view === 'table'} onClick={() => setView('table')} title="Table" type="button">
-                <Table2 aria-hidden="true" size={18} />
-                <span>Table</span>
-              </button>
-            </div>
-            <div className="league-page__notifications">
-              <button aria-expanded={notificationsOpen} aria-label={`Notifications${notifications.length ? `, ${notifications.length} unread` : ''}`} className="league-page__icon-button" onClick={() => setNotificationsOpen((open) => !open)} title="Notifications" type="button">
-                <Bell aria-hidden="true" size={20} />
-                {notifications.length ? <span className="league-page__notification-count">{notifications.length}</span> : null}
-              </button>
-              {notificationsOpen ? <NotificationPopover notifications={notifications} onNavigate={onNavigate} /> : null}
-            </div>
-          </div>
+          <PageHeroControls>
+            <PageHeroViewToggle
+              ariaLabel="League view"
+              onChange={(nextView) => setView(nextView as LeagueView)}
+              options={[
+                { ariaLabel: 'View fixtures', value: 'fixtures', label: 'Fixtures', icon: <CalendarDays aria-hidden="true" size={18} /> },
+                { ariaLabel: 'View table', value: 'table', label: 'Table', icon: <Table2 aria-hidden="true" size={18} /> },
+              ]}
+              value={view}
+            />
+            <PageHeroNotificationButton
+              notifications={notifications.map((notification) => ({ id: notification.id, title: notification.title, message: notification.message, actionHref: notification.action_href }))}
+              onNavigate={onNavigate}
+              onToggle={() => setNotificationsOpen((open) => !open)}
+              open={notificationsOpen}
+            />
+          </PageHeroControls>
         )}
         actionsLabel="League utilities"
-        context={snapshot?.currentFixtures.gameweek?.name ?? 'Competition workspace'}
         title="League"
         titleId="league-title"
       />
@@ -1317,10 +1313,6 @@ function FixtureScoringSummary({ detail, fixture, gameweekState }: { detail: Fix
 
 function SectionHeading({ action, eyebrow, id, title }: { action?: ReactNode; eyebrow: string; id?: string; title: string }) {
   return <header className="league-section-heading"><div><p className="eyebrow">{eyebrow}</p><h2 id={id}>{title}</h2></div>{action ? <div>{action}</div> : null}</header>;
-}
-
-function NotificationPopover({ notifications, onNavigate }: { notifications: SquadApiNotification[]; onNavigate: (href: string) => void }) {
-  return <div aria-label="Notifications" className="league-page__notifications-popover" role="dialog"><div className="league-page__notifications-heading"><strong>Notifications</strong><span>{notifications.length}</span></div>{notifications.length === 0 ? <p className="league-page__empty-copy">You are all caught up.</p> : notifications.map((notification) => <a href={notification.action_href} key={notification.id} className="league-page__notification" onClick={(event) => { event.preventDefault(); onNavigate(notification.action_href); }}><strong>{notification.title}</strong><span>{notification.message}</span></a>)}</div>;
 }
 
 function StatusBadge({ status }: { status: LeagueFixture['status'] }) {

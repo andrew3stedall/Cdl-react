@@ -15,20 +15,21 @@ export interface NavigationSection {
 }
 
 const accountNavigationItem: NavigationItem = {
-  label: 'Account',
-  href: '/account',
+  label: 'Profile',
+  href: '/profile',
   featureKey: 'account',
-  description: 'Account details, appearance, pitch orientation and session controls',
+  description: 'Profile details, appearance, pitch orientation and session controls',
 };
 
 const squadRouteAliases = ['/squad', '/squad-management', '/team-selection'];
+const teamRouteAliases = ['/', '/team', '/dashboard'];
 
 export const primaryNavigationItems: NavigationItem[] = [
   {
-    label: 'Desk',
-    href: '/dashboard',
+    label: 'Team',
+    href: '/team',
     featureKey: 'dashboard',
-    description: 'Priorities, deadlines and actions that need attention',
+    description: 'Your team, fixture, league position and priorities',
   },
   {
     label: 'Squad',
@@ -66,8 +67,20 @@ export function isSquadRoute(path: string): boolean {
   return squadRouteAliases.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
 }
 
+export function isTeamRoute(path: string): boolean {
+  return teamRouteAliases.some((prefix) => path === prefix || (prefix !== '/' && path.startsWith(`${prefix}/`)));
+}
+
+export function isProfileRoute(path: string): boolean {
+  return path === '/profile' || path.startsWith('/profile/') || path === '/account' || path.startsWith('/account/');
+}
+
 export function isRouteActive(currentPath: string, itemHref: string): boolean {
-  if (currentPath === '/' && itemHref === '/dashboard') {
+  if ((itemHref === '/team' || itemHref === '/dashboard') && isTeamRoute(currentPath)) {
+    return true;
+  }
+
+  if ((itemHref === '/profile' || itemHref === '/account') && isProfileRoute(currentPath)) {
     return true;
   }
 
@@ -116,8 +129,12 @@ export function getNavigationItemByPath(path: string): NavigationItem | undefine
     return primaryNavigationItems[0];
   }
 
-  if (path === '/account' || path.startsWith('/account/') || path === '/profile' || path.startsWith('/profile/')) {
+  if (isProfileRoute(path)) {
     return accountNavigationItem;
+  }
+
+  if (isTeamRoute(path)) {
+    return primaryNavigationItems.find((item) => item.href === '/team');
   }
 
   if (path === '/fdr' || path.startsWith('/fdr/')) {

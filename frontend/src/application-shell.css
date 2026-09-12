@@ -416,6 +416,164 @@
   gap: 0.5rem;
 }
 
+.cdl-page-hero__controls {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  gap: 0.5rem;
+}
+
+.cdl-page-hero__view-toggle {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.8rem;
+  display: grid;
+  grid-auto-columns: minmax(2.25rem, 1fr);
+  grid-auto-flow: column;
+  padding: 0.16rem;
+}
+
+.cdl-page-hero__view-toggle button {
+  align-items: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 0.65rem;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 800;
+  gap: 0.28rem;
+  justify-content: center;
+  min-height: 2.2rem;
+  min-width: 2.25rem;
+  padding: 0 0.5rem;
+  white-space: nowrap;
+}
+
+.cdl-page-hero__view-toggle button[aria-pressed='true'] {
+  background: var(--secondary);
+  border-color: var(--primary);
+  color: var(--foreground);
+}
+
+.cdl-page-hero__view-toggle button[aria-pressed='true'] svg {
+  color: var(--primary);
+}
+
+.cdl-page-hero__view-toggle button:hover:not(:disabled),
+.cdl-page-hero__view-toggle button:focus-visible {
+  border-color: var(--primary);
+  outline: none;
+}
+
+.cdl-page-hero__view-toggle button:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.cdl-page-hero__notifications {
+  position: relative;
+}
+
+.cdl-page-hero__notification-button {
+  align-items: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 0.65rem;
+  color: var(--muted-foreground);
+  cursor: pointer;
+  display: inline-flex;
+  height: 2.55rem;
+  justify-content: center;
+  padding: 0;
+  position: relative;
+  width: 2.55rem;
+}
+
+.cdl-page-hero__notification-button:hover,
+.cdl-page-hero__notification-button:focus-visible {
+  background: var(--secondary);
+  border-color: var(--border);
+  color: var(--primary);
+  outline: none;
+}
+
+.cdl-page-hero__notification-icon {
+  height: 1.35rem;
+  width: 1.35rem;
+}
+
+.cdl-page-hero__notification-count {
+  align-items: center;
+  background: var(--primary);
+  border-radius: 999px;
+  color: var(--primary-foreground);
+  display: inline-flex;
+  font-size: 0.5rem;
+  font-weight: 850;
+  height: 1rem;
+  justify-content: center;
+  min-width: 1rem;
+  padding: 0 0.16rem;
+  position: absolute;
+  right: -0.15rem;
+  top: -0.15rem;
+}
+
+.cdl-page-hero__notifications-popover {
+  background: var(--popover);
+  border: 1px solid var(--primary);
+  border-radius: 0.75rem;
+  display: grid;
+  gap: 0.45rem;
+  min-width: min(18rem, calc(100vw - 2rem));
+  padding: 0.7rem;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.55rem);
+  z-index: 20;
+}
+
+.cdl-page-hero__notifications-heading {
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  padding-bottom: 0.45rem;
+}
+
+.cdl-page-hero__notifications-heading span,
+.cdl-page-hero__empty-copy {
+  color: var(--muted-foreground);
+  font-size: 0.62rem;
+  margin: 0;
+}
+
+.cdl-page-hero__notification {
+  border-bottom: 1px solid var(--border);
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.45rem 0;
+  text-decoration: none;
+}
+
+.cdl-page-hero__notification:last-child {
+  border-bottom: 0;
+}
+
+.cdl-page-hero__notification strong {
+  color: var(--foreground);
+  font-size: 0.68rem;
+}
+
+.cdl-page-hero__notification span {
+  color: var(--muted-foreground);
+  font-size: 0.62rem;
+  line-height: 1.35;
+}
+
 @media (max-width: 1100px) {
   .app-shell {
     grid-template-columns: 13.5rem minmax(0, 1fr);
@@ -462,6 +620,25 @@
 
   .cdl-page-hero h1 {
     font-size: 1.6rem;
+  }
+
+  .cdl-page-hero__controls {
+    gap: 0.25rem;
+  }
+
+  .cdl-page-hero__view-toggle button {
+    min-width: 2.2rem;
+    padding: 0;
+    width: 2.2rem;
+  }
+
+  .cdl-page-hero__view-toggle button span {
+    display: none;
+  }
+
+  .cdl-page-hero__notification-button {
+    height: 2.45rem;
+    width: 2.45rem;
   }
 
   .cdl-page-hero__context-team,

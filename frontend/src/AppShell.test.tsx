@@ -182,7 +182,7 @@ describe('AppShell integration', () => {
 
     expect(container.querySelector('[aria-current="page"]')?.textContent).toContain('Rules');
     expect(container.textContent).toContain('Rules Knowledge Base');
-    expect(primaryNavigation?.textContent).toContain('Desk');
+    expect(primaryNavigation?.textContent).toContain('Team');
     expect(primaryNavigation?.textContent).toContain('Squad');
     expect(primaryNavigation?.textContent).toContain('Market');
     expect(primaryNavigation?.textContent).toContain('League');
@@ -195,7 +195,7 @@ describe('AppShell integration', () => {
     expect(container.querySelector('button[aria-label="Menu"]')).toBeNull();
   });
 
-  test('places account controls on the Managers Desk surface', async () => {
+  test('places profile controls on the Team surface', async () => {
     const { container } = renderApp({ initialPath: '/' });
 
     await act(async () => {
@@ -206,7 +206,7 @@ describe('AppShell integration', () => {
     expect(container.querySelector('[aria-label="Account settings"]')).toBeNull();
     expect(container.querySelector('[aria-label="Account menu for Test Manager"]')).not.toBeNull();
     expect(container.querySelector('#manager-desk-visual-preset')).toBeNull();
-    expect(container.textContent).toContain('Account');
+    expect(container.textContent).toContain('Profile');
     expect(container.textContent).not.toContain('Profile & preferences');
     expect(container.textContent).not.toContain('Refresh data');
     expect(container.textContent).toContain('Sign out');
@@ -220,7 +220,7 @@ describe('AppShell integration', () => {
       accountButton?.click();
       await Promise.resolve();
     });
-    expect(container.querySelector('main[aria-labelledby="account-title"]')).not.toBeNull();
+    expect(container.querySelector('main[aria-labelledby="profile-title"]')).not.toBeNull();
     expect(container.querySelector('.profile-page')?.textContent).not.toContain('Refresh data');
   });
 
@@ -294,7 +294,7 @@ describe('AppShell integration', () => {
       await Promise.resolve();
     });
 
-    expect(container.querySelector('h1')?.textContent).toBe('Account');
+    expect(container.querySelector('h1')?.textContent).toBe('Profile');
     expect(container.textContent).not.toContain('Profile & preferences');
     expect(container.textContent).toContain('Test Manager');
     expect(container.querySelector('.profile-page')?.textContent).not.toContain('Refresh data');

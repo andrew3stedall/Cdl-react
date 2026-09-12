@@ -1,0 +1,55 @@
+/* Keep the selected gameweek fully opaque. The carousel tween should fade only
+   neighbouring cards, never the active fixture content itself. */
+.league-gameweek-carousel__slide[aria-current='true'] .league-gameweek-slide__content {
+  opacity: 1 !important;
+}
+
+/* Match the featured fixture treatment used on Gaffers Desk: the tint is the
+   card background, with all content rendered normally above it. */
+.league-gameweek-fixture--spotlight {
+  background: color-mix(in srgb, var(--primary) 7%, var(--surface));
+  border-color: color-mix(in srgb, var(--primary) 78%, var(--border));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary) 24%, transparent),
+    0 0 1.1rem color-mix(in srgb, var(--primary) 13%, transparent);
+  height: auto;
+  min-height: 8.4rem;
+}
+
+.league-gameweek-fixture--spotlight .league-gameweek-team,
+.league-gameweek-fixture--spotlight .league-gameweek-fixture__centre {
+  opacity: 1;
+}
+
+/* Desk uses clear result colours rather than washed-out foreground mixes. */
+.league-form-point--w {
+  background: color-mix(in srgb, var(--primary) 10%, var(--surface));
+  border-color: color-mix(in srgb, var(--primary) 74%, var(--border));
+  color: var(--primary);
+}
+
+.league-form-point--l {
+  background: color-mix(in srgb, var(--destructive) 9%, var(--surface));
+  border-color: color-mix(in srgb, var(--destructive) 68%, var(--border));
+  color: var(--destructive);
+}
+
+.league-form-point--d {
+  background: color-mix(in srgb, var(--muted-foreground) 9%, var(--surface));
+  border-color: color-mix(in srgb, var(--muted-foreground) 48%, var(--border));
+  color: var(--foreground);
+}
+
+.league-gameweek-team__record {
+  color: var(--muted-foreground);
+  font-size: 0.62rem;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.league-gameweek-fixture-row .league-gameweek-team__record {
+  font-size: 0.5rem;
+}
+
+.league-gameweek-fixture-row {
+  min-height: 5.75rem;
+}

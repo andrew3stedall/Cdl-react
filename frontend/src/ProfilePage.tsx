@@ -16,7 +16,7 @@ import {
   Palette,
   Smartphone,
   Trash2,
-  Users,
+  LampDesk,
   UserRound,
   X,
 } from 'lucide-react';
@@ -345,12 +345,12 @@ export function ProfilePage({ currentPath, onNavigate, session, squadClient = de
         actions={(
           <PageHeroControls>
             <PageHeroViewToggle
-              ariaLabel="Team and profile"
+              ariaLabel="Desk and profile"
               onChange={(nextPage) => {
-                if (nextPage === 'team') onNavigate('/team');
+                if (nextPage === 'desk') onNavigate('/dashboard');
               }}
               options={[
-                { value: 'team', label: 'Team', icon: <Users aria-hidden="true" size={17} /> },
+                { value: 'desk', label: 'Desk', icon: <LampDesk aria-hidden="true" size={17} /> },
                 { value: 'profile', label: 'Profile', icon: <UserRound aria-hidden="true" size={17} /> },
               ]}
               value="profile"

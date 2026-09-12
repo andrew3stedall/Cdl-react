@@ -5,6 +5,7 @@ import {
   getActiveContextItem,
   getContextNavigation,
   getNavigationItemByPath,
+  isDeskRoute,
   isPrimaryNavigationItemActive,
   isRouteActive,
   isSquadRoute,
@@ -15,7 +16,7 @@ import {
 describe('navigation configuration', () => {
   test('uses the four global manager destinations', () => {
     expect(primaryNavigationItems.map((item) => item.label)).toEqual([
-      'Team',
+      'Desk',
       'Squad',
       'Market',
       'League',
@@ -47,8 +48,9 @@ describe('navigation configuration', () => {
   test('detects active nested routes and the root home alias', () => {
     expect(isRouteActive('/league', '/league')).toBe(true);
     expect(isRouteActive('/rules', '/league')).toBe(false);
-    expect(isRouteActive('/', '/team')).toBe(true);
     expect(isRouteActive('/', '/dashboard')).toBe(true);
+    expect(isRouteActive('/team', '/dashboard')).toBe(true);
+    expect(isDeskRoute('/dashboard/analytics')).toBe(true);
   });
 
   test('keeps contextual routes attached to their primary destination', () => {
@@ -64,8 +66,8 @@ describe('navigation configuration', () => {
     expect(marketItem && isPrimaryNavigationItemActive('/fdr', marketItem)).toBe(true);
     expect(squadItem && isPrimaryNavigationItemActive('/team-selection', squadItem)).toBe(true);
     expect(leagueItem && isPrimaryNavigationItemActive('/league/fixtures', leagueItem)).toBe(true);
-    const teamItem = primaryNavigationItems.find((item) => item.href === '/team');
-    expect(teamItem && isPrimaryNavigationItemActive('/dashboard', teamItem)).toBe(true);
+    const deskItem = primaryNavigationItems.find((item) => item.href === '/dashboard');
+    expect(deskItem && isPrimaryNavigationItemActive('/dashboard', deskItem)).toBe(true);
   });
 
   test('does not expose a second League navigation surface', () => {
@@ -78,8 +80,8 @@ describe('navigation configuration', () => {
     expect(getNavigationItemByPath('/squad')?.label).toBe('Squad');
     expect(getNavigationItemByPath('/squad-management')?.label).toBe('Squad');
     expect(getNavigationItemByPath('/team-selection')?.label).toBe('Squad');
-    expect(getNavigationItemByPath('/')?.label).toBe('Team');
-    expect(getNavigationItemByPath('/team')?.label).toBe('Team');
+    expect(getNavigationItemByPath('/')?.label).toBe('Desk');
+    expect(getNavigationItemByPath('/team')?.label).toBe('Desk');
     expect(getNavigationItemByPath('/account')?.label).toBe('Profile');
     expect(getNavigationItemByPath('/profile')?.label).toBe('Profile');
     expect(getNavigationItemByPath('/modernisation/checkpoint-1')).toBeUndefined();

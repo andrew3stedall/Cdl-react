@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { Gauge, Search, ShieldCheck, Users } from 'lucide-react';
+import { Gauge, LampDesk, Search, ShieldCheck, Users } from 'lucide-react';
 
 import {
   isPrimaryNavigationItemActive,
@@ -14,7 +14,7 @@ interface GlobalNavigationProps {
 }
 
 const navigationIcons: Record<string, LucideIcon> = {
-  dashboard: Gauge,
+  dashboard: LampDesk,
   'squad-management': Users,
   scouting: Search,
   league: ShieldCheck,

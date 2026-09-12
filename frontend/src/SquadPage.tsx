@@ -1082,7 +1082,7 @@ export function SquadPage({
       ) : null}
 
       <nav aria-label="Squad mobile navigation" className="squad-page__mobile-nav">
-        <a href="/team" onClick={(event) => navigateInternally(event, '/team')}><Home size={19} /><span>Team</span></a>
+        <a href="/" onClick={(event) => navigateInternally(event, '/')}><Home size={19} /><span>Desk</span></a>
         <a aria-current="page" href="/squad-management" onClick={(event) => navigateInternally(event, '/squad-management')}><Shield size={19} /><span>Squad</span></a>
         <a href="/scouting" onClick={(event) => navigateInternally(event, '/scouting')}><Search size={19} /><span>Market</span></a>
         <a href="/team-selection" onClick={(event) => navigateInternally(event, '/team-selection')}><CalendarDays size={19} /><span>Matchweek</span></a>

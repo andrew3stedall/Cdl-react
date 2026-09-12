@@ -211,12 +211,12 @@ describe('ManagerDeskPage', () => {
       await Promise.resolve();
     });
 
-    expect(container.querySelector('h1')?.textContent).toBe('Team');
+    expect(container.querySelector('h1')?.textContent).toBe('Gaffers Desk');
     expect(container.textContent).not.toContain('Manager workspace');
     expect(container.textContent).not.toContain('Good to see you, Alex');
-    expect(container.querySelector('.cdl-page-hero h1')?.textContent).toBe('Team');
+    expect(container.querySelector('.cdl-page-hero h1')?.textContent).toBe('Gaffers Desk');
     expect(container.querySelector('.cdl-page-hero__context')).toBeNull();
-    expect(container.querySelector('button[aria-label="Team"]')?.getAttribute('aria-pressed')).toBe('true');
+    expect(container.querySelector('button[aria-label="Desk"]')?.getAttribute('aria-pressed')).toBe('true');
     expect(container.querySelector('.cdl-page-hero .manager-account-menu')).not.toBeNull();
     expect(container.textContent).toContain('Review your starting XI');
     expect(container.textContent).toContain('Check squad availability');

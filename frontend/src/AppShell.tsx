@@ -7,6 +7,7 @@ import {
   ChevronDown,
   ClipboardList,
   Gauge,
+  LampDesk,
   LogOut,
   ArrowRightLeft,
   Search,
@@ -41,7 +42,7 @@ interface AppShellProps {
 }
 
 const navigationIcons: Record<string, LucideIcon> = {
-  dashboard: Gauge,
+  dashboard: LampDesk,
   'squad-management': Users,
   scouting: Search,
   fdr: BarChart3,
@@ -68,7 +69,7 @@ export function AppShell({
   const contextNavigation = getContextNavigation(currentPath);
   const activePage = getNavigationItemByPath(currentPath) ?? primaryNavigationItems[0];
   const displayName = managerNicknameForName(session.user?.displayName) ?? 'Authenticated user';
-  const isTeamLandingPage = currentPath === '/' || currentPath === '/team' || currentPath === '/dashboard';
+  const isDeskLandingPage = currentPath === '/' || currentPath === '/team' || currentPath === '/dashboard';
   const initials = displayName
     .split(/\s+/)
     .filter(Boolean)
@@ -128,7 +129,7 @@ export function AppShell({
               <BookOpen aria-hidden="true" size={18} />
             </a>
 
-            {!isTeamLandingPage ? (
+            {!isDeskLandingPage ? (
               <details className="account-menu">
                 <summary aria-label={`Account menu for ${displayName}`}>
                   <span className="account-avatar" aria-hidden="true">{initials}</span>

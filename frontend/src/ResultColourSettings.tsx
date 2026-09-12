@@ -120,7 +120,7 @@ function ResultColourPreview({ colours }: { colours: ResultColourPalette }) {
   return (
     <div aria-label="Result colour preview" className="result-colour-preview">
       <div className="result-colour-preview__header">
-        <strong>Gaffers Desk preview</strong>
+        <strong>Team preview</strong>
         <small>{getResultColourPaletteLabel(colours)}</small>
       </div>
       <div className="result-colour-preview__scores">

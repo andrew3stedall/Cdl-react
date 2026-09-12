@@ -16,8 +16,7 @@ import {
 
 import { Button } from './components/ui/button';
 import { FormDots, PlayerCard, type PlayerCardPlayer } from './components/player/PlayerCard';
-import { TeamCrest } from './components/team/TeamCrest';
-import { PageHero } from './components/ui/page-hero';
+import { PageHero, PageHeroControls, PageHeroNotificationButton, PageHeroViewToggle } from './components/ui/page-hero';
 import type { ThemePreset } from './contracts';
 import { availabilityIssueLabel, hasAvailabilityIssue } from './player-availability';
 import type { SquadApiPlayer } from './squad-api';
@@ -108,6 +107,15 @@ interface ApiScoutingResponse {
   players: SquadApiPlayer[];
 }
 
+interface ApiNotificationsResponse {
+  notifications?: Array<{
+    id: string;
+    title: string;
+    message: string;
+    action_href?: string | null;
+  }>;
+}
+
 const positionOptions: Array<{ label: string; value: PositionFilter }> = [
   { label: 'All positions', value: 'all' },
   { label: 'Goalkeepers', value: 'GKP' },
@@ -138,7 +146,8 @@ export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps)
   const [interests, setInterests] = useState<InterestView[]>([]);
   const [trades, setTrades] = useState<TradeView[]>([]);
   const [managerTeam, setManagerTeam] = useState('Your team');
-  const [gameweek, setGameweek] = useState('Current gameweek');
+  const [notifications, setNotifications] = useState<ApiNotificationsResponse['notifications']>([]);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [positionFilter, setPositionFilter] = useState<PositionFilter>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
@@ -169,25 +178,27 @@ export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps)
         fetchJson<ApiScoutingResponse>('/api/scouting/players'),
         fetchJson<ApiInterest[]>('/api/interests'),
         fetchJson<{ trades?: ApiTrade[] }>('/api/trades'),
+        fetchJson<ApiNotificationsResponse>('/api/squad/notifications'),
       ]);
       if (!active) return;
 
-      const [summaryResult, scoutingResult, interestsResult, tradesResult] = results;
+      const [summaryResult, scoutingResult, interestsResult, tradesResult, notificationsResult] = results;
       const errors: string[] = [];
       const summary = getFulfilled(summaryResult, 'squad context', errors);
       const scouting = getFulfilled(scoutingResult, 'player pool', errors);
       const interestPayload = getFulfilled(interestsResult, 'Interests', errors);
       const tradePayload = getFulfilled(tradesResult, 'trade activity', errors);
+      const notificationPayload = getFulfilled(notificationsResult, 'notifications', errors);
 
       if (summary) {
         setManagerTeam(summary.manager_team.name);
-        setGameweek(summary.gameweek.name);
       }
       if (scouting) setPlayers(scouting.players.map(mapPlayer));
       if (interestPayload) setInterests(interestPayload.map(mapInterest));
       if (tradePayload) setTrades((tradePayload.trades ?? []).map(mapTrade));
+      if (notificationPayload) setNotifications(notificationPayload.notifications ?? []);
       setLoading(false);
-      if (errors.length === 4) {
+      if (errors.length === 5) {
         setError('Market data is temporarily unavailable. Try again from the shell reload control.');
       } else if (errors.length > 0) {
         setNotice(`Market loaded with ${errors.join(' and ')} unavailable.`);
@@ -318,14 +329,27 @@ export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps)
     <main aria-labelledby="market-page-title" className="feature-screen market-page" data-density={preset.tokens.density}>
       <PageHero
         actions={(
-          <div aria-label="Market context" className="market-page__context">
-            <TeamCrest className="market-page__team-mark" team={{ name: managerTeam }} />
-            <div><strong>{managerTeam}</strong></div>
-          </div>
+          <PageHeroControls>
+            <PageHeroViewToggle
+              ariaLabel="Market workspace sections"
+              onChange={(nextMode) => selectMode(nextMode as MarketMode)}
+              options={[
+                { value: 'discover', label: 'Discovery', icon: <Search aria-hidden="true" size={17} /> },
+                { value: 'interests', label: 'Interests', icon: <Bookmark aria-hidden="true" size={17} /> },
+                { value: 'trades', label: 'Trades', icon: <ArrowRightLeft aria-hidden="true" size={17} /> },
+              ]}
+              value={mode}
+            />
+            <PageHeroNotificationButton
+              notifications={(notifications ?? []).map((notification) => ({ id: notification.id, title: notification.title, message: notification.message, actionHref: notification.action_href }))}
+              onNavigate={onNavigate}
+              onToggle={() => setNotificationsOpen((open) => !open)}
+              open={notificationsOpen}
+            />
+          </PageHeroControls>
         )}
-        actionsLabel="Market team context"
-        context={gameweek}
-        title="Find your next move"
+        actionsLabel="Market utilities"
+        title="Market"
         titleId="market-page-title"
       />
 
@@ -343,11 +367,6 @@ export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps)
             <p className="eyebrow">Market workspace</p>
             <h2 id="market-workspace-title">{modeTitle(mode)}</h2>
             <p>{modeDescription(mode)}</p>
-          </div>
-          <div aria-label="Market workspace sections" className="market-page__tabs" role="tablist">
-            <WorkspaceTab active={mode === 'discover'} label="Discovery" onSelect={() => selectMode('discover')} />
-            <WorkspaceTab active={mode === 'interests'} label="Interests" onSelect={() => selectMode('interests')} />
-            <WorkspaceTab active={mode === 'trades'} label="Trades" onSelect={() => selectMode('trades')} />
           </div>
         </header>
 
@@ -557,10 +576,6 @@ function PlayerDrawer({ drawerRef, history, historyStatus, interest, managerTeam
   return (
     <div className="market-page__drawer-layer"><button aria-label="Close player details" className="market-page__drawer-backdrop" onClick={onClose} type="button" /><aside aria-labelledby="market-player-detail-title" aria-modal="true" className="market-page__drawer" ref={drawerRef} role="dialog" tabIndex={-1}><span aria-hidden="true" className="market-page__sheet-handle" /><header className="market-page__drawer-header"><PlayerCard formPosition="hidden" layout="token" player={toPlayerCardPlayer(player)} showOpponent={false} showPositionMarker={false} size="lg" /><div><p className="eyebrow">Player evidence</p><h2 id="market-player-detail-title">{player.displayName}</h2><span>{positionLabel(player.position)} · {player.club}</span></div><button aria-label="Close player details" className="market-page__icon-button" onClick={onClose} type="button"><X aria-hidden="true" size={19} /></button></header><section aria-label="Player metrics" className="market-page__detail-metrics"><Metric label="Total points" value={formatInteger(player.points)} /><Metric dots label="Form" value={player.form} /><Metric label="xG" value={formatMetric(player.xg)} /><Metric label="xA" value={formatMetric(player.xa)} /><Metric label="Value" value={player.value === null ? '—' : `£${player.value.toFixed(1)}m`} /><Metric label="Selected" value={player.selectedPercent === null ? '—' : `${formatMetric(player.selectedPercent)}%`} /></section><section className="market-page__drawer-section"><h3>Next fixture</h3><p>{formatFixture(player)}{player.nextDifficulty === null ? '' : ` · FDR ${player.nextDifficulty}`}</p></section><section className="market-page__drawer-section"><h3>Availability</h3><p>{issue ? issue : 'No current availability flag from official FPL data.'}{player.availabilityNews ? ` ${player.availabilityNews}` : ''}</p></section><section className="market-page__drawer-section"><h3>Recent FPL history</h3>{historyStatus ? <p role="status">{historyStatus}</p> : null}{history?.history.length ? <div aria-label="Recent FPL gameweek history" className="market-page__history"><table><thead><tr><th>GW</th><th>Pts</th><th>Min</th><th>xG</th><th>xA</th></tr></thead><tbody>{history.history.slice(-5).reverse().map((row) => <tr key={row.gameweek}><td>{row.gameweek}</td><td><strong>{row.total_points}</strong></td><td>{row.minutes}</td><td>{row.expected_goals.toFixed(2)}</td><td>{row.expected_assists.toFixed(2)}</td></tr>)}</tbody></table></div> : null}{history && history.history.length === 0 ? <p>No completed gameweek history is available.</p> : null}</section><footer className="market-page__drawer-actions">{status === 'owned' ? <Button onClick={() => { onClose(); onNavigate('/squad'); }} type="button"><Users aria-hidden="true" size={16} />View in Squad</Button> : null}{status === 'interested' && interest ? <Button disabled={pendingAction === interest.id} onClick={() => void onRemoveInterest(interest)} type="button" variant="secondary">{pendingAction === interest.id ? 'Removing…' : 'Remove Interest'}</Button> : null}{status !== 'owned' && status !== 'interested' ? <Button disabled={pendingAction === player.id} onClick={onAddInterest} type="button"><Star aria-hidden="true" size={16} />{pendingAction === player.id ? 'Adding…' : 'Add to Interests'}</Button> : null}<Button onClick={onClose} type="button" variant="ghost">Close</Button></footer></aside></div>
   );
-}
-
-function WorkspaceTab({ active, label, onSelect }: { active: boolean; label: string; onSelect: () => void }) {
-  return <button aria-selected={active} className={`market-page__tab${active ? ' is-active' : ''}`} onClick={onSelect} role="tab" type="button">{label}</button>;
 }
 
 function EmptyActivity({ action, description, icon, onAction, title }: { action: string; description: string; icon: ReactNode; onAction: () => void; title: string }) {

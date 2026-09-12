@@ -68,7 +68,7 @@ export function AppShell({
   const contextNavigation = getContextNavigation(currentPath);
   const activePage = getNavigationItemByPath(currentPath) ?? primaryNavigationItems[0];
   const displayName = managerNicknameForName(session.user?.displayName) ?? 'Authenticated user';
-  const isManagersDesk = currentPath === '/' || currentPath === '/dashboard';
+  const isTeamLandingPage = currentPath === '/' || currentPath === '/team' || currentPath === '/dashboard';
   const initials = displayName
     .split(/\s+/)
     .filter(Boolean)
@@ -128,7 +128,7 @@ export function AppShell({
               <BookOpen aria-hidden="true" size={18} />
             </a>
 
-            {!isManagersDesk ? (
+            {!isTeamLandingPage ? (
               <details className="account-menu">
                 <summary aria-label={`Account menu for ${displayName}`}>
                   <span className="account-avatar" aria-hidden="true">{initials}</span>
@@ -142,13 +142,13 @@ export function AppShell({
                   </div>
                   <Button
                     onClick={() => {
-                      onNavigate('/account');
+                      onNavigate('/profile');
                     }}
                     type="button"
                     variant="secondary"
                   >
                     <UserRound aria-hidden="true" size={16} />
-                    Account
+                    Profile
                   </Button>
                   <Button onClick={signOut} type="button" variant="ghost">
                     <LogOut aria-hidden="true" size={16} />

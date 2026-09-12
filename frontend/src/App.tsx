@@ -428,7 +428,7 @@ function AccountMotionNavigation({
   useAccountMotionGesture({
     enabled: accountMotionGestureEnabled,
     onTrigger: () => {
-      if (currentPath !== '/account') onNavigate('/account');
+      if (currentPath !== '/profile') onNavigate('/profile');
     },
   });
 
@@ -474,7 +474,7 @@ function AppRouteContent({
   );
 
   if (currentPath.startsWith('/account') || currentPath.startsWith('/profile')) {
-    routeContent = <ProfilePage currentPath={currentPath} onNavigate={onNavigate} session={activeSession} />;
+    routeContent = <ProfilePage currentPath={currentPath} onNavigate={onNavigate} session={activeSession} squadClient={squadClient} />;
   }
 
   if (currentPath === '/account/result-colours' || currentPath === '/profile/result-colours') {
@@ -513,7 +513,7 @@ function AppRouteContent({
     routeContent = <AnalyticsDashboardPage dashboardClient={dashboardClient} />;
   }
 
-  if (currentPath === '/dashboard' || currentPath === '/') {
+  if (currentPath === '/dashboard' || currentPath === '/team' || currentPath === '/') {
     routeContent = (
       <ManagerDeskPage
         deskClient={managerDeskClient}

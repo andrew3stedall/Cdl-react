@@ -35,9 +35,9 @@ export function ManagerAccountSection({
           <span>Signed in</span>
         </div>
         <div className="manager-account-menu__actions">
-          <Button onClick={() => onNavigate('/account')} type="button" variant="secondary">
+          <Button onClick={() => onNavigate('/profile')} type="button" variant="secondary">
             <UserRound aria-hidden="true" size={17} />
-            Account
+            Profile
           </Button>
           <Button onClick={onSignOut} type="button" variant="ghost">
             <LogOut aria-hidden="true" size={17} />

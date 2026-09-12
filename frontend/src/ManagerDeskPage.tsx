@@ -13,13 +13,14 @@ import {
   Star,
   Timer,
   Users,
+  UserRound,
   Zap,
 } from 'lucide-react';
 
 import { Button } from './components/ui/button';
 import { Card } from './components/ui/card';
 import { TeamCrest } from './components/team/TeamCrest';
-import { PageHero } from './components/ui/page-hero';
+import { PageHero, PageHeroControls, PageHeroNotificationButton, PageHeroViewToggle } from './components/ui/page-hero';
 import type { SessionState } from './contracts';
 import type { LeagueClient, LeagueFixture, LeagueTableRow } from './league-api';
 import { HttpLeagueClient } from './league-api';
@@ -72,6 +73,7 @@ export function ManagerDeskPage({
   const [loadState, setLoadState] = useState<LoadState>({ data: null, errors: [], loading: true });
   const [reloadRequest, setReloadRequest] = useState(0);
   const [now, setNow] = useState(() => Date.now());
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const legacyClientsSupplied = Boolean(leagueClient || squadClient || teamSelectionClient);
 
   useEffect(() => {
@@ -116,13 +118,33 @@ export function ManagerDeskPage({
   );
 
   return (
-    <main aria-labelledby="manager-desk-title" className="feature-screen manager-desk">
+    <main aria-labelledby="team-title" className="feature-screen manager-desk">
       <PageHero
-        actions={<ManagerAccountSection onNavigate={onNavigate} onSignOut={onSignOut} session={session} />}
-        actionsLabel="Desk account actions"
-        context={data?.gameweek.name ?? 'Manager workspace'}
-        title="Gaffers Desk"
-        titleId="manager-desk-title"
+        actions={(
+          <PageHeroControls>
+            <PageHeroViewToggle
+              ariaLabel="Team and profile"
+              onChange={(nextPage) => {
+                if (nextPage === 'profile') onNavigate('/profile');
+              }}
+              options={[
+                { value: 'team', label: 'Team', icon: <Users aria-hidden="true" size={17} /> },
+                { value: 'profile', label: 'Profile', icon: <UserRound aria-hidden="true" size={17} /> },
+              ]}
+              value="team"
+            />
+            <PageHeroNotificationButton
+              notifications={notifications.map((notification) => ({ id: notification.id, title: notification.title, message: notification.message, actionHref: notification.action_href }))}
+              onNavigate={onNavigate}
+              onToggle={() => setNotificationsOpen((open) => !open)}
+              open={notificationsOpen}
+            />
+            <ManagerAccountSection onNavigate={onNavigate} onSignOut={onSignOut} session={session} />
+          </PageHeroControls>
+        )}
+        actionsLabel="Team utilities"
+        title="Team"
+        titleId="team-title"
       />
 
       {errors.length > 0 ? (

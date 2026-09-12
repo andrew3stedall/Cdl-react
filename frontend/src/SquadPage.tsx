@@ -3,7 +3,6 @@ import {
   ArrowDown,
   ArrowDownUp,
   ArrowRightLeft,
-  Bell,
   CalendarClock,
   CalendarDays,
   ChevronDown,
@@ -30,7 +29,7 @@ import {
 } from 'lucide-react';
 
 import { Button } from './components/ui/button';
-import { PageHero } from './components/ui/page-hero';
+import { PageHero, PageHeroControls, PageHeroNotificationButton, PageHeroViewToggle } from './components/ui/page-hero';
 import { FormDots, PlayerCard, type PlayerCardPlayer, formBand } from './components/player/PlayerCard';
 import type { AttackDirection, ThemePreset } from './contracts';
 import { availabilityChance, getAvailabilityIssue, hasAvailabilityIssue } from './player-availability';
@@ -324,7 +323,6 @@ export function SquadPage({
   const [proposedTradeCount, setProposedTradeCount] = useState(0);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [managerTeam, setManagerTeam] = useState<TeamRef>({ id: '', name: 'Current team', shortName: '' });
-  const [gameweek, setGameweek] = useState('Gameweek');
   const [lineupAvailable, setLineupAvailable] = useState(false);
   const [teamSelection, setTeamSelection] = useState<TeamSelectionSnapshot | null>(null);
   const [lineupDirty, setLineupDirty] = useState(false);
@@ -391,7 +389,6 @@ export function SquadPage({
             ?? normalizedLineup?.managerTeam.name
             ?? '',
         });
-        setGameweek(normalizedLineup?.gameweek.name ?? summary?.gameweek.name ?? 'Gameweek');
         setProposedTradeCount(workspace?.notifications.proposed_trade_count ?? 0);
         setNotifications(workspace?.notifications.notifications ?? []);
         setStagedAdditionIds(new Set());
@@ -798,66 +795,25 @@ export function SquadPage({
     <main aria-labelledby="squad-title" className="squad-page" data-density={preset.tokens.density}>
       <PageHero
         actions={(
-          <div aria-label="Squad utilities" className="squad-page__hero-icons">
-            <div aria-label="Squad view" className="squad-page__view-toggle" role="group">
-              <button
-                aria-label="View as pitch"
-                aria-pressed={squadView === 'pitch'}
-                disabled={!lineupAvailable}
-                onClick={() => setSquadView('pitch')}
-                title="Pitch view"
-                type="button"
-              >
-                <SoccerPitchIcon />
-              </button>
-              <button
-                aria-label="View as list"
-                aria-pressed={squadView === 'list'}
-                onClick={() => setSquadView('list')}
-                title="List view"
-                type="button"
-              >
-                <List aria-hidden="true" size={18} />
-              </button>
-            </div>
-            <div className="squad-page__notifications">
-              <button
-                aria-expanded={notificationsOpen}
-                aria-label={`Notifications${notifications.length ? `, ${notifications.length} unread` : ''}`}
-                className="squad-page__icon-button"
-                onClick={() => setNotificationsOpen((open) => !open)}
-                title="Notifications"
-                type="button"
-              >
-                <Bell size={20} />
-                {notifications.length ? <span className="squad-page__notification-count">{notifications.length}</span> : null}
-              </button>
-              {notificationsOpen ? (
-                <div aria-label="Notifications" className="squad-page__notifications-popover" role="dialog">
-                  <div className="squad-page__notifications-heading"><strong>Notifications</strong><span>{notifications.length}</span></div>
-                  {notifications.length === 0 ? <p className="squad-page__empty-copy">You are all caught up.</p> : notifications.map((notification) => (
-                    <a
-                      href={notification.action_href}
-                      key={notification.id}
-                      className="squad-page__notification"
-                      onClick={(event) => navigateInternally(event, notification.action_href)}
-                    >
-                      <strong>{notification.title}</strong><span>{notification.message}</span>
-                    </a>
-                  ))}
-                </div>
-              ) : null}
-            </div>
-          </div>
+          <PageHeroControls>
+            <PageHeroViewToggle
+              ariaLabel="Squad view"
+              onChange={(nextView) => setSquadView(nextView as SquadView)}
+              options={[
+                { ariaLabel: 'View as pitch', value: 'pitch', label: 'Pitch', disabled: !lineupAvailable, icon: <SoccerPitchIcon /> },
+                { ariaLabel: 'View as list', value: 'list', label: 'List', icon: <List aria-hidden="true" size={18} /> },
+              ]}
+              value={squadView}
+            />
+            <PageHeroNotificationButton
+              notifications={notifications.map((notification) => ({ id: notification.id, title: notification.title, message: notification.message, actionHref: notification.action_href }))}
+              onNavigate={onNavigate ?? (() => undefined)}
+              onToggle={() => setNotificationsOpen((open) => !open)}
+              open={notificationsOpen}
+            />
+          </PageHeroControls>
         )}
         actionsLabel="Squad utilities"
-        context={(
-          <>
-            <span className="cdl-page-hero__context-team">{managerTeam.name}</span>
-            <span aria-hidden="true" className="cdl-page-hero__context-separator">·</span>
-            <span>{gameweek}</span>
-          </>
-        )}
         title="Squad"
         titleId="squad-title"
       />
@@ -1126,7 +1082,7 @@ export function SquadPage({
       ) : null}
 
       <nav aria-label="Squad mobile navigation" className="squad-page__mobile-nav">
-        <a href="/" onClick={(event) => navigateInternally(event, '/')}><Home size={19} /><span>Desk</span></a>
+        <a href="/team" onClick={(event) => navigateInternally(event, '/team')}><Home size={19} /><span>Team</span></a>
         <a aria-current="page" href="/squad-management" onClick={(event) => navigateInternally(event, '/squad-management')}><Shield size={19} /><span>Squad</span></a>
         <a href="/scouting" onClick={(event) => navigateInternally(event, '/scouting')}><Search size={19} /><span>Market</span></a>
         <a href="/team-selection" onClick={(event) => navigateInternally(event, '/team-selection')}><CalendarDays size={19} /><span>Matchweek</span></a>

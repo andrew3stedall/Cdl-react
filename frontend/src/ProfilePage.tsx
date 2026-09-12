@@ -16,6 +16,8 @@ import {
   Palette,
   Smartphone,
   Trash2,
+  Users,
+  UserRound,
   X,
 } from 'lucide-react';
 
@@ -64,6 +66,8 @@ import { getPasskeyStatus, registerPasskey, type PasskeyStatus } from './passkey
 import { SensorMazeGame } from './SensorMazeGame';
 import { getResultColourPaletteLabel } from './result-colours';
 import { managerNicknameForName } from './manager-nicknames';
+import { HttpSquadClient, type SquadApiNotification, type SquadClient } from './squad-api';
+import { PageHero, PageHeroControls, PageHeroNotificationButton, PageHeroViewToggle } from './components/ui/page-hero';
 import { ResultColourSummaryPreview } from './ResultColourSettings';
 import './profile-page.css';
 
@@ -71,9 +75,12 @@ interface ProfilePageProps {
   currentPath: string;
   onNavigate: (href: string) => void;
   session: SessionState;
+  squadClient?: Pick<SquadClient, 'getNotifications'>;
 }
 
-export function ProfilePage({ currentPath, onNavigate, session }: ProfilePageProps) {
+const defaultProfileSquadClient = new HttpSquadClient();
+
+export function ProfilePage({ currentPath, onNavigate, session, squadClient = defaultProfileSquadClient }: ProfilePageProps) {
   const {
     attackDirection,
     fdrDisplayMode,
@@ -121,6 +128,8 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
   const [passkeyMessage, setPasskeyMessage] = useState<string | null>(null);
   const [motionPermissionState, setMotionPermissionState] = useState<MotionPermissionState | null>(null);
   const [isSensorMazeOpen, setIsSensorMazeOpen] = useState(false);
+  const [notifications, setNotifications] = useState<SquadApiNotification[]>([]);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const isAccountSummary = currentPath === '/account' || currentPath === '/profile';
   const isAppearancePage = currentPath === '/account/appearance' || currentPath === '/profile/appearance';
   const isFdrPage = currentPath === '/account/fdr' || currentPath === '/profile/fdr';
@@ -144,6 +153,23 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
       active = false;
     };
   }, [isAccountSummary]);
+
+  useEffect(() => {
+    if (!isAccountSummary) return undefined;
+
+    let active = true;
+    void squadClient.getNotifications()
+      .then((response) => {
+        if (active) setNotifications(response.notifications ?? []);
+      })
+      .catch(() => {
+        if (active) setNotifications([]);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [isAccountSummary, squadClient]);
 
   useEffect(() => {
     if (!isFdrScaleSheetOpen && !isPositionScaleSheetOpen && !isMetricScaleSheetOpen && !isSensorMazeOpen) return undefined;
@@ -211,7 +237,7 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
   if (isAppearancePage) {
     return (
       <main aria-labelledby="account-settings-title" className="feature-screen profile-page profile-page--subpage">
-        <SettingsPageHeader onBack={() => onNavigate('/account')} title="Visual preset" />
+        <SettingsPageHeader onBack={() => onNavigate('/profile')} title="Visual preset" />
         <AppearanceSettingsCard
           preset={preset}
           saveStatus={saveStatus}
@@ -226,7 +252,7 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
   if (isFdrPage) {
     return (
       <main aria-labelledby="account-settings-title" className="feature-screen profile-page profile-page--subpage">
-        <SettingsPageHeader onBack={() => onNavigate('/account')} title="FDR colour scale" />
+        <SettingsPageHeader onBack={() => onNavigate('/profile')} title="FDR colour scale" />
         <FdrSettingsCard
           customFdrAnchors={customFdrAnchors}
           fdrDisplayMode={fdrDisplayMode}
@@ -262,7 +288,7 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
   if (isOrientationPage) {
     return (
       <main aria-labelledby="account-settings-title" className="feature-screen profile-page profile-page--subpage">
-        <SettingsPageHeader onBack={() => onNavigate('/account')} title="Attacking orientation" />
+        <SettingsPageHeader onBack={() => onNavigate('/profile')} title="Attacking orientation" />
         <PitchSettingsCard attackDirection={attackDirection} onSetAttackDirection={setAttackDirection} />
       </main>
     );
@@ -271,7 +297,7 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
   if (isPositionColoursPage) {
     return (
       <main aria-labelledby="account-settings-title" className="feature-screen profile-page profile-page--subpage">
-        <SettingsPageHeader onBack={() => onNavigate('/account')} title="Position colours" />
+        <SettingsPageHeader onBack={() => onNavigate('/profile')} title="Position colours" />
         <PositionColourSettingsCard
           customPalettes={customPlayerColourPalettes}
           isScaleSheetOpen={isPositionScaleSheetOpen}
@@ -293,7 +319,7 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
   if (isMetricColoursPage) {
     return (
       <main aria-labelledby="account-settings-title" className="feature-screen profile-page profile-page--subpage">
-        <SettingsPageHeader onBack={() => onNavigate('/account')} title="Metric colours" />
+        <SettingsPageHeader onBack={() => onNavigate('/profile')} title="Metric colours" />
         <MetricColourSettingsCard
           customPalettes={customPlayerColourPalettes}
           isScaleSheetOpen={isMetricScaleSheetOpen}
@@ -314,10 +340,34 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
   }
 
   return (
-    <main aria-labelledby="account-title" className="feature-screen profile-page profile-page--summary">
-      <header className="profile-page__header">
-        <p className="eyebrow">Account</p>
-        <h1 id="account-title">Account</h1>
+    <main aria-labelledby="profile-title" className="feature-screen profile-page profile-page--summary">
+      <PageHero
+        actions={(
+          <PageHeroControls>
+            <PageHeroViewToggle
+              ariaLabel="Team and profile"
+              onChange={(nextPage) => {
+                if (nextPage === 'team') onNavigate('/team');
+              }}
+              options={[
+                { value: 'team', label: 'Team', icon: <Users aria-hidden="true" size={17} /> },
+                { value: 'profile', label: 'Profile', icon: <UserRound aria-hidden="true" size={17} /> },
+              ]}
+              value="profile"
+            />
+            <PageHeroNotificationButton
+              notifications={notifications.map((notification) => ({ id: notification.id, title: notification.title, message: notification.message, actionHref: notification.action_href }))}
+              onNavigate={onNavigate}
+              onToggle={() => setNotificationsOpen((open) => !open)}
+              open={notificationsOpen}
+            />
+          </PageHeroControls>
+        )}
+        actionsLabel="Profile utilities"
+        title="Profile"
+        titleId="profile-title"
+      />
+      <header className="profile-page__header profile-page__header--description">
         <p>Manage your identity, workspace appearance, player colours, result colours, pitch orientation, and FDR colours.</p>
       </header>
 
@@ -361,7 +411,7 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
           <div className="profile-card__header">
             <div>
               <p className="profile-card__eyebrow">Quick account access</p>
-              <h2>Shake to open Account</h2>
+              <h2>Shake to open Profile</h2>
             </div>
             <Smartphone aria-hidden="true" className="profile-appearance-icon" size={22} />
           </div>
@@ -372,7 +422,7 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
               <small>{accountMotionGestureEnabled ? 'Enabled on this device' : 'Disabled on this device'}</small>
             </span>
             <input
-              aria-label="Enable shake to open Account"
+              aria-label="Enable shake to open Profile"
               checked={accountMotionGestureEnabled}
               onChange={(event) => handleMotionGestureToggle(event.target.checked)}
               type="checkbox"
@@ -404,7 +454,7 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
 
         <ProfileSummaryCard
           ariaLabel="Open workspace appearance settings"
-          onSelect={() => onNavigate('/account/appearance')}
+          onSelect={() => onNavigate('/profile/appearance')}
         >
           <div className="profile-card__header">
             <div>
@@ -420,7 +470,7 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
 
         <ProfileSummaryCard
           ariaLabel="Open player position colour settings"
-          onSelect={() => onNavigate('/account/player-positions')}
+          onSelect={() => onNavigate('/profile/player-positions')}
         >
           <div className="profile-card__header">
             <div>
@@ -435,7 +485,7 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
 
         <ProfileSummaryCard
           ariaLabel="Open player metric colour settings"
-          onSelect={() => onNavigate('/account/player-metrics')}
+          onSelect={() => onNavigate('/profile/player-metrics')}
         >
           <div className="profile-card__header">
             <div>
@@ -450,7 +500,7 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
 
         <ProfileSummaryCard
           ariaLabel="Open result colour settings"
-          onSelect={() => onNavigate('/account/result-colours')}
+          onSelect={() => onNavigate('/profile/result-colours')}
         >
           <div className="profile-card__header">
             <div>
@@ -465,7 +515,7 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
 
         <ProfileSummaryCard
           ariaLabel="Open FDR colour scale settings"
-          onSelect={() => onNavigate('/account/fdr')}
+          onSelect={() => onNavigate('/profile/fdr')}
         >
           <div className="profile-card__header">
             <div>
@@ -490,7 +540,7 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
 
         <ProfileSummaryCard
           ariaLabel={`Current attacking orientation: attack ${attackDirection === 'up' ? 'upwards' : 'downwards'}. Open settings.`}
-          onSelect={() => onNavigate('/account/orientation')}
+          onSelect={() => onNavigate('/profile/orientation')}
         >
           <div className="profile-card__header">
             <div>
@@ -535,9 +585,9 @@ function SettingsPageHeader({ onBack, title }: { onBack: () => void; title: stri
     <header className="profile-page__header profile-page__header--subpage">
       <button className="profile-subpage-back" onClick={onBack} type="button">
         <ArrowLeft aria-hidden="true" size={17} />
-        Account
+        Profile
       </button>
-      <p className="eyebrow">Account</p>
+      <p className="eyebrow">Profile</p>
       <h1 id="account-settings-title">{title}</h1>
     </header>
   );

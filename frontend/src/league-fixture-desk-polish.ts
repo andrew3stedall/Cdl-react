@@ -3,7 +3,6 @@ import { managerNicknameForTeam } from './manager-nicknames';
 type ApiTeam = {
   id: string;
   name: string;
-  short_name?: string | null;
   manager_name?: string | null;
 };
 
@@ -79,7 +78,6 @@ async function loadLeagueRecords(): Promise<void> {
       const nickname = managerNicknameForTeam({
         id: row.team.id,
         name: row.team.name,
-        shortName: row.team.short_name ?? undefined,
         managerName: row.team.manager_name ?? undefined,
       });
       return [normalise(nickname), `${row.wins}W ${row.draws}D ${row.losses}L`];

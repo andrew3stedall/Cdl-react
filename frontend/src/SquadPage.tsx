@@ -11,10 +11,8 @@ import {
   CircleX,
   CircleMinus,
   CirclePlus,
-  Crown,
   Filter,
   Home,
-  Layers,
   List,
   LockKeyhole,
   Repeat2,
@@ -23,12 +21,12 @@ import {
   Shield,
   SlidersHorizontal,
   Trophy,
-  Users,
   WandSparkles,
   X,
 } from 'lucide-react';
 
 import { Button } from './components/ui/button';
+import { ChipIcon } from './components/chips/ChipIcon';
 import { PageHero, PageHeroControls, PageHeroNotificationButton, PageHeroViewToggle } from './components/ui/page-hero';
 import { FormDots, PlayerCard, type PlayerCardPlayer, formBand } from './components/player/PlayerCard';
 import type { AttackDirection, ThemePreset } from './contracts';
@@ -1267,11 +1265,11 @@ function ChipToggle({ chip, disabled, onToggle }: { chip: TeamSelectionChip; dis
 
 function ChipGlyph({ chip }: { chip: TeamSelectionChip }) {
   const name = `${chip.id} ${chip.name}`.toLowerCase();
-  if (name.includes('bench')) return <Layers aria-hidden="true" size={18} />;
-  if (name.includes('dual')) return <Users aria-hidden="true" size={18} />;
-  if (name.includes('auto')) return <CircleCheck aria-hidden="true" size={18} />;
+  if (name.includes('triple')) return <ChipIcon variant="triple-captain" />;
+  if (name.includes('dual')) return <ChipIcon variant="dual-captain" />;
+  if (name.includes('bench')) return <ChipIcon variant="bench-boost" />;
+  if (name.includes('auto')) return <ChipIcon variant="auto-captain" />;
   if (name.includes('best')) return <Trophy aria-hidden="true" size={18} />;
-  if (name.includes('captain')) return <Crown aria-hidden="true" size={18} />;
   return <WandSparkles aria-hidden="true" size={18} />;
 }
 

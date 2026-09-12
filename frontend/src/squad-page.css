@@ -343,6 +343,13 @@
   color: var(--squad-text);
 }
 
+.squad-page__chip-toggle .chip-icon {
+  color: var(--squad-text);
+  display: block;
+  height: 1.35rem;
+  width: 1.35rem;
+}
+
 .squad-page__chip-toggle.is-active {
   background: var(--secondary);
   border-color: var(--squad-border-strong);

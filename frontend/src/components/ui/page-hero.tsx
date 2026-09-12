@@ -26,7 +26,7 @@ interface PageHeroProps {
 
 export function PageHero({ actions, actionsLabel, context, title, titleId }: PageHeroProps) {
   return (
-    <header className="cdl-page-hero">
+    <header className="cdl-page-hero" data-page-hero="shared">
       <div className="cdl-page-hero__brand-lockup">
         <span aria-hidden="true" className="cdl-page-hero__brand-mark"><Shield size={25} /></span>
         <div className="cdl-page-hero__copy">

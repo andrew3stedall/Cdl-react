@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 
 import { App } from './App';
+import { registerLeagueFixtureDeskPolish } from './league-fixture-desk-polish';
 import { registerPwaServiceWorker } from './pwa';
 import type { SessionState } from './contracts';
 import {
@@ -19,6 +20,7 @@ import './login-page.css';
 import './squad-page-a11y.css';
 import './manager-desk-fixture-layout.css';
 import './result-colours.css';
+import './league-fixture-desk-polish.css';
 
 function getInitialPath() {
   const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, '');
@@ -32,6 +34,7 @@ function getInitialPath() {
 }
 
 registerPwaServiceWorker();
+registerLeagueFixtureDeskPolish();
 
 const staticPreviewSession: SessionState = {
   isAuthenticated: true,

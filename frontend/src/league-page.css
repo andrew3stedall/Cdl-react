@@ -366,13 +366,12 @@
   align-items: center;
   display: flex;
   gap: 0.75rem;
-  justify-content: space-between;
-  min-height: 1.2rem;
-  padding: 0 0.1rem 0.3rem;
-}
-
-.league-gameweek-carousel__header .eyebrow {
-  margin: 0;
+  min-height: 1.45rem;
+  padding: 0;
+  position: absolute;
+  right: 0.7rem;
+  top: 0.7rem;
+  z-index: 1;
 }
 
 .league-gameweek-carousel__dots {
@@ -1307,6 +1306,12 @@
 .league-gameweek-fixture--finished {
   border-color: color-mix(in srgb, var(--border) 85%, var(--muted-foreground));
   box-shadow: none;
+}
+
+.league-gameweek-fixture--spotlight {
+  background: color-mix(in srgb, var(--primary) 7%, var(--surface));
+  border-color: color-mix(in srgb, var(--primary) 70%, var(--border));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--primary) 14%, transparent), 0 0.55rem 1.4rem color-mix(in srgb, var(--primary) 8%, transparent);
 }
 
 .league-gameweek-fixture__topline {

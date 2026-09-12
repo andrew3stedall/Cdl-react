@@ -12,14 +12,12 @@ import {
   ShieldAlert,
   ShieldCheck,
   Star,
-  Timer,
   Users,
   UserRound,
   Zap,
 } from 'lucide-react';
 
 import { Button } from './components/ui/button';
-import { Card } from './components/ui/card';
 import { TeamCrest } from './components/team/TeamCrest';
 import { PageHero, PageHeroControls, PageHeroNotificationButton, PageHeroViewToggle } from './components/ui/page-hero';
 import type { SessionState } from './contracts';
@@ -190,13 +188,39 @@ export function ManagerDeskPage({
             )}
           </div>
         </>
-      ) : loading ? (
-        <Card className="manager-desk__loading" role="status">
-          <Timer aria-hidden="true" size={20} />
-          <span>Loading your manager desk…</span>
-        </Card>
-      ) : null}
+      ) : loading ? <ManagerDeskLoadingState /> : null}
     </main>
+  );
+}
+
+function ManagerDeskLoadingState() {
+  return (
+    <div aria-label="Loading manager desk" className="manager-desk__loading-state" role="status">
+      <section className="manager-desk__loading-surface manager-desk__loading-surface--fixture">
+        <div className="manager-desk__loading-topline">
+          <span className="manager-desk__loading-line manager-desk__loading-line--short" />
+          <span className="manager-desk__loading-line manager-desk__loading-line--tiny" />
+        </div>
+        <div className="manager-desk__loading-matchup">
+          <span className="manager-desk__loading-badge" />
+          <span className="manager-desk__loading-score" />
+          <span className="manager-desk__loading-badge manager-desk__loading-badge--small" />
+        </div>
+        <div className="manager-desk__loading-insights">
+          <span className="manager-desk__loading-line" />
+          <span className="manager-desk__loading-line" />
+          <span className="manager-desk__loading-line" />
+        </div>
+      </section>
+      <section className="manager-desk__loading-surface manager-desk__loading-surface--priority">
+        <span className="manager-desk__loading-line manager-desk__loading-line--short" />
+        <span className="manager-desk__loading-line" />
+      </section>
+      <div className="manager-desk__loading-support-grid">
+        <span className="manager-desk__loading-surface" />
+        <span className="manager-desk__loading-surface" />
+      </div>
+    </div>
   );
 }
 

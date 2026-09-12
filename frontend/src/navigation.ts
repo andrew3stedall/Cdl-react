@@ -26,6 +26,19 @@ const squadRouteAliases = ['/squad', '/squad-management', '/team-selection'];
 // landing-page rollout. The product destination is still the Desk.
 const deskRouteAliases = ['/', '/dashboard', '/team'];
 
+export type PageRouteKey =
+  | 'desk'
+  | 'squad'
+  | 'market'
+  | 'league'
+  | 'profile'
+  | 'result-colours'
+  | 'rules'
+  | 'modernisation'
+  | 'analytics'
+  | 'fdr'
+  | 'player-profile';
+
 export const primaryNavigationItems: NavigationItem[] = [
   {
     label: 'Desk',
@@ -75,6 +88,27 @@ export function isDeskRoute(path: string): boolean {
 
 export function isProfileRoute(path: string): boolean {
   return path === '/profile' || path.startsWith('/profile/') || path === '/account' || path.startsWith('/account/');
+}
+
+/**
+ * Returns the stable page identity used by the shell and the in-memory route
+ * cache. Nested paths within a page intentionally share one identity so that
+ * changing a view does not throw away the page's loaded data and local state.
+ */
+export function getPageRouteKey(path: string): PageRouteKey {
+  if (path === '/account/result-colours' || path === '/profile/result-colours') {
+    return 'result-colours';
+  }
+  if (path.startsWith('/account') || path.startsWith('/profile')) return 'profile';
+  if (path.startsWith('/rules')) return 'rules';
+  if (path.startsWith('/league')) return 'league';
+  if (path.startsWith('/modernisation/')) return 'modernisation';
+  if (path.startsWith('/dashboard/analytics') || path.startsWith('/analytics')) return 'analytics';
+  if (path.startsWith('/fdr')) return 'fdr';
+  if (path.startsWith('/scouting')) return 'market';
+  if (/^\/players\/[^/]+$/.test(path)) return 'player-profile';
+  if (isSquadRoute(path)) return 'squad';
+  return 'desk';
 }
 
 export function isRouteActive(currentPath: string, itemHref: string): boolean {

@@ -2526,17 +2526,17 @@
 }
 
 @media (max-width: 780px) {
-  .shell-main:has(.squad-page) {
+  .shell-main[data-active-route='squad'] {
     background: var(--squad-bg);
   }
 
-  .shell-main:has(.squad-page) > .shell-header,
-  .shell-main:has(.squad-page) > .context-navigation,
-  .shell-main:has(.squad-page) > .context-navigation-strip {
+  .shell-main[data-active-route='squad'] > .shell-header,
+  .shell-main[data-active-route='squad'] > .context-navigation,
+  .shell-main[data-active-route='squad'] > .context-navigation-strip {
     display: none;
   }
 
-  .shell-main:has(.squad-page) > .shell-content {
+  .shell-main[data-active-route='squad'] > .shell-content {
     background: var(--squad-bg);
     max-width: none;
     padding: 0 0 calc(2rem + var(--cdl-mobile-navigation-clearance));

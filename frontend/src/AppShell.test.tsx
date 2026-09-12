@@ -6,6 +6,7 @@ import { App } from './App';
 import type { SessionState, UserPreferences } from './contracts';
 import { officialFplShirtUrl } from './fpl-shirt-assets';
 import type { LeagueClient, LeagueSnapshot } from './league-api';
+import type { ManagerDeskClient, ManagerDeskSnapshot } from './manager-desk-api';
 import type { FdrCustomPalette } from './fdr-colour-scales';
 import type { FdrCustomPaletteDraft, PreferenceClient } from './preferences-api';
 import type { PlayerColourPalette } from './player-colour-scales';
@@ -142,11 +143,13 @@ class MemoryLeagueClient implements LeagueClient {
 function renderApp({
   preferenceClient = new MemoryPreferenceClient(),
   initialPath = '/dashboard',
+  managerDeskClient,
   session = authenticatedSession,
   leagueClient = new MemoryLeagueClient(),
 }: {
   preferenceClient?: PreferenceClient;
   initialPath?: string;
+  managerDeskClient?: ManagerDeskClient;
   session?: SessionState;
   leagueClient?: LeagueClient;
 } = {}) {
@@ -159,6 +162,7 @@ function renderApp({
       <App
         initialPath={initialPath}
         leagueClient={leagueClient}
+        managerDeskClient={managerDeskClient}
         preferenceClient={preferenceClient}
         session={session}
       />,
@@ -239,6 +243,137 @@ describe('AppShell integration', () => {
     expect(container.textContent).toContain('Gameweek 12');
     expect(container.textContent).toContain('CAS');
     expect(container.textContent).not.toContain('Overview stays lightweight');
+  });
+
+  test('takes control of initial scroll restoration before async content arrives', () => {
+    const previousScrollTo = window.scrollTo;
+    const previousScrollRestoration = window.history.scrollRestoration;
+    const scrollTo = vi.fn();
+    window.scrollTo = scrollTo;
+
+    try {
+      const { root } = renderApp({ initialPath: '/dashboard' });
+
+      expect(window.history.scrollRestoration).toBe('manual');
+      expect(scrollTo).toHaveBeenCalledWith({ behavior: 'auto', left: 0, top: 0 });
+      root.unmount();
+      expect(window.history.scrollRestoration).toBe(previousScrollRestoration);
+    } finally {
+      window.scrollTo = previousScrollTo;
+      window.history.scrollRestoration = previousScrollRestoration;
+    }
+  });
+
+  test('keeps a loaded page mounted when navigating away and back', async () => {
+    const leagueClient = new MemoryLeagueClient();
+    const getLeagueSnapshot = vi.spyOn(leagueClient, 'getLeagueSnapshot');
+    const managerDeskClient: ManagerDeskClient = {
+      getDesk: vi.fn(async () => {
+        throw new Error('Desk is not part of this test.');
+      }),
+    };
+    const { container, root } = renderApp({ initialPath: '/league', leagueClient, managerDeskClient });
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(getLeagueSnapshot).toHaveBeenCalledTimes(1);
+
+    const deskLink = container.querySelector<HTMLAnchorElement>(
+      'nav[aria-label="Global mobile navigation"] a[href="/dashboard"]',
+    );
+    await act(async () => {
+      deskLink?.click();
+      await Promise.resolve();
+    });
+
+    const leagueLink = container.querySelector<HTMLAnchorElement>(
+      'nav[aria-label="Global mobile navigation"] a[href="/league"]',
+    );
+    await act(async () => {
+      leagueLink?.click();
+      await Promise.resolve();
+    });
+
+    expect(getLeagueSnapshot).toHaveBeenCalledTimes(1);
+    expect(container.querySelectorAll('[data-route-key="league"]')).toHaveLength(1);
+    expect(container.querySelector('[data-route-key="league"]')?.hasAttribute('hidden')).toBe(false);
+    root.unmount();
+  });
+
+  test('returns from Profile to the parsed Desk without reloading it', async () => {
+    const gameweek = { id: 'gw-1', name: 'Gameweek 1', number: 1, deadlineAt: null };
+    const team = { id: 'team-1', name: 'Test Team', shortName: 'TST' };
+    const deskSnapshot: ManagerDeskSnapshot = {
+      context: 'pre_deadline',
+      gameweek,
+      selection: {
+        managerTeam: team,
+        gameweek,
+        players: [],
+        chips: [],
+        fixtureLock: {
+          locked: false,
+          fixtureId: null,
+          fixtureType: null,
+          lockScope: null,
+          lockedAt: null,
+          reason: null,
+        },
+      },
+      squad: {
+        summary: { manager_team: team, gameweek, players: [] },
+        notifications: { notifications: [], proposed_trade_count: 0 },
+      },
+      currentFixture: null,
+      nextFixture: null,
+      currentFixtures: [],
+      nextFixtures: [],
+      recentFixtures: [],
+      formFixtures: [],
+      leagueTable: { source: 'test', rows: [] },
+      availablePlayers: [],
+      drawDeadlineAt: null,
+      interestCount: 0,
+    };
+    const getDesk = vi.fn(async () => deskSnapshot);
+    const { container, root } = renderApp({
+      initialPath: '/dashboard',
+      managerDeskClient: { getDesk },
+    });
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(getDesk).toHaveBeenCalledTimes(1);
+    expect(container.querySelector('.manager-desk__loading-state')).toBeNull();
+
+    const managerMenu = container.querySelector<HTMLDetailsElement>('.manager-account-menu');
+    await act(async () => {
+      managerMenu?.querySelector<HTMLElement>('summary')?.click();
+    });
+    const profileButton = [...(managerMenu?.querySelectorAll<HTMLButtonElement>('button') ?? [])]
+      .find((button) => button.textContent?.includes('Profile'));
+    await act(async () => {
+      profileButton?.click();
+      await Promise.resolve();
+    });
+    expect(container.querySelector('[data-route-key="profile"] .profile-page')).not.toBeNull();
+
+    const deskLink = container.querySelector<HTMLAnchorElement>(
+      'nav[aria-label="Global mobile navigation"] a[href="/dashboard"]',
+    );
+    await act(async () => {
+      deskLink?.click();
+      await Promise.resolve();
+    });
+
+    expect(getDesk).toHaveBeenCalledTimes(1);
+    expect(container.querySelector('[data-route-key="desk"] .manager-desk__loading-state')).toBeNull();
+    expect(container.querySelector('[data-route-key="desk"]')?.hasAttribute('hidden')).toBe(false);
+    root.unmount();
   });
 
   test('hides passkey setup after a device credential is already registered', async () => {

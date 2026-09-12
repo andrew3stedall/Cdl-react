@@ -23,6 +23,7 @@ import {
   getActiveContextItem,
   getContextNavigation,
   getNavigationItemByPath,
+  getPageRouteKey,
   isPrimaryNavigationItemActive,
   isRouteActive,
   primaryNavigationItems,
@@ -102,7 +103,7 @@ export function AppShell({
         </div>
       </aside>
 
-      <main className="shell-main">
+      <main className="shell-main" data-active-route={getPageRouteKey(currentPath)}>
         <header className="shell-header">
           <div className="shell-title-group">
             <div className="shell-heading">

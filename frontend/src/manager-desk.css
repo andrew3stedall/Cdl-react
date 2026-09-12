@@ -573,6 +573,98 @@
   min-height: 3.8rem;
 }
 
+/* Keep the first desk paint close to the loaded geometry. A single generic
+   loading card leaves the fixture, priorities, and support cards to appear
+   later, which is the source of the visible vertical jump on mobile. */
+.manager-desk__loading-state {
+  display: grid;
+  gap: 1rem;
+}
+
+.manager-desk__loading-surface {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  display: block;
+  min-height: 6.5rem;
+  padding: 1rem;
+}
+
+.manager-desk__loading-surface--fixture {
+  display: grid;
+  gap: 1rem;
+  min-height: clamp(18rem, 48vw, 25rem);
+}
+
+.manager-desk__loading-surface--priority {
+  display: grid;
+  gap: 0.75rem;
+  min-height: 7rem;
+}
+
+.manager-desk__loading-topline,
+.manager-desk__loading-insights {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.manager-desk__loading-matchup {
+  align-items: center;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 3rem minmax(5rem, 1fr) 2.6rem;
+  justify-content: center;
+}
+
+.manager-desk__loading-badge {
+  background: var(--secondary);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  display: block;
+  height: 3rem;
+  width: 3rem;
+}
+
+.manager-desk__loading-badge--small {
+  height: 2.6rem;
+  justify-self: end;
+  width: 2.6rem;
+}
+
+.manager-desk__loading-line,
+.manager-desk__loading-score {
+  background: var(--secondary);
+  border-radius: 999px;
+  display: block;
+  height: 0.8rem;
+}
+
+.manager-desk__loading-line--short {
+  width: min(11rem, 42%);
+}
+
+.manager-desk__loading-line--tiny {
+  width: 4.5rem;
+}
+
+.manager-desk__loading-score {
+  height: 2.4rem;
+  justify-self: center;
+  width: min(7rem, 60%);
+}
+
+.manager-desk__loading-insights .manager-desk__loading-line {
+  flex: 1;
+}
+
+.manager-desk__loading-support-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .manager-desk__all-clear {
   color: var(--primary);
 }
@@ -1226,11 +1318,11 @@
 
 
 @media (max-width: 780px) {
-  .shell-main:has(.manager-desk) {
+  .shell-main[data-active-route='desk'] {
     background: var(--background);
   }
 
-  .shell-main:has(.manager-desk) > .shell-content {
+  .shell-main[data-active-route='desk'] > .shell-content {
     background: var(--background);
     max-width: none;
     padding: 0 0 calc(2rem + var(--cdl-mobile-navigation-clearance));

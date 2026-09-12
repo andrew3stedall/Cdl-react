@@ -9,7 +9,7 @@
   padding: clamp(1rem, 2.4vw, 1.65rem) 0 1.65rem;
 }
 
-.shell-main:has(.league-page) {
+.shell-main[data-active-route='league'] {
   overflow-x: clip;
 }
 

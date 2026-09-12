@@ -302,6 +302,50 @@
   width: 100%;
 }
 
+.market-page__table-wrap--loading {
+  min-height: 24rem;
+}
+
+.market-page__loading-row {
+  background: var(--background);
+}
+
+.market-page__loading-row > td {
+  height: 3.25rem;
+}
+
+.market-page__loading-block {
+  background: var(--secondary);
+  border-radius: 999px;
+  display: block;
+  height: 0.75rem;
+  max-width: 100%;
+  width: 4.5rem;
+}
+
+.market-page__loading-block--player {
+  height: 1.85rem;
+  width: min(8rem, 80%);
+}
+
+.market-page__loading-block--number {
+  margin-inline: auto;
+  width: 2rem;
+}
+
+.market-page__loading-block--fixture {
+  width: 5rem;
+}
+
+.market-page__loading-block--status {
+  width: 4rem;
+}
+
+.market-page__loading-block--action {
+  margin-left: auto;
+  width: 2rem;
+}
+
 .market-page__player-table {
   border-collapse: collapse;
   min-width: 46rem;
@@ -825,11 +869,11 @@
 
 
 @media (max-width: 780px) {
-  .shell-main:has(.market-page) {
+  .shell-main[data-active-route='market'] {
     background: var(--background);
   }
 
-  .shell-main:has(.market-page) > .shell-content {
+  .shell-main[data-active-route='market'] > .shell-content {
     background: var(--background);
     max-width: none;
     padding: 0 0 calc(2rem + var(--cdl-mobile-navigation-clearance));

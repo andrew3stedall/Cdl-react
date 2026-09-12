@@ -1,0 +1,60 @@
+/* Shared page frame for every authenticated route. The page content owns the
+   spacing; individual route surfaces must not add a second gutter around the
+   shared PageHero. */
+:root {
+  --cdl-page-gutter: clamp(0.85rem, 2.4vw, 2rem);
+  --cdl-page-top: clamp(0.85rem, 2vw, 1.5rem);
+  --cdl-page-bottom: 2rem;
+  --cdl-page-section-gap: 1rem;
+  --cdl-page-hero-height: 4.2rem;
+}
+
+.shell-main > .shell-content {
+  margin: 0;
+  padding: var(--cdl-page-top) var(--cdl-page-gutter) var(--cdl-page-bottom);
+}
+
+.feature-screen,
+.league-page,
+.squad-page {
+  box-sizing: border-box;
+  gap: var(--cdl-page-section-gap);
+  margin: 0;
+  min-width: 0;
+  padding: 0;
+}
+
+.feature-screen {
+  border: 0;
+  border-radius: 0;
+}
+
+.cdl-page-hero {
+  box-sizing: border-box;
+  gap: 1rem;
+  margin: 0;
+  min-height: var(--cdl-page-hero-height);
+  padding: 0;
+  width: 100%;
+}
+
+@media (max-width: 900px) {
+  /* Match the route-specific shell selectors used by older page styles so
+     every mobile route resolves to this single gutter. */
+  .shell-main[data-active-route] > .shell-content {
+    margin: 0;
+    padding: 0.75rem var(--cdl-page-gutter) calc(2rem + var(--cdl-mobile-navigation-clearance));
+  }
+
+  .feature-screen,
+  .league-page,
+  .squad-page {
+    gap: var(--cdl-page-section-gap);
+    padding: 0;
+  }
+
+  .cdl-page-hero {
+    min-height: 3.8rem;
+    padding: 0;
+  }
+}

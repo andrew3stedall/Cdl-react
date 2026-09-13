@@ -30,6 +30,7 @@ import { ProfilePage } from './ProfilePage';
 import { ResultColourProfilePage } from './ResultColourProfilePage';
 import { loginWithPasskey } from './passkeys';
 import { RulesPage } from './RulesPage';
+import { SessionSplash } from './SessionSplash';
 import { SquadWorkspacePage } from './SquadWorkspacePage';
 import type { SquadClient } from './squad-api';
 import type { TeamSelectionClient } from './team-selection-api';
@@ -342,21 +343,15 @@ export function App({
 
   if (activeSession === null) {
     return (
-      <main className="session-boundary" aria-label="Protected route session state">
-        <h1>Castle Draft League</h1>
-        {sessionCheckError ? (
-          <div className="login-required" role="alert">
-            <p>{sessionCheckError}</p>
-            <button onClick={() => void refreshActiveSession()} type="button">
-              Retry session check
-            </button>
-          </div>
-        ) : (
-          <div className="login-required" role="status">
-            Checking your session…
-          </div>
-        )}
-      </main>
+      <ThemePresetProvider
+        initialPresetName={getStoredThemePreset()}
+        preferenceClient={loginPreferenceClient}
+      >
+        <SessionSplash
+          error={sessionCheckError}
+          onRetry={() => void refreshActiveSession()}
+        />
+      </ThemePresetProvider>
     );
   }
 

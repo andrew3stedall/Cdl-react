@@ -6,12 +6,18 @@ interface ChipIconProps {
 }
 
 /**
- * The chip artwork is deliberately inline SVG so it remains crisp at the
- * compact squad-control size and can follow the app's theme foreground.
- * `currentColor` is the visible mark; surface-coloured details are cut-outs.
+ * The supplied Triple Captain artwork is kept as a public image so its
+ * detailed card composition remains intact at the compact squad-control size.
+ * The remaining chip artwork stays inline SVG so it can follow the theme
+ * foreground. `currentColor` is the visible mark; surface-coloured details
+ * are cut-outs.
  */
 export function ChipIcon({ className = '', variant }: ChipIconProps) {
   const classNames = ['chip-icon', `chip-icon--${variant}`, className].filter(Boolean).join(' ');
+
+  if (variant === 'triple-captain') {
+    return <img alt="" aria-hidden="true" className={classNames} decoding="async" draggable="false" src="/chip-icons/triple-captain-white.png" />;
+  }
 
   return (
     <svg
@@ -21,7 +27,6 @@ export function ChipIcon({ className = '', variant }: ChipIconProps) {
       focusable="false"
       viewBox="0 0 24 24"
     >
-      {variant === 'triple-captain' ? <TripleCaptainIcon /> : null}
       {variant === 'dual-captain' ? <DualCaptainIcon /> : null}
       {variant === 'bench-boost' ? <BenchBoostIcon /> : null}
       {variant === 'auto-captain' ? <AutoCaptainIcon /> : null}
@@ -57,42 +62,6 @@ function CaptainBadge({ label }: { label: 'x2' | 'x3' }) {
         y="16.95"
       >
         {label}
-      </text>
-    </>
-  );
-}
-
-function TripleCaptainIcon() {
-  return (
-    <>
-      <path d="M7.1 4.7 10.1 2.5h3.8l3 2.2 4.05 3.55-2.35 3.2-2.42-1.7v10.1H7.82V9.75l-2.42 1.7-2.35-3.2Z" fill="currentColor" />
-      <path d="M10.1 2.5h1.35v15.35H10.1Zm2.45 0h1.35v15.35h-1.35Z" fill="var(--surface)" opacity=".82" />
-      <path d="M7.1 4.7 10.1 2.5h3.8l3 2.2 4.05 3.55-2.35 3.2-2.42-1.7v10.1H7.82V9.75l-2.42 1.7-2.35-3.2Z" fill="none" stroke="currentColor" strokeLinejoin="round" strokeWidth=".7" />
-      <circle cx="18.55" cy="6.35" fill="currentColor" r="4.05" />
-      <text
-        dominantBaseline="middle"
-        fill="var(--surface)"
-        fontFamily="Arial, Helvetica, sans-serif"
-        fontSize="5.6"
-        fontWeight="800"
-        textAnchor="middle"
-        x="18.55"
-        y="6.45"
-      >
-        C
-      </text>
-      <rect fill="currentColor" height="4.1" rx="2.05" width="9.6" x="7.2" y="18.15" />
-      <text
-        dominantBaseline="middle"
-        fill="var(--surface)"
-        fontFamily="Arial, Helvetica, sans-serif"
-        fontSize="4.7"
-        fontWeight="800"
-        textAnchor="middle"
-        x="12"
-        y="20.25"
-      >
-        x3
       </text>
     </>
   );

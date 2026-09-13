@@ -362,6 +362,13 @@
   width: 1.8rem;
 }
 
+.squad-page__chip-toggle .chip-icon--triple-captain {
+  border-radius: 0.22rem;
+  height: 2.1rem;
+  object-fit: cover;
+  width: 2.1rem;
+}
+
 .squad-page__chip-label {
   color: currentColor;
   display: block;

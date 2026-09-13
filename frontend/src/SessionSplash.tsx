@@ -1,5 +1,7 @@
 import { LoaderCircle, RotateCcw } from 'lucide-react';
+import type { CSSProperties } from 'react';
 
+import { defaultThemeColour } from './theme-colours';
 import './session-splash.css';
 
 interface SessionSplashProps {
@@ -8,8 +10,12 @@ interface SessionSplashProps {
 }
 
 export function SessionSplash({ error, onRetry }: SessionSplashProps) {
+  const splashStyle = {
+    '--session-splash-background': defaultThemeColour,
+  } as CSSProperties;
+
   return (
-    <main aria-label="Castle Draft League loading" className="session-splash">
+    <main aria-label="Castle Draft League loading" className="session-splash" style={splashStyle}>
       <div className="session-splash__halo session-splash__halo--outer" aria-hidden="true" />
       <div className="session-splash__halo session-splash__halo--inner" aria-hidden="true" />
 

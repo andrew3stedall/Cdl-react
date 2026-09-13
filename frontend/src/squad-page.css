@@ -330,8 +330,9 @@
   color: var(--squad-muted);
   cursor: pointer;
   display: inline-flex;
-  height: 3.75rem;
+  height: auto;
   justify-content: center;
+  min-height: 5rem;
   min-width: 0;
   padding: 0.3rem 0.16rem;
   position: relative;
@@ -364,9 +365,10 @@
 
 .squad-page__chip-toggle .chip-icon--triple-captain {
   border-radius: 0.22rem;
-  height: 2.1rem;
+  aspect-ratio: 1;
+  height: auto;
   object-fit: cover;
-  width: 2.1rem;
+  width: 80%;
 }
 
 .squad-page__chip-label {
@@ -379,6 +381,11 @@
   min-height: 1.22em;
   overflow-wrap: anywhere;
   text-align: center;
+}
+
+.squad-page__chip-toggle[data-chip-id='triple-captain'] .squad-page__chip-label {
+  max-width: 3.2rem;
+  white-space: normal;
 }
 
 .squad-page__chip-toggle.is-active {

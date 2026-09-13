@@ -496,6 +496,7 @@ describe('SquadPage', () => {
       'Bench Boost',
       'Best XI',
     ]);
+    expect(container.querySelector('.squad-page__chip-toggle[data-chip-id="triple-captain"] .squad-page__chip-label')).not.toBeNull();
     expect(container.querySelector('img.chip-icon--triple-captain[src="/chip-icons/triple-captain-white.png"]')).not.toBeNull();
     const pitchRows = Array.from(container.querySelectorAll('.squad-page__pitch-row'));
     expect(pitchRows[0]?.className).toContain('position-fwd');

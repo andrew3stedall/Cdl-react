@@ -1,7 +1,7 @@
 import { type ReactNode, useEffect, useState } from 'react';
-import { List } from 'lucide-react';
+import { ArrowDown, List } from 'lucide-react';
 
-import { FormDots, OpponentFdrBadge, PlayerCard, TeamShirt, type PlayerCardPlayer, formBand } from '../player/PlayerCard';
+import { PlayerCard, type PlayerCardPlayer, formBand } from '../player/PlayerCard';
 import type { AttackDirection } from '../../contracts';
 import { fixtureDifficultyTitle } from '../../SquadPage';
 import type { FixturePlayerFixture, FixtureSquad, FixtureSquadPlayer } from '../../league-api';
@@ -212,21 +212,29 @@ function FixtureListTeam({
       {groups.map((group) => (
         <section className="fixture-squad-list__group" key={group.key}>
           <header className="fixture-squad-list__group-header">
-            <span>{group.label}</span>
+            <h3>{group.label}</h3>
             <span>{group.players.length}</span>
           </header>
-          <div className="fixture-squad-list__players">
-            {group.players.map((player, index) => (
-              <FixtureListPlayer
-                gameweekStatus={gameweekStatus}
-                key={player.id}
-                now={now}
-                onPlayerClick={onPlayerClick}
-                player={player}
-                playerInteraction={playerInteraction}
-                slotLabel={group.key === 'bench' ? fixtureRosterSlotLabel('Substitutes', index) : undefined}
-              />
-            ))}
+          <div aria-label={`${group.label} players table`} className="fixture-squad-list__table-scroll" role="region" tabIndex={0}>
+            <table className="fixture-squad-list__table">
+              <colgroup><col className="player" /><col className="points" /></colgroup>
+              <thead><tr><th>Player</th><th className="sorted">Pts <ArrowDown aria-hidden="true" size={11} /></th></tr></thead>
+              <tbody>
+                {group.players.map((player, index) => (
+                  <FixtureListPlayer
+                    gameweekStatus={gameweekStatus}
+                    key={player.id}
+                    now={now}
+                    onPlayerClick={onPlayerClick}
+                    player={player}
+                    playerInteraction={playerInteraction}
+                    startsNewPosition={group.key === 'starters'
+                      && index > 0
+                      && fixturePosition(group.players[index - 1]?.position ?? '') !== fixturePosition(player.position)}
+                  />
+                ))}
+              </tbody>
+            </table>
           </div>
         </section>
       ))}
@@ -240,85 +248,78 @@ function FixtureListPlayer({
   onPlayerClick,
   player,
   playerInteraction,
-  slotLabel,
+  startsNewPosition,
 }: {
   gameweekStatus: FixtureGameweekStatus;
   now?: number;
   onPlayerClick?: (player: FixtureSquadPlayer) => void;
   player: FixtureSquadPlayer;
   playerInteraction: FixturePlayerInteraction;
-  slotLabel?: string;
+  startsNewPosition: boolean;
 }) {
   const pointsPlaceholder = fixturePointsPlaceholder(gameweekStatus, player, now);
   const showPoints = shouldShowFixturePoints(gameweekStatus, player, now) && pointsPlaceholder === null;
-  const showForm = gameweekStatus === 'future';
-  const fixtures = fixtureCardFixtures(player);
-  const firstFixture = fixtures[0] ?? null;
-  const metric = showPoints || pointsPlaceholder !== null ? 'points' : showForm ? 'form' : 'pending';
+  const pointsDisplay = showPoints ? String(player.points ?? 0) : pointsPlaceholder ?? '—';
+  const metric = showPoints || pointsPlaceholder !== null ? 'points' : gameweekStatus === 'future' ? 'form' : 'pending';
   const substitutionStateClass = player.isSubstitutedOut ? ' fixture-squad-list__player--substituted-out' : '';
   const substitutionStateLabel = player.isSubstitutedIn
     ? ' · automatic substitute'
     : player.isSubstitutedOut
       ? ' · replaced by automatic substitute'
       : '';
-  const content = (
+  const rowClassName = `fixture-squad-list__player-row${startsNewPosition ? ' is-position-start' : ''}${substitutionStateClass} position-${fixturePosition(player.position).toLowerCase()}`;
+  const card = (
+    <PlayerCard
+      ariaLabel={`${player.displayName}${substitutionStateLabel}`}
+      className={player.isSubstitutedOut ? 'fixture-squad-player-card--substituted-out' : player.isSubstitutedIn ? 'fixture-squad-player-card--substituted-in' : ''}
+      formPosition="beside"
+      layout="list"
+      player={toFixtureListCardPlayer(player)}
+      showOpponent
+      showPositionMarker={false}
+      size="sm"
+    />
+  );
+  const rowContent = (
     <>
-      <span className="fixture-squad-list__shirt">
-        <TeamShirt team={player.club?.shortName ?? player.club?.name ?? 'unknown'} />
-      </span>
-      <span className="fixture-squad-list__identity">
-        <span className="fixture-squad-list__name-row">
-          {slotLabel ? <span className="fixture-squad-list__slot">{slotLabel}</span> : null}
-          <strong>{player.displayName}</strong>
+      <td>
+        <div className="fixture-squad-list__player-row-identity">
+          {card}
           {player.isSubstitutedIn ? <span className="fixture-squad-list__substitution fixture-squad-list__substitution--in">IN</span> : null}
           {player.isSubstitutedOut ? <span className="fixture-squad-list__substitution fixture-squad-list__substitution--out">OUT</span> : null}
-          {player.isCaptain ? <span className="fixture-squad-list__role">C</span> : null}
-          {player.isViceCaptain ? <span className="fixture-squad-list__role fixture-squad-list__role--vice">VC</span> : null}
+        </div>
+      </td>
+      <td>
+        <span className="fixture-squad-list__metric" data-fixture-list-metric={metric}>
+          <strong aria-label={pointsPlaceholder === null ? (showPoints ? `${pointsDisplay} fantasy points` : 'Fixture points unavailable') : fixturePointsPlaceholderLabel(pointsDisplay)}>{pointsDisplay}</strong>
         </span>
-        <small>
-          <span>{fixturePosition(player.position)}</span>
-          {firstFixture ? <OpponentFdrBadge difficulty={firstFixture.difficulty} label={firstFixture.label} title={firstFixture.title} /> : null}
-        </small>
-      </span>
-      <span className="fixture-squad-list__metric" data-fixture-list-metric={metric}>
-        {showPoints ? (
-          <>
-            <strong>{player.points ?? 0}</strong>
-            <small>pts</small>
-          </>
-        ) : pointsPlaceholder !== null ? (
-          <>
-            <strong aria-label={fixturePointsPlaceholderLabel(pointsPlaceholder)}>{pointsPlaceholder}</strong>
-            <small>pts</small>
-          </>
-        ) : showForm ? (
-          <>
-            <FormDots value={player.form} />
-            <small>form</small>
-          </>
-        ) : null}
-      </span>
+      </td>
     </>
   );
 
   if (!onPlayerClick) {
     return (
-      <div className={`fixture-squad-list__player${substitutionStateClass} position-${fixturePosition(player.position).toLowerCase()}`} data-player-id={player.id}>
-        {content}
-      </div>
+      <tr className={rowClassName} data-player-id={player.id}>{rowContent}</tr>
     );
   }
 
   return (
-    <button
+    <tr
       aria-label={`View ${player.displayName} ${playerInteraction === 'points' ? 'points breakdown' : 'player profile'}${substitutionStateLabel}`}
-      className={`fixture-squad-list__player fixture-squad-list__player--button${substitutionStateClass} position-${fixturePosition(player.position).toLowerCase()}`}
+      className={`${rowClassName} fixture-squad-list__player-row--button`}
       data-player-id={player.id}
       onClick={() => onPlayerClick(player)}
-      type="button"
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onPlayerClick(player);
+        }
+      }}
+      role="button"
+      tabIndex={0}
     >
-      {content}
-    </button>
+      {rowContent}
+    </tr>
   );
 }
 
@@ -569,6 +570,10 @@ function toFixtureCardPlayer(player: FixtureSquadPlayer, shirtTeam?: string, ind
     team: shirtTeam ?? player.club?.shortName ?? player.club?.name ?? 'unknown',
     viceCaptain: player.isViceCaptain,
   };
+}
+
+function toFixtureListCardPlayer(player: FixtureSquadPlayer): PlayerCardPlayer {
+  return toFixtureCardPlayer(player, undefined, player.form);
 }
 
 export function shouldShowFixturePoints(gameweekStatus: FixtureGameweekStatus, player: FixtureSquadPlayer, now = Date.now()): boolean {

@@ -1295,10 +1295,12 @@ function ChipToggle({ chip, disabled, onToggle }: { chip: TeamSelectionChip; dis
       title={`${chip.name}: ${chip.status}`}
       type="button"
     >
-      <ChipGlyph chip={chip} />
+      <span className="squad-page__chip-content">
+        <ChipGlyph chip={chip} />
+        <span className="squad-page__chip-label">{chip.name}</span>
+      </span>
       {active ? <span aria-hidden="true" className="squad-page__chip-dot" /> : null}
       {used ? <CircleCheck aria-hidden="true" className="squad-page__chip-used" size={12} /> : null}
-      <span className="sr-only">{chip.name}</span>
     </button>
   );
 }

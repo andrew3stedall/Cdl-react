@@ -26,6 +26,8 @@ describe('ChipIcon', () => {
 
     expect(host.querySelectorAll('svg.chip-icon')).toHaveLength(4);
     expect(host.querySelector('.chip-icon--triple-captain circle[fill="currentColor"]')).not.toBeNull();
+    expect(host.querySelector('.chip-icon--triple-captain text')?.textContent).toContain('C');
+    expect(host.querySelector('.chip-icon--triple-captain text:last-of-type')?.textContent).toBe('x3');
     expect(host.querySelector('.chip-icon--dual-captain text')?.textContent).toBe('VC');
     expect(host.querySelector('.chip-icon--bench-boost g[stroke="var(--surface)"]')).not.toBeNull();
     expect(host.querySelector('.chip-icon--auto-captain path[stroke="var(--surface)"]')).not.toBeNull();

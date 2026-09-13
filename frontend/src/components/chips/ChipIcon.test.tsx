@@ -8,7 +8,7 @@ const testGlobal = globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT:
 testGlobal.IS_REACT_ACT_ENVIRONMENT = true;
 
 describe('ChipIcon', () => {
-  test('renders supplied artwork as public images and the remaining concepts as inline SVGs', () => {
+  test('renders every chip concept as a theme-aware inline SVG', () => {
     const host = document.createElement('div');
     document.body.appendChild(host);
     const root = createRoot(host);
@@ -24,9 +24,11 @@ describe('ChipIcon', () => {
       );
     });
 
-    expect(host.querySelectorAll('svg.chip-icon')).toHaveLength(2);
-    expect(host.querySelector('img.chip-icon--triple-captain[src="/chip-icons/triple-captain-white.png"]')).not.toBeNull();
-    expect(host.querySelector('img.chip-icon--dual-captain[src="/chip-icons/dual-captain-white.png"]')).not.toBeNull();
+    expect(host.querySelectorAll('svg.chip-icon')).toHaveLength(4);
+    expect(host.querySelector('.chip-icon--triple-captain circle[stroke="currentColor"]')).not.toBeNull();
+    expect(host.querySelector('.chip-icon--dual-captain circle[stroke="currentColor"]')).not.toBeNull();
+    expect(Array.from(host.querySelectorAll('.chip-icon--dual-captain text')).map((text) => text.textContent)).toEqual(['VC', 'x2']);
+    expect(host.querySelector('.chip-icon--triple-captain [fill="var(--surface)"]')).not.toBeNull();
     expect(host.querySelector('.chip-icon--bench-boost g[stroke="var(--surface)"]')).not.toBeNull();
     expect(host.querySelector('.chip-icon--auto-captain path[stroke="var(--surface)"]')).not.toBeNull();
 

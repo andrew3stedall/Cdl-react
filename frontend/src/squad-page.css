@@ -365,10 +365,10 @@
 
 .squad-page__chip-toggle .chip-icon--triple-captain,
 .squad-page__chip-toggle .chip-icon--dual-captain {
-  border-radius: 0.22rem;
   aspect-ratio: 1;
   height: auto;
-  object-fit: cover;
+  max-height: 100%;
+  overflow: visible;
   width: 80%;
 }
 

@@ -496,8 +496,7 @@ describe('SquadPage', () => {
       'Bench Boost',
       'Best XI',
     ]);
-    expect(container.querySelector('.chip-icon--triple-captain text')?.textContent).toContain('C');
-    expect(container.querySelector('.chip-icon--triple-captain text:last-of-type')?.textContent).toBe('x3');
+    expect(container.querySelector('img.chip-icon--triple-captain[src="/chip-icons/triple-captain-white.png"]')).not.toBeNull();
     const pitchRows = Array.from(container.querySelectorAll('.squad-page__pitch-row'));
     expect(pitchRows[0]?.className).toContain('position-fwd');
     expect(pitchRows.at(-1)?.className).toContain('position-gkp');

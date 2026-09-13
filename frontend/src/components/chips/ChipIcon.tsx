@@ -6,17 +6,16 @@ interface ChipIconProps {
 }
 
 /**
- * The supplied Triple Captain artwork is kept as a public image so its
- * detailed card composition remains intact at the compact squad-control size.
- * The remaining chip artwork stays inline SVG so it can follow the theme
- * foreground. `currentColor` is the visible mark; surface-coloured details
- * are cut-outs.
+ * The supplied captain artwork is kept as public images so its detailed card
+ * composition remains intact at the compact squad-control size. The remaining
+ * chip artwork stays inline SVG so it can follow the theme foreground.
+ * `currentColor` is the visible mark; surface-coloured details are cut-outs.
  */
 export function ChipIcon({ className = '', variant }: ChipIconProps) {
   const classNames = ['chip-icon', `chip-icon--${variant}`, className].filter(Boolean).join(' ');
 
-  if (variant === 'triple-captain') {
-    return <img alt="" aria-hidden="true" className={classNames} decoding="async" draggable="false" src="/chip-icons/triple-captain-white.png" />;
+  if (variant === 'triple-captain' || variant === 'dual-captain') {
+    return <img alt="" aria-hidden="true" className={classNames} decoding="async" draggable="false" src={`/chip-icons/${variant}-white.png`} />;
   }
 
   return (
@@ -27,48 +26,10 @@ export function ChipIcon({ className = '', variant }: ChipIconProps) {
       focusable="false"
       viewBox="0 0 24 24"
     >
-      {variant === 'dual-captain' ? <DualCaptainIcon /> : null}
       {variant === 'bench-boost' ? <BenchBoostIcon /> : null}
       {variant === 'auto-captain' ? <AutoCaptainIcon /> : null}
     </svg>
   );
-}
-
-function CaptainBadge({ label }: { label: 'x2' | 'x3' }) {
-  return (
-    <>
-      <circle cx="10" cy="11" fill="currentColor" r="8.05" />
-      <circle cx="17.2" cy="16.75" fill="currentColor" r="4.95" />
-      <text
-        dominantBaseline="middle"
-        fill="var(--surface)"
-        fontFamily="Arial, Helvetica, sans-serif"
-        fontSize="8.6"
-        fontWeight="800"
-        textAnchor="middle"
-        x="10"
-        y="11.15"
-      >
-        {label === 'x3' ? 'C' : 'VC'}
-      </text>
-      <text
-        dominantBaseline="middle"
-        fill="var(--surface)"
-        fontFamily="Arial, Helvetica, sans-serif"
-        fontSize="4.5"
-        fontWeight="800"
-        textAnchor="middle"
-        x="17.2"
-        y="16.95"
-      >
-        {label}
-      </text>
-    </>
-  );
-}
-
-function DualCaptainIcon() {
-  return <CaptainBadge label="x2" />;
 }
 
 function BenchBoostIcon() {

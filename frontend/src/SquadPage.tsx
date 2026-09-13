@@ -1290,6 +1290,7 @@ function ChipToggle({ chip, disabled, onToggle }: { chip: TeamSelectionChip; dis
       aria-label={`${chip.name}, ${chip.status}`}
       aria-pressed={active}
       className={`squad-page__chip-toggle ${active ? 'is-active' : ''} ${used ? 'is-used' : ''}`}
+      data-chip-id={chip.id}
       disabled={disabled}
       onClick={onToggle}
       title={`${chip.name}: ${chip.status}`}

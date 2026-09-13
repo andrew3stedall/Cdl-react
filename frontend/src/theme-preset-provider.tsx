@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import type { AttackDirection, ThemePreset, UserPreferences } from './contracts';
 import {
@@ -220,7 +220,7 @@ export function ThemePresetProvider({
     };
   }, [preferenceClient]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const root = document.documentElement;
     const colors = preset.tokens.colors;
     const themeMode = getThemeMode(preset);

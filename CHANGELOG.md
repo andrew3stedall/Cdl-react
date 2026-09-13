@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Replaced the plain initial session-checking card with a full-screen,
+  theme-aware Castle Draft League splash screen that preserves a clear retry
+  state when session verification is unavailable.
+
 - Refined the League fixture carousel by removing the redundant primary-fixture
   gameweek label, matching its padding to supporting fixtures, applying the
   restrained Desk-style highlight, and aligning gameweek dots with the round

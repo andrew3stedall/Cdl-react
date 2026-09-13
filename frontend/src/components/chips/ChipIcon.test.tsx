@@ -28,6 +28,12 @@ describe('ChipIcon', () => {
     expect(host.querySelector('.chip-icon--triple-captain circle[stroke="currentColor"]')).not.toBeNull();
     expect(host.querySelector('.chip-icon--dual-captain circle[stroke="currentColor"]')).not.toBeNull();
     expect(Array.from(host.querySelectorAll('.chip-icon--dual-captain text')).map((text) => text.textContent)).toEqual(['VC', 'x2']);
+    expect(host.querySelector('.chip-icon--triple-captain circle')?.getAttribute('clip-path')).toBe('url(#captain-circle-clip-triple-captain)');
+    expect(host.querySelector('.chip-icon--dual-captain circle')?.getAttribute('clip-path')).toBe('url(#captain-circle-clip-dual-captain)');
+    expect(host.querySelector('.chip-icon--triple-captain text')?.getAttribute('font-size')).toBe('12.5');
+    expect(host.querySelector('.chip-icon--dual-captain text')?.getAttribute('font-size')).toBe('8.6');
+    expect(host.querySelectorAll('.chip-icon--triple-captain text')[1]?.getAttribute('font-size')).toBe('18.5');
+    expect(host.querySelectorAll('.chip-icon--dual-captain text')[1]?.getAttribute('font-size')).toBe('18.5');
     expect(host.querySelector('.chip-icon--triple-captain [fill="var(--surface)"]')).not.toBeNull();
     expect(host.querySelector('.chip-icon--bench-boost g[stroke="var(--surface)"]')).not.toBeNull();
     expect(host.querySelector('.chip-icon--auto-captain path[stroke="var(--surface)"]')).not.toBeNull();

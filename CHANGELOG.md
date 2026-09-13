@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Updated Squad chip controls to show each theme-aware icon with its chip name,
+  and refreshed Triple Captain with a neutral segmented shirt, captain `C`, and
+  `x3` multiplier marker.
+
 - Replaced the plain initial session-checking card with a full-screen,
   default-teal Castle Draft League splash screen with a white CDL logo and a
   clear retry state when session verification is unavailable.

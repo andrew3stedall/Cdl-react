@@ -63,7 +63,39 @@ function CaptainBadge({ label }: { label: 'x2' | 'x3' }) {
 }
 
 function TripleCaptainIcon() {
-  return <CaptainBadge label="x3" />;
+  return (
+    <>
+      <path d="M7.1 4.7 10.1 2.5h3.8l3 2.2 4.05 3.55-2.35 3.2-2.42-1.7v10.1H7.82V9.75l-2.42 1.7-2.35-3.2Z" fill="currentColor" />
+      <path d="M10.1 2.5h1.35v15.35H10.1Zm2.45 0h1.35v15.35h-1.35Z" fill="var(--surface)" opacity=".82" />
+      <path d="M7.1 4.7 10.1 2.5h3.8l3 2.2 4.05 3.55-2.35 3.2-2.42-1.7v10.1H7.82V9.75l-2.42 1.7-2.35-3.2Z" fill="none" stroke="currentColor" strokeLinejoin="round" strokeWidth=".7" />
+      <circle cx="18.55" cy="6.35" fill="currentColor" r="4.05" />
+      <text
+        dominantBaseline="middle"
+        fill="var(--surface)"
+        fontFamily="Arial, Helvetica, sans-serif"
+        fontSize="5.6"
+        fontWeight="800"
+        textAnchor="middle"
+        x="18.55"
+        y="6.45"
+      >
+        C
+      </text>
+      <rect fill="currentColor" height="4.1" rx="2.05" width="9.6" x="7.2" y="18.15" />
+      <text
+        dominantBaseline="middle"
+        fill="var(--surface)"
+        fontFamily="Arial, Helvetica, sans-serif"
+        fontSize="4.7"
+        fontWeight="800"
+        textAnchor="middle"
+        x="12"
+        y="20.25"
+      >
+        x3
+      </text>
+    </>
+  );
 }
 
 function DualCaptainIcon() {

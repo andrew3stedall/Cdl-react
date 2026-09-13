@@ -16,7 +16,7 @@ Implemented in the canonical Squad workspace. Fixture/table presentation is inte
 
 ## Current Behaviour
 
-Managers view their selected team, bench, reserves, next deadline, and compact chip controls in Squad. The pitch/list switch is icon-only, the list is split into Starting XI/Bench/Reserves tables, and players enter an in-place substitution mode from the player drawer rather than using per-row dropdowns. The Sub action is available from every squad slot; legal candidates are highlighted directly on the current pitch or list, and selecting one opens a two-column review drawer with the latest four fixtures for both players. Available chips are actionable, active chips show a dot, and used chips remain visibly unavailable. Fixtures and tables remain available through the API but are not duplicated into this workspace yet.
+Managers view their selected team, bench, reserves, next deadline, and compact icon-and-label chip controls in Squad. The pitch/list switch is icon-only, the list is split into Starting XI/Bench/Reserves tables, and players enter an in-place substitution mode from the player drawer rather than using per-row dropdowns. The Sub action is available from every squad slot; legal candidates are highlighted directly on the current pitch or list, and selecting one opens a two-column review drawer with the latest four fixtures for both players. Available chips are actionable, active chips show a dot, and used chips remain visibly unavailable. Triple Captain uses a neutral segmented shirt with a clear captain `C` and `x3` marker. Fixtures and tables remain available through the API but are not duplicated into this workspace yet.
 
 ## Business Rules
 
@@ -53,7 +53,7 @@ Managers view their selected team, bench, reserves, next deadline, and compact c
 
 - Team pitch and compact list layouts.
 - Bench and reserves sections with context-menu substitutions and explicit swap review.
-- Icon-only chip toggles with available, active, and used states.
+- Icon-and-label chip toggles with available, active, and used states.
 - Next deadline date and countdown context.
 - Validation messages for invalid lineup states.
 

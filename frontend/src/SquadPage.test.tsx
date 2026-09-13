@@ -489,6 +489,15 @@ describe('SquadPage', () => {
       'Bench Boost, available',
       'Best XI, available',
     ]);
+    expect(Array.from(container.querySelectorAll('.squad-page__chip-label')).map((label) => label.textContent)).toEqual([
+      'Triple Captain',
+      'Dual Captain',
+      'Auto Captain',
+      'Bench Boost',
+      'Best XI',
+    ]);
+    expect(container.querySelector('.chip-icon--triple-captain text')?.textContent).toContain('C');
+    expect(container.querySelector('.chip-icon--triple-captain text:last-of-type')?.textContent).toBe('x3');
     const pitchRows = Array.from(container.querySelectorAll('.squad-page__pitch-row'));
     expect(pitchRows[0]?.className).toContain('position-fwd');
     expect(pitchRows.at(-1)?.className).toContain('position-gkp');

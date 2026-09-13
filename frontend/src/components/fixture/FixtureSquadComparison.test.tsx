@@ -131,6 +131,12 @@ describe('FixtureSquadComparison', () => {
     expect(container.textContent).toContain('Alpha Keeper');
     expect(container.textContent).toContain('Beta Forward');
     expect(container.querySelector('[data-player-id="alpha-gk"] [data-fixture-list-metric="points"]')?.textContent).toContain('8');
+    expect(container.querySelector('[data-player-id="alpha-gk"] .player-card--list')).not.toBeNull();
+    expect(container.querySelector('[data-player-id="alpha-gk"] .player-card__token')).not.toBeNull();
+    expect(container.querySelector('[data-player-id="alpha-gk"] .player-card__form-dots')).not.toBeNull();
+    expect(container.querySelector('[data-player-id="alpha-gk"] .player-card__opponent')).not.toBeNull();
+    expect(container.querySelector('[data-player-id="alpha-gk"] .fixture-squad-list__shirt')).toBeNull();
+    expect(container.querySelectorAll('.fixture-squad-list__table')).toHaveLength(6);
     expect(window.localStorage.getItem('cdl:fixture-review-view')).toBe('list');
 
     await act(async () => root.unmount());
@@ -170,7 +176,7 @@ describe('FixtureSquadComparison', () => {
 
     await act(async () => container.querySelector<HTMLButtonElement>('button[aria-label="View as list"]')?.click());
 
-    const playerButton = container.querySelector<HTMLButtonElement>('button[aria-label="View Alpha Keeper player profile"]');
+    const playerButton = container.querySelector<HTMLElement>('[role="button"][aria-label="View Alpha Keeper player profile"]');
     expect(container.querySelector('[data-player-id="alpha-gk"] [data-fixture-list-metric="form"]')).not.toBeNull();
 
     await act(async () => playerButton?.click());

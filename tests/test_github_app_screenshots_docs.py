@@ -7,6 +7,7 @@ INTERACTION_SCRIPT = Path("scripts/test-app-interactions.mjs")
 LEAGUE_PAGE = Path("frontend/src/LeaguePage.tsx")
 STYLES = Path("frontend/src/styles.css")
 APP = Path("frontend/src/App.tsx")
+SESSION_SPLASH = Path("frontend/src/SessionSplash.tsx")
 LOGIN_PAGE = Path("frontend/src/LoginPage.tsx")
 MAIN = Path("frontend/src/main.tsx")
 TEAM_SELECTION_API = Path("frontend/src/team-selection-api.ts")
@@ -139,6 +140,7 @@ def test_browser_journey_exercises_protected_session_boundary() -> None:
     login_page = LOGIN_PAGE.read_text(encoding="utf-8")
     main = MAIN.read_text(encoding="utf-8")
     auth = AUTH.read_text(encoding="utf-8")
+    session_splash = SESSION_SPLASH.read_text(encoding="utf-8")
     assert "/api/auth/session" in interactions
     assert "/api/auth/session" in screenshots
     assert "screenshotSession" in screenshots
@@ -152,7 +154,8 @@ def test_browser_journey_exercises_protected_session_boundary() -> None:
     assert "mapSession" in auth
     assert "getSession()" in app
     assert "demo-manager" not in app
-    assert "Checking your session" in app
+    assert "SessionSplash" in app
+    assert "Preparing your workspace" in session_splash
     assert "VITE_STATIC_PREVIEW" in main
     assert "./login-page.css" in main
     assert "session: staticPreviewSession" in main

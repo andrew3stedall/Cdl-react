@@ -160,7 +160,7 @@
 .fixture-squad-list__table th,
 .fixture-squad-list__table td {
   overflow: hidden;
-  padding: 0.24rem 0.28rem;
+  padding: 0.08rem 0.28rem;
   text-align: right;
   vertical-align: middle;
 }
@@ -184,7 +184,7 @@
   border-top: 1px solid color-mix(in srgb, var(--border) 76%, transparent);
   color: var(--foreground);
   font-size: 0.7rem;
-  height: 4.35rem;
+  height: 4.05rem;
   min-width: 0;
 }
 
@@ -648,7 +648,7 @@
   }
 
   .fixture-squad-list__table td {
-    height: 4rem;
+    height: 3.7rem;
   }
 
   .fixture-squad-list__table .player-card__name {

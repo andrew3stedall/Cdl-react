@@ -33,6 +33,7 @@ export function ChipIcon({ className = '', variant }: ChipIconProps) {
 
 function CaptainChipIcon({ className, variant }: { className: string; variant: 'triple-captain' | 'dual-captain' }) {
   const badgeLabel = variant === 'triple-captain' ? 'C' : 'VC';
+  const badgeFontSize = variant === 'triple-captain' ? '12.5' : '8.6';
   const multiplier = variant === 'triple-captain' ? 'x3' : 'x2';
 
   return (
@@ -43,7 +44,12 @@ function CaptainChipIcon({ className, variant }: { className: string; variant: '
       focusable="false"
       viewBox="0 0 100 100"
     >
-      <circle cx="50" cy="50" r="45" stroke="currentColor" strokeWidth="3.2" />
+      <defs>
+        <clipPath id={`captain-circle-clip-${variant}`}>
+          <rect height="71" width="100" x="0" y="0" />
+        </clipPath>
+      </defs>
+      <circle cx="50" cy="50" r="45" stroke="currentColor" strokeWidth="3.2" clipPath={`url(#captain-circle-clip-${variant})`} />
       <path d="M39 14 50 17 61 14 72 21 79 46 69 49 66 38v34H34V38l-3 11-10-3 7-25Z" fill="currentColor" />
       <path d="M39 14q11 4 22 0l-1 5.5q-10 3-20 0Z" fill="var(--surface)" stroke="currentColor" strokeWidth="1.2" />
       <path d="M31 49 21 46M69 49l10-3M34 38v34M66 38v34" stroke="var(--surface)" strokeLinecap="round" strokeWidth="1.35" />
@@ -52,7 +58,7 @@ function CaptainChipIcon({ className, variant }: { className: string; variant: '
         dominantBaseline="middle"
         fill="currentColor"
         fontFamily="Arial, Helvetica, sans-serif"
-        fontSize={variant === 'dual-captain' ? '7.4' : '10.5'}
+        fontSize={badgeFontSize}
         fontWeight="800"
         textAnchor="middle"
         x="78"
@@ -65,7 +71,7 @@ function CaptainChipIcon({ className, variant }: { className: string; variant: '
         dominantBaseline="middle"
         fill="var(--surface)"
         fontFamily="Arial, Helvetica, sans-serif"
-        fontSize="15.5"
+        fontSize="18.5"
         fontWeight="800"
         textAnchor="middle"
         x="50"

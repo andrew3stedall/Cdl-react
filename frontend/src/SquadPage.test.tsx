@@ -73,6 +73,12 @@ class FullTeamSelectionClient implements TeamSelectionClient {
   }
 }
 
+class PendingTeamSelectionClient extends FullTeamSelectionClient {
+  async getTeamSelection(): Promise<TeamSelectionSnapshot> {
+    return new Promise<TeamSelectionSnapshot>(() => undefined);
+  }
+}
+
 let reducedChance = false;
 
 beforeEach(() => {
@@ -395,6 +401,17 @@ function setInputValue(input: HTMLInputElement, value: string) {
 }
 
 describe('SquadPage', () => {
+  test('reserves the selected squad view while data is loading', async () => {
+    const { container, root } = await renderPage(new PendingTeamSelectionClient());
+
+    expect(container.querySelector('[aria-label="Loading squad pitch"]')).not.toBeNull();
+    expect(container.querySelector('.squad-page__pitch--loading')).not.toBeNull();
+    expect(container.querySelector('.squad-page__list--loading')).toBeNull();
+    expect(container.querySelector('.squad-page__changes-panel')).not.toBeNull();
+
+    act(() => root.unmount());
+  });
+
   test('loads the consolidated workspace and team-selection reads first', async () => {
     await renderPage();
 

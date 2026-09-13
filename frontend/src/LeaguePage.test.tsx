@@ -175,6 +175,12 @@ class MemoryLeagueClient implements LeagueClient {
   }
 }
 
+class PendingLeagueClient extends MemoryLeagueClient {
+  async getLeagueSnapshot(): Promise<LeagueSnapshot> {
+    return new Promise<LeagueSnapshot>(() => undefined);
+  }
+}
+
 class FinishedLeagueClient extends MemoryLeagueClient {
   async getLeagueSnapshot() {
     return {
@@ -214,6 +220,16 @@ describe('LeaguePage', () => {
     document.body.innerHTML = '';
   });
 
+  test('reserves the round and gameweek board while league data is loading', async () => {
+    const { container, root } = await renderPage('/league', new PendingLeagueClient());
+
+    expect(container.querySelector('.league-loading__round')).not.toBeNull();
+    expect(container.querySelector('.league-loading__gameweek')).not.toBeNull();
+    expect(container.querySelectorAll('.league-loading__fixture-rows span')).toHaveLength(3);
+
+    act(() => root.unmount());
+  });
+
   test('uses the Squad-style contextual header with a focused round and gameweek carousel', async () => {
     const { container, root } = await renderPage();
 
@@ -244,7 +260,7 @@ describe('LeaguePage', () => {
     expect(container.querySelectorAll('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__dot')).toHaveLength(7);
     expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__dot.is-selected')?.getAttribute('aria-label')).toBe('Go to Gameweek 12');
     expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__dot.is-selected')?.getAttribute('data-gameweek-index')).toBe('4');
-    expect(container.querySelector('.league-gameweek-carousel')?.getAttribute('style')).toContain('--league-gameweek-carousel-height: 14.63rem');
+    expect(container.querySelector('.league-gameweek-carousel')?.getAttribute('style')).toContain('--league-gameweek-carousel-height: 29rem');
     expect(container.querySelector('.league-gameweek-carousel')?.getAttribute('style')).not.toContain('--league-gameweek-carousel-track-height');
     expect(container.querySelector('.league-gameweek-carousel__viewport')?.getAttribute('style')).toBeNull();
     expect(container.querySelector('.league-round-slide__content')?.getAttribute('style')).toContain('transform: scale(1)');

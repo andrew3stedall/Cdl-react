@@ -196,27 +196,42 @@ export function ManagerDeskPage({
 function ManagerDeskLoadingState() {
   return (
     <div aria-label="Loading manager desk" className="manager-desk__loading-state" role="status">
-      <section className="manager-desk__loading-surface manager-desk__loading-surface--fixture">
-        <div className="manager-desk__loading-topline">
+      <section aria-hidden="true" className="manager-desk__fixture-focus manager-desk__fixture-focus--loading">
+        <div className="manager-desk__fixture-spotlight-topline">
           <span className="manager-desk__loading-line manager-desk__loading-line--short" />
           <span className="manager-desk__loading-line manager-desk__loading-line--tiny" />
         </div>
-        <div className="manager-desk__loading-matchup">
-          <span className="manager-desk__loading-badge" />
-          <span className="manager-desk__loading-score" />
-          <span className="manager-desk__loading-badge manager-desk__loading-badge--small" />
-        </div>
-        <div className="manager-desk__loading-insights">
-          <span className="manager-desk__loading-line" />
-          <span className="manager-desk__loading-line" />
-          <span className="manager-desk__loading-line" />
+        <div className="manager-desk__fixture-list">
+          {Array.from({ length: 4 }, (_, index) => (
+            <article className={`manager-desk__fixture-matchup${index === 0 ? ' manager-desk__fixture-matchup--featured' : ''}`} key={index}>
+              <div className="manager-desk__fixture-board">
+                <div className="manager-desk__fixture-manager manager-desk__fixture-manager--home">
+                  <span className="manager-desk__loading-badge" />
+                  <span className="manager-desk__loading-line manager-desk__loading-line--team" />
+                  <span className="manager-desk__loading-line manager-desk__loading-line--record" />
+                </div>
+                <div className="manager-desk__fixture-comparison">
+                  {Array.from({ length: index === 0 ? 6 : 5 }, (_, rowIndex) => (
+                    <span className={`manager-desk__loading-comparison-row${rowIndex === 0 && index === 0 ? ' is-current' : ''}`} key={rowIndex}>
+                      <i /><i /><i />
+                    </span>
+                  ))}
+                </div>
+                <div className="manager-desk__fixture-manager manager-desk__fixture-manager--away">
+                  <span className="manager-desk__loading-badge manager-desk__loading-badge--small" />
+                  <span className="manager-desk__loading-line manager-desk__loading-line--team" />
+                  <span className="manager-desk__loading-line manager-desk__loading-line--record" />
+                </div>
+              </div>
+            </article>
+          ))}
         </div>
       </section>
-      <section className="manager-desk__loading-surface manager-desk__loading-surface--priority">
+      <section aria-hidden="true" className="manager-desk__loading-surface manager-desk__loading-surface--priority">
         <span className="manager-desk__loading-line manager-desk__loading-line--short" />
         <span className="manager-desk__loading-line" />
       </section>
-      <div className="manager-desk__loading-support-grid">
+      <div aria-hidden="true" className="manager-desk__loading-support-grid">
         <span className="manager-desk__loading-surface" />
         <span className="manager-desk__loading-surface" />
       </div>

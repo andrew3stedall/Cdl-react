@@ -323,6 +323,7 @@ export function SquadPage({
   const [managerTeam, setManagerTeam] = useState<TeamRef>({ id: '', name: 'Current team', shortName: '' });
   const [lineupAvailable, setLineupAvailable] = useState(false);
   const [teamSelection, setTeamSelection] = useState<TeamSelectionSnapshot | null>(null);
+  const [loading, setLoading] = useState(true);
   const [lineupDirty, setLineupDirty] = useState(false);
   const [lineupSaving, setLineupSaving] = useState(false);
   const [clockNow, setClockNow] = useState(() => Date.now());
@@ -393,6 +394,7 @@ export function SquadPage({
         setLineupAvailable(hasLineup);
         setLineupDirty(false);
         if (!hasLineup) setSquadView('list');
+        setLoading(false);
         setStatus(
           hasLineup
             ? `${summary?.manager_team.name ?? normalizedLineup?.managerTeam.name ?? 'Your'} squad ready for review.`
@@ -406,7 +408,10 @@ export function SquadPage({
         }
       })
       .catch((error: Error) => {
-        if (mounted) setStatus(error.message);
+        if (mounted) {
+          setLoading(false);
+          setStatus(error.message);
+        }
       });
     return () => {
       mounted = false;
@@ -870,7 +875,9 @@ export function SquadPage({
       ) : null}
 
       <section className="squad-page__roster-card">
-        {squadView === 'pitch' && lineupAvailable ? (
+        {loading ? (
+          <SquadLoadingState view={squadView} />
+        ) : squadView === 'pitch' && lineupAvailable ? (
           <SquadPitch
             attackDirection={attackDirection}
             onSelect={openPlayer}
@@ -1087,6 +1094,39 @@ export function SquadPage({
         <a href="/league" onClick={(event) => navigateInternally(event, '/league')}><Trophy size={19} /><span>League</span></a>
       </nav>
     </main>
+  );
+}
+
+function SquadLoadingState({ view }: { view: SquadView }) {
+  if (view === 'pitch') {
+    return (
+      <section aria-label="Loading squad pitch" className="squad-page__pitch-shell squad-page__pitch-shell--loading" role="status">
+        <div aria-hidden="true" className="squad-page__pitch squad-page__pitch--loading">
+          <span className="squad-page__loading-line squad-page__loading-line--formation" />
+          <div className="squad-page__loading-pitch-rows">
+            <span /><span /><span /><span />
+          </div>
+        </div>
+        <div aria-hidden="true" className="squad-page__loading-surface squad-page__loading-surface--bench" />
+        <div aria-hidden="true" className="squad-page__loading-surface squad-page__loading-surface--reserves" />
+      </section>
+    );
+  }
+
+  return (
+    <div aria-label="Loading squad list" className="squad-page__list squad-page__list--loading" role="status">
+      <div aria-hidden="true" className="squad-page__list-controls">
+        <span className="squad-page__loading-control squad-page__loading-control--search" />
+        <span className="squad-page__loading-control squad-page__loading-control--icon" />
+        <span className="squad-page__loading-control squad-page__loading-control--icon" />
+      </div>
+      <div aria-hidden="true" className="squad-page__position-tabs squad-page__position-tabs--loading">
+        {positionOptions.map((option) => <span key={option.value}>{option.shortLabel}<i /></span>)}
+      </div>
+      <div aria-hidden="true" className="squad-page__loading-list-space">
+        <span /><span /><span />
+      </div>
+    </div>
   );
 }
 

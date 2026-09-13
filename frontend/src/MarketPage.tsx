@@ -543,7 +543,7 @@ function MarketLoadingTable() {
             <th scope="col">Player</th>
             <th scope="col">Pts</th>
             <th scope="col">Form</th>
-            <th scope="col">xG / xA</th>
+            <th className="market-page__expected-heading" scope="col">xG / xA</th>
             <th scope="col">Next</th>
             <th scope="col">Status</th>
             <th scope="col"><span className="sr-only">Actions</span></th>
@@ -555,7 +555,7 @@ function MarketLoadingTable() {
               <td><span className="market-page__loading-block market-page__loading-block--player" /></td>
               <td><span className="market-page__loading-block market-page__loading-block--number" /></td>
               <td><span className="market-page__loading-block market-page__loading-block--number" /></td>
-              <td><span className="market-page__loading-block" /></td>
+              <td className="market-page__loading-expected"><span className="market-page__loading-block" /></td>
               <td><span className="market-page__loading-block market-page__loading-block--fixture" /></td>
               <td><span className="market-page__loading-block market-page__loading-block--status" /></td>
               <td><span className="market-page__loading-block market-page__loading-block--action" /></td>

@@ -616,6 +616,7 @@
 }
 
 .squad-page__roster-card {
+  min-height: 15.9rem;
   min-width: 0;
 }
 
@@ -2843,4 +2844,119 @@
   .squad-page__position-tabs button span {
     display: none;
   }
+}
+
+/* Loading views use the same measured slots as their final pitch/list
+   variants. This keeps the changes panel and mobile navigation anchored while
+   the workspace requests settle. */
+.squad-page__pitch-shell--loading {
+  gap: 0.65rem;
+}
+
+.squad-page__pitch--loading {
+  min-height: 0;
+}
+
+.squad-page__loading-line,
+.squad-page__loading-control,
+.squad-page__loading-surface,
+.squad-page__loading-pitch-rows span,
+.squad-page__loading-list-space span {
+  background: var(--squad-panel-soft);
+  border: 1px solid var(--squad-border);
+  display: block;
+}
+
+.squad-page__loading-line,
+.squad-page__loading-control,
+.squad-page__loading-list-space span {
+  border-radius: 999px;
+}
+
+.squad-page__loading-line--formation {
+  height: 0.7rem;
+  left: 0.8rem;
+  opacity: 0.82;
+  position: absolute;
+  top: 0.7rem;
+  width: 3.5rem;
+}
+
+.squad-page__loading-pitch-rows {
+  align-items: center;
+  display: grid;
+  gap: 0.85rem;
+  inset: 3.7rem 1.1rem 1.2rem;
+  justify-items: center;
+  position: absolute;
+}
+
+.squad-page__loading-pitch-rows span {
+  border-radius: 50%;
+  height: var(--squad-pitch-token-size);
+  opacity: 0.82;
+  width: var(--squad-pitch-token-size);
+}
+
+.squad-page__loading-surface {
+  border-radius: 0.82rem;
+  min-height: 5.7rem;
+}
+
+.squad-page__loading-surface--bench {
+  min-height: 6.3rem;
+}
+
+.squad-page__loading-surface--reserves {
+  min-height: 6.3rem;
+}
+
+.squad-page__list--loading {
+  min-height: 15.9rem;
+}
+
+.squad-page__loading-control {
+  min-height: 2.8rem;
+}
+
+.squad-page__loading-control--search {
+  width: 100%;
+}
+
+.squad-page__loading-control--icon {
+  min-width: 2.85rem;
+}
+
+.squad-page__position-tabs--loading {
+  align-items: center;
+  gap: 0.2rem;
+  justify-items: stretch;
+}
+
+.squad-page__position-tabs--loading span {
+  align-items: center;
+  color: var(--squad-muted);
+  display: inline-flex;
+  font-size: 0.7rem;
+  font-weight: 800;
+  gap: 0.28rem;
+  justify-content: center;
+  min-height: 2.3rem;
+}
+
+.squad-page__position-tabs--loading i {
+  background: var(--squad-panel-soft);
+  border-radius: 999px;
+  display: inline-block;
+  height: 1.15rem;
+  width: 1.15rem;
+}
+
+.squad-page__loading-list-space {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.squad-page__loading-list-space span {
+  height: 3.25rem;
 }

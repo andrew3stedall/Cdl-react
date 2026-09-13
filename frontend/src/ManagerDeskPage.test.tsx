@@ -175,6 +175,12 @@ class MemoryManagerDeskClient implements ManagerDeskClient {
   async getDesk() { return this.snapshot; }
 }
 
+class PendingManagerDeskClient implements ManagerDeskClient {
+  async getDesk(): Promise<ManagerDeskSnapshot> {
+    return new Promise<ManagerDeskSnapshot>(() => undefined);
+  }
+}
+
 function renderPage(
   onNavigate: (href: string) => void = () => undefined,
   squadClient: SquadClient = new MemorySquadClient(),
@@ -203,6 +209,16 @@ function renderPage(
 }
 
 describe('ManagerDeskPage', () => {
+  test('reserves the full fixture board while desk data is loading', () => {
+    const { container, root } = renderPage(() => undefined, new MemorySquadClient(), () => undefined, new PendingManagerDeskClient());
+
+    expect(container.querySelector('.manager-desk__fixture-focus--loading')).not.toBeNull();
+    expect(container.querySelectorAll('.manager-desk__fixture-focus--loading .manager-desk__fixture-matchup')).toHaveLength(4);
+    expect(container.querySelector('.manager-desk__loading-support-grid')).not.toBeNull();
+
+    act(() => root.unmount());
+  });
+
   test('combines manager APIs into an actionable landing page', async () => {
     const destinations: string[] = [];
     const { container } = renderPage((href) => destinations.push(href));

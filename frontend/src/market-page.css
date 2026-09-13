@@ -297,6 +297,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   max-width: 100%;
+  min-height: 24rem;
   min-width: 0;
   overflow-x: auto;
   width: 100%;
@@ -311,7 +312,13 @@
 }
 
 .market-page__loading-row > td {
+  min-width: 0;
+  padding: 0.55rem 0.7rem;
   height: 3.25rem;
+}
+
+.market-page__loading-expected {
+  display: table-cell;
 }
 
 .market-page__loading-block {
@@ -831,7 +838,8 @@
   .market-page__player-row > td { padding-inline: 0.35rem; }
   .market-page__player-identity { gap: 0.35rem; }
   .market-page__expected-heading,
-  .market-page__player-row .market-page__metric--expected { display: none; }
+  .market-page__player-row .market-page__metric--expected,
+  .market-page__loading-expected { display: none; }
   .market-page__fixture-full,
   .market-page__status-full { display: none; }
   .market-page__fixture-compact,

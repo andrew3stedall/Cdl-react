@@ -748,7 +748,10 @@ function GameweekCarousel({ allFixtures, expectedGameweeks, groups, isActive, le
   const [selectedIndex, setSelectedIndex] = useState(initialIndex);
   const fixtureRows = Math.max(...groups.map((group) => group.fixtures.length), 1);
   const baseGameweekCardHeight = Math.max(11, 3.4 + fixtureRows * 4.95);
-  const gameweekCardHeight = Math.round(baseGameweekCardHeight * GAMEWEEK_HEIGHT_SCALE * 100) / 100;
+  // The fixture board contains one featured fixture plus the remaining
+  // gameweek rows. Reserve the full mobile card slot up front so the
+  // measurement observer does not resize the carousel after first paint.
+  const gameweekCardHeight = Math.max(29, Math.round(baseGameweekCardHeight * GAMEWEEK_HEIGHT_SCALE * 100) / 100);
   const [measuredCardHeight, setMeasuredCardHeight] = useState<number | null>(null);
   const gameweekCarouselRef = useRef<HTMLElement | null>(null);
   const carouselStyle = {
@@ -1325,7 +1328,29 @@ function EmptyState({ message }: { message: string }) {
 }
 
 function LeagueLoadingState() {
-  return <div aria-label="Loading league data" className="league-loading" role="status"><span /><span /><span /></div>;
+  return (
+    <div aria-label="Loading league data" className="league-loading" role="status">
+      <section aria-hidden="true" className="league-loading__round">
+        <header className="league-loading__round-header">
+          <span className="league-loading__line league-loading__line--round" />
+          <span className="league-loading__dots"><i /><i /><i /></span>
+        </header>
+        <div className="league-loading__gameweek">
+          <div className="league-loading__gameweek-header">
+            <span className="league-loading__line league-loading__line--gameweek" />
+            <span className="league-loading__badge" />
+          </div>
+          <div className="league-loading__spotlight">
+            <span className="league-loading__crest" />
+            <span className="league-loading__score" />
+            <span className="league-loading__crest league-loading__crest--away" />
+          </div>
+          <div className="league-loading__fixture-rows"><span /><span /><span /></div>
+        </div>
+      </section>
+      <span className="league-loading__round-dot" />
+    </div>
+  );
 }
 
 function leagueViewFromPath(pathname: string): LeagueView {

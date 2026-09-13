@@ -593,7 +593,8 @@
 .manager-desk__loading-surface--fixture {
   display: grid;
   gap: 1rem;
-  min-height: clamp(18rem, 48vw, 25rem);
+  /* Match the loaded fixture spotlight's reserved mobile slot. */
+  min-height: clamp(24rem, 62vw, 31rem);
 }
 
 .manager-desk__loading-surface--priority {
@@ -663,6 +664,12 @@
   display: grid;
   gap: 1rem;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 760px) {
+  .manager-desk__loading-support-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .manager-desk__all-clear {
@@ -1326,5 +1333,105 @@
     background: var(--background);
     max-width: none;
     padding: 0 0 calc(2rem + var(--cdl-mobile-navigation-clearance));
+  }
+}
+
+/* The loading fixture deliberately follows the live fixture-board DOM so
+   every matchup reserves the same row height before API data is available. */
+.manager-desk__fixture-focus--loading {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.55rem;
+}
+
+.manager-desk__fixture-focus--loading .manager-desk__fixture-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.manager-desk__fixture-focus--loading .manager-desk__fixture-matchup {
+  min-width: 0;
+}
+
+.manager-desk__fixture-focus--loading .manager-desk__loading-badge {
+  background: var(--secondary);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  display: block;
+  height: clamp(3rem, 9.6vw, 3.65rem);
+  width: clamp(3rem, 9.6vw, 3.65rem);
+}
+
+.manager-desk__fixture-focus--loading .manager-desk__fixture-matchup--featured .manager-desk__loading-badge {
+  height: clamp(3.75rem, 12vw, 4.8rem);
+  width: clamp(3.75rem, 12vw, 4.8rem);
+}
+
+.manager-desk__fixture-focus--loading .manager-desk__loading-line--team,
+.manager-desk__fixture-focus--loading .manager-desk__loading-line--record {
+  border-radius: 999px;
+  height: 0.72rem;
+  max-width: 100%;
+  width: min(5.5rem, 100%);
+}
+
+.manager-desk__fixture-focus--loading .manager-desk__loading-line--record {
+  height: 0.52rem;
+  width: min(4.2rem, 82%);
+}
+
+.manager-desk__fixture-focus--loading .manager-desk__loading-comparison-row {
+  align-items: center;
+  display: grid;
+  gap: 0.12rem;
+  grid-template-columns: 1.55rem 1.85rem 1.55rem;
+  justify-content: center;
+  min-height: 1.18rem;
+  width: 100%;
+}
+
+.manager-desk__fixture-focus--loading .manager-desk__loading-comparison-row.is-current {
+  border-bottom: 1px solid color-mix(in srgb, var(--primary) 28%, var(--border));
+  margin-bottom: 0.08rem;
+  min-height: 1.38rem;
+  padding-bottom: 0.18rem;
+}
+
+.manager-desk__fixture-focus--loading .manager-desk__loading-comparison-row i {
+  background: var(--secondary);
+  border: 1px solid var(--border);
+  border-radius: 0.34rem;
+  display: block;
+  height: 0.96rem;
+  justify-self: center;
+  width: 0.96rem;
+}
+
+.manager-desk__fixture-focus--loading .manager-desk__fixture-matchup--featured .manager-desk__loading-comparison-row {
+  min-height: 1.52rem;
+}
+
+.manager-desk__fixture-focus--loading .manager-desk__fixture-matchup--featured .manager-desk__loading-comparison-row.is-current {
+  min-height: 1.82rem;
+}
+
+.manager-desk__fixture-focus--loading .manager-desk__fixture-matchup--featured .manager-desk__loading-comparison-row i {
+  height: 1.5rem;
+  width: 1.5rem;
+}
+
+@media (max-width: 420px) {
+  .manager-desk__fixture-focus--loading {
+    padding: 0.5rem;
+  }
+
+  .manager-desk__fixture-focus--loading .manager-desk__fixture-board {
+    gap: 0.35rem;
+    padding-inline: 0.5rem;
+  }
+
+  .manager-desk__fixture-focus--loading .manager-desk__loading-comparison-row {
+    gap: 0.1rem;
+    grid-template-columns: 1.5rem 1.75rem 1.5rem;
   }
 }

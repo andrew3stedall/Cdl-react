@@ -579,7 +579,6 @@ export function ProfilePage({ currentPath, onNavigate, session, squadClient = de
             </div>
             <Gamepad2 aria-hidden="true" className="profile-summary-card__arrow" size={21} />
           </div>
-          <span className="profile-summary-value">Navigate a ball with your phone</span>
           <span aria-hidden="true" className="profile-maze-summary-preview">
             <span className="profile-maze-summary-preview__path" />
             <span className="profile-maze-summary-preview__ball" />

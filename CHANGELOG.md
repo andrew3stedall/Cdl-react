@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Reworked the Profile landing page's first section into a phone-settings-style
+  `My profile` group with the manager identity, display name, and email address,
+  and removed non-essential explanatory narration from the summary.
+
 - Updated Squad chip controls to show each theme-aware icon with its chip name,
   and refreshed Triple Captain with a neutral segmented shirt, captain `C`, and
   `x3` multiplier marker.

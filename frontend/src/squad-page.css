@@ -330,10 +330,10 @@
   color: var(--squad-muted);
   cursor: pointer;
   display: inline-flex;
-  height: 2.25rem;
+  height: 3.75rem;
   justify-content: center;
   min-width: 0;
-  padding: 0;
+  padding: 0.3rem 0.16rem;
   position: relative;
   width: 100%;
 }
@@ -344,11 +344,34 @@
   color: var(--squad-text);
 }
 
+.squad-page__chip-content {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.16rem;
+  justify-content: center;
+  min-width: 0;
+  width: 100%;
+}
+
 .squad-page__chip-toggle .chip-icon {
   color: var(--squad-text);
   display: block;
-  height: 1.75rem;
-  width: 1.75rem;
+  flex: 0 0 auto;
+  height: 1.8rem;
+  width: 1.8rem;
+}
+
+.squad-page__chip-label {
+  color: currentColor;
+  display: block;
+  font-size: 0.58rem;
+  font-weight: 800;
+  line-height: 1.05;
+  max-width: 100%;
+  min-height: 1.22em;
+  overflow-wrap: anywhere;
+  text-align: center;
 }
 
 .squad-page__chip-toggle.is-active {

@@ -489,6 +489,15 @@ describe('SquadPage', () => {
       'Bench Boost, available',
       'Best XI, available',
     ]);
+    expect(Array.from(container.querySelectorAll('.squad-page__chip-label')).map((label) => label.textContent)).toEqual([
+      'Triple Captain',
+      'Dual Captain',
+      'Auto Captain',
+      'Bench Boost',
+      'Best XI',
+    ]);
+    expect(container.querySelector('.chip-icon--triple-captain text')?.textContent).toContain('C');
+    expect(container.querySelector('.chip-icon--triple-captain text:last-of-type')?.textContent).toBe('x3');
     const pitchRows = Array.from(container.querySelectorAll('.squad-page__pitch-row'));
     expect(pitchRows[0]?.className).toContain('position-fwd');
     expect(pitchRows.at(-1)?.className).toContain('position-gkp');
@@ -687,154 +696,57 @@ describe('SquadPage', () => {
     expect(container.querySelector('tr[role="button"][aria-label="Substitute with Starting Defender 1"]')).not.toBeNull();
     expect(container.querySelector('tr[role="button"][aria-label="Substitute with Reserve Forward"]')).not.toBeNull();
     expect(container.querySelector('tr[role="button"][aria-label="Substitute with Bench Keeper"]')).toBeNull();
-    expect(container.querySelector('tr[role="button"][aria-label="Substitute with Reserve Keeper"]')).toBeNull();
-    expect(container.querySelector('button[aria-label="Cancel substitution"]')).not.toBeNull();
+    expect(container.querySelector('tr[role="button"][aria-label="Substitute with Reserve Keeper"]')).toBeNulßNtâÚ$z{-®éÜj×œÛİÜ™\ˆY›˜[YK›ØØ[PÛÛ\\™JšYÚ›˜[YJNÂŸB‚™[˜İ[Ûˆ\Q\œ›Ü“Y\ÜØYÙJ\œ›Üˆ[šÛ›İÛ‹˜[˜XÚÎˆİš[™ÊNˆİš[™ÈÂˆYˆ
+\œ›Üˆ[œİ[˜Ù[ÙˆX[TÙ[Xİ[Û\Q\œ›Üˆ	‰ˆ\œ›Ü‹˜ÛÙHOOH	ØÛÛ™›Xİ	ÊHÂˆÛÛœİ™X\ÛÛˆH\[Ùˆ\œ›Ü‹™]Z[Ëœ™X\ÛÛˆOOH	Üİš[™ÉÈÈ\œ›Ü‹™]Z[Ëœ™X\ÛÛˆˆ\œ›Ü‹›Y\ÜØYÙNÂˆ™]\›ˆ[™]\ØÚÙYˆ	Ü™X\ÛÛŸXÂˆBˆYˆ
+\œ›Üˆ[œİ[˜Ù[ÙˆÜ]XY\Q\œ›ÜŠH™]\›ˆ\œ›Ü‹›Y\ÜØYÙNÂˆ™]\›ˆ˜[˜XÚÎÂŸB‚™[˜İ[Ûˆ›Ü›X]XY[™Q]JXY[™P]ˆİš[™ÊNˆİš[™ÈÂˆÛÛœİXY[™HH™]È]JXY[™P]
+NÂˆYˆ
+[X™\‹š\Ó˜SŠXY[™K™Ù][YJ
+JJH™]\›ˆ	ÑXY[™H[™[™ÉÎÂˆ™]\›ˆ™]È[‘]U[YQ›Ü›X]
+[™Yš[™YÂˆ^Nˆ	Û[Y\šXÉËˆİ\ˆ	Û[Y\šXÉËˆZ[]Nˆ	Ì‹YYÚ]	Ëˆ[Ûˆ	ÜÚÜ	ËˆÙYZÙ^Nˆ	ÜÚÜ	ËˆJK™›Ü›X]
+XY[™JNÂŸB‚™[˜İ[Ûˆ›Ü›X]Ûİ[İÛŠXY[™P]ˆİš[™Ë›İÎˆ[X™\ŠNˆİš[™ÈÂˆÛÛœİ™[XZ[š[™ÔÙXÛÛ™ÈHX]›X^
+X]™›ÛÜŠ
+™]È]JXY[™P]
+K™Ù][YJ
+HH›İÊHÈL
+JNÂˆYˆ
+™[XZ[š[™ÔÙXÛÛ™ÈH
+H™]\›ˆ	ÑXY[™H\ÜÙY	ÎÂˆÛÛœİ^\ÈHX]™›ÛÜŠ™[XZ[š[™ÔÙXÛÛ™ÈÈ—Í
+NÂˆÛÛœİİ\œÈHX]™›ÛÜŠ
+™[XZ[š[™ÔÙXÛÛ™È	H—Í
+HÈ×ÍŒ
+NÂˆÛÛœİZ[]\ÈHX]™›ÛÜŠ
+™[XZ[š[™ÔÙXÛÛ™È	H×ÍŒ
+HÈŒ
+NÂˆÛÛœİÙXÛÛ™ÈH™[XZ[š[™ÔÙXÛÛ™È	HŒÂˆYˆ
+^\Èˆ
+H™]\›ˆ	Ù^\ßY	Úİ\œßZÂˆYˆ
+İ\œÈˆ
+H™]\›ˆ	Úİ\œßZ	ÛZ[]\ß[XÂˆYˆ
+Z[]\Èˆ
+H™]\›ˆ	ÛZ[]\ß[H	ÜÙXÛÛ™ß\ØÂˆ™]\›ˆ	ÜÙXÛÛ™ß\ØÂŸB‚™[˜İ[Ûˆ›Ü›X[^™TÜÚ][ÛŠÜÚ][Ûˆİš[™ÊNˆİš[™ÈÂˆÛÛœİ›Ü›X[^™YHÜÚ][Û‹š[J
+KÕ\\Ø\ÙJ
+NÂˆYˆ
+›Ü›X[^™YOOH	ÑÒÉÈ›Ü›X[^™YOOH	ÑÓĞSÑQTT‰ÊH™]\›ˆ	ÑÒÔ	ÎÂˆYˆ
+›Ü›X[^™YOOH	ÑQ‘S‘T‰ÊH™]\›ˆ	ÑQ‰ÎÂˆYˆ
+›Ü›X[^™YOOH	ÓRQ’QST‰ÊH™]\›ˆ	ÓRQ	ÎÂˆYˆ
+›Ü›X[^™YOOH	Ñ“Ô•ĞT‘	È›Ü›X[^™YOOH	ÔÕ’RÑT‰ÊH™]\›ˆ	Ñ•Ñ	ÎÂˆ™]\›ˆ›Ü›X[^™YÂŸB‚™[˜İ[Ûˆš\œİ[X™\Š‹‹˜[Y\Îˆ\œ˜^O[X™\ˆ[[™Yš[™YŠNˆ[X™\ˆ[Âˆ™]\›ˆ˜[Y\Ë™š[™
 
-    await act(async () => {
-      (container.querySelector('button[aria-label="Cancel substitution"]') as HTMLButtonElement).click();
-      await Promise.resolve();
-    });
-    expect(container.querySelector('[aria-label="Substitution mode"]')).toBeNull();
-
-    await act(async () => {
-      (container.querySelector('tr[role="button"][aria-label="View Reserve Midfielder details"]') as HTMLElement).click();
-      await Promise.resolve();
-    });
-    await act(async () => {
-      buttonByText(container, 'Sub').click();
-      await Promise.resolve();
-    });
-    expect(container.querySelector('[aria-label="Substitution mode"]')?.textContent).toContain('Reserve Midfielder');
-    expect(container.querySelector('tr[role="button"][aria-label="Substitute with Starting Midfielder 1"]')).not.toBeNull();
-    expect(container.querySelector('tr[role="button"][aria-label="Substitute with Bench Keeper"]')).toBeNull();
-  });
-
-  test('compares manually selected players in selection order', async () => {
-    const { container } = await renderPage();
-    const haaland = container.querySelector('button[aria-label="View Haaland details"]') as HTMLButtonElement;
-
-    await act(async () => {
-      haaland.click();
-      await Promise.resolve();
-    });
-    expect(container.querySelector('.squad-page__drawer--profile')?.textContent).toContain('Sub');
-
-    await act(async () => {
-      (container.querySelector('button[aria-label="Open player actions"]') as HTMLButtonElement).click();
-      await Promise.resolve();
-    });
-    await act(async () => {
-      buttonByText(container, 'Compare player').click();
-      await Promise.resolve();
-      await Promise.resolve();
-      await Promise.resolve();
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    });
-
-    const search = container.querySelector('input[aria-label="Search comparison players"]') as HTMLInputElement;
-    await act(async () => {
-      setInputValue(search, 'Palmer');
-      await Promise.resolve();
-      await Promise.resolve();
-      await Promise.resolve();
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    });
-
-    await act(async () => {
-      buttonByText(container, 'Palmer').click();
-      await Promise.resolve();
-    });
-
-    const cards = Array.from(container.querySelectorAll('.squad-page__compare-card'));
-    expect(cards).toHaveLength(2);
-    expect(cards[0].textContent).toContain('Haaland');
-    expect(cards[1].textContent).toContain('Palmer');
-  });
-
-  test('opens the full player profile directly from the squad selection', async () => {
-    const { container } = await renderPage();
-
-    await act(async () => {
-      (container.querySelector('button[aria-label="View Haaland details"]') as HTMLButtonElement).click();
-      await Promise.resolve();
-      await Promise.resolve();
-      await new Promise((resolve) => setTimeout(resolve, 0));
-    });
-    expect(container.querySelector('.squad-page__drawer--profile')).not.toBeNull();
-    expect(container.querySelector('[data-presentation="drawer"]')).not.toBeNull();
-    expect(container.querySelector('[aria-label="Squad-management actions"]')).not.toBeNull();
-    expect([...container.querySelectorAll('.player-profile__action > span')].map((node) => node.textContent)).toEqual([
-      'Sub',
-      'Remove',
-      'Captain',
-      'Vice',
-    ]);
-    expect(container.querySelector('.player-profile__action-role-badge:not(.vice)')).not.toBeNull();
-    expect(container.querySelector('.player-profile__action-role-badge.vice')).not.toBeNull();
-    expect(container.querySelector('.player-profile__action svg')).not.toBeNull();
-    expect(container.textContent).toContain('Form');
-    expect(container.textContent).toContain('Form & minutes');
-    expect(container.querySelector('.player-profile__next-fixture')).toBeNull();
-    expect(container.textContent).toContain('9');
-  });
-
-  test('stages captaincy changes until Save lineup is clicked', async () => {
-    const { container, root } = await renderPage();
-
-    await act(async () => {
-      (container.querySelector('button[aria-label="View Pickford details"]') as HTMLButtonElement).click();
-      await Promise.resolve();
-      await Promise.resolve();
-    });
-
-    const captainButton = [...container.querySelectorAll<HTMLButtonElement>('.player-profile__action')]
-      .find((button) => button.textContent?.trim() === 'Captain');
-    expect(captainButton).toBeTruthy();
-    expect(captainButton?.disabled).toBe(false);
-
-    await act(async () => {
-      captainButton?.click();
-      await Promise.resolve();
-    });
-
-    const putCallsBeforeSave = vi.mocked(fetch).mock.calls.filter(([, init]) => init?.method === 'PUT');
-    expect(putCallsBeforeSave).toHaveLength(0);
-    expect(buttonByText(container, 'Save lineup')).toBeTruthy();
-
-    const saveButton = [...container.querySelectorAll<HTMLButtonElement>('button')]
-      .find((button) => button.textContent?.trim() === 'Save lineup');
-    expect(saveButton?.disabled).toBe(false);
-
-    await act(async () => {
-      saveButton?.click();
-      await Promise.resolve();
-      await Promise.resolve();
-      await new Promise((resolve) => setTimeout(resolve, 0));
-      await Promise.resolve();
-    });
-
-    const putCallsAfterSave = vi.mocked(fetch).mock.calls.filter(([, init]) => init?.method === 'PUT');
-    expect(putCallsAfterSave).toHaveLength(1);
-    const body = JSON.parse(String(putCallsAfterSave[0]?.[1]?.body ?? '{}')) as { players?: Array<{ player_id: string; is_captain: boolean; is_vice_captain: boolean }> };
-    expect(body.players?.find((candidate) => candidate.player_id === 'fpl-235')).toMatchObject({ is_captain: true, is_vice_captain: false });
-    expect(body.players?.find((candidate) => candidate.player_id === 'fpl-411')).toMatchObject({ is_captain: false, is_vice_captain: false });
-    act(() => { root.unmount(); });
-  });
-
-  test('keeps the profile action bar available for squad management', async () => {
-    const { container } = await renderPage();
-    const haaland = container.querySelector('button[aria-label="View Haaland details"]') as HTMLButtonElement;
-
-    await act(async () => {
-      haaland.click();
-      await Promise.resolve();
-    });
-    await act(async () => {
-      buttonByText(container, 'Remove').click();
-      await Promise.resolve();
-    });
-
-    expect(container.querySelector('.player-profile__dialog')).not.toBeNull();
-    expect(container.querySelector('.player-profile__dialog')?.textContent).toContain('Remove player');
-  });
-});
+˜[YJNˆ˜[YH\È[X™\ˆOˆ\[Ùˆ˜[YHOOH	Û[X™\‰ÊHÏÈ[ÂŸB‚™[˜İ[ÛˆÙ]Y˜[YOŠ™\İ[ˆ›ÛZ\ÙTÙ]Y™\İ[ŠNˆ[Âˆ™]\›ˆ™\İ[œİ]\ÈOOH	Ù[š[Y	ÈÈ™\İ[˜[YHˆ[ÂŸB‚™[˜İ[Ûˆ›Ü›X]Y]šXÊ˜[YNˆ[X™\ˆ[
+Nˆİš[™ÈÂˆ™]\›ˆ˜[YHOOH[[X™\‹š\Ó˜SŠ˜[YJHÈ	ø %	Èˆ˜[YKÑš^Y
+JNÂŸB‚™[˜İ[Ûˆ›Ü›X][YÙ\Š˜[YNˆ[X™\ˆ[
+Nˆİš[™ÈÂˆ™]\›ˆ˜[YHOOH[[X™\‹š\Ó˜SŠ˜[YJHÈ	ø %	Èˆİš[™Ê˜[YJNÂŸB‚™^Ü[˜İ[Ûˆ›Ü›X]š^\™SX™[
+^Y\ˆXÚÏ^Y\•šY]Ë	Û™^ÜÛ™[	È	Û™^š^\™R\ÒÛYIÏŠNˆİš[™ÈÂˆYˆ
+\^Y\‹›™^ÜÛ™[
+H™]\›ˆ	Ó™^8 %	ÎÂˆ™]\›ˆ›Ü›X]ÜÛ™[š^\™SX™[
+^Y\‹›™^ÜÛ™[^Y\‹›™^š^\™R\ÒÛYHOOHYJNÂŸB‚™[˜İ[Ûˆ›Ü›X]ÜÛ™[š^\™SX™[
+ÜÛ™[ˆİš[™È[\ÒÛYNˆ›ÛÛX[ŠNˆİš[™ÈÂˆYˆ
+[ÜÛ™[
+H™]\›ˆ	ø %	ÎÂˆ™]\›ˆ\ÒÛYHÈÜÛ™[Õ\\Ø\ÙJ
+HˆÜÛ™[ÓİÙ\Ø\ÙJ
+NÂŸB‚˜ÛÛœİš^\™QY™šXİ[SX™[ÈHÉÕ™\HX\ŞIË	ÑX\ŞIË	Ğ˜[[˜ÙY	Ë	Ò\™	Ë	Õ™\HÚ[[™Ú[™É×H\ÈÛÛœİÂ‚™[˜İ[Ûˆ›Ü›X[^™Yš^\™QY™šXİ[J˜[YNˆ[X™\ˆ[[™Yš[™Y
+Nˆ[X™\ˆ[ÂˆYˆ
+\[Ùˆ˜[YHOOH	Û[X™\‰È[X™\‹š\Ó˜SŠ˜[YJJH™]\›ˆ[Âˆ™]\›ˆX]›Z[ŠKX]›X^
+KX]œ›İ[™
+˜[YJJJNÂŸB‚™^Ü[˜İ[Ûˆš^\™SÜÛ™[Û\ÜÓ˜[YJ˜[YNˆ[X™\ˆ[[™Yš[™Y
+Nˆİš[™ÈÂˆÛÛœİ˜][™ÈH›Ü›X[^™Yš^\™QY™šXİ[J˜[YJNÂˆ™]\›ˆ˜][™ÈOOH[È	ÜÜ]XY\YÙW×ÛÜÛ™[	ÈˆÜ]XY\YÙW×ÛÜÛ™[Ü]XY\YÙW×ÛÜÛ™[KY™‹IÜ˜][™ßXÂŸB‚™^Ü[˜İ[Ûˆš^\™QY™šXİ[U]J˜[YNˆ[X™\ˆ[[™Yš[™Y
+Nˆİš[™È[™Yš[™YÂˆÛÛœİ˜][™ÈH›Ü›X[^™Yš^\™QY™šXİ[J˜[YJNÂˆ™]\›ˆ˜][™ÈOOH[È[™Yš[™Yˆ	Ùš^\™QY™šXİ[SX™[ÖÜ˜][™ÈHW_Hš^\™XÂŸB‚™[˜İ[Ûˆ\Ğ]˜Z[Xš[]Tš\ÚÊ^Y\ˆ^Y\•šY]ÊNˆ›ÛÛX[ˆÂˆ™]\›ˆ\Ğ]˜Z[Xš[]R\ÜİYJÂˆ]˜Z[Xš[]Nˆ^Y\‹˜]˜Z[Xš[]KˆÚ[˜ÙWÛÙ—Ü^Z[™×Û™^Ü›İ[™ˆ^Y\‹˜Ú[˜ÙSÙ”^Z[™ËˆJNÂŸB‚™^ÜÈ›Ü›P˜[™ÚÜ^Y\“˜[YHHœ›ÛH	Ë‹ØÛÛ\Û™[ËÜ^Y\‹Ô^Y\Ø\™	ÎÂ

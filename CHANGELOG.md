@@ -2,9 +2,13 @@
 
 ## Unreleased
 
+- Updated Squad chip controls to show each theme-aware icon with its chip name,
+  and refreshed Triple Captain with a neutral segmented shirt, captain `C`, and
+  `x3` multiplier marker.
+
 - Replaced the plain initial session-checking card with a full-screen,
-  theme-aware Castle Draft League splash screen that preserves a clear retry
-  state when session verification is unavailable.
+  default-teal Castle Draft League splash screen with a white CDL logo and a
+  clear retry state when session verification is unavailable.
 
 - Refined the League fixture carousel by removing the redundant primary-fixture
   gameweek label, matching its padding to supporting fixtures, applying the

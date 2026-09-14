@@ -434,6 +434,7 @@ describe('AppShell integration', () => {
     expect(container.querySelector('.profile-page__header--description')).toBeNull();
     expect(container.textContent).not.toContain('Manage your identity');
     expect(container.textContent).not.toContain('Shake your phone away and back twice');
+    expect(container.textContent).not.toContain('Navigate a ball with your phone');
     expect(container.textContent).toContain('Test Manager');
     expect(container.querySelector('.profile-page')?.textContent).not.toContain('Refresh data');
     expect(container.querySelector('.profile-page')?.textContent).not.toContain('Sign out');

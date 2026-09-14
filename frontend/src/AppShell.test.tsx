@@ -431,6 +431,9 @@ describe('AppShell integration', () => {
 
     expect(container.querySelector('h1')?.textContent).toBe('Profile');
     expect(container.textContent).not.toContain('Profile & preferences');
+    expect(container.querySelector('.profile-page__header--description')).toBeNull();
+    expect(container.textContent).not.toContain('Manage your identity');
+    expect(container.textContent).not.toContain('Shake your phone away and back twice');
     expect(container.textContent).toContain('Test Manager');
     expect(container.querySelector('.profile-page')?.textContent).not.toContain('Refresh data');
     expect(container.querySelector('.profile-page')?.textContent).not.toContain('Sign out');
@@ -440,6 +443,10 @@ describe('AppShell integration', () => {
     expect(container.querySelector('[aria-label="Open FDR colour scale settings"]')).not.toBeNull();
     expect(container.querySelector('[aria-label="Open result colour settings"]')).not.toBeNull();
     expect(container.querySelector('[aria-label^="Current attacking orientation"]')).not.toBeNull();
+    expect(container.querySelector('#profile-user-details-title')?.textContent).toBe('My profile');
+    expect(container.querySelector('.profile-user-details-card')).not.toBeNull();
+    expect(container.querySelector('.profile-user-details__row dt')?.textContent).toBe('Display name');
+    expect(container.querySelectorAll('.profile-user-details__row')).toHaveLength(2);
     expect(container.querySelector('.profile-page .profile-preset-option')).toBeNull();
     expect(container.querySelector('.profile-page .profile-direction-option')).toBeNull();
 

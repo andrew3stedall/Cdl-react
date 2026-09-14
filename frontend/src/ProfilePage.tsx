@@ -9,6 +9,7 @@ import {
   Circle,
   Fingerprint,
   Gamepad2,
+  Mail,
   Moon,
   Sun,
   Type,
@@ -367,9 +368,31 @@ export function ProfilePage({ currentPath, onNavigate, session, squadClient = de
         title="Profile"
         titleId="profile-title"
       />
-      <header className="profile-page__header profile-page__header--description">
-        <p>Manage your identity, workspace appearance, player colours, result colours, pitch orientation, and FDR colours.</p>
-      </header>
+
+      <section aria-labelledby="profile-user-details-title" className="profile-settings-section">
+        <h2 className="profile-settings-section__title" id="profile-user-details-title">My profile</h2>
+        <Card className="profile-card profile-identity-card profile-user-details-card">
+          <div className="profile-user-details__summary">
+            <span aria-hidden="true" className="profile-avatar">{initials}</span>
+            <div>
+              <h3>{displayName}</h3>
+              <p>{user?.email ?? 'No email address available'}</p>
+            </div>
+          </div>
+          <dl className="profile-user-details__list">
+            <div className="profile-user-details__row">
+              <span aria-hidden="true" className="profile-user-details__icon"><UserRound size={17} /></span>
+              <dt>Display name</dt>
+              <dd>{displayName}</dd>
+            </div>
+            <div className="profile-user-details__row">
+              <span aria-hidden="true" className="profile-user-details__icon"><Mail size={17} /></span>
+              <dt>Email address</dt>
+              <dd>{user?.email ?? 'Not available'}</dd>
+            </div>
+          </dl>
+        </Card>
+      </section>
 
       {isAccountSummary && passkeyStatus?.enabled && passkeyStatus.registeredCount === 0 ? (
         <Card className="profile-card profile-security-card">
@@ -415,7 +438,6 @@ export function ProfilePage({ currentPath, onNavigate, session, squadClient = de
             </div>
             <Smartphone aria-hidden="true" className="profile-appearance-icon" size={22} />
           </div>
-          <p className="profile-card__copy">Shake your phone away and back twice to open this page from anywhere in the app.</p>
           <label className="profile-motion-toggle">
             <span>
               <strong>Motion shortcut</strong>
@@ -440,17 +462,9 @@ export function ProfilePage({ currentPath, onNavigate, session, squadClient = de
         </Card>
       ) : null}
 
-      <div className="profile-page__summary-grid">
-        <Card className="profile-card profile-identity-card">
-          <div className="profile-identity">
-            <span aria-hidden="true" className="profile-avatar">{initials}</span>
-            <div>
-              <p className="profile-card__eyebrow">Manager account</p>
-              <h2>{displayName}</h2>
-              <p>{user?.email ?? 'No email address available'}</p>
-            </div>
-          </div>
-        </Card>
+      <section aria-labelledby="profile-preferences-title" className="profile-settings-section">
+        <h2 className="profile-settings-section__title" id="profile-preferences-title">Preferences</h2>
+        <div className="profile-page__summary-grid">
 
         <ProfileSummaryCard
           ariaLabel="Open workspace appearance settings"
@@ -573,7 +587,8 @@ export function ProfilePage({ currentPath, onNavigate, session, squadClient = de
           </span>
           <ChevronRight aria-hidden="true" className="profile-summary-card__arrow" size={18} />
         </ProfileSummaryCard>
-      </div>
+        </div>
+      </section>
 
       {isSensorMazeOpen ? <SensorMazeGame onClose={() => setIsSensorMazeOpen(false)} /> : null}
     </main>

@@ -14,14 +14,14 @@
   width: 100%;
 }
 
-.team-crest__on-dark {
+.team-crest img.team-crest__on-dark {
   display: none;
 }
 
-:root[data-theme-mode='dark'] .team-crest__on-light {
+:root[data-theme-mode='dark'] .team-crest img.team-crest__on-light {
   display: none;
 }
 
-:root[data-theme-mode='dark'] .team-crest__on-dark {
+:root[data-theme-mode='dark'] .team-crest img.team-crest__on-dark {
   display: block;
 }

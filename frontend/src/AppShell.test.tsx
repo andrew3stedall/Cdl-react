@@ -431,6 +431,10 @@ describe('AppShell integration', () => {
 
     expect(container.querySelector('h1')?.textContent).toBe('Profile');
     expect(container.textContent).not.toContain('Profile & preferences');
+    expect(container.querySelector('.profile-page__header--description')).toBeNull();
+    expect(container.textContent).not.toContain('Manage your identity');
+    expect(container.textContent).not.toContain('Shake your phone away and back twice');
+    expect(container.textContent).not.toContain('Navigate a ball with your phone');
     expect(container.textContent).toContain('Test Manager');
     expect(container.querySelector('.profile-page')?.textContent).not.toContain('Refresh data');
     expect(container.querySelector('.profile-page')?.textContent).not.toContain('Sign out');
@@ -443,6 +447,10 @@ describe('AppShell integration', () => {
     expect(container.querySelector('[aria-label="Open FDR colour scale settings"]')).not.toBeNull();
     expect(container.querySelector('[aria-label="Open result colour settings"]')).not.toBeNull();
     expect(container.querySelector('[aria-label^="Current attacking orientation"]')).not.toBeNull();
+    expect(container.querySelector('#profile-user-details-title')?.textContent).toBe('My profile');
+    expect(container.querySelector('.profile-user-details-card')).not.toBeNull();
+    expect(container.querySelector('.profile-user-details__row dt')?.textContent).toBe('Display name');
+    expect(container.querySelectorAll('.profile-user-details__row')).toHaveLength(2);
     expect(container.querySelector('.profile-page .profile-preset-option')).toBeNull();
     expect(container.querySelector('.profile-page .profile-direction-option')).toBeNull();
 
@@ -495,6 +503,14 @@ describe('AppShell integration', () => {
     expect(container.querySelector('.profile-fdr-preview__labels')?.textContent).toContain('Very easy');
     expect(container.querySelector('.profile-fdr-preview .profile-fdr-palette-bar')?.textContent).toBe('12345');
     expect(container.textContent).not.toContain('Light theme');
+    const customFdrSelector = container.querySelector('[aria-label="Custom FDR colours"]');
+    expect(customFdrSelector?.querySelectorAll('button')).toHaveLength(5);
+    expect(customFdrSelector?.textContent).not.toMatch(/#[0-9A-F]{6}/i);
+    await act(async () => {
+      customFdrSelector?.querySelector<HTMLButtonElement>('[aria-label="Edit FDR 3 colour"]')?.click();
+      await Promise.resolve();
+    });
+    expect(container.querySelector('[aria-label="Colour field for FDR 3"]')).not.toBeNull();
 
     const redBlueOption = container.querySelector<HTMLButtonElement>('[data-scale-name="RdBu"]');
     await act(async () => {
@@ -589,6 +605,14 @@ describe('AppShell integration', () => {
     await act(async () => {
       await Promise.resolve();
     });
+    const customPositionSelector = container.querySelector('[aria-label="Custom position colours"]');
+    expect(customPositionSelector?.querySelectorAll('button')).toHaveLength(4);
+    expect(customPositionSelector?.textContent).not.toMatch(/#[0-9A-F]{6}/i);
+    await act(async () => {
+      customPositionSelector?.querySelector<HTMLButtonElement>('[aria-label="Edit position DEF colour"]')?.click();
+      await Promise.resolve();
+    });
+    expect(container.querySelector('[aria-label="Colour field for position DEF"]')).not.toBeNull();
     const positionPaletteName = container.querySelector<HTMLInputElement>('[aria-label="Saved position palette name"]');
     await act(async () => {
       if (positionPaletteName) {

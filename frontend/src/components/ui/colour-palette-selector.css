@@ -1,0 +1,46 @@
+.colour-palette-selector {
+  display: grid;
+  gap: 0.35rem;
+  grid-template-columns: repeat(var(--colour-palette-columns, 5), minmax(0, 1fr));
+}
+
+.colour-palette-selector__option {
+  align-items: center;
+  background: var(--colour-palette-colour);
+  border: 2px solid transparent;
+  border-radius: calc(var(--radius) - 0.2rem);
+  color: var(--colour-palette-foreground, var(--foreground));
+  cursor: pointer;
+  display: grid;
+  gap: 0.12rem;
+  justify-items: center;
+  min-height: 3.3rem;
+  min-width: 0;
+  padding: 0.35rem 0.15rem;
+}
+
+.colour-palette-selector__option:hover,
+.colour-palette-selector__option:focus-visible,
+.colour-palette-selector__option.is-selected {
+  border-color: var(--foreground);
+  outline: none;
+}
+
+.colour-palette-selector__option.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.colour-palette-selector__option span {
+  font-size: 0.85rem;
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+}
+
+.colour-palette-selector__option small {
+  font-size: 0.58rem;
+  font-weight: 700;
+}

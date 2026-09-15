@@ -8,6 +8,7 @@ import {
   ChevronRight,
   Circle,
   Fingerprint,
+  Mail,
   Moon,
   Sun,
   Type,
@@ -61,6 +62,7 @@ import { getResultColourPaletteLabel } from './result-colours';
 import { managerNicknameForName } from './manager-nicknames';
 import { HttpSquadClient, type SquadApiNotification, type SquadClient } from './squad-api';
 import { PageHero, PageHeroControls, PageHeroNotificationButton, PageHeroViewToggle } from './components/ui/page-hero';
+import { ColourPaletteSelector } from './components/ui/colour-palette-selector';
 import './profile-page.css';
 
 interface ProfilePageProps {
@@ -346,14 +348,26 @@ export function ProfilePage({ currentPath, onNavigate, session, squadClient = de
         titleId="profile-title"
       />
       <div className="profile-settings-groups">
-        <ProfileSettingsGroup title="Account">
-          <div className="profile-settings-identity">
+        <ProfileSettingsGroup cardClassName="profile-user-details-card" title="My profile" titleId="profile-user-details-title">
+          <div className="profile-user-details__summary">
             <span aria-hidden="true" className="profile-avatar">{initials}</span>
-            <span className="profile-settings-row__copy">
-              <strong>{displayName}</strong>
-              <small>{user?.email ?? 'No email address available'}</small>
-            </span>
+            <div>
+              <h3>{displayName}</h3>
+              <p>{user?.email ?? 'No email address available'}</p>
+            </div>
           </div>
+          <dl className="profile-user-details__list">
+            <div className="profile-user-details__row">
+              <span aria-hidden="true" className="profile-user-details__icon"><UserRound size={17} /></span>
+              <dt>Display name</dt>
+              <dd>{displayName}</dd>
+            </div>
+            <div className="profile-user-details__row">
+              <span aria-hidden="true" className="profile-user-details__icon"><Mail size={17} /></span>
+              <dt>Email address</dt>
+              <dd>{user?.email ?? 'Not available'}</dd>
+            </div>
+          </dl>
           {passkeyStatus?.enabled && passkeyStatus.registeredCount === 0 ? (
             <div className="profile-settings-row profile-settings-row--static profile-security-card">
               <span aria-hidden="true" className="profile-settings-row__icon"><Fingerprint size={20} /></span>
@@ -459,11 +473,12 @@ function SettingsPageHeader({ onBack, title }: { onBack: () => void; title: stri
   );
 }
 
-function ProfileSettingsGroup({ children, title }: { children: ReactNode; title: string }) {
+function ProfileSettingsGroup({ cardClassName, children, title, titleId }: { cardClassName?: string; children: ReactNode; title: string; titleId?: string }) {
+  const headingId = titleId ?? `profile-settings-group-${title.toLowerCase().replace(/\s+/g, '-')}`;
   return (
-    <section aria-labelledby={`profile-settings-group-${title.toLowerCase().replace(/\s+/g, '-')}`} className="profile-settings-group">
-      <h2 id={`profile-settings-group-${title.toLowerCase().replace(/\s+/g, '-')}`}>{title}</h2>
-      <Card className="profile-settings-group__card">{children}</Card>
+    <section aria-labelledby={headingId} className="profile-settings-group">
+      <h2 id={headingId}>{title}</h2>
+      <Card className={`profile-settings-group__card${cardClassName ? ` ${cardClassName}` : ''}`}>{children}</Card>
     </section>
   );
 }
@@ -853,22 +868,6 @@ function CustomPlayerColourEditor({
         </div>
         <Button onClick={() => onUse(colours)} type="button" variant="secondary">Use custom</Button>
       </div>
-      <div aria-label={`Custom ${family} colours`} className="profile-fdr-custom-editor__inputs" role="group">
-        {colours.map((colour, index) => (
-          <button
-            aria-label={`Edit ${family} ${labels[index]} colour`}
-            aria-pressed={index === selectedIndex}
-            className={`profile-fdr-custom-editor__level${index === selectedIndex ? ' is-selected' : ''}`}
-            key={`${family}-${labels[index]}`}
-            onClick={() => selectColour(index)}
-            style={{ '--level-colour': colour, '--level-foreground': getFdrFillForeground(colour) } as CSSProperties}
-            type="button"
-          >
-            <span>{labels[index]}</span>
-            <small>{colour}</small>
-          </button>
-        ))}
-      </div>
       <div aria-label={`Colour field for ${family} ${labels[selectedIndex]}`} className="profile-fdr-colour-picker__field" onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); updateFieldFromPointer(event); }} onPointerMove={(event) => { if (event.buttons > 0) updateFieldFromPointer(event); }} style={{ '--picker-hue': `${hsv.hue}deg` } as CSSProperties}>
         <span aria-hidden="true" className="profile-fdr-colour-picker__field-pointer" style={{ left: `${hsv.saturation * 100}%`, top: `${(1 - hsv.exposure) * 100}%` }} />
       </div>
@@ -893,9 +892,19 @@ function CustomPlayerColourEditor({
         <Button disabled={isSaving} onClick={() => void savePalette()} type="button" variant="secondary">{isSaving ? 'Saving…' : 'Save palette'}</Button>
         {saveMessage ? <small aria-live="polite" role="status">{saveMessage}</small> : null}
       </div>
-      {family === 'position'
-        ? <PositionPaletteBar customColours={resolvePositionPalette({ GKP: colours[0], DEF: colours[1], MID: colours[2], FWD: colours[3] })} positionColourScale="Custom" />
-        : <MetricPaletteBar customColours={resolveMetricPalette(colours)} metricColourScale="Custom" metricColourScaleReversed={false} mode="light" />}
+      <ColourPaletteSelector
+        ariaLabel={`Custom ${family} colours`}
+        columns={colours.length}
+        onSelect={(id) => selectColour(Number(id))}
+        options={colours.map((colour, index) => ({
+          ariaLabel: `Edit ${family} ${labels[index]} colour`,
+          colour,
+          foregroundColor: getFdrFillForeground(colour),
+          id: String(index),
+          label: labels[index],
+        }))}
+        selectedId={String(selectedIndex)}
+      />
     </div>
   );
 }
@@ -1505,29 +1514,6 @@ function CustomFdrScaleEditor({
           <small>Choose all five FDR colours independently.</small>
         </button>
       </div>
-      <div aria-label="Custom FDR colours" className="profile-fdr-custom-editor__inputs" role="group">
-        {customColourKeys.map((key, index) => {
-          const isEditable = editableKeys.includes(key);
-          const colour = mode === 'anchors'
-            ? getFdrFillPalette('CustomHex', 'light', false, anchors)[index]
-            : anchors[key];
-          return (
-            <button
-              aria-label={`Edit FDR ${index + 1} colour`}
-              aria-pressed={isEditable && key === selectedKey}
-              className={`profile-fdr-custom-editor__level${key === selectedKey ? ' is-selected' : ''}${!isEditable ? ' is-interpolated' : ''}`}
-              disabled={!isEditable}
-              key={key}
-              onClick={() => setActiveKey(key)}
-              style={{ '--level-colour': colour, '--level-foreground': getFdrFillForeground(colour) } as CSSProperties}
-              type="button"
-            >
-              <span>{index + 1}</span>
-              <small>{isEditable ? colour : 'Auto'}</small>
-            </button>
-          );
-        })}
-      </div>
       <div
         aria-label={`Colour field for FDR ${customColourKeys.indexOf(selectedKey) + 1}`}
         className="profile-fdr-colour-picker__field"
@@ -1603,12 +1589,26 @@ function CustomFdrScaleEditor({
         </Button>
         {saveMessage ? <small aria-live="polite" role="status">{saveMessage}</small> : null}
       </div>
-      <FdrPaletteBar
-        customAnchors={anchors}
-        displayMode="fill"
-        mode="light"
-        reversed={false}
-        scale={getFdrColourScale(mode === 'all' ? 'CustomAll' : 'CustomHex')}
+      <ColourPaletteSelector
+        ariaLabel="Custom FDR colours"
+        columns={customColourKeys.length}
+        onSelect={(id) => setActiveKey(id as CustomColourKey)}
+        options={customColourKeys.map((key, index) => {
+          const isEditable = editableKeys.includes(key);
+          const colour = mode === 'anchors'
+            ? getFdrFillPalette('CustomHex', 'light', false, anchors)[index]
+            : anchors[key];
+          return {
+            ariaLabel: `Edit FDR ${index + 1} colour`,
+            colour,
+            disabled: !isEditable,
+            foregroundColor: getFdrFillForeground(colour),
+            id: key,
+            label: String(index + 1),
+            secondaryLabel: isEditable ? undefined : 'Auto',
+          };
+        })}
+        selectedId={selectedKey}
       />
     </div>
   );

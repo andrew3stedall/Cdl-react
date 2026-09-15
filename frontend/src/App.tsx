@@ -9,7 +9,6 @@ import {
   type SessionClient,
 } from './auth';
 import { AppShell } from './AppShell';
-import { useAccountMotionGesture } from './account-motion-gesture';
 import { AnalyticsDashboardPage } from './AnalyticsDashboardPage';
 import type { RuleSection, SessionState } from './contracts';
 import type { DashboardClient } from './dashboard-api';
@@ -385,7 +384,6 @@ export function App({
   return (
     <ThemePresetProvider preferenceClient={preferenceClient}>
       <>
-        <AccountMotionNavigation currentPath={currentPath} onNavigate={handleNavigate} />
         <AppShell
           currentPath={currentPath}
           onNavigate={handleNavigate}
@@ -409,25 +407,6 @@ export function App({
       </>
     </ThemePresetProvider>
   );
-}
-
-function AccountMotionNavigation({
-  currentPath,
-  onNavigate,
-}: {
-  currentPath: string;
-  onNavigate: (href: string) => void;
-}) {
-  const { accountMotionGestureEnabled } = useThemePreset();
-
-  useAccountMotionGesture({
-    enabled: accountMotionGestureEnabled,
-    onTrigger: () => {
-      if (currentPath !== '/profile') onNavigate('/profile');
-    },
-  });
-
-  return null;
 }
 
 interface AppRouteContentProps {

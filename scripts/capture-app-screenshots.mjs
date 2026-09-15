@@ -19,6 +19,7 @@ const routes = [
   ['market', '/scouting'],
   ['squad-management', '/squad-management'],
   ['team-selection', '/team-selection'],
+  ['profile', '/profile'],
 ];
 
 const screenshotSession = {

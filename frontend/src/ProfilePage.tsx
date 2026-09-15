@@ -8,14 +8,11 @@ import {
   ChevronRight,
   Circle,
   Fingerprint,
-  Gamepad2,
-  Mail,
   Moon,
   Sun,
   Type,
   PaintBucket,
   Palette,
-  Smartphone,
   Trash2,
   LampDesk,
   UserRound,
@@ -25,10 +22,6 @@ import {
 import { Button } from './components/ui/button';
 import { Card } from './components/ui/card';
 import { Sheet } from './components/ui/sheet';
-import {
-  requestAccountMotionPermission,
-  type MotionPermissionState,
-} from './account-motion-gesture';
 import { PlayerCard } from './components/player/PlayerCard';
 import type { AttackDirection, SessionState, ThemePreset } from './contracts';
 import {
@@ -64,12 +57,10 @@ import { getThemeMode, themePresets } from './theme-presets';
 import { useThemePreset } from './theme-preset-provider';
 import { getThemeColourForMode, themeColourOptions } from './theme-colours';
 import { getPasskeyStatus, registerPasskey, type PasskeyStatus } from './passkeys';
-import { SensorMazeGame } from './SensorMazeGame';
 import { getResultColourPaletteLabel } from './result-colours';
 import { managerNicknameForName } from './manager-nicknames';
 import { HttpSquadClient, type SquadApiNotification, type SquadClient } from './squad-api';
 import { PageHero, PageHeroControls, PageHeroNotificationButton, PageHeroViewToggle } from './components/ui/page-hero';
-import { ResultColourSummaryPreview } from './ResultColourSettings';
 import './profile-page.css';
 
 interface ProfilePageProps {
@@ -117,8 +108,6 @@ export function ProfilePage({ currentPath, onNavigate, session, squadClient = de
     deletePlayerColourPalette,
     useCustomFdrPalette,
     setThemeColour,
-    accountMotionGestureEnabled,
-    setAccountMotionGestureEnabled,
     setPresetName,
   } = useThemePreset();
   const [isFdrScaleSheetOpen, setIsFdrScaleSheetOpen] = useState(false);
@@ -127,8 +116,6 @@ export function ProfilePage({ currentPath, onNavigate, session, squadClient = de
   const [passkeyStatus, setPasskeyStatus] = useState<PasskeyStatus | null>(null);
   const [passkeyPending, setPasskeyPending] = useState(false);
   const [passkeyMessage, setPasskeyMessage] = useState<string | null>(null);
-  const [motionPermissionState, setMotionPermissionState] = useState<MotionPermissionState | null>(null);
-  const [isSensorMazeOpen, setIsSensorMazeOpen] = useState(false);
   const [notifications, setNotifications] = useState<SquadApiNotification[]>([]);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const isAccountSummary = currentPath === '/account' || currentPath === '/profile';
@@ -173,7 +160,7 @@ export function ProfilePage({ currentPath, onNavigate, session, squadClient = de
   }, [isAccountSummary, squadClient]);
 
   useEffect(() => {
-    if (!isFdrScaleSheetOpen && !isPositionScaleSheetOpen && !isMetricScaleSheetOpen && !isSensorMazeOpen) return undefined;
+    if (!isFdrScaleSheetOpen && !isPositionScaleSheetOpen && !isMetricScaleSheetOpen) return undefined;
 
     const documentElement = document.documentElement;
     const body = document.body;
@@ -211,7 +198,7 @@ export function ProfilePage({ currentPath, onNavigate, session, squadClient = de
       body.style.width = previousBodyWidth;
       window.scrollTo(scrollX, scrollY);
     };
-  }, [isFdrScaleSheetOpen, isMetricScaleSheetOpen, isPositionScaleSheetOpen, isSensorMazeOpen]);
+  }, [isFdrScaleSheetOpen, isMetricScaleSheetOpen, isPositionScaleSheetOpen]);
 
   const user = session.user;
   const selectedFdrScale = getFdrColourScale(fdrScale);
@@ -224,16 +211,6 @@ export function ProfilePage({ currentPath, onNavigate, session, squadClient = de
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
     .join('') || 'CD';
-
-  const handleMotionGestureToggle = (enabled: boolean) => {
-    setAccountMotionGestureEnabled(enabled);
-    if (!enabled) {
-      setMotionPermissionState(null);
-      return;
-    }
-
-    void requestAccountMotionPermission().then(setMotionPermissionState);
-  };
 
   if (isAppearancePage) {
     return (
@@ -368,228 +345,103 @@ export function ProfilePage({ currentPath, onNavigate, session, squadClient = de
         title="Profile"
         titleId="profile-title"
       />
-
-      <section aria-labelledby="profile-user-details-title" className="profile-settings-section">
-        <h2 className="profile-settings-section__title" id="profile-user-details-title">My profile</h2>
-        <Card className="profile-card profile-identity-card profile-user-details-card">
-          <div className="profile-user-details__summary">
+      <div className="profile-settings-groups">
+        <ProfileSettingsGroup title="Account">
+          <div className="profile-settings-identity">
             <span aria-hidden="true" className="profile-avatar">{initials}</span>
-            <div>
-              <h3>{displayName}</h3>
-              <p>{user?.email ?? 'No email address available'}</p>
-            </div>
-          </div>
-          <dl className="profile-user-details__list">
-            <div className="profile-user-details__row">
-              <span aria-hidden="true" className="profile-user-details__icon"><UserRound size={17} /></span>
-              <dt>Display name</dt>
-              <dd>{displayName}</dd>
-            </div>
-            <div className="profile-user-details__row">
-              <span aria-hidden="true" className="profile-user-details__icon"><Mail size={17} /></span>
-              <dt>Email address</dt>
-              <dd>{user?.email ?? 'Not available'}</dd>
-            </div>
-          </dl>
-        </Card>
-      </section>
-
-      {isAccountSummary && passkeyStatus?.enabled && passkeyStatus.registeredCount === 0 ? (
-        <Card className="profile-card profile-security-card">
-          <div className="profile-card__header">
-            <div>
-              <p className="profile-card__eyebrow">Fast sign-in</p>
-              <h2>Use Face ID or fingerprint</h2>
-            </div>
-            <Fingerprint aria-hidden="true" className="profile-appearance-icon" size={22} />
-          </div>
-          <Button
-            disabled={passkeyPending}
-            onClick={() => {
-              setPasskeyMessage(null);
-              setPasskeyPending(true);
-              void registerPasskey()
-                .then((result) => {
-                  if (result.ok) {
-                    setPasskeyStatus({ enabled: true, registeredCount: 1 });
-                    setPasskeyMessage('Passkey added on this device.');
-                  } else {
-                    setPasskeyMessage(result.error.message);
-                  }
-                })
-                .finally(() => setPasskeyPending(false));
-            }}
-            type="button"
-            variant="secondary"
-          >
-            <Fingerprint aria-hidden="true" size={17} />
-            {passkeyPending ? 'Waiting for device verification…' : 'Enable device sign-in'}
-          </Button>
-          {passkeyMessage ? <p aria-live="polite" className="profile-save-status" role="status">{passkeyMessage}</p> : null}
-        </Card>
-      ) : null}
-
-      {isAccountSummary ? (
-        <Card className="profile-card profile-motion-gesture-card">
-          <div className="profile-card__header">
-            <div>
-              <p className="profile-card__eyebrow">Quick account access</p>
-              <h2>Shake to open Profile</h2>
-            </div>
-            <Smartphone aria-hidden="true" className="profile-appearance-icon" size={22} />
-          </div>
-          <label className="profile-motion-toggle">
-            <span>
-              <strong>Motion shortcut</strong>
-              <small>{accountMotionGestureEnabled ? 'Enabled on this device' : 'Disabled on this device'}</small>
+            <span className="profile-settings-row__copy">
+              <strong>{displayName}</strong>
+              <small>{user?.email ?? 'No email address available'}</small>
             </span>
-            <input
-              aria-label="Enable shake to open Profile"
-              checked={accountMotionGestureEnabled}
-              onChange={(event) => handleMotionGestureToggle(event.target.checked)}
-              type="checkbox"
-            />
-            <span aria-hidden="true" className="profile-motion-toggle__track">
-              <span className="profile-motion-toggle__thumb" />
-            </span>
-          </label>
-          {motionPermissionState === 'denied' ? (
-            <p aria-live="polite" className="profile-motion-status" role="status">Motion access is blocked. Allow motion access in your browser settings to use the shortcut.</p>
+          </div>
+          {passkeyStatus?.enabled && passkeyStatus.registeredCount === 0 ? (
+            <div className="profile-settings-row profile-settings-row--static profile-security-card">
+              <span aria-hidden="true" className="profile-settings-row__icon"><Fingerprint size={20} /></span>
+              <span className="profile-settings-row__copy">
+                <strong>Device sign-in</strong>
+                <small>Use Face ID or fingerprint</small>
+              </span>
+              <Button
+                disabled={passkeyPending}
+                onClick={() => {
+                  setPasskeyMessage(null);
+                  setPasskeyPending(true);
+                  void registerPasskey()
+                    .then((result) => {
+                      if (result.ok) {
+                        setPasskeyStatus({ enabled: true, registeredCount: 1 });
+                        setPasskeyMessage('Passkey added on this device.');
+                      } else {
+                        setPasskeyMessage(result.error.message);
+                      }
+                    })
+                    .finally(() => setPasskeyPending(false));
+                }}
+                type="button"
+                variant="secondary"
+              >
+                <Fingerprint aria-hidden="true" size={17} />
+                {passkeyPending ? 'Waiting…' : 'Enable'}
+              </Button>
+              {passkeyMessage ? <span aria-live="polite" className="profile-settings-row__status" role="status">{passkeyMessage}</span> : null}
+            </div>
           ) : null}
-          {motionPermissionState === 'unsupported' ? (
-            <p aria-live="polite" className="profile-motion-status" role="status">Motion sensors are not available in this browser.</p>
-          ) : null}
-        </Card>
-      ) : null}
+        </ProfileSettingsGroup>
 
-      <section aria-labelledby="profile-preferences-title" className="profile-settings-section">
-        <h2 className="profile-settings-section__title" id="profile-preferences-title">Preferences</h2>
-        <div className="profile-page__summary-grid">
+        <ProfileSettingsGroup title="Appearance">
+          <ProfileSettingsRow
+            ariaLabel="Open workspace appearance settings"
+            icon={<AppearanceIcon preset={preset} />}
+            label="Appearance"
+            onSelect={() => onNavigate('/profile/appearance')}
+            value={`${preset.label} · ${themeColour}`}
+          />
+        </ProfileSettingsGroup>
 
-        <ProfileSummaryCard
-          ariaLabel="Open workspace appearance settings"
-          onSelect={() => onNavigate('/profile/appearance')}
-        >
-          <div className="profile-card__header">
-            <div>
-              <p className="profile-card__eyebrow">Workspace appearance</p>
-              <h2>Visual preset</h2>
-            </div>
-            <AppearanceIcon preset={preset} />
-          </div>
-          <span className="profile-summary-value">{preset.label} · {themeColour}</span>
-          <AppearanceSummaryPreview preset={preset} themeColour={themeColour} />
-          <ChevronRight aria-hidden="true" className="profile-summary-card__arrow" size={18} />
-        </ProfileSummaryCard>
+        <ProfileSettingsGroup title="Player cards">
+          <ProfileSettingsRow
+            ariaLabel="Open player position colour settings"
+            icon={<Palette aria-hidden="true" size={20} />}
+            label="Position colours"
+            onSelect={() => onNavigate('/profile/player-positions')}
+            value={`${positionColourScale === 'Custom' ? 'Custom' : getPositionColourScale(positionColourScale).label} · ${positionColourMode.replace('-', ' ')}`}
+          />
+          <ProfileSettingsRow
+            ariaLabel="Open player metric colour settings"
+            icon={<BarChart3 aria-hidden="true" size={20} />}
+            label="Metric heatmap"
+            onSelect={() => onNavigate('/profile/player-metrics')}
+            value={`${metricColourScale === 'Custom' ? 'Custom' : getMetricColourScale(metricColourScale).label} · ${metricColourScaleReversed ? 'Reversed' : 'Low to high'}`}
+          />
+        </ProfileSettingsGroup>
 
-        <ProfileSummaryCard
-          ariaLabel="Open player position colour settings"
-          onSelect={() => onNavigate('/profile/player-positions')}
-        >
-          <div className="profile-card__header">
-            <div>
-              <p className="profile-card__eyebrow">Player positions</p>
-              <h2>Position colours</h2>
-            </div>
-            <ChevronRight aria-hidden="true" className="profile-summary-card__arrow" size={18} />
-          </div>
-          <span className="profile-summary-value">{positionColourScale === 'Custom' ? 'Custom' : getPositionColourScale(positionColourScale).label} · {positionColourMode.replace('-', ' ')}</span>
-          <PositionPaletteBar positionColourScale={positionColourScale} customColours={positionCustomColours} />
-        </ProfileSummaryCard>
+        <ProfileSettingsGroup title="Fixtures">
+          <ProfileSettingsRow
+            ariaLabel="Open result colour settings"
+            icon={<Circle aria-hidden="true" size={20} />}
+            label="Result colours"
+            onSelect={() => onNavigate('/profile/result-colours')}
+            value={`${getResultColourPaletteLabel(resultColours)} · Win / Draw / Loss`}
+          />
+          <ProfileSettingsRow
+            ariaLabel="Open FDR colour scale settings"
+            icon={<BarChart3 aria-hidden="true" size={20} />}
+            label="FDR colour scale"
+            onSelect={() => onNavigate('/profile/fdr')}
+            value={`${selectedFdrScaleNumber ? `Option ${selectedFdrScaleNumber}` : selectedFdrScale.label} · ${fdrDisplayMode === 'fill' ? 'Coloured fill' : 'Coloured font'}`}
+          />
+        </ProfileSettingsGroup>
 
-        <ProfileSummaryCard
-          ariaLabel="Open player metric colour settings"
-          onSelect={() => onNavigate('/profile/player-metrics')}
-        >
-          <div className="profile-card__header">
-            <div>
-              <p className="profile-card__eyebrow">Player metrics</p>
-              <h2>Metric heatmap</h2>
-            </div>
-            <ChevronRight aria-hidden="true" className="profile-summary-card__arrow" size={18} />
-          </div>
-          <span className="profile-summary-value">{metricColourScale === 'Custom' ? 'Custom' : getMetricColourScale(metricColourScale).label} · {metricColourScaleReversed ? 'Reversed' : 'Low to high'}</span>
-          <MetricPaletteBar customColours={metricCustomColours} metricColourScale={metricColourScale} metricColourScaleReversed={metricColourScaleReversed} mode={themeMode} />
-        </ProfileSummaryCard>
-
-        <ProfileSummaryCard
-          ariaLabel="Open result colour settings"
-          onSelect={() => onNavigate('/profile/result-colours')}
-        >
-          <div className="profile-card__header">
-            <div>
-              <p className="profile-card__eyebrow">Match results</p>
-              <h2>Result colours</h2>
-            </div>
-            <ChevronRight aria-hidden="true" className="profile-summary-card__arrow" size={18} />
-          </div>
-          <span className="profile-summary-value">{getResultColourPaletteLabel(resultColours)} · Win / Draw / Loss</span>
-          <ResultColourSummaryPreview colours={resultColours} />
-        </ProfileSummaryCard>
-
-        <ProfileSummaryCard
-          ariaLabel="Open FDR colour scale settings"
-          onSelect={() => onNavigate('/profile/fdr')}
-        >
-          <div className="profile-card__header">
-            <div>
-              <p className="profile-card__eyebrow">Fixture difficulty</p>
-              <h2>FDR colour scale</h2>
-            </div>
-            <ChevronRight aria-hidden="true" className="profile-summary-card__arrow" size={18} />
-          </div>
-          <span className="profile-summary-value">
-            {selectedFdrScaleNumber ? `Option ${selectedFdrScaleNumber}` : selectedFdrScale.label} · {fdrDisplayMode === 'fill' ? 'Coloured fill' : 'Coloured font'}
-          </span>
-          <div aria-label="Current FDR colour scale" className="profile-fdr-summary-preview">
-            <FdrPaletteBar
-              customAnchors={customFdrAnchors}
-              displayMode={fdrDisplayMode}
-              mode={themeMode}
-              reversed={fdrScaleReversed}
-              scale={selectedFdrScale}
-            />
-          </div>
-        </ProfileSummaryCard>
-
-        <ProfileSummaryCard
-          ariaLabel={`Current attacking orientation: attack ${attackDirection === 'up' ? 'upwards' : 'downwards'}. Open settings.`}
-          onSelect={() => onNavigate('/profile/orientation')}
-        >
-          <div className="profile-card__header">
-            <div>
-              <p className="profile-card__eyebrow">Pitch orientation</p>
-              <h2>Attacking direction</h2>
-            </div>
-            <ChevronRight aria-hidden="true" className="profile-summary-card__arrow" size={18} />
-          </div>
-          <span aria-hidden="true" className="profile-pitch-summary-demo">
-            {attackDirection === 'up' ? <ArrowUp size={42} /> : <ArrowDown size={42} />}
-          </span>
-        </ProfileSummaryCard>
-
-        <ProfileSummaryCard
-          ariaLabel="Open tilt maze game"
-          onSelect={() => setIsSensorMazeOpen(true)}
-        >
-          <div className="profile-card__header">
-            <div>
-              <p className="profile-card__eyebrow">Motion challenge</p>
-              <h2>Tilt maze</h2>
-            </div>
-            <Gamepad2 aria-hidden="true" className="profile-summary-card__arrow" size={21} />
-          </div>
-          <span aria-hidden="true" className="profile-maze-summary-preview">
-            <span className="profile-maze-summary-preview__path" />
-            <span className="profile-maze-summary-preview__ball" />
-            <span className="profile-maze-summary-preview__goal" />
-          </span>
-          <ChevronRight aria-hidden="true" className="profile-summary-card__arrow" size={18} />
-        </ProfileSummaryCard>
-        </div>
-      </section>
-
-      {isSensorMazeOpen ? <SensorMazeGame onClose={() => setIsSensorMazeOpen(false)} /> : null}
+        <ProfileSettingsGroup title="Squad display">
+          <ProfileSettingsRow
+            ariaLabel={`Current attacking orientation: attack ${attackDirection === 'up' ? 'upwards' : 'downwards'}. Open settings.`}
+            icon={attackDirection === 'up' ? <ArrowUp aria-hidden="true" size={20} /> : <ArrowDown aria-hidden="true" size={20} />}
+            label="Attacking direction"
+            onSelect={() => onNavigate('/profile/orientation')}
+            value={attackDirection === 'up' ? 'Attack upwards' : 'Attack downwards'}
+          />
+        </ProfileSettingsGroup>
+      </div>
     </main>
   );
 }
@@ -607,33 +459,25 @@ function SettingsPageHeader({ onBack, title }: { onBack: () => void; title: stri
   );
 }
 
-function ProfileSummaryCard({ ariaLabel, children, onSelect }: { ariaLabel: string; children: ReactNode; onSelect: () => void }) {
+function ProfileSettingsGroup({ children, title }: { children: ReactNode; title: string }) {
   return (
-    <button aria-label={ariaLabel} className="ui-card profile-card profile-summary-card" onClick={onSelect} type="button">
-      {children}
-    </button>
+    <section aria-labelledby={`profile-settings-group-${title.toLowerCase().replace(/\s+/g, '-')}`} className="profile-settings-group">
+      <h2 id={`profile-settings-group-${title.toLowerCase().replace(/\s+/g, '-')}`}>{title}</h2>
+      <Card className="profile-settings-group__card">{children}</Card>
+    </section>
   );
 }
 
-function AppearanceSummaryPreview({ preset, themeColour }: { preset: ThemePreset; themeColour: string }) {
-  const mode = getThemeMode(preset);
-  const previewStyle = {
-    '--summary-preview-background': preset.tokens.colors.background,
-    '--summary-preview-card': preset.tokens.colors.card,
-    '--summary-preview-border': preset.tokens.colors.border,
-    '--summary-preview-foreground': preset.tokens.colors.foreground,
-    '--summary-preview-primary': getThemeColourForMode(themeColour, mode),
-  } as CSSProperties;
-
+function ProfileSettingsRow({ ariaLabel, icon, label, onSelect, value }: { ariaLabel: string; icon: ReactNode; label: string; onSelect: () => void; value: string }) {
   return (
-    <span aria-label={`${preset.label} with accent ${themeColour}`} className="profile-appearance-summary-preview" style={previewStyle}>
-      <span className="profile-appearance-summary-preview__sidebar" />
-      <span className="profile-appearance-summary-preview__content">
-        <span />
-        <span />
-        <span />
+    <button aria-label={ariaLabel} className="profile-settings-row profile-settings-row--button" onClick={onSelect} type="button">
+      <span aria-hidden="true" className="profile-settings-row__icon">{icon}</span>
+      <span className="profile-settings-row__copy">
+        <strong>{label}</strong>
+        <small>{value}</small>
       </span>
-    </span>
+      <ChevronRight aria-hidden="true" className="profile-settings-row__chevron" size={19} />
+    </button>
   );
 }
 
@@ -776,13 +620,13 @@ function MetricColourSettingsCard({
         <ChevronRight aria-hidden="true" size={18} />
       </Button>
       <MetricPaletteBar customColours={metricCustomColours} metricColourScale={metricColourScale} metricColourScaleReversed={metricColourScaleReversed} mode={mode} />
-      <label className="profile-fdr-reverse-toggle">
-        <input checked={metricColourScaleReversed} onChange={(event) => onSetMetricColourScaleReversed(event.target.checked)} type="checkbox" />
-        <span>
-          <strong>Reverse order</strong>
-          <small>Swap which end of the heatmap represents lower and higher values.</small>
-        </span>
-      </label>
+      <ProfileSettingsSwitch
+        checked={metricColourScaleReversed}
+        className="profile-fdr-reverse-toggle"
+        description="Swap which end of the heatmap represents lower and higher values."
+        label="Reverse order"
+        onChange={onSetMetricColourScaleReversed}
+      />
       <PlayerColourPaletteChooser
         customColours={[...metricCustomColours]}
         customPalettes={customPalettes}
@@ -1184,13 +1028,13 @@ function FdrSettingsCard({
         <DisplayModeOption displayMode="font" isSelected={fdrDisplayMode === 'font'} onSelect={() => onSetFdrDisplayMode('font')} />
         <DisplayModeOption displayMode="fill" isSelected={fdrDisplayMode === 'fill'} onSelect={() => onSetFdrDisplayMode('fill')} />
       </div>
-      <label className="profile-fdr-reverse-toggle">
-        <input checked={fdrScaleReversed} onChange={(event) => onSetFdrScaleReversed(event.target.checked)} type="checkbox" />
-        <span>
-          <strong>Reverse order</strong>
-          <small>Swap which end of the chosen scale represents 1 and 5.</small>
-        </span>
-      </label>
+      <ProfileSettingsSwitch
+        checked={fdrScaleReversed}
+        className="profile-fdr-reverse-toggle"
+        description="Swap which end of the chosen scale represents 1 and 5."
+        label="Reverse order"
+        onChange={onSetFdrScaleReversed}
+      />
       <span className="sr-only">Current FDR scale: {fdrScale}</span>
     </Card>
   );
@@ -1212,6 +1056,33 @@ function PitchSettingsCard({ attackDirection, onSetAttackDirection }: { attackDi
         <DirectionOption direction="down" isSelected={attackDirection === 'down'} onSelect={() => onSetAttackDirection('down')} />
       </div>
     </Card>
+  );
+}
+
+function ProfileSettingsSwitch({
+  checked,
+  className = '',
+  description,
+  label,
+  onChange,
+}: {
+  checked: boolean;
+  className?: string;
+  description: string;
+  label: string;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <label className={`profile-settings-switch ${className}`.trim()}>
+      <span className="profile-settings-switch__copy">
+        <strong>{label}</strong>
+        <small>{description}</small>
+      </span>
+      <input aria-label={label} checked={checked} onChange={(event) => onChange(event.target.checked)} type="checkbox" />
+      <span aria-hidden="true" className="profile-settings-switch__track">
+        <span className="profile-settings-switch__thumb" />
+      </span>
+    </label>
   );
 }
 

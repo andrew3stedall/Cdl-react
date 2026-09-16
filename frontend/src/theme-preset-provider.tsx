@@ -48,9 +48,12 @@ import { getThemeMode, getThemePresetClassName, resolveThemePreset } from './the
 import { getStoredThemePreset, setThemePresetCookie } from './theme-cookie';
 import {
   applyThemeColours,
-  defaultThemeColour,
+  defaultThemeColours,
   getThemeColourForMode,
+  resolveThemeAccentColours,
   resolveThemeBaseColour,
+  type ThemeAccent,
+  type ThemeAccentColours,
 } from './theme-colours';
 
 interface ThemePresetContextValue {
@@ -68,6 +71,7 @@ interface ThemePresetContextValue {
   metricCustomColours: MetricPalette;
   resultColours: ResultColourPalette;
   customPlayerColourPalettes: PlayerColourPalette[];
+  themeColours: ThemeAccentColours;
   themeColour: string;
   preset: ThemePreset;
   setAttackDirection: (direction: AttackDirection) => void;
@@ -87,6 +91,7 @@ interface ThemePresetContextValue {
   setResultColours: (colours: ResultColourPalette) => void;
   savePlayerColourPalette: (palette: Omit<PlayerColourPalette, 'id'>) => Promise<PlayerColourPalette>;
   deletePlayerColourPalette: (paletteId: string) => Promise<void>;
+  setThemeAccentColour: (accent: ThemeAccent, colour: string) => void;
   setThemeColour: (colour: string) => void;
   setPresetName: (presetName: ThemePreset['name']) => void;
   saveStatus: 'idle' | 'saving' | 'saved' | 'error';
@@ -94,6 +99,16 @@ interface ThemePresetContextValue {
 
 const ThemePresetContext = createContext<ThemePresetContextValue | null>(null);
 const defaultPreferenceClient = new FallbackPreferenceClient();
+
+function getThemePreferenceFields(themeColours: ThemeAccentColours) {
+  return {
+    lightThemeColour: themeColours.primary,
+    darkThemeColour: getThemeColourForMode(themeColours.primary, 'dark'),
+    primaryThemeColour: themeColours.primary,
+    secondaryThemeColour: themeColours.secondary,
+    tertiaryThemeColour: themeColours.tertiary,
+  };
+}
 
 interface ThemePresetProviderProps {
   children: ReactNode;
@@ -123,14 +138,15 @@ export function ThemePresetProvider({
   const [metricCustomColours, setMetricCustomColoursState] = useState<MetricPalette>(defaultMetricCustomColours);
   const [resultColours, setResultColoursState] = useState<ResultColourPalette>(defaultResultColours);
   const [customPlayerColourPalettes, setCustomPlayerColourPalettes] = useState<PlayerColourPalette[]>([]);
-  const [themeColour, setThemeColourState] = useState(defaultThemeColour);
+  const [themeColours, setThemeColoursState] = useState<ThemeAccentColours>(defaultThemeColours);
+  const themeColour = themeColours.primary;
   const [themeClockTick, setThemeClockTick] = useState(() => Date.now());
   const [saveStatus, setSaveStatus] = useState<ThemePresetContextValue['saveStatus']>('idle');
   const latestPreferencesRef = useRef<UserPreferences | null>(null);
   const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
   const preset = useMemo(
-    () => applyThemeColours(resolveThemePreset(presetName), themeColour),
-    [presetName, themeClockTick, themeColour],
+    () => applyThemeColours(resolveThemePreset(presetName), themeColours),
+    [presetName, themeClockTick, themeColours],
   );
 
   useEffect(() => {
@@ -161,7 +177,11 @@ export function ThemePresetProvider({
           setMetricColourScaleReversedState(preferences.metricColourScaleReversed ?? defaultMetricColourScaleReversed);
           setMetricCustomColoursState(resolveMetricPalette(preferences.metricCustomColours));
           setResultColoursState(resolveResultColours(preferences.resultColours));
-          setThemeColourState(resolveThemeBaseColour(preferences.lightThemeColour ?? preferences.darkThemeColour));
+          setThemeColoursState(resolveThemeAccentColours({
+            primary: preferences.primaryThemeColour ?? preferences.lightThemeColour ?? preferences.darkThemeColour,
+            secondary: preferences.secondaryThemeColour,
+            tertiary: preferences.tertiaryThemeColour,
+          }));
           setCustomFdrAnchorsState(resolveFdrCustomAnchors(preferences.fdrCustomAnchors));
           latestPreferencesRef.current = preferences;
         }
@@ -234,6 +254,8 @@ export function ThemePresetProvider({
       'primary-foreground': colors.primaryForeground,
       secondary: colors.secondary,
       'secondary-foreground': colors.secondaryForeground,
+      tertiary: colors.tertiary,
+      'tertiary-foreground': colors.tertiaryForeground,
       muted: colors.muted,
       'muted-foreground': colors.mutedForeground,
       accent: colors.accent,
@@ -253,6 +275,13 @@ export function ThemePresetProvider({
       root.style.setProperty(`--${token}`, value);
       root.style.setProperty(`--cdl-${token}`, value);
     });
+    const [themePrimary, themeSecondary, themeTertiary] = preset.tokens.chartPaletteHooks;
+    root.style.setProperty('--theme-primary', themePrimary ?? colors.primary);
+    root.style.setProperty('--theme-secondary', themeSecondary ?? colors.accent);
+    root.style.setProperty('--theme-tertiary', themeTertiary ?? colors.tertiary);
+    root.style.setProperty('--cdl-theme-primary', themePrimary ?? colors.primary);
+    root.style.setProperty('--cdl-theme-secondary', themeSecondary ?? colors.accent);
+    root.style.setProperty('--cdl-theme-tertiary', themeTertiary ?? colors.tertiary);
     root.style.setProperty('--cdl-radius', preset.tokens.radius);
     root.style.setProperty('--radius', preset.tokens.radius);
     root.style.setProperty('--cdl-result-win', resultColours.win);
@@ -314,8 +343,7 @@ export function ThemePresetProvider({
           metricColourScaleReversed,
           metricCustomColours,
           resultColours,
-          lightThemeColour: themeColour,
-          darkThemeColour: getThemeColourForMode(themeColour, 'dark'),
+          ...getThemePreferenceFields(themeColours),
           fdrCustomAnchors: customFdrAnchors,
         };
         savePreference({ ...basePreferences, ...patch });
@@ -336,6 +364,7 @@ export function ThemePresetProvider({
       metricCustomColours,
       resultColours,
       customPlayerColourPalettes,
+      themeColours,
       themeColour,
       preset,
       setAttackDirection: (nextAttackDirection) => {
@@ -349,8 +378,7 @@ export function ThemePresetProvider({
           positionColourScale,
           metricColourScale,
           metricColourScaleReversed,
-          lightThemeColour: themeColour,
-          darkThemeColour: getThemeColourForMode(themeColour, 'dark'),
+          ...getThemePreferenceFields(themeColours),
           fdrCustomAnchors: customFdrAnchors,
         });
       },
@@ -365,8 +393,7 @@ export function ThemePresetProvider({
           positionColourScale,
           metricColourScale,
           metricColourScaleReversed,
-          lightThemeColour: themeColour,
-          darkThemeColour: getThemeColourForMode(themeColour, 'dark'),
+          ...getThemePreferenceFields(themeColours),
           fdrCustomAnchors: customFdrAnchors,
         });
       },
@@ -381,8 +408,7 @@ export function ThemePresetProvider({
           positionColourScale,
           metricColourScale,
           metricColourScaleReversed,
-          lightThemeColour: themeColour,
-          darkThemeColour: getThemeColourForMode(themeColour, 'dark'),
+          ...getThemePreferenceFields(themeColours),
           fdrCustomAnchors: customFdrAnchors,
         });
       },
@@ -397,8 +423,7 @@ export function ThemePresetProvider({
           positionColourScale,
           metricColourScale,
           metricColourScaleReversed,
-          lightThemeColour: themeColour,
-          darkThemeColour: getThemeColourForMode(themeColour, 'dark'),
+          ...getThemePreferenceFields(themeColours),
           fdrCustomAnchors: customFdrAnchors,
         });
       },
@@ -414,8 +439,7 @@ export function ThemePresetProvider({
           positionColourScale,
           metricColourScale,
           metricColourScaleReversed,
-          lightThemeColour: themeColour,
-          darkThemeColour: getThemeColourForMode(themeColour, 'dark'),
+          ...getThemePreferenceFields(themeColours),
           fdrCustomAnchors: resolvedAnchors,
         });
       },
@@ -432,8 +456,7 @@ export function ThemePresetProvider({
           positionColourScale,
           metricColourScale,
           metricColourScaleReversed,
-          lightThemeColour: themeColour,
-          darkThemeColour: getThemeColourForMode(themeColour, 'dark'),
+          ...getThemePreferenceFields(themeColours),
           fdrCustomAnchors: palette.anchors,
         });
       },
@@ -500,9 +523,12 @@ export function ThemePresetProvider({
         await preferenceClient.deletePlayerColourPalette(paletteId);
         setCustomPlayerColourPalettes((current) => current.filter((palette) => palette.id !== paletteId));
       },
-      setThemeColour: (nextColour) => {
-        const resolvedColour = resolveThemeBaseColour(nextColour);
-        setThemeColourState(resolvedColour);
+      setThemeAccentColour: (accent, nextColour) => {
+        const nextThemeColours = {
+          ...themeColours,
+          [accent]: resolveThemeBaseColour(nextColour),
+        } as ThemeAccentColours;
+        setThemeColoursState(nextThemeColours);
         savePreference({
           themePreset: preset.name,
           attackDirection,
@@ -512,8 +538,24 @@ export function ThemePresetProvider({
           positionColourScale,
           metricColourScale,
           metricColourScaleReversed,
-          lightThemeColour: resolvedColour,
-          darkThemeColour: getThemeColourForMode(resolvedColour, 'dark'),
+          ...getThemePreferenceFields(nextThemeColours),
+          fdrCustomAnchors: customFdrAnchors,
+        });
+      },
+      setThemeColour: (nextColour) => {
+        const resolvedColour = resolveThemeBaseColour(nextColour);
+        const nextThemeColours = { ...themeColours, primary: resolvedColour };
+        setThemeColoursState(nextThemeColours);
+        savePreference({
+          themePreset: preset.name,
+          attackDirection,
+          fdrScale,
+          fdrScaleReversed,
+          fdrDisplayMode,
+          positionColourScale,
+          metricColourScale,
+          metricColourScaleReversed,
+          ...getThemePreferenceFields(nextThemeColours),
           fdrCustomAnchors: customFdrAnchors,
         });
       },
@@ -531,15 +573,14 @@ export function ThemePresetProvider({
           positionColourScale,
           metricColourScale,
           metricColourScaleReversed,
-          lightThemeColour: themeColour,
-          darkThemeColour: getThemeColourForMode(themeColour, 'dark'),
+          ...getThemePreferenceFields(themeColours),
           fdrCustomAnchors: customFdrAnchors,
         });
       },
       saveStatus,
       });
     },
-    [attackDirection, customFdrAnchors, customFdrPalettes, customPlayerColourPalettes, fdrDisplayMode, fdrScale, fdrScaleReversed, metricColourScale, metricColourScaleReversed, metricCustomColours, positionColourMode, positionColourScale, positionCustomColours, preferenceClient, preset, resultColours, saveStatus, themeColour],
+    [attackDirection, customFdrAnchors, customFdrPalettes, customPlayerColourPalettes, fdrDisplayMode, fdrScale, fdrScaleReversed, metricColourScale, metricColourScaleReversed, metricCustomColours, positionColourMode, positionColourScale, positionCustomColours, preferenceClient, preset, resultColours, saveStatus, themeColour, themeColours],
   );
 
   return <ThemePresetContext.Provider value={value}>{children}</ThemePresetContext.Provider>;

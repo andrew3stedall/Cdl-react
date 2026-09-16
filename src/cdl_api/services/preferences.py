@@ -40,6 +40,13 @@ class UserPreferenceService:
         return self._repository.get_for_user(user_id)
 
     def update_preferences(self, user_id: str, preferences: UserPreferences) -> UserPreferences:
+        # Older clients only send the legacy light/dark pair. Treat the legacy
+        # light value as the primary accent while the new palette fields roll out.
+        if "primary_theme_colour" not in preferences.model_fields_set:
+            preferences = preferences.model_copy(
+                update={"primary_theme_colour": preferences.light_theme_colour}
+            )
+
         if (
             preferences.theme_preset not in SUPPORTED_THEME_PRESETS
             or preferences.attack_direction not in SUPPORTED_ATTACK_DIRECTIONS
@@ -50,6 +57,9 @@ class UserPreferenceService:
             or preferences.metric_colour_scale not in SUPPORTED_METRIC_COLOUR_SCALES
             or not THEME_COLOUR_PATTERN.fullmatch(preferences.light_theme_colour)
             or not THEME_COLOUR_PATTERN.fullmatch(preferences.dark_theme_colour)
+            or not THEME_COLOUR_PATTERN.fullmatch(preferences.primary_theme_colour)
+            or not THEME_COLOUR_PATTERN.fullmatch(preferences.secondary_theme_colour)
+            or not THEME_COLOUR_PATTERN.fullmatch(preferences.tertiary_theme_colour)
             or not THEME_COLOUR_PATTERN.fullmatch(preferences.result_win_colour)
             or not THEME_COLOUR_PATTERN.fullmatch(preferences.result_draw_colour)
             or not THEME_COLOUR_PATTERN.fullmatch(preferences.result_loss_colour)

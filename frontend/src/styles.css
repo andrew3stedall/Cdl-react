@@ -11,6 +11,8 @@
   --primary-foreground: #f0fdfa;
   --secondary: #f1f5f9;
   --secondary-foreground: #1e293b;
+  --tertiary: #0d9488;
+  --tertiary-foreground: #f0fdfa;
   --muted: #f1f5f9;
   --muted-foreground: #64748b;
   --accent: #f1f5f9;
@@ -28,6 +30,12 @@
   --cdl-primary: var(--primary);
   --cdl-border: var(--border);
   --cdl-accent: var(--accent);
+  --theme-primary: #0f766e;
+  --theme-secondary: #115e59;
+  --theme-tertiary: #0d9488;
+  --cdl-theme-primary: var(--theme-primary);
+  --cdl-theme-secondary: var(--theme-secondary);
+  --cdl-theme-tertiary: var(--theme-tertiary);
   --cdl-muted-foreground: var(--muted-foreground);
   --cdl-radius: var(--radius);
   --cdl-fdr-1: #147c71;

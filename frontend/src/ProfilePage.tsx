@@ -56,7 +56,12 @@ import {
 } from './player-colour-scales';
 import { getThemeMode, themePresets } from './theme-presets';
 import { useThemePreset } from './theme-preset-provider';
-import { getThemeColourForMode, themeColourOptions } from './theme-colours';
+import {
+  getThemeColourForMode,
+  themeColourOptions,
+  type ThemeAccent,
+  type ThemeAccentColours,
+} from './theme-colours';
 import { getPasskeyStatus, registerPasskey, type PasskeyStatus } from './passkeys';
 import { getResultColourPaletteLabel } from './result-colours';
 import { managerNicknameForName } from './manager-nicknames';
@@ -90,7 +95,7 @@ export function ProfilePage({ currentPath, onNavigate, session, squadClient = de
     metricCustomColours,
     resultColours,
     customPlayerColourPalettes,
-    themeColour,
+    themeColours,
     preset,
     saveStatus,
     setAttackDirection,
@@ -109,7 +114,7 @@ export function ProfilePage({ currentPath, onNavigate, session, squadClient = de
     savePlayerColourPalette,
     deletePlayerColourPalette,
     useCustomFdrPalette,
-    setThemeColour,
+    setThemeAccentColour,
     setPresetName,
   } = useThemePreset();
   const [isFdrScaleSheetOpen, setIsFdrScaleSheetOpen] = useState(false);
@@ -222,8 +227,8 @@ export function ProfilePage({ currentPath, onNavigate, session, squadClient = de
           preset={preset}
           saveStatus={saveStatus}
           setPresetName={setPresetName}
-          setThemeColour={setThemeColour}
-          themeColour={themeColour}
+          setThemeAccentColour={setThemeAccentColour}
+          themeColours={themeColours}
         />
       </main>
     );
@@ -408,7 +413,7 @@ export function ProfilePage({ currentPath, onNavigate, session, squadClient = de
             icon={<AppearanceIcon preset={preset} />}
             label="Appearance"
             onSelect={() => onNavigate('/profile/appearance')}
-            value={`${preset.label} · ${themeColour}`}
+            value={preset.label + ' · 3 accent colours'}
           />
         </ProfileSettingsGroup>
 
@@ -935,15 +940,15 @@ function SavedPlayerColourPalette({ onDelete, onUse, palette }: { onDelete: () =
 function AppearanceSettingsCard({
   preset,
   saveStatus,
+  setThemeAccentColour,
   setPresetName,
-  setThemeColour,
-  themeColour,
+  themeColours,
 }: {
   preset: ThemePreset;
   saveStatus: 'idle' | 'saving' | 'saved' | 'error';
   setPresetName: (presetName: ThemePreset['name']) => void;
-  setThemeColour: (colour: string) => void;
-  themeColour: string;
+  setThemeAccentColour: (accent: ThemeAccent, colour: string) => void;
+  themeColours: ThemeAccentColours;
 }) {
   return (
     <Card className="profile-card profile-appearance-card profile-settings-card">
@@ -965,7 +970,7 @@ function AppearanceSettingsCard({
           />
         ))}
       </div>
-      <ThemeColourControls themeColour={themeColour} onSelect={setThemeColour} />
+      <ThemeColourControls onSelect={setThemeAccentColour} themeColours={themeColours} />
       <p aria-live="polite" className="profile-save-status" role="status">
         {saveStatus === 'saving' ? 'Saving your appearance preference…' : null}
         {saveStatus === 'saved' ? 'Appearance preference saved.' : null}
@@ -1364,53 +1369,68 @@ function DisplayModeOption({
   );
 }
 
+const themeAccentDefinitions: Array<{ accent: ThemeAccent; description: string; label: string }> = [
+  { accent: 'primary', label: 'Primary accent', description: 'Main actions, focus states, and active navigation.' },
+  { accent: 'secondary', label: 'Secondary accent', description: 'Supporting highlights and softer interface emphasis.' },
+  { accent: 'tertiary', label: 'Tertiary accent', description: 'Additional contrast for charts and supporting data.' },
+];
+
 function ThemeColourControls({
-  themeColour,
+  themeColours,
   onSelect,
 }: {
-  themeColour: string;
-  onSelect: (colour: string) => void;
+  themeColours: ThemeAccentColours;
+  onSelect: (accent: ThemeAccent, colour: string) => void;
 }) {
   return (
     <section aria-labelledby="main-theme-colour-title" className="profile-theme-colours">
       <div className="profile-theme-colours__header">
         <div>
-          <strong id="main-theme-colour-title">Main theme colour</strong>
-          <small>Choose one colour; light and dark variants are adjusted automatically.</small>
+          <strong id="main-theme-colour-title">Theme accent colours</strong>
+          <small>Choose primary, secondary, and tertiary accents; light and dark variants are adjusted automatically.</small>
         </div>
       </div>
-      <div className="profile-theme-colour-row" data-theme-colour-mode="shared">
-        <div className="profile-theme-colour-row__copy">
-          <strong>Shared accent</strong>
-          <small>{themeColour}</small>
+      {themeAccentDefinitions.map(({ accent, description, label }) => (
+        <div className="profile-theme-colour-row" data-theme-colour-accent={accent} key={accent}>
+          <div className="profile-theme-colour-row__copy">
+            <strong>{label}</strong>
+            <small>{description}</small>
+          </div>
+          <div aria-label={label + ' choices'} className="profile-theme-colour-options" role="group">
+            {themeColourOptions.map((option) => (
+              <button
+                aria-label={option.label + ' ' + accent + ' theme colour'}
+                aria-pressed={themeColours[accent] === option.colour}
+                className={'profile-theme-colour-swatch' + (themeColours[accent] === option.colour ? ' is-selected' : '')}
+                key={option.label}
+                onClick={() => onSelect(accent, option.colour)}
+                style={{ '--swatch-colour': option.colour } as CSSProperties}
+                title={label + ': ' + option.label}
+                type="button"
+              />
+            ))}
+            <label className="profile-theme-colour-picker">
+              <span className="sr-only">Choose a custom {accent} theme colour</span>
+              <input
+                aria-label={'Custom ' + accent + ' theme colour'}
+                onChange={(event) => onSelect(accent, event.target.value)}
+                type="color"
+                value={themeColours[accent]}
+              />
+            </label>
+          </div>
         </div>
-        <div aria-label="Main theme colours" className="profile-theme-colour-options" role="group">
-          {themeColourOptions.map((option) => (
-            <button
-              aria-label={`${option.label} theme colour`}
-              aria-pressed={themeColour === option.colour}
-              className={`profile-theme-colour-swatch${themeColour === option.colour ? ' is-selected' : ''}`}
-              key={option.label}
-              onClick={() => onSelect(option.colour)}
-              style={{ '--swatch-colour': option.colour } as CSSProperties}
-              title={option.label}
-              type="button"
-            />
-          ))}
-          <label className="profile-theme-colour-picker">
-            <span className="sr-only">Choose a custom theme colour</span>
-            <input
-              aria-label="Custom theme colour"
-              onChange={(event) => onSelect(event.target.value)}
-              type="color"
-              value={themeColour}
-            />
-          </label>
-        </div>
-      </div>
-      <div className="profile-theme-colour-variants">
-        <span style={{ '--swatch-colour': getThemeColourForMode(themeColour, 'light') } as CSSProperties}>Light {getThemeColourForMode(themeColour, 'light')}</span>
-        <span style={{ '--swatch-colour': getThemeColourForMode(themeColour, 'dark') } as CSSProperties}>Dark {getThemeColourForMode(themeColour, 'dark')}</span>
+      ))}
+      <div aria-label="Theme accent preview" className="profile-theme-colour-variants">
+        {themeAccentDefinitions.map(({ accent, label }) => (
+          <div className="profile-theme-colour-variant" key={accent}>
+            <strong>{label}</strong>
+            <div className="profile-theme-colour-variant__swatches">
+              <span style={{ '--swatch-colour': getThemeColourForMode(themeColours[accent], 'light') } as CSSProperties}>Light</span>
+              <span style={{ '--swatch-colour': getThemeColourForMode(themeColours[accent], 'dark') } as CSSProperties}>Dark</span>
+            </div>
+          </div>
+        ))}
       </div>
     </section>
   );

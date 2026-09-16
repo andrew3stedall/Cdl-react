@@ -42,6 +42,8 @@ export interface ThemePresetTokens {
     primaryForeground: string;
     secondary: string;
     secondaryForeground: string;
+    tertiary: string;
+    tertiaryForeground: string;
     muted: string;
     mutedForeground: string;
     accentForeground: string;
@@ -90,6 +92,9 @@ export interface UserPreferences {
   resultColours?: ResultColourPalette;
   lightThemeColour?: string;
   darkThemeColour?: string;
+  primaryThemeColour?: string;
+  secondaryThemeColour?: string;
+  tertiaryThemeColour?: string;
   fdrCustomAnchors?: {
     min: string;
     second: string;

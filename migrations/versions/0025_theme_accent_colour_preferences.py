@@ -1,6 +1,6 @@
 """persist primary, secondary, and tertiary theme accent colours
 
-Revision ID: 0025_theme_accent_colour_preferences
+Revision ID: 0025_theme_accent_colours
 Revises: 0024_result_colour_preferences
 Create Date: 2026-09-16 00:00:00.000000
 """
@@ -10,7 +10,7 @@ from collections.abc import Sequence
 import sqlalchemy as sa
 from alembic import op
 
-revision: str = "0025_theme_accent_colour_preferences"
+revision: str = "0025_theme_accent_colours"
 down_revision: str | None = "0024_result_colour_preferences"
 branch_labels: str | Sequence[str] | None = None
 depends_on: str | Sequence[str] | None = None

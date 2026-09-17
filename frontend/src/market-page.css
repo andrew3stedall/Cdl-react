@@ -320,11 +320,11 @@
 .market-page__player-table th {
   background: var(--market-surface);
   border-bottom: 1px solid var(--border);
-  color: var(--foreground);
-  font-size: 0.72rem;
-  font-weight: 750;
+  color: var(--market-muted);
+  font-size: 0.62rem;
+  font-weight: 700;
   letter-spacing: 0;
-  padding: 0.7rem 0.65rem;
+  padding: 0.34rem 0.52rem;
   text-align: left;
   white-space: nowrap;
 }
@@ -362,8 +362,10 @@
 }
 
 .market-page__player-row > td {
+  color: var(--foreground);
+  font-size: 0.72rem;
   min-width: 0;
-  padding: 0.48rem 0.65rem;
+  padding: 0.34rem 0.52rem;
   vertical-align: middle;
 }
 
@@ -382,7 +384,7 @@
   color: var(--foreground);
   cursor: pointer;
   display: flex;
-  gap: 0.45rem;
+  gap: 0.25rem;
   min-width: 0;
   padding: 0.12rem 0;
   text-align: left;
@@ -394,16 +396,14 @@
   min-width: 0;
 }
 
+.market-page__list-player-card {
+  flex: 0 1 auto;
+}
+
 .market-page__player-identity:hover,
 .market-page__player-identity:focus-visible {
   color: var(--primary);
   outline: none;
-}
-
-.market-page__player-identity > span:last-child {
-  display: grid;
-  gap: 0.18rem;
-  min-width: 0;
 }
 
 .market-page__player-identity strong {
@@ -462,6 +462,25 @@
 .market-page__metric strong {
   font-size: 0.87rem;
   white-space: nowrap;
+}
+
+.market-page__list-points {
+  font-size: inherit;
+  white-space: nowrap;
+}
+
+.market-page__expected {
+  color: var(--market-muted);
+  display: inline-flex;
+  font-size: 0.58rem;
+  gap: 0.2rem;
+  white-space: nowrap;
+}
+
+.market-page__expected span + span::before {
+  color: var(--border);
+  content: '/';
+  margin-right: 0.2rem;
 }
 
 .market-page__form-dots {
@@ -788,8 +807,9 @@
   .market-page__result-bar { align-items: flex-start; flex-direction: column; gap: 0.35rem; }
   .market-page__player-table { min-width: 0; }
   .market-page__player-table th,
-  .market-page__player-row > td { padding-inline: 0.35rem; }
-  .market-page__player-identity { gap: 0.35rem; }
+  .market-page__player-row > td { padding-inline: 0.18rem; }
+  .market-page__player-row > td { padding-block: 0.24rem; }
+  .market-page__player-identity { gap: 0.25rem; }
   .market-page__player-table th:first-child,
   .market-page__player-table td:first-child { width: 63%; }
   .market-page__player-table th:nth-child(2),

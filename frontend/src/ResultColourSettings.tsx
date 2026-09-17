@@ -1,5 +1,6 @@
 import { Check, Circle, Palette } from 'lucide-react';
-import { useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
+import { useEffect, useState, type CSSProperties } from 'react';
+import type { PointerEvent as ReactPointerEvent } from 'react';
 
 import { ColourPaletteSelector } from './components/ui/colour-palette-selector';
 import { Card } from './components/ui/card';
@@ -32,6 +33,9 @@ const resultEntries = [
 ] as const satisfies ReadonlyArray<{ key: ResultColourKey; label: string }>;
 
 export function ResultColourSettings({ colours, onChange, saveStatus }: ResultColourSettingsProps) {
+  const matchesPreset = resultColourPresets.some((preset) => resultColoursEqual(preset.colours, colours));
+  const [isCustomOpen, setIsCustomOpen] = useState(!matchesPreset);
+  useEffect(() => setIsCustomOpen(!matchesPreset), [matchesPreset]);
   const [selectedKey, setSelectedKey] = useState<ResultColourKey>('win');
   const selectedEntry = resultEntries.find(({ key }) => key === selectedKey) ?? resultEntries[0];
   const hsv = hexToHsv(colours[selectedKey]);
@@ -66,10 +70,6 @@ export function ResultColourSettings({ colours, onChange, saveStatus }: ResultCo
         </div>
         <Palette aria-hidden="true" className="profile-appearance-icon" size={21} />
       </div>
-      <p className="result-colour-settings__intro">
-        Keep win, draw, and loss states separate from the workspace accent so changing the theme never changes what a result means.
-      </p>
-
       <div aria-label="Result colour presets" className="result-colour-settings__presets" role="group">
         {resultColourPresets.map((preset) => {
           const isSelected = resultColoursEqual(preset.colours, colours);
@@ -84,7 +84,6 @@ export function ResultColourSettings({ colours, onChange, saveStatus }: ResultCo
               <ResultColourSwatches colours={preset.colours} />
               <span className="result-colour-settings__preset-copy">
                 <strong>{preset.label}</strong>
-                <small>{preset.description}</small>
               </span>
               <span aria-hidden="true" className="profile-preset-check">
                 {isSelected ? <Check size={15} /> : <Circle size={15} />}
@@ -94,11 +93,9 @@ export function ResultColourSettings({ colours, onChange, saveStatus }: ResultCo
         })}
       </div>
 
-      <section aria-labelledby="custom-result-colours-title" className="result-colour-settings__custom">
-        <div className="result-colour-settings__custom-label">
-          <strong id="custom-result-colours-title">Custom palette</strong>
-          <small>Choose win, draw, and loss independently. Changes are previewed and saved immediately.</small>
-        </div>
+      <details className="profile-colour-accordion result-colour-settings__custom" id="result-custom-accordion" onToggle={(event) => setIsCustomOpen(event.currentTarget.open)} open={isCustomOpen}>
+        <summary className="profile-colour-accordion__summary">Custom palette</summary>
+        <div className="profile-colour-accordion__content">
 
         <div
           aria-label={`Colour field for result ${selectedEntry.label}`}
@@ -175,7 +172,8 @@ export function ResultColourSettings({ colours, onChange, saveStatus }: ResultCo
           }))}
           selectedId={selectedKey}
         />
-      </section>
+        </div>
+      </details>
 
       <ResultColourPreview colours={colours} />
       <p aria-live="polite" className="profile-save-status" role="status">

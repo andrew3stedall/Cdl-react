@@ -346,14 +346,60 @@
   color: var(--primary);
 }
 
-.profile-theme-colours {
+.profile-colour-accordion {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.profile-colour-accordion[open] {
+  border-color: var(--primary);
+}
+
+.profile-colour-accordion__summary {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  font-size: 0.76rem;
+  font-weight: 800;
+  justify-content: space-between;
+  list-style: none;
+  padding: 0.75rem 0.8rem;
+}
+
+.profile-colour-accordion__summary::-webkit-details-marker {
+  display: none;
+}
+
+.profile-colour-accordion__summary::after {
+  color: var(--muted-foreground);
+  content: '+';
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.profile-colour-accordion[open] > .profile-colour-accordion__summary::after {
+  content: '−';
+}
+
+.profile-colour-accordion__summary:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+
+.profile-colour-accordion__content {
   border-top: 1px solid var(--border);
   display: grid;
   gap: 0.7rem;
-  padding-top: 0.9rem;
+  padding: 0.75rem;
 }
 
-.profile-theme-colours__header,
+.profile-theme-colours {
+  display: block;
+}
+
 .profile-theme-colour-row {
   align-items: center;
   display: flex;
@@ -361,22 +407,8 @@
   justify-content: space-between;
 }
 
-.profile-theme-colours__header > div,
-.profile-theme-colour-row__copy {
-  display: grid;
-  gap: 0.18rem;
-}
-
-.profile-theme-colours__header strong,
-.profile-theme-colour-row__copy strong {
+.profile-theme-colour-row > strong {
   font-size: 0.78rem;
-}
-
-.profile-theme-colours__header small,
-.profile-theme-colour-row__copy small {
-  color: var(--muted-foreground);
-  font-size: 0.68rem;
-  line-height: 1.35;
 }
 
 .profile-theme-colour-row {
@@ -973,7 +1005,7 @@
   align-items: center;
   display: flex;
   gap: 0.75rem;
-  justify-content: space-between;
+  justify-content: flex-end;
 }
 
 .profile-fdr-custom-editor__header > div {
@@ -983,12 +1015,6 @@
 
 .profile-fdr-custom-editor__header strong {
   font-size: 0.78rem;
-}
-
-.profile-fdr-custom-editor__header small {
-  color: var(--muted-foreground);
-  font-size: 0.65rem;
-  line-height: 1.35;
 }
 
 .profile-fdr-custom-editor__header button {
@@ -1160,7 +1186,6 @@
   margin: 0;
 }
 
-.profile-fdr-saved-palettes__header small,
 .profile-fdr-saved-palettes__empty {
   color: var(--muted-foreground);
   font-size: 0.63rem;

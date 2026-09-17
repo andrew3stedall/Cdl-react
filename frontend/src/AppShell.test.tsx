@@ -472,6 +472,13 @@ describe('AppShell integration', () => {
     expect(preferenceClient.preferences.themePreset).toBe('teal-dark');
     expect(document.documentElement.dataset.themeMode).toBe('dark');
 
+    const themeColoursAccordion = container.querySelector<HTMLDetailsElement>('#theme-colours-accordion');
+    expect(themeColoursAccordion?.open).toBe(false);
+    await act(async () => {
+      themeColoursAccordion?.querySelector<HTMLElement>('summary')?.click();
+      await Promise.resolve();
+    });
+    expect(themeColoursAccordion?.open).toBe(true);
     const blueOption = container.querySelector<HTMLButtonElement>('[aria-label="Blue primary theme colour"]');
     await act(async () => {
       blueOption?.click();
@@ -494,6 +501,7 @@ describe('AppShell integration', () => {
     expect(preferenceClient.preferences.tertiaryThemeColour).toBe('#BE123C');
     expect(document.documentElement.style.getPropertyValue('--cdl-theme-secondary')).toBe('#A679F3');
     expect(document.documentElement.style.getPropertyValue('--cdl-theme-tertiary')).toBe('#D35E7A');
+    expect(container.querySelectorAll('.profile-preset-copy small')).toHaveLength(0);
 
     await act(async () => {
       container.querySelector<HTMLButtonElement>('.profile-subpage-back')?.click();
@@ -513,11 +521,21 @@ describe('AppShell integration', () => {
     expect(container.querySelector('#fdr-scale-sheet')?.hasAttribute('hidden')).toBe(false);
     expect(container.querySelectorAll('.profile-fdr-scale-option')).toHaveLength(7);
     expect([...container.querySelectorAll('.profile-fdr-scale-option__number')].map((number) => number.textContent)).toEqual(['1', '2', '3', '4', '5', '6', '7']);
+    const fdrCustomAccordion = container.querySelector<HTMLDetailsElement>('#fdr-custom-accordion');
+    expect(fdrCustomAccordion?.open).toBe(false);
+    expect(fdrCustomAccordion?.previousElementSibling?.querySelectorAll('.profile-fdr-scale-option')).toHaveLength(7);
     expect(container.querySelectorAll('[aria-label^="Delete saved FDR palette"]').length).toBe(0);
     expect(container.querySelector('#fdr-scale-sheet')?.textContent).not.toContain('Viridis');
     expect(container.querySelector('.profile-fdr-preview__labels')?.textContent).toContain('Very easy');
     expect(container.querySelector('.profile-fdr-preview .profile-fdr-palette-bar')?.textContent).toBe('12345');
     expect(container.textContent).not.toContain('Light theme');
+    await act(async () => {
+      fdrCustomAccordion?.querySelector<HTMLElement>('summary')?.click();
+      await Promise.resolve();
+    });
+    expect(fdrCustomAccordion?.open).toBe(true);
+    expect(container.querySelector('.profile-fdr-custom-editor__header strong')).toBeNull();
+    expect(container.querySelector('.profile-fdr-custom-editor__header small')).toBeNull();
     const customFdrSelector = container.querySelector('[aria-label="Custom FDR colours"]');
     expect(customFdrSelector?.querySelectorAll('button')).toHaveLength(5);
     expect(customFdrSelector?.textContent).not.toMatch(/#[0-9A-F]{6}/i);
@@ -605,7 +623,11 @@ describe('AppShell integration', () => {
     await act(async () => {
       await Promise.resolve();
     });
+    const positionCustomAccordion = container.querySelector<HTMLDetailsElement>('#position-custom-accordion');
+    expect(positionCustomAccordion?.open).toBe(false);
+    expect(positionCustomAccordion?.previousElementSibling?.querySelectorAll('.profile-player-colour-option')).toHaveLength(3);
     expect(container.querySelectorAll('[aria-label="Position colour scales"] .profile-player-colour-option')).toHaveLength(3);
+    expect(container.querySelectorAll('[aria-label="Position colour scales"] .profile-player-colour-option small')).toHaveLength(0);
     const oceanPositions = [...container.querySelectorAll<HTMLButtonElement>('[aria-label="Position colour scales"] .profile-player-colour-option')]
       .find((option) => option.textContent?.includes('Ocean'));
     expect(oceanPositions).toBeDefined();
@@ -618,6 +640,10 @@ describe('AppShell integration', () => {
 
     container.querySelector<HTMLButtonElement>('[aria-controls="position-colour-sheet"]')?.click();
     await act(async () => {
+      await Promise.resolve();
+    });
+    await act(async () => {
+      container.querySelector<HTMLDetailsElement>('#position-custom-accordion')?.querySelector<HTMLElement>('summary')?.click();
       await Promise.resolve();
     });
     const customPositionSelector = container.querySelector('[aria-label="Custom position colours"]');
@@ -673,7 +699,9 @@ describe('AppShell integration', () => {
     await act(async () => {
       await Promise.resolve();
     });
+    expect(container.querySelector<HTMLDetailsElement>('#metric-custom-accordion')?.open).toBe(false);
     expect(container.querySelectorAll('[aria-label="Metric colour scales"] .profile-player-colour-option')).toHaveLength(4);
+    expect(container.querySelectorAll('[aria-label="Metric colour scales"] .profile-player-colour-option small')).toHaveLength(0);
     const purpleMetrics = [...container.querySelectorAll<HTMLButtonElement>('[aria-label="Metric colour scales"] .profile-player-colour-option')]
       .find((option) => option.textContent?.includes('Purple'));
     expect(purpleMetrics).toBeDefined();
@@ -690,6 +718,22 @@ describe('AppShell integration', () => {
     expect(preferenceClient.preferences.metricColourScaleReversed).toBe(true);
     expect(document.documentElement.dataset.metricColourScale).toBe('Purple');
 
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('.profile-subpage-back')?.click();
+      await Promise.resolve();
+    });
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[aria-label="Open result colour settings"]')?.click();
+      await Promise.resolve();
+    });
+    expect(container.querySelectorAll('.result-colour-settings__preset-copy small')).toHaveLength(0);
+    expect(container.querySelector<HTMLDetailsElement>('#result-custom-accordion')?.open).toBe(false);
+    await act(async () => {
+      container.querySelector<HTMLDetailsElement>('#result-custom-accordion')?.querySelector<HTMLElement>('summary')?.click();
+      await Promise.resolve();
+    });
+    expect(container.querySelector<HTMLDetailsElement>('#result-custom-accordion')?.open).toBe(true);
+    expect(container.querySelector('.result-colour-settings__picker small')).toBeNull();
     await act(async () => {
       container.querySelector<HTMLButtonElement>('.profile-subpage-back')?.click();
       await Promise.resolve();

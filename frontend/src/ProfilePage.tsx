@@ -537,7 +537,6 @@ function PositionColourSettingsCard({
         </div>
         <Palette aria-hidden="true" className="profile-appearance-icon" size={21} />
       </div>
-      <p className="profile-card__copy">Choose distinct categorical colours for GKP, DEF, MID, and FWD players.</p>
       <Button aria-controls="position-colour-sheet" aria-expanded={isScaleSheetOpen} className="profile-fdr-scale-trigger" onClick={onOpenSheet} type="button" variant="secondary">
         <span>
           <strong>{positionColourScale === 'Custom' ? 'Custom' : getPositionColourScale(positionColourScale).label}</strong>
@@ -552,7 +551,7 @@ function PositionColourSettingsCard({
             <span className="profile-position-colour-mode__icon" aria-hidden="true">
               {option.name === 'name-font' ? <Type size={16} /> : option.name === 'name-fill' ? <PaintBucket size={16} /> : option.name === 'card-border' ? <Circle size={16} /> : <Palette size={16} />}
             </span>
-            <span><strong>{option.label}</strong><small>{option.description}</small></span>
+            <span><strong>{option.label}</strong></span>
             <span aria-hidden="true" className="profile-preset-check">{option.name === positionColourMode ? <Check size={15} /> : <Circle size={15} />}</span>
           </button>
         ))}
@@ -560,7 +559,6 @@ function PositionColourSettingsCard({
       <section aria-label="Example player card" className="profile-position-player-card-preview">
         <div className="profile-position-player-card-preview__copy">
           <strong>Live player card preview</strong>
-          <small>Updates as you choose a position colour and application style.</small>
         </div>
         <div className="profile-position-player-card-preview__stage">
           <PlayerCard
@@ -631,7 +629,6 @@ function MetricColourSettingsCard({
         </div>
         <BarChart3 aria-hidden="true" className="profile-appearance-icon" size={21} />
       </div>
-      <p className="profile-card__copy">Use hue-varying sequential colours so low-to-high metrics read like a heatmap.</p>
       <Button aria-controls="metric-colour-sheet" aria-expanded={isScaleSheetOpen} className="profile-fdr-scale-trigger" onClick={onOpenSheet} type="button" variant="secondary">
         <span>
           <strong>{metricColourScale === 'Custom' ? 'Custom' : getMetricColourScale(metricColourScale).label}</strong>
@@ -643,7 +640,6 @@ function MetricColourSettingsCard({
       <ProfileSettingsSwitch
         checked={metricColourScaleReversed}
         className="profile-fdr-reverse-toggle"
-        description="Swap which end of the heatmap represents lower and higher values."
         label="Reverse order"
         onChange={onSetMetricColourScaleReversed}
       />
@@ -726,6 +722,8 @@ function PlayerColourPaletteChooser({
   const savedPalettes = customPalettes.filter((palette) => palette.family === family);
   const title = isPosition ? 'Position colours' : 'Metric heatmap colours';
   const selectedLabel = selectedScale === 'Custom' ? 'Custom' : presets.find((scale) => scale.name === selectedScale)?.label ?? selectedScale;
+  const [isCustomOpen, setIsCustomOpen] = useState(selectedScale === 'Custom');
+  useEffect(() => setIsCustomOpen(selectedScale === 'Custom'), [selectedScale]);
 
   return (
     <>
@@ -742,37 +740,6 @@ function PlayerColourPaletteChooser({
             </Button>
           </header>
           <div className="profile-fdr-scale-list">
-            <section aria-labelledby={`${family}-custom-heading`}>
-              <h3 className="profile-fdr-custom-heading" id={`${family}-custom-heading`}>Custom palette</h3>
-              <CustomPlayerColourEditor
-                family={family}
-                initialColours={customColours}
-                onSave={(palette) => onSavePalette(palette)}
-                onUse={(colours) => {
-                  onUseCustomColours(colours);
-                  onClose();
-                }}
-              />
-              {savedPalettes.length ? (
-                <div aria-label={`Saved custom ${family} palettes`} className="profile-player-saved-palettes">
-                  <div className="profile-fdr-saved-palettes__header">
-                    <h4>Saved palettes</h4>
-                    <small>Only palettes saved here can be deleted.</small>
-                  </div>
-                  {savedPalettes.map((palette) => (
-                    <SavedPlayerColourPalette
-                      key={palette.id}
-                      onDelete={() => onDeletePalette(palette.id)}
-                      onUse={() => {
-                        onUseCustomColours(palette.colours);
-                        onClose();
-                      }}
-                      palette={palette}
-                    />
-                  ))}
-                </div>
-              ) : null}
-            </section>
             <section aria-labelledby={`${family}-preset-heading`}>
               <h3 className="profile-fdr-custom-heading" id={`${family}-preset-heading`}>Presets</h3>
               <div aria-label={`${isPosition ? 'Position' : 'Metric'} colour scales`} className="profile-player-colour-options" role="group">
@@ -790,12 +757,44 @@ function PlayerColourPaletteChooser({
                     {isPosition
                       ? <PositionPaletteBar positionColourScale={scale.name as PositionColourScaleName} />
                       : <MetricPaletteBar metricColourScale={scale.name as MetricColourScaleName} metricColourScaleReversed={false} mode={mode} />}
-                    <span><strong>{scale.label}</strong><small>{scale.description}</small></span>
+                    <span><strong>{scale.label}</strong></span>
                     <span aria-hidden="true" className="profile-preset-check">{scale.name === selectedScale ? <Check size={15} /> : <Circle size={15} />}</span>
                   </button>
                 ))}
               </div>
             </section>
+            <details className="profile-colour-accordion" id={`${family}-custom-accordion`} onToggle={(event) => setIsCustomOpen(event.currentTarget.open)} open={isCustomOpen}>
+              <summary className="profile-colour-accordion__summary">Custom palette</summary>
+              <div className="profile-colour-accordion__content">
+                <CustomPlayerColourEditor
+                  family={family}
+                  initialColours={customColours}
+                  onSave={(palette) => onSavePalette(palette)}
+                  onUse={(colours) => {
+                    onUseCustomColours(colours);
+                    onClose();
+                  }}
+                />
+                {savedPalettes.length ? (
+                  <div aria-label={`Saved custom ${family} palettes`} className="profile-player-saved-palettes">
+                    <div className="profile-fdr-saved-palettes__header">
+                      <h4>Saved palettes</h4>
+                    </div>
+                    {savedPalettes.map((palette) => (
+                      <SavedPlayerColourPalette
+                        key={palette.id}
+                        onDelete={() => onDeletePalette(palette.id)}
+                        onUse={() => {
+                          onUseCustomColours(palette.colours);
+                          onClose();
+                        }}
+                        palette={palette}
+                      />
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            </details>
           </div>
           <span className="sr-only">Current palette: {selectedLabel}</span>
         </div>
@@ -867,10 +866,6 @@ function CustomPlayerColourEditor({
   return (
     <div className={`profile-fdr-custom-editor profile-player-custom-editor profile-player-custom-editor--${family}`}>
       <div className="profile-fdr-custom-editor__header">
-        <div>
-          <strong>Build your own {family} palette</strong>
-          <small>Pick each colour independently with the colour field, hue strip, saturation, and exposure controls.</small>
-        </div>
         <Button onClick={() => onUse(colours)} type="button" variant="secondary">Use custom</Button>
       </div>
       <div aria-label={`Colour field for ${family} ${labels[selectedIndex]}`} className="profile-fdr-colour-picker__field" onPointerDown={(event) => { event.currentTarget.setPointerCapture(event.pointerId); updateFieldFromPointer(event); }} onPointerMove={(event) => { if (event.buttons > 0) updateFieldFromPointer(event); }} style={{ '--picker-hue': `${hsv.hue}deg` } as CSSProperties}>
@@ -959,7 +954,6 @@ function AppearanceSettingsCard({
         </div>
         <AppearanceIcon preset={preset} />
       </div>
-      <p className="profile-card__copy">Choose the light, dark, or adaptive workspace appearance.</p>
       <div aria-label="Visual preset" className="profile-preset-grid" role="group">
         {themePresets.map((themePreset) => (
           <PresetOption
@@ -1014,7 +1008,6 @@ function FdrSettingsCard({
         </div>
         <span className="profile-fdr-count">{fdrColourScales.length} presets + custom</span>
       </div>
-      <p className="profile-card__copy">Choose how fixture difficulty is coloured across the workspace.</p>
       <Button
         aria-controls="fdr-scale-sheet"
         aria-expanded={isFdrScaleSheetOpen}
@@ -1045,7 +1038,6 @@ function FdrSettingsCard({
       <ProfileSettingsSwitch
         checked={fdrScaleReversed}
         className="profile-fdr-reverse-toggle"
-        description="Swap which end of the chosen scale represents 1 and 5."
         label="Reverse order"
         onChange={onSetFdrScaleReversed}
       />
@@ -1064,7 +1056,6 @@ function PitchSettingsCard({ attackDirection, onSetAttackDirection }: { attackDi
         </div>
         {attackDirection === 'up' ? <ArrowUp aria-hidden="true" className="profile-appearance-icon" size={21} /> : <ArrowDown aria-hidden="true" className="profile-appearance-icon" size={21} />}
       </div>
-      <p className="profile-card__copy">Choose the direction your team attacks in pitch views.</p>
       <div aria-label="Attacking direction" className="profile-direction-grid" role="group">
         <DirectionOption direction="up" isSelected={attackDirection === 'up'} onSelect={() => onSetAttackDirection('up')} />
         <DirectionOption direction="down" isSelected={attackDirection === 'down'} onSelect={() => onSetAttackDirection('down')} />
@@ -1082,7 +1073,7 @@ function ProfileSettingsSwitch({
 }: {
   checked: boolean;
   className?: string;
-  description: string;
+  description?: string;
   label: string;
   onChange: (checked: boolean) => void;
 }) {
@@ -1090,7 +1081,7 @@ function ProfileSettingsSwitch({
     <label className={`profile-settings-switch ${className}`.trim()}>
       <span className="profile-settings-switch__copy">
         <strong>{label}</strong>
-        <small>{description}</small>
+        {description ? <small>{description}</small> : null}
       </span>
       <input aria-label={label} checked={checked} onChange={(event) => onChange(event.target.checked)} type="checkbox" />
       <span aria-hidden="true" className="profile-settings-switch__track">
@@ -1129,6 +1120,9 @@ function FdrScaleChooser({
   onUseCustomFdrPalette: (palette: FdrCustomPalette) => void;
   themeMode: 'light' | 'dark';
 }) {
+  const [isCustomOpen, setIsCustomOpen] = useState(fdrScale === 'CustomHex' || fdrScale === 'CustomAll');
+  useEffect(() => setIsCustomOpen(fdrScale === 'CustomHex' || fdrScale === 'CustomAll'), [fdrScale]);
+
   return (
     <>
       {isOpen ? <button aria-label="Close FDR colour scale chooser" className="profile-fdr-sheet-backdrop" onClick={onClose} type="button" /> : null}
@@ -1144,38 +1138,6 @@ function FdrScaleChooser({
             </Button>
           </header>
           <div className="profile-fdr-scale-list">
-            <section aria-labelledby="profile-fdr-custom-heading">
-              <h3 className="profile-fdr-custom-heading" id="profile-fdr-custom-heading">Custom scales</h3>
-              <CustomFdrScaleEditor
-                anchors={customFdrAnchors}
-                onChange={onSetCustomFdrAnchors}
-                onSave={onSave}
-                onUse={(scaleName) => {
-                  onSetFdrScale(scaleName);
-                  onClose();
-                }}
-                selectedScaleName={fdrScale}
-              />
-              <div aria-label="Saved custom FDR palettes" className="profile-fdr-saved-palettes">
-                <div className="profile-fdr-saved-palettes__header">
-                  <h4>Saved palettes</h4>
-                  <small>Only palettes you save here can be deleted.</small>
-                </div>
-                {customFdrPalettes.length ? customFdrPalettes.map((palette) => (
-                  <SavedFdrPaletteOption
-                    key={palette.id}
-                    onDelete={() => deleteCustomFdrPalette(palette.id)}
-                    onUse={() => {
-                      onUseCustomFdrPalette(palette);
-                      onClose();
-                    }}
-                    palette={palette}
-                  />
-                )) : (
-                  <p className="profile-fdr-saved-palettes__empty">Save a custom palette to keep it here for later.</p>
-                )}
-              </div>
-            </section>
             <section aria-labelledby="profile-fdr-presets-heading">
               <h3 className="profile-fdr-custom-heading" id="profile-fdr-presets-heading">Numbered presets</h3>
               {fdrColourScales.map((scale) => (
@@ -1199,6 +1161,39 @@ function FdrScaleChooser({
                 </button>
               ))}
             </section>
+            <details className="profile-colour-accordion" id="fdr-custom-accordion" onToggle={(event) => setIsCustomOpen(event.currentTarget.open)} open={isCustomOpen}>
+              <summary className="profile-colour-accordion__summary">Custom palette</summary>
+              <div className="profile-colour-accordion__content">
+                <CustomFdrScaleEditor
+                  anchors={customFdrAnchors}
+                  onChange={onSetCustomFdrAnchors}
+                  onSave={onSave}
+                  onUse={(scaleName) => {
+                    onSetFdrScale(scaleName);
+                    onClose();
+                  }}
+                  selectedScaleName={fdrScale}
+                />
+                {customFdrPalettes.length ? (
+                  <div aria-label="Saved custom FDR palettes" className="profile-fdr-saved-palettes">
+                    <div className="profile-fdr-saved-palettes__header">
+                      <h4>Saved palettes</h4>
+                    </div>
+                    {customFdrPalettes.map((palette) => (
+                      <SavedFdrPaletteOption
+                        key={palette.id}
+                        onDelete={() => deleteCustomFdrPalette(palette.id)}
+                        onUse={() => {
+                          onUseCustomFdrPalette(palette);
+                          onClose();
+                        }}
+                        palette={palette}
+                      />
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            </details>
           </div>
         </div>
       </Sheet>
@@ -1360,7 +1355,6 @@ function DisplayModeOption({
       <span aria-hidden="true" className="profile-direction-icon"><Icon size={18} /></span>
       <span className="profile-direction-copy">
         <strong>{isFill ? 'Coloured fill' : 'Coloured font'}</strong>
-        <small>{isFill ? 'Black or white text chosen for contrast' : 'Use the scale on the opponent text'}</small>
       </span>
       <span aria-hidden="true" className="profile-preset-check">
         {isSelected ? <Check size={15} /> : <Circle size={15} />}
@@ -1369,10 +1363,10 @@ function DisplayModeOption({
   );
 }
 
-const themeAccentDefinitions: Array<{ accent: ThemeAccent; description: string; label: string }> = [
-  { accent: 'primary', label: 'Primary accent', description: 'Main actions, focus states, and active navigation.' },
-  { accent: 'secondary', label: 'Secondary accent', description: 'Supporting highlights and softer interface emphasis.' },
-  { accent: 'tertiary', label: 'Tertiary accent', description: 'Additional contrast for charts and supporting data.' },
+const themeAccentDefinitions: Array<{ accent: ThemeAccent; label: string }> = [
+  { accent: 'primary', label: 'Primary accent' },
+  { accent: 'secondary', label: 'Secondary accent' },
+  { accent: 'tertiary', label: 'Tertiary accent' },
 ];
 
 function ThemeColourControls({
@@ -1382,57 +1376,53 @@ function ThemeColourControls({
   themeColours: ThemeAccentColours;
   onSelect: (accent: ThemeAccent, colour: string) => void;
 }) {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
-    <section aria-labelledby="main-theme-colour-title" className="profile-theme-colours">
-      <div className="profile-theme-colours__header">
-        <div>
-          <strong id="main-theme-colour-title">Theme accent colours</strong>
-          <small>Choose primary, secondary, and tertiary accents; light and dark variants are adjusted automatically.</small>
-        </div>
-      </div>
-      {themeAccentDefinitions.map(({ accent, description, label }) => (
-        <div className="profile-theme-colour-row" data-theme-colour-accent={accent} key={accent}>
-          <div className="profile-theme-colour-row__copy">
-            <strong>{label}</strong>
-            <small>{description}</small>
-          </div>
-          <div aria-label={label + ' choices'} className="profile-theme-colour-options" role="group">
-            {themeColourOptions.map((option) => (
-              <button
-                aria-label={option.label + ' ' + accent + ' theme colour'}
-                aria-pressed={themeColours[accent] === option.colour}
-                className={'profile-theme-colour-swatch' + (themeColours[accent] === option.colour ? ' is-selected' : '')}
-                key={option.label}
-                onClick={() => onSelect(accent, option.colour)}
-                style={{ '--swatch-colour': option.colour } as CSSProperties}
-                title={label + ': ' + option.label}
-                type="button"
-              />
-            ))}
-            <label className="profile-theme-colour-picker">
-              <span className="sr-only">Choose a custom {accent} theme colour</span>
-              <input
-                aria-label={'Custom ' + accent + ' theme colour'}
-                onChange={(event) => onSelect(accent, event.target.value)}
-                type="color"
-                value={themeColours[accent]}
-              />
-            </label>
-          </div>
-        </div>
-      ))}
-      <div aria-label="Theme accent preview" className="profile-theme-colour-variants">
+    <details className="profile-colour-accordion profile-theme-colours" id="theme-colours-accordion" onToggle={(event) => setIsOpen(event.currentTarget.open)} open={isOpen}>
+      <summary className="profile-colour-accordion__summary" id="main-theme-colour-title">Custom theme colours</summary>
+      <div className="profile-colour-accordion__content">
         {themeAccentDefinitions.map(({ accent, label }) => (
-          <div className="profile-theme-colour-variant" key={accent}>
+          <div className="profile-theme-colour-row" data-theme-colour-accent={accent} key={accent}>
             <strong>{label}</strong>
-            <div className="profile-theme-colour-variant__swatches">
-              <span style={{ '--swatch-colour': getThemeColourForMode(themeColours[accent], 'light') } as CSSProperties}>Light</span>
-              <span style={{ '--swatch-colour': getThemeColourForMode(themeColours[accent], 'dark') } as CSSProperties}>Dark</span>
+            <div aria-label={label + ' choices'} className="profile-theme-colour-options" role="group">
+              {themeColourOptions.map((option) => (
+                <button
+                  aria-label={option.label + ' ' + accent + ' theme colour'}
+                  aria-pressed={themeColours[accent] === option.colour}
+                  className={'profile-theme-colour-swatch' + (themeColours[accent] === option.colour ? ' is-selected' : '')}
+                  key={option.label}
+                  onClick={() => onSelect(accent, option.colour)}
+                  style={{ '--swatch-colour': option.colour } as CSSProperties}
+                  title={label + ': ' + option.label}
+                  type="button"
+                />
+              ))}
+              <label className="profile-theme-colour-picker">
+                <span className="sr-only">Choose a custom {accent} theme colour</span>
+                <input
+                  aria-label={'Custom ' + accent + ' theme colour'}
+                  onChange={(event) => onSelect(accent, event.target.value)}
+                  type="color"
+                  value={themeColours[accent]}
+                />
+              </label>
             </div>
           </div>
         ))}
+        <div aria-label="Theme accent preview" className="profile-theme-colour-variants">
+          {themeAccentDefinitions.map(({ accent, label }) => (
+            <div className="profile-theme-colour-variant" key={accent}>
+              <strong>{label}</strong>
+              <div className="profile-theme-colour-variant__swatches">
+                <span style={{ '--swatch-colour': getThemeColourForMode(themeColours[accent], 'light') } as CSSProperties}>Light</span>
+                <span style={{ '--swatch-colour': getThemeColourForMode(themeColours[accent], 'dark') } as CSSProperties}>Dark</span>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
-    </section>
+    </details>
   );
 }
 
@@ -1504,10 +1494,6 @@ function CustomFdrScaleEditor({
   return (
     <div className="profile-fdr-custom-editor">
       <div className="profile-fdr-custom-editor__header">
-        <div>
-          <strong>Build your own scale</strong>
-          <small>Use the colour field to tune saturation and exposure, then choose exactly which FDR levels are editable.</small>
-        </div>
         <div className="profile-fdr-custom-editor__actions">
           <Button onClick={() => onUse(mode === 'all' ? 'CustomAll' : 'CustomHex')} type="button" variant="secondary">
             Use {mode === 'all' ? 'every colour' : '1 / 3 / 5'}
@@ -1522,7 +1508,6 @@ function CustomFdrScaleEditor({
           type="button"
         >
           <strong>Custom 1 / 3 / 5</strong>
-          <small>Levels 2 and 4 interpolate automatically.</small>
         </button>
         <button
           aria-pressed={mode === 'all'}
@@ -1531,7 +1516,6 @@ function CustomFdrScaleEditor({
           type="button"
         >
           <strong>Custom every colour</strong>
-          <small>Choose all five FDR colours independently.</small>
         </button>
       </div>
       <div
@@ -1768,7 +1752,6 @@ function PresetOption({
       </span>
       <span className="profile-preset-copy">
         <strong>{preset.label}</strong>
-        <small>{preset.description}</small>
       </span>
       <span aria-hidden="true" className="profile-preset-check">
         {isSelected ? <Check size={15} /> : <Circle size={15} />}

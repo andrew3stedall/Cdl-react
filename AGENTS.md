@@ -232,6 +232,7 @@ Planned/production infrastructure context:
 - Use the modern CDL React design direction rather than recreating the legacy UI exactly.
 - Treat the Castle Manager's Desk pattern as the preferred experience direction for mobile-first, urgency-ranked action surfaces.
 - Prefer short CTAs, clear hierarchy, dense but readable cards, and responsive layouts.
+- Do not add narrative or explanatory prose to app components. Use compact labels, values, controls, and actionable status or error feedback instead.
 - Every major screen should handle loading, empty, error, and success states.
 - Preserve accessibility basics: semantic HTML, labelled controls, visible focus states, and sufficient contrast.
 

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Matched Market list density to Squad: the shared player card and its form
+  gauge now stay on one row, while table typography, row padding, and xG/xA
+  values use the same compact scan pattern.
+
 - Simplified Market player discovery into the Squad-style player list, keeping
   player card, points, and xG/xA while removing position dots, status/ownership
   columns and filters, and non-actionable workspace copy.

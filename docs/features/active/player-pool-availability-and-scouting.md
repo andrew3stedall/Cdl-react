@@ -61,7 +61,7 @@ unavailable_fpl_status
 
 - Reusable player table/cards.
 - Position colour coding.
-- Market discovery uses the same compact player-card, points, and xG/xA list pattern as Squad.
+- Market discovery uses the same compact player-card, points, and xG/xA list pattern as Squad, including row density, typography, and a side-aligned form gauge.
 - Market discovery does not show player availability, ownership, or status fields and does not offer filters for them.
 - Watchlist and notes controls.
 

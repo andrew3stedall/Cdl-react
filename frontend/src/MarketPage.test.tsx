@@ -89,6 +89,10 @@ describe('MarketPage', () => {
     expect(table?.querySelector('tbody tr td')?.textContent).toContain('Casey Midfielder');
     expect(container.querySelector('.market-page__player-row article')).toBeNull();
     expect(container.querySelector('.player-card__position-marker')).toBeNull();
+    const playerCard = table?.querySelector('.market-page__list-player-card');
+    expect(playerCard?.classList).toContain('player-card--form-beside');
+    expect(playerCard?.lastElementChild?.classList.contains('player-card__form')).toBe(true);
+    expect(table?.querySelector('.market-page__expected')).not.toBeNull();
     expect(table?.textContent).not.toContain('Status');
     expect(table?.textContent).not.toContain('Owned');
   });

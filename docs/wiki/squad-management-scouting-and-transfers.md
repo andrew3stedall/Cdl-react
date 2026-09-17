@@ -89,7 +89,7 @@ Content-Type: application/json
 `/scouting` renders the Market workspace inside the shared application shell and includes:
 
 - One page-level navigation for Discovery, Interests, and Trades.
-- Squad-style player discovery list with player card, points, and xG/xA columns.
+- Squad-style compact player discovery list with a side-aligned form gauge, player card, points, and xG/xA columns.
 - Position and fixture-difficulty filters; no player ownership, availability, or status filter/column.
 - Interest creation and registered-interest review.
 - Proposed trade activity review.

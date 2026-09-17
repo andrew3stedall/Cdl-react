@@ -67,33 +67,33 @@ async function renderPage(currentPath = '/scouting') {
 }
 
 describe('MarketPage', () => {
-  test('frames discovery around evidence and action rather than squad management', async () => {
+  test('keeps discovery focused on the player list', async () => {
     const { container } = await renderPage();
 
     expect(container.querySelector('h1')?.textContent).toBe('Market');
-    expect(container.textContent).toContain('Official FPL evidence');
     expect(container.textContent).toContain('Casey Midfielder');
     expect(container.querySelector('.cdl-page-hero__view-toggle')).not.toBeNull();
     expect(container.querySelector('button[aria-label="Discovery"]')?.getAttribute('aria-pressed')).toBe('true');
-    expect(container.textContent).not.toContain('Squad management');
-    expect(container.querySelector('[aria-label="Market actions"]')).toBeNull();
-    expect(container.textContent).not.toContain('Find an upgrade');
-    expect(container.textContent).not.toContain('Review Interests');
-    expect(container.textContent).not.toContain('Review trades');
+    expect(container.textContent).not.toContain('Market workspace');
+    expect(container.textContent).not.toContain('Player discovery');
+    expect(container.textContent).not.toContain('Official FPL evidence');
     expect(container.querySelector('nav[aria-label="Squad mobile navigation"]')).toBeNull();
   });
 
-  test('presents discovery players as aligned table rows', async () => {
+  test('presents discovery players in the Squad-style three-column list', async () => {
     const { container } = await renderPage();
     const table = container.querySelector('table[aria-label="Market player results"]');
 
-    expect(table?.querySelectorAll('thead th')).toHaveLength(7);
+    expect(table?.querySelectorAll('thead th')).toHaveLength(3);
     expect(table?.querySelectorAll('tbody tr')).toHaveLength(1);
     expect(table?.querySelector('tbody tr td')?.textContent).toContain('Casey Midfielder');
     expect(container.querySelector('.market-page__player-row article')).toBeNull();
+    expect(container.querySelector('.player-card__position-marker')).toBeNull();
+    expect(table?.textContent).not.toContain('Status');
+    expect(table?.textContent).not.toContain('Owned');
   });
 
-  test('filters discovery and persists an Interest action', async () => {
+  test('keeps only position and fixture filters, then persists an Interest action from player details', async () => {
     const { container } = await renderPage();
     const search = container.querySelector('input[aria-label="Search market players"]') as HTMLInputElement;
 
@@ -103,6 +103,21 @@ describe('MarketPage', () => {
       await Promise.resolve();
     });
 
+    const filterButton = container.querySelector('button[aria-label="Open market filters"]') as HTMLButtonElement;
+    await act(async () => {
+      filterButton.click();
+      await Promise.resolve();
+    });
+    expect(container.querySelector('select[aria-label="Filter market by ownership"]')).toBeNull();
+    expect(container.querySelector('select[aria-label="Filter market by position"]')).not.toBeNull();
+    expect(container.querySelector('select[aria-label="Filter market by fixture difficulty"]')).not.toBeNull();
+
+    const playerRow = container.querySelector('tr[aria-label="View Casey Midfielder details"]') as HTMLTableRowElement;
+    await act(async () => {
+      playerRow.click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
     const interest = container.querySelector('button[aria-label="Add Casey Midfielder to Interests"]') as HTMLButtonElement;
     expect(interest).toBeDefined();
     await act(async () => {
@@ -112,21 +127,24 @@ describe('MarketPage', () => {
     });
 
     expect(container.textContent).toContain('Casey Midfielder added to Interests.');
-    expect(container.textContent).toContain('In Interests');
+    expect(container.querySelector('button[aria-label="Add Casey Midfielder to Interests"]')).toBeNull();
+    expect(container.textContent).not.toContain('In Interests');
   });
 
-  test('opens the evidence drawer and keeps Interests separate from ownership', async () => {
+  test('opens player details without an availability or ownership field', async () => {
     const { container } = await renderPage('/scouting/interests');
-    expect(container.querySelector('section[aria-label="Your Interests"]')?.textContent).toContain('Your shortlist is empty');
+    expect(container.querySelector('section[aria-label="Your Interests"]')?.textContent).toContain('No Interests');
 
     const { container: discoveryContainer } = await renderPage('/scouting');
-    const player = discoveryContainer.querySelector('button[aria-label="View Casey Midfielder details"]') as HTMLButtonElement;
+    const player = discoveryContainer.querySelector('tr[aria-label="View Casey Midfielder details"]') as HTMLTableRowElement;
     await act(async () => {
       player.click();
       await Promise.resolve();
       await Promise.resolve();
     });
-    expect(discoveryContainer.querySelector('[role="dialog"]')?.textContent).toContain('Player evidence');
-    expect(discoveryContainer.querySelector('[role="dialog"]')?.textContent).toContain('No current availability flag');
+    expect(discoveryContainer.querySelector('[role="dialog"]')?.textContent).toContain('Casey Midfielder');
+    expect(discoveryContainer.querySelector('[role="dialog"]')?.textContent).toContain('Next fixture');
+    expect(discoveryContainer.querySelector('[role="dialog"]')?.textContent).not.toContain('Availability');
+    expect(discoveryContainer.querySelector('[role="dialog"]')?.textContent).not.toContain('Owned');
   });
 });

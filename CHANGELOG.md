@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Simplified Market player discovery into the Squad-style player list, keeping
+  player card, points, and xG/xA while removing position dots, status/ownership
+  columns and filters, and non-actionable workspace copy.
+
 - Replaced duplicate custom palette colour rows with one reusable interactive
   selector, removed hex values from the editor, and shared the component across
   position, metric, and FDR custom colour settings.

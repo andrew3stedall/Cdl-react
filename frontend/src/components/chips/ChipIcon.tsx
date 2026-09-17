@@ -1,4 +1,4 @@
-export type ChipIconVariant = 'triple-captain' | 'dual-captain' | 'bench-boost' | 'auto-captain';
+export type ChipIconVariant = 'triple-captain' | 'dual-captain' | 'question-captain' | 'bench-boost' | 'auto-captain';
 
 interface ChipIconProps {
   className?: string;
@@ -15,6 +15,10 @@ export function ChipIcon({ className = '', variant }: ChipIconProps) {
 
   if (variant === 'triple-captain' || variant === 'dual-captain') {
     return <CaptainChipIcon className={classNames} variant={variant} />;
+  }
+
+  if (variant === 'question-captain') {
+    return <QuestionCaptainChipIcon className={classNames} />;
   }
 
   return (
@@ -78,6 +82,57 @@ function CaptainChipIcon({ className, variant }: { className: string; variant: '
         y="79.6"
       >
         {multiplier}
+      </text>
+    </svg>
+  );
+}
+
+function QuestionCaptainChipIcon({ className }: { className: string }) {
+  return (
+    <svg
+      aria-hidden="true"
+      className={className}
+      fill="none"
+      focusable="false"
+      viewBox="0 0 100 100"
+    >
+      <defs>
+        <clipPath id="captain-circle-clip-question-captain">
+          <rect height="71" width="100" x="0" y="0" />
+        </clipPath>
+      </defs>
+      <circle
+        clipPath="url(#captain-circle-clip-question-captain)"
+        cx="50"
+        cy="50"
+        r="45"
+        stroke="currentColor"
+        strokeWidth="3.2"
+      />
+      <text
+        dominantBaseline="middle"
+        fill="currentColor"
+        fontFamily="Arial, Helvetica, sans-serif"
+        fontSize="46"
+        fontWeight="800"
+        textAnchor="middle"
+        x="50"
+        y="43"
+      >
+        ?
+      </text>
+      <rect fill="currentColor" height="17" rx="5.5" width="86" x="7" y="71" />
+      <text
+        dominantBaseline="middle"
+        fill="var(--surface)"
+        fontFamily="Arial, Helvetica, sans-serif"
+        fontSize="18.5"
+        fontWeight="800"
+        textAnchor="middle"
+        x="50"
+        y="79.6"
+      >
+        2x
       </text>
     </svg>
   );

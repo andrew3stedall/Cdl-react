@@ -16,7 +16,7 @@ import {
 
 import { Button } from './components/ui/button';
 import { FormDots, PlayerCard, type PlayerCardPlayer } from './components/player/PlayerCard';
-import { PageHero, PageHeroControls, PageHeroNotificationButton, PageHeroViewToggle } from './components/ui/page-hero';
+import { PageHero, PageHeroControls, PageHeroViewToggle } from './components/ui/page-hero';
 import type { ThemePreset } from './contracts';
 import { availabilityIssueLabel, hasAvailabilityIssue } from './player-availability';
 import type { SquadApiPlayer } from './squad-api';
@@ -107,15 +107,6 @@ interface ApiScoutingResponse {
   players: SquadApiPlayer[];
 }
 
-interface ApiNotificationsResponse {
-  notifications?: Array<{
-    id: string;
-    title: string;
-    message: string;
-    action_href?: string | null;
-  }>;
-}
-
 const positionOptions: Array<{ label: string; value: PositionFilter }> = [
   { label: 'All positions', value: 'all' },
   { label: 'Goalkeepers', value: 'GKP' },
@@ -146,8 +137,6 @@ export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps)
   const [interests, setInterests] = useState<InterestView[]>([]);
   const [trades, setTrades] = useState<TradeView[]>([]);
   const [managerTeam, setManagerTeam] = useState('Your team');
-  const [notifications, setNotifications] = useState<ApiNotificationsResponse['notifications']>([]);
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [positionFilter, setPositionFilter] = useState<PositionFilter>('all');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
@@ -178,17 +167,15 @@ export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps)
         fetchJson<ApiScoutingResponse>('/api/scouting/players'),
         fetchJson<ApiInterest[]>('/api/interests'),
         fetchJson<{ trades?: ApiTrade[] }>('/api/trades'),
-        fetchJson<ApiNotificationsResponse>('/api/squad/notifications'),
       ]);
       if (!active) return;
 
-      const [summaryResult, scoutingResult, interestsResult, tradesResult, notificationsResult] = results;
+      const [summaryResult, scoutingResult, interestsResult, tradesResult] = results;
       const errors: string[] = [];
       const summary = getFulfilled(summaryResult, 'squad context', errors);
       const scouting = getFulfilled(scoutingResult, 'player pool', errors);
       const interestPayload = getFulfilled(interestsResult, 'Interests', errors);
       const tradePayload = getFulfilled(tradesResult, 'trade activity', errors);
-      const notificationPayload = getFulfilled(notificationsResult, 'notifications', errors);
 
       if (summary) {
         setManagerTeam(summary.manager_team.name);
@@ -196,9 +183,8 @@ export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps)
       if (scouting) setPlayers(scouting.players.map(mapPlayer));
       if (interestPayload) setInterests(interestPayload.map(mapInterest));
       if (tradePayload) setTrades((tradePayload.trades ?? []).map(mapTrade));
-      if (notificationPayload) setNotifications(notificationPayload.notifications ?? []);
       setLoading(false);
-      if (errors.length === 5) {
+      if (errors.length === 4) {
         setError('Market data is temporarily unavailable. Try again from the shell reload control.');
       } else if (errors.length > 0) {
         setNotice(`Market loaded with ${errors.join(' and ')} unavailable.`);
@@ -339,12 +325,6 @@ export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps)
                 { value: 'trades', label: 'Trades', icon: <ArrowRightLeft aria-hidden="true" size={17} /> },
               ]}
               value={mode}
-            />
-            <PageHeroNotificationButton
-              notifications={(notifications ?? []).map((notification) => ({ id: notification.id, title: notification.title, message: notification.message, actionHref: notification.action_href }))}
-              onNavigate={onNavigate}
-              onToggle={() => setNotificationsOpen((open) => !open)}
-              open={notificationsOpen}
             />
           </PageHeroControls>
         )}

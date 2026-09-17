@@ -10,6 +10,7 @@ import type { ManagerDeskClient, ManagerDeskSnapshot } from './manager-desk-api'
 import type { FdrCustomPalette } from './fdr-colour-scales';
 import type { FdrCustomPaletteDraft, PreferenceClient } from './preferences-api';
 import type { PlayerColourPalette } from './player-colour-scales';
+import type { SquadClient } from './squad-api';
 
 const testGlobal = globalThis as typeof globalThis & {
   IS_REACT_ACT_ENVIRONMENT: boolean;
@@ -146,12 +147,14 @@ function renderApp({
   managerDeskClient,
   session = authenticatedSession,
   leagueClient = new MemoryLeagueClient(),
+  squadClient,
 }: {
   preferenceClient?: PreferenceClient;
   initialPath?: string;
   managerDeskClient?: ManagerDeskClient;
   session?: SessionState;
   leagueClient?: LeagueClient;
+  squadClient?: SquadClient;
 } = {}) {
   const container = document.createElement('div');
   document.body.append(container);
@@ -165,6 +168,7 @@ function renderApp({
         managerDeskClient={managerDeskClient}
         preferenceClient={preferenceClient}
         session={session}
+        squadClient={squadClient}
       />,
     );
   });
@@ -173,6 +177,43 @@ function renderApp({
 }
 
 describe('AppShell integration', () => {
+  test('keeps one notification centre consistent across routes', async () => {
+    const notifications = [{
+      id: 'notice-1',
+      title: 'Fixture update',
+      message: 'Gameweek 12 is underway.',
+      action_href: '/league',
+      kind: 'fixture',
+    }];
+    const squadClient = {
+      getNotifications: vi.fn(async () => ({ notifications, proposed_trade_count: 0 })),
+    } as unknown as SquadClient;
+    const { container, root } = renderApp({ initialPath: '/rules', squadClient });
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(squadClient.getNotifications).toHaveBeenCalledTimes(1);
+    expect(container.querySelector('.global-notifications__count')?.textContent).toBe('1');
+    expect(container.querySelector('.cdl-page-hero__notification-count')).toBeNull();
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('.global-notifications__button')?.click();
+    });
+
+    expect(container.querySelector('.global-notifications__popover')?.textContent).toContain('Fixture update');
+    const leagueLink = container.querySelector<HTMLAnchorElement>('nav[aria-label="Global mobile navigation"] a[href="/league"]');
+    await act(async () => {
+      leagueLink?.click();
+      await Promise.resolve();
+    });
+    expect(container.querySelector('.global-notifications__popover')?.textContent).toContain('Fixture update');
+
+    root.unmount();
+  });
+
   test('renders the global feature hierarchy consistently around rules content', async () => {
     const { container } = renderApp({ initialPath: '/rules' });
 
@@ -192,7 +233,8 @@ describe('AppShell integration', () => {
     expect(primaryNavigation?.textContent).toContain('League');
     expect(primaryNavigation?.textContent).not.toContain('Matchweek');
     expect(primaryNavigation?.textContent).not.toContain('Scouting');
-    expect(mobileNavigation?.textContent).toBe(primaryNavigation?.textContent);
+    expect(mobileNavigation?.textContent).toContain(primaryNavigation?.textContent ?? '');
+    expect(mobileNavigation?.textContent).toContain('Notifications');
     expect(supportNavigation?.textContent).toContain('Rules');
     expect(container.querySelector('[aria-label="Account menu for Test Manager"]')).not.toBeNull();
     expect(container.querySelector('#mobile-navigation')).toBeNull();

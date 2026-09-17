@@ -22,6 +22,7 @@ import './manager-desk-fixture-layout.css';
 import './result-colours.css';
 import './league-fixture-desk-polish.css';
 import './page-layout.css';
+import './components/ui/global-notifications.css';
 
 function getInitialPath() {
   const baseUrl = import.meta.env.BASE_URL.replace(/\/$/, '');

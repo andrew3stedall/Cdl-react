@@ -9,13 +9,6 @@ export interface PageHeroViewOption {
   disabled?: boolean;
 }
 
-export interface PageHeroNotification {
-  id: string;
-  title: string;
-  message: string;
-  actionHref?: string | null;
-}
-
 interface PageHeroProps {
   actions: ReactNode;
   actionsLabel: string;
@@ -69,63 +62,6 @@ export function PageHeroViewToggle({
           <span>{option.label}</span>
         </button>
       ))}
-    </div>
-  );
-}
-
-export function PageHeroNotificationButton({
-  notifications,
-  onNavigate,
-  onToggle,
-  open,
-}: {
-  notifications: PageHeroNotification[];
-  onNavigate: (href: string) => void;
-  onToggle: () => void;
-  open: boolean;
-}) {
-  return (
-    <div className="cdl-page-hero__notifications">
-      <button
-        aria-expanded={open}
-        aria-label={`Notifications${notifications.length ? `, ${notifications.length} unread` : ''}`}
-        className="cdl-page-hero__notification-button"
-        onClick={onToggle}
-        title="Notifications"
-        type="button"
-      >
-        <svg aria-hidden="true" className="cdl-page-hero__notification-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8">
-          <path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9" />
-          <path d="M10 21h4" />
-        </svg>
-        {notifications.length ? <span className="cdl-page-hero__notification-count">{notifications.length}</span> : null}
-      </button>
-      {open ? (
-        <div aria-label="Notifications" className="cdl-page-hero__notifications-popover" role="dialog">
-          <div className="cdl-page-hero__notifications-heading">
-            <strong>Notifications</strong>
-            <span>{notifications.length}</span>
-          </div>
-          {notifications.length === 0 ? <p className="cdl-page-hero__empty-copy">You are all caught up.</p> : notifications.map((notification) => (
-            <a
-              className="cdl-page-hero__notification"
-              href={notification.actionHref ?? '#'}
-              key={notification.id}
-              onClick={(event) => {
-                if (!notification.actionHref) {
-                  event.preventDefault();
-                  return;
-                }
-                event.preventDefault();
-                onNavigate(notification.actionHref);
-              }}
-            >
-              <strong>{notification.title}</strong>
-              <span>{notification.message}</span>
-            </a>
-          ))}
-        </div>
-      ) : null}
     </div>
   );
 }

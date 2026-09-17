@@ -10,6 +10,7 @@ import {
 } from './auth';
 import { AppShell } from './AppShell';
 import { AnalyticsDashboardPage } from './AnalyticsDashboardPage';
+import { GlobalNotificationsProvider } from './components/ui/global-notifications';
 import type { RuleSection, SessionState } from './contracts';
 import type { DashboardClient } from './dashboard-api';
 import { FixtureDifficultyPage } from './FixtureDifficultyPage';
@@ -24,20 +25,20 @@ import type { ManagerDeskClient } from './manager-desk-api';
 import { ModernisationCheckpointPage } from './ModernisationCheckpointPage';
 import { getPageRouteKey, isSquadRoute } from './navigation';
 import { PlayerProfilePage } from './PlayerProfilePage';
-import type { PreferenceClient } from './preferences-api';
+import { LocalStoragePreferenceClient, type PreferenceClient } from './preferences-api';
 import { ProfilePage } from './ProfilePage';
 import { ResultColourProfilePage } from './ResultColourProfilePage';
 import { loginWithPasskey } from './passkeys';
 import { RulesPage } from './RulesPage';
 import { SessionSplash } from './SessionSplash';
 import { SquadWorkspacePage } from './SquadWorkspacePage';
-import type { SquadClient } from './squad-api';
+import { HttpSquadClient, type SquadClient } from './squad-api';
 import type { TeamSelectionClient } from './team-selection-api';
 import { ThemePresetProvider, useThemePreset } from './theme-preset-provider';
 import { getStoredThemePreset } from './theme-cookie';
-import { LocalStoragePreferenceClient } from './preferences-api';
 
 const loginPreferenceClient = new LocalStoragePreferenceClient();
+const defaultAppSquadClient = new HttpSquadClient();
 
 const rulesVersion = {
   version: '2026.05',
@@ -128,6 +129,7 @@ export function App({
   const [googleClientId, setGoogleClientId] = useState<string | null>(null);
   const [appleEnabled, setAppleEnabled] = useState(false);
   const [passkeyEnabled, setPasskeyEnabled] = useState(false);
+  const appSquadClient = squadClient ?? defaultAppSquadClient;
 
   useEffect(() => {
     let cancelled = false;
@@ -383,28 +385,30 @@ export function App({
 
   return (
     <ThemePresetProvider preferenceClient={preferenceClient}>
-      <>
-        <AppShell
-          currentPath={currentPath}
-          onNavigate={handleNavigate}
-          onSignOut={() => void handleSignOut()}
-          session={activeSession}
-        >
-          <AppRouteContent
-            activeSession={activeSession}
+      <GlobalNotificationsProvider squadClient={appSquadClient}>
+        <>
+          <AppShell
             currentPath={currentPath}
-            dashboardClient={dashboardClient}
-            fdrClient={fdrClient}
-            leagueClient={leagueClient}
-            managerDeskClient={managerDeskClient}
             onNavigate={handleNavigate}
             onSignOut={() => void handleSignOut()}
-            squadClient={squadClient}
-            teamSelectionClient={teamSelectionClient}
-          />
-        </AppShell>
-        <GlobalNavigation currentPath={currentPath} onNavigate={handleNavigate} />
-      </>
+            session={activeSession}
+          >
+            <AppRouteContent
+              activeSession={activeSession}
+              currentPath={currentPath}
+              dashboardClient={dashboardClient}
+              fdrClient={fdrClient}
+              leagueClient={leagueClient}
+              managerDeskClient={managerDeskClient}
+              onNavigate={handleNavigate}
+              onSignOut={() => void handleSignOut()}
+              squadClient={squadClient}
+              teamSelectionClient={teamSelectionClient}
+            />
+          </AppShell>
+          <GlobalNavigation currentPath={currentPath} onNavigate={handleNavigate} />
+        </>
+      </GlobalNotificationsProvider>
     </ThemePresetProvider>
   );
 }
@@ -508,7 +512,7 @@ function AppRouteContent({
     );
 
     if (path.startsWith('/account') || path.startsWith('/profile')) {
-      routeContent = <ProfilePage currentPath={path} onNavigate={onNavigate} session={activeSession} squadClient={squadClient} />;
+      routeContent = <ProfilePage currentPath={path} onNavigate={onNavigate} session={activeSession} />;
     }
 
     if (path === '/account/result-colours' || path === '/profile/result-colours') {

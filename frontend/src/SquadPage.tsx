@@ -27,14 +27,13 @@ import {
 
 import { Button } from './components/ui/button';
 import { ChipIcon } from './components/chips/ChipIcon';
-import { PageHero, PageHeroControls, PageHeroNotificationButton, PageHeroViewToggle } from './components/ui/page-hero';
+import { PageHero, PageHeroControls, PageHeroViewToggle } from './components/ui/page-hero';
 import { FormDots, PlayerCard, type PlayerCardPlayer, formBand } from './components/player/PlayerCard';
 import type { AttackDirection, ThemePreset } from './contracts';
 import { availabilityChance, getAvailabilityIssue, hasAvailabilityIssue } from './player-availability';
 import {
   HttpSquadClient,
   SquadApiError,
-  type SquadApiNotification,
   type SquadApiNextFixture,
   type SquadApiPlayer,
   type SquadApiSummary,
@@ -317,9 +316,7 @@ export function SquadPage({
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [squadPlayers, setSquadPlayers] = useState<PlayerView[]>([]);
   const [scoutingPool, setScoutingPool] = useState<PlayerView[]>([]);
-  const [notifications, setNotifications] = useState<SquadApiNotification[]>([]);
   const [proposedTradeCount, setProposedTradeCount] = useState(0);
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [managerTeam, setManagerTeam] = useState<TeamRef>({ id: '', name: 'Current team', shortName: '' });
   const [lineupAvailable, setLineupAvailable] = useState(false);
   const [teamSelection, setTeamSelection] = useState<TeamSelectionSnapshot | null>(null);
@@ -389,7 +386,6 @@ export function SquadPage({
             ?? '',
         });
         setProposedTradeCount(workspace?.notifications.proposed_trade_count ?? 0);
-        setNotifications(workspace?.notifications.notifications ?? []);
         setStagedAdditionIds(new Set());
         setLineupAvailable(hasLineup);
         setLineupDirty(false);
@@ -807,12 +803,6 @@ export function SquadPage({
                 { ariaLabel: 'View as list', value: 'list', label: 'List', icon: <List aria-hidden="true" size={18} /> },
               ]}
               value={squadView}
-            />
-            <PageHeroNotificationButton
-              notifications={notifications.map((notification) => ({ id: notification.id, title: notification.title, message: notification.message, actionHref: notification.action_href }))}
-              onNavigate={onNavigate ?? (() => undefined)}
-              onToggle={() => setNotificationsOpen((open) => !open)}
-              open={notificationsOpen}
             />
           </PageHeroControls>
         )}

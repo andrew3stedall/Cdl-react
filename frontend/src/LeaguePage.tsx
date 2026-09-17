@@ -18,7 +18,7 @@ import type { FixtureGameweekStatus, FixtureSquadView } from './components/fixtu
 import { managerNicknameForTeam } from './manager-nicknames';
 import { PlayerChartDetailDialog } from './components/player/PlayerChartDetailDialog';
 import { TeamCrest } from './components/team/TeamCrest';
-import { PageHero, PageHeroControls, PageHeroNotificationButton, PageHeroViewToggle } from './components/ui/page-hero';
+import { PageHero, PageHeroControls, PageHeroViewToggle } from './components/ui/page-hero';
 import type { AttackDirection } from './contracts';
 import {
   formDetailSections,
@@ -41,7 +41,6 @@ import {
 import {
   HttpSquadClient,
   type SquadApiHistoryResponse,
-  type SquadApiNotification,
   type SquadApiPlayer,
   type SquadClient,
 } from './squad-api';
@@ -66,13 +65,11 @@ interface LeaguePageProps {
   teamSelectionClient?: Pick<TeamSelectionClient, 'getTeamSelection'>;
 }
 
-export function LeaguePage({ attackDirection = 'up', currentPath = window.location.pathname, leagueClient = defaultLeagueClient, onNavigate = () => undefined, squadClient = defaultSquadClient, teamSelectionClient = defaultTeamSelectionClient }: LeaguePageProps) {
+export function LeaguePage({ attackDirection = 'up', currentPath = window.location.pathname, leagueClient = defaultLeagueClient, squadClient = defaultSquadClient, teamSelectionClient = defaultTeamSelectionClient }: LeaguePageProps) {
   const [snapshot, setSnapshot] = useState<LeagueSnapshot | null>(null);
   const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
   const [reloadKey, setReloadKey] = useState(0);
   const [view, setView] = useState<LeagueView>(() => leagueViewFromPath(currentPath));
-  const [notifications, setNotifications] = useState<SquadApiNotification[]>([]);
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [selectedFixture, setSelectedFixture] = useState<LeagueFixture | null>(null);
   const [selectedFixturePlayer, setSelectedFixturePlayer] = useState<SelectedFixturePlayer | null>(null);
   const [fixtureDetail, setFixtureDetail] = useState<FixtureDetailResponse | null>(null);
@@ -109,20 +106,6 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
       isActive = false;
     };
   }, [leagueClient, reloadKey]);
-
-  useEffect(() => {
-    let isActive = true;
-    void squadClient.getNotifications()
-      .then((response) => {
-        if (isActive) setNotifications(response.notifications);
-      })
-      .catch(() => {
-        if (isActive) setNotifications([]);
-      });
-    return () => {
-      isActive = false;
-    };
-  }, [squadClient, reloadKey]);
 
   useEffect(() => {
     let isActive = true;
@@ -234,12 +217,6 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
                 { ariaLabel: 'View table', value: 'table', label: 'Table', icon: <Table2 aria-hidden="true" size={18} /> },
               ]}
               value={view}
-            />
-            <PageHeroNotificationButton
-              notifications={notifications.map((notification) => ({ id: notification.id, title: notification.title, message: notification.message, actionHref: notification.action_href }))}
-              onNavigate={onNavigate}
-              onToggle={() => setNotificationsOpen((open) => !open)}
-              open={notificationsOpen}
             />
           </PageHeroControls>
         )}

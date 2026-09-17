@@ -61,9 +61,11 @@ unavailable_fpl_status
 
 - Reusable player table/cards.
 - Position colour coding.
-- Availability reason chips.
-- Optional injured/status filters.
+- Market discovery uses the same compact player-card, points, and xG/xA list pattern as Squad.
+- Market discovery does not show player availability, ownership, or status fields and does not offer filters for them.
 - Watchlist and notes controls.
+
+Availability and ownership remain domain data for workflow validation and dedicated player detail experiences; they are intentionally excluded from the high-scan Market list.
 
 ## Data Access Requirements
 

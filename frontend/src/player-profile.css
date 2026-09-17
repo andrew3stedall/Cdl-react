@@ -76,7 +76,7 @@
   align-items: center;
   background: var(--background);
   display: grid;
-  grid-template-columns: 2.75rem minmax(0, 1fr) 2.75rem;
+  grid-template-columns: 2.75rem minmax(0, 1fr) auto;
   min-height: 3.1rem;
   padding: max(0.15rem, env(safe-area-inset-top)) 0 0.15rem;
   position: sticky;
@@ -98,6 +98,13 @@
 .player-profile__header-player-card {
   justify-self: center;
   max-width: 100%;
+}
+
+.player-profile__header-actions {
+  align-items: center;
+  display: flex;
+  gap: 0.15rem;
+  justify-self: end;
 }
 
 .player-profile__mobile-header > .player-profile__header-player-card {

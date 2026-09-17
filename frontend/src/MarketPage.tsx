@@ -329,6 +329,7 @@ export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps)
           </PageHeroControls>
         )}
         actionsLabel="Market utilities"
+        onNavigate={onNavigate}
         title="Market"
         titleId="market-page-title"
       />

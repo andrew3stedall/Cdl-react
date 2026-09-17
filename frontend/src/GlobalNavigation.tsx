@@ -6,7 +6,6 @@ import {
   primaryNavigationItems,
   type NavigationItem,
 } from './navigation';
-import { GlobalNotifications } from './components/ui/global-notifications';
 import './global-navigation.css';
 
 interface GlobalNavigationProps {
@@ -32,7 +31,6 @@ export function GlobalNavigation({ currentPath, onNavigate }: GlobalNavigationPr
           onNavigate={onNavigate}
         />
       ))}
-      <GlobalNotifications onNavigate={onNavigate} />
     </nav>
   );
 }

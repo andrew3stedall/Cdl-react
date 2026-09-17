@@ -807,6 +807,7 @@ export function SquadPage({
           </PageHeroControls>
         )}
         actionsLabel="Squad utilities"
+        onNavigate={onNavigate}
         title="Squad"
         titleId="squad-title"
       />

@@ -135,6 +135,7 @@ export function ManagerDeskPage({
           </PageHeroControls>
         )}
         actionsLabel="Desk utilities"
+        onNavigate={onNavigate}
         title="Gaffers Desk"
         titleId="manager-desk-title"
       />

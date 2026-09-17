@@ -1,4 +1,5 @@
 import type { RuleCategory, RuleSection, ThemePreset } from './contracts';
+import { GlobalPageHeader } from './components/ui/global-notifications';
 import { buildRuleHref, filterRules } from './rules';
 
 interface RulesPageProps {
@@ -6,6 +7,7 @@ interface RulesPageProps {
   categories: RuleCategory[];
   query?: string;
   category?: RuleCategory | 'all';
+  onNavigate?: (href: string) => void;
   preset: ThemePreset;
 }
 
@@ -14,17 +16,18 @@ export function RulesPage({
   categories,
   query = '',
   category = 'all',
+  onNavigate,
   preset,
 }: RulesPageProps) {
   const filteredSections = filterRules(sections, query, category);
 
   return (
     <main aria-labelledby="rules-title" data-preset={preset.name}>
-      <header>
+      <GlobalPageHeader onNavigate={onNavigate}>
         <p>Castle Draft League</p>
         <h1 id="rules-title">Rules Knowledge Base</h1>
         <p>Searchable rule sections with stable identifiers for validation errors.</p>
-      </header>
+      </GlobalPageHeader>
 
       <section aria-label="Rules filters">
         <label htmlFor="rules-search">Search rules</label>

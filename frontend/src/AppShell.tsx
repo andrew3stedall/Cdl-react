@@ -18,7 +18,6 @@ import {
 
 import { Button } from './components/ui/button';
 import { Card } from './components/ui/card';
-import { GlobalNotifications } from './components/ui/global-notifications';
 import type { SessionState } from './contracts';
 import {
   getActiveContextItem,
@@ -130,8 +129,6 @@ export function AppShell({
             >
               <BookOpen aria-hidden="true" size={18} />
             </a>
-
-            <GlobalNotifications onNavigate={onNavigate} />
 
             {!isDeskLandingPage ? (
               <details className="account-menu">

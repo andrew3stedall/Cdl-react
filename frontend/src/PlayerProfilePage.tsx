@@ -17,6 +17,7 @@ import {
   type PlayerChartDetailSection,
   type PlayerChartDetailSummaryItem,
 } from './components/player/PlayerChartDetailDialog';
+import { GlobalNotifications } from './components/ui/global-notifications';
 import { earnedDefensiveContributionPoints, PlayerStatIcons, type PlayerStatSummary } from './components/player/PlayerStatIcons';
 import {
   chartFixtureSlots,
@@ -378,26 +379,29 @@ export function PlayerProfilePage({
           player={toPlayerCardPlayer(player, nextFixtures, captaincy)}
           size="md"
         />
-        {showActions ? (
-          <div className="player-profile__overflow-wrap">
-            <button
-              aria-expanded={overflowOpen}
-              aria-label="Open player actions"
-              className="player-profile__icon-button"
-              onClick={() => setOverflowOpen((current) => !current)}
-              type="button"
-            >
-              <Ellipsis aria-hidden="true" size={21} />
-            </button>
-            {overflowOpen ? (
-              <div className="player-profile__overflow-menu" role="menu">
-                <button onClick={goBack} role="menuitem" type="button">Return to squad</button>
-                {onCompare ? <button onClick={onCompare} role="menuitem" type="button">Compare player</button> : null}
-                {onTrade ? <button onClick={onTrade} role="menuitem" type="button">Draft trade</button> : null}
-              </div>
-            ) : null}
-          </div>
-        ) : <span aria-hidden="true" />}
+        <div className="player-profile__header-actions">
+          {presentation !== 'drawer' && onNavigate ? <GlobalNotifications onNavigate={onNavigate} /> : null}
+          {showActions ? (
+            <div className="player-profile__overflow-wrap">
+              <button
+                aria-expanded={overflowOpen}
+                aria-label="Open player actions"
+                className="player-profile__icon-button"
+                onClick={() => setOverflowOpen((current) => !current)}
+                type="button"
+              >
+                <Ellipsis aria-hidden="true" size={21} />
+              </button>
+              {overflowOpen ? (
+                <div className="player-profile__overflow-menu" role="menu">
+                  <button onClick={goBack} role="menuitem" type="button">Return to squad</button>
+                  {onCompare ? <button onClick={onCompare} role="menuitem" type="button">Compare player</button> : null}
+                  {onTrade ? <button onClick={onTrade} role="menuitem" type="button">Draft trade</button> : null}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
       </header>
 
       <div className="player-profile__content">

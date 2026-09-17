@@ -498,11 +498,11 @@ function MarketPlayerRow({ onOpen, player }: { onOpen: (player: MarketPlayer) =>
     >
       <td className="market-page__player-cell">
         <div className="market-page__player-identity">
-          <PlayerCard formPosition="beside" layout="list" player={toPlayerCardPlayer(player)} showPositionMarker={false} size="sm" />
+          <PlayerCard className="market-page__list-player-card" formPosition="beside" layout="list" player={toPlayerCardPlayer(player)} showPositionMarker={false} size="sm" />
         </div>
       </td>
-      <td><Metric hideLabel label="Pts" value={formatInteger(player.points)} /></td>
-      <td className="market-page__metric--expected"><Metric hideLabel label="xG / xA" value={`${formatMetric(player.xg)} / ${formatMetric(player.xa)}`} /></td>
+      <td><strong className="market-page__list-points">{formatInteger(player.points)}</strong></td>
+      <td><span className="market-page__expected"><span>{formatMetric(player.xg)}</span><span>{formatMetric(player.xa)}</span></span></td>
     </tr>
   );
 }

@@ -520,7 +520,7 @@ function AppRouteContent({
     }
 
     if (path.startsWith('/rules')) {
-      routeContent = <RulesPage categories={['squads', 'trades']} sections={featuredRules} preset={preset} />;
+      routeContent = <RulesPage categories={['squads', 'trades']} onNavigate={onNavigate} sections={featuredRules} preset={preset} />;
     }
 
     if (path.startsWith('/league')) {
@@ -528,27 +528,27 @@ function AppRouteContent({
     }
 
     if (path.startsWith('/modernisation/checkpoint-1')) {
-      routeContent = <ModernisationCheckpointPage />;
+      routeContent = <ModernisationCheckpointPage onNavigate={onNavigate} />;
     }
 
     if (path.startsWith('/modernisation/checkpoint-2')) {
-      routeContent = <ModernisationCheckpointPage checkpoint={2} />;
+      routeContent = <ModernisationCheckpointPage checkpoint={2} onNavigate={onNavigate} />;
     }
 
     if (path.startsWith('/modernisation/checkpoint-3')) {
-      routeContent = <ModernisationCheckpointPage checkpoint={3} />;
+      routeContent = <ModernisationCheckpointPage checkpoint={3} onNavigate={onNavigate} />;
     }
 
     if (path.startsWith('/modernisation/checkpoint-4')) {
-      routeContent = <ModernisationCheckpointPage checkpoint={4} />;
+      routeContent = <ModernisationCheckpointPage checkpoint={4} onNavigate={onNavigate} />;
     }
 
     if (path.startsWith('/modernisation/checkpoint-5')) {
-      routeContent = <ModernisationCheckpointPage checkpoint={5} />;
+      routeContent = <ModernisationCheckpointPage checkpoint={5} onNavigate={onNavigate} />;
     }
 
     if (path.startsWith('/dashboard/analytics') || path.startsWith('/analytics')) {
-      routeContent = <AnalyticsDashboardPage dashboardClient={dashboardClient} />;
+      routeContent = <AnalyticsDashboardPage dashboardClient={dashboardClient} onNavigate={onNavigate} />;
     }
 
     if (path === '/dashboard' || path === '/team' || path === '/') {
@@ -566,7 +566,7 @@ function AppRouteContent({
     }
 
     if (path.startsWith('/fdr')) {
-      routeContent = <FixtureDifficultyPage fdrClient={fdrClient} />;
+      routeContent = <FixtureDifficultyPage fdrClient={fdrClient} onNavigate={onNavigate} />;
     }
 
     if (path.startsWith('/scouting')) {

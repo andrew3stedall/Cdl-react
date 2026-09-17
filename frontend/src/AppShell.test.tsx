@@ -197,7 +197,9 @@ describe('AppShell integration', () => {
 
     expect(squadClient.getNotifications).toHaveBeenCalledTimes(1);
     expect(container.querySelector('.global-notifications__count')?.textContent).toBe('1');
-    expect(container.querySelector('.cdl-page-hero__notification-count')).toBeNull();
+    expect(container.querySelector('.global-page-header .global-notifications__button')).not.toBeNull();
+    expect(container.querySelector('nav[aria-label="Global mobile navigation"] .global-notifications')).toBeNull();
+    expect(container.querySelectorAll('nav[aria-label="Global mobile navigation"] a')).toHaveLength(4);
 
     await act(async () => {
       container.querySelector<HTMLButtonElement>('.global-notifications__button')?.click();
@@ -209,6 +211,7 @@ describe('AppShell integration', () => {
       leagueLink?.click();
       await Promise.resolve();
     });
+    expect(container.querySelector('.cdl-page-hero .global-notifications__button')).not.toBeNull();
     expect(container.querySelector('.global-notifications__popover')?.textContent).toContain('Fixture update');
 
     root.unmount();
@@ -234,7 +237,8 @@ describe('AppShell integration', () => {
     expect(primaryNavigation?.textContent).not.toContain('Matchweek');
     expect(primaryNavigation?.textContent).not.toContain('Scouting');
     expect(mobileNavigation?.textContent).toContain(primaryNavigation?.textContent ?? '');
-    expect(mobileNavigation?.textContent).toContain('Notifications');
+    expect(mobileNavigation?.textContent).not.toContain('Notifications');
+    expect(mobileNavigation?.querySelectorAll('a')).toHaveLength(4);
     expect(supportNavigation?.textContent).toContain('Rules');
     expect(container.querySelector('[aria-label="Account menu for Test Manager"]')).not.toBeNull();
     expect(container.querySelector('#mobile-navigation')).toBeNull();

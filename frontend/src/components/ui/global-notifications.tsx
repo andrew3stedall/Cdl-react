@@ -54,7 +54,7 @@ export function GlobalNotificationsProvider({
 
 export function GlobalNotifications({ onNavigate }: { onNavigate: (href: string) => void }) {
   const context = useContext(GlobalNotificationsContext);
-  if (!context) throw new Error('GlobalNotifications must be rendered inside GlobalNotificationsProvider.');
+  if (!context) return null;
 
   const { close, notifications, open, toggle } = context;
   const navigate = useCallback((href: string) => {
@@ -106,5 +106,22 @@ export function GlobalNotifications({ onNavigate }: { onNavigate: (href: string)
         </div>
       ) : null}
     </div>
+  );
+}
+
+export function GlobalPageHeader({
+  children,
+  className,
+  onNavigate,
+}: {
+  children: ReactNode;
+  className?: string;
+  onNavigate?: (href: string) => void;
+}) {
+  return (
+    <header className={`global-page-header${className ? ` ${className}` : ''}`}>
+      <div className="global-page-header__copy">{children}</div>
+      {onNavigate ? <GlobalNotifications onNavigate={onNavigate} /> : null}
+    </header>
   );
 }

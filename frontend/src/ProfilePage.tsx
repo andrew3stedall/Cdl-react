@@ -65,6 +65,7 @@ import {
 import { getPasskeyStatus, registerPasskey, type PasskeyStatus } from './passkeys';
 import { getResultColourPaletteLabel } from './result-colours';
 import { managerNicknameForName } from './manager-nicknames';
+import { GlobalPageHeader } from './components/ui/global-notifications';
 import { PageHero, PageHeroControls, PageHeroViewToggle } from './components/ui/page-hero';
 import { ColourPaletteSelector } from './components/ui/colour-palette-selector';
 import './profile-page.css';
@@ -199,7 +200,7 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
   if (isAppearancePage) {
     return (
       <main aria-labelledby="account-settings-title" className="feature-screen profile-page profile-page--subpage">
-        <SettingsPageHeader onBack={() => onNavigate('/profile')} title="Visual preset" />
+        <SettingsPageHeader onBack={() => onNavigate('/profile')} onNavigate={onNavigate} title="Visual preset" />
         <AppearanceSettingsCard
           preset={preset}
           saveStatus={saveStatus}
@@ -214,7 +215,7 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
   if (isFdrPage) {
     return (
       <main aria-labelledby="account-settings-title" className="feature-screen profile-page profile-page--subpage">
-        <SettingsPageHeader onBack={() => onNavigate('/profile')} title="FDR colour scale" />
+        <SettingsPageHeader onBack={() => onNavigate('/profile')} onNavigate={onNavigate} title="FDR colour scale" />
         <FdrSettingsCard
           customFdrAnchors={customFdrAnchors}
           fdrDisplayMode={fdrDisplayMode}
@@ -250,7 +251,7 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
   if (isOrientationPage) {
     return (
       <main aria-labelledby="account-settings-title" className="feature-screen profile-page profile-page--subpage">
-        <SettingsPageHeader onBack={() => onNavigate('/profile')} title="Attacking orientation" />
+        <SettingsPageHeader onBack={() => onNavigate('/profile')} onNavigate={onNavigate} title="Attacking orientation" />
         <PitchSettingsCard attackDirection={attackDirection} onSetAttackDirection={setAttackDirection} />
       </main>
     );
@@ -259,7 +260,7 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
   if (isPositionColoursPage) {
     return (
       <main aria-labelledby="account-settings-title" className="feature-screen profile-page profile-page--subpage">
-        <SettingsPageHeader onBack={() => onNavigate('/profile')} title="Position colours" />
+        <SettingsPageHeader onBack={() => onNavigate('/profile')} onNavigate={onNavigate} title="Position colours" />
         <PositionColourSettingsCard
           customPalettes={customPlayerColourPalettes}
           isScaleSheetOpen={isPositionScaleSheetOpen}
@@ -281,7 +282,7 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
   if (isMetricColoursPage) {
     return (
       <main aria-labelledby="account-settings-title" className="feature-screen profile-page profile-page--subpage">
-        <SettingsPageHeader onBack={() => onNavigate('/profile')} title="Metric colours" />
+        <SettingsPageHeader onBack={() => onNavigate('/profile')} onNavigate={onNavigate} title="Metric colours" />
         <MetricColourSettingsCard
           customPalettes={customPlayerColourPalettes}
           isScaleSheetOpen={isMetricScaleSheetOpen}
@@ -320,6 +321,7 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
           </PageHeroControls>
         )}
         actionsLabel="Profile utilities"
+        onNavigate={onNavigate}
         title="Profile"
         titleId="profile-title"
       />
@@ -436,16 +438,16 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
   );
 }
 
-function SettingsPageHeader({ onBack, title }: { onBack: () => void; title: string }) {
+function SettingsPageHeader({ onBack, onNavigate, title }: { onBack: () => void; onNavigate: (href: string) => void; title: string }) {
   return (
-    <header className="profile-page__header profile-page__header--subpage">
+    <GlobalPageHeader className="profile-page__header profile-page__header--subpage" onNavigate={onNavigate}>
       <button className="profile-subpage-back" onClick={onBack} type="button">
         <ArrowLeft aria-hidden="true" size={17} />
         Profile
       </button>
       <p className="eyebrow">Profile</p>
       <h1 id="account-settings-title">{title}</h1>
-    </header>
+    </GlobalPageHeader>
   );
 }
 

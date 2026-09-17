@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import { Card } from './components/ui/card';
+import { GlobalPageHeader } from './components/ui/global-notifications';
 import { Select } from './components/ui/select';
 import type {
   FdrClient,
@@ -23,9 +24,10 @@ const defaultFilters: FdrFilters = {
 
 interface FixtureDifficultyPageProps {
   fdrClient?: FdrClient;
+  onNavigate?: (href: string) => void;
 }
 
-export function FixtureDifficultyPage({ fdrClient = defaultFdrClient }: FixtureDifficultyPageProps) {
+export function FixtureDifficultyPage({ fdrClient = defaultFdrClient, onNavigate }: FixtureDifficultyPageProps) {
   const [data, setData] = useState<FdrCombinedResponse | null>(null);
   const [filters, setFilters] = useState<FdrFilters>(defaultFilters);
   const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
@@ -63,11 +65,11 @@ export function FixtureDifficultyPage({ fdrClient = defaultFdrClient }: FixtureD
 
   return (
     <main aria-labelledby="fdr-title" className="feature-screen fdr-page">
-      <header>
+      <GlobalPageHeader onNavigate={onNavigate}>
         <p className="eyebrow">Fixture Difficulty Ratings</p>
         <h1 id="fdr-title">Attack and defence FDR</h1>
         <p>Compare fixture difficulty by team, gameweek range, and attacking or defensive view.</p>
-      </header>
+      </GlobalPageHeader>
 
       {status === 'loading' ? <p role="status">Loading fixture difficulty ratings</p> : null}
       {status === 'error' ? <p role="alert">Unable to load fixture difficulty ratings.</p> : null}

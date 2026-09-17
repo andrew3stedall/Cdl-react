@@ -65,7 +65,7 @@ interface LeaguePageProps {
   teamSelectionClient?: Pick<TeamSelectionClient, 'getTeamSelection'>;
 }
 
-export function LeaguePage({ attackDirection = 'up', currentPath = window.location.pathname, leagueClient = defaultLeagueClient, squadClient = defaultSquadClient, teamSelectionClient = defaultTeamSelectionClient }: LeaguePageProps) {
+export function LeaguePage({ attackDirection = 'up', currentPath = window.location.pathname, leagueClient = defaultLeagueClient, onNavigate, squadClient = defaultSquadClient, teamSelectionClient = defaultTeamSelectionClient }: LeaguePageProps) {
   const [snapshot, setSnapshot] = useState<LeagueSnapshot | null>(null);
   const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
   const [reloadKey, setReloadKey] = useState(0);
@@ -221,6 +221,7 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
           </PageHeroControls>
         )}
         actionsLabel="League utilities"
+        onNavigate={onNavigate}
         title="League"
         titleId="league-title"
       />

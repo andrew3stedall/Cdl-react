@@ -1,4 +1,5 @@
 import { Card } from './components/ui/card';
+import { GlobalPageHeader } from './components/ui/global-notifications';
 
 interface CheckpointFeature {
   issue: number;
@@ -191,18 +192,19 @@ const checkpointContent: Record<number, CheckpointContent> = {
 
 interface ModernisationCheckpointPageProps {
   checkpoint?: number;
+  onNavigate?: (href: string) => void;
 }
 
-export function ModernisationCheckpointPage({ checkpoint = 1 }: ModernisationCheckpointPageProps) {
+export function ModernisationCheckpointPage({ checkpoint = 1, onNavigate }: ModernisationCheckpointPageProps) {
   const content = checkpointContent[checkpoint] ?? checkpointContent[1];
 
   return (
     <main aria-labelledby="modernisation-checkpoint-title" className="feature-screen">
-      <header>
+      <GlobalPageHeader onNavigate={onNavigate}>
         <p className="eyebrow">{content.eyebrow}</p>
         <h1 id="modernisation-checkpoint-title">{content.title}</h1>
         <p>{content.summary}</p>
-      </header>
+      </GlobalPageHeader>
 
       <section aria-label="Checkpoint summary" className="squad-summary-grid">
         <Card>

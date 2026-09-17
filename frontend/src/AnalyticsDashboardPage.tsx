@@ -2,6 +2,7 @@ import { type CSSProperties, useEffect, useMemo, useRef, useState } from 'react'
 
 import { Button } from './components/ui/button';
 import { Card } from './components/ui/card';
+import { GlobalPageHeader } from './components/ui/global-notifications';
 import { Select } from './components/ui/select';
 import type {
   DashboardClient,
@@ -18,10 +19,12 @@ const defaultDashboardClient = new HttpDashboardClient();
 
 interface AnalyticsDashboardPageProps {
   dashboardClient?: DashboardClient;
+  onNavigate?: (href: string) => void;
 }
 
 export function AnalyticsDashboardPage({
   dashboardClient = defaultDashboardClient,
+  onNavigate,
 }: AnalyticsDashboardPageProps) {
   const [config, setConfig] = useState<DashboardConfig | null>(null);
   const [queries, setQueries] = useState<Record<string, WidgetQueryResponse>>({});
@@ -113,11 +116,11 @@ export function AnalyticsDashboardPage({
 
   return (
     <main aria-labelledby="dashboard-title" className="feature-screen analytics-dashboard">
-      <header>
+      <GlobalPageHeader onNavigate={onNavigate}>
         <p className="eyebrow">Analytics</p>
         <h1 id="dashboard-title">{config?.title ?? 'Manager Analytics Dashboard'}</h1>
         <p>Explore manager performance through allowlisted metrics, dimensions, and filters.</p>
-      </header>
+      </GlobalPageHeader>
 
       {status === 'loading' ? <p role="status">Loading dashboard data</p> : null}
       {status === 'error' ? (

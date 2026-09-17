@@ -65,8 +65,7 @@ import {
 import { getPasskeyStatus, registerPasskey, type PasskeyStatus } from './passkeys';
 import { getResultColourPaletteLabel } from './result-colours';
 import { managerNicknameForName } from './manager-nicknames';
-import { HttpSquadClient, type SquadApiNotification, type SquadClient } from './squad-api';
-import { PageHero, PageHeroControls, PageHeroNotificationButton, PageHeroViewToggle } from './components/ui/page-hero';
+import { PageHero, PageHeroControls, PageHeroViewToggle } from './components/ui/page-hero';
 import { ColourPaletteSelector } from './components/ui/colour-palette-selector';
 import './profile-page.css';
 
@@ -74,12 +73,9 @@ interface ProfilePageProps {
   currentPath: string;
   onNavigate: (href: string) => void;
   session: SessionState;
-  squadClient?: Pick<SquadClient, 'getNotifications'>;
 }
 
-const defaultProfileSquadClient = new HttpSquadClient();
-
-export function ProfilePage({ currentPath, onNavigate, session, squadClient = defaultProfileSquadClient }: ProfilePageProps) {
+export function ProfilePage({ currentPath, onNavigate, session }: ProfilePageProps) {
   const {
     attackDirection,
     fdrDisplayMode,
@@ -123,8 +119,6 @@ export function ProfilePage({ currentPath, onNavigate, session, squadClient = de
   const [passkeyStatus, setPasskeyStatus] = useState<PasskeyStatus | null>(null);
   const [passkeyPending, setPasskeyPending] = useState(false);
   const [passkeyMessage, setPasskeyMessage] = useState<string | null>(null);
-  const [notifications, setNotifications] = useState<SquadApiNotification[]>([]);
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const isAccountSummary = currentPath === '/account' || currentPath === '/profile';
   const isAppearancePage = currentPath === '/account/appearance' || currentPath === '/profile/appearance';
   const isFdrPage = currentPath === '/account/fdr' || currentPath === '/profile/fdr';
@@ -148,23 +142,6 @@ export function ProfilePage({ currentPath, onNavigate, session, squadClient = de
       active = false;
     };
   }, [isAccountSummary]);
-
-  useEffect(() => {
-    if (!isAccountSummary) return undefined;
-
-    let active = true;
-    void squadClient.getNotifications()
-      .then((response) => {
-        if (active) setNotifications(response.notifications ?? []);
-      })
-      .catch(() => {
-        if (active) setNotifications([]);
-      });
-
-    return () => {
-      active = false;
-    };
-  }, [isAccountSummary, squadClient]);
 
   useEffect(() => {
     if (!isFdrScaleSheetOpen && !isPositionScaleSheetOpen && !isMetricScaleSheetOpen) return undefined;
@@ -339,12 +316,6 @@ export function ProfilePage({ currentPath, onNavigate, session, squadClient = de
                 { value: 'profile', label: 'Profile', icon: <UserRound aria-hidden="true" size={17} /> },
               ]}
               value="profile"
-            />
-            <PageHeroNotificationButton
-              notifications={notifications.map((notification) => ({ id: notification.id, title: notification.title, message: notification.message, actionHref: notification.action_href }))}
-              onNavigate={onNavigate}
-              onToggle={() => setNotificationsOpen((open) => !open)}
-              open={notificationsOpen}
             />
           </PageHeroControls>
         )}

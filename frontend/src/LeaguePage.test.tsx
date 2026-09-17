@@ -681,15 +681,4 @@ describe('LeaguePage', () => {
     act(() => root.unmount());
   });
 
-  test('opens the notifications popover from the League header', async () => {
-    const { container, root } = await renderPage();
-
-    await act(async () => {
-      container.querySelector<HTMLButtonElement>('button[aria-label*="Notifications"]')?.click();
-    });
-
-    expect(container.querySelector('[aria-label="Notifications"][role="dialog"]')?.textContent).toContain('Fixture update');
-    expect(container.querySelector('.cdl-page-hero__notification-count')?.textContent).toBe('1');
-    act(() => root.unmount());
-  });
 });

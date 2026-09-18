@@ -15,6 +15,7 @@ import { Button } from './components/ui/button';
 import { FormDots, PlayerCard, type PlayerCardPlayer } from './components/player/PlayerCard';
 import { PageHero, PageHeroControls, PageHeroViewToggle } from './components/ui/page-hero';
 import type { ThemePreset } from './contracts';
+import { managerNicknameForTeam } from './manager-nicknames';
 import type { SquadApiPlayer } from './squad-api';
 import './market-page.css';
 
@@ -36,15 +37,14 @@ interface MarketPlayer {
   club: string;
   status: SquadApiPlayer['status'] | 'owned_by_other';
   draftTeamName: string | null;
+  ownerName: string | null;
   points: number | null;
   form: number | null;
   value: number | null;
   xg: number | null;
   xa: number | null;
   selectedPercent: number | null;
-  nextOpponent: string | null;
   nextDifficulty: number | null;
-  nextFixtureIsHome: boolean | null;
 }
 
 interface InterestView {
@@ -523,7 +523,7 @@ function TradesPanel({ onBrowse, trades }: { onBrowse: () => void; trades: Trade
 function PlayerDrawer({ drawerRef, history, historyStatus, interest, managerTeam, onAddInterest, onClose, onNavigate, onRemoveInterest, pendingAction, player }: { drawerRef: MutableRefObject<HTMLElement | null>; history: PlayerHistoryResponse | null; historyStatus: string; interest: InterestView | null; managerTeam: string; onAddInterest: () => void; onClose: () => void; onNavigate: (href: string) => void; onRemoveInterest: (interest: InterestView) => Promise<void>; pendingAction: string | null; player: MarketPlayer }) {
   const status = interest ? 'interested' : effectiveStatus(player, new Set(), managerTeam);
   return (
-    <div className="market-page__drawer-layer"><button aria-label="Close player details" className="market-page__drawer-backdrop" onClick={onClose} type="button" /><aside aria-labelledby="market-player-detail-title" aria-modal="true" className="market-page__drawer" ref={drawerRef} role="dialog" tabIndex={-1}><span aria-hidden="true" className="market-page__sheet-handle" /><header className="market-page__drawer-header"><PlayerCard formPosition="hidden" layout="token" player={toPlayerCardPlayer(player)} showOpponent={false} showPositionMarker={false} size="lg" /><div><h2 id="market-player-detail-title">{player.displayName}</h2><span>{positionLabel(player.position)} · {player.club}</span></div><button aria-label="Close player details" className="market-page__icon-button" onClick={onClose} type="button"><X aria-hidden="true" size={19} /></button></header><section aria-label="Player metrics" className="market-page__detail-metrics"><Metric label="Total points" value={formatInteger(player.points)} /><Metric dots label="Form" value={player.form} /><Metric label="xG" value={formatMetric(player.xg)} /><Metric label="xA" value={formatMetric(player.xa)} /><Metric label="Value" value={player.value === null ? '—' : `£${player.value.toFixed(1)}m`} /><Metric label="Selected" value={player.selectedPercent === null ? '—' : `${formatMetric(player.selectedPercent)}%`} /></section><section className="market-page__drawer-section"><h3>Next fixture</h3><p>{formatFixture(player)}{player.nextDifficulty === null ? '' : ` · FDR ${player.nextDifficulty}`}</p></section><section className="market-page__drawer-section"><h3>Recent FPL history</h3>{historyStatus ? <p role="status">{historyStatus}</p> : null}{history?.history.length ? <div aria-label="Recent FPL gameweek history" className="market-page__history"><table><thead><tr><th>GW</th><th>Pts</th><th>Min</th><th>xG</th><th>xA</th></tr></thead><tbody>{history.history.slice(-5).reverse().map((row) => <tr key={row.gameweek}><td>{row.gameweek}</td><td><strong>{row.total_points}</strong></td><td>{row.minutes}</td><td>{row.expected_goals.toFixed(2)}</td><td>{row.expected_assists.toFixed(2)}</td></tr>)}</tbody></table></div> : null}{history && history.history.length === 0 ? <p>No completed gameweek history is available.</p> : null}</section><footer className="market-page__drawer-actions">{status === 'owned' ? <Button onClick={() => { onClose(); onNavigate('/squad'); }} type="button"><Users aria-hidden="true" size={16} />View in Squad</Button> : null}{status === 'interested' && interest ? <Button aria-label={`Remove ${player.displayName} from Interests`} disabled={pendingAction === interest.id} onClick={() => void onRemoveInterest(interest)} type="button" variant="secondary">{pendingAction === interest.id ? 'Removing…' : 'Remove Interest'}</Button> : null}{status !== 'owned' && status !== 'interested' ? <Button aria-label={`Add ${player.displayName} to Interests`} disabled={pendingAction === player.id} onClick={onAddInterest} type="button"><Star aria-hidden="true" size={16} />{pendingAction === player.id ? 'Adding…' : 'Add to Interests'}</Button> : null}<Button onClick={onClose} type="button" variant="ghost">Close</Button></footer></aside></div>
+    <div className="market-page__drawer-layer"><button aria-label="Close player details" className="market-page__drawer-backdrop" onClick={onClose} type="button" /><aside aria-labelledby="market-player-detail-title" aria-modal="true" className="market-page__drawer" ref={drawerRef} role="dialog" tabIndex={-1}><span aria-hidden="true" className="market-page__sheet-handle" /><header className="market-page__drawer-header"><PlayerCard formPosition="hidden" layout="token" player={toPlayerCardPlayer(player)} showOpponent={false} showPositionMarker={false} size="lg" /><div><h2 id="market-player-detail-title">{player.displayName}</h2><span>{positionLabel(player.position)} · {player.club}</span></div><button aria-label="Close player details" className="market-page__icon-button" onClick={onClose} type="button"><X aria-hidden="true" size={19} /></button></header><section aria-label="Player metrics" className="market-page__detail-metrics"><Metric label="Total points" value={formatInteger(player.points)} /><Metric dots label="Form" value={player.form} /><Metric label="xG" value={formatMetric(player.xg)} /><Metric label="xA" value={formatMetric(player.xa)} /><Metric label="Value" value={player.value === null ? '—' : `£${player.value.toFixed(1)}m`} /><Metric label="Selected" value={player.selectedPercent === null ? '—' : `${formatMetric(player.selectedPercent)}%`} /></section><section className="market-page__drawer-section"><h3>Owner</h3><p className="market-page__owner-value">{ownerLabel(player)}</p></section><section className="market-page__drawer-section"><h3>Recent FPL history</h3>{historyStatus ? <p role="status">{historyStatus}</p> : null}{history?.history.length ? <div aria-label="Recent FPL gameweek history" className="market-page__history"><table><thead><tr><th>GW</th><th>Pts</th><th>Min</th><th>xG</th><th>xA</th></tr></thead><tbody>{history.history.slice(-5).reverse().map((row) => <tr key={row.gameweek}><td>{row.gameweek}</td><td><strong>{row.total_points}</strong></td><td>{row.minutes}</td><td>{row.expected_goals.toFixed(2)}</td><td>{row.expected_assists.toFixed(2)}</td></tr>)}</tbody></table></div> : null}{history && history.history.length === 0 ? <p>No completed gameweek history is available.</p> : null}</section><footer className="market-page__drawer-actions">{status === 'owned' ? <Button onClick={() => { onClose(); onNavigate('/squad'); }} type="button"><Users aria-hidden="true" size={16} />View in Squad</Button> : null}{status === 'interested' && interest ? <Button aria-label={`Remove ${player.displayName} from Interests`} disabled={pendingAction === interest.id} onClick={() => void onRemoveInterest(interest)} type="button" variant="secondary">{pendingAction === interest.id ? 'Removing…' : 'Remove Interest'}</Button> : null}{status !== 'owned' && status !== 'interested' ? <Button aria-label={`Add ${player.displayName} to Interests`} disabled={pendingAction === player.id} onClick={onAddInterest} type="button"><Star aria-hidden="true" size={16} />{pendingAction === player.id ? 'Adding…' : 'Add to Interests'}</Button> : null}<Button onClick={onClose} type="button" variant="ghost">Close</Button></footer></aside></div>
   );
 }
 
@@ -542,13 +542,15 @@ function StatusBadge({ status }: { status: string }) {
 function toPlayerCardPlayer(player: MarketPlayer): PlayerCardPlayer {
   return {
     displayName: player.displayName,
-    fixtures: player.nextOpponent
-      ? [{ difficulty: player.nextDifficulty, label: player.nextFixtureIsHome === false ? player.nextOpponent.toLowerCase() : player.nextOpponent.toUpperCase(), title: player.nextDifficulty === null ? undefined : `FDR ${player.nextDifficulty} fixture` }]
-      : [],
+    fixtures: [{ label: ownerLabel(player), title: player.ownerName ? `Owned by ${player.ownerName}` : 'Free player' }],
     form: player.form,
     position: player.position,
     team: player.club,
   };
+}
+
+function ownerLabel(player: MarketPlayer): string {
+  return player.ownerName ?? 'Free';
 }
 
 function modeFromPath(path: string): MarketMode {
@@ -566,15 +568,16 @@ function mapPlayer(player: SquadApiPlayer): MarketPlayer {
     club: player.epl_team.short_name ?? player.epl_team.name,
     status: player.status,
     draftTeamName: player.draft_team?.name ?? null,
+    ownerName: player.draft_team
+      ? managerNicknameForTeam({ id: player.draft_team.id, name: player.draft_team.name })
+      : null,
     points: numberOrNull(player.points),
     form: numberOrNull(player.form),
     value: numberOrNull(player.value),
     xg: numberOrNull(player.expected_goals),
     xa: numberOrNull(player.expected_assists),
     selectedPercent: numberOrNull(player.selected_by_percent),
-    nextOpponent: fixture?.opponent.short_name ?? fixture?.opponent.name ?? null,
     nextDifficulty: numberOrNull(fixture?.difficulty),
-    nextFixtureIsHome: fixture?.is_home ?? null,
   };
 }
 
@@ -607,11 +610,6 @@ function formatTradeStatus(status: string): string {
   if (status === 'accepted') return 'Accepted';
   if (status === 'rejected') return 'Rejected';
   return 'Pending';
-}
-
-function formatFixture(player: MarketPlayer): string {
-  if (!player.nextOpponent) return 'Next fixture —';
-  return `${player.nextOpponent} · ${player.nextFixtureIsHome === false ? 'A' : 'H'}`;
 }
 
 function formatInteger(value: number | null): string {

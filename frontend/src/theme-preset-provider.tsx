@@ -144,27 +144,25 @@ export function ThemePresetProvider({
   const [customPlayerColourPalettes, setCustomPlayerColourPalettes] = useState<PlayerColourPalette[]>([]);
   const [themeColours, setThemeColoursState] = useState<ThemeAccentColours>(defaultThemeColours);
   const themeColour = themeColours.primary;
-  const [themeSystemTick, setThemeSystemTick] = useState(0);
+  const [, setThemeSystemTick] = useState(0);
   const [saveStatus, setSaveStatus] = useState<ThemePresetContextValue['saveStatus']>('idle');
   const latestPreferencesRef = useRef<UserPreferences | null>(null);
   const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
-  const preset = useMemo(
-    () => applyThemeColours(resolveThemePreset(presetName), themeColours),
-    [presetName, themeSystemTick, themeColours],
-  );
+  const preset = applyThemeColours(resolveThemePreset(presetName), themeColours);
 
   useEffect(() => {
     if (presetName !== 'adaptive' || typeof window.matchMedia !== 'function') return undefined;
 
     const media = window.matchMedia('(prefers-color-scheme: dark)');
     const update = () => setThemeSystemTick((value) => value + 1);
-    media.addEventListener?.('change', update);
-    media.addListener?.(update);
 
-    return () => {
-      media.removeEventListener?.('change', update);
-      media.removeListener?.(update);
-    };
+    if (typeof media.addEventListener === 'function') {
+      media.addEventListener('change', update);
+      return () => media.removeEventListener('change', update);
+    }
+
+    media.addListener(update);
+    return () => media.removeListener(update);
   }, [presetName]);
 
   useEffect(() => {

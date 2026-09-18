@@ -1425,8 +1425,10 @@ function ThemeColourChooser({
   const selectedPalette = getThemeColourPalette(themeColours);
 
   return (
-    <Sheet ariaLabelledBy="theme-colour-sheet-title" id="theme-colour-sheet" onBackdropClick={onClose} open={isOpen}>
-      <div className="profile-fdr-sheet">
+    <>
+      {isOpen ? <button aria-label="Close theme colour chooser" className="profile-fdr-sheet-backdrop" onClick={onClose} type="button" /> : null}
+      <Sheet id="theme-colour-sheet" isOpen={isOpen} labelledBy="theme-colour-sheet-title">
+        <div className="profile-fdr-sheet">
         <header className="profile-fdr-sheet__header">
           <div>
             <p className="profile-card__eyebrow">Theme colours</p>
@@ -1475,8 +1477,9 @@ function ThemeColourChooser({
             </div>
           </details>
         </div>
-      </div>
-    </Sheet>
+        </div>
+      </Sheet>
+    </>
   );
 }
 

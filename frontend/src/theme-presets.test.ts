@@ -21,11 +21,9 @@ test('legacy preference names resolve to the new teal presets', () => {
   expect(resolveThemePreset('teal-dark-compact').name).toBe('teal-dark');
 });
 
-test('adaptive mode follows the local daytime window', () => {
+test('adaptive mode follows the system appearance setting', () => {
   const adaptive = resolveThemePreset('adaptive');
 
-  expect(getThemeMode(adaptive, new Date(2026, 7, 23, 6, 59))).toBe('dark');
-  expect(getThemeMode(adaptive, new Date(2026, 7, 23, 7, 0))).toBe('light');
-  expect(getThemeMode(adaptive, new Date(2026, 7, 23, 18, 59))).toBe('light');
-  expect(getThemeMode(adaptive, new Date(2026, 7, 23, 19, 0))).toBe('dark');
+  expect(getThemeMode(adaptive, false)).toBe('light');
+  expect(getThemeMode(adaptive, true)).toBe('dark');
 });

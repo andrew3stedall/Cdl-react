@@ -9,18 +9,21 @@ describe('theme accent colours', () => {
       primary: '#2563EB',
       secondary: '#115E59',
       tertiary: '#0D9488',
+      quaternary: '#14B8A6',
     });
   });
 
-  test('derives all three accents for dark mode', () => {
+  test('derives all four accents for dark mode', () => {
     expect(getThemeAccentColoursForMode({
       primary: '#2563EB',
       secondary: '#7C3AED',
       tertiary: '#BE123C',
+      quaternary: '#C2410C',
     }, 'dark')).toEqual({
       primary: '#6B95F1',
       secondary: '#A679F3',
       tertiary: '#D35E7A',
+      quaternary: '#D67E5A',
     });
   });
 
@@ -29,11 +32,12 @@ describe('theme accent colours', () => {
       primary: '#2563EB',
       secondary: '#7C3AED',
       tertiary: '#BE123C',
+      quaternary: '#C2410C',
     });
 
     expect(preset.tokens.colors.primary).toBe('#2563EB');
     expect(preset.tokens.colors.secondary).toBe('#f1f5f9');
     expect(preset.tokens.colors.tertiary).toBe('#BE123C');
-    expect(preset.tokens.chartPaletteHooks.slice(0, 3)).toEqual(['#2563EB', '#7C3AED', '#BE123C']);
+    expect(preset.tokens.chartPaletteHooks.slice(0, 4)).toEqual(['#2563EB', '#7C3AED', '#BE123C', '#C2410C']);
   });
 });

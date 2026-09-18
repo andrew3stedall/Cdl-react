@@ -64,6 +64,7 @@ class UserPreferences(BaseModel):
     primary_theme_colour: str = "#0F766E"
     secondary_theme_colour: str = "#115E59"
     tertiary_theme_colour: str = "#0D9488"
+    quaternary_theme_colour: str = "#14B8A6"
     fdr_custom_min: str = "#2166AC"
     fdr_custom_second: str = "#8CAFD2"
     fdr_custom_mid: str = "#F7F7F7"

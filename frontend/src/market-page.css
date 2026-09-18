@@ -409,9 +409,46 @@
 }
 
 .market-page .player-card__opponents {
-  color: var(--primary);
   font-size: clamp(0.4rem, 1.15vw, 0.5rem);
   letter-spacing: -0.02em;
+}
+
+.market-page .player-card__opponent--theme-primary,
+.market-page__owner-value--primary {
+  color: var(--theme-primary, var(--primary));
+}
+
+.market-page .player-card__opponent--theme-secondary,
+.market-page__owner-value--secondary {
+  color: var(--theme-secondary, var(--primary));
+}
+
+.market-page .player-card__opponent--theme-tertiary,
+.market-page__owner-value--tertiary {
+  color: var(--theme-tertiary, var(--tertiary, var(--primary)));
+}
+
+[data-fdr-display-mode='fill'] .market-page .player-card__opponent--theme-primary,
+[data-fdr-display-mode='fill'] .market-page .player-card__opponent--theme-secondary,
+[data-fdr-display-mode='fill'] .market-page .player-card__opponent--theme-tertiary {
+  border-radius: 0.25rem;
+  display: inline-block;
+  padding: 0.05rem 0.22rem;
+}
+
+[data-fdr-display-mode='fill'] .market-page .player-card__opponent--theme-primary {
+  background: var(--theme-primary, var(--primary));
+  color: var(--theme-primary-foreground, var(--primary-foreground));
+}
+
+[data-fdr-display-mode='fill'] .market-page .player-card__opponent--theme-secondary {
+  background: var(--theme-secondary, var(--primary));
+  color: var(--theme-secondary-foreground, var(--primary-foreground));
+}
+
+[data-fdr-display-mode='fill'] .market-page .player-card__opponent--theme-tertiary {
+  background: var(--theme-tertiary, var(--tertiary, var(--primary)));
+  color: var(--theme-tertiary-foreground, var(--tertiary-foreground, var(--primary-foreground)));
 }
 
 .market-page__player-identity:hover,
@@ -749,7 +786,29 @@
 .market-page__drawer-section { border-top: 1px solid var(--border); padding-top: 0.9rem; }
 .market-page__drawer-section h3 { font-size: 0.8rem; margin: 0 0 0.35rem; }
 .market-page__drawer-section p { color: var(--market-muted); font-size: 0.82rem; line-height: 1.45; margin: 0; }
-.market-page__drawer-section .market-page__owner-value { color: var(--primary); font-weight: 750; }
+.market-page__drawer-section .market-page__owner-value { font-weight: 750; }
+
+[data-fdr-display-mode='fill'] .market-page__drawer-section .market-page__owner-value {
+  border-radius: 0.25rem;
+  display: inline-flex;
+  padding: 0.08rem 0.3rem;
+  width: fit-content;
+}
+
+[data-fdr-display-mode='fill'] .market-page__drawer-section .market-page__owner-value--primary {
+  background: var(--theme-primary, var(--primary));
+  color: var(--theme-primary-foreground, var(--primary-foreground));
+}
+
+[data-fdr-display-mode='fill'] .market-page__drawer-section .market-page__owner-value--secondary {
+  background: var(--theme-secondary, var(--primary));
+  color: var(--theme-secondary-foreground, var(--primary-foreground));
+}
+
+[data-fdr-display-mode='fill'] .market-page__drawer-section .market-page__owner-value--tertiary {
+  background: var(--theme-tertiary, var(--tertiary, var(--primary)));
+  color: var(--theme-tertiary-foreground, var(--tertiary-foreground, var(--primary-foreground)));
+}
 
 .market-page__detail-metrics {
   display: grid;

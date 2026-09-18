@@ -535,18 +535,31 @@ describe('AppShell integration', () => {
     expect(document.documentElement.style.getPropertyValue('--primary')).toBe('#6B95F1');
 
     await act(async () => {
+      container.querySelector<HTMLButtonElement>('[aria-label="Select Secondary accent"]')?.click();
+      await Promise.resolve();
       container.querySelector<HTMLButtonElement>('[aria-label="Purple secondary theme colour"]')?.click();
       await Promise.resolve();
     });
     expect(preferenceClient.preferences.secondaryThemeColour).toBe('#7C3AED');
 
     await act(async () => {
+      container.querySelector<HTMLButtonElement>('[aria-label="Select Tertiary accent"]')?.click();
+      await Promise.resolve();
       container.querySelector<HTMLButtonElement>('[aria-label="Rose tertiary theme colour"]')?.click();
       await Promise.resolve();
     });
     expect(preferenceClient.preferences.tertiaryThemeColour).toBe('#BE123C');
     expect(document.documentElement.style.getPropertyValue('--cdl-theme-secondary')).toBe('#A679F3');
     expect(document.documentElement.style.getPropertyValue('--cdl-theme-tertiary')).toBe('#D35E7A');
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[aria-label="Select Quaternary accent"]')?.click();
+      await Promise.resolve();
+      container.querySelector<HTMLButtonElement>('[aria-label="Orange quaternary theme colour"]')?.click();
+      await Promise.resolve();
+    });
+    expect(preferenceClient.preferences.quaternaryThemeColour).toBe('#C2410C');
+    expect(document.documentElement.style.getPropertyValue('--cdl-theme-quaternary')).toBe('#D67E5A');
     expect(container.querySelectorAll('.profile-preset-copy small')).toHaveLength(0);
 
     await act(async () => {

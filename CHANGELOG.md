@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Added a fourth persisted theme accent and consolidated the four accent choices
+  into the reusable profile palette selector.
+
+- Updated Market ownership labels to follow the selected FDR presentation:
+  primary for the current manager's players, secondary for free agents, and
+  tertiary for players owned by another manager.
+
 - Matched Market list density to Squad: the shared player card and its form
   gauge now stay on one row, while table typography, row padding, and xG/xA
   values use the same compact scan pattern.

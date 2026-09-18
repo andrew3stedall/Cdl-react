@@ -41,6 +41,14 @@ const ownedPlayer = {
   draft_team: { id: 'team-exeter-gently', name: 'Exeter Gently', short_name: 'EXE' },
 };
 
+const otherOwnedPlayer = {
+  ...player,
+  id: 'player-5',
+  display_name: 'Other Owned Midfielder',
+  status: 'owned',
+  draft_team: { id: 'team-bayer-neverlusen', name: 'Bayer Nerverlusen', short_name: 'BAY' },
+};
+
 let marketPlayers = [player];
 
 beforeEach(() => {
@@ -48,7 +56,7 @@ beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const path = String(input);
     if (path === '/api/squad/summary') {
-      return new Response(JSON.stringify({ manager_team: { name: 'Exeter Gently' }, gameweek: { name: 'Gameweek 1' }, players: [player] }), { status: 200 });
+      return new Response(JSON.stringify({ manager_team: { id: 'team-exeter-gently', name: 'Exeter Gently' }, gameweek: { name: 'Gameweek 1' }, players: [player] }), { status: 200 });
     }
     if (path === '/api/scouting/players') return new Response(JSON.stringify({ players: marketPlayers }), { status: 200 });
     if (path === '/api/interests' && init?.method === 'POST') {
@@ -106,17 +114,21 @@ describe('MarketPage', () => {
     expect(playerCard?.lastElementChild?.classList.contains('player-card__form')).toBe(true);
     expect(table?.querySelector('.market-page__expected')).not.toBeNull();
     expect(table?.querySelector('.player-card__opponents')?.textContent).toBe('Free');
+    expect(table?.querySelector('.player-card__opponent')?.classList).toContain('player-card__opponent--theme-secondary');
     expect(table?.textContent).not.toContain('Status');
     expect(table?.textContent).not.toContain('Owned');
   });
 
-  test('shows the owning manager instead of the next fixture', async () => {
-    marketPlayers = [player, ownedPlayer];
+  test('shows the owning manager instead of the next fixture with ownership tones', async () => {
+    marketPlayers = [player, ownedPlayer, otherOwnedPlayer];
     const { container } = await renderPage();
     const ownedRow = container.querySelector('tr[aria-label="View Owned Defender details"]');
+    const otherOwnedRow = container.querySelector('tr[aria-label="View Other Owned Midfielder details"]');
 
     expect(ownedRow?.querySelector('.player-card__opponents')?.textContent).toBe('Dilson');
     expect(ownedRow?.textContent).not.toContain('MCI');
+    expect(ownedRow?.querySelector('.player-card__opponent')?.classList).toContain('player-card__opponent--theme-primary');
+    expect(otherOwnedRow?.querySelector('.player-card__opponent')?.classList).toContain('player-card__opponent--theme-tertiary');
   });
 
   test('keeps only position and fixture filters, then persists an Interest action from player details', async () => {

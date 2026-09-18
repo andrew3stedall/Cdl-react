@@ -34,7 +34,7 @@ describe('PlayerCard', () => {
               availabilityChance: 75,
               captain: true,
               displayName: "Viktor Gyökeres",
-              fixtures: [{ difficulty: 3, label: 'ARS' }],
+              fixtures: [{ difficulty: 3, label: 'ARS', tone: 'tertiary' }],
               form: 7.4,
               position: 'FWD',
               team: 'ARS',
@@ -57,6 +57,7 @@ describe('PlayerCard', () => {
     expect(container.querySelectorAll('.player-card__points')).toHaveLength(1);
     expect(container.querySelector('.player-card__points')?.textContent).toBe('8');
     expect(container.querySelectorAll('.player-card__opponent--fdr-3')).toHaveLength(2);
+    expect(container.querySelector('.player-card__opponent')?.classList).toContain('player-card__opponent--theme-tertiary');
     expect(container.querySelector('.player-card--pitch.player-card--form-below')).not.toBeNull();
     expect(container.querySelector('.player-card--list.player-card--form-beside')).not.toBeNull();
     expect(container.querySelector('.player-card__role')?.textContent).toBe('C');

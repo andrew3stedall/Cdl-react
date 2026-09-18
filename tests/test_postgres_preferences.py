@@ -92,6 +92,7 @@ def test_authenticated_preferences_persist_and_remain_isolated() -> None:
             "result_loss_colour": "#DC2626",
             "light_theme_colour": "#2563EB",
             "dark_theme_colour": "#60A5FA",
+            "quaternary_theme_colour": "#C2410C",
             "fdr_custom_min": "#1B9E77",
             "fdr_custom_second": "#8CCBB5",
             "fdr_custom_mid": "#F7F7F7",
@@ -125,6 +126,7 @@ def test_authenticated_preferences_persist_and_remain_isolated() -> None:
         "primary_theme_colour": "#2563EB",
         "secondary_theme_colour": "#115E59",
         "tertiary_theme_colour": "#0D9488",
+        "quaternary_theme_colour": "#C2410C",
         "fdr_custom_min": "#1B9E77",
         "fdr_custom_second": "#8CCBB5",
         "fdr_custom_mid": "#F7F7F7",
@@ -160,6 +162,7 @@ def test_authenticated_preferences_persist_and_remain_isolated() -> None:
         "primary_theme_colour": "#0F766E",
         "secondary_theme_colour": "#115E59",
         "tertiary_theme_colour": "#0D9488",
+        "quaternary_theme_colour": "#14B8A6",
         "fdr_custom_min": "#2166AC",
         "fdr_custom_second": "#8CAFD2",
         "fdr_custom_mid": "#F7F7F7",
@@ -225,6 +228,7 @@ def test_authenticated_preferences_persist_and_remain_isolated() -> None:
         "primary_theme_colour": "#0F766E",
         "secondary_theme_colour": "#115E59",
         "tertiary_theme_colour": "#0D9488",
+        "quaternary_theme_colour": "#14B8A6",
         "fdr_custom_min": "#2166AC",
         "fdr_custom_second": "#8CAFD2",
         "fdr_custom_mid": "#F7F7F7",
@@ -248,6 +252,10 @@ def test_authenticated_preferences_persist_and_remain_isolated() -> None:
     assert reloaded_repository.get_for_user("preferences-manager-1").result_win_colour == "#16A34A"
     assert reloaded_repository.get_for_user("preferences-manager-1").result_draw_colour == "#D97706"
     assert reloaded_repository.get_for_user("preferences-manager-1").result_loss_colour == "#DC2626"
+    assert (
+        reloaded_repository.get_for_user("preferences-manager-1").quaternary_theme_colour
+        == "#C2410C"
+    )
     assert reloaded_repository.get_for_user("preferences-manager-2").theme_preset == "teal-dark"
     assert reloaded_repository.get_for_user("preferences-manager-2").attack_direction == "up"
     assert reloaded_repository.get_for_user("preferences-manager-2").fdr_scale == "Sinebow"

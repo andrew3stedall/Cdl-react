@@ -49,7 +49,9 @@ import { getStoredThemePreset, setThemePresetCookie } from './theme-cookie';
 import {
   applyThemeColours,
   defaultThemeColours,
+  getThemeAccentColoursForMode,
   getThemeColourForMode,
+  getThemeColourForeground,
   resolveThemeAccentColours,
   resolveThemeBaseColour,
   type ThemeAccent,
@@ -107,6 +109,7 @@ function getThemePreferenceFields(themeColours: ThemeAccentColours) {
     primaryThemeColour: themeColours.primary,
     secondaryThemeColour: themeColours.secondary,
     tertiaryThemeColour: themeColours.tertiary,
+    quaternaryThemeColour: themeColours.quaternary,
   };
 }
 
@@ -181,6 +184,7 @@ export function ThemePresetProvider({
             primary: preferences.primaryThemeColour ?? preferences.lightThemeColour ?? preferences.darkThemeColour,
             secondary: preferences.secondaryThemeColour,
             tertiary: preferences.tertiaryThemeColour,
+            quaternary: preferences.quaternaryThemeColour,
           }));
           setCustomFdrAnchorsState(resolveFdrCustomAnchors(preferences.fdrCustomAnchors));
           latestPreferencesRef.current = preferences;
@@ -275,13 +279,15 @@ export function ThemePresetProvider({
       root.style.setProperty(`--${token}`, value);
       root.style.setProperty(`--cdl-${token}`, value);
     });
-    const [themePrimary, themeSecondary, themeTertiary] = preset.tokens.chartPaletteHooks;
-    root.style.setProperty('--theme-primary', themePrimary ?? colors.primary);
-    root.style.setProperty('--theme-secondary', themeSecondary ?? colors.accent);
-    root.style.setProperty('--theme-tertiary', themeTertiary ?? colors.tertiary);
-    root.style.setProperty('--cdl-theme-primary', themePrimary ?? colors.primary);
-    root.style.setProperty('--cdl-theme-secondary', themeSecondary ?? colors.accent);
-    root.style.setProperty('--cdl-theme-tertiary', themeTertiary ?? colors.tertiary);
+    const themeAccentColours = getThemeAccentColoursForMode(themeColours, themeMode);
+    (Object.keys(themeAccentColours) as ThemeAccent[]).forEach((accent) => {
+      const colour = themeAccentColours[accent];
+      const foreground = getThemeColourForeground(themeColours[accent], themeMode);
+      root.style.setProperty(`--theme-${accent}`, colour);
+      root.style.setProperty(`--theme-${accent}-foreground`, foreground);
+      root.style.setProperty(`--cdl-theme-${accent}`, colour);
+      root.style.setProperty(`--cdl-theme-${accent}-foreground`, foreground);
+    });
     root.style.setProperty('--cdl-radius', preset.tokens.radius);
     root.style.setProperty('--radius', preset.tokens.radius);
     root.style.setProperty('--cdl-result-win', resultColours.win);

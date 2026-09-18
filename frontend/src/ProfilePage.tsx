@@ -112,7 +112,6 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
     savePlayerColourPalette,
     deletePlayerColourPalette,
     useCustomFdrPalette,
-    setThemeAccentColour,
     setThemeColours,
     setPresetName,
   } = useThemePreset();

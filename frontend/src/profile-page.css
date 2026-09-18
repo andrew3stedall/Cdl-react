@@ -396,109 +396,63 @@
   padding: 0.75rem;
 }
 
-.profile-theme-colours {
-  display: block;
-}
-
-.profile-theme-colour-row {
-  align-items: center;
-  display: flex;
+.profile-theme-colour-card {
   gap: 0.8rem;
-  justify-content: space-between;
 }
 
-.profile-theme-colour-row > strong {
-  font-size: 0.78rem;
+.profile-theme-colour-trigger > span:first-child {
+  min-width: 0;
+  width: 100%;
 }
 
-.profile-theme-colour-row {
-  align-items: center;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 0.55rem 0.65rem;
+.profile-theme-palette-bar {
+  border: 1px solid color-mix(in srgb, var(--foreground) 14%, transparent);
+  border-radius: 0.35rem;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  height: 1.8rem;
+  min-width: 0;
+  overflow: hidden;
+  width: 100%;
 }
 
-.profile-theme-colour-options {
+.profile-theme-palette-bar > span {
   align-items: center;
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  justify-content: flex-end;
-}
-
-.profile-theme-colour-swatch,
-.profile-theme-colour-picker {
-  border: 1px solid color-mix(in srgb, var(--foreground) 22%, transparent);
-  border-radius: 50%;
-  cursor: pointer;
-  display: inline-flex;
-  height: 1.35rem;
-  padding: 0;
-  width: 1.35rem;
-}
-
-.profile-theme-colour-swatch {
-  background: var(--swatch-colour);
-}
-
-.profile-theme-colour-swatch:hover,
-.profile-theme-colour-swatch:focus-visible,
-.profile-theme-colour-swatch.is-selected,
-.profile-theme-colour-picker:focus-within {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
-}
-
-.profile-theme-colour-picker {
-  overflow: hidden;
-}
-
-.profile-theme-colour-picker input {
-  border: 0;
-  cursor: pointer;
-  height: 2rem;
-  margin: -0.35rem;
-  padding: 0;
-  width: 2rem;
-}
-
-.profile-theme-colour-variants {
-  display: grid;
-  gap: 0.45rem;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.profile-theme-colour-variant {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  display: grid;
-  gap: 0.45rem;
-  padding: 0.55rem;
-}
-
-.profile-theme-colour-variant > strong {
-  font-size: 0.68rem;
-}
-
-.profile-theme-colour-variant__swatches {
-  display: grid;
-  gap: 0.35rem;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.profile-theme-colour-variants span {
-  align-items: center;
-  background: var(--swatch-colour);
-  border: 1px solid color-mix(in srgb, var(--foreground) 20%, transparent);
-  border-radius: 999px;
-  color: var(--foreground);
-  display: inline-flex;
   font-size: 0.65rem;
-  font-weight: 700;
+  font-weight: 800;
   justify-content: center;
-  padding: 0.25rem 0.4rem;
+}
+
+.profile-theme-colour-trigger .profile-theme-palette-bar {
+  margin-top: 0.25rem;
+  width: min(18rem, 100%);
+}
+
+.profile-theme-palette-option {
+  grid-template-columns: minmax(5.5rem, 0.62fr) minmax(0, 1fr) 2.25rem;
+}
+
+.profile-theme-palette-option__label {
+  font-size: 0.78rem;
+  font-weight: 800;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-theme-palette-option .profile-theme-palette-bar {
+  height: 2.1rem;
+}
+
+.profile-theme-custom-editor .colour-palette-selector {
+  margin-top: 0.05rem;
+}
+
+#theme-colour-sheet.ui-sheet {
+  box-sizing: border-box;
+  width: min(34rem, 100vw);
 }
 
 .profile-save-status {

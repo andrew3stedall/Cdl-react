@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
-import { applyThemeColours, getThemeAccentColoursForMode, resolveThemeAccentColours } from './theme-colours';
+import { applyThemeColours, getThemeAccentColoursForMode, getThemeColourPalette, resolveThemeAccentColours, themeColourPalettes } from './theme-colours';
 import { resolveThemePreset } from './theme-presets';
 
 describe('theme accent colours', () => {
@@ -11,6 +11,13 @@ describe('theme accent colours', () => {
       tertiary: '#0D9488',
       quaternary: '#14B8A6',
     });
+  });
+
+  test('exposes complete four-accent templates and recognises exact selections', () => {
+    expect(themeColourPalettes).toHaveLength(6);
+    expect(themeColourPalettes.every((palette) => Object.keys(palette.colours).length === 4)).toBe(true);
+    expect(getThemeColourPalette(themeColourPalettes[1].colours)?.name).toBe('ocean');
+    expect(getThemeColourPalette({ ...themeColourPalettes[1].colours, primary: '#000000' })).toBeNull();
   });
 
   test('derives all four accents for dark mode', () => {

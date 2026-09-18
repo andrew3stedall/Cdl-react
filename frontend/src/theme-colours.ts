@@ -32,6 +32,51 @@ export const themeColourOptions = [
   { label: 'Pink', colour: '#9D174D' },
 ] as const;
 
+export interface ThemeColourPalette {
+  name: string;
+  label: string;
+  colours: ThemeAccentColours;
+}
+
+export const themeColourPalettes: readonly ThemeColourPalette[] = [
+  { name: 'teal', label: 'Teal', colours: defaultThemeColours },
+  {
+    name: 'ocean',
+    label: 'Ocean',
+    colours: { primary: '#2563EB', secondary: '#0891B2', tertiary: '#14B8A6', quaternary: '#4F46E5' },
+  },
+  {
+    name: 'violet',
+    label: 'Violet',
+    colours: { primary: '#7C3AED', secondary: '#4F46E5', tertiary: '#C026D3', quaternary: '#DB2777' },
+  },
+  {
+    name: 'rose',
+    label: 'Rose',
+    colours: { primary: '#BE123C', secondary: '#9F1239', tertiary: '#DB2777', quaternary: '#C2410C' },
+  },
+  {
+    name: 'sunset',
+    label: 'Sunset',
+    colours: { primary: '#C2410C', secondary: '#B45309', tertiary: '#BE123C', quaternary: '#7C3AED' },
+  },
+  {
+    name: 'forest',
+    label: 'Forest',
+    colours: { primary: '#15803D', secondary: '#4D7C0F', tertiary: '#0F766E', quaternary: '#A16207' },
+  },
+];
+
+export function getThemeColourPalette(value: Partial<ThemeAccentColours> | string | null | undefined): ThemeColourPalette | null {
+  const colours = resolveThemeAccentColours(value);
+  return themeColourPalettes.find((palette) => (
+    palette.colours.primary === colours.primary
+    && palette.colours.secondary === colours.secondary
+    && palette.colours.tertiary === colours.tertiary
+    && palette.colours.quaternary === colours.quaternary
+  )) ?? null;
+}
+
 export function resolveThemeBaseColour(value: string | null | undefined): string {
   return value && /^#[0-9A-Fa-f]{6}$/.test(value) ? value.toUpperCase() : defaultThemeColour;
 }

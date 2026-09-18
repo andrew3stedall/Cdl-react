@@ -51,13 +51,15 @@ The application provides responsive shared navigation, manual reload, route-awar
 - Responsive app shell.
 - Route-aware active state.
 - Persistent bottom navigation on mobile.
-- Theme preset selector.
+- Independent theme-mode selector for light, dark, and system-adaptive appearance.
+- Independent theme-colour selector with predefined four-accent templates and custom colours.
 - Shared reload or data refresh command where needed.
 
 ## UI Requirements
 
 - shadcn/ui is mandatory for shell primitives unless an exception is documented.
-- Presets must include Teal light/dark options and comfortable/compact density variants.
+- Theme mode must include light, dark, and adaptive options; adaptive follows the device colour-scheme preference.
+- Theme colours must be selectable independently of theme mode, with reusable four-accent templates plus a custom palette editor aligned to the FDR selector pattern.
 - Presets must define colour tokens, density, radius, typography scale, and chart palette hooks.
 - Surfaces must avoid gradients, shadows, glows, and information-heavy colour highlighting.
 
@@ -69,7 +71,8 @@ The application provides responsive shared navigation, manual reload, route-awar
 ## Acceptance Criteria
 
 - Users can navigate all modernised modules from a shared shell.
-- Users can select a visual preset and see it applied consistently.
+- Users can select light, dark, or system-adaptive theme mode and see it applied consistently.
+- Users can choose a theme-colour template or custom four-accent palette without changing theme mode.
 - Users can open Profile & preferences, inspect their authenticated account, change appearance, and sign out.
 - Shell works on mobile and desktop.
 - Active route state is clear.

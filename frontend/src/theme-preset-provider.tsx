@@ -94,6 +94,7 @@ interface ThemePresetContextValue {
   savePlayerColourPalette: (palette: Omit<PlayerColourPalette, 'id'>) => Promise<PlayerColourPalette>;
   deletePlayerColourPalette: (paletteId: string) => Promise<void>;
   setThemeAccentColour: (accent: ThemeAccent, colour: string) => void;
+  setThemeColours: (colours: ThemeAccentColours) => void;
   setThemeColour: (colour: string) => void;
   setPresetName: (presetName: ThemePreset['name']) => void;
   saveStatus: 'idle' | 'saving' | 'saved' | 'error';
@@ -143,20 +144,25 @@ export function ThemePresetProvider({
   const [customPlayerColourPalettes, setCustomPlayerColourPalettes] = useState<PlayerColourPalette[]>([]);
   const [themeColours, setThemeColoursState] = useState<ThemeAccentColours>(defaultThemeColours);
   const themeColour = themeColours.primary;
-  const [themeClockTick, setThemeClockTick] = useState(() => Date.now());
+  const [, setThemeSystemTick] = useState(0);
   const [saveStatus, setSaveStatus] = useState<ThemePresetContextValue['saveStatus']>('idle');
   const latestPreferencesRef = useRef<UserPreferences | null>(null);
   const saveQueueRef = useRef<Promise<void>>(Promise.resolve());
-  const preset = useMemo(
-    () => applyThemeColours(resolveThemePreset(presetName), themeColours),
-    [presetName, themeClockTick, themeColours],
-  );
+  const preset = applyThemeColours(resolveThemePreset(presetName), themeColours);
 
   useEffect(() => {
-    if (presetName !== 'adaptive') return undefined;
+    if (presetName !== 'adaptive' || typeof window.matchMedia !== 'function') return undefined;
 
-    const interval = window.setInterval(() => setThemeClockTick(Date.now()), 60_000);
-    return () => window.clearInterval(interval);
+    const media = window.matchMedia('(prefers-color-scheme: dark)');
+    const update = () => setThemeSystemTick((value) => value + 1);
+
+    if (typeof media.addEventListener === 'function') {
+      media.addEventListener('change', update);
+      return () => media.removeEventListener('change', update);
+    }
+
+    media.addListener(update);
+    return () => media.removeListener(update);
   }, [presetName]);
 
   useEffect(() => {
@@ -534,6 +540,22 @@ export function ThemePresetProvider({
           ...themeColours,
           [accent]: resolveThemeBaseColour(nextColour),
         } as ThemeAccentColours;
+        setThemeColoursState(nextThemeColours);
+        savePreference({
+          themePreset: preset.name,
+          attackDirection,
+          fdrScale,
+          fdrScaleReversed,
+          fdrDisplayMode,
+          positionColourScale,
+          metricColourScale,
+          metricColourScaleReversed,
+          ...getThemePreferenceFields(nextThemeColours),
+          fdrCustomAnchors: customFdrAnchors,
+        });
+      },
+      setThemeColours: (nextColours) => {
+        const nextThemeColours = resolveThemeAccentColours(nextColours);
         setThemeColoursState(nextThemeColours);
         savePreference({
           themePreset: preset.name,

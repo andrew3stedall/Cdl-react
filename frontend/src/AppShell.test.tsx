@@ -489,7 +489,8 @@ describe('AppShell integration', () => {
     expect(container.textContent).not.toContain('Shake to open');
     expect(container.textContent).not.toContain('Tilt maze');
     expect(container.querySelectorAll('.profile-settings-group')).toHaveLength(5);
-    expect(container.querySelector('[aria-label="Open workspace appearance settings"]')).not.toBeNull();
+    expect(container.querySelector('[aria-label="Open theme mode settings"]')).not.toBeNull();
+    expect(container.querySelector('[aria-label="Open theme colour settings"]')).not.toBeNull();
     expect(container.querySelector('[aria-label="Open FDR colour scale settings"]')).not.toBeNull();
     expect(container.querySelector('[aria-label="Open result colour settings"]')).not.toBeNull();
     expect(container.querySelector('[aria-label^="Current attacking orientation"]')).not.toBeNull();
@@ -501,10 +502,11 @@ describe('AppShell integration', () => {
     expect(container.querySelector('.profile-page .profile-direction-option')).toBeNull();
 
     await act(async () => {
-      container.querySelector<HTMLButtonElement>('[aria-label="Open workspace appearance settings"]')?.click();
+      container.querySelector<HTMLButtonElement>('[aria-label="Open theme mode settings"]')?.click();
       await Promise.resolve();
     });
-    expect(container.querySelector('#account-settings-title')?.textContent).toBe('Visual preset');
+    expect(container.querySelector('#account-settings-title')?.textContent).toBe('Theme mode');
+    expect(container.querySelector('#theme-colour-sheet')).toBeNull();
 
     const darkOption = [...container.querySelectorAll<HTMLButtonElement>('.profile-preset-option')]
       .find((option) => option.textContent?.includes('Dark mode'));
@@ -517,52 +519,56 @@ describe('AppShell integration', () => {
 
     expect(preferenceClient.preferences.themePreset).toBe('teal-dark');
     expect(document.documentElement.dataset.themeMode).toBe('dark');
-
-    const themeColoursAccordion = container.querySelector<HTMLDetailsElement>('#theme-colours-accordion');
-    expect(themeColoursAccordion?.open).toBe(false);
-    await act(async () => {
-      themeColoursAccordion?.querySelector<HTMLElement>('summary')?.click();
-      await Promise.resolve();
-    });
-    expect(themeColoursAccordion?.open).toBe(true);
-    const blueOption = container.querySelector<HTMLButtonElement>('[aria-label="Blue primary theme colour"]');
-    await act(async () => {
-      blueOption?.click();
-      await Promise.resolve();
-    });
-    expect(preferenceClient.preferences.lightThemeColour).toBe('#2563EB');
-    expect(preferenceClient.preferences.primaryThemeColour).toBe('#2563EB');
-    expect(document.documentElement.style.getPropertyValue('--primary')).toBe('#6B95F1');
-
-    await act(async () => {
-      container.querySelector<HTMLButtonElement>('[aria-label="Select Secondary accent"]')?.click();
-      await Promise.resolve();
-      container.querySelector<HTMLButtonElement>('[aria-label="Purple secondary theme colour"]')?.click();
-      await Promise.resolve();
-    });
-    expect(preferenceClient.preferences.secondaryThemeColour).toBe('#7C3AED');
-
-    await act(async () => {
-      container.querySelector<HTMLButtonElement>('[aria-label="Select Tertiary accent"]')?.click();
-      await Promise.resolve();
-      container.querySelector<HTMLButtonElement>('[aria-label="Rose tertiary theme colour"]')?.click();
-      await Promise.resolve();
-    });
-    expect(preferenceClient.preferences.tertiaryThemeColour).toBe('#BE123C');
-    expect(document.documentElement.style.getPropertyValue('--cdl-theme-secondary')).toBe('#A679F3');
-    expect(document.documentElement.style.getPropertyValue('--cdl-theme-tertiary')).toBe('#D35E7A');
-
-    await act(async () => {
-      container.querySelector<HTMLButtonElement>('[aria-label="Select Quaternary accent"]')?.click();
-      await Promise.resolve();
-      container.querySelector<HTMLButtonElement>('[aria-label="Orange quaternary theme colour"]')?.click();
-      await Promise.resolve();
-    });
-    expect(preferenceClient.preferences.quaternaryThemeColour).toBe('#C2410C');
-    expect(document.documentElement.style.getPropertyValue('--cdl-theme-quaternary')).toBe('#D67E5A');
     expect(container.querySelectorAll('.profile-preset-copy small')).toHaveLength(0);
 
     await act(async () => {
+      container.querySelector<HTMLButtonElement>('.profile-subpage-back')?.click();
+      await Promise.resolve();
+    });
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[aria-label="Open theme colour settings"]')?.click();
+      await Promise.resolve();
+    });
+    expect(container.querySelector('#account-settings-title')?.textContent).toBe('Theme colours');
+
+    const themeColourTrigger = container.querySelector<HTMLButtonElement>('[aria-controls="theme-colour-sheet"]');
+    await act(async () => {
+      themeColourTrigger?.click();
+      await Promise.resolve();
+    });
+    expect(container.querySelector('#theme-colour-sheet')?.hasAttribute('hidden')).toBe(false);
+    expect(container.querySelectorAll('.profile-theme-palette-option')).toHaveLength(6);
+    const themeCustomAccordion = container.querySelector<HTMLDetailsElement>('#theme-custom-accordion');
+    expect(themeCustomAccordion?.open).toBe(false);
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[aria-label="Theme colour template Ocean"]')?.click();
+      await Promise.resolve();
+    });
+    expect(preferenceClient.preferences.primaryThemeColour).toBe('#2563EB');
+    expect(preferenceClient.preferences.secondaryThemeColour).toBe('#0891B2');
+    expect(preferenceClient.preferences.tertiaryThemeColour).toBe('#14B8A6');
+    expect(preferenceClient.preferences.quaternaryThemeColour).toBe('#4F46E5');
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[aria-controls="theme-colour-sheet"]')?.click();
+      await Promise.resolve();
+      container.querySelector<HTMLDetailsElement>('#theme-custom-accordion')?.querySelector<HTMLElement>('summary')?.click();
+      await Promise.resolve();
+    });
+    expect(container.querySelector<HTMLDetailsElement>('#theme-custom-accordion')?.open).toBe(true);
+    const customThemeSelector = container.querySelector('[aria-label="Custom theme colours"]');
+    expect(customThemeSelector?.querySelectorAll('button')).toHaveLength(4);
+    expect(customThemeSelector?.textContent).not.toMatch(/#[0-9A-F]{6}/i);
+    await act(async () => {
+      customThemeSelector?.querySelector<HTMLButtonElement>('[aria-label="Edit Secondary accent"]')?.click();
+      await Promise.resolve();
+    });
+    expect(container.querySelector('[aria-label="Colour field for Secondary accent"]')).not.toBeNull();
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('[aria-label="Close theme colour chooser"]')?.click();
+      await Promise.resolve();
       container.querySelector<HTMLButtonElement>('.profile-subpage-back')?.click();
       await Promise.resolve();
     });

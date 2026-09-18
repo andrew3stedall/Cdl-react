@@ -32,13 +32,25 @@ const player = {
   },
 };
 
+const ownedPlayer = {
+  ...player,
+  id: 'player-4',
+  display_name: 'Owned Defender',
+  position: 'DEF',
+  status: 'owned',
+  draft_team: { id: 'team-exeter-gently', name: 'Exeter Gently', short_name: 'EXE' },
+};
+
+let marketPlayers = [player];
+
 beforeEach(() => {
+  marketPlayers = [player];
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const path = String(input);
     if (path === '/api/squad/summary') {
       return new Response(JSON.stringify({ manager_team: { name: 'Exeter Gently' }, gameweek: { name: 'Gameweek 1' }, players: [player] }), { status: 200 });
     }
-    if (path === '/api/scouting/players') return new Response(JSON.stringify({ players: [player] }), { status: 200 });
+    if (path === '/api/scouting/players') return new Response(JSON.stringify({ players: marketPlayers }), { status: 200 });
     if (path === '/api/interests' && init?.method === 'POST') {
       return new Response(JSON.stringify({ id: 'interest-1', player: { ...player, status: 'interested' }, gameweek: { name: 'Gameweek 1' }, note: null }), { status: 200 });
     }
@@ -93,8 +105,18 @@ describe('MarketPage', () => {
     expect(playerCard?.classList).toContain('player-card--form-beside');
     expect(playerCard?.lastElementChild?.classList.contains('player-card__form')).toBe(true);
     expect(table?.querySelector('.market-page__expected')).not.toBeNull();
+    expect(table?.querySelector('.player-card__opponents')?.textContent).toBe('Free');
     expect(table?.textContent).not.toContain('Status');
     expect(table?.textContent).not.toContain('Owned');
+  });
+
+  test('shows the owning manager instead of the next fixture', async () => {
+    marketPlayers = [player, ownedPlayer];
+    const { container } = await renderPage();
+    const ownedRow = container.querySelector('tr[aria-label="View Owned Defender details"]');
+
+    expect(ownedRow?.querySelector('.player-card__opponents')?.textContent).toBe('Dilson');
+    expect(ownedRow?.textContent).not.toContain('MCI');
   });
 
   test('keeps only position and fixture filters, then persists an Interest action from player details', async () => {
@@ -147,7 +169,9 @@ describe('MarketPage', () => {
       await Promise.resolve();
     });
     expect(discoveryContainer.querySelector('[role="dialog"]')?.textContent).toContain('Casey Midfielder');
-    expect(discoveryContainer.querySelector('[role="dialog"]')?.textContent).toContain('Next fixture');
+    expect(discoveryContainer.querySelector('[role="dialog"]')?.textContent).toContain('Owner');
+    expect(discoveryContainer.querySelector('[role="dialog"]')?.textContent).toContain('Free');
+    expect(discoveryContainer.querySelector('[role="dialog"]')?.textContent).not.toContain('Next fixture');
     expect(discoveryContainer.querySelector('[role="dialog"]')?.textContent).not.toContain('Availability');
     expect(discoveryContainer.querySelector('[role="dialog"]')?.textContent).not.toContain('Owned');
   });

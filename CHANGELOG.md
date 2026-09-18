@@ -7,7 +7,8 @@
 
 - Updated Market ownership labels to follow the selected FDR presentation:
   primary for the current manager's players, secondary for free agents, and
-  tertiary for players owned by another manager.
+  tertiary for players owned by another manager. Labels match the player-name
+  font size while retaining clear vertical separation.
 
 - Matched Market list density to Squad: the shared player card and its form
   gauge now stay on one row, while table typography, row padding, and xG/xA

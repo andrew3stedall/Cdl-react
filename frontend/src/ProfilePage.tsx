@@ -386,7 +386,7 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
             icon={<AppearanceIcon preset={preset} />}
             label="Appearance"
             onSelect={() => onNavigate('/profile/appearance')}
-            value={preset.label + ' · 3 accent colours'}
+            value={preset.label + ' · 4 accent colours'}
           />
         </ProfileSettingsGroup>
 
@@ -1340,6 +1340,7 @@ const themeAccentDefinitions: Array<{ accent: ThemeAccent; label: string }> = [
   { accent: 'primary', label: 'Primary accent' },
   { accent: 'secondary', label: 'Secondary accent' },
   { accent: 'tertiary', label: 'Tertiary accent' },
+  { accent: 'quaternary', label: 'Quaternary accent' },
 ];
 
 function ThemeColourControls({
@@ -1350,49 +1351,51 @@ function ThemeColourControls({
   onSelect: (accent: ThemeAccent, colour: string) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const [activeAccent, setActiveAccent] = useState<ThemeAccent>('primary');
+  const activeDefinition = themeAccentDefinitions.find(({ accent }) => accent === activeAccent) ?? themeAccentDefinitions[0];
 
   return (
     <details className="profile-colour-accordion profile-theme-colours" id="theme-colours-accordion" onToggle={(event) => setIsOpen(event.currentTarget.open)} open={isOpen}>
       <summary className="profile-colour-accordion__summary" id="main-theme-colour-title">Custom theme colours</summary>
       <div className="profile-colour-accordion__content">
-        {themeAccentDefinitions.map(({ accent, label }) => (
-          <div className="profile-theme-colour-row" data-theme-colour-accent={accent} key={accent}>
-            <strong>{label}</strong>
-            <div aria-label={label + ' choices'} className="profile-theme-colour-options" role="group">
-              {themeColourOptions.map((option) => (
-                <button
-                  aria-label={option.label + ' ' + accent + ' theme colour'}
-                  aria-pressed={themeColours[accent] === option.colour}
-                  className={'profile-theme-colour-swatch' + (themeColours[accent] === option.colour ? ' is-selected' : '')}
-                  key={option.label}
-                  onClick={() => onSelect(accent, option.colour)}
-                  style={{ '--swatch-colour': option.colour } as CSSProperties}
-                  title={label + ': ' + option.label}
-                  type="button"
-                />
-              ))}
-              <label className="profile-theme-colour-picker">
-                <span className="sr-only">Choose a custom {accent} theme colour</span>
-                <input
-                  aria-label={'Custom ' + accent + ' theme colour'}
-                  onChange={(event) => onSelect(accent, event.target.value)}
-                  type="color"
-                  value={themeColours[accent]}
-                />
-              </label>
-            </div>
+        <ColourPaletteSelector
+          ariaLabel="Theme accent colours"
+          columns={4}
+          onSelect={(accent) => setActiveAccent(accent as ThemeAccent)}
+          options={themeAccentDefinitions.map(({ accent, label }) => ({
+            ariaLabel: `Select ${label}`,
+            colour: getThemeColourForMode(themeColours[accent], 'light'),
+            foregroundColor: getFdrFillForeground(getThemeColourForMode(themeColours[accent], 'light')),
+            id: accent,
+            label: label.replace(' accent', ''),
+          }))}
+          selectedId={activeAccent}
+        />
+        <div className="profile-theme-colour-row" data-theme-colour-accent={activeAccent}>
+          <strong>{activeDefinition.label}</strong>
+          <div aria-label={activeDefinition.label + ' choices'} className="profile-theme-colour-options" role="group">
+            {themeColourOptions.map((option) => (
+              <button
+                aria-label={option.label + ' ' + activeAccent + ' theme colour'}
+                aria-pressed={themeColours[activeAccent] === option.colour}
+                className={'profile-theme-colour-swatch' + (themeColours[activeAccent] === option.colour ? ' is-selected' : '')}
+                key={option.label}
+                onClick={() => onSelect(activeAccent, option.colour)}
+                style={{ '--swatch-colour': option.colour } as CSSProperties}
+                title={activeDefinition.label + ': ' + option.label}
+                type="button"
+              />
+            ))}
+            <label className="profile-theme-colour-picker">
+              <span className="sr-only">Choose a custom {activeAccent} theme colour</span>
+              <input
+                aria-label={'Custom ' + activeAccent + ' theme colour'}
+                onChange={(event) => onSelect(activeAccent, event.target.value)}
+                type="color"
+                value={themeColours[activeAccent]}
+              />
+            </label>
           </div>
-        ))}
-        <div aria-label="Theme accent preview" className="profile-theme-colour-variants">
-          {themeAccentDefinitions.map(({ accent, label }) => (
-            <div className="profile-theme-colour-variant" key={accent}>
-              <strong>{label}</strong>
-              <div className="profile-theme-colour-variant__swatches">
-                <span style={{ '--swatch-colour': getThemeColourForMode(themeColours[accent], 'light') } as CSSProperties}>Light</span>
-                <span style={{ '--swatch-colour': getThemeColourForMode(themeColours[accent], 'dark') } as CSSProperties}>Dark</span>
-              </div>
-            </div>
-          ))}
         </div>
       </div>
     </details>

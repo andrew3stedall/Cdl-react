@@ -12,11 +12,11 @@ import {
 } from 'lucide-react';
 
 import { Button } from './components/ui/button';
-import { FormDots, PlayerCard, type PlayerCardPlayer } from './components/player/PlayerCard';
+import { FormDots, PlayerCard, type PlayerCardFixtureTone, type PlayerCardPlayer } from './components/player/PlayerCard';
 import { PageHero, PageHeroControls, PageHeroViewToggle } from './components/ui/page-hero';
 import type { ThemePreset } from './contracts';
 import { managerNicknameForTeam } from './manager-nicknames';
-import type { SquadApiPlayer } from './squad-api';
+import type { SquadApiPlayer, SquadApiTeam } from './squad-api';
 import './market-page.css';
 
 interface MarketPageProps {
@@ -36,6 +36,7 @@ interface MarketPlayer {
   position: string;
   club: string;
   status: SquadApiPlayer['status'] | 'owned_by_other';
+  draftTeamId: string | null;
   draftTeamName: string | null;
   ownerName: string | null;
   points: number | null;
@@ -90,7 +91,7 @@ interface ApiTrade {
 }
 
 interface ApiSummary {
-  manager_team: { name: string };
+  manager_team: SquadApiTeam;
   gameweek: { name: string };
   players: SquadApiPlayer[];
 }
@@ -120,7 +121,7 @@ export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps)
   const [players, setPlayers] = useState<MarketPlayer[]>([]);
   const [interests, setInterests] = useState<InterestView[]>([]);
   const [trades, setTrades] = useState<TradeView[]>([]);
-  const [managerTeam, setManagerTeam] = useState('Your team');
+  const [managerTeam, setManagerTeam] = useState<SquadApiTeam>({ id: '', name: 'Your team' });
   const [query, setQuery] = useState('');
   const [positionFilter, setPositionFilter] = useState<PositionFilter>('all');
   const [fixtureFilter, setFixtureFilter] = useState<FixtureFilter>('all');
@@ -161,7 +162,7 @@ export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps)
       const tradePayload = getFulfilled(tradesResult, 'trade activity', errors);
 
       if (summary) {
-        setManagerTeam(summary.manager_team.name);
+        setManagerTeam(summary.manager_team);
       }
       if (scouting) setPlayers(scouting.players.map(mapPlayer));
       if (interestPayload) setInterests(interestPayload.map(mapInterest));
@@ -322,10 +323,11 @@ export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps)
       <section className="market-page__workspace">
         {mode === 'discover' ? (
           <DiscoveryPanel
-            filtersOpen={filtersOpen}
-            filteredPlayers={filteredPlayers}
-            fixtureFilter={fixtureFilter}
-            loading={loading}
+          filtersOpen={filtersOpen}
+          filteredPlayers={filteredPlayers}
+          fixtureFilter={fixtureFilter}
+          loading={loading}
+          managerTeam={managerTeam}
             onClearFilters={() => {
               setQuery('');
               setPositionFilter('all');
@@ -343,7 +345,7 @@ export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps)
           />
         ) : null}
         {mode === 'interests' ? (
-          <InterestsPanel interests={interests} onBrowse={() => selectMode('discover')} onOpenPlayer={openPlayer} onRemove={removeInterest} pendingAction={pendingAction} />
+          <InterestsPanel interests={interests} managerTeam={managerTeam} onBrowse={() => selectMode('discover')} onOpenPlayer={openPlayer} onRemove={removeInterest} pendingAction={pendingAction} />
         ) : null}
         {mode === 'trades' ? <TradesPanel onBrowse={() => selectMode('discover')} trades={trades} /> : null}
       </section>
@@ -372,6 +374,7 @@ function DiscoveryPanel({
   filtersOpen,
   fixtureFilter,
   loading,
+  managerTeam,
   onClearFilters,
   onFixtureFilterChange,
   onFiltersOpenChange,
@@ -387,6 +390,7 @@ function DiscoveryPanel({
   filtersOpen: boolean;
   fixtureFilter: FixtureFilter;
   loading: boolean;
+  managerTeam: SquadApiTeam;
   onClearFilters: () => void;
   onFixtureFilterChange: (value: FixtureFilter) => void;
   onFiltersOpenChange: (open: boolean) => void;
@@ -443,6 +447,7 @@ function DiscoveryPanel({
               {filteredPlayers.map((player) => (
                 <MarketPlayerRow
                   key={player.id}
+                  managerTeam={managerTeam}
                   onOpen={onOpenPlayer}
                   player={player}
                 />
@@ -480,7 +485,7 @@ function MarketLoadingTable() {
   );
 }
 
-function MarketPlayerRow({ onOpen, player }: { onOpen: (player: MarketPlayer) => void; player: MarketPlayer }) {
+function MarketPlayerRow({ managerTeam, onOpen, player }: { managerTeam: SquadApiTeam; onOpen: (player: MarketPlayer) => void; player: MarketPlayer }) {
   const rowLabel = `View ${player.displayName} details`;
   return (
     <tr
@@ -498,7 +503,7 @@ function MarketPlayerRow({ onOpen, player }: { onOpen: (player: MarketPlayer) =>
     >
       <td className="market-page__player-cell">
         <div className="market-page__player-identity">
-          <PlayerCard className="market-page__list-player-card" formPosition="beside" layout="list" player={toPlayerCardPlayer(player)} showPositionMarker={false} size="sm" />
+          <PlayerCard className="market-page__list-player-card" formPosition="beside" layout="list" player={toPlayerCardPlayer(player, ownershipToneFor(player, managerTeam))} showPositionMarker={false} size="sm" />
         </div>
       </td>
       <td><strong className="market-page__list-points">{formatInteger(player.points)}</strong></td>
@@ -507,10 +512,10 @@ function MarketPlayerRow({ onOpen, player }: { onOpen: (player: MarketPlayer) =>
   );
 }
 
-function InterestsPanel({ interests, onBrowse, onOpenPlayer, onRemove, pendingAction }: { interests: InterestView[]; onBrowse: () => void; onOpenPlayer: (player: MarketPlayer) => void; onRemove: (interest: InterestView) => Promise<void>; pendingAction: string | null }) {
+function InterestsPanel({ interests, managerTeam, onBrowse, onOpenPlayer, onRemove, pendingAction }: { interests: InterestView[]; managerTeam: SquadApiTeam; onBrowse: () => void; onOpenPlayer: (player: MarketPlayer) => void; onRemove: (interest: InterestView) => Promise<void>; pendingAction: string | null }) {
   return (
     <section aria-label="Your Interests" className="market-page__activity-panel">
-      {interests.length === 0 ? <EmptyActivity icon={<Bookmark aria-hidden="true" size={23} />} onAction={onBrowse} action="Find a player" title="No Interests" /> : <div className="market-page__activity-list">{interests.map((interest) => <article className="market-page__activity-row" key={interest.id}><button aria-label={`View ${interest.player.displayName} details`} className="market-page__player-identity" onClick={() => onOpenPlayer(interest.player)} type="button"><PlayerCard formPosition="beside" layout="list" player={toPlayerCardPlayer(interest.player)} showPositionMarker={false} size="xs" /></button><Button aria-label={`Remove ${interest.player.displayName} from Interests`} disabled={pendingAction === interest.id} onClick={() => void onRemove(interest)} type="button" variant="ghost">{pendingAction === interest.id ? 'Removing…' : 'Remove'}</Button></article>)}</div>}
+      {interests.length === 0 ? <EmptyActivity icon={<Bookmark aria-hidden="true" size={23} />} onAction={onBrowse} action="Find a player" title="No Interests" /> : <div className="market-page__activity-list">{interests.map((interest) => <article className="market-page__activity-row" key={interest.id}><button aria-label={`View ${interest.player.displayName} details`} className="market-page__player-identity" onClick={() => onOpenPlayer(interest.player)} type="button"><PlayerCard formPosition="beside" layout="list" player={toPlayerCardPlayer(interest.player, ownershipToneFor(interest.player, managerTeam))} showPositionMarker={false} size="xs" /></button><Button aria-label={`Remove ${interest.player.displayName} from Interests`} disabled={pendingAction === interest.id} onClick={() => void onRemove(interest)} type="button" variant="ghost">{pendingAction === interest.id ? 'Removing…' : 'Remove'}</Button></article>)}</div>}
     </section>
   );
 }
@@ -520,10 +525,11 @@ function TradesPanel({ onBrowse, trades }: { onBrowse: () => void; trades: Trade
   return <section aria-label="Trade activity" className="market-page__activity-list">{trades.map((trade) => <article className="market-page__trade-row" key={trade.id}><span className="market-page__trade-icon"><ArrowRightLeft aria-hidden="true" size={18} /></span><div><strong>{trade.assetNames.length > 0 ? trade.assetNames.join(' ↔ ') : 'Player trade proposal'}</strong><span>{trade.offeredBy ?? 'Another manager'} → {trade.offeredTo ?? 'Your team'}</span><StatusBadge status={trade.status} /></div></article>)}</section>;
 }
 
-function PlayerDrawer({ drawerRef, history, historyStatus, interest, managerTeam, onAddInterest, onClose, onNavigate, onRemoveInterest, pendingAction, player }: { drawerRef: MutableRefObject<HTMLElement | null>; history: PlayerHistoryResponse | null; historyStatus: string; interest: InterestView | null; managerTeam: string; onAddInterest: () => void; onClose: () => void; onNavigate: (href: string) => void; onRemoveInterest: (interest: InterestView) => Promise<void>; pendingAction: string | null; player: MarketPlayer }) {
+function PlayerDrawer({ drawerRef, history, historyStatus, interest, managerTeam, onAddInterest, onClose, onNavigate, onRemoveInterest, pendingAction, player }: { drawerRef: MutableRefObject<HTMLElement | null>; history: PlayerHistoryResponse | null; historyStatus: string; interest: InterestView | null; managerTeam: SquadApiTeam; onAddInterest: () => void; onClose: () => void; onNavigate: (href: string) => void; onRemoveInterest: (interest: InterestView) => Promise<void>; pendingAction: string | null; player: MarketPlayer }) {
   const status = interest ? 'interested' : effectiveStatus(player, new Set(), managerTeam);
+  const ownershipTone = ownershipToneFor(player, managerTeam);
   return (
-    <div className="market-page__drawer-layer"><button aria-label="Close player details" className="market-page__drawer-backdrop" onClick={onClose} type="button" /><aside aria-labelledby="market-player-detail-title" aria-modal="true" className="market-page__drawer" ref={drawerRef} role="dialog" tabIndex={-1}><span aria-hidden="true" className="market-page__sheet-handle" /><header className="market-page__drawer-header"><PlayerCard formPosition="hidden" layout="token" player={toPlayerCardPlayer(player)} showOpponent={false} showPositionMarker={false} size="lg" /><div><h2 id="market-player-detail-title">{player.displayName}</h2><span>{positionLabel(player.position)} · {player.club}</span></div><button aria-label="Close player details" className="market-page__icon-button" onClick={onClose} type="button"><X aria-hidden="true" size={19} /></button></header><section aria-label="Player metrics" className="market-page__detail-metrics"><Metric label="Total points" value={formatInteger(player.points)} /><Metric dots label="Form" value={player.form} /><Metric label="xG" value={formatMetric(player.xg)} /><Metric label="xA" value={formatMetric(player.xa)} /><Metric label="Value" value={player.value === null ? '—' : `£${player.value.toFixed(1)}m`} /><Metric label="Selected" value={player.selectedPercent === null ? '—' : `${formatMetric(player.selectedPercent)}%`} /></section><section className="market-page__drawer-section"><h3>Owner</h3><p className="market-page__owner-value">{ownerLabel(player)}</p></section><section className="market-page__drawer-section"><h3>Recent FPL history</h3>{historyStatus ? <p role="status">{historyStatus}</p> : null}{history?.history.length ? <div aria-label="Recent FPL gameweek history" className="market-page__history"><table><thead><tr><th>GW</th><th>Pts</th><th>Min</th><th>xG</th><th>xA</th></tr></thead><tbody>{history.history.slice(-5).reverse().map((row) => <tr key={row.gameweek}><td>{row.gameweek}</td><td><strong>{row.total_points}</strong></td><td>{row.minutes}</td><td>{row.expected_goals.toFixed(2)}</td><td>{row.expected_assists.toFixed(2)}</td></tr>)}</tbody></table></div> : null}{history && history.history.length === 0 ? <p>No completed gameweek history is available.</p> : null}</section><footer className="market-page__drawer-actions">{status === 'owned' ? <Button onClick={() => { onClose(); onNavigate('/squad'); }} type="button"><Users aria-hidden="true" size={16} />View in Squad</Button> : null}{status === 'interested' && interest ? <Button aria-label={`Remove ${player.displayName} from Interests`} disabled={pendingAction === interest.id} onClick={() => void onRemoveInterest(interest)} type="button" variant="secondary">{pendingAction === interest.id ? 'Removing…' : 'Remove Interest'}</Button> : null}{status !== 'owned' && status !== 'interested' ? <Button aria-label={`Add ${player.displayName} to Interests`} disabled={pendingAction === player.id} onClick={onAddInterest} type="button"><Star aria-hidden="true" size={16} />{pendingAction === player.id ? 'Adding…' : 'Add to Interests'}</Button> : null}<Button onClick={onClose} type="button" variant="ghost">Close</Button></footer></aside></div>
+    <div className="market-page__drawer-layer"><button aria-label="Close player details" className="market-page__drawer-backdrop" onClick={onClose} type="button" /><aside aria-labelledby="market-player-detail-title" aria-modal="true" className="market-page__drawer" ref={drawerRef} role="dialog" tabIndex={-1}><span aria-hidden="true" className="market-page__sheet-handle" /><header className="market-page__drawer-header"><PlayerCard formPosition="hidden" layout="token" player={toPlayerCardPlayer(player, ownershipTone)} showOpponent={false} showPositionMarker={false} size="lg" /><div><h2 id="market-player-detail-title">{player.displayName}</h2><span>{positionLabel(player.position)} · {player.club}</span></div><button aria-label="Close player details" className="market-page__icon-button" onClick={onClose} type="button"><X aria-hidden="true" size={19} /></button></header><section aria-label="Player metrics" className="market-page__detail-metrics"><Metric label="Total points" value={formatInteger(player.points)} /><Metric dots label="Form" value={player.form} /><Metric label="xG" value={formatMetric(player.xg)} /><Metric label="xA" value={formatMetric(player.xa)} /><Metric label="Value" value={player.value === null ? '—' : `£${player.value.toFixed(1)}m`} /><Metric label="Selected" value={player.selectedPercent === null ? '—' : `${formatMetric(player.selectedPercent)}%`} /></section><section className="market-page__drawer-section"><h3>Owner</h3><p className={`market-page__owner-value market-page__owner-value--${ownershipTone}`}>{ownerLabel(player)}</p></section><section className="market-page__drawer-section"><h3>Recent FPL history</h3>{historyStatus ? <p role="status">{historyStatus}</p> : null}{history?.history.length ? <div aria-label="Recent FPL gameweek history" className="market-page__history"><table><thead><tr><th>GW</th><th>Pts</th><th>Min</th><th>xG</th><th>xA</th></tr></thead><tbody>{history.history.slice(-5).reverse().map((row) => <tr key={row.gameweek}><td>{row.gameweek}</td><td><strong>{row.total_points}</strong></td><td>{row.minutes}</td><td>{row.expected_goals.toFixed(2)}</td><td>{row.expected_assists.toFixed(2)}</td></tr>)}</tbody></table></div> : null}{history && history.history.length === 0 ? <p>No completed gameweek history is available.</p> : null}</section><footer className="market-page__drawer-actions">{status === 'owned' ? <Button onClick={() => { onClose(); onNavigate('/squad'); }} type="button"><Users aria-hidden="true" size={16} />View in Squad</Button> : null}{status === 'interested' && interest ? <Button aria-label={`Remove ${player.displayName} from Interests`} disabled={pendingAction === interest.id} onClick={() => void onRemoveInterest(interest)} type="button" variant="secondary">{pendingAction === interest.id ? 'Removing…' : 'Remove Interest'}</Button> : null}{status !== 'owned' && status !== 'interested' ? <Button aria-label={`Add ${player.displayName} to Interests`} disabled={pendingAction === player.id} onClick={onAddInterest} type="button"><Star aria-hidden="true" size={16} />{pendingAction === player.id ? 'Adding…' : 'Add to Interests'}</Button> : null}<Button onClick={onClose} type="button" variant="ghost">Close</Button></footer></aside></div>
   );
 }
 
@@ -539,10 +545,10 @@ function StatusBadge({ status }: { status: string }) {
   return <span className={`market-page__status-badge status-${status}`}>{formatTradeStatus(status)}</span>;
 }
 
-function toPlayerCardPlayer(player: MarketPlayer): PlayerCardPlayer {
+function toPlayerCardPlayer(player: MarketPlayer, ownershipTone: PlayerCardFixtureTone): PlayerCardPlayer {
   return {
     displayName: player.displayName,
-    fixtures: [{ label: ownerLabel(player), title: player.ownerName ? `Owned by ${player.ownerName}` : 'Free player' }],
+    fixtures: [{ label: ownerLabel(player), title: player.ownerName ? `Owned by ${player.ownerName}` : 'Free player', tone: ownershipTone }],
     form: player.form,
     position: player.position,
     team: player.club,
@@ -551,6 +557,12 @@ function toPlayerCardPlayer(player: MarketPlayer): PlayerCardPlayer {
 
 function ownerLabel(player: MarketPlayer): string {
   return player.ownerName ?? 'Free';
+}
+
+function ownershipToneFor(player: MarketPlayer, managerTeam: SquadApiTeam): PlayerCardFixtureTone {
+  if (!player.draftTeamId && !player.draftTeamName) return 'secondary';
+  if (player.draftTeamId === managerTeam.id || player.draftTeamName === managerTeam.name) return 'primary';
+  return 'tertiary';
 }
 
 function modeFromPath(path: string): MarketMode {
@@ -567,6 +579,7 @@ function mapPlayer(player: SquadApiPlayer): MarketPlayer {
     position: normalizePosition(player.position),
     club: player.epl_team.short_name ?? player.epl_team.name,
     status: player.status,
+    draftTeamId: player.draft_team?.id ?? null,
     draftTeamName: player.draft_team?.name ?? null,
     ownerName: player.draft_team
       ? managerNicknameForTeam({ id: player.draft_team.id, name: player.draft_team.name })
@@ -589,9 +602,9 @@ function mapTrade(trade: ApiTrade): TradeView {
   return { id: trade.id, status: trade.status, offeredBy: trade.offered_by?.name ?? null, offeredTo: trade.offered_to?.name ?? null, assetNames: (trade.assets ?? []).map((asset) => asset.player?.display_name ?? '').filter(Boolean) };
 }
 
-function effectiveStatus(player: MarketPlayer, interestedPlayerIds: Set<string>, managerTeam: string): MarketPlayer['status'] {
+function effectiveStatus(player: MarketPlayer, interestedPlayerIds: Set<string>, managerTeam: SquadApiTeam): MarketPlayer['status'] {
   if (interestedPlayerIds.has(player.id) && player.status !== 'owned') return 'interested';
-  if (player.status === 'owned' && player.draftTeamName && player.draftTeamName !== managerTeam) return 'owned_by_other';
+  if (player.status === 'owned' && ownershipToneFor(player, managerTeam) === 'tertiary') return 'owned_by_other';
   return player.status;
 }
 

@@ -5,10 +5,13 @@ import './player-card.css';
 import './player-card-presentation.css';
 import './player-card-point-placeholder.css';
 
+export type PlayerCardFixtureTone = 'primary' | 'secondary' | 'tertiary' | 'quaternary';
+
 export interface PlayerCardFixture {
   label: string;
   difficulty?: number | null;
   title?: string;
+  tone?: PlayerCardFixtureTone;
 }
 
 export interface PlayerCardPlayer {
@@ -157,7 +160,7 @@ function PlayerToken({
           title={fixtures.length === 1 ? fixtures[0]?.title : 'Next gameweek fixtures'}
         >
           {fixtures.length > 0
-            ? fixtures.map((fixture) => <span className={fixtureClassName(fixture.difficulty)} key={`${fixture.label}-${fixture.difficulty ?? 'unknown'}`} title={fixture.title}>{fixture.label}</span>)
+            ? fixtures.map((fixture) => <span className={fixtureClassName(fixture)} key={`${fixture.label}-${fixture.difficulty ?? 'unknown'}`} title={fixture.title}>{fixture.label}</span>)
             : <span className="player-card__opponent player-card__opponent--placeholder">Next —</span>}
         </small>
       ) : null}
@@ -212,9 +215,15 @@ export function shortPlayerName(name: string): string {
   return `${parts[0][0]}. ${parts.at(-1)}`;
 }
 
-function fixtureClassName(value: number | null | undefined): string {
-  const rating = typeof value === 'number' && Number.isFinite(value) ? Math.min(5, Math.max(1, Math.round(value))) : null;
-  return rating === null ? 'player-card__opponent' : `player-card__opponent player-card__opponent--fdr-${rating}`;
+function fixtureClassName(fixture: PlayerCardFixture): string {
+  const rating = typeof fixture.difficulty === 'number' && Number.isFinite(fixture.difficulty)
+    ? Math.min(5, Math.max(1, Math.round(fixture.difficulty)))
+    : null;
+  return [
+    'player-card__opponent',
+    rating === null ? '' : `player-card__opponent--fdr-${rating}`,
+    fixture.tone ? `player-card__opponent--theme-${fixture.tone}` : '',
+  ].filter(Boolean).join(' ');
 }
 
 function normalizePosition(position: string): string {

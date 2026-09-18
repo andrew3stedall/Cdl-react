@@ -60,6 +60,7 @@ class UserPreferenceService:
             or not THEME_COLOUR_PATTERN.fullmatch(preferences.primary_theme_colour)
             or not THEME_COLOUR_PATTERN.fullmatch(preferences.secondary_theme_colour)
             or not THEME_COLOUR_PATTERN.fullmatch(preferences.tertiary_theme_colour)
+            or not THEME_COLOUR_PATTERN.fullmatch(preferences.quaternary_theme_colour)
             or not THEME_COLOUR_PATTERN.fullmatch(preferences.result_win_colour)
             or not THEME_COLOUR_PATTERN.fullmatch(preferences.result_draw_colour)
             or not THEME_COLOUR_PATTERN.fullmatch(preferences.result_loss_colour)

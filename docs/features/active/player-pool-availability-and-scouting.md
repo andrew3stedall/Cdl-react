@@ -62,10 +62,11 @@ unavailable_fpl_status
 - Reusable player table/cards.
 - Position colour coding.
 - Market discovery uses the same compact player-card, points, and xG/xA list pattern as Squad, including row density, typography, and a side-aligned form gauge.
-- Market discovery does not show player availability, ownership, or status fields and does not offer filters for them.
+- Market discovery shows a compact owner label in the existing player-card fixture slot: the current manager's player uses the primary theme accent, a free agent uses the secondary accent, and another manager's player uses the tertiary accent. The label follows the selected FDR font/fill preference.
+- Market discovery does not show player availability or status fields and does not offer filters for availability, status, or ownership.
 - Watchlist and notes controls.
 
-Availability and ownership remain domain data for workflow validation and dedicated player detail experiences; they are intentionally excluded from the high-scan Market list.
+Availability remains domain data for workflow validation and dedicated player detail experiences. Ownership is retained as a compact high-scan Market cue rather than a separate list field.
 
 ## Data Access Requirements
 

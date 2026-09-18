@@ -2,17 +2,19 @@ import type { ThemePreset } from './contracts';
 import { getThemeMode } from './theme-presets';
 
 export type ThemeColourMode = 'light' | 'dark';
-export type ThemeAccent = 'primary' | 'secondary' | 'tertiary';
+export type ThemeAccent = 'primary' | 'secondary' | 'tertiary' | 'quaternary';
 export type ThemeAccentColours = Record<ThemeAccent, string>;
 
 export const defaultThemeColours: ThemeAccentColours = {
   primary: '#0F766E',
   secondary: '#115E59',
   tertiary: '#0D9488',
+  quaternary: '#14B8A6',
 };
 export const defaultThemeColour = defaultThemeColours.primary;
 export const defaultSecondaryThemeColour = defaultThemeColours.secondary;
 export const defaultTertiaryThemeColour = defaultThemeColours.tertiary;
+export const defaultQuaternaryThemeColour = defaultThemeColours.quaternary;
 // Legacy aliases remain available while stored preferences migrate to the accent palette.
 export const defaultLightThemeColour = defaultThemeColour;
 export const defaultDarkThemeColour = '#2DD4BF';
@@ -54,6 +56,9 @@ export function resolveThemeAccentColours(
     tertiary: value.tertiary && /^#[0-9A-Fa-f]{6}$/.test(value.tertiary)
       ? value.tertiary.toUpperCase()
       : defaultThemeColours.tertiary,
+    quaternary: value.quaternary && /^#[0-9A-Fa-f]{6}$/.test(value.quaternary)
+      ? value.quaternary.toUpperCase()
+      : defaultThemeColours.quaternary,
   };
 }
 
@@ -100,7 +105,12 @@ export function getThemeAccentColoursForMode(
     primary: getThemeColourForMode(baseColours.primary, mode),
     secondary: getThemeColourForMode(baseColours.secondary, mode),
     tertiary: getThemeColourForMode(baseColours.tertiary, mode),
+    quaternary: getThemeColourForMode(baseColours.quaternary, mode),
   };
+}
+
+export function getThemeColourForeground(value: string | null | undefined, mode: ThemeColourMode): '#000000' | '#FFFFFF' {
+  return getContrastForeground(getThemeColourForMode(value, mode));
 }
 
 export function resolveThemeColour(value: string | null | undefined, mode: ThemeColourMode): string {
@@ -132,7 +142,13 @@ export function applyThemeColours(
         tertiaryForeground: getContrastForeground(accentColours.tertiary),
         ring: accentColours.primary,
       },
-      chartPaletteHooks: [accentColours.primary, accentColours.secondary, accentColours.tertiary, colours.mutedForeground],
+      chartPaletteHooks: [
+        accentColours.primary,
+        accentColours.secondary,
+        accentColours.tertiary,
+        accentColours.quaternary,
+        colours.mutedForeground,
+      ],
     },
   };
 }

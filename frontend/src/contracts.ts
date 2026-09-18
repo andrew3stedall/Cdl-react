@@ -95,6 +95,7 @@ export interface UserPreferences {
   primaryThemeColour?: string;
   secondaryThemeColour?: string;
   tertiaryThemeColour?: string;
+  quaternaryThemeColour?: string;
   fdrCustomAnchors?: {
     min: string;
     second: string;

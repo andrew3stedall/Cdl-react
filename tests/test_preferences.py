@@ -18,6 +18,7 @@ def test_preference_service_returns_default_theme() -> None:
     assert preferences.primary_theme_colour == "#0F766E"
     assert preferences.secondary_theme_colour == "#115E59"
     assert preferences.tertiary_theme_colour == "#0D9488"
+    assert preferences.quaternary_theme_colour == "#14B8A6"
 
 
 def test_preference_service_persists_supported_theme() -> None:
@@ -46,6 +47,7 @@ def test_preference_service_persists_supported_theme() -> None:
     assert updated.primary_theme_colour == "#2563EB"
     assert updated.secondary_theme_colour == "#115E59"
     assert updated.tertiary_theme_colour == "#0D9488"
+    assert updated.quaternary_theme_colour == "#14B8A6"
     assert service.get_preferences("manager-1").theme_preset == "teal-dark"
     assert service.get_preferences("manager-1").attack_direction == "down"
 
@@ -109,6 +111,18 @@ def test_preference_service_rejects_invalid_theme_accent_colour() -> None:
     )
 
     assert updated.secondary_theme_colour == "#115E59"
+
+
+def test_preference_service_persists_quaternary_theme_accent_colour() -> None:
+    service = UserPreferenceService(InMemoryUserPreferenceRepository())
+
+    updated = service.update_preferences(
+        "manager-1",
+        UserPreferences(theme_preset="teal-light", quaternary_theme_colour="#C2410C"),
+    )
+
+    assert updated.quaternary_theme_colour == "#C2410C"
+    assert service.get_preferences("manager-1").quaternary_theme_colour == "#C2410C"
 
 
 def test_preference_service_accepts_custom_fdr_scale() -> None:

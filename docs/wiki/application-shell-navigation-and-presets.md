@@ -48,15 +48,19 @@ The root route is treated as the Overview alias and authenticated sign-in redire
 
 ## Visual presets
 
-Presets remain configured in `frontend/src/theme-presets.ts`:
+Theme mode and theme colours are independent profile settings.
 
-- `classic`
-- `dark`
-- `compact`
+Theme modes remain configured in `frontend/src/theme-presets.ts`:
 
-The account route is a compact summary of the current identity, workspace appearance, FDR colour scale, and attacking orientation. Detailed controls are available through the SPA subroutes `/account/appearance`, `/account/fdr`, and `/account/orientation`. Preferences continue to use `GET /api/me/preferences` and `PUT /api/me/preferences`, with the documented local-storage fallback.
+- `teal-light`
+- `teal-dark`
+- `adaptive`, which follows the device `prefers-color-scheme` setting.
 
-Passkey setup is shown only when the authenticated user has no registered device credential. The account summary does not expose the manager role or account ID.
+Theme colour palettes are configured in `frontend/src/theme-colours.ts`. The Theme colours page uses the same selection pattern as FDR: predefined four-accent templates are shown first, followed by a custom palette accordion using the shared colour selector and HSV editor. Selecting a palette persists the primary, secondary, tertiary, and quaternary accents through the existing preference contract.
+
+The profile route is a compact summary of identity and settings. Theme mode is available at `/profile/appearance`, theme colours at `/profile/theme-colours`, FDR at `/profile/fdr`, and attacking orientation at `/profile/orientation`; `/account/*` aliases remain supported. Preferences continue to use `GET /api/me/preferences` and `PUT /api/me/preferences`, with the documented local-storage fallback.
+
+Passkey setup is shown only when the authenticated user has no registered device credential. The profile summary does not expose the manager role or account ID.
 
 ## Accessibility and responsive behaviour
 

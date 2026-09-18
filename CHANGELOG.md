@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Separated theme mode from theme colours in Profile. Theme colours now use an
+  FDR-style chooser with six four-accent templates plus a shared custom palette
+  editor, while Adaptive mode follows the device light/dark setting.
+
 - Added a fourth persisted theme accent and consolidated the four accent choices
   into the reusable profile palette selector.
 

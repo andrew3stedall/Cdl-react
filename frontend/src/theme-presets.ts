@@ -85,7 +85,7 @@ export const themePresets: ThemePreset[] = [
   {
     name: 'adaptive',
     label: 'Adaptive mode',
-    description: 'Switches between light and dark mode using your local time of day.',
+    description: 'Follows your device light or dark appearance setting.',
     isDefault: false,
     tokens: {
       colors: lightColors,
@@ -120,10 +120,14 @@ export function getThemePresetClassName(preset: ThemePreset): string {
   return `theme-${preset.name} density-${preset.tokens.density} type-${preset.tokens.typographyScale}`;
 }
 
-export function getThemeMode(preset: ThemePreset, now = new Date()): 'light' | 'dark' {
+export function getThemeMode(preset: ThemePreset, prefersDark?: boolean): 'light' | 'dark' {
   if (preset.name === 'adaptive') {
-    const hour = now.getHours();
-    return hour >= 7 && hour < 19 ? 'light' : 'dark';
+    const systemPrefersDark = prefersDark ?? (
+      typeof window !== 'undefined'
+      && typeof window.matchMedia === 'function'
+      && window.matchMedia('(prefers-color-scheme: dark)').matches
+    );
+    return systemPrefersDark ? 'dark' : 'light';
   }
 
   return preset.name.includes('dark') ? 'dark' : 'light';

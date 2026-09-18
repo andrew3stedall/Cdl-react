@@ -58,7 +58,8 @@ import { getThemeMode, themePresets } from './theme-presets';
 import { useThemePreset } from './theme-preset-provider';
 import {
   getThemeColourForMode,
-  themeColourOptions,
+  getThemeColourPalette,
+  themeColourPalettes,
   type ThemeAccent,
   type ThemeAccentColours,
 } from './theme-colours';
@@ -112,9 +113,11 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
     deletePlayerColourPalette,
     useCustomFdrPalette,
     setThemeAccentColour,
+    setThemeColours,
     setPresetName,
   } = useThemePreset();
   const [isFdrScaleSheetOpen, setIsFdrScaleSheetOpen] = useState(false);
+  const [isThemeColourSheetOpen, setIsThemeColourSheetOpen] = useState(false);
   const [isPositionScaleSheetOpen, setIsPositionScaleSheetOpen] = useState(false);
   const [isMetricScaleSheetOpen, setIsMetricScaleSheetOpen] = useState(false);
   const [passkeyStatus, setPasskeyStatus] = useState<PasskeyStatus | null>(null);
@@ -122,6 +125,7 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
   const [passkeyMessage, setPasskeyMessage] = useState<string | null>(null);
   const isAccountSummary = currentPath === '/account' || currentPath === '/profile';
   const isAppearancePage = currentPath === '/account/appearance' || currentPath === '/profile/appearance';
+  const isThemeColoursPage = currentPath === '/account/theme-colours' || currentPath === '/profile/theme-colours';
   const isFdrPage = currentPath === '/account/fdr' || currentPath === '/profile/fdr';
   const isOrientationPage = currentPath === '/account/orientation' || currentPath === '/profile/orientation';
   const isPositionColoursPage = currentPath === '/account/player-positions' || currentPath === '/profile/player-positions';
@@ -145,7 +149,7 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
   }, [isAccountSummary]);
 
   useEffect(() => {
-    if (!isFdrScaleSheetOpen && !isPositionScaleSheetOpen && !isMetricScaleSheetOpen) return undefined;
+    if (!isFdrScaleSheetOpen && !isThemeColourSheetOpen && !isPositionScaleSheetOpen && !isMetricScaleSheetOpen) return undefined;
 
     const documentElement = document.documentElement;
     const body = document.body;
@@ -183,11 +187,12 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
       body.style.width = previousBodyWidth;
       window.scrollTo(scrollX, scrollY);
     };
-  }, [isFdrScaleSheetOpen, isMetricScaleSheetOpen, isPositionScaleSheetOpen]);
+  }, [isFdrScaleSheetOpen, isMetricScaleSheetOpen, isPositionScaleSheetOpen, isThemeColourSheetOpen]);
 
   const user = session.user;
   const selectedFdrScale = getFdrColourScale(fdrScale);
   const selectedFdrScaleNumber = getFdrScaleOptionNumber(fdrScale);
+  const selectedThemeColourPalette = getThemeColourPalette(themeColours);
   const themeMode = getThemeMode(preset);
   const displayName = managerNicknameForName(user?.displayName) ?? 'Authenticated user';
   const initials = displayName
@@ -200,13 +205,32 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
   if (isAppearancePage) {
     return (
       <main aria-labelledby="account-settings-title" className="feature-screen profile-page profile-page--subpage">
-        <SettingsPageHeader onBack={() => onNavigate('/profile')} onNavigate={onNavigate} title="Visual preset" />
+        <SettingsPageHeader onBack={() => onNavigate('/profile')} onNavigate={onNavigate} title="Theme mode" />
         <AppearanceSettingsCard
           preset={preset}
           saveStatus={saveStatus}
           setPresetName={setPresetName}
-          setThemeAccentColour={setThemeAccentColour}
+        />
+      </main>
+    );
+  }
+
+  if (isThemeColoursPage) {
+    return (
+      <main aria-labelledby="account-settings-title" className="feature-screen profile-page profile-page--subpage">
+        <SettingsPageHeader onBack={() => onNavigate('/profile')} onNavigate={onNavigate} title="Theme colours" />
+        <ThemeColourSettingsCard
+          isOpen={isThemeColourSheetOpen}
+          onOpen={() => setIsThemeColourSheetOpen(true)}
           themeColours={themeColours}
+          themeMode={themeMode}
+        />
+        <ThemeColourChooser
+          isOpen={isThemeColourSheetOpen}
+          onClose={() => setIsThemeColourSheetOpen(false)}
+          onSetThemeColours={setThemeColours}
+          themeColours={themeColours}
+          themeMode={themeMode}
         />
       </main>
     );
@@ -382,11 +406,18 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
 
         <ProfileSettingsGroup title="Appearance">
           <ProfileSettingsRow
-            ariaLabel="Open workspace appearance settings"
+            ariaLabel="Open theme mode settings"
             icon={<AppearanceIcon preset={preset} />}
-            label="Appearance"
+            label="Theme mode"
             onSelect={() => onNavigate('/profile/appearance')}
-            value={preset.label + ' · 4 accent colours'}
+            value={preset.label}
+          />
+          <ProfileSettingsRow
+            ariaLabel="Open theme colour settings"
+            icon={<Palette aria-hidden="true" size={20} />}
+            label="Theme colours"
+            onSelect={() => onNavigate('/profile/theme-colours')}
+            value={selectedThemeColourPalette?.label ?? 'Custom'}
           />
         </ProfileSettingsGroup>
 
@@ -908,26 +939,22 @@ function SavedPlayerColourPalette({ onDelete, onUse, palette }: { onDelete: () =
 function AppearanceSettingsCard({
   preset,
   saveStatus,
-  setThemeAccentColour,
   setPresetName,
-  themeColours,
 }: {
   preset: ThemePreset;
   saveStatus: 'idle' | 'saving' | 'saved' | 'error';
   setPresetName: (presetName: ThemePreset['name']) => void;
-  setThemeAccentColour: (accent: ThemeAccent, colour: string) => void;
-  themeColours: ThemeAccentColours;
 }) {
   return (
     <Card className="profile-card profile-appearance-card profile-settings-card">
       <div className="profile-card__header">
         <div>
           <p className="profile-card__eyebrow">Workspace appearance</p>
-          <h2>Visual preset</h2>
+          <h2>Theme mode</h2>
         </div>
         <AppearanceIcon preset={preset} />
       </div>
-      <div aria-label="Visual preset" className="profile-preset-grid" role="group">
+      <div aria-label="Theme mode" className="profile-preset-grid" role="group">
         {themePresets.map((themePreset) => (
           <PresetOption
             key={themePreset.name}
@@ -937,12 +964,51 @@ function AppearanceSettingsCard({
           />
         ))}
       </div>
-      <ThemeColourControls onSelect={setThemeAccentColour} themeColours={themeColours} />
       <p aria-live="polite" className="profile-save-status" role="status">
-        {saveStatus === 'saving' ? 'Saving your appearance preference…' : null}
-        {saveStatus === 'saved' ? 'Appearance preference saved.' : null}
-        {saveStatus === 'error' ? 'The server could not save this preference; local fallback is active.' : null}
+        {saveStatus === 'saving' ? 'Saving…' : null}
+        {saveStatus === 'saved' ? 'Saved.' : null}
+        {saveStatus === 'error' ? 'Save failed.' : null}
       </p>
+    </Card>
+  );
+}
+
+function ThemeColourSettingsCard({
+  isOpen,
+  onOpen,
+  themeColours,
+  themeMode,
+}: {
+  isOpen: boolean;
+  onOpen: () => void;
+  themeColours: ThemeAccentColours;
+  themeMode: 'light' | 'dark';
+}) {
+  const selectedPalette = getThemeColourPalette(themeColours);
+
+  return (
+    <Card className="profile-card profile-theme-colour-card profile-settings-card">
+      <div className="profile-card__header">
+        <div>
+          <p className="profile-card__eyebrow">Workspace appearance</p>
+          <h2>Theme colours</h2>
+        </div>
+        <Palette aria-hidden="true" className="profile-appearance-icon" size={21} />
+      </div>
+      <Button
+        aria-controls="theme-colour-sheet"
+        aria-expanded={isOpen}
+        className="profile-fdr-scale-trigger profile-theme-colour-trigger"
+        onClick={onOpen}
+        type="button"
+        variant="secondary"
+      >
+        <span>
+          <strong>{selectedPalette?.label ?? 'Custom'}</strong>
+          <ThemeColourPaletteBar colours={themeColours} mode={themeMode} />
+        </span>
+        <ChevronRight aria-hidden="true" size={18} />
+      </Button>
     </Card>
   );
 }
@@ -1336,69 +1402,201 @@ function DisplayModeOption({
   );
 }
 
-const themeAccentDefinitions: Array<{ accent: ThemeAccent; label: string }> = [
-  { accent: 'primary', label: 'Primary accent' },
-  { accent: 'secondary', label: 'Secondary accent' },
-  { accent: 'tertiary', label: 'Tertiary accent' },
-  { accent: 'quaternary', label: 'Quaternary accent' },
+const themeAccentDefinitions: Array<{ accent: ThemeAccent; label: string; shortLabel: string }> = [
+  { accent: 'primary', label: 'Primary accent', shortLabel: 'Primary' },
+  { accent: 'secondary', label: 'Secondary accent', shortLabel: 'Secondary' },
+  { accent: 'tertiary', label: 'Tertiary accent', shortLabel: 'Tertiary' },
+  { accent: 'quaternary', label: 'Quaternary accent', shortLabel: 'Fourth' },
 ];
 
-function ThemeColourControls({
+function ThemeColourChooser({
+  isOpen,
+  onClose,
+  onSetThemeColours,
   themeColours,
-  onSelect,
+  themeMode,
 }: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSetThemeColours: (colours: ThemeAccentColours) => void;
   themeColours: ThemeAccentColours;
-  onSelect: (accent: ThemeAccent, colour: string) => void;
+  themeMode: 'light' | 'dark';
 }) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isCustomOpen, setIsCustomOpen] = useState(false);
+  const selectedPalette = getThemeColourPalette(themeColours);
+
+  return (
+    <Sheet ariaLabelledBy="theme-colour-sheet-title" id="theme-colour-sheet" onBackdropClick={onClose} open={isOpen}>
+      <div className="profile-fdr-sheet">
+        <header className="profile-fdr-sheet__header">
+          <div>
+            <p className="profile-card__eyebrow">Theme colours</p>
+            <h2 id="theme-colour-sheet-title">Choose a palette</h2>
+          </div>
+          <Button aria-label="Close theme colour chooser" className="profile-fdr-sheet__close" onClick={onClose} type="button" variant="ghost">
+            <X aria-hidden="true" size={18} />
+          </Button>
+        </header>
+        <div className="profile-fdr-scale-list">
+          <section aria-labelledby="profile-theme-colour-presets-heading">
+            <h3 className="profile-fdr-custom-heading" id="profile-theme-colour-presets-heading">Templates</h3>
+            {themeColourPalettes.map((palette) => (
+              <button
+                aria-label={`Theme colour template ${palette.label}`}
+                aria-pressed={selectedPalette?.name === palette.name}
+                className={`profile-fdr-scale-option profile-theme-palette-option${selectedPalette?.name === palette.name ? ' is-selected' : ''}`}
+                key={palette.name}
+                onClick={() => {
+                  onSetThemeColours(palette.colours);
+                  onClose();
+                }}
+                type="button"
+              >
+                <span className="profile-theme-palette-option__label">{palette.label}</span>
+                <span className="profile-fdr-scale-option__previews">
+                  <ThemeColourPaletteBar colours={palette.colours} mode={themeMode} />
+                </span>
+                <span aria-hidden="true" className="profile-preset-check">
+                  {selectedPalette?.name === palette.name ? <Check size={15} /> : <Circle size={15} />}
+                </span>
+              </button>
+            ))}
+          </section>
+          <details className="profile-colour-accordion" id="theme-custom-accordion" onToggle={(event) => setIsCustomOpen(event.currentTarget.open)} open={isCustomOpen}>
+            <summary className="profile-colour-accordion__summary">Custom palette</summary>
+            <div className="profile-colour-accordion__content">
+              <CustomThemeColourEditor
+                initialColours={themeColours}
+                key={Object.values(themeColours).join('-')}
+                onUse={(colours) => {
+                  onSetThemeColours(colours);
+                  onClose();
+                }}
+              />
+            </div>
+          </details>
+        </div>
+      </div>
+    </Sheet>
+  );
+}
+
+function CustomThemeColourEditor({
+  initialColours,
+  onUse,
+}: {
+  initialColours: ThemeAccentColours;
+  onUse: (colours: ThemeAccentColours) => void;
+}) {
+  const [colours, setColours] = useState<ThemeAccentColours>(() => ({ ...initialColours }));
   const [activeAccent, setActiveAccent] = useState<ThemeAccent>('primary');
+  const [hsv, setHsv] = useState(() => hexToHsv(initialColours.primary));
+
+  const updateColour = (nextHsv: HsvColour) => {
+    setColours((current) => ({ ...current, [activeAccent]: hsvToHex(nextHsv) }));
+    setHsv(nextHsv);
+  };
+
+  const selectAccent = (accent: ThemeAccent) => {
+    setActiveAccent(accent);
+    setHsv(hexToHsv(colours[accent]));
+  };
+
+  const updateFieldFromPointer = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    updateColour({
+      ...hsv,
+      saturation: clamp((event.clientX - bounds.left) / bounds.width),
+      exposure: clamp(1 - ((event.clientY - bounds.top) / bounds.height)),
+    });
+  };
+
+  const updateHueFromPointer = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    updateColour({ ...hsv, hue: clamp((event.clientX - bounds.left) / bounds.width) * 360 });
+  };
+
   const activeDefinition = themeAccentDefinitions.find(({ accent }) => accent === activeAccent) ?? themeAccentDefinitions[0];
 
   return (
-    <details className="profile-colour-accordion profile-theme-colours" id="theme-colours-accordion" onToggle={(event) => setIsOpen(event.currentTarget.open)} open={isOpen}>
-      <summary className="profile-colour-accordion__summary" id="main-theme-colour-title">Custom theme colours</summary>
-      <div className="profile-colour-accordion__content">
-        <ColourPaletteSelector
-          ariaLabel="Theme accent colours"
-          columns={4}
-          onSelect={(accent) => setActiveAccent(accent as ThemeAccent)}
-          options={themeAccentDefinitions.map(({ accent, label }) => ({
-            ariaLabel: `Select ${label}`,
-            colour: getThemeColourForMode(themeColours[accent], 'light'),
-            foregroundColor: getFdrFillForeground(getThemeColourForMode(themeColours[accent], 'light')),
-            id: accent,
-            label: label.replace(' accent', ''),
-          }))}
-          selectedId={activeAccent}
-        />
-        <div className="profile-theme-colour-row" data-theme-colour-accent={activeAccent}>
-          <strong>{activeDefinition.label}</strong>
-          <div aria-label={activeDefinition.label + ' choices'} className="profile-theme-colour-options" role="group">
-            {themeColourOptions.map((option) => (
-              <button
-                aria-label={option.label + ' ' + activeAccent + ' theme colour'}
-                aria-pressed={themeColours[activeAccent] === option.colour}
-                className={'profile-theme-colour-swatch' + (themeColours[activeAccent] === option.colour ? ' is-selected' : '')}
-                key={option.label}
-                onClick={() => onSelect(activeAccent, option.colour)}
-                style={{ '--swatch-colour': option.colour } as CSSProperties}
-                title={activeDefinition.label + ': ' + option.label}
-                type="button"
-              />
-            ))}
-            <label className="profile-theme-colour-picker">
-              <span className="sr-only">Choose a custom {activeAccent} theme colour</span>
-              <input
-                aria-label={'Custom ' + activeAccent + ' theme colour'}
-                onChange={(event) => onSelect(activeAccent, event.target.value)}
-                type="color"
-                value={themeColours[activeAccent]}
-              />
-            </label>
-          </div>
-        </div>
+    <div className="profile-fdr-custom-editor profile-theme-custom-editor">
+      <div className="profile-fdr-custom-editor__header">
+        <Button onClick={() => onUse(colours)} type="button" variant="secondary">Use custom</Button>
       </div>
-    </details>
+      <div
+        aria-label={`Colour field for ${activeDefinition.label}`}
+        className="profile-fdr-colour-picker__field"
+        onPointerDown={(event) => {
+          event.currentTarget.setPointerCapture(event.pointerId);
+          updateFieldFromPointer(event);
+        }}
+        onPointerMove={(event) => {
+          if (event.buttons > 0) updateFieldFromPointer(event);
+        }}
+        style={{ '--picker-hue': `${hsv.hue}deg` } as CSSProperties}
+      >
+        <span
+          aria-hidden="true"
+          className="profile-fdr-colour-picker__field-pointer"
+          style={{ left: `${hsv.saturation * 100}%`, top: `${(1 - hsv.exposure) * 100}%` }}
+        />
+      </div>
+      <div
+        aria-label={`${activeDefinition.label} hue selector`}
+        className="profile-fdr-colour-picker__hue"
+        onPointerDown={(event) => {
+          event.currentTarget.setPointerCapture(event.pointerId);
+          updateHueFromPointer(event);
+        }}
+        onPointerMove={(event) => {
+          if (event.buttons > 0) updateHueFromPointer(event);
+        }}
+      >
+        <span aria-hidden="true" className="profile-fdr-colour-picker__hue-pointer" style={{ left: `${(hsv.hue / 360) * 100}%` }} />
+      </div>
+      <div className="profile-fdr-colour-picker__sliders">
+        <label>
+          <span>Saturation <strong>{Math.round(hsv.saturation * 100)}%</strong></span>
+          <input aria-label={`Saturation for ${activeDefinition.label}`} max="100" min="0" onChange={(event) => updateColour({ ...hsv, saturation: Number(event.target.value) / 100 })} type="range" value={Math.round(hsv.saturation * 100)} />
+        </label>
+        <label>
+          <span>Exposure <strong>{Math.round(hsv.exposure * 100)}%</strong></span>
+          <input aria-label={`Exposure for ${activeDefinition.label}`} max="100" min="0" onChange={(event) => updateColour({ ...hsv, exposure: Number(event.target.value) / 100 })} type="range" value={Math.round(hsv.exposure * 100)} />
+        </label>
+      </div>
+      <ColourPaletteSelector
+        ariaLabel="Custom theme colours"
+        columns={4}
+        onSelect={(accent) => selectAccent(accent as ThemeAccent)}
+        options={themeAccentDefinitions.map(({ accent, label, shortLabel }) => ({
+          ariaLabel: `Edit ${label}`,
+          colour: getThemeColourForMode(colours[accent], 'light'),
+          foregroundColor: getFdrFillForeground(getThemeColourForMode(colours[accent], 'light')),
+          id: accent,
+          label: shortLabel,
+        }))}
+        selectedId={activeAccent}
+      />
+    </div>
+  );
+}
+
+function ThemeColourPaletteBar({ colours, mode }: { colours: ThemeAccentColours; mode: 'light' | 'dark' }) {
+  return (
+    <span aria-label="Theme colour palette" className="profile-theme-palette-bar">
+      {themeAccentDefinitions.map(({ accent, shortLabel }) => {
+        const colour = getThemeColourForMode(colours[accent], mode);
+        return (
+          <span
+            aria-label={`${shortLabel}: ${colour}`}
+            key={accent}
+            style={{ backgroundColor: colour, color: getFdrFillForeground(colour) }}
+          >
+            {shortLabel.slice(0, 1)}
+          </span>
+        );
+      })}
+    </span>
   );
 }
 

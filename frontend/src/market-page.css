@@ -408,9 +408,19 @@
   flex: 0 1 auto;
 }
 
+.market-page .player-card {
+  --player-card-opponent-top: 76%;
+}
+
 .market-page .player-card__opponents {
-  font-size: clamp(0.4rem, 1.15vw, 0.5rem);
+  font-size: clamp(0.55rem, 1.65vw, 0.7rem);
   letter-spacing: -0.02em;
+}
+
+@media (max-width: 560px) {
+  .market-page .player-card__opponents {
+    font-size: 0.6rem;
+  }
 }
 
 .market-page .player-card__opponent--theme-primary,

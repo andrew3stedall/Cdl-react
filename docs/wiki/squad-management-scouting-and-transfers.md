@@ -90,7 +90,7 @@ Content-Type: application/json
 
 - One page-level navigation for Discovery, Interests, and Trades.
 - Squad-style compact player discovery list with a side-aligned form gauge, player card, points, and xG/xA columns.
-- Position and fixture-difficulty filters; no ownership, availability, or status filter/column. Ownership is shown only in the compact player-card label, using the selected FDR font/fill treatment and primary/secondary/tertiary theme accents for own/free/other-manager players.
+- Position and fixture-difficulty filters; no ownership, availability, or status filter/column. Ownership is shown only in the player-card label, matching the player-name font size and using the selected FDR font/fill treatment with primary/secondary/tertiary theme accents for own/free/other-manager players.
 - Interest creation and registered-interest review.
 - Proposed trade activity review.
 - Shared player detail dialog.

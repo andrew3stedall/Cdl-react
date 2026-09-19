@@ -38,7 +38,7 @@ class PlayerColourPalette(PlayerColourPaletteCreate):
 
 
 class UserPreferences(BaseModel):
-    theme_preset: str = "teal-light"
+    theme_preset: str = "teal-dark"
     attack_direction: str = "up"
     fdr_scale: str = "RdYlGn"
     fdr_scale_reversed: bool = True
@@ -60,7 +60,7 @@ class UserPreferences(BaseModel):
     result_draw_colour: str = "#F59E0B"
     result_loss_colour: str = "#F43F5E"
     light_theme_colour: str = "#0F766E"
-    dark_theme_colour: str = "#2DD4BF"
+    dark_theme_colour: str = "#0F766E"
     primary_theme_colour: str = "#0F766E"
     secondary_theme_colour: str = "#115E59"
     tertiary_theme_colour: str = "#0D9488"

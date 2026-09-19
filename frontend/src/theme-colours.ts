@@ -17,7 +17,7 @@ export const defaultTertiaryThemeColour = defaultThemeColours.tertiary;
 export const defaultQuaternaryThemeColour = defaultThemeColours.quaternary;
 // Legacy aliases remain available while stored preferences migrate to the accent palette.
 export const defaultLightThemeColour = defaultThemeColour;
-export const defaultDarkThemeColour = '#2DD4BF';
+export const defaultDarkThemeColour = defaultThemeColour;
 
 export const themeColourOptions = [
   { label: 'Teal', colour: '#0F766E' },
@@ -137,21 +137,18 @@ function getContrastForeground(background: string): '#000000' | '#FFFFFF' {
 }
 
 export function getThemeColourForMode(value: string | null | undefined, mode: ThemeColourMode): string {
-  const base = resolveThemeBaseColour(value);
-  return mode === 'light' ? base : mixHex(base, '#FFFFFF', 0.68);
+  // Kept for compatibility with legacy callers that pass the presentation mode.
+  void mode;
+  return resolveThemeBaseColour(value);
 }
 
 export function getThemeAccentColoursForMode(
   value: Partial<ThemeAccentColours> | string | null | undefined,
   mode: ThemeColourMode,
 ): ThemeAccentColours {
-  const baseColours = resolveThemeAccentColours(value);
-  return {
-    primary: getThemeColourForMode(baseColours.primary, mode),
-    secondary: getThemeColourForMode(baseColours.secondary, mode),
-    tertiary: getThemeColourForMode(baseColours.tertiary, mode),
-    quaternary: getThemeColourForMode(baseColours.quaternary, mode),
-  };
+  // The selected palette is mode-independent; only neutral UI surfaces adapt.
+  void mode;
+  return resolveThemeAccentColours(value);
 }
 
 export function getThemeColourForeground(value: string | null | undefined, mode: ThemeColourMode): '#000000' | '#FFFFFF' {

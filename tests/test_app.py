@@ -25,6 +25,7 @@ def test_theme_contract_endpoint() -> None:
         "teal-dark",
         "adaptive",
     ]
+    assert next(preset for preset in presets if preset["name"] == "teal-dark")["is_default"] is True
 
 
 def test_user_preferences_endpoint_round_trip() -> None:
@@ -76,7 +77,7 @@ def test_user_preferences_endpoint_round_trip() -> None:
         "result_draw_colour": "#F59E0B",
         "result_loss_colour": "#F43F5E",
         "light_theme_colour": "#0F766E",
-        "dark_theme_colour": "#2DD4BF",
+        "dark_theme_colour": "#0F766E",
         "primary_theme_colour": "#0F766E",
         "secondary_theme_colour": "#115E59",
         "tertiary_theme_colour": "#0D9488",
@@ -111,7 +112,7 @@ def test_user_preferences_endpoint_round_trip() -> None:
         "result_draw_colour": "#F59E0B",
         "result_loss_colour": "#F43F5E",
         "light_theme_colour": "#0F766E",
-        "dark_theme_colour": "#2DD4BF",
+        "dark_theme_colour": "#0F766E",
         "primary_theme_colour": "#0F766E",
         "secondary_theme_colour": "#115E59",
         "tertiary_theme_colour": "#0D9488",
@@ -145,7 +146,7 @@ def test_user_preferences_endpoint_round_trip() -> None:
         "result_draw_colour": "#F59E0B",
         "result_loss_colour": "#F43F5E",
         "light_theme_colour": "#0F766E",
-        "dark_theme_colour": "#2DD4BF",
+        "dark_theme_colour": "#0F766E",
         "primary_theme_colour": "#0F766E",
         "secondary_theme_colour": "#115E59",
         "tertiary_theme_colour": "#0D9488",

@@ -60,7 +60,7 @@ export const themePresets: ThemePreset[] = [
     name: 'teal-light',
     label: 'Light mode',
     description: 'A bright, restrained workspace for daytime sessions.',
-    isDefault: true,
+    isDefault: false,
     tokens: {
       colors: lightColors,
       density: 'comfortable',
@@ -73,7 +73,7 @@ export const themePresets: ThemePreset[] = [
     name: 'teal-dark',
     label: 'Dark mode',
     description: 'A deep, low-contrast workspace for evening sessions.',
-    isDefault: false,
+    isDefault: true,
     tokens: {
       colors: darkColors,
       density: 'comfortable',

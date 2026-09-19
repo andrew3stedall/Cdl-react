@@ -59,7 +59,8 @@ The application provides responsive shared navigation, manual reload, route-awar
 
 - shadcn/ui is mandatory for shell primitives unless an exception is documented.
 - Theme mode must include light, dark, and adaptive options; adaptive follows the device colour-scheme preference.
-- Theme colours must be selectable independently of theme mode, with reusable four-accent templates plus a custom palette editor aligned to the FDR selector pattern.
+- Theme colours must be selectable independently of theme mode, with reusable four-accent templates plus a custom palette editor aligned to the FDR selector pattern. The selected accent values are preserved exactly in every mode; only the neutral interface surfaces change.
+- Dark Teal is the default appearance for users without a saved preference.
 - Presets must define colour tokens, density, radius, typography scale, and chart palette hooks.
 - Surfaces must avoid gradients, shadows, glows, and information-heavy colour highlighting.
 

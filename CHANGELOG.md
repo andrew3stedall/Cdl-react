@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Preserved the exact theme-template accent values in dark mode, including
+  Market ownership fills, and made Dark Teal the default appearance.
+
 - Separated theme mode from theme colours in Profile. Theme colours now use an
   FDR-style chooser with six four-accent templates plus a shared custom palette
   editor, while Adaptive mode follows the device light/dark setting.

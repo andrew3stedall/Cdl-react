@@ -20,18 +20,15 @@ describe('theme accent colours', () => {
     expect(getThemeColourPalette({ ...themeColourPalettes[1].colours, primary: '#000000' })).toBeNull();
   });
 
-  test('derives all four accents for dark mode', () => {
-    expect(getThemeAccentColoursForMode({
+  test('preserves all four selected accents in dark mode', () => {
+    const selectedColours = {
       primary: '#2563EB',
       secondary: '#7C3AED',
       tertiary: '#BE123C',
       quaternary: '#C2410C',
-    }, 'dark')).toEqual({
-      primary: '#6B95F1',
-      secondary: '#A679F3',
-      tertiary: '#D35E7A',
-      quaternary: '#D67E5A',
-    });
+    };
+    expect(getThemeAccentColoursForMode(selectedColours, 'dark')).toEqual(selectedColours);
+    expect(applyThemeColours(resolveThemePreset('teal-dark'), selectedColours).tokens.chartPaletteHooks.slice(0, 4)).toEqual(Object.values(selectedColours));
   });
 
   test('applies independent accent hooks without changing the neutral secondary surface', () => {

@@ -8,13 +8,13 @@ def test_preference_service_returns_default_theme() -> None:
 
     preferences = service.get_preferences("manager-1")
 
-    assert preferences.theme_preset == "teal-light"
+    assert preferences.theme_preset == "teal-dark"
     assert preferences.attack_direction == "up"
     assert preferences.fdr_scale == "RdYlGn"
     assert preferences.fdr_scale_reversed is True
     assert preferences.fdr_display_mode == "font"
     assert preferences.light_theme_colour == "#0F766E"
-    assert preferences.dark_theme_colour == "#2DD4BF"
+    assert preferences.dark_theme_colour == "#0F766E"
     assert preferences.primary_theme_colour == "#0F766E"
     assert preferences.secondary_theme_colour == "#115E59"
     assert preferences.tertiary_theme_colour == "#0D9488"
@@ -57,7 +57,7 @@ def test_preference_service_rejects_unsupported_theme() -> None:
 
     updated = service.update_preferences("manager-1", UserPreferences(theme_preset="unknown"))
 
-    assert updated.theme_preset == "teal-light"
+    assert updated.theme_preset == "teal-dark"
 
 
 def test_preference_service_rejects_unsupported_attack_direction() -> None:

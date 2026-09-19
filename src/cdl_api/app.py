@@ -69,18 +69,18 @@ def create_app() -> FastAPI:
                 "name": "teal-light",
                 "label": "Teal · Light",
                 "description": "A bright, restrained workspace with teal actions.",
-                "is_default": True,
+                "is_default": False,
             },
             {
                 "name": "teal-dark",
                 "label": "Teal · Dark",
                 "description": "A deep, low-contrast workspace for evening sessions.",
-                "is_default": False,
+                "is_default": True,
             },
             {
                 "name": "adaptive",
                 "label": "Adaptive mode",
-                "description": "Switches between light and dark mode using your local time of day.",
+                "description": "Follows your device light or dark appearance setting.",
                 "is_default": False,
             },
         ]

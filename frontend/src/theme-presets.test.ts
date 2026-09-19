@@ -2,8 +2,8 @@ import { expect, test } from 'vitest';
 
 import { getDefaultThemePreset, getThemeMode, resolveThemePreset, themePresets } from './theme-presets';
 
-test('default preset is teal light', () => {
-  expect(getDefaultThemePreset().name).toBe('teal-light');
+test('default preset is teal dark', () => {
+  expect(getDefaultThemePreset().name).toBe('teal-dark');
 });
 
 test('light, dark, and adaptive workspace presets are available', () => {

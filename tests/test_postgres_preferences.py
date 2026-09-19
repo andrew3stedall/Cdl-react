@@ -136,7 +136,7 @@ def test_authenticated_preferences_persist_and_remain_isolated() -> None:
 
     app.dependency_overrides[require_authenticated_session] = lambda: _user("preferences-manager-2")
     assert client.get("/api/me/preferences").json() == {
-        "theme_preset": "teal-light",
+        "theme_preset": "teal-dark",
         "attack_direction": "up",
         "fdr_scale": "RdYlGn",
         "fdr_scale_reversed": True,
@@ -158,7 +158,7 @@ def test_authenticated_preferences_persist_and_remain_isolated() -> None:
         "result_draw_colour": "#F59E0B",
         "result_loss_colour": "#F43F5E",
         "light_theme_colour": "#0F766E",
-        "dark_theme_colour": "#2DD4BF",
+        "dark_theme_colour": "#0F766E",
         "primary_theme_colour": "#0F766E",
         "secondary_theme_colour": "#115E59",
         "tertiary_theme_colour": "#0D9488",

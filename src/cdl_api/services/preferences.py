@@ -42,28 +42,40 @@ class UserPreferenceService:
     def update_preferences(self, user_id: str, preferences: UserPreferences) -> UserPreferences:
         # Older clients only send the legacy light/dark pair. Treat the legacy
         # light value as the primary accent while the new palette fields roll out.
-        if "primary_theme_colour" not in preferences.model_fields_set:
+        provided_fields = preferences.model_fields_set
+        if "primary_theme_colour" not in provided_fields:
             preferences = preferences.model_copy(
                 update={"primary_theme_colour": preferences.light_theme_colour}
             )
         if "theme_colour_variants" not in preferences.model_fields_set:
+            legacy_colour_fields = {
+                "light_theme_colour",
+                "dark_theme_colour",
+                "primary_theme_colour",
+                "secondary_theme_colour",
+                "tertiary_theme_colour",
+                "quaternary_theme_colour",
+            }
+            theme_colour_variants = (
+                ThemeColourVariants(
+                    light=ThemeAccentColours.model_construct(
+                        primary=preferences.light_theme_colour,
+                        secondary=preferences.secondary_theme_colour,
+                        tertiary=preferences.tertiary_theme_colour,
+                        quaternary=preferences.quaternary_theme_colour,
+                    ),
+                    dark=ThemeAccentColours.model_construct(
+                        primary=preferences.dark_theme_colour,
+                        secondary=preferences.secondary_theme_colour,
+                        tertiary=preferences.tertiary_theme_colour,
+                        quaternary=preferences.quaternary_theme_colour,
+                    ),
+                )
+                if legacy_colour_fields & provided_fields
+                else ThemeColourVariants()
+            )
             preferences = preferences.model_copy(
-                update={
-                    "theme_colour_variants": ThemeColourVariants(
-                        light=ThemeAccentColours.model_construct(
-                            primary=preferences.light_theme_colour,
-                            secondary=preferences.secondary_theme_colour,
-                            tertiary=preferences.tertiary_theme_colour,
-                            quaternary=preferences.quaternary_theme_colour,
-                        ),
-                        dark=ThemeAccentColours.model_construct(
-                            primary=preferences.dark_theme_colour,
-                            secondary=preferences.secondary_theme_colour,
-                            tertiary=preferences.tertiary_theme_colour,
-                            quaternary=preferences.quaternary_theme_colour,
-                        ),
-                    )
-                }
+                update={"theme_colour_variants": theme_colour_variants}
             )
 
         theme_variant_colours = [

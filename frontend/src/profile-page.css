@@ -429,6 +429,29 @@
   width: min(18rem, 100%);
 }
 
+.profile-theme-palette-pair {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+  width: min(22rem, 100%);
+}
+
+.profile-theme-palette-pair > span,
+.profile-theme-palette-option__variant {
+  display: grid;
+  gap: 0.12rem;
+  min-width: 0;
+}
+
+.profile-theme-palette-pair small,
+.profile-theme-palette-option__variant small {
+  color: var(--muted-foreground);
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
 .profile-theme-palette-option {
   grid-template-columns: minmax(5.5rem, 0.62fr) minmax(0, 1fr) 2.25rem;
 }
@@ -444,6 +467,10 @@
 
 .profile-theme-palette-option .profile-theme-palette-bar {
   height: 2.1rem;
+}
+
+.profile-theme-palette-option__variant .profile-theme-palette-bar {
+  height: 1.55rem;
 }
 
 .profile-theme-custom-editor .colour-palette-selector {
@@ -867,12 +894,13 @@
   max-width: 100vw;
   overflow-y: auto;
   padding: clamp(1rem, 3vw, 1.75rem);
+  padding-bottom: calc(clamp(1rem, 3vw, 1.75rem) + var(--cdl-mobile-navigation-clearance));
   position: fixed;
   right: 0;
   scroll-padding-bottom: var(--cdl-mobile-navigation-clearance);
   top: 0;
   width: min(34rem, 100vw);
-  z-index: 30;
+  z-index: 100;
 }
 
 .profile-fdr-sheet-backdrop {
@@ -880,7 +908,7 @@
   border: 0;
   inset: 0;
   position: fixed;
-  z-index: 29;
+  z-index: 99;
 }
 
 .profile-fdr-sheet {

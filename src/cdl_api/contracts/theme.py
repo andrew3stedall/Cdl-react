@@ -37,6 +37,25 @@ class PlayerColourPalette(PlayerColourPaletteCreate):
     id: str
 
 
+class ThemeAccentColours(BaseModel):
+    primary: str = Field(default="#0F766E", pattern=r"^#[0-9A-Fa-f]{6}$")
+    secondary: str = Field(default="#115E59", pattern=r"^#[0-9A-Fa-f]{6}$")
+    tertiary: str = Field(default="#0D9488", pattern=r"^#[0-9A-Fa-f]{6}$")
+    quaternary: str = Field(default="#14B8A6", pattern=r"^#[0-9A-Fa-f]{6}$")
+
+
+class ThemeColourVariants(BaseModel):
+    light: ThemeAccentColours = Field(
+        default_factory=lambda: ThemeAccentColours(
+            primary="#115E59",
+            secondary="#134E4A",
+            tertiary="#0F766E",
+            quaternary="#0D9488",
+        )
+    )
+    dark: ThemeAccentColours = Field(default_factory=ThemeAccentColours)
+
+
 class UserPreferences(BaseModel):
     theme_preset: str = "teal-dark"
     attack_direction: str = "up"
@@ -65,6 +84,7 @@ class UserPreferences(BaseModel):
     secondary_theme_colour: str = "#115E59"
     tertiary_theme_colour: str = "#0D9488"
     quaternary_theme_colour: str = "#14B8A6"
+    theme_colour_variants: ThemeColourVariants = Field(default_factory=ThemeColourVariants)
     fdr_custom_min: str = "#2166AC"
     fdr_custom_second: str = "#8CAFD2"
     fdr_custom_mid: str = "#F7F7F7"

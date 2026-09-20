@@ -62,6 +62,7 @@ import {
   themeColourPalettes,
   type ThemeAccent,
   type ThemeAccentColours,
+  type ThemeColourVariants,
 } from './theme-colours';
 import { getPasskeyStatus, registerPasskey, type PasskeyStatus } from './passkeys';
 import { getResultColourPaletteLabel } from './result-colours';
@@ -94,6 +95,7 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
     resultColours,
     customPlayerColourPalettes,
     themeColours,
+    themeColourVariants,
     preset,
     saveStatus,
     setAttackDirection,
@@ -112,7 +114,7 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
     savePlayerColourPalette,
     deletePlayerColourPalette,
     useCustomFdrPalette,
-    setThemeColours,
+    setThemeColourVariants,
     setPresetName,
   } = useThemePreset();
   const [isFdrScaleSheetOpen, setIsFdrScaleSheetOpen] = useState(false);
@@ -191,8 +193,8 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
   const user = session.user;
   const selectedFdrScale = getFdrColourScale(fdrScale);
   const selectedFdrScaleNumber = getFdrScaleOptionNumber(fdrScale);
-  const selectedThemeColourPalette = getThemeColourPalette(themeColours);
   const themeMode = getThemeMode(preset);
+  const selectedThemeColourPalette = getThemeColourPalette(themeColours, themeMode);
   const displayName = managerNicknameForName(user?.displayName) ?? 'Authenticated user';
   const initials = displayName
     .split(/\s+/)
@@ -222,13 +224,15 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
           isOpen={isThemeColourSheetOpen}
           onOpen={() => setIsThemeColourSheetOpen(true)}
           themeColours={themeColours}
+          themeColourVariants={themeColourVariants}
           themeMode={themeMode}
         />
         <ThemeColourChooser
           isOpen={isThemeColourSheetOpen}
           onClose={() => setIsThemeColourSheetOpen(false)}
-          onSetThemeColours={setThemeColours}
+          onSetThemeColourVariants={setThemeColourVariants}
           themeColours={themeColours}
+          themeColourVariants={themeColourVariants}
           themeMode={themeMode}
         />
       </main>
@@ -976,14 +980,16 @@ function ThemeColourSettingsCard({
   isOpen,
   onOpen,
   themeColours,
+  themeColourVariants,
   themeMode,
 }: {
   isOpen: boolean;
   onOpen: () => void;
   themeColours: ThemeAccentColours;
+  themeColourVariants: ThemeColourVariants;
   themeMode: 'light' | 'dark';
 }) {
-  const selectedPalette = getThemeColourPalette(themeColours);
+  const selectedPalette = getThemeColourPalette(themeColours, themeMode);
 
   return (
     <Card className="profile-card profile-theme-colour-card profile-settings-card">
@@ -1004,7 +1010,16 @@ function ThemeColourSettingsCard({
       >
         <span>
           <strong>{selectedPalette?.label ?? 'Custom'}</strong>
-          <ThemeColourPaletteBar colours={themeColours} mode={themeMode} />
+          <span aria-label="Light and dark theme palettes" className="profile-theme-palette-pair">
+            <span>
+              <small>Light</small>
+              <ThemeColourPaletteBar colours={themeColourVariants.light} mode="light" />
+            </span>
+            <span>
+              <small>Dark</small>
+              <ThemeColourPaletteBar colours={themeColourVariants.dark} mode="dark" />
+            </span>
+          </span>
         </span>
         <ChevronRight aria-hidden="true" size={18} />
       </Button>
@@ -1411,18 +1426,20 @@ const themeAccentDefinitions: Array<{ accent: ThemeAccent; label: string; shortL
 function ThemeColourChooser({
   isOpen,
   onClose,
-  onSetThemeColours,
+  onSetThemeColourVariants,
   themeColours,
+  themeColourVariants,
   themeMode,
 }: {
   isOpen: boolean;
   onClose: () => void;
-  onSetThemeColours: (colours: ThemeAccentColours) => void;
+  onSetThemeColourVariants: (variants: ThemeColourVariants) => void;
   themeColours: ThemeAccentColours;
+  themeColourVariants: ThemeColourVariants;
   themeMode: 'light' | 'dark';
 }) {
   const [isCustomOpen, setIsCustomOpen] = useState(false);
-  const selectedPalette = getThemeColourPalette(themeColours);
+  const selectedPalette = getThemeColourPalette(themeColours, themeMode);
 
   return (
     <>
@@ -1448,14 +1465,21 @@ function ThemeColourChooser({
                 className={`profile-fdr-scale-option profile-theme-palette-option${selectedPalette?.name === palette.name ? ' is-selected' : ''}`}
                 key={palette.name}
                 onClick={() => {
-                  onSetThemeColours(palette.colours);
+                  onSetThemeColourVariants({ light: palette.lightColours, dark: palette.darkColours });
                   onClose();
                 }}
                 type="button"
               >
                 <span className="profile-theme-palette-option__label">{palette.label}</span>
                 <span className="profile-fdr-scale-option__previews">
-                  <ThemeColourPaletteBar colours={palette.colours} mode={themeMode} />
+                  <span className="profile-theme-palette-option__variant">
+                    <small>Light</small>
+                    <ThemeColourPaletteBar colours={palette.lightColours} mode="light" />
+                  </span>
+                  <span className="profile-theme-palette-option__variant">
+                    <small>Dark</small>
+                    <ThemeColourPaletteBar colours={palette.darkColours} mode="dark" />
+                  </span>
                 </span>
                 <span aria-hidden="true" className="profile-preset-check">
                   {selectedPalette?.name === palette.name ? <Check size={15} /> : <Circle size={15} />}
@@ -1470,7 +1494,7 @@ function ThemeColourChooser({
                 initialColours={themeColours}
                 key={Object.values(themeColours).join('-')}
                 onUse={(colours) => {
-                  onSetThemeColours(colours);
+                  onSetThemeColourVariants({ ...themeColourVariants, [themeMode]: colours });
                   onClose();
                 }}
               />

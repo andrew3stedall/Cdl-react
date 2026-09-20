@@ -1,6 +1,13 @@
 import { describe, expect, test } from 'vitest';
 
-import { applyThemeColours, getThemeAccentColoursForMode, getThemeColourPalette, resolveThemeAccentColours, themeColourPalettes } from './theme-colours';
+import {
+  applyThemeColours,
+  getThemeAccentColoursForMode,
+  getThemeColourPalette,
+  resolveThemeAccentColours,
+  resolveThemeColourVariants,
+  themeColourPalettes,
+} from './theme-colours';
 import { resolveThemePreset } from './theme-presets';
 
 describe('theme accent colours', () => {
@@ -29,6 +36,17 @@ describe('theme accent colours', () => {
     };
     expect(getThemeAccentColoursForMode(selectedColours, 'dark')).toEqual(selectedColours);
     expect(applyThemeColours(resolveThemePreset('teal-dark'), selectedColours).tokens.chartPaletteHooks.slice(0, 4)).toEqual(Object.values(selectedColours));
+  });
+
+  test('keeps a mode-specific companion palette for every template', () => {
+    const ocean = themeColourPalettes.find((palette) => palette.name === 'ocean');
+
+    expect(ocean?.lightColours.primary).toBe('#1D4ED8');
+    expect(ocean?.darkColours.primary).toBe('#2563EB');
+    expect(resolveThemeColourVariants({ light: ocean?.lightColours, dark: ocean?.darkColours })).toEqual({
+      light: ocean?.lightColours,
+      dark: ocean?.darkColours,
+    });
   });
 
   test('applies independent accent hooks without changing the neutral secondary surface', () => {

@@ -1,3 +1,5 @@
+# ruff: noqa: E501
+
 from fastapi.testclient import TestClient
 
 from cdl_api.app import create_app
@@ -75,6 +77,20 @@ def test_preferences_use_authenticated_user_identity() -> None:
         "secondary_theme_colour": "#115E59",
         "tertiary_theme_colour": "#0D9488",
         "quaternary_theme_colour": "#14B8A6",
+        "theme_colour_variants": {
+            "light": {
+                "primary": "#2563EB",
+                "secondary": "#115E59",
+                "tertiary": "#0D9488",
+                "quaternary": "#14B8A6",
+            },
+            "dark": {
+                "primary": "#60A5FA",
+                "secondary": "#115E59",
+                "tertiary": "#0D9488",
+                "quaternary": "#14B8A6",
+            },
+        },
         "fdr_custom_min": "#2166AC",
         "fdr_custom_second": "#8CAFD2",
         "fdr_custom_mid": "#F7F7F7",
@@ -109,6 +125,20 @@ def test_preferences_use_authenticated_user_identity() -> None:
         "secondary_theme_colour": "#115E59",
         "tertiary_theme_colour": "#0D9488",
         "quaternary_theme_colour": "#14B8A6",
+        "theme_colour_variants": {
+            "light": {
+                "primary": "#2563EB",
+                "secondary": "#115E59",
+                "tertiary": "#0D9488",
+                "quaternary": "#14B8A6",
+            },
+            "dark": {
+                "primary": "#60A5FA",
+                "secondary": "#115E59",
+                "tertiary": "#0D9488",
+                "quaternary": "#14B8A6",
+            },
+        },
         "fdr_custom_min": "#2166AC",
         "fdr_custom_second": "#8CAFD2",
         "fdr_custom_mid": "#F7F7F7",
@@ -145,6 +175,20 @@ def test_preferences_use_authenticated_user_identity() -> None:
         "secondary_theme_colour": "#115E59",
         "tertiary_theme_colour": "#0D9488",
         "quaternary_theme_colour": "#14B8A6",
+        "theme_colour_variants": {
+            "light": {
+                "primary": "#115E59",
+                "secondary": "#134E4A",
+                "tertiary": "#0F766E",
+                "quaternary": "#0D9488",
+            },
+            "dark": {
+                "primary": "#0F766E",
+                "secondary": "#115E59",
+                "tertiary": "#0D9488",
+                "quaternary": "#14B8A6",
+            },
+        },
         "fdr_custom_min": "#2166AC",
         "fdr_custom_second": "#8CAFD2",
         "fdr_custom_mid": "#F7F7F7",
@@ -194,6 +238,20 @@ def test_preferences_use_authenticated_user_identity() -> None:
         "secondary_theme_colour": "#115E59",
         "tertiary_theme_colour": "#0D9488",
         "quaternary_theme_colour": "#14B8A6",
+        "theme_colour_variants": {
+            "light": {
+                "primary": "#0F766E",
+                "secondary": "#115E59",
+                "tertiary": "#0D9488",
+                "quaternary": "#14B8A6",
+            },
+            "dark": {
+                "primary": "#2DD4BF",
+                "secondary": "#115E59",
+                "tertiary": "#0D9488",
+                "quaternary": "#14B8A6",
+            },
+        },
         "fdr_custom_min": "#2166AC",
         "fdr_custom_second": "#8CAFD2",
         "fdr_custom_mid": "#F7F7F7",
@@ -230,6 +288,20 @@ def test_preferences_use_authenticated_user_identity() -> None:
         "secondary_theme_colour": "#115E59",
         "tertiary_theme_colour": "#0D9488",
         "quaternary_theme_colour": "#14B8A6",
+        "theme_colour_variants": {
+            "light": {
+                "primary": "#2563EB",
+                "secondary": "#115E59",
+                "tertiary": "#0D9488",
+                "quaternary": "#14B8A6",
+            },
+            "dark": {
+                "primary": "#60A5FA",
+                "secondary": "#115E59",
+                "tertiary": "#0D9488",
+                "quaternary": "#14B8A6",
+            },
+        },
         "fdr_custom_min": "#2166AC",
         "fdr_custom_second": "#8CAFD2",
         "fdr_custom_mid": "#F7F7F7",

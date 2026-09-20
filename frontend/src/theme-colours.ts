@@ -4,6 +4,14 @@ import { getThemeMode } from './theme-presets';
 export type ThemeColourMode = 'light' | 'dark';
 export type ThemeAccent = 'primary' | 'secondary' | 'tertiary' | 'quaternary';
 export type ThemeAccentColours = Record<ThemeAccent, string>;
+export interface ThemeColourVariants {
+  light: ThemeAccentColours;
+  dark: ThemeAccentColours;
+}
+export interface ThemeColourVariantsInput {
+  light?: Partial<ThemeAccentColours>;
+  dark?: Partial<ThemeAccentColours>;
+}
 
 export const defaultThemeColours: ThemeAccentColours = {
   primary: '#0F766E',
@@ -18,6 +26,18 @@ export const defaultQuaternaryThemeColour = defaultThemeColours.quaternary;
 // Legacy aliases remain available while stored preferences migrate to the accent palette.
 export const defaultLightThemeColour = defaultThemeColour;
 export const defaultDarkThemeColour = defaultThemeColour;
+
+export const defaultThemeColourVariants: ThemeColourVariants = {
+  // The light-mode companion is deliberately a little deeper than the dark
+  // palette so bright accents retain contrast on pale surfaces.
+  light: {
+    primary: '#115E59',
+    secondary: '#134E4A',
+    tertiary: '#0F766E',
+    quaternary: '#0D9488',
+  },
+  dark: defaultThemeColours,
+};
 
 export const themeColourOptions = [
   { label: 'Teal', colour: '#0F766E' },
@@ -35,45 +55,69 @@ export const themeColourOptions = [
 export interface ThemeColourPalette {
   name: string;
   label: string;
+  lightColours: ThemeAccentColours;
+  darkColours: ThemeAccentColours;
+  /** Backwards-compatible alias for the dark palette. */
   colours: ThemeAccentColours;
 }
 
+function createThemeColourPalette(
+  name: string,
+  label: string,
+  darkColours: ThemeAccentColours,
+  lightColours: ThemeAccentColours,
+): ThemeColourPalette {
+  return { name, label, lightColours, darkColours, colours: darkColours };
+}
+
 export const themeColourPalettes: readonly ThemeColourPalette[] = [
-  { name: 'teal', label: 'Teal', colours: defaultThemeColours },
-  {
-    name: 'ocean',
-    label: 'Ocean',
-    colours: { primary: '#2563EB', secondary: '#0891B2', tertiary: '#14B8A6', quaternary: '#4F46E5' },
-  },
-  {
-    name: 'violet',
-    label: 'Violet',
-    colours: { primary: '#7C3AED', secondary: '#4F46E5', tertiary: '#C026D3', quaternary: '#DB2777' },
-  },
-  {
-    name: 'rose',
-    label: 'Rose',
-    colours: { primary: '#BE123C', secondary: '#9F1239', tertiary: '#DB2777', quaternary: '#C2410C' },
-  },
-  {
-    name: 'sunset',
-    label: 'Sunset',
-    colours: { primary: '#C2410C', secondary: '#B45309', tertiary: '#BE123C', quaternary: '#7C3AED' },
-  },
-  {
-    name: 'forest',
-    label: 'Forest',
-    colours: { primary: '#15803D', secondary: '#4D7C0F', tertiary: '#0F766E', quaternary: '#A16207' },
-  },
+  createThemeColourPalette('teal', 'Teal', defaultThemeColours, defaultThemeColourVariants.light),
+  createThemeColourPalette(
+    'ocean',
+    'Ocean',
+    { primary: '#2563EB', secondary: '#0891B2', tertiary: '#14B8A6', quaternary: '#4F46E5' },
+    { primary: '#1D4ED8', secondary: '#0E7490', tertiary: '#0F766E', quaternary: '#4338CA' },
+  ),
+  createThemeColourPalette(
+    'violet',
+    'Violet',
+    { primary: '#7C3AED', secondary: '#4F46E5', tertiary: '#C026D3', quaternary: '#DB2777' },
+    { primary: '#6D28D9', secondary: '#4338CA', tertiary: '#A21CAF', quaternary: '#BE185D' },
+  ),
+  createThemeColourPalette(
+    'rose',
+    'Rose',
+    { primary: '#BE123C', secondary: '#9F1239', tertiary: '#DB2777', quaternary: '#C2410C' },
+    { primary: '#9F1239', secondary: '#881337', tertiary: '#BE185D', quaternary: '#9A3412' },
+  ),
+  createThemeColourPalette(
+    'sunset',
+    'Sunset',
+    { primary: '#C2410C', secondary: '#B45309', tertiary: '#BE123C', quaternary: '#7C3AED' },
+    { primary: '#9A3412', secondary: '#92400E', tertiary: '#9F1239', quaternary: '#6D28D9' },
+  ),
+  createThemeColourPalette(
+    'forest',
+    'Forest',
+    { primary: '#15803D', secondary: '#4D7C0F', tertiary: '#0F766E', quaternary: '#A16207' },
+    { primary: '#166534', secondary: '#3F6212', tertiary: '#115E59', quaternary: '#854D0E' },
+  ),
 ];
 
-export function getThemeColourPalette(value: Partial<ThemeAccentColours> | string | null | undefined): ThemeColourPalette | null {
+export function getThemeColourPalette(
+  value: Partial<ThemeAccentColours> | string | null | undefined,
+  mode?: ThemeColourMode,
+): ThemeColourPalette | null {
   const colours = resolveThemeAccentColours(value);
   return themeColourPalettes.find((palette) => (
-    palette.colours.primary === colours.primary
-    && palette.colours.secondary === colours.secondary
-    && palette.colours.tertiary === colours.tertiary
-    && palette.colours.quaternary === colours.quaternary
+    [palette.lightColours, palette.darkColours]
+      .filter((candidate, index) => mode == null || (mode === 'light' ? index === 0 : index === 1))
+      .some((candidate) => (
+        candidate.primary === colours.primary
+        && candidate.secondary === colours.secondary
+        && candidate.tertiary === colours.tertiary
+        && candidate.quaternary === colours.quaternary
+      ))
   )) ?? null;
 }
 
@@ -105,6 +149,42 @@ export function resolveThemeAccentColours(
       ? value.quaternary.toUpperCase()
       : defaultThemeColours.quaternary,
   };
+}
+
+function isThemeColourVariants(value: unknown): value is ThemeColourVariantsInput {
+  return Boolean(value && typeof value === 'object' && ('light' in value || 'dark' in value));
+}
+
+function adjustColourForMode(colour: string, mode: ThemeColourMode): string {
+  // A light surface needs a darker version of a vivid accent. Dark surfaces
+  // benefit from a small lift so controls do not disappear into the canvas.
+  return mixHex(colour, mode === 'light' ? '#000000' : '#FFFFFF', mode === 'light' ? 0.18 : 0.16);
+}
+
+export function deriveThemeColourVariants(
+  colours: Partial<ThemeAccentColours> | string | null | undefined,
+  sourceMode: ThemeColourMode = 'dark',
+): ThemeColourVariants {
+  const source = resolveThemeAccentColours(colours);
+  const oppositeMode: ThemeColourMode = sourceMode === 'dark' ? 'light' : 'dark';
+  const opposite = (Object.keys(source) as ThemeAccent[]).reduce((result, accent) => {
+    result[accent] = adjustColourForMode(source[accent], oppositeMode);
+    return result;
+  }, {} as ThemeAccentColours);
+
+  return sourceMode === 'dark'
+    ? { light: opposite, dark: source }
+    : { light: source, dark: opposite };
+}
+
+export function resolveThemeColourVariants(
+  value: ThemeColourVariantsInput | Partial<ThemeAccentColours> | string | null | undefined,
+): ThemeColourVariants {
+  if (!isThemeColourVariants(value)) return deriveThemeColourVariants(value, 'dark');
+
+  const dark = resolveThemeAccentColours(value.dark ?? value.light ?? defaultThemeColourVariants.dark);
+  const light = resolveThemeAccentColours(value.light ?? deriveThemeColourVariants(dark, 'dark').light);
+  return { light, dark };
 }
 
 function hexToRgb(hex: string): [number, number, number] {
@@ -143,12 +223,12 @@ export function getThemeColourForMode(value: string | null | undefined, mode: Th
 }
 
 export function getThemeAccentColoursForMode(
-  value: Partial<ThemeAccentColours> | string | null | undefined,
+  value: ThemeColourVariantsInput | Partial<ThemeAccentColours> | string | null | undefined,
   mode: ThemeColourMode,
 ): ThemeAccentColours {
-  // The selected palette is mode-independent; only neutral UI surfaces adapt.
-  void mode;
-  return resolveThemeAccentColours(value);
+  return isThemeColourVariants(value)
+    ? resolveThemeAccentColours(value[mode])
+    : resolveThemeAccentColours(value);
 }
 
 export function getThemeColourForeground(value: string | null | undefined, mode: ThemeColourMode): '#000000' | '#FFFFFF' {

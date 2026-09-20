@@ -8,6 +8,8 @@ export {
 } from './PlayerCard';
 export type {
   PlayerCardFixture,
+  PlayerCardFormFixture,
+  PlayerCardFormGameweek,
   PlayerCardFormPosition,
   PlayerCardLayout,
   PlayerCardPlayer,

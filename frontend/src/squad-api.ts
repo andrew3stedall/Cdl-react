@@ -15,6 +15,17 @@ export interface SquadApiNextFixture {
   kickoff_at?: string | null;
 }
 
+export interface SquadApiFormFixture {
+  fixture_id: string;
+  total_points: number;
+  minutes: number;
+}
+
+export interface SquadApiFormGameweek {
+  gameweek: number;
+  fixtures: SquadApiFormFixture[];
+}
+
 export interface SquadApiPlayer {
   id: string;
   display_name: string;
@@ -33,6 +44,7 @@ export interface SquadApiPlayer {
   chance_of_playing_next_round?: number | null;
   next_fixture?: SquadApiNextFixture | null;
   next_fixtures?: SquadApiNextFixture[] | null;
+  form_history?: SquadApiFormGameweek[] | null;
 }
 
 export interface SquadApiSummary {

@@ -35,10 +35,12 @@ import {
   HttpSquadClient,
   SquadApiError,
   type SquadApiNextFixture,
+  type SquadApiFormGameweek,
   type SquadApiPlayer,
   type SquadApiSummary,
   type SquadClient,
 } from './squad-api';
+import { toPlayerCardFormHistory } from './player-form';
 import {
   HttpTeamSelectionClient,
   TeamSelectionApiError,
@@ -101,6 +103,7 @@ interface PlayerView {
   availabilityNews: string | null;
   chanceOfPlaying: number | null;
   nextFixtures: SquadApiNextFixture[];
+  formHistory: SquadApiFormGameweek[];
   slot?: TeamSelectionSlot;
   slotOrder?: number;
   captain?: boolean;
@@ -143,6 +146,7 @@ interface PlayerApiResponse {
     is_home: boolean;
     kickoff_at?: string | null;
   }> | null;
+  form_history?: SquadApiFormGameweek[] | null;
 }
 
 const pitchPositionOrder = ['FWD', 'MID', 'DEF', 'GKP'];
@@ -232,6 +236,7 @@ function mapPlayer(player: PlayerApiResponse): PlayerView {
       is_home: fixture.is_home,
       kickoff_at: fixture.kickoff_at ?? null,
     })),
+    formHistory: player.form_history ?? [],
   };
 }
 
@@ -257,6 +262,7 @@ function mapTeamSelectionPlayer(player: TeamSelectionPlayer): PlayerView {
     availabilityNews: null,
     chanceOfPlaying: null,
     nextFixtures: [],
+    formHistory: [],
     slot: player.slot,
     slotOrder: player.slotOrder,
     captain: player.captain,
@@ -292,6 +298,7 @@ function mergeLineupPlayers(roster: PlayerView[], lineup: TeamSelectionPlayer[] 
       availabilityNews: existing?.availabilityNews ?? null,
       chanceOfPlaying: existing?.chanceOfPlaying ?? null,
       nextFixtures: existing?.nextFixtures ?? [],
+      formHistory: existing?.formHistory ?? [],
       slot: player.slot,
       slotOrder: player.slotOrder,
       captain: player.captain,
@@ -1591,6 +1598,7 @@ function toPlayerCardPlayer(player: PlayerView): PlayerCardPlayer {
       title: fixtureDifficultyTitle(fixture.difficulty),
     })),
     form: player.form,
+    formHistory: toPlayerCardFormHistory(player.formHistory),
     position: player.position,
     team: player.team,
     viceCaptain: player.viceCaptain,
@@ -1616,7 +1624,7 @@ function AvailabilityFlag({ inline = false, player }: { inline?: boolean; player
 }
 
 function Metric({ dots = false, label, placeholder = false, value }: { dots?: boolean; label: string; placeholder?: boolean; value: string }) {
-  return <div className={`squad-page__metric ${placeholder ? 'is-placeholder' : ''}`}><span>{label}</span><strong>{value}</strong>{dots ? <FormDots value={Number(value)} /> : null}{placeholder ? <small>Not in source</small> : null}</div>;
+  return <div className={`squad-page__metric ${placeholder ? 'is-placeholder' : ''}`}><span>{label}</span><strong>{value}</strong>{dots ? <FormDots /> : null}{placeholder ? <small>Not in source</small> : null}</div>;
 }
 
 function ChangeReview({ label, players }: { label: string; players: PlayerView[] }) {

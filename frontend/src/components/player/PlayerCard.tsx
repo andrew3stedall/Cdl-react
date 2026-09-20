@@ -1,4 +1,4 @@
-import { type HTMLAttributes } from 'react';
+import { type CSSProperties, type HTMLAttributes } from 'react';
 
 import { officialFplShirtUrl } from '../../fpl-shirt-assets';
 import './player-card.css';
@@ -14,11 +14,23 @@ export interface PlayerCardFixture {
   tone?: PlayerCardFixtureTone;
 }
 
+export interface PlayerCardFormFixture {
+  fixtureId?: string | number;
+  points: number | null;
+  minutes: number | null;
+}
+
+export interface PlayerCardFormGameweek {
+  gameweek: number;
+  fixtures: readonly PlayerCardFormFixture[];
+}
+
 export interface PlayerCardPlayer {
   displayName: string;
   team: string;
   position?: string | null;
   form?: number | null;
+  formHistory?: readonly PlayerCardFormGameweek[];
   fixtures?: readonly PlayerCardFixture[];
   captain?: boolean;
   viceCaptain?: boolean;
@@ -87,7 +99,7 @@ export function PlayerCard({
         showOpponent={showOpponent}
         showPositionMarker={showPositionMarker}
       />
-      {formPosition !== 'hidden' && !hasPointsPlaceholder ? <FormDots className="player-card__form" value={player.form} /> : null}
+      {formPosition !== 'hidden' && !hasPointsPlaceholder ? <FormDots className="player-card__form" history={player.formHistory} /> : null}
     </span>
   );
 }
@@ -187,12 +199,30 @@ export function TeamShirt({ className = '', large = false, team }: { className?:
   );
 }
 
-export function FormDots({ className = '', value }: { className?: string; value: number | null | undefined }) {
-  const active = value === null || value === undefined || Number.isNaN(value) ? 0 : Math.max(0, Math.min(5, Math.round(value / 2)));
-  const band = formBand(value ?? null);
+export function FormDots({ className = '', history }: { className?: string; history?: readonly PlayerCardFormGameweek[]; value?: number | null }) {
+  const slots = formSlots(history);
   return (
-    <span aria-hidden="true" className={`player-card__form-dots ${className} form-band-${band}`.trim()}>
-      {Array.from({ length: 5 }, (_, index) => <i className={index < active ? 'active' : ''} key={index} />)}
+    <span aria-hidden="true" className={`player-card__form-dots ${className}`.trim()} data-form-slot-count={slots.length}>
+      {slots.map((slot, index) => {
+        const fixtures = slot.fixtures.length > 1 ? slot.fixtures.slice(0, 2) : slot.fixtures;
+        const colours = fixtures.length > 0 ? fixtures.map(formColour) : ['empty' as const];
+        const split = colours.length > 1;
+        const style = split
+          ? {
+              '--form-first-colour': formColourCss(colours[0]),
+              '--form-second-colour': formColourCss(colours[1]),
+            } as CSSProperties
+          : undefined;
+        return (
+          <i
+            className={`player-card__form-dot ${split ? 'player-card__form-dot--split' : `player-card__form-dot--${colours[0] === 'empty' ? 'empty' : `colour-${colours[0]}`}`}`}
+            data-fixture-count={slot.fixtures.length}
+            data-gameweek={slot.gameweek ?? ''}
+            key={`${slot.gameweek ?? 'empty'}-${index}`}
+            style={style}
+          />
+        );
+      })}
     </span>
   );
 }
@@ -224,6 +254,30 @@ function fixtureClassName(fixture: PlayerCardFixture): string {
     rating === null ? '' : `player-card__opponent--fdr-${rating}`,
     fixture.tone ? `player-card__opponent--theme-${fixture.tone}` : '',
   ].filter(Boolean).join(' ');
+}
+
+function formSlots(history: readonly PlayerCardFormGameweek[] | undefined): Array<PlayerCardFormGameweek | { gameweek: null; fixtures: [] }> {
+  const recent = [...(history ?? [])]
+    .sort((left, right) => left.gameweek - right.gameweek)
+    .slice(-5);
+  return [
+    ...recent,
+    ...Array.from({ length: Math.max(0, 5 - recent.length) }, () => ({ gameweek: null, fixtures: [] as [] })),
+  ];
+}
+
+function formColour(fixture: PlayerCardFormFixture): 'empty' | '1' | '2' | '3' | '4' | '5' {
+  if (typeof fixture.minutes !== 'number' || !Number.isFinite(fixture.minutes) || fixture.minutes <= 0) return 'empty';
+  const points = typeof fixture.points === 'number' && Number.isFinite(fixture.points) ? fixture.points : 0;
+  if (points <= 0) return '1';
+  if (points <= 2) return '2';
+  if (points <= 4) return '3';
+  if (points <= 6) return '4';
+  return '5';
+}
+
+function formColourCss(colour: ReturnType<typeof formColour>): string {
+  return colour === 'empty' ? 'var(--player-form-empty)' : `var(--player-form-colour-${colour})`;
 }
 
 function normalizePosition(position: string): string {

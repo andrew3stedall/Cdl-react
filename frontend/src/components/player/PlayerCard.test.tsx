@@ -2,7 +2,7 @@ import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, test } from 'vitest';
 
-import { PlayerCard } from './PlayerCard';
+import { FormDots, PlayerCard } from './PlayerCard';
 
 const testGlobal = globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean };
 testGlobal.IS_REACT_ACT_ENVIRONMENT = true;
@@ -18,6 +18,54 @@ afterEach(() => {
 });
 
 describe('PlayerCard', () => {
+  test('renders the latest five gameweeks with score bands, grey non-appearances, and split double gameweeks', () => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    mountedRoots.push({ container, root });
+
+    act(() => {
+      root.render(
+        <FormDots
+          history={[
+            { gameweek: 1, fixtures: [{ fixtureId: 1, minutes: 90, points: 0 }] },
+            { gameweek: 2, fixtures: [{ fixtureId: 2, minutes: 90, points: 2 }] },
+            { gameweek: 3, fixtures: [{ fixtureId: 3, minutes: 90, points: 4 }] },
+            { gameweek: 4, fixtures: [{ fixtureId: 4, minutes: 90, points: 6 }] },
+            { gameweek: 5, fixtures: [{ fixtureId: 5, minutes: 0, points: 8 }, { fixtureId: 6, minutes: 90, points: 8 }] },
+          ]}
+        />,
+      );
+    });
+
+    const dots = [...container.querySelectorAll('.player-card__form-dot')];
+    expect(dots).toHaveLength(5);
+    expect(dots.map((dot) => dot.className)).toEqual([
+      'player-card__form-dot player-card__form-dot--colour-1',
+      'player-card__form-dot player-card__form-dot--colour-2',
+      'player-card__form-dot player-card__form-dot--colour-3',
+      'player-card__form-dot player-card__form-dot--colour-4',
+      'player-card__form-dot player-card__form-dot--split',
+    ]);
+    expect(dots[4]?.getAttribute('data-fixture-count')).toBe('2');
+    expect(dots[4]?.getAttribute('data-gameweek')).toBe('5');
+    expect(dots[4]?.getAttribute('style')).toContain('--form-first-colour: var(--player-form-empty)');
+    expect(dots[4]?.getAttribute('style')).toContain('--form-second-colour: var(--player-form-colour-5)');
+  });
+
+  test('keeps all five slots grey when history is unavailable', () => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    mountedRoots.push({ container, root });
+
+    act(() => {
+      root.render(<FormDots />);
+    });
+
+    expect(container.querySelectorAll('.player-card__form-dot--empty')).toHaveLength(5);
+  });
+
   test('shares the same player token while moving form beside or below it', () => {
     const container = document.createElement('div');
     document.body.appendChild(container);

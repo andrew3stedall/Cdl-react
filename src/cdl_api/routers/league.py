@@ -133,7 +133,14 @@ def fixture_squads(
     if fixture.status != "pending" and historical_squad_loader is not None:
         historical_squads = historical_squad_loader(fixture)
         if historical_squads:
-            return _attach_fixture_contexts(historical_squads, fixture_contexts)
+            history_by_player = _form_history_for_players(
+                squad_repository,
+                [player.id for squad in historical_squads for player in squad.players],
+            )
+            return _attach_fixture_contexts(
+                _attach_form_history(historical_squads, history_by_player),
+                fixture_contexts,
+            )
         # Once a gameweek has started, never fall back to today's mutable squad
         # or season totals. Missing locked data should be explicit rather than wrong.
         return []
@@ -215,6 +222,7 @@ def fixture_squads(
                 points=player.points,
                 points_multiplier=2 if selection and selection.is_captain else 1,
                 form=player.form,
+                form_history=player.form_history,
                 slot=slot,
                 is_captain=bool(selection and selection.is_captain),
                 is_vice_captain=bool(selection and selection.is_vice_captain),
@@ -251,6 +259,39 @@ def _fixture_contexts_for_gameweek(
     if not callable(loader):
         return {}
     return loader(gameweek_number)
+
+
+def _form_history_for_players(
+    squad_repository: SquadRepository,
+    player_ids: list[str],
+) -> dict[str, list[object]]:
+    loader = getattr(squad_repository, "form_history_for_players", None)
+    if not callable(loader):
+        return {}
+    return loader(player_ids)
+
+
+def _attach_form_history(
+    squads: list[FixtureSquad],
+    history_by_player: dict[str, list[object]],
+) -> list[FixtureSquad]:
+    if not history_by_player:
+        return squads
+
+    def decorate(player: FixtureSquadPlayer) -> FixtureSquadPlayer:
+        return player.model_copy(update={"form_history": history_by_player.get(player.id, [])})
+
+    return [
+        squad.model_copy(
+            update={
+                "players": [decorate(player) for player in squad.players],
+                "starters": [decorate(player) for player in squad.starters],
+                "bench": [decorate(player) for player in squad.bench],
+                "reserves": [decorate(player) for player in squad.reserves],
+            }
+        )
+        for squad in squads
+    ]
 
 
 def _attach_fixture_contexts(

@@ -13,6 +13,8 @@ import {
 import { Button } from './components/ui/button';
 import { PlayerCard, type PlayerCardPlayer } from './components/player/PlayerCard';
 import type { ThemePreset } from './contracts';
+import { toPlayerCardFormHistory } from './player-form';
+import type { SquadApiFormGameweek } from './squad-api';
 import './squad-management.css';
 
 interface SquadManagementPageProps {
@@ -38,6 +40,7 @@ interface PlayerView {
   availabilityStatus?: string | null;
   availabilityNews: string;
   chanceOfPlayingNextRound?: number | null;
+  formHistory: SquadApiFormGameweek[];
 }
 
 interface PlayerApiResponse {
@@ -55,6 +58,7 @@ interface PlayerApiResponse {
   availability_status?: string | null;
   availability_news?: string;
   chance_of_playing_next_round?: number | null;
+  form_history?: SquadApiFormGameweek[] | null;
 }
 
 interface ScoutingApiResponse {
@@ -125,6 +129,7 @@ function mapPlayer(player: PlayerApiResponse): PlayerView {
     availabilityStatus: player.availability_status,
     availabilityNews: player.availability_news ?? '',
     chanceOfPlayingNextRound: player.chance_of_playing_next_round,
+    formHistory: player.form_history ?? [],
   };
 }
 
@@ -581,11 +586,12 @@ function PlayerTable({
   );
 }
 
-function toPlayerCardPlayer(player: { displayName: string; team: string; position: string; form: number | null; chanceOfPlayingNextRound?: number | null }): PlayerCardPlayer {
+function toPlayerCardPlayer(player: { displayName: string; team: string; position: string; form: number | null; chanceOfPlayingNextRound?: number | null; formHistory?: SquadApiFormGameweek[] }): PlayerCardPlayer {
   return {
     availabilityChance: player.chanceOfPlayingNextRound,
     displayName: player.displayName,
     form: player.form,
+    formHistory: toPlayerCardFormHistory(player.formHistory),
     position: player.position,
     team: player.team,
   };

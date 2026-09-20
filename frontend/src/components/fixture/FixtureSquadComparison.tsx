@@ -6,6 +6,7 @@ import type { AttackDirection } from '../../contracts';
 import { fixtureDifficultyTitle } from '../../SquadPage';
 import type { FixturePlayerFixture, FixtureSquad, FixtureSquadPlayer } from '../../league-api';
 import { managerNicknameForTeam } from '../../manager-nicknames';
+import { toPlayerCardFormHistory } from '../../player-form';
 import './fixture-squad-comparison.css';
 
 export interface FixtureSquadComparisonProps {
@@ -566,6 +567,7 @@ function toFixtureCardPlayer(player: FixtureSquadPlayer, shirtTeam?: string, ind
     displayName: player.displayName,
     fixtures: fixtureCardFixtures(player),
     form: indicatorValue,
+    formHistory: toPlayerCardFormHistory(player.formHistory),
     position: fixturePosition(player.position),
     team: shirtTeam ?? player.club?.shortName ?? player.club?.name ?? 'unknown',
     viceCaptain: player.isViceCaptain,

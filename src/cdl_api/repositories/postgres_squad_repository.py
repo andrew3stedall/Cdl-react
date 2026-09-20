@@ -1,6 +1,6 @@
 """PostgreSQL-backed squad interest and trade repository."""
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from datetime import UTC, datetime
 from uuid import uuid4
 
@@ -13,6 +13,8 @@ from cdl_api.contracts.domain import GameweekSummary, TeamSummary
 from cdl_api.contracts.squad import (
     InterestResponse,
     PlayerDetail,
+    PlayerFormFixture,
+    PlayerFormGameweek,
     PlayerNextFixture,
     PlayerOwnershipStatus,
     ScoutingFilters,
@@ -21,6 +23,7 @@ from cdl_api.contracts.squad import (
     TradeStatus,
 )
 from cdl_api.repositories.postgres_fpl_data import (
+    external_payload_cache_table,
     fpl_fixtures_table,
     fpl_gameweeks_table,
     fpl_player_current_metrics_table,
@@ -53,6 +56,95 @@ from cdl_api.staging_draft_seed import (
 DEMO_SEASON_ID = SEASON_ID
 DEMO_MANAGER_ID = PRIMARY_MANAGER_ID
 DEMO_RIVAL_MANAGER_ID = "manager-2"
+
+
+def _merge_summary_form_history(
+    history: dict[str, dict[int, dict[str, PlayerFormFixture]]],
+    player_id: str,
+    payload: object,
+) -> None:
+    if player_id not in history or not isinstance(payload, Mapping):
+        return
+    rows = payload.get("history")
+    if not isinstance(rows, list):
+        return
+    for row in rows:
+        if not isinstance(row, Mapping):
+            continue
+        gameweek = _safe_int(row.get("round"))
+        fixture_id = row.get("fixture")
+        if gameweek is None or fixture_id is None:
+            continue
+        history[player_id].setdefault(gameweek, {})[str(fixture_id)] = PlayerFormFixture(
+            fixture_id=str(fixture_id),
+            total_points=_safe_int(row.get("total_points")) or 0,
+            minutes=_safe_int(row.get("minutes")) or 0,
+        )
+
+
+def _merge_live_form_history(
+    history: dict[str, dict[int, dict[str, PlayerFormFixture]]],
+    requested: set[str],
+    gameweek: int,
+    payload: object,
+) -> None:
+    if not isinstance(payload, Mapping) or not isinstance(payload.get("elements"), list):
+        return
+    for element in payload["elements"]:
+        if not isinstance(element, Mapping) or element.get("id") is None:
+            continue
+        player_id = f"fpl-{element['id']}"
+        if player_id not in requested:
+            continue
+        explanations = element.get("explain")
+        if isinstance(explanations, list) and explanations:
+            for explanation in explanations:
+                if not isinstance(explanation, Mapping) or explanation.get("fixture") is None:
+                    continue
+                stats = explanation.get("stats")
+                if not isinstance(stats, list):
+                    continue
+                points = sum(
+                    _safe_int(stat.get("points")) or 0
+                    for stat in stats
+                    if isinstance(stat, Mapping)
+                )
+                minutes = next(
+                    (
+                        _safe_int(stat.get("value")) or 0
+                        for stat in stats
+                        if isinstance(stat, Mapping) and stat.get("identifier") == "minutes"
+                    ),
+                    0,
+                )
+                fixture_id = str(explanation["fixture"])
+                history[player_id].setdefault(gameweek, {})[fixture_id] = PlayerFormFixture(
+                    fixture_id=fixture_id,
+                    total_points=points,
+                    minutes=minutes,
+                )
+            continue
+        stats = element.get("stats")
+        if isinstance(stats, Mapping):
+            fixture_id = f"event-live:{gameweek}:{element['id']}"
+            history[player_id].setdefault(gameweek, {})[fixture_id] = PlayerFormFixture(
+                fixture_id=fixture_id,
+                total_points=_safe_int(stats.get("total_points")) or 0,
+                minutes=_safe_int(stats.get("minutes")) or 0,
+            )
+
+
+def _gameweek_from_resource(resource: str) -> int | None:
+    if not resource.startswith("event-live:"):
+        return None
+    return _safe_int(resource.removeprefix("event-live:"))
+
+
+def _safe_int(value: object) -> int | None:
+    try:
+        return int(value) if value is not None and value != "" else None
+    except (TypeError, ValueError):
+        return None
 
 
 def _active_gameweek_player_values_subquery() -> Subquery:
@@ -196,11 +288,73 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
                 ).mappings()
             )
             next_fixtures = self._next_fixtures_by_team(session)
+            form_history_by_player = self._form_history_by_players(
+                session,
+                [str(row["id"]) for row in rows],
+            )
         self._players_cache = [
-            self._player_from_database_row(row, next_fixtures.get(row["epl_team_id"]))
+            self._player_from_database_row(
+                row,
+                next_fixtures.get(row["epl_team_id"]),
+                form_history_by_player.get(str(row["id"]), []),
+            )
             for row in rows
         ]
         return self._players_cache
+
+    def form_history_for_players(
+        self,
+        player_ids: list[str],
+    ) -> dict[str, list[PlayerFormGameweek]]:
+        if not player_ids:
+            return {}
+        with self._session_factory() as session:
+            return self._form_history_by_players(session, player_ids)
+
+    @staticmethod
+    def _form_history_by_players(
+        session: Session,
+        player_ids: list[str],
+    ) -> dict[str, list[PlayerFormGameweek]]:
+        requested = {str(player_id) for player_id in player_ids}
+        history: dict[str, dict[int, dict[str, PlayerFormFixture]]] = {
+            player_id: {} for player_id in requested
+        }
+        if not requested:
+            return {}
+
+        resources = [f"element-summary:{player_id}" for player_id in requested]
+        try:
+            summary_rows = session.execute(
+                select(
+                    external_payload_cache_table.c.resource,
+                    external_payload_cache_table.c.payload_json,
+                ).where(external_payload_cache_table.c.resource.in_(resources))
+            ).mappings()
+            for row in summary_rows:
+                player_id = str(row["resource"])[len("element-summary:") :]
+                _merge_summary_form_history(history, player_id, row["payload_json"])
+
+            live_rows = session.execute(
+                select(
+                    external_payload_cache_table.c.resource,
+                    external_payload_cache_table.c.payload_json,
+                ).where(external_payload_cache_table.c.resource.like("event-live:%"))
+            ).mappings()
+            for row in live_rows:
+                gameweek = _gameweek_from_resource(str(row["resource"]))
+                if gameweek is not None:
+                    _merge_live_form_history(history, requested, gameweek, row["payload_json"])
+        except SQLAlchemyError:
+            return {player_id: [] for player_id in requested}
+
+        return {
+            player_id: [
+                PlayerFormGameweek(gameweek=gameweek, fixtures=list(fixtures.values()))
+                for gameweek, fixtures in sorted(gameweeks.items())[-5:]
+            ]
+            for player_id, gameweeks in history.items()
+        }
 
     def _invalidate_players_cache(self) -> None:
         self._players_cache = None
@@ -374,6 +528,7 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
     def _player_from_database_row(
         row: object,
         next_fixtures: list[PlayerNextFixture] | None = None,
+        form_history: list[PlayerFormGameweek] | None = None,
     ) -> PlayerDetail:
         upcoming_fixtures = next_fixtures or []
         epl_team = TeamSummary(
@@ -413,6 +568,7 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
             chance_of_playing_next_round=row["chance_of_playing_next_round"],
             next_fixture=upcoming_fixtures[0] if upcoming_fixtures else None,
             next_fixtures=upcoming_fixtures,
+            form_history=form_history or [],
         )
 
     def list_squad_players(self) -> list[PlayerDetail]:

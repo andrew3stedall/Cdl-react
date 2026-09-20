@@ -38,6 +38,17 @@ class PlayerNextFixture(BaseModel):
     kickoff_at: datetime | None = None
 
 
+class PlayerFormFixture(BaseModel):
+    fixture_id: str
+    total_points: int = 0
+    minutes: int = 0
+
+
+class PlayerFormGameweek(BaseModel):
+    gameweek: int
+    fixtures: list[PlayerFormFixture] = Field(default_factory=list)
+
+
 class PlayerDetail(PlayerSummary):
     epl_team: TeamSummary
     draft_team: TeamSummary | None = None
@@ -57,6 +68,7 @@ class PlayerDetail(PlayerSummary):
     chance_of_playing_next_round: int | None = None
     next_fixture: PlayerNextFixture | None = None
     next_fixtures: list[PlayerNextFixture] = Field(default_factory=list)
+    form_history: list[PlayerFormGameweek] = Field(default_factory=list)
 
 
 class ScoutingFilters(BaseModel):

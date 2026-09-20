@@ -1,3 +1,5 @@
+import type { SquadApiFormGameweek } from './squad-api';
+
 export interface LeagueTeam {
   id: string;
   name: string;
@@ -62,6 +64,7 @@ export interface FixtureSquadPlayer {
   hasStartedFixture?: boolean | null;
   allFixturesFinished?: boolean | null;
   form: number;
+  formHistory?: SquadApiFormGameweek[];
   slot: 'starter' | 'bench' | 'reserve';
   isCaptain?: boolean;
   isViceCaptain?: boolean;
@@ -333,6 +336,7 @@ interface ApiFixtureSquadPlayer {
   has_started_fixture?: boolean | null;
   all_fixtures_finished?: boolean | null;
   form: number;
+  form_history?: SquadApiFormGameweek[];
   slot: 'starter' | 'bench' | 'reserve';
   is_captain?: boolean;
   is_vice_captain?: boolean;
@@ -381,6 +385,7 @@ function mapFixtureSquadPlayer(player: ApiFixtureSquadPlayer): FixtureSquadPlaye
     hasStartedFixture: player.has_started_fixture ?? null,
     allFixturesFinished: player.all_fixtures_finished ?? null,
     form: player.form,
+    formHistory: player.form_history ?? [],
     slot: player.slot,
     isCaptain: player.is_captain === true,
     isViceCaptain: player.is_vice_captain === true,

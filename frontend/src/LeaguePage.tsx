@@ -393,6 +393,7 @@ function toProfilePlayer(player: FixtureSquadPlayer): SquadApiPlayer {
     status: 'available',
     points: player.points,
     form: player.form,
+    form_history: player.formHistory ?? [],
     value: 0,
     next_fixture: nextFixture,
     next_fixtures: nextFixture ? [nextFixture] : [],

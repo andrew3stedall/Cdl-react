@@ -33,6 +33,7 @@ import {
   type SubstitutionOption,
 } from './SquadPage';
 import { availabilityChance, getAvailabilityIssue, type AvailabilityIssue } from './player-availability';
+import { formHistoryFromRows, toPlayerCardFormHistory } from './player-form';
 import {
   HttpSquadClient,
   type SquadApiHistoryResponse,
@@ -376,7 +377,7 @@ export function PlayerProfilePage({
           className="player-profile__header-player-card"
           formPosition="hidden"
           layout="token"
-          player={toPlayerCardPlayer(player, nextFixtures, captaincy)}
+          player={toPlayerCardPlayer(player, nextFixtures, captaincy, history ? toPlayerCardFormHistory(formHistoryFromRows(history.history)) : undefined)}
           size="md"
         />
         <div className="player-profile__header-actions">
@@ -737,7 +738,7 @@ function toTeamSelectionCardPlayer(player: TeamSelectionPlayer): PlayerCardPlaye
   };
 }
 
-function toPlayerCardPlayer(player: SquadApiPlayer, selectedFixtures?: ProfileNextFixture[], captaincy: Captaincy = null): PlayerCardPlayer {
+function toPlayerCardPlayer(player: SquadApiPlayer, selectedFixtures?: ProfileNextFixture[], captaincy: Captaincy = null, formHistory = toPlayerCardFormHistory(player.form_history)): PlayerCardPlayer {
   const rawFixtures: Array<SquadApiNextFixture | SquadApiUpcomingFixture> = player.next_fixtures?.length
     ? player.next_fixtures
     : player.next_fixture
@@ -752,6 +753,7 @@ function toPlayerCardPlayer(player: SquadApiPlayer, selectedFixtures?: ProfileNe
       title: fixtureDifficultyTitle(fixture.difficulty),
     })),
     form: player.form,
+    formHistory,
     position: player.position,
     team: player.epl_team.short_name ?? player.epl_team.name,
     captain: captaincy === 'captain',

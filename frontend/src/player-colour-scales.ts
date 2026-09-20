@@ -35,6 +35,8 @@ export interface MetricColourScale {
   dark: MetricPalette;
 }
 
+const standardMetricHeatmapPalette: MetricPalette = ['#00FF00', '#00FFFF', '#008DFF', '#FF0000', '#500000'];
+
 const positionColourScaleRows: readonly PositionColourScale[] = [
   {
     name: 'Classic',
@@ -60,9 +62,9 @@ const metricColourScaleRows: readonly MetricColourScale[] = [
   {
     name: 'Blue',
     label: 'Blue',
-    description: 'Blue through teal, yellow, orange, and red.',
-    light: ['#2563EB', '#0EA5A4', '#A3C635', '#F59E0B', '#DC2626'],
-    dark: ['#60A5FA', '#2DD4BF', '#BEF264', '#FBBF24', '#F87171'],
+    description: 'Green through cyan and blue, then red and deep red.',
+    light: standardMetricHeatmapPalette,
+    dark: standardMetricHeatmapPalette,
   },
   {
     name: 'Teal',

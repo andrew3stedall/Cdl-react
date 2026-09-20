@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Made the standard player metric heatmap use the reference five-step palette:
+  green, cyan, electric blue, red, and deep red. The same colours now apply in
+  light and dark modes so form dots and other metric surfaces remain consistent.
+
 - Preserved the exact theme-template accent values in dark mode, including
   Market ownership fills, and made Dark Teal the default appearance.
 

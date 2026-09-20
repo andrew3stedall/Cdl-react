@@ -2,11 +2,11 @@
 
 from collections.abc import Callable
 
-from sqlalchemy import Boolean, Column, MetaData, String, Table, select
+from sqlalchemy import JSON, Boolean, Column, MetaData, String, Table, select
 from sqlalchemy.dialects.postgresql import insert as postgres_insert
 from sqlalchemy.orm import Session
 
-from cdl_api.contracts.theme import UserPreferences
+from cdl_api.contracts.theme import ThemeColourVariants, UserPreferences
 
 metadata = MetaData()
 
@@ -41,6 +41,7 @@ user_preferences_table = Table(
     Column("secondary_theme_colour", String(7), nullable=False),
     Column("tertiary_theme_colour", String(7), nullable=False),
     Column("quaternary_theme_colour", String(7), nullable=False),
+    Column("theme_colour_variants", JSON, nullable=False),
     Column("fdr_custom_min", String(7), nullable=False),
     Column("fdr_custom_second", String(7), nullable=False),
     Column("fdr_custom_mid", String(7), nullable=False),
@@ -84,6 +85,7 @@ class PostgreSQLUserPreferenceRepository:
                     user_preferences_table.c.secondary_theme_colour,
                     user_preferences_table.c.tertiary_theme_colour,
                     user_preferences_table.c.quaternary_theme_colour,
+                    user_preferences_table.c.theme_colour_variants,
                     user_preferences_table.c.fdr_custom_min,
                     user_preferences_table.c.fdr_custom_second,
                     user_preferences_table.c.fdr_custom_mid,
@@ -123,6 +125,7 @@ class PostgreSQLUserPreferenceRepository:
             secondary_theme_colour=preference_row.secondary_theme_colour,
             tertiary_theme_colour=preference_row.tertiary_theme_colour,
             quaternary_theme_colour=preference_row.quaternary_theme_colour,
+            theme_colour_variants=ThemeColourVariants.model_validate(preference_row.theme_colour_variants),
             fdr_custom_min=preference_row.fdr_custom_min,
             fdr_custom_second=preference_row.fdr_custom_second,
             fdr_custom_mid=preference_row.fdr_custom_mid,
@@ -160,6 +163,7 @@ class PostgreSQLUserPreferenceRepository:
             secondary_theme_colour=preferences.secondary_theme_colour,
             tertiary_theme_colour=preferences.tertiary_theme_colour,
             quaternary_theme_colour=preferences.quaternary_theme_colour,
+            theme_colour_variants=preferences.theme_colour_variants.model_dump(mode="json"),
             fdr_custom_min=preferences.fdr_custom_min,
             fdr_custom_second=preferences.fdr_custom_second,
             fdr_custom_mid=preferences.fdr_custom_mid,
@@ -196,6 +200,7 @@ class PostgreSQLUserPreferenceRepository:
                 "secondary_theme_colour": preferences.secondary_theme_colour,
                 "tertiary_theme_colour": preferences.tertiary_theme_colour,
                 "quaternary_theme_colour": preferences.quaternary_theme_colour,
+                "theme_colour_variants": preferences.theme_colour_variants.model_dump(mode="json"),
                 "fdr_custom_min": preferences.fdr_custom_min,
                 "fdr_custom_second": preferences.fdr_custom_second,
                 "fdr_custom_mid": preferences.fdr_custom_mid,

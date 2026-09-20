@@ -8,6 +8,7 @@ import type {
   PositionPalette,
 } from './player-colour-scales';
 import type { ResultColourPalette } from './result-colours';
+import type { ThemeColourVariants } from './theme-colours';
 
 export interface ApiErrorResponse {
   code: 'validation_error' | 'unauthenticated' | 'forbidden' | 'not_found' | 'conflict' | 'server_error';
@@ -96,6 +97,7 @@ export interface UserPreferences {
   secondaryThemeColour?: string;
   tertiaryThemeColour?: string;
   quaternaryThemeColour?: string;
+  themeColourVariants?: ThemeColourVariants;
   fdrCustomAnchors?: {
     min: string;
     second: string;

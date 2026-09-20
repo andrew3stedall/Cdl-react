@@ -26,16 +26,18 @@ import {
   type PlayerPosition,
 } from './player-colour-scales';
 import { defaultResultColours, resolveResultColours } from './result-colours';
-import { resolveThemePreset } from './theme-presets';
+import { getThemeMode, resolveThemePreset } from './theme-presets';
 import { getStoredThemePreset, setThemePresetCookie } from './theme-cookie';
 import {
   defaultSecondaryThemeColour,
   defaultTertiaryThemeColour,
   defaultQuaternaryThemeColour,
   defaultThemeColour,
-  getThemeColourForMode,
+  defaultThemeColourVariants,
   resolveThemeAccentColours,
-  resolveThemeColour,
+  resolveThemeColourVariants,
+  type ThemeColourVariants,
+  type ThemeColourVariantsInput,
 } from './theme-colours';
 
 interface ApiUserPreferences {
@@ -66,6 +68,7 @@ interface ApiUserPreferences {
   secondary_theme_colour?: string;
   tertiary_theme_colour?: string;
   quaternary_theme_colour?: string;
+  theme_colour_variants?: ThemeColourVariants;
   fdr_custom_min?: string;
   fdr_custom_second?: string;
   fdr_custom_mid?: string;
@@ -136,15 +139,25 @@ function toApiFdrCustomPalette(palette: FdrCustomPaletteDraft): Omit<ApiFdrCusto
 }
 
 function fromApiPreferences(preferences: ApiUserPreferences): UserPreferences {
-  const themeColours = resolveThemeAccentColours({
-    primary: preferences.primary_theme_colour ?? preferences.light_theme_colour ?? preferences.dark_theme_colour,
-    secondary: preferences.secondary_theme_colour,
-    tertiary: preferences.tertiary_theme_colour,
-    quaternary: preferences.quaternary_theme_colour,
+  const themeColourVariants = resolveThemeColourVariants(preferences.theme_colour_variants ?? {
+    light: {
+      primary: preferences.light_theme_colour ?? preferences.primary_theme_colour,
+      secondary: preferences.secondary_theme_colour,
+      tertiary: preferences.tertiary_theme_colour,
+      quaternary: preferences.quaternary_theme_colour,
+    },
+    dark: {
+      primary: preferences.dark_theme_colour ?? preferences.primary_theme_colour,
+      secondary: preferences.secondary_theme_colour,
+      tertiary: preferences.tertiary_theme_colour,
+      quaternary: preferences.quaternary_theme_colour,
+    },
   });
+  const resolvedPreset = resolveThemePreset(preferences.theme_preset);
+  const themeColours = themeColourVariants[getThemeMode(resolvedPreset)];
 
   return {
-    themePreset: resolveThemePreset(preferences.theme_preset).name,
+    themePreset: resolvedPreset.name,
     attackDirection: resolveAttackDirection(preferences.attack_direction),
     fdrScale: resolveFdrScaleName(preferences.fdr_scale),
     fdrScaleReversed: preferences.fdr_scale_reversed ?? defaultFdrScaleReversed,
@@ -171,12 +184,13 @@ function fromApiPreferences(preferences: ApiUserPreferences): UserPreferences {
       draw: preferences.result_draw_colour,
       loss: preferences.result_loss_colour,
     }),
-    lightThemeColour: themeColours.primary,
-    darkThemeColour: resolveThemeColour(themeColours.primary, 'dark'),
+    lightThemeColour: themeColourVariants.light.primary,
+    darkThemeColour: themeColourVariants.dark.primary,
     primaryThemeColour: themeColours.primary,
     secondaryThemeColour: themeColours.secondary,
     tertiaryThemeColour: themeColours.tertiary,
     quaternaryThemeColour: themeColours.quaternary,
+    themeColourVariants,
     fdrCustomAnchors: resolveFdrCustomAnchors({
       min: preferences.fdr_custom_min,
       second: preferences.fdr_custom_second,
@@ -189,12 +203,21 @@ function fromApiPreferences(preferences: ApiUserPreferences): UserPreferences {
 
 function toApiPreferences(preferences: UserPreferences): ApiUserPreferences {
   const resultColours = resolveResultColours(preferences.resultColours);
-  const themeColours = resolveThemeAccentColours({
-    primary: preferences.primaryThemeColour ?? preferences.lightThemeColour,
-    secondary: preferences.secondaryThemeColour,
-    tertiary: preferences.tertiaryThemeColour,
-    quaternary: preferences.quaternaryThemeColour,
+  const themeColourVariants = resolveThemeColourVariants(preferences.themeColourVariants ?? {
+    light: {
+      primary: preferences.lightThemeColour ?? preferences.primaryThemeColour,
+      secondary: preferences.secondaryThemeColour,
+      tertiary: preferences.tertiaryThemeColour,
+      quaternary: preferences.quaternaryThemeColour,
+    },
+    dark: {
+      primary: preferences.darkThemeColour ?? preferences.primaryThemeColour,
+      secondary: preferences.secondaryThemeColour,
+      tertiary: preferences.tertiaryThemeColour,
+      quaternary: preferences.quaternaryThemeColour,
+    },
   });
+  const themeColours = themeColourVariants[getThemeMode(resolveThemePreset(preferences.themePreset))];
 
   return {
     theme_preset: preferences.themePreset,
@@ -218,18 +241,34 @@ function toApiPreferences(preferences: UserPreferences): ApiUserPreferences {
     result_win_colour: resultColours.win,
     result_draw_colour: resultColours.draw,
     result_loss_colour: resultColours.loss,
-    light_theme_colour: themeColours.primary,
-    dark_theme_colour: getThemeColourForMode(themeColours.primary, 'dark'),
+    light_theme_colour: themeColourVariants.light.primary,
+    dark_theme_colour: themeColourVariants.dark.primary,
     primary_theme_colour: themeColours.primary,
     secondary_theme_colour: themeColours.secondary,
     tertiary_theme_colour: themeColours.tertiary,
     quaternary_theme_colour: themeColours.quaternary,
+    theme_colour_variants: themeColourVariants,
     fdr_custom_min: preferences.fdrCustomAnchors?.min ?? defaultFdrCustomAnchors.min,
     fdr_custom_second: preferences.fdrCustomAnchors?.second ?? defaultFdrCustomAnchors.second,
     fdr_custom_mid: preferences.fdrCustomAnchors?.mid ?? defaultFdrCustomAnchors.mid,
     fdr_custom_fourth: preferences.fdrCustomAnchors?.fourth ?? defaultFdrCustomAnchors.fourth,
     fdr_custom_max: preferences.fdrCustomAnchors?.max ?? defaultFdrCustomAnchors.max,
   };
+}
+
+function readStoredThemeColourVariants(
+  value: string | null,
+  fallback: ThemeColourVariantsInput,
+): ThemeColourVariants {
+  if (value) {
+    try {
+      return resolveThemeColourVariants(JSON.parse(value) as ThemeColourVariantsInput);
+    } catch {
+      // Fall through to the legacy values when a previous client stored an
+      // incomplete or malformed palette.
+    }
+  }
+  return resolveThemeColourVariants(fallback);
 }
 
 function resolveFdrDisplayMode(value: string | undefined): FdrDisplayMode {
@@ -354,6 +393,7 @@ export class LocalStoragePreferenceClient implements PreferenceClient {
   private readonly secondaryThemeColourStorageKey = 'cdl-secondary-theme-colour';
   private readonly tertiaryThemeColourStorageKey = 'cdl-tertiary-theme-colour';
   private readonly quaternaryThemeColourStorageKey = 'cdl-quaternary-theme-colour';
+  private readonly themeColourVariantsStorageKey = 'cdl-theme-colour-variants';
   private readonly fdrCustomMinStorageKey = 'cdl-fdr-custom-min';
   private readonly fdrCustomSecondStorageKey = 'cdl-fdr-custom-second';
   private readonly fdrCustomMidStorageKey = 'cdl-fdr-custom-mid';
@@ -364,7 +404,7 @@ export class LocalStoragePreferenceClient implements PreferenceClient {
 
   async getPreferences(): Promise<UserPreferences> {
     const storedPreset = getStoredThemePreset();
-    const themeColours = resolveThemeAccentColours({
+    const legacyThemeColours = resolveThemeAccentColours({
       primary: localStorage.getItem(this.primaryThemeColourStorageKey)
         ?? localStorage.getItem(this.lightThemeColourStorageKey)
         ?? defaultThemeColour,
@@ -372,6 +412,11 @@ export class LocalStoragePreferenceClient implements PreferenceClient {
       tertiary: localStorage.getItem(this.tertiaryThemeColourStorageKey) ?? defaultTertiaryThemeColour,
       quaternary: localStorage.getItem(this.quaternaryThemeColourStorageKey) ?? defaultQuaternaryThemeColour,
     });
+    const themeColourVariants = readStoredThemeColourVariants(
+      localStorage.getItem(this.themeColourVariantsStorageKey),
+      { dark: legacyThemeColours },
+    );
+    const themeColours = themeColourVariants[getThemeMode(resolveThemePreset(storedPreset))];
 
     return {
       themePreset: resolveThemePreset(storedPreset).name,
@@ -394,12 +439,13 @@ export class LocalStoragePreferenceClient implements PreferenceClient {
         draw: localStorage.getItem(this.resultDrawColourStorageKey) ?? undefined,
         loss: localStorage.getItem(this.resultLossColourStorageKey) ?? undefined,
       }),
-      lightThemeColour: themeColours.primary,
-      darkThemeColour: resolveThemeColour(themeColours.primary, 'dark'),
+      lightThemeColour: themeColourVariants.light.primary,
+      darkThemeColour: themeColourVariants.dark.primary,
       primaryThemeColour: themeColours.primary,
       secondaryThemeColour: themeColours.secondary,
       tertiaryThemeColour: themeColours.tertiary,
       quaternaryThemeColour: themeColours.quaternary,
+      themeColourVariants,
       fdrCustomAnchors: resolveFdrCustomAnchors({
         min: localStorage.getItem(this.fdrCustomMinStorageKey) ?? undefined,
         second: localStorage.getItem(this.fdrCustomSecondStorageKey) ?? undefined,
@@ -427,18 +473,28 @@ export class LocalStoragePreferenceClient implements PreferenceClient {
     localStorage.setItem(this.resultWinColourStorageKey, resultColours.win ?? defaultResultColours.win);
     localStorage.setItem(this.resultDrawColourStorageKey, resultColours.draw ?? defaultResultColours.draw);
     localStorage.setItem(this.resultLossColourStorageKey, resultColours.loss ?? defaultResultColours.loss);
-    const themeColours = resolveThemeAccentColours({
-      primary: preferences.primaryThemeColour ?? preferences.lightThemeColour ?? defaultThemeColour,
-      secondary: preferences.secondaryThemeColour ?? defaultSecondaryThemeColour,
-      tertiary: preferences.tertiaryThemeColour ?? defaultTertiaryThemeColour,
-      quaternary: preferences.quaternaryThemeColour ?? defaultQuaternaryThemeColour,
+    const themeColourVariants = resolveThemeColourVariants(preferences.themeColourVariants ?? {
+      light: {
+        primary: preferences.lightThemeColour ?? preferences.primaryThemeColour ?? defaultThemeColourVariants.light.primary,
+        secondary: preferences.secondaryThemeColour ?? defaultThemeColourVariants.light.secondary,
+        tertiary: preferences.tertiaryThemeColour ?? defaultThemeColourVariants.light.tertiary,
+        quaternary: preferences.quaternaryThemeColour ?? defaultThemeColourVariants.light.quaternary,
+      },
+      dark: {
+        primary: preferences.darkThemeColour ?? preferences.primaryThemeColour ?? defaultThemeColourVariants.dark.primary,
+        secondary: preferences.secondaryThemeColour ?? defaultSecondaryThemeColour,
+        tertiary: preferences.tertiaryThemeColour ?? defaultTertiaryThemeColour,
+        quaternary: preferences.quaternaryThemeColour ?? defaultQuaternaryThemeColour,
+      },
     });
+    const themeColours = themeColourVariants[getThemeMode(resolveThemePreset(preferences.themePreset))];
+    localStorage.setItem(this.themeColourVariantsStorageKey, JSON.stringify(themeColourVariants));
     localStorage.setItem(this.primaryThemeColourStorageKey, themeColours.primary);
     localStorage.setItem(this.secondaryThemeColourStorageKey, themeColours.secondary);
     localStorage.setItem(this.tertiaryThemeColourStorageKey, themeColours.tertiary);
     localStorage.setItem(this.quaternaryThemeColourStorageKey, themeColours.quaternary);
-    localStorage.setItem(this.lightThemeColourStorageKey, themeColours.primary);
-    localStorage.setItem(this.darkThemeColourStorageKey, getThemeColourForMode(themeColours.primary, 'dark'));
+    localStorage.setItem(this.lightThemeColourStorageKey, themeColourVariants.light.primary);
+    localStorage.setItem(this.darkThemeColourStorageKey, themeColourVariants.dark.primary);
     localStorage.setItem(this.fdrCustomMinStorageKey, preferences.fdrCustomAnchors?.min ?? defaultFdrCustomAnchors.min);
     localStorage.setItem(this.fdrCustomSecondStorageKey, preferences.fdrCustomAnchors?.second ?? defaultFdrCustomAnchors.second);
     localStorage.setItem(this.fdrCustomMidStorageKey, preferences.fdrCustomAnchors?.mid ?? defaultFdrCustomAnchors.mid);

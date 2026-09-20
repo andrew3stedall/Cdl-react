@@ -1,6 +1,7 @@
 import { type CSSProperties, type HTMLAttributes } from 'react';
 
 import { officialFplShirtUrl } from '../../fpl-shirt-assets';
+import { playerFormColour } from '../../player-form-colours';
 import './player-card.css';
 import './player-card-presentation.css';
 import './player-card-point-placeholder.css';
@@ -205,7 +206,7 @@ export function FormDots({ className = '', history }: { className?: string; hist
     <span aria-hidden="true" className={`player-card__form-dots ${className}`.trim()} data-form-slot-count={slots.length}>
       {slots.map((slot, index) => {
         const fixtures = slot.fixtures.length > 1 ? slot.fixtures.slice(0, 2) : slot.fixtures;
-        const colours = fixtures.length > 0 ? fixtures.map(formColour) : ['empty' as const];
+        const colours = fixtures.length > 0 ? fixtures.map((fixture) => playerFormColour(fixture.points, fixture.minutes)) : ['empty' as const];
         const split = colours.length > 1;
         const style = split
           ? {
@@ -266,17 +267,7 @@ function formSlots(history: readonly PlayerCardFormGameweek[] | undefined): Arra
   ];
 }
 
-function formColour(fixture: PlayerCardFormFixture): 'empty' | '1' | '2' | '3' | '4' | '5' {
-  if (typeof fixture.minutes !== 'number' || !Number.isFinite(fixture.minutes) || fixture.minutes <= 0) return 'empty';
-  const points = typeof fixture.points === 'number' && Number.isFinite(fixture.points) ? fixture.points : 0;
-  if (points <= 0) return '1';
-  if (points <= 2) return '2';
-  if (points <= 4) return '3';
-  if (points <= 6) return '4';
-  return '5';
-}
-
-function formColourCss(colour: ReturnType<typeof formColour>): string {
+function formColourCss(colour: ReturnType<typeof playerFormColour>): string {
   return colour === 'empty' ? 'var(--player-form-empty)' : `var(--player-form-colour-${colour})`;
 }
 

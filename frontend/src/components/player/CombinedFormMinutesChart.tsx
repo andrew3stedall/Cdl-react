@@ -1,9 +1,9 @@
 import type { CSSProperties } from 'react';
 
+import { playerFormColour } from '../../player-form-colours';
 import { PlayerChartGrid, PlayerChartYAxisScale, PlayerChartZeroLine } from './PlayerChartGrid';
 import { PlayerStatIcons, type PlayerStatSummary } from './PlayerStatIcons';
 import {
-  barTone,
   chartFixtureSlots,
   fdrStyleFor,
   formChartScaleMax,
@@ -113,7 +113,10 @@ function CombinedChartColumn({
 }) {
   const pointsHeight = fixture ? chartBarHeight(fixture.fantasyPoints, formMax) : 100;
   const minutesHeight = fixture ? chartBarHeight(fixture.minutesPlayed, minutesMax) : 100;
-  const pointsTone = barTone(fixture?.fantasyPoints ?? null);
+  const pointsColour = playerFormColour(fixture?.fantasyPoints, fixture?.minutesPlayed);
+  const pointsClass = pointsColour === 'empty'
+    ? 'player-profile__combined-bar--empty'
+    : `player-profile__combined-bar--form-colour-${pointsColour}`;
 
   return (
     <div className="player-profile__combined-chart-column" style={style}>
@@ -124,7 +127,8 @@ function CombinedChartColumn({
         <div className="player-profile__combined-track player-profile__combined-track--positive">
           {fixture ? <button
               aria-label={`View ${formatOpponentLabel(fixture.opponentShortName, fixture.isHome)} form details: ${formatNullableNumber(fixture.fantasyPoints)} points`}
-              className={`player-profile__combined-bar player-profile__combined-bar--${pointsTone}`}
+              className={`player-profile__combined-bar ${pointsClass}`}
+              data-form-colour={pointsColour}
               onClick={() => onFixtureClick?.(fixture, index)}
               style={{ '--bar-height': `${pointsHeight}%` } as CSSProperties}
               type="button"

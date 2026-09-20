@@ -32,15 +32,6 @@ export function formatNullableNumber(value: number | null | undefined): string {
   return value === null || value === undefined || Number.isNaN(value) ? '—' : String(value);
 }
 
-export function barTone(value: number | null): string {
-  if (value === null) return 'empty';
-  if (value < 0) return 'negative';
-  if (value === 0) return 'neutral';
-  if (value >= 10) return 'high';
-  if (value >= 5) return 'positive';
-  return 'low';
-}
-
 export function formChartScaleMax(fixtures: ReadonlyArray<{ fantasyPoints: number | null }>): number {
   const largestScore = fixtures.reduce((largest, fixture) => Math.max(largest, fixture.fantasyPoints ?? 0), 0);
   return Math.max(10, Math.ceil(largestScore / 5) * 5);

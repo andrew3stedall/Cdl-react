@@ -5,6 +5,12 @@
   --combined-opponent-height: var(--profile-combined-opponent-height, 1.35rem);
   --combined-track-gap: 0.12rem;
   --combined-value-row: 1.1rem;
+  --player-form-colour-1: var(--cdl-metric-1, #a8777e);
+  --player-form-colour-2: var(--cdl-metric-2, #71889a);
+  --player-form-colour-3: var(--cdl-metric-3, #a9966e);
+  --player-form-colour-4: var(--cdl-metric-4, #b6a06b);
+  --player-form-colour-5: var(--cdl-metric-5, #78a39a);
+  --player-form-empty: color-mix(in srgb, var(--profile-text) 16%, transparent);
   min-width: 0;
   width: 100%;
 }
@@ -163,27 +169,16 @@
 }
 
 .player-profile__combined-bar--empty {
-  background: var(--profile-chart-track);
+  background: var(--player-form-empty);
   cursor: default;
   opacity: 1;
 }
 
-.player-profile__combined-bar--negative {
-  background: color-mix(in srgb, var(--profile-danger) 75%, var(--profile-panel));
-}
-
-.player-profile__combined-bar--neutral {
-  background: color-mix(in srgb, var(--profile-muted) 62%, var(--profile-panel));
-}
-
-.player-profile__combined-bar--low {
-  background: color-mix(in srgb, var(--cdl-metric-2, var(--profile-accent)) 68%, var(--profile-panel));
-}
-
-.player-profile__combined-bar--positive,
-.player-profile__combined-bar--high {
-  background: color-mix(in srgb, var(--cdl-metric-4, #22c55e) 68%, var(--profile-panel));
-}
+.player-profile__combined-bar--form-colour-1 { background: var(--player-form-colour-1); }
+.player-profile__combined-bar--form-colour-2 { background: var(--player-form-colour-2); }
+.player-profile__combined-bar--form-colour-3 { background: var(--player-form-colour-3); }
+.player-profile__combined-bar--form-colour-4 { background: var(--player-form-colour-4); }
+.player-profile__combined-bar--form-colour-5 { background: var(--player-form-colour-5); }
 
 .player-profile__combined-bar {
   height: var(--bar-height);

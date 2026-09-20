@@ -355,6 +355,11 @@ describe('PlayerProfilePage', () => {
     expect([...container.querySelectorAll('[data-chart-kind="combined-form-minutes"] .player-profile__combined-opponent')].map((node) => node.textContent)).toEqual([
       'wol', 'BOU', 'CHE', 'tot', 'AVL', 'ful', 'eve', 'NEW',
     ]);
+    expect([...container.querySelectorAll<HTMLButtonElement>('[data-chart-kind="combined-form-minutes"] .player-profile__combined-positive button')].map((button) => button.dataset.formColour)).toEqual([
+      '5', '2', '5', '5', '4', '3', '5', '5',
+    ]);
+    expect(container.querySelector('[data-form-colour="2"]')?.classList).toContain('player-profile__combined-bar--form-colour-2');
+    expect(container.querySelector('[data-form-colour="5"]')?.classList).toContain('player-profile__combined-bar--form-colour-5');
     const firstFixtureOpponent = [...container.querySelectorAll('[data-chart-kind="combined-form-minutes"] .player-profile__combined-opponent')].find((node) => node.textContent);
     expect(firstFixtureOpponent?.getAttribute('style')).toContain('var(--cdl-fdr-3)');
     expect(container.querySelector('[data-chart-kind="combined-form-minutes"]')?.getAttribute('data-y-axis-min')).toBe('-90');

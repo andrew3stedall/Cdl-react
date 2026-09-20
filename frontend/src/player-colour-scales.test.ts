@@ -25,6 +25,8 @@ describe('player colour scales', () => {
     const reversed = getMetricPalette('Blue', 'light', true);
 
     expect(palette).toHaveLength(5);
+    expect(palette).toEqual(['#00FF00', '#00FFFF', '#008DFF', '#FF0000', '#500000']);
+    expect(getMetricPalette('Blue', 'dark')).toEqual(palette);
     expect(palette[0]).toBe(reversed[4]);
     expect(palette[4]).toBe(reversed[0]);
     expect(getMetricColour('Blue', 0, { min: 0, max: 100 })).toBe(palette[0]);

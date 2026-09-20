@@ -130,8 +130,18 @@ def test_authenticated_preferences_persist_and_remain_isolated() -> None:
         "tertiary_theme_colour": "#0D9488",
         "quaternary_theme_colour": "#C2410C",
         "theme_colour_variants": {
-            "light": {"primary": "#2563EB", "secondary": "#115E59", "tertiary": "#0D9488", "quaternary": "#C2410C"},
-            "dark": {"primary": "#60A5FA", "secondary": "#115E59", "tertiary": "#0D9488", "quaternary": "#C2410C"},
+            "light": {
+                "primary": "#2563EB",
+                "secondary": "#115E59",
+                "tertiary": "#0D9488",
+                "quaternary": "#C2410C",
+            },
+            "dark": {
+                "primary": "#60A5FA",
+                "secondary": "#115E59",
+                "tertiary": "#0D9488",
+                "quaternary": "#C2410C",
+            },
         },
         "fdr_custom_min": "#1B9E77",
         "fdr_custom_second": "#8CCBB5",
@@ -170,8 +180,18 @@ def test_authenticated_preferences_persist_and_remain_isolated() -> None:
         "tertiary_theme_colour": "#0D9488",
         "quaternary_theme_colour": "#14B8A6",
         "theme_colour_variants": {
-            "light": {"primary": "#115E59", "secondary": "#134E4A", "tertiary": "#0F766E", "quaternary": "#0D9488"},
-            "dark": {"primary": "#0F766E", "secondary": "#115E59", "tertiary": "#0D9488", "quaternary": "#14B8A6"},
+            "light": {
+                "primary": "#115E59",
+                "secondary": "#134E4A",
+                "tertiary": "#0F766E",
+                "quaternary": "#0D9488",
+            },
+            "dark": {
+                "primary": "#0F766E",
+                "secondary": "#115E59",
+                "tertiary": "#0D9488",
+                "quaternary": "#14B8A6",
+            },
         },
         "fdr_custom_min": "#2166AC",
         "fdr_custom_second": "#8CAFD2",
@@ -240,8 +260,18 @@ def test_authenticated_preferences_persist_and_remain_isolated() -> None:
         "tertiary_theme_colour": "#0D9488",
         "quaternary_theme_colour": "#14B8A6",
         "theme_colour_variants": {
-            "light": {"primary": "#0F766E", "secondary": "#115E59", "tertiary": "#0D9488", "quaternary": "#14B8A6"},
-            "dark": {"primary": "#2DD4BF", "secondary": "#115E59", "tertiary": "#0D9488", "quaternary": "#14B8A6"},
+            "light": {
+                "primary": "#0F766E",
+                "secondary": "#115E59",
+                "tertiary": "#0D9488",
+                "quaternary": "#14B8A6",
+            },
+            "dark": {
+                "primary": "#2DD4BF",
+                "secondary": "#115E59",
+                "tertiary": "#0D9488",
+                "quaternary": "#14B8A6",
+            },
         },
         "fdr_custom_min": "#2166AC",
         "fdr_custom_second": "#8CAFD2",

@@ -125,7 +125,9 @@ class PostgreSQLUserPreferenceRepository:
             secondary_theme_colour=preference_row.secondary_theme_colour,
             tertiary_theme_colour=preference_row.tertiary_theme_colour,
             quaternary_theme_colour=preference_row.quaternary_theme_colour,
-            theme_colour_variants=ThemeColourVariants.model_validate(preference_row.theme_colour_variants),
+            theme_colour_variants=ThemeColourVariants.model_validate(
+                preference_row.theme_colour_variants
+            ),
             fdr_custom_min=preference_row.fdr_custom_min,
             fdr_custom_second=preference_row.fdr_custom_second,
             fdr_custom_mid=preference_row.fdr_custom_mid,

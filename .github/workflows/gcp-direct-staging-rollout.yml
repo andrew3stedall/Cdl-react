@@ -258,3 +258,28 @@ jobs:
           if image != expected_image:
               raise SystemExit(f"Cloud Run image mismatch: {image!r}")
           print(f"ready_revision={latest_ready}")
+          print("latest_traffic_percent=100")
+          print(f"image={image}")
+          PY
+
+          service_url="$(gcloud run services describe "${SERVICE_NAME}" \
+            --project "${PROJECT_ID}" \
+            --region "${REGION}" \
+            --format='value(status.url)')"
+          for attempt in $(seq 1 20); do
+            if curl --fail --silent --show-error "${service_url}/health" \
+              | grep -Fq '"status":"ok"'; then
+              break
+            fi
+            if [ "${attempt}" -eq 20 ]; then
+              echo "Staging health endpoint did not become ready." >&2
+              exit 1
+            fi
+            sleep 5
+          done
+
+          status_code="$(curl --silent --show-error \
+            --output /dev/null \
+            --write-out '%{http_code}' \
+            "${service_url}/api/fpl/status")"
+          test "${status_code}" = "401"

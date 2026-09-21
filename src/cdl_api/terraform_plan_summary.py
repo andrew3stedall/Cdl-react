@@ -55,11 +55,12 @@ SECURITY_SENSITIVE_PREFIXES = (
 KNOWN_CLOUD_RUN_SQL_RECOVERY_DRIFT_ADDRESS = (
     "module.cloud_run_api[0].google_cloud_run_v2_service.this"
 )
-KNOWN_CLOUD_RUN_ROLLOUT_DRIFT_PATHS = {
-    "template[0].template[0].containers[0].image",
-    "template[0].template[0].volumes[0].cloud_sql_instance.instances",
-    "template[0].template[0].volumes[0].cloud_sql_instance[0].instances",
-}
+KNOWN_CLOUD_RUN_ROLLOUT_DRIFT_PATH_SUFFIXES = (
+    ".containers[0].image",
+    ".cloud_sql_instance.instances",
+    ".cloud_sql_instance[0].instances",
+)
+KNOWN_CLOUD_RUN_PROVIDER_METADATA_DRIFT_PATHS = {"client", "client_version"}
 
 
 def _as_object(value: JsonValue) -> dict[str, JsonValue]:
@@ -152,7 +153,11 @@ def _is_known_cloud_run_rollout_drift(item: dict[str, JsonValue]) -> bool:
         and item.get("type") == "google_cloud_run_v2_service"
         and isinstance(changed_paths, list)
         and bool(changed_paths)
-        and set(changed_paths).issubset(KNOWN_CLOUD_RUN_ROLLOUT_DRIFT_PATHS)
+        and all(
+            path in KNOWN_CLOUD_RUN_PROVIDER_METADATA_DRIFT_PATHS
+            or any(path.endswith(suffix) for suffix in KNOWN_CLOUD_RUN_ROLLOUT_DRIFT_PATH_SUFFIXES)
+            for path in changed_paths
+        )
     )
 
 

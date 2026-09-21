@@ -89,8 +89,8 @@ jobs:
           service = json.loads(sys.argv[1])
           expected_image = sys.argv[2]
           status = service.get("status", {})
-          latest_ready = status.get("latestReadyRevisionName")
-          traffic = status.get("traffic", [])
+          latest_ready = status.get("latestReadyRevisionName") or service.get("latestReadyRevision")
+          traffic = status.get("traffic", []) or service.get("traffic", [])
           latest_traffic = next(
               (
                   item
@@ -100,7 +100,9 @@ jobs:
               ),
               None,
           )
-          containers = service.get("spec", {}).get("template", {}).get("containers", [])
+          containers = service.get("template", {}).get("containers", [])
+          if not containers:
+              containers = service.get("spec", {}).get("template", {}).get("containers", [])
           image = containers[0].get("image") if containers else None
 
           if not latest_ready:

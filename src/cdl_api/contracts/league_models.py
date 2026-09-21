@@ -145,16 +145,33 @@ class HeadToHeadResponse(BaseModel):
 class LeagueManagementResponse(BaseModel):
     league_name: str
     available_team_count: int
+    teams: list["LeagueManagementTeam"] = Field(default_factory=list)
+
+
+class LeagueManagementTeam(BaseModel):
+    team_id: str
+    team_name: str
+    manager_name: str | None = None
+    manager_email: str | None = None
+    is_assigned: bool = False
+
+
+class LeagueInviteRequest(BaseModel):
+    team_id: str
 
 
 class LeagueInviteResponse(BaseModel):
     league_name: str
+    team_id: str
+    team_name: str
     token: str
     available_team_count: int
 
 
 class LeagueInvitePreviewResponse(BaseModel):
     league_name: str
+    team_id: str
+    team_name: str
     available_team_count: int
 
 

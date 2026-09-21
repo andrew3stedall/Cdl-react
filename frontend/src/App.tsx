@@ -293,7 +293,10 @@ export function App({
       setLoginError(null);
       setLoginPending(true);
       try {
-        const result = await sessionClient.loginWithGoogleCredential(credential);
+        const result = await sessionClient.loginWithGoogleCredential(
+          credential,
+          inviteTokenFromPath(loginReturnPath) ?? undefined,
+        );
         if (!result.ok) {
           setLoginError(result.error.message);
           return;
@@ -372,6 +375,7 @@ export function App({
           email={loginEmail}
           error={loginError}
           googleClientId={googleClientId}
+          inviteMode={Boolean(loginReturnPath)}
           onEmailChange={setLoginEmail}
           onGoogleCredential={handleGoogleCredential}
           onAppleSignIn={handleAppleSignIn}
@@ -416,6 +420,12 @@ export function App({
       </GlobalNotificationsProvider>
     </ThemePresetProvider>
   );
+}
+
+function inviteTokenFromPath(path: string | null): string | null {
+  if (!path?.startsWith('/join/')) return null;
+  const token = path.replace(/^\/join\//, '').split('/')[0];
+  return token ? decodeURIComponent(token) : null;
 }
 
 interface AppRouteContentProps {

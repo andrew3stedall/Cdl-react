@@ -53,6 +53,10 @@ def get_google_identity_verifier(
     )
 
 
+def get_league_membership_repository(settings: Settings = Depends(get_settings)) -> object:
+    return build_repositories(settings).league_memberships
+
+
 def get_apple_identity_verifier(
     settings: Settings = Depends(get_settings),
 ) -> AppleIdentityVerifier:
@@ -283,6 +287,7 @@ def google_login(
     settings: Settings = Depends(get_settings),
     service: AuthenticationService = Depends(get_auth_service),
     verifier: GoogleIdentityVerifier = Depends(get_google_identity_verifier),
+    membership_repository: object = Depends(get_league_membership_repository),
 ) -> LoginResponse | JSONResponse:
     if google_sign_in_header != "1":
         error = ApiErrorResponse(
@@ -291,7 +296,16 @@ def google_login(
         )
         return JSONResponse(status_code=status.HTTP_403_FORBIDDEN, content=error.model_dump())
 
+    invite_is_valid = False
+    if payload.invite_token:
+        try:
+            invite_is_valid = membership_repository.preview_invite(payload.invite_token) is not None
+        except (OperationalError, SQLAlchemyTimeoutError):
+            return _database_unavailable("Google sign-in is temporarily unavailable. Try again.")
+
     identity = verifier.verify(payload.credential)
+    if identity is None and invite_is_valid:
+        identity = verifier.verify(payload.credential, allow_unlisted_email=True)
     if identity is None:
         error = ApiErrorResponse(
             code=ErrorCode.UNAUTHENTICATED,

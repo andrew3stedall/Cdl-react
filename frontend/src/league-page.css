@@ -1905,12 +1905,76 @@
 
 .league-management-card__copy,
 .league-management-card__status,
+.league-management-card__empty,
+.league-management-row__identity span,
+.league-management-team .league-management-row__identity span,
 .league-invite-card__state p,
 .league-invite-card__signed-in {
   color: var(--muted-foreground);
   font-size: 0.78rem;
   line-height: 1.45;
   margin: 0;
+}
+
+.league-management-list {
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 0.1rem);
+  overflow: hidden;
+}
+
+.league-management-row {
+  align-items: center;
+  display: flex;
+  gap: 0.8rem;
+  justify-content: space-between;
+  padding: 0.8rem 0.85rem;
+}
+
+.league-management-row + .league-management-row {
+  border-top: 1px solid var(--border);
+}
+
+.league-management-row__identity {
+  display: grid;
+  gap: 0.16rem;
+  min-width: 0;
+}
+
+.league-management-row__identity strong,
+.league-management-row__team,
+.league-management-row__status {
+  color: var(--foreground);
+  font-size: 0.82rem;
+}
+
+.league-management-row__team,
+.league-management-row__status {
+  flex: 0 0 auto;
+  font-weight: 700;
+  text-align: right;
+}
+
+.league-management-row__status {
+  color: var(--primary);
+}
+
+.league-management-team + .league-management-team {
+  border-top: 1px solid var(--border);
+}
+
+.league-management-team .league-management-row {
+  padding: 0.7rem 0.85rem;
+}
+
+.league-management-team .league-management-card__link-row {
+  border-top: 1px solid var(--border);
+  padding: 0.65rem 0.85rem 0.75rem;
+}
+
+.league-management-card__empty {
+  border: 1px dashed var(--border);
+  border-radius: calc(var(--radius) - 0.1rem);
+  padding: 0.8rem;
 }
 
 .league-management-card__status[role='alert'] {
@@ -1972,9 +2036,16 @@
 
 @media (max-width: 520px) {
   .league-management-card__heading,
-  .league-management-card__link-row {
+  .league-management-card__link-row,
+  .league-management-row {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .league-management-row__team,
+  .league-management-row__status {
+    align-self: flex-start;
+    text-align: left;
   }
 }
 

@@ -30,6 +30,7 @@ class PasskeyAuthConfig(BaseModel):
 
 class GoogleCredentialRequest(BaseModel):
     credential: str = Field(min_length=1)
+    invite_token: str | None = None
 
 
 class PasskeyCredentialRequest(BaseModel):

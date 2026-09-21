@@ -126,10 +126,14 @@ def test_management_lists_active_users_and_their_teams() -> None:
         display_name="Commissioner",
         roles=["commissioner"],
     )
-    invite = _client(commissioner, repository).post(
-        "/api/league/management/invites",
-        json={"team_id": "keepers"},
-    ).json()["token"]
+    invite = (
+        _client(commissioner, repository)
+        .post(
+            "/api/league/management/invites",
+            json={"team_id": "keepers"},
+        )
+        .json()["token"]
+    )
     _client(
         SessionUser(
             id="manager-2",

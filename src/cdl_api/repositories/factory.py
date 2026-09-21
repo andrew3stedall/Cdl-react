@@ -8,6 +8,10 @@ from cdl_api.repositories.fdr_custom_palettes import (
     InMemoryFdrCustomPaletteRepository,
     PostgreSQLFdrCustomPaletteRepository,
 )
+from cdl_api.repositories.league_memberships import (
+    InMemoryLeagueMembershipRepository,
+    PostgreSQLLeagueMembershipRepository,
+)
 from cdl_api.repositories.league_repository import LeagueRepository
 from cdl_api.repositories.live_league import (
     LiveAwarePostgreSQLLeagueRepository,
@@ -51,6 +55,7 @@ class RepositoryBundle:
     squad: object
     team_selection: object
     league: object
+    league_memberships: object
     passkeys: object
     auth_challenges: object
 
@@ -64,6 +69,7 @@ _memory_bundle = RepositoryBundle(
     squad=InMemorySquadRepository(),
     team_selection=InMemoryTeamSelectionRepository(),
     league=LeagueRepository(),
+    league_memberships=InMemoryLeagueMembershipRepository(),
     passkeys=InMemoryPasskeyRepository(),
     auth_challenges=InMemoryAuthChallengeRepository(),
 )
@@ -78,6 +84,7 @@ def build_repositories(settings: Settings) -> RepositoryBundle:
         users = PostgreSQLUserRepository(session_factory)
         squad = PostgreSQLSquadRepository(session_factory)
         league = LiveAwarePostgreSQLLeagueRepository(session_factory)
+        league_memberships = PostgreSQLLeagueMembershipRepository(session_factory)
         return RepositoryBundle(
             users=users,
             sessions=PostgreSQLSessionRepository(session_factory),
@@ -87,6 +94,7 @@ def build_repositories(settings: Settings) -> RepositoryBundle:
             squad=squad,
             team_selection=LiveAwarePostgreSQLTeamSelectionRepository(session_factory),
             league=league,
+            league_memberships=league_memberships,
             passkeys=PostgreSQLPasskeyRepository(session_factory),
             auth_challenges=PostgreSQLAuthChallengeRepository(session_factory),
         )

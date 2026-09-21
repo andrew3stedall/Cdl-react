@@ -11,16 +11,24 @@ from cdl_api.contracts.league_models import (
     HeadToHeadResponse,
     KnockoutResponse,
     LeagueFixturesResponse,
+    LeagueInvitePreviewResponse,
+    LeagueInviteResponse,
+    LeagueJoinResponse,
+    LeagueManagementResponse,
     LeagueTableResponse,
 )
 from cdl_api.contracts.session import SessionUser
 from cdl_api.database import build_session_factory
 from cdl_api.repositories.factory import build_repositories
+from cdl_api.repositories.league_memberships import (
+    InMemoryLeagueMembershipRepository,
+    PostgreSQLLeagueMembershipRepository,
+)
 from cdl_api.repositories.live_league import LiveAwarePostgreSQLTeamSelectionRepository
 from cdl_api.repositories.postgres_squad_repository import PostgreSQLSquadRepository
 from cdl_api.repositories.squad import SquadRepository
 from cdl_api.repositories.team_selection import InMemoryTeamSelectionRepository
-from cdl_api.routers.auth import get_optional_authenticated_session
+from cdl_api.routers.auth import get_optional_authenticated_session, require_authenticated_session
 from cdl_api.services.league_service import (
     FixtureService,
     HeadToHeadService,
@@ -31,6 +39,132 @@ from cdl_api.services.league_service import (
 from cdl_api.settings import Settings, get_settings
 
 router = APIRouter(prefix="/league", tags=["league"])
+
+
+def get_membership_repository(
+    settings: Settings = Depends(get_settings),
+) -> InMemoryLeagueMembershipRepository | PostgreSQLLeagueMembershipRepository:
+    return build_repositories(settings).league_memberships
+
+
+def _is_commissioner(user: SessionUser, settings: Settings) -> bool:
+    return bool(
+        {"commissioner", "admin"}.intersection(user.roles)
+        or user.email.lower() in settings.commissioner_email_set
+    )
+
+
+def _forbidden() -> JSONResponse:
+    return JSONResponse(
+        status_code=status.HTTP_403_FORBIDDEN,
+        content={
+            "code": "forbidden",
+            "message": "Commissioner access is required.",
+            "details": {},
+        },
+    )
+
+
+@router.get("/management", response_model=LeagueManagementResponse)
+def league_management(
+    user: SessionUser = Depends(require_authenticated_session),
+    settings: Settings = Depends(get_settings),
+    repository: InMemoryLeagueMembershipRepository | PostgreSQLLeagueMembershipRepository = Depends(
+        get_membership_repository
+    ),
+) -> LeagueManagementResponse | JSONResponse:
+    if not _is_commissioner(user, settings):
+        return _forbidden()
+    try:
+        league_name, available_team_count = repository.league_summary()
+    except LookupError as exc:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={"code": "not_found", "message": str(exc), "details": {}},
+        )
+    return LeagueManagementResponse(
+        league_name=league_name,
+        available_team_count=available_team_count,
+    )
+
+
+@router.post("/management/invites", response_model=LeagueInviteResponse)
+def create_league_invite(
+    user: SessionUser = Depends(require_authenticated_session),
+    settings: Settings = Depends(get_settings),
+    repository: InMemoryLeagueMembershipRepository | PostgreSQLLeagueMembershipRepository = Depends(
+        get_membership_repository
+    ),
+) -> LeagueInviteResponse | JSONResponse:
+    if not _is_commissioner(user, settings):
+        return _forbidden()
+    try:
+        invite = repository.create_invite(user.id)
+    except LookupError as exc:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={"code": "not_found", "message": str(exc), "details": {}},
+        )
+    return LeagueInviteResponse(
+        league_name=invite.league_name,
+        token=invite.token,
+        available_team_count=invite.available_team_count,
+    )
+
+
+@router.get(
+    "/invites/{token}",
+    response_model=LeagueInvitePreviewResponse,
+    responses={status.HTTP_404_NOT_FOUND: {"model": ApiErrorResponse}},
+)
+def preview_league_invite(
+    token: str,
+    repository: InMemoryLeagueMembershipRepository | PostgreSQLLeagueMembershipRepository = Depends(
+        get_membership_repository
+    ),
+) -> LeagueInvitePreviewResponse | JSONResponse:
+    preview = repository.preview_invite(token)
+    if preview is None:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={
+                "code": "not_found",
+                "message": "This invite link is invalid or has expired.",
+                "details": {},
+            },
+        )
+    return LeagueInvitePreviewResponse(
+        league_name=preview.league_name,
+        available_team_count=preview.available_team_count,
+    )
+
+
+@router.post("/invites/{token}/accept", response_model=LeagueJoinResponse)
+def accept_league_invite(
+    token: str,
+    user: SessionUser = Depends(require_authenticated_session),
+    repository: InMemoryLeagueMembershipRepository | PostgreSQLLeagueMembershipRepository = Depends(
+        get_membership_repository
+    ),
+) -> LeagueJoinResponse | JSONResponse:
+    try:
+        joined = repository.accept_invite(token, user.id)
+    except LookupError as exc:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={"code": "not_found", "message": str(exc), "details": {}},
+        )
+    except RuntimeError as exc:
+        return JSONResponse(
+            status_code=status.HTTP_409_CONFLICT,
+            content={"code": "conflict", "message": str(exc), "details": {}},
+        )
+    return LeagueJoinResponse(
+        league_name=joined.league_name,
+        team_id=joined.team_id,
+        team_name=joined.team_name,
+        already_member=joined.already_member,
+    )
 
 
 def get_league_repository(

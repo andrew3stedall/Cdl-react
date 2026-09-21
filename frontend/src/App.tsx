@@ -17,6 +17,7 @@ import { FixtureDifficultyPage } from './FixtureDifficultyPage';
 import type { FdrClient } from './fdr-api';
 import { GlobalNavigation } from './GlobalNavigation';
 import { LeaguePage } from './LeaguePage';
+import { LeagueInvitePage } from './LeagueInvitePage';
 import type { LeagueClient } from './league-api';
 import { LoginPage } from './LoginPage';
 import { MarketPage } from './MarketPage';
@@ -120,6 +121,7 @@ export function App({
   teamSelectionClient,
 }: AppProps) {
   const [currentPath, setCurrentPath] = useState(initialPath);
+  const [loginReturnPath, setLoginReturnPath] = useState<string | null>(() => initialPath.startsWith('/join/') ? initialPath : null);
   const [activeSession, setActiveSession] = useState<SessionState | null>(session ?? null);
   const [sessionCheckError, setSessionCheckError] = useState<string | null>(null);
   const [loginEmail, setLoginEmail] = useState('');
@@ -150,6 +152,7 @@ export function App({
           setSessionCheckError(null);
           setActiveSession(resolvedSession);
           if (!canAccessProtectedRoute(resolvedSession)) {
+            if (initialPath.startsWith('/join/')) setLoginReturnPath(initialPath);
             try {
               window.history.replaceState({}, '', '/login');
             } catch {
@@ -223,7 +226,7 @@ export function App({
     };
   }, []);
 
-  const setBrowserPath = (href: string, replace = false) => {
+  const setBrowserPath = useCallback((href: string, replace = false) => {
     try {
       if (replace) {
         window.history.replaceState({}, '', href);
@@ -234,7 +237,15 @@ export function App({
       // Browser history can be unavailable in isolated DOM tests.
     }
     setCurrentPath(href);
-  };
+  }, []);
+
+  const completeLogin = useCallback((resolvedSession: SessionState) => {
+    setSessionCheckError(null);
+    setActiveSession(resolvedSession);
+    const destination = loginReturnPath ?? '/';
+    setLoginReturnPath(null);
+    setBrowserPath(destination, true);
+  }, [loginReturnPath, setBrowserPath]);
 
   const refreshActiveSession = async () => {
     if (session !== undefined) return;
@@ -268,10 +279,8 @@ export function App({
         return;
       }
 
-      setSessionCheckError(null);
       setLoginPassword('');
-      setBrowserPath('/', true);
-      setActiveSession(result.data.session);
+      completeLogin(result.data.session);
     } catch {
       setLoginError('Sign in is temporarily unavailable. Try again.');
     } finally {
@@ -289,16 +298,14 @@ export function App({
           setLoginError(result.error.message);
           return;
         }
-        setSessionCheckError(null);
-        setBrowserPath('/', true);
-        setActiveSession(result.data.session);
+        completeLogin(result.data.session);
       } catch {
         setLoginError('Google sign-in is temporarily unavailable. Try again.');
       } finally {
         setLoginPending(false);
       }
     },
-    [sessionClient],
+    [completeLogin, sessionClient],
   );
 
   const handlePasskeyLogin = useCallback(async () => {
@@ -310,13 +317,11 @@ export function App({
         setLoginError(result.error.message);
         return;
       }
-      setSessionCheckError(null);
-      setBrowserPath('/', true);
-      setActiveSession(result.data.session);
+      completeLogin(result.data.session);
     } finally {
       setLoginPending(false);
     }
-  }, []);
+  }, [completeLogin]);
 
   const handleAppleSignIn = useCallback(() => {
     window.location.assign('/api/auth/apple/start');
@@ -524,7 +529,11 @@ function AppRouteContent({
     }
 
     if (path.startsWith('/league')) {
-      routeContent = <LeaguePage attackDirection={attackDirection} currentPath={path} leagueClient={leagueClient} onNavigate={onNavigate} squadClient={squadClient} teamSelectionClient={teamSelectionClient} />;
+      routeContent = <LeaguePage attackDirection={attackDirection} currentPath={path} leagueClient={leagueClient} onNavigate={onNavigate} session={activeSession} squadClient={squadClient} teamSelectionClient={teamSelectionClient} />;
+    }
+
+    if (path.startsWith('/join/')) {
+      routeContent = <LeagueInvitePage currentPath={path} leagueClient={leagueClient} onNavigate={onNavigate} session={activeSession} />;
     }
 
     if (path.startsWith('/modernisation/checkpoint-1')) {

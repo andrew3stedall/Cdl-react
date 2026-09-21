@@ -197,6 +197,7 @@ module "cloud_run_api" {
     CDL_DATABASE_MAX_OVERFLOW         = "4"
     CDL_DATABASE_POOL_TIMEOUT_SECONDS = "10"
     CDL_DATABASE_POOL_RECYCLE_SECONDS = "300"
+    CDL_COMMISSIONER_EMAILS         = "andrew3stedall@gmail.com"
   }
   secret_environment_variables = merge({
     CDL_DATABASE_URL = {

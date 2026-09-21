@@ -31,6 +31,8 @@ def staging_access_required(settings: Settings, path: str) -> bool:
     """Return whether a staging request must have an application session."""
     if settings.environment != "staging":
         return False
+    if path.startswith(f"{settings.api_prefix}/league/invites/"):
+        return False
     if path in _PUBLIC_STAGING_PATHS:
         return False
     return path.startswith(f"{settings.api_prefix}/") or path in {

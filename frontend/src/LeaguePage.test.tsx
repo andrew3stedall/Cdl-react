@@ -205,11 +205,18 @@ class CurrentPendingLeagueClient extends MemoryLeagueClient {
 
 class CommissionerLeagueClient extends MemoryLeagueClient {
   async getLeagueManagement() {
-    return { leagueName: 'CDL', availableTeamCount: 5 };
+    return {
+      leagueName: 'CDL',
+      availableTeamCount: 5,
+      teams: [
+        { teamId: 'castle', teamName: 'Castle United', managerName: 'Andrew', managerEmail: 'andrew@example.com', isAssigned: true },
+        { teamId: 'drafton', teamName: 'Drafton Rovers', managerName: null, managerEmail: null, isAssigned: false },
+      ],
+    };
   }
 
-  async createLeagueInvite() {
-    return { leagueName: 'CDL', token: 'invite-token', availableTeamCount: 5 };
+  async createLeagueInvite(teamId: string) {
+    return { leagueName: 'CDL', teamId, teamName: 'Drafton Rovers', token: 'invite-token', availableTeamCount: 5 };
   }
 }
 
@@ -309,16 +316,19 @@ describe('LeaguePage', () => {
 
   test('shows invite link controls on commissioner management and hides them for managers', async () => {
     const commissioner = await renderPage('/league/manage', new CommissionerLeagueClient());
-    expect(commissioner.container.textContent).toContain('Invite managers');
+    expect(commissioner.container.textContent).toContain('Active managers');
+    expect(commissioner.container.textContent).toContain('Andrew');
+    expect(commissioner.container.textContent).toContain('Castle United');
+    expect(commissioner.container.textContent).toContain('Invite by team');
     expect(commissioner.container.textContent).toContain('5 open places');
 
-    const generateButton = Array.from(commissioner.container.querySelectorAll('button')).find((button) => button.textContent?.includes('Generate invite link'));
+    const generateButton = Array.from(commissioner.container.querySelectorAll('button')).find((button) => button.textContent === 'Invite');
     expect(generateButton).not.toBeUndefined();
     await act(async () => {
       generateButton?.click();
       await Promise.resolve();
     });
-    expect(commissioner.container.querySelector('input[aria-label="League invite link"]')?.getAttribute('value')).toContain('/join/invite-token');
+    expect(commissioner.container.querySelector('input[aria-label="Drafton Rovers invite link"]')?.getAttribute('value')).toContain('/join/invite-token');
     commissioner.root.unmount();
 
     const managerSession: SessionState = {
@@ -328,7 +338,7 @@ describe('LeaguePage', () => {
     };
     const manager = await renderPage('/league/manage', new CommissionerLeagueClient(), 'up', managerSession);
     expect(manager.container.textContent).not.toContain('Manage');
-    expect(manager.container.textContent).not.toContain('Invite managers');
+    expect(manager.container.textContent).not.toContain('Invite by team');
     manager.root.unmount();
   });
 

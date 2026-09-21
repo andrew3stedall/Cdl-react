@@ -31,7 +31,7 @@ export interface SessionClient {
   getSession(): Promise<SessionState>;
   getGoogleAuthConfig(): Promise<GoogleAuthConfig>;
   login(request: LoginRequest): Promise<AuthResult<LoginResponse>>;
-  loginWithGoogleCredential(credential: string): Promise<AuthResult<LoginResponse>>;
+  loginWithGoogleCredential(credential: string, inviteToken?: string): Promise<AuthResult<LoginResponse>>;
   logout(): Promise<LogoutResponse>;
 }
 
@@ -149,6 +149,7 @@ export async function getPasskeyAuthConfig(): Promise<PasskeyAuthConfig> {
 
 export async function loginWithGoogleCredential(
   credential: string,
+  inviteToken?: string,
 ): Promise<AuthResult<LoginResponse>> {
   const response = await fetch('/api/auth/google', {
     method: 'POST',
@@ -156,7 +157,7 @@ export async function loginWithGoogleCredential(
       'Content-Type': 'application/json',
       'X-CDL-Google-Sign-In': '1',
     },
-    body: JSON.stringify({ credential }),
+    body: JSON.stringify({ credential, ...(inviteToken ? { invite_token: inviteToken } : {}) }),
     credentials: 'include',
   });
 

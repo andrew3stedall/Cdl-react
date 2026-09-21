@@ -12,6 +12,7 @@ from cdl_api.contracts.league_models import (
     KnockoutResponse,
     LeagueFixturesResponse,
     LeagueInvitePreviewResponse,
+    LeagueInviteRequest,
     LeagueInviteResponse,
     LeagueJoinResponse,
     LeagueManagementResponse,
@@ -76,7 +77,7 @@ def league_management(
     if not _is_commissioner(user, settings):
         return _forbidden()
     try:
-        league_name, available_team_count = repository.league_summary()
+        league_name, available_team_count, teams = repository.league_management()
     except LookupError as exc:
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -85,11 +86,22 @@ def league_management(
     return LeagueManagementResponse(
         league_name=league_name,
         available_team_count=available_team_count,
+        teams=[
+            {
+                "team_id": team.team_id,
+                "team_name": team.team_name,
+                "manager_name": team.manager_name,
+                "manager_email": team.manager_email,
+                "is_assigned": team.is_assigned,
+            }
+            for team in teams
+        ],
     )
 
 
 @router.post("/management/invites", response_model=LeagueInviteResponse)
 def create_league_invite(
+    payload: LeagueInviteRequest,
     user: SessionUser = Depends(require_authenticated_session),
     settings: Settings = Depends(get_settings),
     repository: InMemoryLeagueMembershipRepository | PostgreSQLLeagueMembershipRepository = Depends(
@@ -99,14 +111,21 @@ def create_league_invite(
     if not _is_commissioner(user, settings):
         return _forbidden()
     try:
-        invite = repository.create_invite(user.id)
+        invite = repository.create_invite(user.id, payload.team_id)
     except LookupError as exc:
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,
             content={"code": "not_found", "message": str(exc), "details": {}},
         )
+    except RuntimeError as exc:
+        return JSONResponse(
+            status_code=status.HTTP_409_CONFLICT,
+            content={"code": "conflict", "message": str(exc), "details": {}},
+        )
     return LeagueInviteResponse(
         league_name=invite.league_name,
+        team_id=invite.team_id,
+        team_name=invite.team_name,
         token=invite.token,
         available_team_count=invite.available_team_count,
     )
@@ -135,6 +154,8 @@ def preview_league_invite(
         )
     return LeagueInvitePreviewResponse(
         league_name=preview.league_name,
+        team_id=preview.team_id,
+        team_name=preview.team_name,
         available_team_count=preview.available_team_count,
     )
 
@@ -148,7 +169,7 @@ def accept_league_invite(
     ),
 ) -> LeagueJoinResponse | JSONResponse:
     try:
-        joined = repository.accept_invite(token, user.id)
+        joined = repository.accept_invite(token, user.id, user.email, user.display_name)
     except LookupError as exc:
         return JSONResponse(
             status_code=status.HTTP_404_NOT_FOUND,

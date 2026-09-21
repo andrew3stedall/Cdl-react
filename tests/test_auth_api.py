@@ -11,6 +11,7 @@ from cdl_api.google_identity import GoogleIdentity
 from cdl_api.routers.auth import (
     get_auth_service,
     get_google_identity_verifier,
+    get_league_membership_repository,
     get_session_for_request,
 )
 from cdl_api.settings import Settings
@@ -79,7 +80,12 @@ def test_anonymous_session_is_not_authenticated() -> None:
 
 
 class StubGoogleIdentityVerifier:
-    def verify(self, credential: str) -> GoogleIdentity | None:
+    def verify(
+        self,
+        credential: str,
+        *,
+        allow_unlisted_email: bool = False,
+    ) -> GoogleIdentity | None:
         if credential != "valid-google-credential":
             return None
         return GoogleIdentity(
@@ -155,6 +161,45 @@ def test_google_login_creates_application_session(monkeypatch: pytest.MonkeyPatc
     assert response.status_code == 200
     assert response.json()["session"]["user"]["email"] == "andrew3stedall@gmail.com"
     assert client.get("/api/auth/session").json()["is_authenticated"] is True
+
+
+def test_google_invite_registration_allows_a_verified_unlisted_email(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("CDL_GOOGLE_CLIENT_ID", "staging-client.apps.googleusercontent.com")
+    monkeypatch.setenv("CDL_GOOGLE_ALLOWED_EMAILS", "andrew3stedall@gmail.com")
+    from cdl_api.repositories.league_memberships import InMemoryLeagueMembershipRepository
+
+    repository = InMemoryLeagueMembershipRepository()
+    invite = repository.create_invite("commissioner-1", "castle").token
+
+    class InviteGoogleIdentityVerifier:
+        def verify(
+            self,
+            credential: str,
+            *,
+            allow_unlisted_email: bool = False,
+        ) -> GoogleIdentity | None:
+            if credential != "valid-google-credential" or not allow_unlisted_email:
+                return None
+            return GoogleIdentity(
+                subject="google-invitee",
+                email="new.manager@example.com",
+                display_name="New Manager",
+            )
+
+    app = create_app()
+    app.dependency_overrides[get_google_identity_verifier] = InviteGoogleIdentityVerifier
+    app.dependency_overrides[get_league_membership_repository] = lambda: repository
+    client = TestClient(app)
+
+    response = client.post(
+        "/api/auth/google",
+        json={"credential": "valid-google-credential", "invite_token": invite},
+        headers={"X-CDL-Google-Sign-In": "1"},
+    )
+
+    assert response.status_code == 200
 
 
 def test_google_login_requires_same_origin_header() -> None:

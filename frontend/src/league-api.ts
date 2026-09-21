@@ -152,16 +152,29 @@ export interface LeagueSnapshot {
 export interface LeagueManagement {
   leagueName: string;
   availableTeamCount: number;
+  teams: LeagueManagementTeam[];
+}
+
+export interface LeagueManagementTeam {
+  teamId: string;
+  teamName: string;
+  managerName: string | null;
+  managerEmail: string | null;
+  isAssigned: boolean;
 }
 
 export interface LeagueInvite {
   leagueName: string;
+  teamId: string;
+  teamName: string;
   token: string;
   availableTeamCount: number;
 }
 
 export interface LeagueInvitePreview {
   leagueName: string;
+  teamId: string;
+  teamName: string;
   availableTeamCount: number;
 }
 
@@ -175,7 +188,7 @@ export interface LeagueJoinResult {
 export interface LeagueClient {
   getLeagueSnapshot(): Promise<LeagueSnapshot>;
   getLeagueManagement?(): Promise<LeagueManagement>;
-  createLeagueInvite?(): Promise<LeagueInvite>;
+  createLeagueInvite?(teamId: string): Promise<LeagueInvite>;
   previewLeagueInvite?(token: string): Promise<LeagueInvitePreview>;
   acceptLeagueInvite?(token: string): Promise<LeagueJoinResult>;
   getFixtureDetail?(fixtureId: string): Promise<FixtureDetailResponse>;
@@ -284,16 +297,29 @@ interface ApiHeadToHeadResponse {
 interface ApiLeagueManagementResponse {
   league_name: string;
   available_team_count: number;
+  teams: ApiLeagueManagementTeam[];
+}
+
+interface ApiLeagueManagementTeam {
+  team_id: string;
+  team_name: string;
+  manager_name?: string | null;
+  manager_email?: string | null;
+  is_assigned: boolean;
 }
 
 interface ApiLeagueInviteResponse {
   league_name: string;
+  team_id: string;
+  team_name: string;
   token: string;
   available_team_count: number;
 }
 
 interface ApiLeagueInvitePreviewResponse {
   league_name: string;
+  team_id: string;
+  team_name: string;
   available_team_count: number;
 }
 
@@ -333,13 +359,22 @@ export class HttpLeagueClient implements LeagueClient {
     return {
       leagueName: response.league_name,
       availableTeamCount: response.available_team_count,
+      teams: response.teams.map((team) => ({
+        teamId: team.team_id,
+        teamName: team.team_name,
+        managerName: team.manager_name ?? null,
+        managerEmail: team.manager_email ?? null,
+        isAssigned: team.is_assigned,
+      })),
     };
   }
 
-  async createLeagueInvite(): Promise<LeagueInvite> {
-    const response = await this.post<ApiLeagueInviteResponse>('/league/management/invites');
+  async createLeagueInvite(teamId: string): Promise<LeagueInvite> {
+    const response = await this.post<ApiLeagueInviteResponse>('/league/management/invites', { team_id: teamId });
     return {
       leagueName: response.league_name,
+      teamId: response.team_id,
+      teamName: response.team_name,
       token: response.token,
       availableTeamCount: response.available_team_count,
     };
@@ -351,6 +386,8 @@ export class HttpLeagueClient implements LeagueClient {
     );
     return {
       leagueName: response.league_name,
+      teamId: response.team_id,
+      teamName: response.team_name,
       availableTeamCount: response.available_team_count,
     };
   }
@@ -409,10 +446,11 @@ export class HttpLeagueClient implements LeagueClient {
     return (await response.json()) as T;
   }
 
-  private async post<T>(path: string): Promise<T> {
+  private async post<T>(path: string, body?: unknown): Promise<T> {
     const response = await fetch(`${this.baseUrl}${path}`, {
       method: 'POST',
-      headers: { Accept: 'application/json' },
+      headers: { Accept: 'application/json', ...(body ? { 'Content-Type': 'application/json' } : {}) },
+      ...(body ? { body: JSON.stringify(body) } : {}),
       credentials: 'include',
     });
 

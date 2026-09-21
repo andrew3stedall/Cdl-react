@@ -12,6 +12,7 @@ from uuid import uuid4
 from sqlalchemy import Column, DateTime, MetaData, String, Table, insert, select, update
 from sqlalchemy.orm import Session
 
+from cdl_api.repositories.postgres_auth import users_table
 from cdl_api.repositories.postgres_league_fpl import (
     draft_teams_table,
     league_memberships_table,
@@ -29,6 +30,7 @@ league_invites_table = Table(
     Column("league_id", String(64), nullable=False),
     Column("created_by_user_id", String(64), nullable=False),
     Column("token_hash", String(64), nullable=False, unique=True),
+    Column("team_id", String(64), nullable=True),
     Column("created_at", DateTime(timezone=True), nullable=False),
     Column("expires_at", DateTime(timezone=True), nullable=True),
     Column("revoked_at", DateTime(timezone=True), nullable=True),
@@ -48,6 +50,8 @@ class LeagueAccess:
 class InvitePreview:
     league_id: str
     league_name: str
+    team_id: str
+    team_name: str
     available_team_count: int
     is_expired: bool = False
 
@@ -56,6 +60,8 @@ class InvitePreview:
 class InviteCreation:
     token: str
     league_name: str
+    team_id: str
+    team_name: str
     available_team_count: int
 
 
@@ -66,6 +72,15 @@ class LeagueJoin:
     team_id: str
     team_name: str
     already_member: bool
+
+
+@dataclass(frozen=True)
+class LeagueManagementTeam:
+    team_id: str
+    team_name: str
+    manager_name: str | None
+    manager_email: str | None
+    is_assigned: bool
 
 
 def hash_invite_token(token: str) -> str:
@@ -117,7 +132,56 @@ class PostgreSQLLeagueMembershipRepository:
             team_name=str(row["team_name"]) if row["team_name"] is not None else None,
         )
 
-    def create_invite(self, user_id: str, league_id: str = LEAGUE_ID) -> InviteCreation:
+    def league_management(
+        self, league_id: str = LEAGUE_ID
+    ) -> tuple[str, int, list[LeagueManagementTeam]]:
+        with self._session_factory() as session:
+            league_name = session.execute(
+                select(leagues_table.c.name).where(leagues_table.c.id == league_id)
+            ).scalar_one_or_none()
+            if league_name is None:
+                raise LookupError("League not found.")
+
+            rows = (
+                session.execute(
+                    select(
+                        draft_teams_table.c.id.label("team_id"),
+                        draft_teams_table.c.name.label("team_name"),
+                        managers_table.c.user_id,
+                        users_table.c.display_name.label("user_name"),
+                        users_table.c.email.label("user_email"),
+                    )
+                    .join(
+                        managers_table,
+                        managers_table.c.id == draft_teams_table.c.manager_id,
+                    )
+                    .outerjoin(users_table, users_table.c.id == managers_table.c.user_id)
+                    .where(draft_teams_table.c.league_id == league_id)
+                    .order_by(draft_teams_table.c.name)
+                )
+                .mappings()
+                .all()
+            )
+            teams = [
+                LeagueManagementTeam(
+                    team_id=str(row["team_id"]),
+                    team_name=str(row["team_name"]),
+                    manager_name=(str(row["user_name"]) if row["user_name"] is not None else None),
+                    manager_email=(
+                        str(row["user_email"]) if row["user_email"] is not None else None
+                    ),
+                    is_assigned=row["user_id"] is not None,
+                )
+                for row in rows
+            ]
+        return str(league_name), sum(not team.is_assigned for team in teams), teams
+
+    def create_invite(
+        self,
+        user_id: str,
+        team_id: str | None = None,
+        league_id: str = LEAGUE_ID,
+    ) -> InviteCreation:
         token = secrets.token_urlsafe(32)
         now = datetime.now(UTC)
         with self._session_factory() as session:
@@ -127,11 +191,19 @@ class PostgreSQLLeagueMembershipRepository:
             if league is None:
                 raise LookupError("League not found.")
 
+            target = self._team_for_invite(session, league_id, team_id)
+            if target is None:
+                raise LookupError("Team not found.")
+            if target["user_id"] is not None:
+                raise RuntimeError("This team is already assigned.")
+
             session.execute(
                 update(league_invites_table)
                 .where(
                     league_invites_table.c.league_id == league_id,
                     league_invites_table.c.revoked_at.is_(None),
+                    (league_invites_table.c.team_id == target["team_id"])
+                    | league_invites_table.c.team_id.is_(None),
                 )
                 .values(revoked_at=now)
             )
@@ -141,6 +213,7 @@ class PostgreSQLLeagueMembershipRepository:
                     league_id=league_id,
                     created_by_user_id=user_id,
                     token_hash=hash_invite_token(token),
+                    team_id=target["team_id"],
                     created_at=now,
                 )
             )
@@ -149,6 +222,8 @@ class PostgreSQLLeagueMembershipRepository:
         return InviteCreation(
             token=token,
             league_name=str(league),
+            team_id=str(target["team_id"]),
+            team_name=str(target["team_name"]),
             available_team_count=available_team_count,
         )
 
@@ -169,6 +244,7 @@ class PostgreSQLLeagueMembershipRepository:
                     select(
                         league_invites_table.c.league_id,
                         leagues_table.c.name.label("league_name"),
+                        league_invites_table.c.team_id,
                         league_invites_table.c.expires_at,
                     )
                     .join(leagues_table, leagues_table.c.id == league_invites_table.c.league_id)
@@ -185,13 +261,24 @@ class PostgreSQLLeagueMembershipRepository:
             expires_at = row["expires_at"]
             if expires_at is not None and expires_at <= now:
                 return None
+            target = self._team_for_invite(session, str(row["league_id"]), row["team_id"])
+            if target is None or target["user_id"] is not None:
+                return None
             return InvitePreview(
                 league_id=str(row["league_id"]),
                 league_name=str(row["league_name"]),
+                team_id=str(target["team_id"]),
+                team_name=str(target["team_name"]),
                 available_team_count=self._available_team_count(session, str(row["league_id"])),
             )
 
-    def accept_invite(self, token: str, user_id: str) -> LeagueJoin:
+    def accept_invite(
+        self,
+        token: str,
+        user_id: str,
+        user_email: str | None = None,
+        user_name: str | None = None,
+    ) -> LeagueJoin:
         now = datetime.now(UTC)
         with self._session_factory() as session:
             invite = (
@@ -199,6 +286,7 @@ class PostgreSQLLeagueMembershipRepository:
                     select(
                         league_invites_table.c.league_id,
                         leagues_table.c.name.label("league_name"),
+                        league_invites_table.c.team_id,
                         league_invites_table.c.expires_at,
                     )
                     .join(leagues_table, leagues_table.c.id == league_invites_table.c.league_id)
@@ -225,29 +313,14 @@ class PostgreSQLLeagueMembershipRepository:
                     already_member=True,
                 )
 
-            available = (
-                session.execute(
-                    select(
-                        managers_table.c.id.label("manager_id"),
-                        draft_teams_table.c.id.label("team_id"),
-                        draft_teams_table.c.name.label("team_name"),
-                    )
-                    .join(
-                        draft_teams_table,
-                        draft_teams_table.c.manager_id == managers_table.c.id,
-                    )
-                    .where(
-                        draft_teams_table.c.league_id == league_id,
-                        managers_table.c.user_id.is_(None),
-                    )
-                    .order_by(draft_teams_table.c.name)
-                    .with_for_update()
-                )
-                .mappings()
-                .first()
+            available = self._team_for_invite(
+                session,
+                league_id,
+                invite["team_id"],
+                lock=True,
             )
-            if available is None:
-                raise RuntimeError("This league has no open manager places.")
+            if available is None or available["user_id"] is not None:
+                raise RuntimeError("This team is already assigned or no longer available.")
 
             session.execute(
                 update(managers_table)
@@ -262,6 +335,33 @@ class PostgreSQLLeagueMembershipRepository:
                 team_name=str(available["team_name"]),
                 already_member=False,
             )
+
+    @staticmethod
+    def _team_for_invite(
+        session: Session,
+        league_id: str,
+        team_id: str | None,
+        *,
+        lock: bool = False,
+    ) -> object:
+        statement = (
+            select(
+                managers_table.c.id.label("manager_id"),
+                managers_table.c.user_id,
+                draft_teams_table.c.id.label("team_id"),
+                draft_teams_table.c.name.label("team_name"),
+            )
+            .join(draft_teams_table, draft_teams_table.c.manager_id == managers_table.c.id)
+            .where(draft_teams_table.c.league_id == league_id)
+            .order_by(draft_teams_table.c.name)
+        )
+        if team_id is not None:
+            statement = statement.where(draft_teams_table.c.id == team_id)
+        else:
+            statement = statement.where(managers_table.c.user_id.is_(None))
+        if lock:
+            statement = statement.with_for_update()
+        return session.execute(statement).mappings().first()
 
     @staticmethod
     def _team_for_user(session: Session, user_id: str, league_id: str) -> object:
@@ -296,8 +396,9 @@ class PostgreSQLLeagueMembershipRepository:
 
 class InMemoryLeagueMembershipRepository:
     def __init__(self) -> None:
-        self._invites: dict[str, str] = {}
+        self._invites: dict[str, tuple[str, str]] = {}
         self._members: dict[str, LeagueJoin] = {}
+        self._member_profiles: dict[str, tuple[str | None, str | None]] = {}
         self._teams = (
             ("castle", "Castle United"),
             ("drafton", "Drafton Rovers"),
@@ -317,25 +418,82 @@ class InMemoryLeagueMembershipRepository:
             member.team_name,
         )
 
-    def create_invite(self, user_id: str, league_id: str = LEAGUE_ID) -> InviteCreation:
+    def league_management(
+        self, league_id: str = LEAGUE_ID
+    ) -> tuple[str, int, list[LeagueManagementTeam]]:
+        assigned_by_team = {member.team_id: user_id for user_id, member in self._members.items()}
+        teams = [
+            LeagueManagementTeam(
+                team_id=team_id,
+                team_name=team_name,
+                manager_name=(
+                    self._member_profiles.get(assigned_by_team[team_id], (None, None))[0]
+                    if team_id in assigned_by_team
+                    else None
+                ),
+                manager_email=(
+                    self._member_profiles.get(assigned_by_team[team_id], (None, None))[1]
+                    if team_id in assigned_by_team
+                    else None
+                ),
+                is_assigned=team_id in assigned_by_team,
+            )
+            for team_id, team_name in self._teams
+        ]
+        return "CDL", sum(not team.is_assigned for team in teams), teams
+
+    def create_invite(
+        self,
+        user_id: str,
+        team_id: str | None = None,
+        league_id: str = LEAGUE_ID,
+    ) -> InviteCreation:
+        target = self._team_by_id(team_id) if team_id is not None else self._first_available_team()
+        if target is None:
+            raise LookupError("Team not found.")
+        if target[0] in {member.team_id for member in self._members.values()}:
+            raise RuntimeError("This team is already assigned.")
         token = secrets.token_urlsafe(32)
-        self._invites.clear()
-        self._invites[hash_invite_token(token)] = league_id
-        return InviteCreation(token, "CDL", self._available_team_count())
+        self._invites = {
+            token_hash: invite
+            for token_hash, invite in self._invites.items()
+            if invite[0] != league_id or invite[1] != target[0]
+        }
+        self._invites[hash_invite_token(token)] = (league_id, target[0])
+        return InviteCreation(
+            token,
+            "CDL",
+            target[0],
+            target[1],
+            self._available_team_count(),
+        )
 
     def league_summary(self, league_id: str = LEAGUE_ID) -> tuple[str, int]:
         return "CDL", self._available_team_count()
 
     def preview_invite(self, token: str) -> InvitePreview | None:
-        league_id = self._invites.get(hash_invite_token(token))
-        if league_id is None:
+        invite = self._invites.get(hash_invite_token(token))
+        if invite is None:
             return None
-        return InvitePreview(league_id, "CDL", self._available_team_count())
+        league_id, team_id = invite
+        target = self._team_by_id(team_id)
+        if target is None or target[0] in {member.team_id for member in self._members.values()}:
+            return None
+        return InvitePreview(
+            league_id,
+            "CDL",
+            target[0],
+            target[1],
+            self._available_team_count(),
+        )
 
-    def accept_invite(self, token: str, user_id: str) -> LeagueJoin:
-        preview = self.preview_invite(token)
-        if preview is None:
-            raise LookupError("This invite link is invalid or has expired.")
+    def accept_invite(
+        self,
+        token: str,
+        user_id: str,
+        user_email: str | None = None,
+        user_name: str | None = None,
+    ) -> LeagueJoin:
         existing = self._members.get(user_id)
         if existing is not None:
             return LeagueJoin(
@@ -345,13 +503,14 @@ class InMemoryLeagueMembershipRepository:
                 existing.team_name,
                 True,
             )
-        taken = {member.team_id for member in self._members.values()}
-        available = next(
-            ((team_id, name) for team_id, name in self._teams if team_id not in taken),
-            None,
-        )
-        if available is None:
-            raise RuntimeError("This league has no open manager places.")
+        preview = self.preview_invite(token)
+        if preview is None:
+            raise LookupError("This invite link is invalid or has expired.")
+        available = self._team_by_id(preview.team_id)
+        if available is None or available[0] in {
+            member.team_id for member in self._members.values()
+        }:
+            raise RuntimeError("This team is already assigned or no longer available.")
         joined = LeagueJoin(
             preview.league_id,
             preview.league_name,
@@ -360,7 +519,15 @@ class InMemoryLeagueMembershipRepository:
             False,
         )
         self._members[user_id] = joined
+        self._member_profiles[user_id] = (user_name or user_id, user_email)
         return joined
+
+    def _team_by_id(self, team_id: str | None) -> tuple[str, str] | None:
+        return next((team for team in self._teams if team[0] == team_id), None)
+
+    def _first_available_team(self) -> tuple[str, str] | None:
+        taken = {member.team_id for member in self._members.values()}
+        return next((team for team in self._teams if team[0] not in taken), None)
 
     def _available_team_count(self) -> int:
         taken = {member.team_id for member in self._members.values()}

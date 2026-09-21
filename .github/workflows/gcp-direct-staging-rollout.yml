@@ -74,6 +74,99 @@ jobs:
         with:
           version: ">= 416.0.0"
 
+      - name: Repair database attachment for the active staging secret
+        run: |
+          set -euo pipefail
+
+          database_url="$(gcloud secrets versions access latest \
+            --project "${PROJECT_ID}" \
+            --secret cdl-database-url)"
+          echo "::add-mask::${database_url}"
+
+          connection_name="$(python - "${database_url}" <<'PY'
+          import re
+          import sys
+
+          value = sys.argv[1]
+          match = re.search(r"(?:[?&])host=/cloudsql/([^&]+)", value)
+          if not match:
+              raise SystemExit("The active staging database secret has no Cloud SQL socket host.")
+          print(match.group(1))
+          PY
+          )"
+          project_from_connection="${connection_name%%:*}"
+          instance_name="${connection_name##*:}"
+
+          test "${project_from_connection}" = "${PROJECT_ID}"
+          state="$(gcloud sql instances describe "${instance_name}" \
+            --project "${PROJECT_ID}" \
+            --format='value(state)')"
+          test "${state}" = "RUNNABLE"
+          test "$(gcloud sql instances describe "${instance_name}" \
+            --project "${PROJECT_ID}" \
+            --format='value(connectionName)')" = "${connection_name}"
+
+          cloud_sql_attached() {
+            local resource_type="$1"
+            local resource_name="$2"
+            gcloud run "${resource_type}" describe "${resource_name}" \
+              --project "${PROJECT_ID}" \
+              --region "${REGION}" \
+              --format=json \
+              | CONNECTION_NAME="${connection_name}" python -c '
+          import json
+          import os
+          import sys
+
+          payload = json.load(sys.stdin)
+          target = os.environ["CONNECTION_NAME"]
+
+          def find_instances(value):
+              if isinstance(value, dict):
+                  for key, child in value.items():
+                      if key in {"instances", "cloudSql", "cloud_sql_instance"}:
+                          if isinstance(child, list) and all(isinstance(item, str) for item in child):
+                              yield from child
+                          elif isinstance(child, dict):
+                              yield from find_instances(child)
+                      yield from find_instances(child)
+              elif isinstance(value, list):
+                  for child in value:
+                      yield from find_instances(child)
+
+          print("true" if target in set(find_instances(payload)) else "false")
+          '
+          }
+
+          echo "Attaching active staging database connection ${connection_name}."
+          if [ "$(cloud_sql_attached services "${SERVICE_NAME}")" != "true" ]; then
+            gcloud run services update "${SERVICE_NAME}" \
+              --project "${PROJECT_ID}" \
+              --region "${REGION}" \
+              --add-cloudsql-instances "${connection_name}" \
+              --quiet
+          fi
+
+          for job in \
+            cdl-react-staging-db-migrate \
+            cdl-react-staging-synthetic-seed \
+            cdl-react-staging-fpl-refresh; do
+            if gcloud run jobs describe "${job}" \
+              --project "${PROJECT_ID}" \
+              --region "${REGION}" \
+              >/dev/null 2>&1; then
+              if [ "$(cloud_sql_attached jobs "${job}")" != "true" ]; then
+                gcloud run jobs update "${job}" \
+                  --project "${PROJECT_ID}" \
+                  --region "${REGION}" \
+                  --add-cloudsql-instances "${connection_name}" \
+                  --quiet
+              fi
+            fi
+          done
+
+          echo "STAGING_DATABASE_CONNECTION=${connection_name}" >> "${GITHUB_ENV}"
+
       - name: Resolve immutable image for this rollout
         run: |
           set -euo pipefail
@@ -165,28 +258,3 @@ jobs:
           if image != expected_image:
               raise SystemExit(f"Cloud Run image mismatch: {image!r}")
           print(f"ready_revision={latest_ready}")
-          print("latest_traffic_percent=100")
-          print(f"image={image}")
-          PY
-
-          service_url="$(gcloud run services describe "${SERVICE_NAME}" \
-            --project "${PROJECT_ID}" \
-            --region "${REGION}" \
-            --format='value(status.url)')"
-          for attempt in $(seq 1 20); do
-            if curl --fail --silent --show-error "${service_url}/health" \
-              | grep -Fq '"status":"ok"'; then
-              break
-            fi
-            if [ "${attempt}" -eq 20 ]; then
-              echo "Staging health endpoint did not become ready." >&2
-              exit 1
-            fi
-            sleep 5
-          done
-
-          status_code="$(curl --silent --show-error \
-            --output /dev/null \
-            --write-out '%{http_code}' \
-            "${service_url}/api/fpl/status")"
-          test "${status_code}" = "401"

@@ -15,6 +15,7 @@ import { Button } from './components/ui/button';
 import { Card } from './components/ui/card';
 import { FIXTURE_REVIEW_VIEW_STORAGE_KEY, FixtureSquadComparison, FixtureSquadViewToggle, getStoredFixtureReviewView } from './components/fixture/FixtureSquadComparison';
 import type { FixtureGameweekStatus, FixtureSquadView } from './components/fixture/FixtureSquadComparison';
+import { LeagueManagementIcon } from './components/league/LeagueManagementIcon';
 import { managerNicknameForTeam } from './manager-nicknames';
 import { PlayerChartDetailDialog } from './components/player/PlayerChartDetailDialog';
 import { TeamCrest } from './components/team/TeamCrest';
@@ -53,7 +54,7 @@ const defaultLeagueClient = new HttpLeagueClient();
 const defaultSquadClient = new HttpSquadClient();
 const defaultTeamSelectionClient = new HttpTeamSelectionClient();
 
-type LeagueView = 'fixtures' | 'table';
+type LeagueView = 'fixtures' | 'table' | 'manage';
 type GameweekState = 'not-started' | 'underway' | 'finished';
 
 interface LeaguePageProps {
@@ -215,6 +216,7 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
               options={[
                 { ariaLabel: 'View fixtures', value: 'fixtures', label: 'Fixtures', icon: <CalendarDays aria-hidden="true" size={18} /> },
                 { ariaLabel: 'View table', value: 'table', label: 'Table', icon: <Table2 aria-hidden="true" size={18} /> },
+                { ariaLabel: 'View commissioner management', value: 'manage', label: 'Manage', icon: <LeagueManagementIcon size={18} /> },
               ]}
               value={view}
             />
@@ -415,9 +417,13 @@ function LeagueContent({
   snapshot: LeagueSnapshot;
   view: LeagueView;
 }) {
-  return view === 'table'
-    ? <TableView onReload={onReload} snapshot={snapshot} />
-    : <FixturesView leagueClient={leagueClient} managerTeamId={managerTeamId} onOpenFixture={onOpenFixture} snapshot={snapshot} />;
+  if (view === 'table') return <TableView onReload={onReload} snapshot={snapshot} />;
+  if (view === 'manage') return <CommissionerManagementView />;
+  return <FixturesView leagueClient={leagueClient} managerTeamId={managerTeamId} onOpenFixture={onOpenFixture} snapshot={snapshot} />;
+}
+
+function CommissionerManagementView() {
+  return <section aria-label="Commissioner management" className="league-management-view" />;
 }
 
 function FixturesView({ leagueClient, managerTeamId, onOpenFixture, snapshot }: { leagueClient: LeagueClient; managerTeamId: string | null; onOpenFixture: (fixture: LeagueFixture) => void; snapshot: LeagueSnapshot }) {
@@ -1334,6 +1340,7 @@ function LeagueLoadingState() {
 
 function leagueViewFromPath(pathname: string): LeagueView {
   if (pathname === '/league/table') return 'table';
+  if (pathname === '/league/manage') return 'manage';
   return 'fixtures';
 }
 

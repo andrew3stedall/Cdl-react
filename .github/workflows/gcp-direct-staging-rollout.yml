@@ -6,6 +6,11 @@ on:
       - main
     paths:
       - ".github/workflows/gcp-direct-staging-rollout.yml"
+  workflow_run:
+    workflows:
+      - GCP Auto Rollout Staging
+    types:
+      - completed
   workflow_dispatch:
 
 permissions:
@@ -20,14 +25,19 @@ env:
   REGION: australia-southeast1
   PROJECT_ID: cdl-react-staging-ast
   SERVICE_NAME: cdl-react-staging-api
-  IMAGE_DIGEST_URI: australia-southeast1-docker.pkg.dev/cdl-react-staging-ast/cdl-react-backend/cdl-react-app@sha256:8c210e39bdf1e28412680226773390bc1f8032c130c5a20ae315e85b97423171
+  ARTIFACT_REPOSITORY: cdl-react-backend
+  IMAGE_NAME: cdl-react-app
 
 jobs:
   rollout:
     name: Deploy existing immutable image to Cloud Run
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      contains(github.event.head_commit.message, '[direct-staging-rollout]')
+      (github.event_name == 'push' &&
+      contains(github.event.head_commit.message, '[direct-staging-rollout]')) ||
+      (github.event_name == 'workflow_run' &&
+      github.event.workflow_run.conclusion == 'failure' &&
+      github.event.workflow_run.head_branch == 'main')
     runs-on: ubuntu-latest
     environment: staging
 
@@ -58,6 +68,21 @@ jobs:
         uses: google-github-actions/setup-gcloud@v3
         with:
           version: ">= 416.0.0"
+
+      - name: Resolve immutable image for this rollout
+        run: |
+          set -euo pipefail
+          source_sha="${{ github.event.workflow_run.head_sha || github.sha }}"
+          image_tag_uri="${REGION}-docker.pkg.dev/${PROJECT_ID}/${ARTIFACT_REPOSITORY}/${IMAGE_NAME}:${source_sha}"
+          image_digest="$(gcloud artifacts docker images describe "${image_tag_uri}" \
+            --project "${PROJECT_ID}" \
+            --format='value(image_summary.digest)')"
+          test "${image_digest}" != "<no value>"
+          test "${image_digest}" = "sha256:${image_digest#sha256:}"
+          image_digest_uri="${image_tag_uri%@*}@${image_digest}"
+          echo "IMAGE_DIGEST_URI=${image_digest_uri}" >> "${GITHUB_ENV}"
+          echo "source_sha=${source_sha}"
+          echo "image_digest_uri=${image_digest_uri}"
 
       - name: Verify immutable image exists
         run: |

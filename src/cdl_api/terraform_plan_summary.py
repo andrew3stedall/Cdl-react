@@ -52,9 +52,10 @@ SECURITY_SENSITIVE_PREFIXES = (
     "google_cloud_run_v2_service",
     "google_sql_database_instance",
 )
-KNOWN_CLOUD_RUN_SQL_RECOVERY_DRIFT_ADDRESS = (
-    "module.cloud_run_api[0].google_cloud_run_v2_service.this"
-)
+KNOWN_CLOUD_RUN_ROLLOUT_DRIFT_TYPES = {
+    "google_cloud_run_v2_job",
+    "google_cloud_run_v2_service",
+}
 KNOWN_CLOUD_RUN_ROLLOUT_DRIFT_PATH_SUFFIXES = (
     ".containers[0].image",
     ".cloud_sql_instance.instances",
@@ -160,8 +161,7 @@ def _is_known_cloud_run_rollout_drift(item: dict[str, JsonValue]) -> bool:
     """Identify the known image and recovery-mount differences from staging rollouts."""
     changed_paths = item.get("changed_paths")
     return (
-        item.get("address") == KNOWN_CLOUD_RUN_SQL_RECOVERY_DRIFT_ADDRESS
-        and item.get("type") == "google_cloud_run_v2_service"
+        item.get("type") in KNOWN_CLOUD_RUN_ROLLOUT_DRIFT_TYPES
         and isinstance(changed_paths, list)
         and bool(changed_paths)
         and all(
@@ -235,12 +235,12 @@ def _classify_drift(
     refresh_only: list[dict[str, JsonValue]] = []
 
     for item in drift:
-        if _is_known_cloud_run_rollout_drift(item):
+        managed = managed_by_address.get(_as_string(item["address"]))
+        if managed is None:
             refresh_only.append(item)
             continue
 
-        managed = managed_by_address.get(_as_string(item["address"]))
-        if managed is None:
+        if _is_known_cloud_run_rollout_drift(item) and managed.get("changed_paths"):
             refresh_only.append(item)
             continue
 

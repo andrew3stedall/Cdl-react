@@ -102,7 +102,11 @@ jobs:
           )
           containers = service.get("template", {}).get("containers", [])
           if not containers:
+              containers = service.get("template", {}).get("spec", {}).get("containers", [])
+          if not containers:
               containers = service.get("spec", {}).get("template", {}).get("containers", [])
+          if not containers:
+              containers = service.get("spec", {}).get("template", {}).get("spec", {}).get("containers", [])
           image = containers[0].get("image") if containers else None
 
           if not latest_ready:

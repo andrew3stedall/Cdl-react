@@ -210,9 +210,7 @@ class PostgreSQLLeagueMembershipRepository:
                 .mappings()
                 .first()
             )
-            if invite is None or (
-                invite["expires_at"] is not None and invite["expires_at"] <= now
-            ):
+            if invite is None or (invite["expires_at"] is not None and invite["expires_at"] <= now):
                 raise LookupError("This invite link is invalid or has expired.")
 
             league_id = str(invite["league_id"])

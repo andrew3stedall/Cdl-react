@@ -92,7 +92,12 @@ jobs:
           latest_ready = status.get("latestReadyRevisionName")
           traffic = status.get("traffic", [])
           latest_traffic = next(
-              (item for item in traffic if item.get("type") == "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST"),
+              (
+                  item
+                  for item in traffic
+                  if item.get("latestRevision") is True
+                  or item.get("type") == "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST"
+              ),
               None,
           )
           containers = service.get("spec", {}).get("template", {}).get("containers", [])

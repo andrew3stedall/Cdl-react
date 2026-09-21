@@ -96,7 +96,7 @@ jobs:
           PY
             )"
           fi
-          test "${source_sha}" =~ ^[0-9a-f]{40}$
+          [[ "${source_sha}" =~ ^[0-9a-f]{40}$ ]]
           image_tag_uri="${REGION}-docker.pkg.dev/${PROJECT_ID}/${ARTIFACT_REPOSITORY}/${IMAGE_NAME}:${source_sha}"
           image_digest="$(gcloud artifacts docker images describe "${image_tag_uri}" \
             --project "${PROJECT_ID}" \

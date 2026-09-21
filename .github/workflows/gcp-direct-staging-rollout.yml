@@ -1,0 +1,132 @@
+name: GCP Direct Staging Image Rollout
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/gcp-direct-staging-rollout.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: gcp-direct-staging-rollout
+  cancel-in-progress: false
+
+env:
+  REGION: australia-southeast1
+  PROJECT_ID: cdl-react-staging-ast
+  SERVICE_NAME: cdl-react-staging-api
+  IMAGE_DIGEST_URI: australia-southeast1-docker.pkg.dev/cdl-react-staging-ast/cdl-react-backend/cdl-react-app@sha256:8c210e39bdf1e28412680226773390bc1f8032c130c5a20ae315e85b97423171
+
+jobs:
+  rollout:
+    name: Deploy existing immutable image to Cloud Run
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.head_commit.message, '[direct-staging-rollout]')
+    runs-on: ubuntu-latest
+    environment: staging
+
+    env:
+      PROJECT_NUMBER: ${{ vars.GCP_STAGING_PROJECT_NUMBER }}
+      WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_STAGING_WORKLOAD_IDENTITY_PROVIDER }}
+      DEPLOY_SERVICE_ACCOUNT: ${{ vars.GCP_STAGING_DEPLOY_SERVICE_ACCOUNT }}
+
+    steps:
+      - name: Validate staging identity
+        run: |
+          set -euo pipefail
+          test "${PROJECT_ID}" = "cdl-react-staging-ast"
+          test -n "${PROJECT_NUMBER}"
+          test "${WORKLOAD_IDENTITY_PROVIDER}" = \
+            "projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
+          test "${DEPLOY_SERVICE_ACCOUNT}" = \
+            "github-deploy@${PROJECT_ID}.iam.gserviceaccount.com"
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.DEPLOY_SERVICE_ACCOUNT }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
+        with:
+          version: ">= 416.0.0"
+
+      - name: Verify immutable image exists
+        run: |
+          set -euo pipefail
+          gcloud artifacts docker images describe "${IMAGE_DIGEST_URI}" \
+            --project "${PROJECT_ID}" \
+            --format='value(image_summary.digest)' | grep -Fxq "${IMAGE_DIGEST_URI##*@}"
+
+      - name: Update Cloud Run image only
+        run: |
+          set -euo pipefail
+          gcloud run services update "${SERVICE_NAME}" \
+            --project "${PROJECT_ID}" \
+            --region "${REGION}" \
+            --image "${IMAGE_DIGEST_URI}" \
+            --quiet
+
+      - name: Verify ready revision, traffic, health, and auth boundary
+        run: |
+          set -euo pipefail
+          service_json="$(gcloud run services describe "${SERVICE_NAME}" \
+            --project "${PROJECT_ID}" \
+            --region "${REGION}" \
+            --format=json)"
+          python - "${service_json}" "${IMAGE_DIGEST_URI}" <<'PY'
+          import json
+          import sys
+
+          service = json.loads(sys.argv[1])
+          expected_image = sys.argv[2]
+          status = service.get("status", {})
+          latest_ready = status.get("latestReadyRevisionName")
+          traffic = status.get("traffic", [])
+          latest_traffic = next(
+              (item for item in traffic if item.get("type") == "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST"),
+              None,
+          )
+          containers = service.get("spec", {}).get("template", {}).get("containers", [])
+          image = containers[0].get("image") if containers else None
+
+          if not latest_ready:
+              raise SystemExit("Cloud Run has no ready revision")
+          if not latest_traffic or latest_traffic.get("percent") != 100:
+              raise SystemExit(f"Cloud Run latest revision does not have 100% traffic: {traffic!r}")
+          if image != expected_image:
+              raise SystemExit(f"Cloud Run image mismatch: {image!r}")
+          print(f"ready_revision={latest_ready}")
+          print("latest_traffic_percent=100")
+          print(f"image={image}")
+          PY
+
+          service_url="$(gcloud run services describe "${SERVICE_NAME}" \
+            --project "${PROJECT_ID}" \
+            --region "${REGION}" \
+            --format='value(status.url)')"
+          for attempt in $(seq 1 20); do
+            if curl --fail --silent --show-error "${service_url}/health" \
+              | grep -Fq '"status":"ok"'; then
+              break
+            fi
+            if [ "${attempt}" -eq 20 ]; then
+              echo "Staging health endpoint did not become ready." >&2
+              exit 1
+            fi
+            sleep 5
+          done
+
+          status_code="$(curl --silent --show-error \
+            --output /dev/null \
+            --write-out '%{http_code}' \
+            "${service_url}/api/fpl/status")"
+          test "${status_code}" = "401"

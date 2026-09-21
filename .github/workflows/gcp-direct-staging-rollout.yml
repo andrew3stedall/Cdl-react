@@ -12,6 +12,11 @@ on:
     types:
       - completed
   workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Commit SHA whose immutable image should be deployed
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -72,7 +77,26 @@ jobs:
       - name: Resolve immutable image for this rollout
         run: |
           set -euo pipefail
-          source_sha="${{ github.event.workflow_run.head_sha || github.sha }}"
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_run" ]; then
+            source_sha="${{ github.event.workflow_run.head_sha }}"
+          elif [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            source_sha="${{ inputs.source_sha }}"
+          else
+            source_sha="$(python - "${GITHUB_EVENT_PATH}" <<'PY'
+          import json
+          import re
+          import sys
+
+          with open(sys.argv[1], encoding="utf-8") as event_file:
+              message = json.load(event_file).get("head_commit", {}).get("message", "")
+          match = re.search(r"source_sha=([0-9a-f]{40})", message)
+          if not match:
+              raise SystemExit("Push deployment requires source_sha=<40-character commit SHA>")
+          print(match.group(1))
+          PY
+            )"
+          fi
+          test "${source_sha}" =~ ^[0-9a-f]{40}$
           image_tag_uri="${REGION}-docker.pkg.dev/${PROJECT_ID}/${ARTIFACT_REPOSITORY}/${IMAGE_NAME}:${source_sha}"
           image_digest="$(gcloud artifacts docker images describe "${image_tag_uri}" \
             --project "${PROJECT_ID}" \

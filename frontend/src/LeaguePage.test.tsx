@@ -236,6 +236,7 @@ describe('LeaguePage', () => {
     expect(container.textContent).toContain('Castle Draft League');
     expect(container.textContent).toContain('Fixtures');
     expect(container.textContent).toContain('Table');
+    expect(container.textContent).toContain('Manage');
     expect(container.textContent).toContain('Gameweek 12');
     expect(container.textContent).toContain('Round 2');
     expect(container.textContent).not.toContain('Gameweeks 8–14');
@@ -678,6 +679,28 @@ describe('LeaguePage', () => {
     expect(container.textContent).toContain('League table');
     expect(container.textContent).not.toContain('Current fixtures');
     expect(container.querySelector('button[aria-label="View table"]')?.getAttribute('aria-pressed')).toBe('true');
+    act(() => root.unmount());
+  });
+
+  test('switches to the empty commissioner management surface', async () => {
+    const { container, root } = await renderPage();
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('button[aria-label="View commissioner management"]')?.click();
+    });
+
+    expect(container.querySelector('button[aria-label="View commissioner management"]')?.getAttribute('aria-pressed')).toBe('true');
+    expect(container.querySelector('.league-management-view')).not.toBeNull();
+    expect(container.querySelector('.league-fixtures-view')).toBeNull();
+    expect(container.querySelector('.league-table')).toBeNull();
+    act(() => root.unmount());
+  });
+
+  test('opens commissioner management when the nested route is active', async () => {
+    const { container, root } = await renderPage('/league/manage');
+
+    expect(container.querySelector('button[aria-label="View commissioner management"]')?.getAttribute('aria-pressed')).toBe('true');
+    expect(container.querySelector('.league-management-view')).not.toBeNull();
     act(() => root.unmount());
   });
 

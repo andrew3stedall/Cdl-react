@@ -60,7 +60,18 @@ KNOWN_CLOUD_RUN_ROLLOUT_DRIFT_PATH_SUFFIXES = (
     ".cloud_sql_instance.instances",
     ".cloud_sql_instance[0].instances",
 )
-KNOWN_CLOUD_RUN_PROVIDER_METADATA_DRIFT_PATHS = {"client", "client_version"}
+KNOWN_CLOUD_RUN_PROVIDER_METADATA_DRIFT_PATHS = {
+    "client",
+    "client_version",
+    "conditions",
+    "etag",
+    "generation",
+    "latest_created_revision",
+    "latest_ready_revision",
+    "observed_generation",
+    "terminal_condition[0].last_transition_time",
+    "update_time",
+}
 
 
 def _as_object(value: JsonValue) -> dict[str, JsonValue]:

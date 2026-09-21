@@ -55,9 +55,10 @@ SECURITY_SENSITIVE_PREFIXES = (
 KNOWN_CLOUD_RUN_SQL_RECOVERY_DRIFT_ADDRESS = (
     "module.cloud_run_api[0].google_cloud_run_v2_service.this"
 )
-KNOWN_CLOUD_RUN_SQL_RECOVERY_DRIFT_PATH = (
-    "template[0].template[0].volumes[0].cloud_sql_instance.instances"
-)
+KNOWN_CLOUD_RUN_SQL_RECOVERY_DRIFT_PATHS = {
+    "template[0].template[0].volumes[0].cloud_sql_instance.instances",
+    "template[0].template[0].volumes[0].cloud_sql_instance[0].instances",
+}
 
 
 def _as_object(value: JsonValue) -> dict[str, JsonValue]:
@@ -144,10 +145,13 @@ def _paths_overlap(left: str, right: str) -> bool:
 
 def _is_known_cloud_run_sql_recovery_drift(item: dict[str, JsonValue]) -> bool:
     """Identify the transient Cloud SQL recovery mount Cloud Run can report after restore."""
+    changed_paths = item.get("changed_paths")
     return (
         item.get("address") == KNOWN_CLOUD_RUN_SQL_RECOVERY_DRIFT_ADDRESS
         and item.get("type") == "google_cloud_run_v2_service"
-        and item.get("changed_paths") == [KNOWN_CLOUD_RUN_SQL_RECOVERY_DRIFT_PATH]
+        and isinstance(changed_paths, list)
+        and len(changed_paths) == 1
+        and changed_paths[0] in KNOWN_CLOUD_RUN_SQL_RECOVERY_DRIFT_PATHS
     )
 
 

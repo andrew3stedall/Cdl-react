@@ -79,7 +79,7 @@ jobs:
             --format='value(image_summary.digest)')"
           test "${image_digest}" != "<no value>"
           test "${image_digest}" = "sha256:${image_digest#sha256:}"
-          image_digest_uri="${image_tag_uri%@*}@${image_digest}"
+          image_digest_uri="${REGION}-docker.pkg.dev/${PROJECT_ID}/${ARTIFACT_REPOSITORY}/${IMAGE_NAME}@${image_digest}"
           echo "IMAGE_DIGEST_URI=${image_digest_uri}" >> "${GITHUB_ENV}"
           echo "source_sha=${source_sha}"
           echo "image_digest_uri=${image_digest_uri}"

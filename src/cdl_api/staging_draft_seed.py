@@ -65,6 +65,8 @@ STAGING_MANAGER_TEAM_IDS = (
     "team-bayer-neverlusen",
 )
 
+STAGING_COMMISSIONER_EMAIL = "andrew3stedall@gmail.com"
+
 SQUAD_SIZE = 20
 POSITION_LIMITS = {
     "GKP": (2, 3),
@@ -718,7 +720,11 @@ def seed_staging_snake_draft(
                         id=user_id,
                         email=email,
                         display_name=manager_nickname,
-                        roles=["manager"],
+                        roles=(
+                            ["manager", "commissioner"]
+                            if email == STAGING_COMMISSIONER_EMAIL
+                            else ["manager"]
+                        ),
                     )
                 )
                 assigned_users[email] = {
@@ -730,7 +736,14 @@ def seed_staging_snake_draft(
                 session.execute(
                     update(users_table)
                     .where(users_table.c.id == user_id)
-                    .values(display_name=manager_nickname, roles=["manager"])
+                    .values(
+                        display_name=manager_nickname,
+                        roles=(
+                            ["manager", "commissioner"]
+                            if email == STAGING_COMMISSIONER_EMAIL
+                            else ["manager"]
+                        ),
+                    )
                 )
                 assigned_users[email] = {
                     "id": user_id,

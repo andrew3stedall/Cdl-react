@@ -26,8 +26,13 @@ class GoogleIdentityVerifier:
     def enabled(self) -> bool:
         return bool(self._client_id and self._allowed_emails)
 
-    def verify(self, credential: str) -> GoogleIdentity | None:
-        if not self.enabled:
+    def verify(
+        self,
+        credential: str,
+        *,
+        allow_unlisted_email: bool = False,
+    ) -> GoogleIdentity | None:
+        if not self._client_id or (not self._allowed_emails and not allow_unlisted_email):
             return None
 
         try:
@@ -45,7 +50,7 @@ class GoogleIdentityVerifier:
             not isinstance(email, str)
             or not isinstance(subject, str)
             or claims.get("email_verified") is not True
-            or email.lower() not in self._allowed_emails
+            or (not allow_unlisted_email and email.lower() not in self._allowed_emails)
         ):
             return None
 

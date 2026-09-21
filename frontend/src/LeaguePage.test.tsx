@@ -6,6 +6,7 @@ import { LeaguePage } from './LeaguePage';
 import { shouldShowFixturePoints, sortFixtureBench } from './components/fixture/FixtureSquadComparison';
 import type { FixtureDetailResponse, FixtureSquad, LeagueClient, LeagueSnapshot } from './league-api';
 import type { SquadApiHistoryResponse } from './squad-api';
+import type { SessionState } from './contracts';
 
 const testGlobal = globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean };
 testGlobal.IS_REACT_ACT_ENVIRONMENT = true;
@@ -202,12 +203,35 @@ class CurrentPendingLeagueClient extends MemoryLeagueClient {
   }
 }
 
-async function renderPage(currentPath = '/league', client = new MemoryLeagueClient(), attackDirection: 'up' | 'down' = 'up') {
+class CommissionerLeagueClient extends MemoryLeagueClient {
+  async getLeagueManagement() {
+    return {
+      leagueName: 'CDL',
+      availableTeamCount: 5,
+      teams: [
+        { teamId: 'castle', teamName: 'Castle United', managerName: 'Andrew', managerEmail: 'andrew@example.com', isAssigned: true },
+        { teamId: 'drafton', teamName: 'Drafton Rovers', managerName: null, managerEmail: null, isAssigned: false },
+      ],
+    };
+  }
+
+  async createLeagueInvite(teamId: string) {
+    return { leagueName: 'CDL', teamId, teamName: 'Drafton Rovers', token: 'invite-token', availableTeamCount: 5 };
+  }
+}
+
+const commissionerSession: SessionState = {
+  isAuthenticated: true,
+  user: { id: 'commissioner-1', email: 'commissioner@example.com', displayName: 'Commissioner', roles: ['manager', 'commissioner'] },
+  expiresAt: null,
+};
+
+async function renderPage(currentPath = '/league', client = new MemoryLeagueClient(), attackDirection: 'up' | 'down' = 'up', session: SessionState = commissionerSession) {
   const container = document.createElement('div');
   document.body.append(container);
   const root = createRoot(container);
   await act(async () => {
-    root.render(<LeaguePage attackDirection={attackDirection} currentPath={currentPath} leagueClient={client} onNavigate={() => undefined} squadClient={new MemoryNotificationsClient()} />);
+    root.render(<LeaguePage attackDirection={attackDirection} currentPath={currentPath} leagueClient={client} onNavigate={() => undefined} session={session} squadClient={new MemoryNotificationsClient()} />);
     await Promise.resolve();
     await Promise.resolve();
   });
@@ -288,6 +312,34 @@ describe('LeaguePage', () => {
     expect(container.querySelector('nav[aria-label="League navigation"]')).toBeNull();
     expect(container.textContent).not.toContain('Overview stays lightweight');
     act(() => root.unmount());
+  });
+
+  test('shows invite link controls on commissioner management and hides them for managers', async () => {
+    const commissioner = await renderPage('/league/manage', new CommissionerLeagueClient());
+    expect(commissioner.container.textContent).toContain('Active managers');
+    expect(commissioner.container.textContent).toContain('Andrew');
+    expect(commissioner.container.textContent).toContain('Castle United');
+    expect(commissioner.container.textContent).toContain('Invite by team');
+    expect(commissioner.container.textContent).toContain('5 open places');
+
+    const generateButton = Array.from(commissioner.container.querySelectorAll('button')).find((button) => button.textContent === 'Invite');
+    expect(generateButton).not.toBeUndefined();
+    await act(async () => {
+      generateButton?.click();
+      await Promise.resolve();
+    });
+    expect(commissioner.container.querySelector('input[aria-label="Drafton Rovers invite link"]')?.getAttribute('value')).toContain('/join/invite-token');
+    commissioner.root.unmount();
+
+    const managerSession: SessionState = {
+      isAuthenticated: true,
+      user: { id: 'manager-1', email: 'manager@example.com', displayName: 'Manager', roles: ['manager'] },
+      expiresAt: null,
+    };
+    const manager = await renderPage('/league/manage', new CommissionerLeagueClient(), 'up', managerSession);
+    expect(manager.container.textContent).not.toContain('Manage');
+    expect(manager.container.textContent).not.toContain('Invite by team');
+    manager.root.unmount();
   });
 
   test('keeps gameweek navigation dots aligned with the selected gameweek', async () => {

@@ -8,6 +8,7 @@ interface LoginPageProps {
   email: string;
   error: string | null;
   googleClientId: string | null;
+  inviteMode?: boolean;
   onAppleSignIn?(): void;
   onPasskeyLogin?(): void | Promise<void>;
   password: string;
@@ -36,6 +37,7 @@ export function LoginPage({
   email,
   error,
   googleClientId,
+  inviteMode = false,
   onAppleSignIn = () => undefined,
   onPasskeyLogin = () => undefined,
   password,
@@ -69,10 +71,10 @@ export function LoginPage({
         <div className="login-rule" />
 
         <div className="login-intro">
-          <p className="login-kicker">Manager access</p>
-          <h1 id="login-title">Welcome back</h1>
+          <p className="login-kicker">{inviteMode ? 'League invitation' : 'Manager access'}</p>
+          <h1 id="login-title">{inviteMode ? 'Create your manager account' : 'Welcome back'}</h1>
           <p className="login-access-copy">
-            Sign in to access the Castle Draft League manager workspace.
+            {inviteMode ? 'Use Google to register, then your invited team will be assigned automatically.' : 'Sign in to access the Castle Draft League manager workspace.'}
           </p>
         </div>
 

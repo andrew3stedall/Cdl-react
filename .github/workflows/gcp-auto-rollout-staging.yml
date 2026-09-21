@@ -296,12 +296,36 @@ jobs:
             > "${RUNNER_TEMP}/auto-rollout-plan.txt"
           terraform show -json "${RUNNER_TEMP}/auto-rollout.tfplan" \
             > "${RUNNER_TEMP}/auto-rollout-plan.json"
+          set +e
           python "${GITHUB_WORKSPACE}/src/cdl_api/terraform_plan_summary.py" \
             --plan-json "${RUNNER_TEMP}/auto-rollout-plan.json" \
             --plan-file "${RUNNER_TEMP}/auto-rollout.tfplan" \
             --output "${RUNNER_TEMP}/auto-rollout-plan-summary.md" \
             --plan-exit-code "${{ steps.plan.outputs.exit_code }}" \
             --allow-staging-public-invoker
+          summary_rc=$?
+          set -e
+          python - "${RUNNER_TEMP}/auto-rollout-plan.json" "${GITHUB_WORKSPACE}" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+
+          sys.path.insert(0, str(Path(sys.argv[2]) / "src"))
+          from cdl_api.terraform_plan_summary import _parse_changes
+
+          plan = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          for item in _parse_changes(plan, "resource_drift"):
+              if item["action"] not in {"no-op", "read"}:
+                  print(
+                      "Terraform drift paths: "
+                      f"address={item['address']} paths={item['changed_paths']}"
+                  )
+          PY
+          cat "${RUNNER_TEMP}/auto-rollout-plan-summary.md"
+          if [ "${summary_rc}" -ne 0 ]; then
+            echo "Terraform plan summary failed with exit code ${summary_rc}." >&2
+            exit "${summary_rc}"
+          fi
           grep -Fq "Safety gate: **PASS**" \
             "${RUNNER_TEMP}/auto-rollout-plan-summary.md"
 

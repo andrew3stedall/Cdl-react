@@ -78,9 +78,7 @@ class Settings(BaseSettings):
     @property
     def commissioner_email_set(self) -> set[str]:
         return {
-            email.strip().lower()
-            for email in self.commissioner_emails.split(",")
-            if email.strip()
+            email.strip().lower() for email in self.commissioner_emails.split(",") if email.strip()
         }
 
 

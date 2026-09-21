@@ -140,3 +140,26 @@ class HeadToHeadRecord(BaseModel):
 
 class HeadToHeadResponse(BaseModel):
     records: list[HeadToHeadRecord]
+
+
+class LeagueManagementResponse(BaseModel):
+    league_name: str
+    available_team_count: int
+
+
+class LeagueInviteResponse(BaseModel):
+    league_name: str
+    token: str
+    available_team_count: int
+
+
+class LeagueInvitePreviewResponse(BaseModel):
+    league_name: str
+    available_team_count: int
+
+
+class LeagueJoinResponse(BaseModel):
+    league_name: str
+    team_id: str
+    team_name: str
+    already_member: bool = False

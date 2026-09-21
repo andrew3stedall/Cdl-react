@@ -1865,6 +1865,119 @@
   margin: 0.18rem 0 0;
 }
 
+.league-management-view,
+.league-invite-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.league-management-card,
+.league-invite-card {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem;
+}
+
+.league-management-card__heading {
+  align-items: flex-start;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.league-management-card h2,
+.league-invite-card h1 {
+  color: var(--foreground);
+  font-size: 1.1rem;
+  margin: 0.1rem 0 0;
+}
+
+.league-management-card__places,
+.league-invite-card__places {
+  background: var(--secondary);
+  border-radius: 999px;
+  color: var(--secondary-foreground);
+  flex: 0 0 auto;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.35rem 0.55rem;
+}
+
+.league-management-card__copy,
+.league-management-card__status,
+.league-invite-card__state p,
+.league-invite-card__signed-in {
+  color: var(--muted-foreground);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.league-management-card__status[role='alert'] {
+  color: var(--destructive);
+}
+
+.league-management-card__link-row {
+  align-items: stretch;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.league-management-card__link-row input {
+  background: var(--input);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 0.1rem);
+  color: var(--foreground);
+  flex: 1 1 auto;
+  font: inherit;
+  min-width: 0;
+  padding: 0.6rem 0.7rem;
+}
+
+.league-invite-page {
+  margin: auto;
+  max-width: 32rem;
+  min-height: 70vh;
+  place-content: center;
+  padding: 1rem;
+}
+
+.league-invite-card__state {
+  align-items: center;
+  display: grid;
+  gap: 0.8rem;
+  justify-items: start;
+}
+
+.league-invite-card__state[role='status'] {
+  grid-template-columns: auto 1fr;
+  justify-items: start;
+}
+
+.league-invite-card__spinner {
+  animation: league-invite-spin 0.9s linear infinite;
+}
+
+.league-invite-card__success {
+  color: var(--primary);
+}
+
+.league-invite-card__signed-in {
+  font-size: 0.68rem;
+}
+
+@keyframes league-invite-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 520px) {
+  .league-management-card__heading,
+  .league-management-card__link-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
 .league-loading {
   display: grid;
   gap: 0.8rem;

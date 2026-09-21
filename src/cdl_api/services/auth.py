@@ -55,11 +55,13 @@ class AuthenticationService:
         sessions: SessionRepository,
         development_secret: str,
         session_ttl_days: int = 30,
+        commissioner_emails: set[str] | None = None,
     ) -> None:
         self._users = users
         self._sessions = sessions
         self._development_secret = development_secret
         self._session_ttl = timedelta(days=session_ttl_days)
+        self._commissioner_emails = commissioner_emails or set()
 
     def login(self, request: LoginRequest) -> tuple[str, SessionState] | None:
         user_record = self._users.get_by_email(request.email)
@@ -97,7 +99,7 @@ class AuthenticationService:
             id=user_record.id,
             email=user_record.email,
             display_name=user_record.display_name,
-            roles=user_record.roles,
+            roles=self._effective_roles(user_record.email, user_record.roles),
         )
         expires_at = datetime.now(UTC) + self._session_ttl
         session_id = self._sessions.create(user, expires_at)
@@ -109,11 +111,21 @@ class AuthenticationService:
 
     def get_session(self, session_id: str | None) -> SessionState:
         record = self._sessions.get_record(session_id)
+        user = record.user if record is not None else None
+        if user is not None:
+            user = user.model_copy(
+                update={"roles": self._effective_roles(user.email, user.roles)}
+            )
         return SessionState(
             is_authenticated=record is not None,
-            user=record.user if record is not None else None,
+            user=user,
             expires_at=record.expires_at if record is not None else None,
         )
+
+    def _effective_roles(self, email: str, roles: list[str]) -> list[str]:
+        if email.lower() not in self._commissioner_emails or "commissioner" in roles:
+            return roles
+        return [*roles, "commissioner"]
 
     def logout(self, session_id: str | None) -> SessionState:
         self._sessions.delete(session_id)

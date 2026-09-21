@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     apple_private_key: str = ""
     apple_redirect_uri: str = ""
     apple_allowed_emails: str = ""
+    commissioner_emails: str = ""
     passkey_rp_id: str = ""
     passkey_expected_origin: str = ""
     passkey_rp_name: str = "Castle Draft League"
@@ -73,6 +74,14 @@ class Settings(BaseSettings):
     @property
     def passkey_enabled(self) -> bool:
         return bool(self.passkey_rp_id and self.passkey_expected_origin)
+
+    @property
+    def commissioner_email_set(self) -> set[str]:
+        return {
+            email.strip().lower()
+            for email in self.commissioner_emails.split(",")
+            if email.strip()
+        }
 
 
 def get_settings() -> Settings:

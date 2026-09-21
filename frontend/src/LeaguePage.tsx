@@ -21,6 +21,7 @@ import { PlayerChartDetailDialog } from './components/player/PlayerChartDetailDi
 import { TeamCrest } from './components/team/TeamCrest';
 import { PageHero, PageHeroControls, PageHeroViewToggle } from './components/ui/page-hero';
 import type { AttackDirection } from './contracts';
+import type { SessionState } from './contracts';
 import {
   formDetailSections,
   formDetailSummary,
@@ -62,11 +63,12 @@ interface LeaguePageProps {
   currentPath?: string;
   leagueClient?: LeagueClient;
   onNavigate: (href: string) => void;
+  session?: SessionState;
   squadClient?: Pick<SquadClient, 'getNotifications' | 'getPlayerHistory'>;
   teamSelectionClient?: Pick<TeamSelectionClient, 'getTeamSelection'>;
 }
 
-export function LeaguePage({ attackDirection = 'up', currentPath = window.location.pathname, leagueClient = defaultLeagueClient, onNavigate, squadClient = defaultSquadClient, teamSelectionClient = defaultTeamSelectionClient }: LeaguePageProps) {
+export function LeaguePage({ attackDirection = 'up', currentPath = window.location.pathname, leagueClient = defaultLeagueClient, onNavigate, session, squadClient = defaultSquadClient, teamSelectionClient = defaultTeamSelectionClient }: LeaguePageProps) {
   const [snapshot, setSnapshot] = useState<LeagueSnapshot | null>(null);
   const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
   const [reloadKey, setReloadKey] = useState(0);
@@ -204,6 +206,9 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
   const selectedFixturePlayerGameweekStatus = selectedFixturePlayer
     ? fixtureGameweekStatusForFixture(selectedFixturePlayer.fixture, snapshot)
     : null;
+  const isCommissioner = Boolean(
+    session?.user?.roles.some((role) => role === 'commissioner' || role === 'admin'),
+  );
 
   return (
     <main aria-labelledby="league-title" className="league-page">
@@ -216,7 +221,9 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
               options={[
                 { ariaLabel: 'View fixtures', value: 'fixtures', label: 'Fixtures', icon: <CalendarDays aria-hidden="true" size={18} /> },
                 { ariaLabel: 'View table', value: 'table', label: 'Table', icon: <Table2 aria-hidden="true" size={18} /> },
-                { ariaLabel: 'View commissioner management', value: 'manage', label: 'Manage', icon: <LeagueManagementIcon size={18} /> },
+                ...(isCommissioner
+                  ? [{ ariaLabel: 'View commissioner management', value: 'manage', label: 'Manage', icon: <LeagueManagementIcon size={18} /> }]
+                  : []),
               ]}
               value={view}
             />
@@ -250,6 +257,7 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
           onOpenFixture={openFixture}
           onReload={() => setReloadKey((key) => key + 1)}
           snapshot={snapshot}
+          isCommissioner={isCommissioner}
           view={view}
         />
       ) : null}
@@ -403,6 +411,7 @@ function toProfilePlayer(player: FixtureSquadPlayer): SquadApiPlayer {
 }
 
 function LeagueContent({
+  isCommissioner,
   leagueClient,
   managerTeamId,
   onOpenFixture,
@@ -410,6 +419,7 @@ function LeagueContent({
   snapshot,
   view,
 }: {
+  isCommissioner: boolean;
   leagueClient: LeagueClient;
   managerTeamId: string | null;
   onOpenFixture: (fixture: LeagueFixture) => void;
@@ -418,12 +428,106 @@ function LeagueContent({
   view: LeagueView;
 }) {
   if (view === 'table') return <TableView onReload={onReload} snapshot={snapshot} />;
-  if (view === 'manage') return <CommissionerManagementView />;
+  if (view === 'manage' && isCommissioner) return <CommissionerManagementView leagueClient={leagueClient} />;
   return <FixturesView leagueClient={leagueClient} managerTeamId={managerTeamId} onOpenFixture={onOpenFixture} snapshot={snapshot} />;
 }
 
-function CommissionerManagementView() {
-  return <section aria-label="Commissioner management" className="league-management-view" />;
+function CommissionerManagementView({ leagueClient }: { leagueClient: LeagueClient }) {
+  const [management, setManagement] = useState<{ leagueName: string; availableTeamCount: number } | null>(null);
+  const [inviteUrl, setInviteUrl] = useState<string | null>(null);
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [inviteStatus, setInviteStatus] = useState<'idle' | 'creating' | 'created' | 'error'>('idle');
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied' | 'error'>('idle');
+
+  useEffect(() => {
+    if (!leagueClient.getLeagueManagement) {
+      setManagement({ leagueName: 'CDL', availableTeamCount: 0 });
+      setStatus('ready');
+      return;
+    }
+    let active = true;
+    setStatus('loading');
+    void leagueClient.getLeagueManagement()
+      .then((result) => {
+        if (active) {
+          setManagement(result);
+          setStatus('ready');
+        }
+      })
+      .catch(() => {
+        if (active) setStatus('error');
+      });
+    return () => {
+      active = false;
+    };
+  }, [leagueClient]);
+
+  async function generateInvite() {
+    if (!leagueClient.createLeagueInvite) return;
+    setInviteStatus('creating');
+    setCopyStatus('idle');
+    try {
+      const invite = await leagueClient.createLeagueInvite();
+      setManagement((current) => current ? { ...current, leagueName: invite.leagueName, availableTeamCount: invite.availableTeamCount } : { leagueName: invite.leagueName, availableTeamCount: invite.availableTeamCount });
+      setInviteUrl(`${window.location.origin}/join/${encodeURIComponent(invite.token)}`);
+      setInviteStatus('created');
+    } catch {
+      setInviteStatus('error');
+    }
+  }
+
+  async function copyInvite() {
+    if (!inviteUrl) return;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(inviteUrl);
+      } else {
+        const input = document.createElement('textarea');
+        input.value = inviteUrl;
+        input.style.position = 'fixed';
+        input.style.opacity = '0';
+        document.body.append(input);
+        input.select();
+        document.execCommand('copy');
+        input.remove();
+      }
+      setCopyStatus('copied');
+    } catch {
+      setCopyStatus('error');
+    }
+  }
+
+  return (
+    <section aria-label="Commissioner management" className="league-management-view">
+      <Card className="league-management-card">
+        <div className="league-management-card__heading">
+          <div>
+            <p className="eyebrow">League management</p>
+            <h2>Invite managers</h2>
+          </div>
+          {status === 'ready' && management ? <span className="league-management-card__places">{management.availableTeamCount} open {management.availableTeamCount === 1 ? 'place' : 'places'}</span> : null}
+        </div>
+        {status === 'loading' ? <p className="league-management-card__status">Loading league places…</p> : null}
+        {status === 'error' ? <p className="league-management-card__status" role="alert">League management is temporarily unavailable.</p> : null}
+        {status === 'ready' ? (
+          <>
+            <p className="league-management-card__copy">Generate a link to share with the next manager.</p>
+            <Button disabled={!leagueClient.createLeagueInvite || management?.availableTeamCount === 0 || inviteStatus === 'creating'} onClick={() => void generateInvite()} type="button">
+              {inviteStatus === 'creating' ? 'Generating…' : inviteUrl ? 'Generate new link' : 'Generate invite link'}
+            </Button>
+            {inviteStatus === 'error' ? <p className="league-management-card__status" role="alert">The invite link could not be generated.</p> : null}
+            {inviteUrl ? (
+              <div className="league-management-card__link-row">
+                <input aria-label="League invite link" readOnly value={inviteUrl} />
+                <Button onClick={() => void copyInvite()} type="button" variant="secondary">{copyStatus === 'copied' ? 'Copied' : 'Copy link'}</Button>
+              </div>
+            ) : null}
+            {copyStatus === 'error' ? <p className="league-management-card__status" role="alert">Copy was blocked. Select the link and copy it manually.</p> : null}
+          </>
+        ) : null}
+      </Card>
+    </section>
+  );
 }
 
 function FixturesView({ leagueClient, managerTeamId, onOpenFixture, snapshot }: { leagueClient: LeagueClient; managerTeamId: string | null; onOpenFixture: (fixture: LeagueFixture) => void; snapshot: LeagueSnapshot }) {

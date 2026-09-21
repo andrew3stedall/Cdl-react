@@ -198,6 +198,101 @@ def test_cloud_run_sql_recovery_mount_drift_is_refresh_only() -> None:
     assert "Actionable managed reconciliation" not in summary
 
 
+def test_cloud_run_job_rollout_metadata_drift_is_refresh_only() -> None:
+    address = "google_cloud_run_v2_job.database_migration[0]"
+    plan = {
+        "format_version": "1.2",
+        "terraform_version": "1.15.8",
+        "resource_changes": [
+            _change(
+                address,
+                "google_cloud_run_v2_job",
+                {
+                    "template": [
+                        {
+                            "template": [
+                                {
+                                    "containers": [{"image": "old"}],
+                                    "volumes": [
+                                        {
+                                            "cloud_sql_instance": {
+                                                "instances": ["primary", "recovery"]
+                                            }
+                                        }
+                                    ],
+                                }
+                            ]
+                        }
+                    ],
+                    "etag": "old",
+                },
+                {
+                    "template": [
+                        {
+                            "template": [
+                                {
+                                    "containers": [{"image": "new"}],
+                                    "volumes": [{"cloud_sql_instance": {"instances": ["primary"]}}],
+                                }
+                            ]
+                        }
+                    ],
+                    "etag": "new",
+                },
+            )
+        ],
+        "resource_drift": [
+            _change(
+                address,
+                "google_cloud_run_v2_job",
+                {
+                    "template": [
+                        {
+                            "template": [
+                                {
+                                    "volumes": [
+                                        {
+                                            "cloud_sql_instance": {
+                                                "instances": ["primary", "recovery"]
+                                            }
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ],
+                    "etag": "old",
+                    "update_time": "old",
+                },
+                {
+                    "template": [
+                        {
+                            "template": [
+                                {"volumes": [{"cloud_sql_instance": {"instances": ["primary"]}}]}
+                            ]
+                        }
+                    ],
+                    "etag": "new",
+                    "update_time": "new",
+                },
+            )
+        ],
+    }
+
+    summary, exit_code = summarize_plan(
+        plan,
+        plan_sha256="abc",
+        plan_exit_code=2,
+        source_sha="deadbeef",
+        run_url="",
+    )
+
+    assert exit_code == 0
+    assert "Safety gate: **PASS**" in summary
+    assert "Non-overlapping refresh differences" in summary
+    assert "Actionable managed reconciliation" not in summary
+
+
 def test_unknown_change_shape_fails_closed_when_same_resource_is_managed() -> None:
     address = "google_cloud_run_v2_job.synthetic_seed[0]"
     plan = {

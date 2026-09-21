@@ -113,9 +113,7 @@ class AuthenticationService:
         record = self._sessions.get_record(session_id)
         user = record.user if record is not None else None
         if user is not None:
-            user = user.model_copy(
-                update={"roles": self._effective_roles(user.email, user.roles)}
-            )
+            user = user.model_copy(update={"roles": self._effective_roles(user.email, user.roles)})
         return SessionState(
             is_authenticated=record is not None,
             user=user,

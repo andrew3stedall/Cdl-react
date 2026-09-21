@@ -225,6 +225,14 @@ def test_cloud_run_job_rollout_metadata_drift_is_refresh_only() -> None:
                         }
                     ],
                     "etag": "old",
+                    "execution_count": 1,
+                    "latest_created_execution": [
+                        {
+                            "completion_time": "old",
+                            "create_time": "old",
+                            "name": "old",
+                        }
+                    ],
                 },
                 {
                     "template": [
@@ -238,6 +246,14 @@ def test_cloud_run_job_rollout_metadata_drift_is_refresh_only() -> None:
                         }
                     ],
                     "etag": "new",
+                    "execution_count": 2,
+                    "latest_created_execution": [
+                        {
+                            "completion_time": "new",
+                            "create_time": "new",
+                            "name": "new",
+                        }
+                    ],
                 },
             )
         ],
@@ -262,6 +278,14 @@ def test_cloud_run_job_rollout_metadata_drift_is_refresh_only() -> None:
                         }
                     ],
                     "etag": "old",
+                    "execution_count": 1,
+                    "latest_created_execution": [
+                        {
+                            "completion_time": "old",
+                            "create_time": "old",
+                            "name": "old",
+                        }
+                    ],
                     "update_time": "old",
                 },
                 {
@@ -273,6 +297,14 @@ def test_cloud_run_job_rollout_metadata_drift_is_refresh_only() -> None:
                         }
                     ],
                     "etag": "new",
+                    "execution_count": 2,
+                    "latest_created_execution": [
+                        {
+                            "completion_time": "new",
+                            "create_time": "new",
+                            "name": "new",
+                        }
+                    ],
                     "update_time": "new",
                 },
             )

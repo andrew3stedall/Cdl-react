@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Added the 3 October 2026 whole-app production retrospective and 70 scoped
+  follow-up issues under milestone tracker #466, with evidence, priorities,
+  dependencies and explicit production validation limits. No runtime behavior
+  changed in this audit.
+
 - Made the standard player metric heatmap use the reference five-step palette:
   green, cyan, electric blue, red, and deep red. The same colours now apply in
   light and dark modes so form dots and other metric surfaces remain consistent.

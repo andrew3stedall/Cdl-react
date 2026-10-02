@@ -1067,18 +1067,34 @@ PY
 from cdl_api.staging_draft_seed import resolve_staging_manager_context
 from cdl_api.repositories.postgres_squad_repository import PostgreSQLSquadRepository
 from cdl_api.repositories.postgres_team_selection import PostgreSQLTeamSelectionRepository
+
+
 class Result:
-    def mappings(self): return self
-    def first(self): return None
-    def __iter__(self): return iter([])
+    def mappings(self):
+        return self
+
+    def first(self):
+        return None
+
+    def __iter__(self):
+        return iter([])
+
+
 class Session:
-    def __enter__(self): return self
-    def __exit__(self, *args): return None
-    def execute(self, statement): return Result()
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return None
+
+    def execute(self, statement):
+        return Result()
+
+
 factory = lambda: Session()
-print(resolve_staging_manager_context(factory, 'new-unassigned-user'))
+print(resolve_staging_manager_context(factory, "new-unassigned-user"))
 for cls in [PostgreSQLSquadRepository, PostgreSQLTeamSelectionRepository]:
-    repo = cls(factory, user_id='new-unassigned-user')
+    repo = cls(factory, user_id="new-unassigned-user")
     print(cls.__name__, repo.manager_team.id, repo.manager_team.name, repo._manager_id)
 ```
 

@@ -481,16 +481,6 @@ jobs:
               echo "Cloud Run reconciliation ended without a new ready revision." >&2
               exit 1
             fi
-            if [ "$(python scripts/cloud_run_staged_revision.py reconciling \
-              "${RUNNER_TEMP}/staged-service.json")" = "false" ]; then
-              python scripts/cloud_run_staged_revision.py diagnostics \
-                "${RUNNER_TEMP}/staged-service.json" - \
-                "${RUNTIME_TRAFFIC_REVISION}" "${image}" \
-                > "${RUNNER_TEMP}/staged-revision-diagnostics.json"
-              cat "${RUNNER_TEMP}/staged-revision-diagnostics.json" >&2
-              echo "Cloud Run reconciliation ended without a new ready revision." >&2
-              exit 1
-            fi
             sleep 5
           done
           if [ -z "${revision}" ]; then

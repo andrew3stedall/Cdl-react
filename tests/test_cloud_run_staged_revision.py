@@ -334,6 +334,7 @@ def test_all_rollout_workflows_wait_fail_closed_and_capture_only_safe_diagnostic
         assert "cloud_run_staged_revision.py ready" in workflow
         assert "cloud_run_staged_revision.py failed" in workflow
         assert "cloud_run_staged_revision.py reconciling" in workflow
+        assert workflow.count("cloud_run_staged_revision.py reconciling") == 1
         assert "seq 1 60" in workflow
         assert "cloud_run_staged_revision.py diagnostics" in workflow
         assert "cloud_run_staged_revision.py sanitize-logs" in workflow

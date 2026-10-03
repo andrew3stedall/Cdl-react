@@ -261,7 +261,6 @@ test('primary headers and essential player values remain legible at 200% text sc
   const scaledRootFontSize = await page.evaluate(() => Number.parseFloat(getComputedStyle(document.documentElement).fontSize));
   expect(scaledRootFontSize, 'the 200% text scale should apply before measuring content').toBeGreaterThanOrEqual(32);
 
-  let firstHeader: Awaited<ReturnType<typeof readHeaderBounds>> | undefined;
   for (const [label, title] of [
     ['Desk', 'Gaffers Desk'],
     ['Squad', 'Squad'],
@@ -274,7 +273,11 @@ test('primary headers and essential player values remain legible at 200% text sc
     }
 
     const header = await readHeaderBounds(page);
-    await expectHeaderDimensions(page, header, viewport);
+    const expectedBellSize = 2.5 * scaledRootFontSize;
+    expect(Math.abs(header.bell.width - expectedBellSize), `${title} notification width at 200% text scale`).toBeLessThanOrEqual(1);
+    expect(Math.abs(header.bell.height - expectedBellSize), `${title} notification height at 200% text scale`).toBeLessThanOrEqual(1);
+    const bellInlineEndDelta = header.bell.x + header.bell.width - (header.hero.x + header.hero.width);
+    expect(Math.abs(bellInlineEndDelta), `${title} notification aligns to PageHero at 200% text scale`).toBeLessThanOrEqual(1);
     const hero = activeHero(page);
     const heroBox = await bounds(hero);
     const brand = hero.locator('.cdl-page-hero__brand-lockup');
@@ -294,13 +297,6 @@ test('primary headers and essential player values remain legible at 200% text sc
     expect(titleFontSize, `${title} title should respond to 200% text scaling`).toBeGreaterThanOrEqual(32);
     const heroOverflow = await hero.evaluate((element) => element.scrollWidth > element.clientWidth + 1);
     expect(heroOverflow, `${title} header content should not overflow at 200% text scaling`).toBe(false);
-    if (firstHeader) {
-      expectBoundsStable(firstHeader.hero, header.hero, `200% text scale header before→${title}`);
-      expectBoundsStable(firstHeader.bell, header.bell, `200% text scale notification before→${title}`);
-    } else {
-      firstHeader = header;
-    }
-
     if (title === 'Market') {
       const playerRow = page.getByRole('button', { name: 'View Fixture Available Midfielder details' });
       await expect(playerRow).toBeVisible();

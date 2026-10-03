@@ -6,7 +6,7 @@ Define league roles, approval routing, commissioner/vice commissioner responsibi
 
 ## Status
 
-Checkpoint 1 complete.
+Trade agreement/approval/execution and its audit records are being delivered in milestone #466. General commissioner corrections, global audit browsing and assigned-team reassignment are not completed by the engineering checkpoint; #524 and #535 track their remaining scope.
 
 ## Business Rules
 

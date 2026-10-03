@@ -595,15 +595,19 @@ def validate_draft_allocations(allocations: tuple[DraftAllocation, ...]) -> None
                 )
 
 
+class UnassignedManagerContextError(PermissionError):
+    """Raised when a signed-in user has no assigned league team."""
+
+
 def resolve_staging_manager_context(
     session_factory: object,
     user_id: str | None,
 ) -> tuple[str, str, str, str, str] | None:
-    """Resolve a signed-in staging user to their manager and rival teams.
+    """Resolve a signed-in user to their manager and rival teams.
 
     The tuple contains manager ID, manager team ID, manager team name, rival
-    team ID, and rival team name. A missing user or unassigned user returns
-    ``None`` so development-mode defaults remain unchanged.
+    team ID, and rival team name. Anonymous development previews may use the
+    seeded default; an identified user without a team fails closed.
     """
     if user_id is None:
         return None
@@ -626,7 +630,7 @@ def resolve_staging_manager_context(
             .first()
         )
         if manager_row is None:
-            return None
+            raise UnassignedManagerContextError("A team assignment is required.")
 
         rival_row = (
             session.execute(
@@ -643,7 +647,7 @@ def resolve_staging_manager_context(
         )
 
     if rival_row is None:
-        return None
+        raise UnassignedManagerContextError("A team assignment is required.")
     return (
         str(manager_row["id"]),
         str(manager_row["team_id"]),

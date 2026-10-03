@@ -6,7 +6,7 @@ Define knockout brackets, legs, aggregate scoring, playoff structure, and most-g
 
 ## Status
 
-Checkpoint 4 complete.
+Historical knockout persistence exists. A deterministic domain engine now seeds the documented 1v4/2v3 top-four ties and bottom-two final, resolves by aggregate then scoring-lineup goals, and leaves an aggregate-and-goals tie unresolved. The API has additive bracket, tie, leg, readiness, aggregate, goals, and unresolved-tiebreak fields. Persisted scheduled fixtures and winner progression are not yet connected. The 5th/6th pairings and a second-level rule for aggregate-and-goals ties remain unresolved and must not be guessed.
 
 ## Business Rules
 

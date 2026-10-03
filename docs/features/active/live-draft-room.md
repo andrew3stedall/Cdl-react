@@ -6,7 +6,7 @@ Define the live sequential draft workflow, draft order modes, pick clock, presel
 
 ## Status
 
-Checkpoint 1 complete.
+Engineering prototype exists; persistent authenticated live draft remains planned (#521), targeted before the next league draft. It is excluded from the already-drafted-league staging candidate.
 
 ## Business Rules
 

@@ -31,7 +31,7 @@
   background: var(--secondary);
   border: 1px solid var(--border);
   border-radius: 0.55rem;
-  color: var(--primary);
+  color: var(--theme-primary-text, var(--primary));
   cursor: pointer;
   display: inline-flex;
   height: 1.85rem;

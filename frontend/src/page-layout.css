@@ -44,7 +44,7 @@
      every mobile route resolves to this single gutter. */
   .shell-main[data-active-route] > .shell-content {
     margin: 0;
-    padding: 0.75rem var(--cdl-page-gutter) calc(2rem + var(--cdl-mobile-navigation-clearance));
+    padding: calc(0.75rem + env(safe-area-inset-top)) var(--cdl-page-gutter) calc(2rem + var(--cdl-mobile-navigation-clearance));
   }
 
   .feature-screen,

@@ -59,9 +59,13 @@ The application provides responsive shared navigation, manual reload, route-awar
 
 - shadcn/ui is mandatory for shell primitives unless an exception is documented.
 - Theme mode must include light, dark, and adaptive options; adaptive follows the device colour-scheme preference.
-- Theme colours must be selectable independently of theme mode, with reusable four-accent templates plus a custom palette editor aligned to the FDR selector pattern. The selected accent values are preserved exactly in every mode; only the neutral interface surfaces change.
+- Theme colours must be selectable independently of theme mode, with reusable four-accent templates plus a custom palette editor aligned to the FDR selector pattern. Light and dark variants are stored independently. Templates retain their exact authored pairs; legacy single palettes derive a nearby companion, and custom edits can target either mode without mutating the other.
+- Theme fill tokens preserve the exact selected accent values. Accessible text roles (`--theme-{accent}-text`) may derive a contrasting text colour against the current neutral canvas and card surfaces; foreground-on-fill tokens remain separate for filled controls.
 - Dark Teal is the default appearance for users without a saved preference.
 - Presets must define colour tokens, density, radius, typography scale, and chart palette hooks.
+- Shared typography roles keep primary player names and essential values at or above `0.7rem`, metadata at or above `0.7rem`, and compact chart labels at or above `0.625rem`; all use rem sizing for browser text scaling.
+- Global mobile navigation stays below the shared modal stack; drawers and full-height palette sheets reserve safe-area and dynamic viewport space.
+- Modal sheets and custom drawers use a shared keyboard lifecycle: focus enters, Tab stays in the modal, Escape closes, background siblings become inert, and close restores the opener.
 - Surfaces must avoid gradients, shadows, glows, and information-heavy colour highlighting.
 
 ## Data Access Requirements
@@ -74,6 +78,8 @@ The application provides responsive shared navigation, manual reload, route-awar
 - Users can navigate all modernised modules from a shared shell.
 - Users can select light, dark, or system-adaptive theme mode and see it applied consistently.
 - Users can choose a theme-colour template or custom four-accent palette without changing theme mode.
+- Users can edit the custom light and dark palettes independently; templates and saved preferences retain both exact variants.
+- Accent fill values remain unchanged when accessible text values are derived.
 - Users can open Profile & preferences, inspect their authenticated account, change appearance, and sign out.
 - Shell works on mobile and desktop.
 - Active route state is clear.
@@ -92,3 +98,7 @@ The application provides responsive shared navigation, manual reload, route-awar
 ## Changelog Requirements
 
 - Add implementation changelog entry when the shell is built.
+
+## Retrospective follow-up
+
+Known supported routes now have explicit recognition, League view tabs are addressable, Market and League expose contextual FDR/Analytics links, and notification counts are labelled as alerts until durable read state exists. Shared route and visibility freshness remains in progress.

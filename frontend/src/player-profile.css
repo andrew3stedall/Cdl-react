@@ -850,7 +850,7 @@
 .player-profile__dialog-layer {
   inset: 0;
   position: fixed;
-  z-index: 40;
+  z-index: var(--cdl-z-modal-nested, 80);
 }
 
 .player-profile__dialog-backdrop {

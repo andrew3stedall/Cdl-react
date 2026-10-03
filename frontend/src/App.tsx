@@ -11,7 +11,7 @@ import {
 import { AppShell } from './AppShell';
 import { AnalyticsDashboardPage } from './AnalyticsDashboardPage';
 import { GlobalNotificationsProvider } from './components/ui/global-notifications';
-import type { RuleSection, SessionState } from './contracts';
+import type { SessionState } from './contracts';
 import type { DashboardClient } from './dashboard-api';
 import { FixtureDifficultyPage } from './FixtureDifficultyPage';
 import type { FdrClient } from './fdr-api';
@@ -24,13 +24,13 @@ import { MarketPage } from './MarketPage';
 import { ManagerDeskPage } from './ManagerDeskPage';
 import type { ManagerDeskClient } from './manager-desk-api';
 import { ModernisationCheckpointPage } from './ModernisationCheckpointPage';
-import { getPageRouteKey, isSquadRoute } from './navigation';
+import { getPageRouteKey, isSquadRoute, isSupportedRoute } from './navigation';
 import { PlayerProfilePage } from './PlayerProfilePage';
 import { LocalStoragePreferenceClient, type PreferenceClient } from './preferences-api';
 import { ProfilePage } from './ProfilePage';
 import { ResultColourProfilePage } from './ResultColourProfilePage';
 import { loginWithPasskey } from './passkeys';
-import { RulesPage } from './RulesPage';
+import { RulesWorkspacePage } from './RulesWorkspacePage';
 import { SessionSplash } from './SessionSplash';
 import { SquadWorkspacePage } from './SquadWorkspacePage';
 import { HttpSquadClient, type SquadClient } from './squad-api';
@@ -40,60 +40,16 @@ import { getStoredThemePreset } from './theme-cookie';
 
 const loginPreferenceClient = new LocalStoragePreferenceClient();
 const defaultAppSquadClient = new HttpSquadClient();
+const LOGIN_RETURN_KEY = 'cdl.loginReturnPath';
 
-const rulesVersion = {
-  version: '2026.05',
-  effectiveDate: '2026-05-22',
-  status: 'active',
-  source: 'docs/features/active/rules-knowledge-base.md',
-};
-
-const featuredRules: RuleSection[] = [
-  {
-    id: 'squad-size',
-    title: 'Squad Size',
-    category: 'squads',
-    summary: 'Squads must remain within approved roster limits.',
-    body: ['Validation errors should link to this stable rule identifier.'],
-    tags: ['squad', 'validation'],
-    anchors: ['squad-size'],
-    relatedRuleIds: ['transfer-deadline'],
-    version: rulesVersion,
-  },
-  {
-    id: 'trade-window',
-    title: 'Trade Window',
-    category: 'trades',
-    summary: 'Trades are only valid during configured trade windows.',
-    body: ['Trade proposals can only be accepted while the trade window is open.'],
-    tags: ['trades', 'commissioner'],
-    anchors: ['trade-window'],
-    relatedRuleIds: ['commissioner-decisions'],
-    version: rulesVersion,
-  },
-  {
-    id: 'lineup-validation',
-    title: 'Lineup Validation',
-    category: 'squads',
-    summary: 'Lineups must satisfy starter, bench, reserve, and captaincy rules.',
-    body: ['Team selection validation links to this stable rule identifier.'],
-    tags: ['team-selection', 'validation'],
-    anchors: ['lineup-validation'],
-    relatedRuleIds: ['chip-usage', 'captaincy'],
-    version: rulesVersion,
-  },
-  {
-    id: 'chip-usage',
-    title: 'Chip Usage',
-    category: 'squads',
-    summary: 'Only one unused chip can be active at a time.',
-    body: ['Used chips cannot be reactivated.'],
-    tags: ['chips', 'team-selection'],
-    anchors: ['chip-usage'],
-    relatedRuleIds: ['lineup-validation'],
-    version: rulesVersion,
-  },
-];
+function storedLoginReturnPath(): string | null {
+  try {
+    const value = window.sessionStorage.getItem(LOGIN_RETURN_KEY);
+    return value?.startsWith('/join/') ? value : null;
+  } catch {
+    return null;
+  }
+}
 
 interface AppProps {
   dashboardClient?: DashboardClient;
@@ -121,7 +77,7 @@ export function App({
   teamSelectionClient,
 }: AppProps) {
   const [currentPath, setCurrentPath] = useState(initialPath);
-  const [loginReturnPath, setLoginReturnPath] = useState<string | null>(() => initialPath.startsWith('/join/') ? initialPath : null);
+  const [loginReturnPath, setLoginReturnPath] = useState<string | null>(() => initialPath.startsWith('/join/') ? initialPath : storedLoginReturnPath());
   const [activeSession, setActiveSession] = useState<SessionState | null>(session ?? null);
   const [sessionCheckError, setSessionCheckError] = useState<string | null>(null);
   const [loginEmail, setLoginEmail] = useState('');
@@ -131,6 +87,8 @@ export function App({
   const [googleClientId, setGoogleClientId] = useState<string | null>(null);
   const [appleEnabled, setAppleEnabled] = useState(false);
   const [passkeyEnabled, setPasskeyEnabled] = useState(false);
+  const [logoutError, setLogoutError] = useState<string | null>(null);
+  const [logoutPending, setLogoutPending] = useState(false);
   const appSquadClient = squadClient ?? defaultAppSquadClient;
 
   useEffect(() => {
@@ -152,7 +110,11 @@ export function App({
           setSessionCheckError(null);
           setActiveSession(resolvedSession);
           if (!canAccessProtectedRoute(resolvedSession)) {
-            if (initialPath.startsWith('/join/')) setLoginReturnPath(initialPath);
+            const invitePath = initialPath.startsWith('/join/') ? initialPath : storedLoginReturnPath();
+            if (invitePath) {
+              setLoginReturnPath(invitePath);
+              try { window.sessionStorage.setItem(LOGIN_RETURN_KEY, invitePath); } catch { /* storage is optional */ }
+            }
             try {
               window.history.replaceState({}, '', '/login');
             } catch {
@@ -244,6 +206,7 @@ export function App({
     setActiveSession(resolvedSession);
     const destination = loginReturnPath ?? '/';
     setLoginReturnPath(null);
+    try { window.sessionStorage.removeItem(LOGIN_RETURN_KEY); } catch { /* storage is optional */ }
     setBrowserPath(destination, true);
   }, [loginReturnPath, setBrowserPath]);
 
@@ -331,18 +294,23 @@ export function App({
   }, []);
 
   const handleSignOut = async () => {
-    setActiveSession(null);
-    setSessionCheckError(null);
-    setBrowserPath('/login', true);
+    setLogoutError(null);
+    setLogoutPending(true);
     if (session !== undefined) {
       setActiveSession(getUnauthenticatedSession());
+      setBrowserPath('/login', true);
+      setLogoutPending(false);
       return;
     }
     try {
       const response = await sessionClient.logout();
       setActiveSession(response.session);
+      setSessionCheckError(null);
+      setBrowserPath('/login', true);
     } catch {
-      setActiveSession(getUnauthenticatedSession());
+      setLogoutError('Sign out could not be confirmed. You are still signed in; retry to finish signing out.');
+    } finally {
+      setLogoutPending(false);
     }
   };
 
@@ -396,6 +364,7 @@ export function App({
     <ThemePresetProvider preferenceClient={preferenceClient}>
       <GlobalNotificationsProvider squadClient={appSquadClient}>
         <>
+          {logoutError ? <div className="auth-logout-error" role="alert"><span>{logoutError}</span><button disabled={logoutPending} onClick={() => void handleSignOut()} type="button">{logoutPending ? 'Retrying…' : 'Retry sign out'}</button></div> : null}
           <AppShell
             currentPath={currentPath}
             onNavigate={handleNavigate}
@@ -535,7 +504,7 @@ function AppRouteContent({
     }
 
     if (path.startsWith('/rules')) {
-      routeContent = <RulesPage categories={['squads', 'trades']} onNavigate={onNavigate} sections={featuredRules} preset={preset} />;
+      routeContent = <RulesWorkspacePage onNavigate={onNavigate} preset={preset} />;
     }
 
     if (path.startsWith('/league')) {
@@ -606,6 +575,10 @@ function AppRouteContent({
 
     if (isSquadRoute(path)) {
       routeContent = <SquadWorkspacePage attackDirection={attackDirection} onNavigate={onNavigate} preset={preset} squadClient={squadClient} teamSelectionClient={teamSelectionClient} />;
+    }
+
+    if (!isSupportedRoute(path)) {
+      routeContent = <main aria-labelledby="route-not-found-title" className="feature-screen"><h1 id="route-not-found-title">Page not found</h1><p>This address is not a supported destination.</p><a href="/dashboard" onClick={(event) => { event.preventDefault(); onNavigate('/dashboard'); }}>Go to Desk</a></main>;
     }
 
     return routeContent;

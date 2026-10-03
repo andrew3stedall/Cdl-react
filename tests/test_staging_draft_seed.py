@@ -18,6 +18,7 @@ from cdl_api.staging_draft_seed import (
     SQUAD_SIZE,
     TEAM_IDS,
     TEAM_MANAGER_NICKNAMES,
+    UnassignedManagerContextError,
     allocation_position_counts,
     captured_draft_team_index,
     constrained_snake_allocation,
@@ -198,6 +199,12 @@ def test_seed_is_idempotent_and_persists_valid_position_counts() -> None:
                 "VALUES ('google:test', 'reviewer.one@example.com', 'Reviewer One', '[]')"
             )
         )
+        connection.execute(
+            text(
+                "INSERT INTO users (id, email, display_name, roles) "
+                "VALUES ('unassigned:test', 'unassigned@example.com', 'Unassigned', '[]')"
+            )
+        )
     session_factory = sessionmaker(bind=engine, class_=Session)
 
     reviewer_allowlist = (
@@ -216,6 +223,10 @@ def test_seed_is_idempotent_and_persists_valid_position_counts() -> None:
     assert first.players == 160
     assert first.ownerships == 160
     assert first.position_counts == EXPECTED_POSITION_COUNTS
+    with pytest.raises(UnassignedManagerContextError, match="team assignment"):
+        PostgreSQLSquadRepository(session_factory, user_id="unassigned:test")
+    with pytest.raises(UnassignedManagerContextError, match="team assignment"):
+        PostgreSQLTeamSelectionRepository(session_factory, user_id="unassigned:test")
 
     with session_factory() as session:
         assert (

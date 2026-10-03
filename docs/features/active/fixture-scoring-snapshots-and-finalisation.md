@@ -6,7 +6,7 @@ Define live/provisional/final fixture scoring, player-level score storage, sourc
 
 ## Status
 
-Checkpoint 2 complete.
+Settlement stores immutable source hash/fetch time and per-player base points, multiplier, final points, inclusion, and scoring reason. Completed fixture detail reads those frozen values before current event-live cache data. Finalisation waits for a verified successful event refresh; a newer recorded event refresh failure keeps results provisional until retry. Legacy frozen snapshots without explanation rows retain their frozen totals, with a reduced legacy explanation.
 
 ## Business Rules
 
@@ -14,7 +14,7 @@ Checkpoint 2 complete.
 - Live/provisional scores can change as FPL data changes.
 - Final results freeze a selected score snapshot.
 - Official history should not drift due to later FPL refetches.
-- System finalises results when FPL data is checked and CDL scoring completes.
+- System finalises results only after FPL data is checked, a successful event-live source is verified, and CDL scoring completes.
 - The scheduled official FPL refresh settles each pending CDL fixture from the checked
   `event-live` payload and stores its response hash with the frozen result.
 - Final settlement applies automatic substitutions for zero-minute starters using

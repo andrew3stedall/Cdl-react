@@ -203,6 +203,18 @@ class CurrentPendingLeagueClient extends MemoryLeagueClient {
   }
 }
 
+class UnpublishedLineupClient extends MemoryLeagueClient {
+  async getFixtureSquads(): Promise<FixtureSquad[]> {
+    return [];
+  }
+}
+
+class OnePublishedLineupClient extends MemoryLeagueClient {
+  async getFixtureSquads(fixtureId: string): Promise<FixtureSquad[]> {
+    return (await super.getFixtureSquads(fixtureId)).slice(0, 1);
+  }
+}
+
 class CommissionerLeagueClient extends MemoryLeagueClient {
   async getLeagueManagement() {
     return {
@@ -316,7 +328,8 @@ describe('LeaguePage', () => {
 
   test('shows invite link controls on commissioner management and hides them for managers', async () => {
     const commissioner = await renderPage('/league/manage', new CommissionerLeagueClient());
-    expect(commissioner.container.textContent).toContain('Active managers');
+    expect(commissioner.container.textContent).toContain('Assigned managers');
+    expect(commissioner.container.textContent).not.toContain('currently signed in');
     expect(commissioner.container.textContent).toContain('Andrew');
     expect(commissioner.container.textContent).toContain('Castle United');
     expect(commissioner.container.textContent).toContain('Invite by team');
@@ -556,6 +569,38 @@ describe('LeaguePage', () => {
     act(() => root.unmount());
   });
 
+  test('shows retry and an explicit state when upcoming lineups are not published', async () => {
+    const client = new UnpublishedLineupClient();
+    const { container, root } = await renderPage('/league', client);
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('button[aria-label="Select Gameweek 13"]')?.click();
+    });
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('button[aria-label*="Open preview for Andrew versus DJ"]')?.click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(container.querySelector('[role="dialog"]')?.textContent).toContain('Lineups unavailable');
+    expect(container.querySelector('[role="dialog"]')?.textContent).toContain('Lineups will appear when managers publish them.');
+    expect(container.querySelector('[role="dialog"] button')?.textContent).not.toContain('Retry');
+    act(() => root.unmount());
+  });
+
+  test('defines the one-lineup published preview state', async () => {
+    const { container, root } = await renderPage('/league', new OnePublishedLineupClient());
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('button[aria-label="Select Gameweek 13"]')?.click();
+    });
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('button[aria-label*="Open preview for Andrew versus DJ"]')?.click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(container.querySelector('[role="dialog"]')?.textContent).toContain('One lineup is available');
+    expect(container.querySelector('[role="dialog"]')?.textContent).toContain('other manager’s lineup has not been published yet.');
+    act(() => root.unmount());
+  });
+
   test('hides point gauges for current-gameweek players before kickoff', async () => {
     const { container, root } = await renderPage('/league', new CurrentPendingLeagueClient());
 
@@ -753,6 +798,13 @@ describe('LeaguePage', () => {
 
     expect(container.querySelector('button[aria-label="View commissioner management"]')?.getAttribute('aria-pressed')).toBe('true');
     expect(container.querySelector('.league-management-view')).not.toBeNull();
+    act(() => root.unmount());
+  });
+
+  test('loads commissioner management without waiting for fixture reads', async () => {
+    const { container, root } = await renderPage('/league/manage', new CommissionerLeagueClient());
+    expect(container.querySelector('.league-management-view')).not.toBeNull();
+    expect(container.textContent).toContain('Assigned managers');
     act(() => root.unmount());
   });
 

@@ -6,7 +6,7 @@ Define the core CDL identity model: reusable leagues, seasons within leagues, pe
 
 ## Status
 
-Checkpoint 1 complete.
+Team-specific invitations and membership/team isolation are implemented. Self-service league/season creation, switching and history remain planned (#522). Engineering checkpoint completion does not prove those production workflows.
 
 ## Business Rules
 
@@ -17,6 +17,8 @@ Checkpoint 1 complete.
 - A user should not manage more than one team in the same league season.
 - Default league season size is 8 active managers/season teams.
 - Initial onboarding supports invite links/codes.
+- Commissioners can list active pending team invites and revoke one. Reissuing an invite continues to revoke its earlier link. Invite expiry remains optional until a league policy sets a duration; no new expiry duration is implied by this lifecycle.
+- A user without a team assignment cannot access manager-scoped PostgreSQL API data. Invite acceptance remains available as the onboarding path.
 
 ## Target Architecture
 

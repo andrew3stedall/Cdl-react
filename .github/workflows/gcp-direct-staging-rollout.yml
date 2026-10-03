@@ -209,16 +209,31 @@ jobs:
             --project "${PROJECT_ID}" \
             --format='value(image_summary.digest)' | grep -Fxq "${IMAGE_DIGEST_URI##*@}"
 
-      - name: Update Cloud Run image only
+      - name: Run and verify migrations before changing application traffic
+        run: |
+          set -euo pipefail
+          migration_job="cdl-react-staging-db-migrate"
+          gcloud run jobs update "${migration_job}" \
+            --project "${PROJECT_ID}" --region "${REGION}" \
+            --image "${IMAGE_DIGEST_URI}" --quiet
+          migration_image="$(gcloud run jobs describe "${migration_job}" \
+            --project "${PROJECT_ID}" --region "${REGION}" \
+            --format='value(spec.template.spec.template.spec.containers[0].image)')"
+          test "${migration_image}" = "${IMAGE_DIGEST_URI}"
+          gcloud run jobs execute "${migration_job}" \
+            --project "${PROJECT_ID}" --region "${REGION}" --wait
+
+      - name: Stage image without changing application traffic
         run: |
           set -euo pipefail
           gcloud run services update "${SERVICE_NAME}" \
             --project "${PROJECT_ID}" \
             --region "${REGION}" \
             --image "${IMAGE_DIGEST_URI}" \
+            --no-traffic \
             --quiet
 
-      - name: Verify ready revision, traffic, health, and auth boundary
+      - name: Verify staged revision and retained traffic
         run: |
           set -euo pipefail
           service_json="$(gcloud run services describe "${SERVICE_NAME}" \
@@ -234,15 +249,7 @@ jobs:
           status = service.get("status", {})
           latest_ready = status.get("latestReadyRevisionName") or service.get("latestReadyRevision")
           traffic = status.get("traffic", []) or service.get("traffic", [])
-          latest_traffic = next(
-              (
-                  item
-                  for item in traffic
-                  if item.get("latestRevision") is True
-                  or item.get("type") == "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST"
-              ),
-              None,
-          )
+          active_traffic = [item for item in traffic if item.get("percent", 0) > 0]
           containers = service.get("template", {}).get("containers", [])
           if not containers:
               containers = service.get("template", {}).get("spec", {}).get("containers", [])
@@ -254,18 +261,38 @@ jobs:
 
           if not latest_ready:
               raise SystemExit("Cloud Run has no ready revision")
-          if not latest_traffic or latest_traffic.get("percent") != 100:
-              raise SystemExit(f"Cloud Run latest revision does not have 100% traffic: {traffic!r}")
+          if not active_traffic or sum(item.get("percent", 0) for item in active_traffic) != 100:
+              raise SystemExit(f"Cloud Run traffic is not fully allocated: {traffic!r}")
+          if any(item.get("revisionName") == latest_ready for item in active_traffic):
+              raise SystemExit("Staged revision received traffic before migration smoke checks.")
           if image != expected_image:
               raise SystemExit(f"Cloud Run image mismatch: {image!r}")
           print(f"ready_revision={latest_ready}")
-          print("latest_traffic_percent=100")
+          print("existing_traffic_percent=100")
           print(f"image={image}")
           PY
 
+          candidate_url="$(gcloud run revisions describe "${latest_ready}" \
+            --project "${PROJECT_ID}" --region "${REGION}" \
+            --format='value(status.url)')"
+          test -n "${candidate_url}"
+          curl --fail --silent --show-error "${candidate_url}/health" \
+            | grep -Fq '"status":"ok"'
+          status_code="$(curl --silent --show-error --output /dev/null \
+            --write-out '%{http_code}' "${candidate_url}/api/fpl/status")"
+          test "${status_code}" = "401"
+
+      - name: Promote staged revision after migration smoke checks
+        run: |
+          set -euo pipefail
+          gcloud run services update-traffic "${SERVICE_NAME}" \
+            --project "${PROJECT_ID}" --region "${REGION}" --to-latest --quiet
+
+      - name: Verify promoted revision health and auth boundary
+        run: |
+          set -euo pipefail
           service_url="$(gcloud run services describe "${SERVICE_NAME}" \
-            --project "${PROJECT_ID}" \
-            --region "${REGION}" \
+            --project "${PROJECT_ID}" --region "${REGION}" \
             --format='value(status.url)')"
           for attempt in $(seq 1 20); do
             if curl --fail --silent --show-error "${service_url}/health" \

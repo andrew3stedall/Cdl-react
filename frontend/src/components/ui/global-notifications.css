@@ -50,7 +50,7 @@
 .global-notifications__button[aria-expanded='true'] {
   background: var(--secondary);
   border-color: var(--border);
-  color: var(--primary);
+  color: var(--theme-primary-text, var(--primary));
   outline: none;
 }
 
@@ -105,7 +105,7 @@
 .global-notifications__heading span,
 .global-notifications__empty {
   color: var(--muted-foreground);
-  font-size: 0.62rem;
+  font-size: var(--cdl-type-metadata, 0.7rem);
   margin: 0;
 }
 

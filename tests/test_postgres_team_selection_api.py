@@ -228,7 +228,7 @@ def test_postgres_historical_fixture_squads_use_locked_lineup_and_event_points()
             ),
             {
                 "payload": (
-                    '{"elements": [{"id": 1, "stats": {"total_points": 8}}, '
+                    '{"elements": [{"id": 1, "stats": {"total_points": 99}}, '
                     '{"id": 2, "stats": {"total_points": 5}}, '
                     '{"id": 3, "stats": {"total_points": 3}}, '
                     '{"id": 4, "stats": {"total_points": 7}}]}'
@@ -242,7 +242,8 @@ def test_postgres_historical_fixture_squads_use_locked_lineup_and_event_points()
             ),
             {
                 "payload": (
-                    '{"fixture_id": "fixture-history-1", "substitutions": '
+                    '{"fixture_id": "fixture-history-1", "player_scores": '
+                    '{"team-home:fpl-1": 10, "team-home:fpl-2": 5}, "substitutions": '
                     '{"team-home": [{"starter_player_id": "fpl-1", '
                     '"substitute_player_id": "fpl-2"}], "team-away": []}}'
                 )
@@ -314,7 +315,7 @@ def test_postgres_historical_fixture_squads_use_locked_lineup_and_event_points()
 
     assert [squad.team.id for squad in squads] == ["team-home", "team-away"]
     assert squads[0].starters[0].display_name == "Keeper One"
-    assert squads[0].starters[0].points == 8
+    assert squads[0].starters[0].points == 10
     assert squads[0].bench[0].points == 5
     assert squads[0].starters[0].is_captain is True
     assert squads[0].starters[0].is_substituted_out is True

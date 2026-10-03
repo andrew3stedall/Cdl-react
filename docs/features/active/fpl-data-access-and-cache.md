@@ -30,8 +30,10 @@ Implemented:
 - next unfinished FPL fixture, opponent, home/away, kickoff and fixture difficulty exposed on Squad player records;
 - lazy `element-summary/{player}` retrieval through
   `GET /api/fpl/players/{player_id}/history`;
-- cached `event/{gameweek}/live` data is used to finalise due CDL fixture results once
-  FPL marks the gameweek finished and checked;
+- active/provisional started events refresh with fixture updates; completed historical
+  events are not repeatedly fetched while a cached payload exists;
+- final settlement requires an event-live cache payload whose last successful fetch is
+  newer than any failed event refresh attempt, and records the source hash and fetch time;
 - six-hour PostgreSQL reuse of cached element-summary payloads so repeated player detail
   views do not make repeated upstream calls;
 - explicit failure when PostgreSQL mode is unavailable or upstream payloads do not
@@ -67,6 +69,8 @@ Still required:
 - TTL means how long cached data is considered fresh.
 - Live scoring fetches `event-live` on demand per gameweek.
 - Final CDL score snapshots are frozen and do not depend on future FPL refetches.
+- A failed final event-live refresh leaves the score provisional and exposes a per-event
+  fetch failure through `/api/fpl/status` until a successful retry replaces it.
 - Commissioner can force refresh/recalculate before finalisation.
 
 ## Implemented API

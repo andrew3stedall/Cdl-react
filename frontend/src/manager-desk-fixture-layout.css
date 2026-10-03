@@ -106,7 +106,7 @@
   background: color-mix(in srgb, var(--primary) 8%, var(--surface));
   border: 1px solid color-mix(in srgb, var(--primary) 55%, var(--border));
   border-radius: 0.3rem;
-  color: var(--primary);
+  color: var(--theme-primary-text, var(--primary));
   display: inline-flex;
   font-size: 0.54rem;
   font-weight: 800;
@@ -171,7 +171,7 @@
 }
 
 .manager-desk__fixture-comparison-row--current .manager-desk__fixture-comparison-label {
-  color: var(--primary);
+  color: var(--theme-primary-text, var(--primary));
 }
 
 .manager-desk__fixture-comparison .manager-desk__form-score {
@@ -212,7 +212,7 @@
 .manager-desk__fixture-comparison .manager-desk__form-score--w > strong {
   background: color-mix(in srgb, var(--primary) 10%, var(--surface));
   border-color: color-mix(in srgb, var(--primary) 74%, var(--border));
-  color: var(--primary);
+  color: var(--theme-primary-text, var(--primary));
 }
 
 .manager-desk__fixture-comparison .manager-desk__form-score--l > strong {
@@ -260,7 +260,7 @@
 }
 
 .manager-desk__fixture-comparison .manager-desk__form-score--w .manager-desk__form-score-markers {
-  color: var(--primary);
+  color: var(--theme-primary-text, var(--primary));
 }
 
 .manager-desk__fixture-comparison .manager-desk__form-score--l .manager-desk__form-score-markers {
@@ -331,7 +331,7 @@
 }
 
 .manager-desk__fixture-spotlight--empty > svg {
-  color: var(--primary);
+  color: var(--theme-primary-text, var(--primary));
 }
 
 .manager-desk__priority-heading > h2 {

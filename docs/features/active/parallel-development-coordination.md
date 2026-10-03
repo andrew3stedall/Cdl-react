@@ -8,6 +8,8 @@ Coordinate parallel development across all active feature documents while preser
 
 Active coordination document. The initial Agent 01 through Agent 10 implementation foundations are in place, and this document now acts as the current shared-contract and cross-feature validation register until the active feature documents move through release completion.
 
+The production retrospective follow-up #502 also requires engineering checkpoint APIs to remain unavailable in production; their backend paths now return 404 in production while remaining available in development/staging.
+
 ## Release Target
 
 Initial modern application planning release.

@@ -57,6 +57,10 @@ def get_league_membership_repository(settings: Settings = Depends(get_settings))
     return build_repositories(settings).league_memberships
 
 
+def get_user_repository(settings: Settings = Depends(get_settings)) -> object:
+    return build_repositories(settings).users
+
+
 def get_apple_identity_verifier(
     settings: Settings = Depends(get_settings),
 ) -> AppleIdentityVerifier:
@@ -84,6 +88,12 @@ def get_passkey_service(settings: Settings = Depends(get_settings)) -> PasskeySe
 
 def _session_id_from_request(request: Request, settings: Settings) -> str | None:
     return request.cookies.get(settings.session_cookie_name)
+
+
+def _with_environment_capabilities(session: SessionState, settings: Settings) -> SessionState:
+    return session.model_copy(
+        update={"engineering_previews_enabled": settings.engineering_previews_enabled}
+    )
 
 
 def get_session_for_request(
@@ -195,6 +205,12 @@ def login(
     settings: Settings = Depends(get_settings),
     service: AuthenticationService = Depends(get_auth_service),
 ) -> LoginResponse | JSONResponse:
+    if settings.environment == "production":
+        error = ApiErrorResponse(
+            code=ErrorCode.FORBIDDEN,
+            message="Password sign-in is disabled.",
+        )
+        return JSONResponse(status_code=status.HTTP_403_FORBIDDEN, content=error.model_dump())
     try:
         result = service.login(payload)
     except (OperationalError, SQLAlchemyTimeoutError):
@@ -208,7 +224,7 @@ def login(
 
     session_id, session = result
     _set_session_cookie(response, settings, session_id)
-    return LoginResponse(session=session)
+    return LoginResponse(session=_with_environment_capabilities(session, settings))
 
 
 @router.get("/google/config", response_model=GoogleAuthConfig)
@@ -288,6 +304,7 @@ def google_login(
     service: AuthenticationService = Depends(get_auth_service),
     verifier: GoogleIdentityVerifier = Depends(get_google_identity_verifier),
     membership_repository: object = Depends(get_league_membership_repository),
+    user_repository: object = Depends(get_user_repository),
 ) -> LoginResponse | JSONResponse:
     if google_sign_in_header != "1":
         error = ApiErrorResponse(
@@ -303,9 +320,24 @@ def google_login(
         except (OperationalError, SQLAlchemyTimeoutError):
             return _database_unavailable("Google sign-in is temporarily unavailable. Try again.")
 
-    identity = verifier.verify(payload.credential)
-    if identity is None and invite_is_valid:
-        identity = verifier.verify(payload.credential, allow_unlisted_email=True)
+    identity = None
+    try:
+        if settings.environment == "production":
+            candidate = verifier.verify(payload.credential, allow_unlisted_email=True)
+            if candidate is not None:
+                existing = user_repository.get_by_email(candidate.email)
+                if invite_is_valid or (
+                    existing is not None
+                    and (access := membership_repository.access_for_user(existing.id)) is not None
+                    and access.team_id is not None
+                ):
+                    identity = candidate
+        else:
+            identity = verifier.verify(payload.credential)
+            if identity is None and invite_is_valid:
+                identity = verifier.verify(payload.credential, allow_unlisted_email=True)
+    except (OperationalError, SQLAlchemyTimeoutError):
+        return _database_unavailable("Google sign-in is temporarily unavailable. Try again.")
     if identity is None:
         error = ApiErrorResponse(
             code=ErrorCode.UNAUTHENTICATED,
@@ -318,7 +350,7 @@ def google_login(
     except (OperationalError, SQLAlchemyTimeoutError):
         return _database_unavailable("Google sign-in is temporarily unavailable. Try again.")
     _set_session_cookie(response, settings, session_id)
-    return LoginResponse(session=session)
+    return LoginResponse(session=_with_environment_capabilities(session, settings))
 
 
 @router.get("/passkeys/config", response_model=PasskeyAuthConfig)
@@ -372,7 +404,7 @@ def passkey_authentication(
 
     _set_session_cookie(response, settings, session_id)
     _clear_cookie(response, PASSKEY_CHALLENGE_COOKIE, settings)
-    return LoginResponse(session=session)
+    return LoginResponse(session=_with_environment_capabilities(session, settings))
 
 
 @router.get("/passkeys/registration/options")
@@ -425,7 +457,27 @@ def passkey_status(
     return {
         "enabled": service.enabled,
         "registered_count": service.registered_count(user.id) if service.enabled else 0,
+        "credentials": [
+            {"credential_id": item.credential_id, "nickname": item.nickname}
+            for item in service.registered_passkeys(user.id)
+        ]
+        if service.enabled
+        else [],
     }
+
+
+@router.delete("/passkeys/{credential_id}", response_model=None)
+def revoke_passkey(
+    credential_id: str,
+    user: SessionUser = Depends(require_authenticated_session),
+    service: PasskeyService = Depends(get_passkey_service),
+) -> dict[str, bool] | JSONResponse:
+    try:
+        service.revoke(user.id, credential_id)
+    except PasskeyError as exc:
+        error = ApiErrorResponse(code=ErrorCode.NOT_FOUND, message=str(exc))
+        return JSONResponse(status_code=status.HTTP_404_NOT_FOUND, content=error.model_dump())
+    return {"revoked": True}
 
 
 @router.get("/session", response_model=SessionState)
@@ -435,7 +487,8 @@ def session(
     service: AuthenticationService = Depends(get_auth_service),
 ) -> SessionState | JSONResponse:
     try:
-        return service.get_session(_session_id_from_request(request, settings))
+        resolved_session = service.get_session(_session_id_from_request(request, settings))
+        return _with_environment_capabilities(resolved_session, settings)
     except (OperationalError, SQLAlchemyTimeoutError):
         return _database_unavailable("Session verification is temporarily unavailable. Retry.")
 
@@ -456,4 +509,4 @@ def logout(
         secure=settings.session_cookie_secure,
         samesite="lax",
     )
-    return LogoutResponse(session=session)
+    return LogoutResponse(session=_with_environment_capabilities(session, settings))

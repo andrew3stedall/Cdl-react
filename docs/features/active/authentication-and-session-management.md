@@ -2,13 +2,15 @@
 
 ## Purpose
 
-Replace the legacy login and session checks with a modern, API-driven authentication flow for the Castle Draft League application.
+Replace the legacy login and session checks with a modern, API-driven authentication flow for the Castle Draft League application. The 2026-10-03 retrospective auth fixes are implemented in the milestone #466 auth lane; production deployment remains gated.
 
 ## Status
 
 Implemented staging authentication foundation with PostgreSQL-backed durable sessions, allowlisted
-Google sign-in, and passkey support. Apple sign-in is implemented behind configuration and remains
-disabled until Apple Developer credentials and the staging email allowlist are provisioned.
+Google sign-in, and passkey support. The API boundary now protects staging and production, and
+production rejects unsafe cookie/repository settings and temporary password sign-in. Existing
+assigned league members can return through verified Google sign-in; invite return state survives a
+login refresh. Apple sign-in remains disabled until credentials and the email allowlist are provisioned.
 
 ## Legacy Inventory
 
@@ -20,11 +22,15 @@ disabled until Apple Developer credentials and the staging email allowlist are p
 
 Users can sign in with the staging email/password fallback, Google, or a registered device passkey.
 Successful sign-ins receive a secure HTTP-only application cookie with a 30-day PostgreSQL-backed
-session. The PWA reuses that same-origin cookie after the app is closed and reopened.
+session. The PWA reuses that same-origin cookie after the app is closed and reopened. Failed logout
+keeps the signed-in session visible and offers a retry. Account security supports multiple passkeys,
+listing and owner-checked revocation.
 
 ## Business Rules
 
 - Staging supports allowlisted Google sign-in while retaining email/password as a temporary fallback.
+- Production protects private API/schema routes, requires PostgreSQL persistence and secure session cookies, and disables temporary shared-secret login.
+- Production Google sign-in accepts verified existing league members and valid invitees; unknown nonmembers are denied.
 - Staging supports discoverable passkeys with required user verification, allowing Android
   fingerprint/face unlock or device PIN and iOS Face ID/Touch ID or device passcode.
 - Apple sign-in is available only when all Apple credentials, redirect URI, and allowlisted emails
@@ -63,6 +69,7 @@ session. The PWA reuses that same-origin cookie after the app is closed and reop
 - `GET /api/auth/passkeys/registration/options`
 - `POST /api/auth/passkeys/registration`
 - `GET /api/auth/passkeys/status`
+- `DELETE /api/auth/passkeys/{credential_id}`
 - `GET /api/auth/session`
 - `POST /api/auth/logout`
 - `POST /api/auth/refresh`, if refresh tokens or sliding sessions are used.

@@ -111,7 +111,9 @@ function CombinedChartColumn({
   onFixtureClick?: (fixture: CombinedFormMinutesFixture, index: number) => void;
   style?: CSSProperties;
 }) {
-  const pointsHeight = fixture ? chartBarHeight(fixture.fantasyPoints, formMax) : 100;
+  const pointsHeight = fixture && fixture.fantasyPoints !== null && fixture.fantasyPoints >= 0
+    ? chartBarHeight(fixture.fantasyPoints, formMax)
+    : 0;
   const minutesHeight = fixture ? chartBarHeight(fixture.minutesPlayed, minutesMax) : 100;
   const pointsColour = playerFormColour(fixture?.fantasyPoints, fixture?.minutesPlayed);
   const pointsClass = pointsColour === 'empty'
@@ -127,7 +129,8 @@ function CombinedChartColumn({
         <div className="player-profile__combined-track player-profile__combined-track--positive">
           {fixture ? <button
               aria-label={`View ${formatOpponentLabel(fixture.opponentShortName, fixture.isHome)} form details: ${formatNullableNumber(fixture.fantasyPoints)} points`}
-              className={`player-profile__combined-bar ${pointsClass}`}
+              className={`player-profile__combined-bar ${pointsClass}${fixture.fantasyPoints !== null && fixture.fantasyPoints < 0 ? ' player-profile__combined-bar--negative-points' : ''}`}
+              data-points-sign={fixture.fantasyPoints === null ? 'unknown' : fixture.fantasyPoints < 0 ? 'negative' : fixture.fantasyPoints === 0 ? 'zero' : 'positive'}
               data-form-colour={pointsColour}
               onClick={() => onFixtureClick?.(fixture, index)}
               style={{ '--bar-height': `${pointsHeight}%` } as CSSProperties}

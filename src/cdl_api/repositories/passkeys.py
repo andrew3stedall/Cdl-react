@@ -52,6 +52,13 @@ class InMemoryPasskeyRepository:
             nickname=record.nickname,
         )
 
+    def delete_for_user(self, credential_id: str, user_id: str) -> bool:
+        record = self._credentials.get(credential_id)
+        if record is None or record.user_id != user_id:
+            return False
+        del self._credentials[credential_id]
+        return True
+
 
 class InMemoryAuthChallengeRepository:
     def __init__(self) -> None:

@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from cdl_api.contracts.fpl_data import FplPlayerHistoryResponse, FplRefreshResource
-from cdl_api.fpl_client import FplApiResponse
+from cdl_api.fpl_client import FplApiError, FplApiResponse
 from cdl_api.repositories.postgres_fpl_data import (
     PostgreSQLFplDataRepository,
     external_fetch_log_table,
@@ -667,3 +667,21 @@ def test_repository_records_fetch_failure_without_marking_freshness() -> None:
     assert fixture_status.last_updated_at is None
     assert fixture_status.last_fetch_status is None
     assert fixture_status.last_fetch_error == "upstream unavailable"
+
+
+def test_failed_event_live_refresh_is_recorded_for_settlement_guard() -> None:
+    class FailingEventClient(FakeClient):
+        def fetch_event_live(self, gameweek: int) -> FplApiResponse:
+            raise FplApiError("event-live unavailable")
+
+    sessions = _session_factory()
+    repository = PostgreSQLFplDataRepository(sessions)
+    service = FplDataService(FailingEventClient(), repository)
+
+    assert service._fetch_and_cache_event_live(1) is None
+    with sessions() as session:
+        failure = session.execute(
+            select(external_fetch_log_table.c.resource, external_fetch_log_table.c.error)
+        ).one()
+
+    assert failure == ("event-live:1", "event-live unavailable")

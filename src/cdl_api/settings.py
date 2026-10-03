@@ -13,7 +13,7 @@ DEFAULT_DEVELOPMENT_LOGIN_SECRET = "demo-login-secret"
 class Settings(BaseSettings):
     app_name: str = "Castle Draft League API"
     api_prefix: str = "/api"
-    environment: str = "development"
+    environment: Literal["development", "test", "staging", "production"] = "development"
     session_cookie_name: str = "cdl_session"
     session_cookie_secure: bool = False
     session_ttl_days: int = Field(default=30, ge=1, le=365)
@@ -52,7 +52,10 @@ class Settings(BaseSettings):
 
     @property
     def google_sign_in_enabled(self) -> bool:
-        return bool(self.google_client_id and self.google_allowed_email_set)
+        return bool(
+            self.google_client_id
+            and (self.google_allowed_email_set or self.environment == "production")
+        )
 
     @property
     def apple_allowed_email_set(self) -> set[str]:
@@ -74,6 +77,24 @@ class Settings(BaseSettings):
     @property
     def passkey_enabled(self) -> bool:
         return bool(self.passkey_rp_id and self.passkey_expected_origin)
+
+    @property
+    def is_protected_environment(self) -> bool:
+        return self.environment in {"staging", "production"}
+
+    @property
+    def engineering_previews_enabled(self) -> bool:
+        return self.environment != "production"
+
+    def validate_protected_environment(self) -> None:
+        if self.environment != "production":
+            return
+        if self.development_login_secret == DEFAULT_DEVELOPMENT_LOGIN_SECRET:
+            raise RuntimeError("Production requires a non-default login secret.")
+        if not self.session_cookie_secure:
+            raise RuntimeError("Production requires secure session cookies.")
+        if self.repository_mode != "postgres" or not self.database_url.strip():
+            raise RuntimeError("Production requires PostgreSQL persistence.")
 
     @property
     def commissioner_email_set(self) -> set[str]:

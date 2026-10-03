@@ -67,3 +67,14 @@ approval_requests
 - Agreed transfer cannot affect squads until approved.
 - Commissioner cannot self-approve.
 - Loan return happens automatically and is auditable.
+
+## Implemented trade agreement and approval contract
+
+- `POST /api/trades` creates a private proposal for the participating managers.
+- `PUT /api/trades/{trade_id}` with `accepted` records the receiving manager's agreement; it does not move ownership.
+- `POST /api/trades/{trade_id}/approve` accepts `{ "decision": "approved" | "rejected", "note": "..." }` from the required league approver after party agreement.
+- Trade responses expose `approval_status`, `required_approver_role`, `approved_by`, and `executed_at`.
+- Commissioner-involved trades route to the vice commissioner. A trade participant cannot approve their own movement.
+- Approval, ownership end/start records, audit events, and unlocked future-lineup repair commit in one transaction. A rejected or stale trade changes no ownership.
+
+The existing `accepted` trade status remains the two-party agreement state for compatibility. Execution is represented by approved `approval_status` plus `executed_at`, preventing accepted proposals from silently changing ownership.

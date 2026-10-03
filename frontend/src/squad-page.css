@@ -36,7 +36,7 @@
   gap: 0.85rem;
   min-height: 100%;
   min-width: 0;
-  padding: clamp(0.8rem, 2vw, 1.2rem);
+  padding: 0;
 }
 
 .squad-page *,
@@ -462,7 +462,7 @@
 
 .squad-page__summary-card small {
   color: var(--squad-muted);
-  font-size: 0.68rem;
+  font-size: var(--cdl-type-metadata, 0.7rem);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -476,7 +476,7 @@
 
 .squad-page__summary-note {
   color: var(--squad-muted);
-  font-size: 0.58rem;
+  font-size: var(--cdl-type-metadata, 0.7rem);
   min-height: 0.85rem;
 }
 
@@ -2578,8 +2578,6 @@
 
   .shell-main[data-active-route='squad'] > .shell-content {
     background: var(--squad-bg);
-    max-width: none;
-    padding: 0 0 calc(2rem + var(--cdl-mobile-navigation-clearance));
   }
 
   .squad-page {
@@ -2587,7 +2585,7 @@
     border-radius: 0;
     gap: 0.72rem;
     min-height: 100dvh;
-    padding: 0.75rem 0.72rem 5rem;
+    padding: 0;
   }
 
   .squad-page__hero {
@@ -2632,15 +2630,15 @@
   }
 
   .squad-page__summary-card small {
-    font-size: 0.52rem;
+    font-size: var(--cdl-type-metadata, 0.7rem);
   }
 
   .squad-page__summary-card strong {
-    font-size: 0.93rem;
+    font-size: var(--cdl-type-value, 0.7rem);
   }
 
   .squad-page__summary-note {
-    font-size: 0.48rem;
+    font-size: var(--cdl-type-metadata, 0.7rem);
   }
 
   .squad-page__form-dots {
@@ -2862,8 +2860,7 @@
 
 @media (max-width: 410px) {
   .squad-page {
-    padding-left: 0.55rem;
-    padding-right: 0.55rem;
+    padding: 0;
   }
 
   .squad-page__pitch-player {
@@ -2873,11 +2870,11 @@
   }
 
   .squad-page__summary-card small {
-    font-size: 0.48rem;
+    font-size: var(--cdl-type-metadata, 0.7rem);
   }
 
   .squad-page__summary-card strong {
-    font-size: 0.85rem;
+    font-size: var(--cdl-type-value, 0.875rem);
   }
 
   .squad-page__position-tabs button span {

@@ -18,6 +18,13 @@ variable "image" {
   type        = string
 }
 
+variable "traffic_revision" {
+  description = "Optional existing Cloud Run revision to keep at 100 percent while a new revision is staged."
+  type        = string
+  default     = null
+  nullable    = true
+}
+
 variable "runtime_service_account_email" {
   description = "Service account email used by the Cloud Run service."
   type        = string

@@ -40,6 +40,7 @@ export async function fetchRules(category?: RuleCategory): Promise<RulesIndexRes
   }
   const suffix = params.toString() ? `?${params.toString()}` : '';
   const response = await fetch(`/api/rules${suffix}`, { credentials: 'include' });
+  if (!response.ok) throw new Error('Rules could not be loaded. Try again.');
   return toRulesIndex((await response.json()) as Record<string, unknown>);
 }
 
@@ -49,6 +50,7 @@ export async function searchRules(query: string, category?: RuleCategory): Promi
     params.set('category', category);
   }
   const response = await fetch(`/api/rules/search?${params.toString()}`, { credentials: 'include' });
+  if (!response.ok) throw new Error('Rules could not be loaded. Try again.');
   return toRulesIndex((await response.json()) as Record<string, unknown>);
 }
 

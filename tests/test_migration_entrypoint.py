@@ -43,6 +43,7 @@ def test_migration_entrypoint_upgrades_to_head(
         "upgrade",
         lambda config, revision: calls.append((config, revision)),
     )
+    monkeypatch.setattr(migrate, "verify_schema_head", lambda config, url: None)
 
     migrate.run_migrations()
 
@@ -50,6 +51,34 @@ def test_migration_entrypoint_upgrades_to_head(
     config, revision = calls[0]
     assert revision == "head"
     assert config.config_file_name == str(config_path)
+
+
+def test_migration_entrypoint_verifies_the_database_head(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    calls: list[tuple[Any, str]] = []
+    verified: list[tuple[Any, str]] = []
+    config_path = tmp_path / "alembic.ini"
+    config_path.write_text("[alembic]\nscript_location = migrations\n", encoding="utf-8")
+    database_url = "postgresql+psycopg://example"
+    monkeypatch.setenv(migrate.DATABASE_URL_ENV, database_url)
+    monkeypatch.setenv(migrate.ALEMBIC_CONFIG_ENV, str(config_path))
+    monkeypatch.setattr(
+        migrate.command,
+        "upgrade",
+        lambda config, revision: calls.append((config, revision)),
+    )
+    monkeypatch.setattr(
+        migrate,
+        "verify_schema_head",
+        lambda config, url: verified.append((config, url)),
+    )
+
+    migrate.run_migrations()
+
+    assert len(calls) == 1
+    assert calls[0][1] == "head"
+    assert verified == [(calls[0][0], database_url)]
 
 
 def test_backend_image_packages_migration_assets() -> None:

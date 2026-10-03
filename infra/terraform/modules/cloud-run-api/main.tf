@@ -5,6 +5,13 @@ resource "google_cloud_run_v2_service" "this" {
   ingress  = "INGRESS_TRAFFIC_ALL"
   labels   = var.labels
 
+  lifecycle {
+    precondition {
+      condition     = var.environment != "staging" || var.traffic_revision != null
+      error_message = "Staging revisions must pin an existing healthy traffic revision until migrations and release checks pass."
+    }
+  }
+
   template {
     service_account = var.runtime_service_account_email
 
@@ -79,9 +86,14 @@ resource "google_cloud_run_v2_service" "this" {
     }
   }
 
-  traffic {
-    type    = "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST"
-    percent = 100
+  dynamic "traffic" {
+    for_each = var.traffic_revision == null ? [null] : [var.traffic_revision]
+
+    content {
+      type     = var.traffic_revision == null ? "TRAFFIC_TARGET_ALLOCATION_TYPE_LATEST" : "TRAFFIC_TARGET_ALLOCATION_TYPE_REVISION"
+      revision = var.traffic_revision
+      percent  = 100
+    }
   }
 }
 

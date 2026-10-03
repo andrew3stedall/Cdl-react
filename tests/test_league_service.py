@@ -34,14 +34,19 @@ def test_fixture_detail_only_returns_started_fixture_details() -> None:
 
 def test_league_table_service_calculates_standings_from_results() -> None:
     table = LeagueTableService().get_table()
+    live_table = LeagueTableService().get_table("live")
 
     rows_by_team = {row.team.id: row for row in table.rows}
+    live_rows_by_team = {row.team.id: row for row in live_table.rows}
 
-    assert rows_by_team["castle"].played == 1
-    assert rows_by_team["castle"].wins == 1
-    assert rows_by_team["castle"].league_points == 3
-    assert rows_by_team["castle"].points_difference == 6
-    assert table.rows[0].team.id == "castle"
+    assert rows_by_team["castle"].played == 0
+    assert live_rows_by_team["castle"].played == 1
+    assert live_rows_by_team["castle"].wins == 1
+    assert live_rows_by_team["castle"].league_points == 6
+    assert live_rows_by_team["castle"].points_difference == 6
+    assert live_table.rows[0].team.id == "castle"
+    assert table.mode == "official"
+    assert live_table.mode == "live"
 
 
 def test_head_to_head_and_knockout_services_expose_context() -> None:

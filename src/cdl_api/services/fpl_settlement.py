@@ -7,10 +7,11 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
-from sqlalchemy import insert, select, update
+from sqlalchemy import insert, inspect, select, update
 from sqlalchemy.orm import Session
 
 from cdl_api.repositories.postgres_fpl_data import (
+    external_fetch_log_table,
     external_payload_cache_table,
     fpl_gameweeks_table,
 )
@@ -20,6 +21,7 @@ from cdl_api.repositories.postgres_league_fixtures import (
     fixture_scoring_snapshots_table,
 )
 from cdl_api.repositories.postgres_league_fpl import draft_teams_table, fpl_players_table
+from cdl_api.repositories.postgres_squad import squad_ownerships_table
 from cdl_api.repositories.postgres_team_selection import (
     lineup_substitutions_table,
     team_selection_chips_table,
@@ -117,6 +119,7 @@ class FplSettlementService:
         for gameweek, deadline in sorted(due_gameweeks.items()):
             for team_id in team_ids:
                 team_id = str(team_id)
+                FplSettlementService._repair_owned_lineup(session, team_id, now)
                 FplSettlementService._roll_forward_lineup(
                     session,
                     team_id=team_id,
@@ -173,6 +176,7 @@ class FplSettlementService:
         next_gameweek = FplSettlementService._next_gameweek(session)
         if next_gameweek is not None:
             for team_id in (str(team_id) for team_id in team_ids):
+                FplSettlementService._repair_owned_lineup(session, team_id, now)
                 FplSettlementService._roll_forward_lineup(
                     session,
                     team_id=team_id,
@@ -180,6 +184,27 @@ class FplSettlementService:
                     now=now,
                 )
         return created
+
+    @staticmethod
+    def _repair_owned_lineup(session: Session, team_id: str, now: datetime) -> None:
+        # Inspect on the current transaction connection. An Engine-level
+        # inspector can acquire a second StaticPool connection and interfere
+        # with an in-flight SQLite transaction in deterministic tests.
+        if not inspect(session.connection()).has_table(squad_ownerships_table.name):
+            return
+        owned_ids = {
+            str(player_id)
+            for player_id in session.execute(
+                select(squad_ownerships_table.c.player_id).where(
+                    squad_ownerships_table.c.season_id == SEASON_ID,
+                    squad_ownerships_table.c.draft_team_id == team_id,
+                    squad_ownerships_table.c.ended_at.is_(None),
+                )
+            ).scalars()
+        }
+        from cdl_api.repositories.postgres_team_selection import PostgreSQLTeamSelectionRepository
+
+        PostgreSQLTeamSelectionRepository.repair_unlocked_lineups(session, team_id, owned_ids, now)
 
     @staticmethod
     def _next_gameweek(session: Session) -> int | None:
@@ -279,16 +304,33 @@ class FplSettlementService:
                 external_payload_cache_table.c.resource,
                 external_payload_cache_table.c.payload_json,
                 external_payload_cache_table.c.response_sha256,
+                external_payload_cache_table.c.fetched_at,
             ).where(external_payload_cache_table.c.resource.like("event-live:%"))
         ).mappings()
         live_payloads = {
             int(str(row["resource"]).removeprefix("event-live:")): (
                 row["payload_json"],
                 str(row["response_sha256"]),
+                row["fetched_at"],
             )
             for row in live_rows
             if str(row["resource"]).removeprefix("event-live:").isdigit()
         }
+        failed_attempts: dict[int, datetime] = {}
+        for row in session.execute(
+            select(
+                external_fetch_log_table.c.resource,
+                external_fetch_log_table.c.fetched_at,
+            )
+            .where(
+                external_fetch_log_table.c.resource.like("event-live:%"),
+                external_fetch_log_table.c.error.is_not(None),
+            )
+            .order_by(external_fetch_log_table.c.fetched_at.desc())
+        ).mappings():
+            gameweek_resource = str(row["resource"]).removeprefix("event-live:")
+            if gameweek_resource.isdigit():
+                failed_attempts.setdefault(int(gameweek_resource), row["fetched_at"])
         result_rows = {
             str(row["payload_json"].get("fixture_id")): (str(row["id"]), row["payload_json"])
             for row in session.execute(
@@ -340,16 +382,36 @@ class FplSettlementService:
             )
             if was_finalised and not needs_automatic_substitution_repair:
                 continue
-            live_payload, source_hash = live_payloads.get(gameweek, (None, ""))
+            live_payload, source_hash, fetched_at = live_payloads.get(gameweek, (None, "", None))
+            if (
+                was_finalised
+                and needs_automatic_substitution_repair
+                and isinstance(current_result, Mapping)
+                and current_result.get("source_response_sha256")
+                and current_result.get("source_response_sha256") != source_hash
+            ):
+                # Legacy snapshots may acquire explanation metadata only by
+                # replaying the exact source that was originally frozen.
+                continue
             player_points = _event_player_points(live_payload)
             player_minutes = _event_player_minutes(live_payload)
+            player_goals = _event_player_goals(live_payload)
             if not player_points:
                 skipped += 1
                 continue
             # A previously finalised result is repaired with the latest
             # substitution-aware calculation, even if the current scheduler
             # pass no longer sees the gameweek in the ready set.
-            finalised = gameweek in ready_gameweeks or was_finalised
+            failed_at = failed_attempts.get(gameweek)
+            verified_event_refresh = fetched_at is not None and (
+                failed_at is None or failed_at <= fetched_at
+            )
+            finalised = (gameweek in ready_gameweeks and verified_event_refresh) or (
+                was_finalised and verified_event_refresh
+            )
+            if gameweek in ready_gameweeks and not verified_event_refresh:
+                skipped += 1
+                continue
             if (
                 not finalised
                 and result_row is not None
@@ -371,11 +433,14 @@ class FplSettlementService:
                 player_points,
                 player_minutes,
                 apply_substitutions=finalised,
+                player_goals=player_goals,
             )
             if scores is None:
                 skipped += 1
                 continue
-            home_score, away_score, player_scores, chips_played, substitutions = scores
+            home_score, away_score, player_scores, chips_played, substitutions, explanations = (
+                scores
+            )
             outcome = (
                 "home_win"
                 if home_score > away_score
@@ -399,6 +464,7 @@ class FplSettlementService:
                 "gameweek": gameweek,
                 "source_resource": f"event-live:{gameweek}",
                 "source_response_sha256": source_hash,
+                "source_fetched_at": fetched_at.isoformat() if fetched_at is not None else None,
                 "automatic_substitution_version": (
                     AUTOMATIC_SUBSTITUTION_VERSION
                     if finalised
@@ -412,10 +478,16 @@ class FplSettlementService:
                 "home_score": home_score,
                 "away_score": away_score,
                 "player_scores": player_scores,
+                "player_explanations": explanations,
+                "scoring_lineup_goals": {
+                    team_id: sum(int(row["goals_scored"]) for row in team_rows if row["included"])
+                    for team_id, team_rows in explanations.items()
+                },
                 "chips_played": chips_played,
                 "substitutions": substitutions,
                 "source_resource": f"event-live:{gameweek}",
                 "source_response_sha256": source_hash,
+                "source_fetched_at": fetched_at.isoformat() if fetched_at is not None else None,
                 "automatic_substitution_version": (
                     AUTOMATIC_SUBSTITUTION_VERSION
                     if finalised
@@ -490,12 +562,14 @@ class FplSettlementService:
         player_minutes: Mapping[str, int],
         *,
         apply_substitutions: bool,
+        player_goals: Mapping[str, int] | None = None,
     ) -> (
         tuple[
             int,
             int,
             dict[str, int],
             dict[str, list[str]],
+            dict[str, list[dict[str, object]]],
             dict[str, list[dict[str, object]]],
         ]
         | None
@@ -555,6 +629,10 @@ class FplSettlementService:
         substitutions_by_team: dict[str, list[dict[str, object]]] = {
             team_id: [] for team_id in team_ids
         }
+        explanations_by_team: dict[str, list[dict[str, object]]] = {
+            team_id: [] for team_id in team_ids
+        }
+        player_goals = player_goals or {}
         for team_id in team_ids:
             team_rows = by_team[team_id]
             starters = [row for row in team_rows if row["slot"] == "starter"]
@@ -617,15 +695,59 @@ class FplSettlementService:
                 player_id = str(row["player_id"])
                 points = int(player_points.get(player_id.removeprefix("fpl-"), 0))
                 multiplier = 1
+                # Auto Captain replaces selected captaincy; it cannot award a
+                # second multiplier to the originally selected captain.
                 if auto_captain is row:
                     multiplier = 2
-                elif row is captain:
+                elif row is captain and "auto-captain" not in chip_ids:
                     multiplier = 3 if "triple-captain" in chip_ids else 2
                 elif row is vice_captain and "dual-captain" in chip_ids:
                     multiplier = 2
                 final_points = points * multiplier
                 player_scores[f"{team_id}:{player_id}"] = final_points
                 total += final_points
+                explanations_by_team[team_id].append(
+                    {
+                        "player_id": player_id,
+                        "base_points": points,
+                        "multiplier": multiplier,
+                        "final_points": final_points,
+                        "goals_scored": int(player_goals.get(player_id.removeprefix("fpl-"), 0)),
+                        "included": True,
+                        "slot": str(row["slot"]),
+                        "is_captain": bool(row["is_captain"]),
+                        "is_vice_captain": bool(row["is_vice_captain"]),
+                        "reason": (
+                            "auto_captain_highest_scorer"
+                            if auto_captain is row
+                            else "captain"
+                            if row is captain and multiplier > 1
+                            else "vice_captain_dual"
+                            if row is vice_captain and multiplier > 1
+                            else "standard_lineup"
+                        ),
+                    }
+                )
+            for row in team_rows:
+                if row in scoring_rows:
+                    continue
+                player_id = str(row["player_id"])
+                explanations_by_team[team_id].append(
+                    {
+                        "player_id": player_id,
+                        "base_points": int(player_points.get(player_id.removeprefix("fpl-"), 0)),
+                        "multiplier": 0,
+                        "final_points": 0,
+                        "goals_scored": int(player_goals.get(player_id.removeprefix("fpl-"), 0)),
+                        "included": False,
+                        "slot": str(row["slot"]),
+                        "is_captain": bool(row["is_captain"]),
+                        "is_vice_captain": bool(row["is_vice_captain"]),
+                        "reason": "excluded_by_best_xi"
+                        if "best-xi" in chip_ids
+                        else "bench_not_scoring",
+                    }
+                )
             totals[team_id] = total
         return (
             totals[team_ids[0]],
@@ -633,6 +755,7 @@ class FplSettlementService:
             player_scores,
             chips_by_team,
             substitutions_by_team,
+            explanations_by_team,
         )
 
     @staticmethod
@@ -775,6 +898,24 @@ def _event_player_minutes(payload: object) -> dict[str, int]:
         except (TypeError, ValueError):
             continue
     return minutes
+
+
+def _event_player_goals(payload: object) -> dict[str, int]:
+    """Read goals scored for each player from event-live player stats."""
+    if not isinstance(payload, Mapping) or not isinstance(payload.get("elements"), list):
+        return {}
+    goals: dict[str, int] = {}
+    for element in payload["elements"]:
+        if not isinstance(element, Mapping) or element.get("id") is None:
+            continue
+        stats = element.get("stats")
+        if not isinstance(stats, Mapping):
+            continue
+        try:
+            goals[str(element["id"])] = int(stats.get("goals_scored", 0) or 0)
+        except (TypeError, ValueError):
+            continue
+    return goals
 
 
 def _chip_display_name(chip_id: str) -> str:

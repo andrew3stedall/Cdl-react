@@ -139,6 +139,18 @@ class TradeStatus(StrEnum):
     CANCELLED = "cancelled"
 
 
+class TradeApprovalStatus(StrEnum):
+    NOT_SUBMITTED = "not_submitted"
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
+
+class TradeApprovalDecision(StrEnum):
+    APPROVED = "approved"
+    REJECTED = "rejected"
+
+
 class TradeCreateRequest(BaseModel):
     offered_to_team_id: str
     offered_player_ids: list[str] = Field(min_length=1)
@@ -148,6 +160,11 @@ class TradeCreateRequest(BaseModel):
 
 class TradeUpdateRequest(BaseModel):
     status: TradeStatus
+
+
+class TradeApprovalRequest(BaseModel):
+    decision: TradeApprovalDecision
+    note: str | None = Field(default=None, max_length=512)
 
 
 class TradeAsset(BaseModel):
@@ -165,6 +182,10 @@ class TradeProposal(BaseModel):
     assets: list[TradeAsset]
     rule_references: list[RuleReference] = Field(default_factory=list)
     validation_messages: list[ValidationIssue] = Field(default_factory=list)
+    approval_status: TradeApprovalStatus = TradeApprovalStatus.NOT_SUBMITTED
+    required_approver_role: str | None = None
+    approved_by: str | None = None
+    executed_at: datetime | None = None
 
 
 class TradesResponse(BaseModel):

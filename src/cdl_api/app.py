@@ -27,13 +27,15 @@ from cdl_api.static_frontend import mount_static_frontend
 def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(title=settings.app_name)
-    if settings.environment == "staging":
-        if settings.development_login_secret == DEFAULT_DEVELOPMENT_LOGIN_SECRET:
-            raise RuntimeError("Staging requires a non-default login secret.")
-        if bool(settings.google_client_id) != bool(settings.google_allowed_email_set):
-            raise RuntimeError(
-                "Staging Google sign-in requires both a client ID and an email allowlist."
-            )
+    if settings.is_protected_environment:
+        settings.validate_protected_environment()
+        if settings.environment == "staging":
+            if settings.development_login_secret == DEFAULT_DEVELOPMENT_LOGIN_SECRET:
+                raise RuntimeError("Staging requires a non-default login secret.")
+            if bool(settings.google_client_id) != bool(settings.google_allowed_email_set):
+                raise RuntimeError(
+                    "Staging Google sign-in requires both a client ID and an email allowlist."
+                )
         repositories = build_repositories(settings)
         auth_service = AuthenticationService(
             repositories.users,
@@ -42,7 +44,13 @@ def create_app() -> FastAPI:
             settings.session_ttl_days,
             settings.commissioner_email_set,
         )
-        app.middleware("http")(build_staging_access_middleware(settings, auth_service))
+        app.middleware("http")(
+            build_staging_access_middleware(
+                settings,
+                auth_service,
+                repositories.league_memberships,
+            )
+        )
     app.include_router(auth_router, prefix=settings.api_prefix)
     app.include_router(dashboard_router, prefix=settings.api_prefix)
     app.include_router(fdr_router, prefix=settings.api_prefix)

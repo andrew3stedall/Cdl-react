@@ -39,6 +39,9 @@ describe('PlayerCard', () => {
     });
 
     const dots = [...container.querySelectorAll('.player-card__form-dot')];
+    const formSummary = container.querySelector('.player-card__form-dots')?.getAttribute('aria-label');
+    expect(formSummary).toContain('Gameweek 5: 8 points, did not play; 8 points, 90 minutes');
+    expect(formSummary).toContain('Gameweek 1: 0 points, 90 minutes');
     expect(dots).toHaveLength(5);
     expect(dots.map((dot) => dot.className)).toEqual([
       'player-card__form-dot player-card__form-dot--colour-1',

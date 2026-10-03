@@ -1,6 +1,6 @@
 """Team selection and chip API routes."""
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.responses import JSONResponse
 
 from cdl_api.contracts.common import ApiErrorResponse, ErrorCode, ValidationErrorResponse
@@ -24,6 +24,7 @@ from cdl_api.services.team_selection import (
     TeamSelectionValidationError,
 )
 from cdl_api.settings import Settings, get_settings
+from cdl_api.staging_draft_seed import UnassignedManagerContextError
 
 router = APIRouter(tags=["team-selection"])
 
@@ -33,10 +34,13 @@ def get_team_selection_repository(
     user: SessionUser | None = Depends(get_optional_authenticated_session),
 ) -> InMemoryTeamSelectionRepository:
     if settings.repository_mode == "postgres":
-        return PostgreSQLTeamSelectionRepository(
-            build_session_factory(settings),
-            user_id=user.id if user is not None else None,
-        )
+        try:
+            return PostgreSQLTeamSelectionRepository(
+                build_session_factory(settings),
+                user_id=user.id if user is not None else None,
+            )
+        except UnassignedManagerContextError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
     repositories = build_repositories(settings)
     return repositories.team_selection
 

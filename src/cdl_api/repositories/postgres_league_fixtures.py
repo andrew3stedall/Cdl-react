@@ -484,14 +484,27 @@ class PostgreSQLLeagueRepository:
 
         if active_teams:
             active_team_ids = {str(team["id"]) for team in active_teams}
+            fixtures = self.list_fixtures()
+            final_gameweeks = [
+                fixture.gameweek.number
+                for fixture in fixtures
+                if fixture.status == FixtureStatus.COMPLETE
+            ]
+            newest_final_gameweek = max(final_gameweeks, default=None)
             for payload in reversed(payloads):
+                if (
+                    payload.get("mode") != "official"
+                    or payload.get("gameweek") != newest_final_gameweek
+                    or payload.get("calculated_at") is None
+                    or payload.get("synthetic") is True
+                ):
+                    continue
                 snapshot = LeagueTableResponse.model_validate(
                     self._normalize_snapshot_teams(payload, manager_names)
                 )
                 snapshot_team_ids = {row.team.id for row in snapshot.rows}
                 if snapshot_team_ids and snapshot_team_ids <= active_team_ids:
                     return snapshot
-            fixtures = self.list_fixtures()
             if fixtures:
                 return _table_from_fixtures(fixtures)
             return LeagueTableResponse(
@@ -517,8 +530,11 @@ class PostgreSQLLeagueRepository:
             raise MissingLeagueTableSnapshotError(
                 "PostgreSQL mode requires a persisted league table snapshot."
             )
+        payload = payloads[-1]
+        if payload.get("mode") != "official" or payload.get("calculated_at") is None:
+            return LeagueTableResponse(rows=[], source="postgresql-no-fresh-official-snapshot")
         return LeagueTableResponse.model_validate(
-            self._normalize_snapshot_teams(payloads[-1], manager_names)
+            self._normalize_snapshot_teams(payload, manager_names)
         )
 
     def get_knockout_snapshot(self) -> KnockoutResponse:
@@ -656,7 +672,10 @@ def _table_from_fixtures(fixtures: Iterable[LeagueFixture]) -> LeagueTableRespon
                     league_points=0,
                 ),
             )
-        if fixture.score.outcome == FixtureOutcome.PENDING:
+        if (
+            fixture.score.outcome == FixtureOutcome.PENDING
+            or fixture.status != FixtureStatus.COMPLETE
+        ):
             continue
 
         home = standings[fixture.home_team.id]
@@ -682,6 +701,8 @@ def _table_from_fixtures(fixtures: Iterable[LeagueFixture]) -> LeagueTableRespon
             away.draws += 1
             home.league_points += 1
             away.league_points += 1
+        home.league_points += fixture.score.bonus_points.get(home.team.id, 0)
+        away.league_points += fixture.score.bonus_points.get(away.team.id, 0)
 
     rows = sorted(
         standings.values(),

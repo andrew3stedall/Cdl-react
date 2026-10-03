@@ -25,7 +25,7 @@
 .player-profile__combined-chart-y-axis {
   color: var(--profile-muted);
   display: grid;
-  font-size: clamp(0.45rem, 1.55vw, 0.56rem);
+  font-size: clamp(var(--cdl-type-chart-label, 0.625rem), 1.55vw, 0.7rem);
   font-variant-numeric: tabular-nums;
   grid-template-rows:
     var(--combined-value-row)
@@ -168,17 +168,36 @@
   border-radius: 0.1rem 0.1rem 0.25rem 0.25rem;
 }
 
+.player-profile__combined-bar.player-profile__combined-bar--negative-points {
+  align-items: center;
+  background: transparent;
+  bottom: 0;
+  color: currentColor;
+  display: flex;
+  height: 0.8rem;
+  justify-content: center;
+  opacity: 1;
+  position: absolute;
+}
+
+.player-profile__combined-bar--negative-points::after {
+  color: currentColor;
+  content: '▼';
+  font-size: 0.58rem;
+  line-height: 1;
+}
+
 .player-profile__combined-bar--empty {
   background: var(--player-form-empty);
   cursor: default;
   opacity: 1;
 }
 
-.player-profile__combined-bar--form-colour-1 { background: var(--player-form-colour-1); }
-.player-profile__combined-bar--form-colour-2 { background: var(--player-form-colour-2); }
-.player-profile__combined-bar--form-colour-3 { background: var(--player-form-colour-3); }
-.player-profile__combined-bar--form-colour-4 { background: var(--player-form-colour-4); }
-.player-profile__combined-bar--form-colour-5 { background: var(--player-form-colour-5); }
+.player-profile__combined-bar--form-colour-1 { background: var(--player-form-colour-1); color: var(--player-form-colour-1); }
+.player-profile__combined-bar--form-colour-2 { background: var(--player-form-colour-2); color: var(--player-form-colour-2); }
+.player-profile__combined-bar--form-colour-3 { background: var(--player-form-colour-3); color: var(--player-form-colour-3); }
+.player-profile__combined-bar--form-colour-4 { background: var(--player-form-colour-4); color: var(--player-form-colour-4); }
+.player-profile__combined-bar--form-colour-5 { background: var(--player-form-colour-5); color: var(--player-form-colour-5); }
 
 .player-profile__combined-bar {
   height: var(--bar-height);
@@ -188,7 +207,7 @@
   align-self: center;
   border-radius: 0.25rem;
   display: block;
-  font-size: clamp(0.56rem, 1.9vw, 0.69rem);
+  font-size: clamp(var(--cdl-type-chart-label, 0.625rem), 1.9vw, 0.69rem);
   font-weight: 900;
   line-height: 1.1;
   overflow: hidden;

@@ -83,6 +83,15 @@ class LeagueManagementTeam:
     is_assigned: bool
 
 
+@dataclass(frozen=True)
+class PendingLeagueInvite:
+    invite_id: str
+    league_name: str
+    team_id: str
+    team_name: str
+    created_at: datetime
+
+
 def hash_invite_token(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
@@ -175,6 +184,61 @@ class PostgreSQLLeagueMembershipRepository:
                 for row in rows
             ]
         return str(league_name), sum(not team.is_assigned for team in teams), teams
+
+    def list_pending_invites(self, league_id: str = LEAGUE_ID) -> list[PendingLeagueInvite]:
+        now = datetime.now(UTC)
+        with self._session_factory() as session:
+            rows = (
+                session.execute(
+                    select(
+                        league_invites_table.c.id,
+                        leagues_table.c.name.label("league_name"),
+                        draft_teams_table.c.id.label("team_id"),
+                        draft_teams_table.c.name.label("team_name"),
+                        league_invites_table.c.created_at,
+                    )
+                    .join(leagues_table, leagues_table.c.id == league_invites_table.c.league_id)
+                    .join(
+                        draft_teams_table,
+                        draft_teams_table.c.id == league_invites_table.c.team_id,
+                    )
+                    .join(managers_table, managers_table.c.id == draft_teams_table.c.manager_id)
+                    .where(
+                        league_invites_table.c.league_id == league_id,
+                        league_invites_table.c.revoked_at.is_(None),
+                        (league_invites_table.c.expires_at.is_(None))
+                        | (league_invites_table.c.expires_at > now),
+                        managers_table.c.user_id.is_(None),
+                    )
+                    .order_by(league_invites_table.c.created_at.desc())
+                )
+                .mappings()
+                .all()
+            )
+        return [
+            PendingLeagueInvite(
+                invite_id=str(row["id"]),
+                league_name=str(row["league_name"]),
+                team_id=str(row["team_id"]),
+                team_name=str(row["team_name"]),
+                created_at=row["created_at"],
+            )
+            for row in rows
+        ]
+
+    def revoke_invite(self, invite_id: str, league_id: str = LEAGUE_ID) -> bool:
+        with self._session_factory() as session:
+            result = session.execute(
+                update(league_invites_table)
+                .where(
+                    league_invites_table.c.id == invite_id,
+                    league_invites_table.c.league_id == league_id,
+                    league_invites_table.c.revoked_at.is_(None),
+                )
+                .values(revoked_at=datetime.now(UTC))
+            )
+            session.commit()
+            return bool(result.rowcount)
 
     def create_invite(
         self,
@@ -396,7 +460,7 @@ class PostgreSQLLeagueMembershipRepository:
 
 class InMemoryLeagueMembershipRepository:
     def __init__(self) -> None:
-        self._invites: dict[str, tuple[str, str]] = {}
+        self._invites: dict[str, tuple[str, str, str, datetime]] = {}
         self._members: dict[str, LeagueJoin] = {}
         self._member_profiles: dict[str, tuple[str | None, str | None]] = {}
         self._teams = (
@@ -442,6 +506,34 @@ class InMemoryLeagueMembershipRepository:
         ]
         return "CDL", sum(not team.is_assigned for team in teams), teams
 
+    def list_pending_invites(self, league_id: str = LEAGUE_ID) -> list[PendingLeagueInvite]:
+        assigned = {member.team_id for member in self._members.values()}
+        return [
+            PendingLeagueInvite(
+                invite_id,
+                "CDL",
+                team_id,
+                self._team_by_id(team_id)[1],
+                created_at,
+            )
+            for _token_hash, (invite_league_id, team_id, invite_id, created_at) in (
+                self._invites.items()
+            )
+            if invite_league_id == league_id
+            and team_id not in assigned
+            and self._team_by_id(team_id) is not None
+        ]
+
+    def revoke_invite(self, invite_id: str, league_id: str = LEAGUE_ID) -> bool:
+        matches = [
+            token_hash
+            for token_hash, invite in self._invites.items()
+            if invite[0] == league_id and invite[2] == invite_id
+        ]
+        for token_hash in matches:
+            del self._invites[token_hash]
+        return bool(matches)
+
     def create_invite(
         self,
         user_id: str,
@@ -459,7 +551,12 @@ class InMemoryLeagueMembershipRepository:
             for token_hash, invite in self._invites.items()
             if invite[0] != league_id or invite[1] != target[0]
         }
-        self._invites[hash_invite_token(token)] = (league_id, target[0])
+        self._invites[hash_invite_token(token)] = (
+            league_id,
+            target[0],
+            f"invite-{uuid4()}",
+            datetime.now(UTC),
+        )
         return InviteCreation(
             token,
             "CDL",
@@ -475,7 +572,7 @@ class InMemoryLeagueMembershipRepository:
         invite = self._invites.get(hash_invite_token(token))
         if invite is None:
             return None
-        league_id, team_id = invite
+        league_id, team_id, _invite_id, _created_at = invite
         target = self._team_by_id(team_id)
         if target is None or target[0] in {member.team_id for member in self._members.values()}:
             return None

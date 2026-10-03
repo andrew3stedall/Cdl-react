@@ -6,7 +6,7 @@ Define chip ownership, activation, locking, scoring effects, and explainable chi
 
 ## Status
 
-Checkpoint 2 complete.
+The primary settlement path now applies Auto Captain to exactly one highest-scoring player in the scoring lineup. Equal point totals resolve by the lowest lineup slot order, matching the existing deterministic ordering. Frozen scoring snapshots retain the per-player point and multiplier explanation. Captain/vice fallback for DNP and Best XI omission still requires a product rule decision.
 
 ## Business Rules
 
@@ -15,6 +15,7 @@ Checkpoint 2 complete.
 - Triple Captain: captain scores 3x instead of 2x.
 - Dual Captain: captain and vice captain both score 2x.
 - Auto Captain: highest scorer from scoring lineup gets captain multiplier.
+- Auto Captain gives the multiplier to one player only. Equal highest scores resolve by lineup slot order.
 - Bench Boost: bench players score; reserves excluded.
 - Best XI: uses best 11 from starters plus bench, ignoring position constraints; reserves excluded.
 - Chip impact should show whether the chip was wasted, points delta, fixture outcome impact, and league-points impact.

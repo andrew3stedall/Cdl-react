@@ -50,6 +50,7 @@ import {
   applyThemeColours,
   defaultThemeColourVariants,
   getThemeAccentColoursForMode,
+  getAccessibleAccentText,
   getThemeColourForeground,
   resolveThemeAccentColours,
   resolveThemeColourVariants,
@@ -305,8 +306,19 @@ export function ThemePresetProvider({
       const foreground = getThemeColourForeground(themeColours[accent], themeMode);
       root.style.setProperty(`--theme-${accent}`, colour);
       root.style.setProperty(`--theme-${accent}-foreground`, foreground);
+      const accessibleText = getAccessibleAccentText(colour, [
+        colors.background,
+        colors.card,
+        colors.surface,
+        colors.popover,
+        colors.secondary,
+        colors.muted,
+        colors.accent,
+      ]);
+      root.style.setProperty(`--theme-${accent}-text`, accessibleText);
       root.style.setProperty(`--cdl-theme-${accent}`, colour);
       root.style.setProperty(`--cdl-theme-${accent}-foreground`, foreground);
+      root.style.setProperty(`--cdl-theme-${accent}-text`, accessibleText);
     });
     root.style.setProperty('--cdl-radius', preset.tokens.radius);
     root.style.setProperty('--radius', preset.tokens.radius);

@@ -128,6 +128,10 @@ trade_proposals_table = Table(
     Column("offered_to_team_id", String(64), ForeignKey("draft_teams.id"), nullable=False),
     Column("gameweek", Integer(), nullable=False),
     Column("status", String(64), nullable=False),
+    Column("approval_status", String(64), nullable=False, server_default="not_submitted"),
+    Column("required_approver_role", String(64), nullable=True),
+    Column("approved_by_manager_id", String(64), ForeignKey("managers.id"), nullable=True),
+    Column("executed_at", DateTime(timezone=True), nullable=True),
     Column("created_at", DateTime(timezone=True), nullable=False),
     Column("updated_at", DateTime(timezone=True), nullable=False),
 )

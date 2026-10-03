@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This runbook defines the controlled migration and deterministic synthetic seed jobs for the first staging environment. Terraform creates job definitions only; it never executes them automatically.
+This runbook defines the controlled migration and deterministic synthetic seed jobs for staging. Reviewed manual apply and automatic rollout may execute the migration job as part of a runtime release; the seed job remains a separate explicit action.
 
 The relevant resources and workflow are:
 
@@ -75,6 +75,37 @@ backend_image=<same approved immutable digest URI>
 ```
 
 The cumulative runtime stage retains both database jobs and adds the private web service. Do not plan runtime with database jobs disabled.
+
+## Runtime image release gate
+
+For every runtime image rollout, the workflows first identify the one currently
+serving revision at 100 percent and pin that revision in the Terraform plan.
+Terraform can create the new image revision, but the old revision continues to
+receive traffic. A runtime plan fails closed when it cannot identify that
+healthy revision; first-time service creation must be handled as a separately
+reviewed bootstrap sequence.
+
+The order is:
+
+1. Build or resolve the immutable application image digest.
+2. Stage the image while the healthy revision retains traffic.
+3. Verify the migration job uses the same image digest and execute it.
+4. The migration entrypoint upgrades to Alembic `head`, reads PostgreSQL's
+   current revision heads, and exits unsuccessfully if they differ from the
+   checked-in migration heads.
+5. Check staged revision readiness, `/health`, and the unauthenticated API
+   boundary without routing public traffic to the candidate.
+6. Promote the staged revision. A failed migration or staged check prevents
+   this step. The direct fallback repeats the migration/image gate and stages
+   with `--no-traffic` before it can promote.
+
+The runtime smoke in these workflows is a health/auth-boundary check. Real
+authenticated two-manager, invite, lineup and chip round trips run in the
+PostgreSQL CI job; staging promotion does not mutate a manager's lineup to
+manufacture a smoke result. These checks do not establish schema compatibility
+for destructive migrations. Destructive or contract-breaking migrations need
+an expand/contract rollout plan and separate approval before enabling the
+automatic rollout path.
 
 ## Required environment and identity
 
@@ -176,6 +207,12 @@ workflow does not create, update or replace the job definition.
 
 Migration and seed execution must remain separate. A failed seed must not obscure whether schema migration succeeded.
 
+The automatic runtime workflow uses the same immutable image digest for the
+service and migration job. Migration failure retains the previously serving
+revision. Before relying on the automatically started direct fallback, confirm
+its migration execution and retained-traffic checks succeeded; it is not a
+general recovery substitute for a failed migration.
+
 ## Evidence to record
 
 For each execution record:
@@ -195,11 +232,14 @@ Repository validation proves that:
 - the image includes Alembic and seed entrypoints;
 - migration refuses a missing database URL or configuration;
 - migration requests an upgrade to `head`;
+- migration reads back the database revision and fails when it does not match
+  the checked-in Alembic heads;
 - seed execution refuses unsafe targets and requires confirmation;
 - the bounded seed invokes existing idempotent domain seeders;
 - the Terraform jobs use the dedicated identity, Cloud SQL and Secret Manager;
 - the execution workflow is manual, main-only and confirmation-gated;
-- CI applies all migrations to a clean PostgreSQL database.
+- CI applies all migrations to a clean PostgreSQL database and runs the
+  two-manager release journey against that PostgreSQL service.
 
 This does not prove live Cloud SQL connectivity, secret resolution, database privileges, execution duration, rollback or staging state.
 

@@ -156,3 +156,35 @@ def test_management_lists_active_users_and_their_teams() -> None:
         "is_assigned": True,
     }
     assert teams["castle"]["is_assigned"] is False
+
+
+def test_commissioner_can_list_and_revoke_pending_invites() -> None:
+    repository = InMemoryLeagueMembershipRepository()
+    commissioner = SessionUser(
+        id="commissioner-1",
+        email="commissioner@example.com",
+        display_name="Commissioner",
+        roles=["commissioner"],
+    )
+    client = _client(commissioner, repository)
+    token = client.post(
+        "/api/league/management/invites",
+        json={"team_id": "castle"},
+    ).json()["token"]
+    invite = client.get("/api/league/management/invites").json()["invites"][0]
+
+    assert invite["team_id"] == "castle"
+    assert invite["invite_id"]
+    assert client.delete(f"/api/league/management/invites/{invite['invite_id']}").json() == {
+        "revoked": True
+    }
+    assert client.get(f"/api/league/invites/{token}").status_code == 404
+    assert client.get("/api/league/management/invites").json()["invites"] == []
+
+    manager = SessionUser(
+        id="manager-2",
+        email="manager@example.com",
+        display_name="Manager",
+        roles=["manager"],
+    )
+    assert _client(manager, repository).get("/api/league/management/invites").status_code == 403

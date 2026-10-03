@@ -3,6 +3,7 @@ import {
   ArrowRight,
   ArrowRightLeft,
   Bookmark,
+  ChartNoAxesCombined,
   CircleAlert,
   Filter,
   Search,
@@ -60,8 +61,11 @@ interface InterestView {
 interface TradeView {
   id: string;
   status: string;
+  offeredById: string | null;
+  offeredToId: string | null;
   offeredBy: string | null;
   offeredTo: string | null;
+  approvalStatus?: string | null;
   assetNames: string[];
 }
 
@@ -88,8 +92,9 @@ interface ApiInterest {
 interface ApiTrade {
   id: string;
   status: string;
-  offered_by?: { name?: string | null } | null;
-  offered_to?: { name?: string | null } | null;
+  offered_by?: { id?: string | null; name?: string | null } | null;
+  offered_to?: { id?: string | null; name?: string | null } | null;
+  approval_status?: string | null;
   assets?: Array<{ player?: { display_name?: string | null } | null }>;
 }
 
@@ -136,7 +141,10 @@ export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps)
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState('');
+  const [failedSections, setFailedSections] = useState<Set<string>>(() => new Set());
+  const [refreshKey, setRefreshKey] = useState(0);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
+  const [pendingTradeAction, setPendingTradeAction] = useState<string | null>(null);
   const drawerRef = useRef<HTMLElement | null>(null);
   const selectedPlayerId = selectedPlayer?.id;
 
@@ -172,10 +180,15 @@ export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps)
       if (interestPayload) setInterests(interestPayload.map(mapInterest));
       if (tradePayload) setTrades((tradePayload.trades ?? []).map(mapTrade));
       setLoading(false);
+      setFailedSections(new Set(errors));
       if (errors.length === 4) {
-        setError('Market data is temporarily unavailable. Try again from the shell reload control.');
+        setError('Market data is temporarily unavailable.');
       } else if (errors.length > 0) {
         setNotice(`Unavailable: ${errors.join(' and ')}.`);
+        setError(null);
+      } else {
+        setError(null);
+        setNotice('');
       }
     }
 
@@ -183,7 +196,7 @@ export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps)
     return () => {
       active = false;
     };
-  }, []);
+  }, [refreshKey]);
 
   useEffect(() => {
     if (!selectedPlayerId) {
@@ -200,9 +213,8 @@ export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps)
         if (!active) return;
         setHistory(response);
         const formHistory = formHistoryFromRows(response.history);
-        setSelectedPlayer((current) => current?.id === selectedPlayerId && current.formHistory.length !== formHistory.length
-          ? { ...current, formHistory }
-          : current);
+        setPlayers((current) => current.map((player) => player.id === selectedPlayerId ? { ...player, formHistory } : player));
+        setSelectedPlayer((current) => current?.id === selectedPlayerId ? { ...current, formHistory } : current);
         setHistoryStatus('');
       })
       .catch(() => {
@@ -288,6 +300,7 @@ export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps)
         throw new Error(payload.message ?? payload.detail ?? 'Unable to remove this Interest.');
       }
       setInterests((current) => current.filter((item) => item.id !== interest.id));
+      setPlayers((current) => current.map((player) => player.id === interest.player.id ? { ...player, status: 'available' } : player));
       setNotice(`${interest.player.displayName} removed from Interests.`);
       setSelectedPlayer((current) => current?.id === interest.player.id ? { ...current, status: 'available' } : current);
     } catch (actionError) {
@@ -297,11 +310,34 @@ export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps)
     }
   }
 
+  async function updateTrade(trade: TradeView, status: 'accepted' | 'rejected' | 'cancelled') {
+    if (pendingTradeAction) return;
+    setPendingTradeAction(trade.id);
+    try {
+      await fetchJson<ApiTrade>(`/api/trades/${encodeURIComponent(trade.id)}`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status }),
+      });
+      const response = await fetchJson<{ trades?: ApiTrade[] }>('/api/trades');
+      setTrades((response.trades ?? []).map(mapTrade));
+      setNotice(status === 'accepted'
+        ? 'Trade accepted. Commissioner approval is still required before ownership changes.'
+        : status === 'rejected' ? 'Trade rejected.' : 'Trade proposal cancelled.');
+    } catch (actionError) {
+      setNotice(actionError instanceof Error ? actionError.message : 'Unable to update this trade.');
+    } finally {
+      setPendingTradeAction(null);
+    }
+  }
+
   return (
     <main aria-labelledby="market-page-title" className="feature-screen market-page" data-density={preset.tokens.density}>
       <PageHero
         actions={(
           <PageHeroControls>
+            <Button aria-label="Open fixture difficulty" onClick={() => onNavigate('/fdr')} type="button" variant="secondary"><ChartNoAxesCombined aria-hidden="true" size={16} />FDR</Button>
             <PageHeroViewToggle
               ariaLabel="Market workspace sections"
               onChange={(nextMode) => selectMode(nextMode as MarketMode)}
@@ -324,6 +360,7 @@ export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps)
         <div className="market-page__error" role="alert">
           <CircleAlert aria-hidden="true" size={18} />
           <span>{error}</span>
+          <Button disabled={loading} onClick={() => setRefreshKey((key) => key + 1)} type="button" variant="secondary">{loading ? 'Retrying…' : 'Retry'}</Button>
         </div>
       ) : null}
       {notice && !error ? <p className="market-page__status" role="status">{notice}</p> : null}
@@ -335,6 +372,7 @@ export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps)
           filteredPlayers={filteredPlayers}
           fixtureFilter={fixtureFilter}
           loading={loading}
+          failed={failedSections.has('player pool')}
           managerTeam={managerTeam}
             onClearFilters={() => {
               setQuery('');
@@ -353,9 +391,9 @@ export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps)
           />
         ) : null}
         {mode === 'interests' ? (
-          <InterestsPanel interests={interests} managerTeam={managerTeam} onBrowse={() => selectMode('discover')} onOpenPlayer={openPlayer} onRemove={removeInterest} pendingAction={pendingAction} />
+          <InterestsPanel failed={failedSections.has('Interests')} interests={interests} loading={loading} managerTeam={managerTeam} onBrowse={() => selectMode('discover')} onOpenPlayer={openPlayer} onRemove={removeInterest} onRetry={() => setRefreshKey((key) => key + 1)} pendingAction={pendingAction} />
         ) : null}
-        {mode === 'trades' ? <TradesPanel onBrowse={() => selectMode('discover')} trades={trades} /> : null}
+        {mode === 'trades' ? <TradesPanel failed={failedSections.has('trade activity')} loading={loading} managerTeam={managerTeam} onBrowse={() => selectMode('discover')} onRetry={() => setRefreshKey((key) => key + 1)} onUpdateTrade={updateTrade} pendingTradeAction={pendingTradeAction} trades={trades} /> : null}
       </section>
 
       {selectedPlayer ? (
@@ -378,6 +416,7 @@ export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps)
 }
 
 function DiscoveryPanel({
+  failed,
   filteredPlayers,
   filtersOpen,
   fixtureFilter,
@@ -395,6 +434,7 @@ function DiscoveryPanel({
   sortKey,
 }: {
   filteredPlayers: MarketPlayer[];
+  failed: boolean;
   filtersOpen: boolean;
   fixtureFilter: FixtureFilter;
   loading: boolean;
@@ -439,8 +479,9 @@ function DiscoveryPanel({
       </div>
 
       {loading ? <MarketLoadingTable /> : null}
-      {!loading && filteredPlayers.length === 0 ? <div className="market-page__empty"><Search aria-hidden="true" size={22} /><strong>No players found</strong>{hasFilters ? <Button onClick={onClearFilters} type="button" variant="secondary">Clear filters</Button> : null}</div> : null}
-      {!loading && filteredPlayers.length > 0 ? (
+      {!loading && failed ? <p role="alert">Player pool unavailable. Retry to load players.</p> : null}
+      {!loading && !failed && filteredPlayers.length === 0 ? <div className="market-page__empty"><Search aria-hidden="true" size={22} /><strong>No players found</strong>{hasFilters ? <Button onClick={onClearFilters} type="button" variant="secondary">Clear filters</Button> : null}</div> : null}
+      {!loading && !failed && filteredPlayers.length > 0 ? (
         <div className="market-page__table-wrap">
           <table aria-label="Market player results" className="market-page__player-table">
             <caption className="sr-only">Market player results</caption>
@@ -520,17 +561,28 @@ function MarketPlayerRow({ managerTeam, onOpen, player }: { managerTeam: SquadAp
   );
 }
 
-function InterestsPanel({ interests, managerTeam, onBrowse, onOpenPlayer, onRemove, pendingAction }: { interests: InterestView[]; managerTeam: SquadApiTeam; onBrowse: () => void; onOpenPlayer: (player: MarketPlayer) => void; onRemove: (interest: InterestView) => Promise<void>; pendingAction: string | null }) {
+function InterestsPanel({ failed, interests, loading, managerTeam, onBrowse, onOpenPlayer, onRemove, onRetry, pendingAction }: { failed: boolean; interests: InterestView[]; loading: boolean; managerTeam: SquadApiTeam; onBrowse: () => void; onOpenPlayer: (player: MarketPlayer) => void; onRemove: (interest: InterestView) => Promise<void>; onRetry: () => void; pendingAction: string | null }) {
   return (
     <section aria-label="Your Interests" className="market-page__activity-panel">
-      {interests.length === 0 ? <EmptyActivity icon={<Bookmark aria-hidden="true" size={23} />} onAction={onBrowse} action="Find a player" title="No Interests" /> : <div className="market-page__activity-list">{interests.map((interest) => <article className="market-page__activity-row" key={interest.id}><button aria-label={`View ${interest.player.displayName} details`} className="market-page__player-identity" onClick={() => onOpenPlayer(interest.player)} type="button"><PlayerCard formPosition="beside" layout="list" player={toPlayerCardPlayer(interest.player, ownershipToneFor(interest.player, managerTeam))} showPositionMarker={false} size="xs" /></button><Button aria-label={`Remove ${interest.player.displayName} from Interests`} disabled={pendingAction === interest.id} onClick={() => void onRemove(interest)} type="button" variant="ghost">{pendingAction === interest.id ? 'Removing…' : 'Remove'}</Button></article>)}</div>}
+      {loading ? <p role="status">Loading Interests…</p> : null}
+      {!loading && failed ? <p role="alert">Interests unavailable. <Button onClick={onRetry} type="button" variant="secondary">Retry</Button></p> : null}
+      {!loading && !failed && interests.length === 0 ? <EmptyActivity icon={<Bookmark aria-hidden="true" size={23} />} onAction={onBrowse} action="Find a player" title="No Interests" /> : null}
+      {!loading && !failed && interests.length > 0 ? <div className="market-page__activity-list">{interests.map((interest) => <article className="market-page__activity-row" key={interest.id}><button aria-label={`View ${interest.player.displayName} details`} className="market-page__player-identity" onClick={() => onOpenPlayer(interest.player)} type="button"><PlayerCard formPosition="beside" layout="list" player={toPlayerCardPlayer(interest.player, ownershipToneFor(interest.player, managerTeam))} showPositionMarker={false} size="xs" /></button><Button aria-label={`Remove ${interest.player.displayName} from Interests`} disabled={pendingAction === interest.id} onClick={() => void onRemove(interest)} type="button" variant="ghost">{pendingAction === interest.id ? 'Removing…' : 'Remove'}</Button></article>)}</div> : null}
     </section>
   );
 }
 
-function TradesPanel({ onBrowse, trades }: { onBrowse: () => void; trades: TradeView[] }) {
+function TradesPanel({ failed, loading, managerTeam, onBrowse, onRetry, onUpdateTrade, pendingTradeAction, trades }: { failed: boolean; loading: boolean; managerTeam: SquadApiTeam; onBrowse: () => void; onRetry: () => void; onUpdateTrade: (trade: TradeView, status: 'accepted' | 'rejected' | 'cancelled') => Promise<void>; pendingTradeAction: string | null; trades: TradeView[] }) {
+  if (loading) return <p role="status">Loading trade activity…</p>;
+  if (failed) return <p role="alert">Trade activity unavailable. <Button onClick={onRetry} type="button" variant="secondary">Retry</Button></p>;
   if (trades.length === 0) return <EmptyActivity icon={<ArrowRightLeft aria-hidden="true" size={23} />} onAction={onBrowse} action="Browse players" title="No trade proposals" />;
-  return <section aria-label="Trade activity" className="market-page__activity-list">{trades.map((trade) => <article className="market-page__trade-row" key={trade.id}><span className="market-page__trade-icon"><ArrowRightLeft aria-hidden="true" size={18} /></span><div><strong>{trade.assetNames.length > 0 ? trade.assetNames.join(' ↔ ') : 'Player trade proposal'}</strong><span>{trade.offeredBy ?? 'Another manager'} → {trade.offeredTo ?? 'Your team'}</span><StatusBadge status={trade.status} /></div></article>)}</section>;
+  return <section aria-label="Trade activity" className="market-page__activity-list">{trades.map((trade) => {
+    const recipient = trade.offeredToId === managerTeam.id;
+    const sender = trade.offeredById === managerTeam.id;
+    const pending = pendingTradeAction === trade.id;
+    const terminal = ['rejected', 'cancelled', 'executed'].includes(trade.status);
+    return <article className="market-page__trade-row" key={trade.id}><span className="market-page__trade-icon"><ArrowRightLeft aria-hidden="true" size={18} /></span><div><strong>{trade.assetNames.length > 0 ? trade.assetNames.join(' ↔ ') : 'Player trade proposal'}</strong><span>{trade.offeredBy ?? 'Another manager'} → {trade.offeredTo ?? 'Your team'}</span><StatusBadge status={trade.status} />{trade.status === 'accepted' && trade.approvalStatus !== 'approved' ? <span>Awaiting commissioner approval</span> : null}{!terminal && trade.status === 'proposed' && recipient ? <div className="market-page__trade-actions"><Button disabled={pending} onClick={() => void onUpdateTrade(trade, 'accepted')} type="button">{pending ? 'Saving…' : 'Accept'}</Button><Button disabled={pending} onClick={() => void onUpdateTrade(trade, 'rejected')} type="button" variant="secondary">Reject</Button></div> : null}{!terminal && trade.status === 'proposed' && sender ? <Button disabled={pending} onClick={() => void onUpdateTrade(trade, 'cancelled')} type="button" variant="secondary">{pending ? 'Cancelling…' : 'Cancel proposal'}</Button> : null}</div></article>;
+  })}</section>;
 }
 
 function PlayerDrawer({ drawerRef, history, historyStatus, interest, managerTeam, onAddInterest, onClose, onNavigate, onRemoveInterest, pendingAction, player }: { drawerRef: MutableRefObject<HTMLElement | null>; history: PlayerHistoryResponse | null; historyStatus: string; interest: InterestView | null; managerTeam: SquadApiTeam; onAddInterest: () => void; onClose: () => void; onNavigate: (href: string) => void; onRemoveInterest: (interest: InterestView) => Promise<void>; pendingAction: string | null; player: MarketPlayer }) {
@@ -609,7 +661,7 @@ function mapInterest(interest: ApiInterest): InterestView {
 }
 
 function mapTrade(trade: ApiTrade): TradeView {
-  return { id: trade.id, status: trade.status, offeredBy: trade.offered_by?.name ?? null, offeredTo: trade.offered_to?.name ?? null, assetNames: (trade.assets ?? []).map((asset) => asset.player?.display_name ?? '').filter(Boolean) };
+  return { id: trade.id, status: trade.status, offeredById: trade.offered_by?.id ?? null, offeredToId: trade.offered_to?.id ?? null, offeredBy: trade.offered_by?.name ?? null, offeredTo: trade.offered_to?.name ?? null, approvalStatus: trade.approval_status ?? null, assetNames: (trade.assets ?? []).map((asset) => asset.player?.display_name ?? '').filter(Boolean) };
 }
 
 function effectiveStatus(player: MarketPlayer, interestedPlayerIds: Set<string>, managerTeam: SquadApiTeam): MarketPlayer['status'] {
@@ -656,8 +708,8 @@ function numberOrNull(value: number | null | undefined): number | null {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
-async function fetchJson<T>(url: string): Promise<T> {
-  const response = await fetch(url, { credentials: 'include', headers: { Accept: 'application/json' } });
+async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(url, { ...init, credentials: 'include', headers: { Accept: 'application/json', ...init?.headers } });
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(typeof payload?.message === 'string' ? payload.message : `Request failed with ${response.status}.`);
   return payload as T;

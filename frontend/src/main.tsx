@@ -15,7 +15,6 @@ import {
 } from './static-preview-clients';
 import './styles.css';
 import './application-shell.css';
-import './squad-management-responsive.css';
 import './login-page.css';
 import './squad-page-a11y.css';
 import './manager-desk-fixture-layout.css';

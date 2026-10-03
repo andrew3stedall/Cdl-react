@@ -6,7 +6,7 @@ Define UI-editable league configuration with versioned rule snapshots so histori
 
 ## Status
 
-Checkpoint 1 complete.
+Engineering prototype only. Persistent commissioner rule configuration and runtime historical-version enforcement remain planned (#523); unresolved league rules remain explicit decisions.
 
 ## Business Rules
 

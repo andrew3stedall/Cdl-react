@@ -207,6 +207,126 @@ class PostgreSQLTeamSelectionRepository(InMemoryTeamSelectionRepository):
         selected_players.extend(player for player in players if player.id not in selected_ids)
         return sorted(selected_players, key=self._lineup_sort_key)
 
+    @staticmethod
+    def repair_unlocked_lineups(
+        session: Session,
+        team_id: str,
+        owned_player_ids: set[str],
+        now: datetime,
+    ) -> None:
+        """Reconcile future unlocked lineup rows within an ownership transaction."""
+        next_gameweek = session.execute(
+            select(fpl_gameweeks_table.c.id).where(fpl_gameweeks_table.c.is_next.is_(True)).limit(1)
+        ).scalar_one_or_none()
+        try:
+            first_future_gameweek = int(str(next_gameweek))
+        except (TypeError, ValueError):
+            first_future_gameweek = None
+        future_condition = (
+            team_selection_lineup_slots_table.c.gameweek >= first_future_gameweek
+            if first_future_gameweek is not None
+            else team_selection_lineup_slots_table.c.gameweek > 0
+        )
+        rows = list(
+            session.execute(
+                select(team_selection_lineup_slots_table)
+                .where(
+                    team_selection_lineup_slots_table.c.season_id == SEASON_ID,
+                    team_selection_lineup_slots_table.c.draft_team_id == team_id,
+                    team_selection_lineup_slots_table.c.locked_at.is_(None),
+                    future_condition,
+                )
+                .order_by(
+                    team_selection_lineup_slots_table.c.gameweek,
+                    team_selection_lineup_slots_table.c.slot,
+                    team_selection_lineup_slots_table.c.slot_order,
+                )
+            ).mappings()
+        )
+        if not rows:
+            return
+        owned_rows = list(
+            session.execute(
+                select(
+                    fpl_players_table.c.id,
+                    squad_roster_slots_table.c.sort_order,
+                )
+                .join(
+                    squad_ownerships_table,
+                    squad_ownerships_table.c.player_id == fpl_players_table.c.id,
+                )
+                .join(
+                    squad_roster_slots_table,
+                    squad_ownerships_table.c.roster_slot_id == squad_roster_slots_table.c.id,
+                )
+                .where(fpl_players_table.c.id.in_(owned_player_ids))
+                .where(
+                    squad_ownerships_table.c.season_id == SEASON_ID,
+                    squad_ownerships_table.c.draft_team_id == team_id,
+                    squad_ownerships_table.c.ended_at.is_(None),
+                )
+                .order_by(squad_roster_slots_table.c.sort_order, fpl_players_table.c.id)
+            ).mappings()
+        )
+        owned_order = [str(row["id"]) for row in owned_rows]
+        for gameweek in sorted({int(row["gameweek"]) for row in rows}):
+            gameweek_rows = [row for row in rows if int(row["gameweek"]) == gameweek]
+            if any(row["locked_at"] is not None for row in gameweek_rows):
+                continue
+            used = {
+                str(row["player_id"])
+                for row in gameweek_rows
+                if str(row["player_id"]) in owned_player_ids
+            }
+            replacements = [player_id for player_id in owned_order if player_id not in used]
+            repaired = []
+            for row in gameweek_rows:
+                player_id = str(row["player_id"])
+                if player_id not in owned_player_ids:
+                    if not replacements:
+                        continue
+                    player_id = replacements.pop(0)
+                    used.add(player_id)
+                repaired.append({**dict(row), "player_id": player_id})
+            starters = sorted(
+                (row for row in repaired if row["slot"] == "starter"),
+                key=lambda row: int(row["slot_order"]),
+            )
+            if starters and not any(row["is_captain"] for row in starters):
+                starters[0]["is_captain"] = True
+            if len(starters) > 1 and not any(row["is_vice_captain"] for row in starters):
+                vice = next((row for row in starters if not row["is_captain"]), None)
+                if vice is not None:
+                    vice["is_vice_captain"] = True
+            session.execute(
+                _remove_existing(team_selection_lineup_slots_table).where(
+                    team_selection_lineup_slots_table.c.season_id == SEASON_ID,
+                    team_selection_lineup_slots_table.c.draft_team_id == team_id,
+                    team_selection_lineup_slots_table.c.gameweek == gameweek,
+                    team_selection_lineup_slots_table.c.locked_at.is_(None),
+                )
+            )
+            if repaired:
+                session.execute(
+                    insert(team_selection_lineup_slots_table),
+                    [
+                        {
+                            "id": f"lineup-{team_id}-{gameweek}-{row['player_id']}",
+                            "season_id": SEASON_ID,
+                            "draft_team_id": team_id,
+                            "player_id": row["player_id"],
+                            "gameweek": gameweek,
+                            "slot": row["slot"],
+                            "slot_order": row["slot_order"],
+                            "is_captain": bool(row["is_captain"]),
+                            "is_vice_captain": bool(row["is_vice_captain"]),
+                            "locked_at": None,
+                            "updated_at": now,
+                        }
+                        for row in repaired
+                    ],
+                )
+
     def get_historical_fixture_squads(self, fixture: LeagueFixture) -> list[FixtureSquad]:
         """Return the locked lineups and gameweek points for a past fixture.
 
@@ -265,6 +385,7 @@ class PostgreSQLTeamSelectionRepository(InMemoryTeamSelectionRepository):
 
         event_points = _event_live_player_points(event_payload)
         snapshot_points = _snapshot_player_points(snapshot_payload)
+        snapshot_explanations = _snapshot_player_explanations(snapshot_payload)
         snapshot_substitutions = _snapshot_substitutions(snapshot_payload)
         substituted_in_ids = {
             str(row["substitute_player_id"])
@@ -294,6 +415,16 @@ class PostgreSQLTeamSelectionRepository(InMemoryTeamSelectionRepository):
                 row: Mapping[str, object], owning_team_id: str = team_id
             ) -> FixtureSquadPlayer:
                 player_id = str(row["player_id"])
+                explanation = snapshot_explanations.get(
+                    f"{owning_team_id}:{player_id}",
+                    snapshot_explanations.get(
+                        f"{owning_team_id}:{player_id.removeprefix('fpl-')}", {}
+                    ),
+                )
+                frozen = fixture.status == "complete"
+                frozen_total = _historical_snapshot_total(
+                    player_id, snapshot_points, owning_team_id
+                )
                 return FixtureSquadPlayer(
                     id=player_id,
                     display_name=str(row["web_name"]),
@@ -303,15 +434,35 @@ class PostgreSQLTeamSelectionRepository(InMemoryTeamSelectionRepository):
                         name=str(row["club_name"]),
                         short_name=str(row["club_short_name"]),
                     ),
-                    points=_historical_player_points(
-                        player_id,
-                        event_points,
-                        snapshot_points,
-                        owning_team_id,
+                    points=(
+                        int(explanation.get("base_points", 0))
+                        if frozen and explanation
+                        else frozen_total
+                        if frozen and frozen_total is not None and not explanation
+                        else 0
+                        if frozen
+                        else _historical_player_points(
+                            player_id, event_points, snapshot_points, owning_team_id
+                        )
                     ),
-                    points_multiplier=_historical_points_multiplier(
-                        row,
-                        fixture.score.chips_played.get(owning_team_id, []),
+                    points_multiplier=(
+                        int(explanation.get("multiplier", 1))
+                        if frozen and explanation
+                        else 1
+                        if frozen and frozen_total is not None and not explanation
+                        else _historical_points_multiplier(
+                            row, fixture.score.chips_played.get(owning_team_id, [])
+                        )
+                    ),
+                    scoring_included=(
+                        bool(explanation.get("included", True)) if explanation else True
+                    ),
+                    scoring_reason=(
+                        str(explanation.get("reason"))
+                        if explanation
+                        else "legacy_frozen_total"
+                        if frozen_total is not None
+                        else None
                     ),
                     slot=str(row["slot"]),
                     is_captain=bool(row["is_captain"]),
@@ -773,6 +924,27 @@ def _snapshot_player_points(payload: object) -> dict[str, int]:
     return points
 
 
+def _snapshot_player_explanations(payload: object) -> dict[str, Mapping[str, object]]:
+    if isinstance(payload, str):
+        try:
+            payload = json.loads(payload)
+        except json.JSONDecodeError:
+            return {}
+    if not isinstance(payload, Mapping):
+        return {}
+    explanations = payload.get("player_explanations")
+    if not isinstance(explanations, Mapping):
+        return {}
+    output: dict[str, Mapping[str, object]] = {}
+    for team_id, rows in explanations.items():
+        if not isinstance(rows, list):
+            continue
+        for row in rows:
+            if isinstance(row, Mapping) and row.get("player_id") is not None:
+                output[f"{team_id}:{row['player_id']}"] = row
+    return output
+
+
 def _snapshot_substitutions(payload: object) -> list[Mapping[str, object]]:
     if isinstance(payload, str):
         try:
@@ -798,15 +970,25 @@ def _historical_player_points(
     snapshot_points: Mapping[str, int],
     team_id: str,
 ) -> int:
+    frozen_total = _historical_snapshot_total(player_id, snapshot_points, team_id)
+    if frozen_total is not None:
+        return frozen_total
     if player_id in event_points:
         return event_points[player_id]
     unprefixed_id = player_id.removeprefix("fpl-")
     if unprefixed_id in event_points:
         return event_points[unprefixed_id]
+    return 0
+
+
+def _historical_snapshot_total(
+    player_id: str, snapshot_points: Mapping[str, int], team_id: str
+) -> int | None:
+    unprefixed_id = player_id.removeprefix("fpl-")
     for key in (f"{team_id}:{player_id}", f"{team_id}:{unprefixed_id}"):
         if key in snapshot_points:
             return snapshot_points[key]
-    return 0
+    return None
 
 
 def _historical_points_multiplier(row: Mapping[str, object], chips: list[str]) -> int:

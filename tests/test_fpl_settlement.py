@@ -46,6 +46,13 @@ def _session_factory() -> sessionmaker[Session]:
                 "response_sha256 TEXT NOT NULL, fetched_at DATETIME NOT NULL)"
             )
         )
+        connection.execute(
+            text(
+                "CREATE TABLE external_fetch_log (id TEXT PRIMARY KEY, resource TEXT NOT NULL, "
+                "endpoint TEXT NOT NULL, status_code INTEGER, response_sha256 TEXT, "
+                "record_count INTEGER NOT NULL, error TEXT, fetched_at DATETIME NOT NULL)"
+            )
+        )
         for table_name in (
             "cdl_fixtures",
             "fixture_results",
@@ -56,6 +63,19 @@ def _session_factory() -> sessionmaker[Session]:
             )
         connection.execute(
             text("CREATE TABLE fpl_players (id TEXT PRIMARY KEY, position_id TEXT NOT NULL)")
+        )
+        connection.execute(
+            text(
+                "CREATE TABLE squad_roster_slots (id TEXT PRIMARY KEY, season_id TEXT NOT NULL, "
+                "draft_team_id TEXT NOT NULL, sort_order INTEGER NOT NULL)"
+            )
+        )
+        connection.execute(
+            text(
+                "CREATE TABLE squad_ownerships (id TEXT PRIMARY KEY, season_id TEXT NOT NULL, "
+                "draft_team_id TEXT NOT NULL, player_id TEXT NOT NULL, roster_slot_id TEXT, "
+                "started_at DATETIME NOT NULL, ended_at DATETIME)"
+            )
         )
         connection.execute(
             text(
@@ -367,6 +387,7 @@ def test_final_team_scores_apply_automatic_substitutions() -> None:
             }
             for slot_order, player_id in enumerate(starters, start=1)
         )
+
         lineup_rows.extend(
             {
                 "id": f"lineup-{team_id}-{player_id}",
@@ -458,6 +479,155 @@ def test_final_team_scores_apply_automatic_substitutions() -> None:
         )
         assert len(substitution_ids) == 2
         assert all(len(substitution_id) == 61 for substitution_id in substitution_ids)
+
+
+def test_auto_captain_applies_only_one_bonus_and_explains_player_totals() -> None:
+    sessions = _session_factory()
+    now = datetime.now(UTC)
+    rows = []
+    for team_id, player_ids in (
+        ("team-home", range(1, 12)),
+        ("team-away", range(12, 23)),
+    ):
+        rows.extend(
+            {
+                "id": f"lineup-{team_id}-{player_id}",
+                "season_id": SEASON_ID,
+                "draft_team_id": team_id,
+                "player_id": f"fpl-{player_id}",
+                "gameweek": 1,
+                "slot": "starter",
+                "slot_order": order,
+                "is_captain": order == 1,
+                "is_vice_captain": order == 2,
+                "locked_at": now,
+                "updated_at": now,
+            }
+            for order, player_id in enumerate(player_ids, start=1)
+        )
+    with sessions() as session:
+        session.execute(insert(team_selection_lineup_slots_table), rows)
+        session.execute(
+            insert(team_selection_chips_table).values(
+                id="chip-team-home-auto",
+                season_id=SEASON_ID,
+                draft_team_id="team-home",
+                chip_id="auto-captain",
+                status="used",
+                active_gameweek=1,
+                used_gameweek=1,
+                updated_at=now,
+            )
+        )
+        session.commit()
+    points = {str(player_id): 1 for player_id in range(1, 23)}
+    points.update({"1": 5, "2": 10})
+    with sessions() as session:
+        scores = FplSettlementService._team_scores(
+            session,
+            1,
+            ("team-home", "team-away"),
+            points,
+            {str(player_id): 90 for player_id in range(1, 23)},
+            apply_substitutions=False,
+        )
+    assert scores is not None
+    assert scores[0] == 34
+    explanation = {row["player_id"]: row for row in scores[5]["team-home"]}
+    assert explanation["fpl-1"]["multiplier"] == 1
+    assert explanation["fpl-2"]["multiplier"] == 2
+
+
+def test_ownership_repair_replaces_departed_player_only_in_future_unlocked_lineup() -> None:
+    from cdl_api.repositories.postgres_squad import (
+        squad_ownerships_table,
+        squad_roster_slots_table,
+    )
+    from cdl_api.repositories.postgres_team_selection import PostgreSQLTeamSelectionRepository
+
+    sessions = _session_factory()
+    now = datetime.now(UTC)
+    with sessions() as session:
+        session.execute(
+            insert(fpl_gameweeks_table).values(
+                id="2",
+                name="Gameweek 2",
+                deadline_time=now + timedelta(days=1),
+                is_previous=False,
+                is_current=False,
+                is_next=True,
+                finished=False,
+                data_checked=False,
+            )
+        )
+        session.execute(
+            insert(squad_roster_slots_table),
+            [
+                {
+                    "id": f"slot-{player_id}",
+                    "season_id": SEASON_ID,
+                    "draft_team_id": "team-home",
+                    "sort_order": order,
+                }
+                for order, player_id in enumerate(("fpl-2", "fpl-3", "fpl-24"), start=1)
+            ],
+        )
+        session.execute(
+            insert(squad_ownerships_table),
+            [
+                {
+                    "id": f"ownership-{player_id}",
+                    "season_id": SEASON_ID,
+                    "draft_team_id": "team-home",
+                    "player_id": player_id,
+                    "roster_slot_id": f"slot-{player_id}",
+                    "started_at": now,
+                    "ended_at": None,
+                }
+                for player_id in ("fpl-2", "fpl-3", "fpl-24")
+            ],
+        )
+        rows = []
+        for gameweek, locked_at in ((1, now), (2, None)):
+            for slot_order, player_id in enumerate(("fpl-1", "fpl-2", "fpl-3"), start=1):
+                rows.append(
+                    {
+                        "id": f"lineup-team-home-{gameweek}-{player_id}",
+                        "season_id": SEASON_ID,
+                        "draft_team_id": "team-home",
+                        "player_id": player_id,
+                        "gameweek": gameweek,
+                        "slot": "starter",
+                        "slot_order": slot_order,
+                        "is_captain": slot_order == 1,
+                        "is_vice_captain": slot_order == 2,
+                        "locked_at": locked_at,
+                        "updated_at": now,
+                    }
+                )
+        session.execute(insert(team_selection_lineup_slots_table), rows)
+        PostgreSQLTeamSelectionRepository.repair_unlocked_lineups(
+            session, "team-home", {"fpl-2", "fpl-3", "fpl-24"}, now
+        )
+        session.commit()
+        updated = list(
+            session.execute(
+                select(
+                    team_selection_lineup_slots_table.c.gameweek,
+                    team_selection_lineup_slots_table.c.player_id,
+                ).order_by(
+                    team_selection_lineup_slots_table.c.gameweek,
+                    team_selection_lineup_slots_table.c.slot_order,
+                )
+            ).all()
+        )
+
+    assert updated[:3] == [(1, "fpl-1"), (1, "fpl-2"), (1, "fpl-3")]
+    assert {player_id for gameweek, player_id in updated if gameweek == 2} == {
+        "fpl-2",
+        "fpl-3",
+        "fpl-24",
+    }
 
 
 def test_settlement_repairs_a_finalised_fixture_missing_substitution_pass() -> None:
@@ -555,7 +725,7 @@ def test_settlement_repairs_a_finalised_fixture_missing_substitution_pass() -> N
                     "outcome": "draw",
                     "finalised": True,
                     "finalised_at": "2026-09-01T00:00:00+00:00",
-                    "source_response_sha256": "old" * 16,
+                    "source_response_sha256": "r" * 64,
                     "synthetic": False,
                 },
             )

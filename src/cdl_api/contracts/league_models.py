@@ -64,6 +64,8 @@ class FixtureSquadPlayer(BaseModel):
     fixture_fixtures: list[PlayerNextFixture] = Field(default_factory=list)
     points: int = 0
     points_multiplier: int = 1
+    scoring_included: bool = True
+    scoring_reason: str | None = None
     minutes: int | None = None
     has_started_fixture: bool | None = None
     all_fixtures_finished: bool | None = None
@@ -113,6 +115,8 @@ class LeagueTableRow(BaseModel):
 class LeagueTableResponse(BaseModel):
     rows: list[LeagueTableRow]
     source: str = "service-calculated"
+    mode: str = "official"
+    gameweek: int | None = None
 
 
 class KnockoutMatch(BaseModel):
@@ -122,9 +126,36 @@ class KnockoutMatch(BaseModel):
     winner: TeamSummary | None = None
 
 
+class KnockoutLeg(BaseModel):
+    id: str
+    leg_number: int
+    fixture: LeagueFixture
+
+
+class KnockoutTie(BaseModel):
+    id: str
+    round_label: str
+    teams: list[TeamSummary]
+    legs: list[KnockoutLeg] = Field(default_factory=list)
+    aggregate: dict[str, int] = Field(default_factory=dict)
+    scoring_lineup_goals: dict[str, int] = Field(default_factory=dict)
+    winner: TeamSummary | None = None
+    tiebreak_status: str = "pending"
+
+
+class KnockoutBracket(BaseModel):
+    id: str
+    label: str
+    status: str = "not_ready"
+    ties: list[KnockoutTie] = Field(default_factory=list)
+
+
 class KnockoutResponse(BaseModel):
     rounds: list[str]
     matches: list[KnockoutMatch]
+    status: str = "not_ready"
+    brackets: list[KnockoutBracket] = Field(default_factory=list)
+    unconfigured_brackets: list[str] = Field(default_factory=list)
 
 
 class HeadToHeadRecord(BaseModel):

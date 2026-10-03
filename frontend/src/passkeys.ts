@@ -6,16 +6,38 @@ type JsonCredential = Record<string, unknown>;
 export interface PasskeyStatus {
   enabled: boolean;
   registeredCount: number;
+  credentials: { credentialId: string; nickname: string }[];
 }
 
 export async function getPasskeyStatus(): Promise<PasskeyStatus> {
   const response = await fetch('/api/auth/passkeys/status', { credentials: 'include' });
-  if (!response.ok) return { enabled: false, registeredCount: 0 };
-  const payload = (await response.json()) as { enabled?: boolean; registered_count?: number };
+  if (!response.ok) return { enabled: false, registeredCount: 0, credentials: [] };
+  const payload = (await response.json()) as {
+    enabled?: boolean;
+    registered_count?: number;
+    credentials?: { credential_id?: string; nickname?: string }[];
+  };
   return {
     enabled: payload.enabled === true,
     registeredCount: payload.registered_count ?? 0,
+    credentials: (payload.credentials ?? []).map((item) => ({
+      credentialId: item.credential_id ?? '',
+      nickname: item.nickname ?? 'Passkey',
+    })),
   };
+}
+
+export async function revokePasskey(credentialId: string): Promise<AuthResult<{ revoked: boolean }>> {
+  try {
+    const response = await fetch(`/api/auth/passkeys/${encodeURIComponent(credentialId)}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    if (!response.ok) return { ok: false, error: await readError(response, 'Passkey could not be removed.') };
+    return { ok: true, data: { revoked: true } };
+  } catch {
+    return { ok: false, error: { code: 'server_error', message: 'Passkey could not be removed. Retry.', details: {} } };
+  }
 }
 
 export async function registerPasskey(): Promise<AuthResult<{ registered: boolean }>> {
@@ -73,6 +95,7 @@ export async function loginWithPasskey(): Promise<AuthResult<LoginResponse>> {
     const payload = (await response.json()) as {
       session: {
         is_authenticated: boolean;
+        engineering_previews_enabled?: boolean;
         user: { id: string; email: string; display_name: string; roles: string[] } | null;
         expires_at: string | null;
       };
@@ -91,6 +114,7 @@ export async function loginWithPasskey(): Promise<AuthResult<LoginResponse>> {
               }
             : null,
           expiresAt: payload.session.expires_at,
+          engineeringPreviewsEnabled: payload.session.engineering_previews_enabled === true,
         },
       },
     };

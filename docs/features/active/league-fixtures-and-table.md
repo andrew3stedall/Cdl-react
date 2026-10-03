@@ -151,3 +151,7 @@ player profile. The same interaction applies from pitch and list fixture views.
 ## Changelog Requirements
 
 - Add implementation changelog entry when built.
+
+## Retrospective follow-up
+
+Fixtures, table, and commissioner management now load independently so an optional League read does not block the active view. Fixture previews retain partial publication states and a retry path. League tabs are reflected in `/league`, `/league/table`, and `/league/manage`; knockout and head-to-head presentation is being integrated separately.

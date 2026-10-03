@@ -123,6 +123,25 @@ export interface KnockoutMatch {
 export interface KnockoutResponse {
   rounds: string[];
   matches: KnockoutMatch[];
+  status?: 'not_ready' | 'in_progress' | 'complete' | 'partially_configured';
+  brackets?: KnockoutBracket[];
+  unconfiguredBrackets?: string[];
+}
+
+export interface KnockoutBracket {
+  id: string;
+  label: string;
+  status: string;
+  ties: {
+    id: string;
+    roundLabel: string;
+    teams: LeagueTeam[];
+    legs: { id: string; fixture: LeagueFixture; legNumber: number }[];
+    aggregate: Record<string, number>;
+    scoringLineupGoals: Record<string, number>;
+    winner: LeagueTeam | null;
+    tiebreakStatus: 'pending' | 'decided' | 'unresolved';
+  }[];
 }
 
 export interface HeadToHeadRecord {
@@ -147,7 +166,10 @@ export interface LeagueSnapshot {
   table: LeagueTableResponse;
   knockout: KnockoutResponse;
   headToHead: HeadToHeadResponse;
+  failedReads?: string[];
 }
+
+export type LeagueSnapshotView = 'fixtures' | 'table' | 'all';
 
 export interface LeagueManagement {
   leagueName: string;
@@ -186,13 +208,20 @@ export interface LeagueJoinResult {
 }
 
 export interface LeagueClient {
-  getLeagueSnapshot(): Promise<LeagueSnapshot>;
+  getLeagueSnapshot(view?: LeagueSnapshotView): Promise<LeagueSnapshot>;
   getLeagueManagement?(): Promise<LeagueManagement>;
   createLeagueInvite?(teamId: string): Promise<LeagueInvite>;
   previewLeagueInvite?(token: string): Promise<LeagueInvitePreview>;
   acceptLeagueInvite?(token: string): Promise<LeagueJoinResult>;
   getFixtureDetail?(fixtureId: string): Promise<FixtureDetailResponse>;
   getFixtureSquads?(fixtureId: string): Promise<FixtureSquad[]>;
+}
+
+export class LeagueApiError extends Error {
+  constructor(readonly status: number, message: string) {
+    super(message);
+    this.name = 'LeagueApiError';
+  }
 }
 
 interface ApiTeam {
@@ -277,6 +306,23 @@ interface ApiKnockoutMatch {
 interface ApiKnockoutResponse {
   rounds: string[];
   matches: ApiKnockoutMatch[];
+  status?: KnockoutResponse['status'];
+  unconfigured_brackets?: string[];
+  brackets?: {
+    id: string;
+    label: string;
+    status: string;
+    ties: {
+      id: string;
+      round_label: string;
+      teams: ApiTeam[];
+      legs: { id: string; fixture: ApiFixture; leg_number: number }[];
+      aggregate: Record<string, number>;
+      scoring_lineup_goals: Record<string, number>;
+      winner: ApiTeam | null;
+      tiebreak_status: 'pending' | 'decided' | 'unresolved';
+    }[];
+  }[];
 }
 
 interface ApiHeadToHeadRecord {
@@ -333,25 +379,52 @@ interface ApiLeagueJoinResponse {
 export class HttpLeagueClient implements LeagueClient {
   constructor(private readonly baseUrl = '/api') {}
 
-  async getLeagueSnapshot(): Promise<LeagueSnapshot> {
-    const [currentFixtures, nextFixtures, allFixtures, table, knockout, headToHead] =
-      await Promise.all([
-        this.get<ApiFixturesResponse>('/league/fixtures/current'),
-        this.get<ApiFixturesResponse>('/league/fixtures/next'),
-        this.get<ApiFixturesResponse>('/league/fixtures'),
-        this.get<ApiTableResponse>('/league/table'),
-        this.get<ApiKnockoutResponse>('/league/knockout'),
-        this.get<ApiHeadToHeadResponse>('/league/head-to-head'),
-      ]);
-
-    return {
-      currentFixtures: mapFixturesResponse(currentFixtures),
-      nextFixtures: mapFixturesResponse(nextFixtures),
-      allFixtures: mapFixturesResponse(allFixtures),
-      table: mapTableResponse(table),
-      knockout: mapKnockoutResponse(knockout),
-      headToHead: mapHeadToHeadResponse(headToHead),
+  async getLeagueSnapshot(view: LeagueSnapshotView = 'all'): Promise<LeagueSnapshot> {
+    const emptyFixtures: LeagueFixturesResponse = { gameweek: null, fixtures: [] };
+    const emptyTable: LeagueTableResponse = { rows: [], source: 'unavailable' };
+    const fixtureReads = view === 'fixtures' || view === 'all'
+      ? await Promise.allSettled([
+          this.get<ApiFixturesResponse>('/league/fixtures/current'),
+          this.get<ApiFixturesResponse>('/league/fixtures/next'),
+          this.get<ApiFixturesResponse>('/league/fixtures'),
+        ])
+      : [];
+    const tableRead = view === 'table' || view === 'all'
+      ? await Promise.allSettled([this.get<ApiTableResponse>('/league/table')])
+      : [];
+    const failedReads: string[] = [];
+    const fixtureValue = (index: number, label: string): LeagueFixturesResponse => {
+      const result = fixtureReads[index];
+      if (!result) return emptyFixtures;
+      if (result.status === 'rejected') {
+        failedReads.push(label);
+        return emptyFixtures;
+      }
+      return mapFixturesResponse(result.value);
     };
+    let table = emptyTable;
+    if (view === 'table') {
+      const result = tableRead[0];
+      if (result?.status === 'fulfilled') table = mapTableResponse(result.value);
+      else failedReads.push('table');
+    }
+    return {
+      currentFixtures: fixtureValue(0, 'current fixtures'),
+      nextFixtures: fixtureValue(1, 'upcoming fixtures'),
+      allFixtures: fixtureValue(2, 'fixture history'),
+      table,
+      knockout: { rounds: [], matches: [] },
+      headToHead: { records: [] },
+      failedReads,
+    };
+  }
+
+  async getKnockout(): Promise<KnockoutResponse> {
+    return mapKnockoutResponse(await this.get<ApiKnockoutResponse>('/league/knockout'));
+  }
+
+  async getHeadToHead(): Promise<HeadToHeadResponse> {
+    return mapHeadToHeadResponse(await this.get<ApiHeadToHeadResponse>('/league/head-to-head'));
   }
 
   async getLeagueManagement(): Promise<LeagueManagement> {
@@ -440,7 +513,7 @@ export class HttpLeagueClient implements LeagueClient {
     });
 
     if (!response.ok) {
-      throw new Error(`Unable to load league data from ${path}.`);
+      throw new LeagueApiError(response.status, `Unable to load league data from ${path}.`);
     }
 
     return (await response.json()) as T;
@@ -455,7 +528,7 @@ export class HttpLeagueClient implements LeagueClient {
     });
 
     if (!response.ok) {
-      throw new Error(`Unable to update league data at ${path}.`);
+      throw new LeagueApiError(response.status, `Unable to update league data at ${path}.`);
     }
 
     return (await response.json()) as T;
@@ -602,6 +675,23 @@ function mapTableResponse(response: ApiTableResponse): LeagueTableResponse {
 
 function mapKnockoutResponse(response: ApiKnockoutResponse): KnockoutResponse {
   return {
+    status: response.status,
+    unconfiguredBrackets: response.unconfigured_brackets ?? [],
+    brackets: response.brackets?.map((bracket) => ({
+      id: bracket.id,
+      label: bracket.label,
+      status: bracket.status,
+      ties: bracket.ties.map((tie) => ({
+        id: tie.id,
+        roundLabel: tie.round_label,
+        teams: tie.teams.map(mapTeam),
+        legs: tie.legs.map((leg) => ({ id: leg.id, fixture: mapFixture(leg.fixture), legNumber: leg.leg_number })),
+        aggregate: tie.aggregate,
+        scoringLineupGoals: tie.scoring_lineup_goals,
+        winner: tie.winner ? mapTeam(tie.winner) : null,
+        tiebreakStatus: tie.tiebreak_status,
+      })),
+    })),
     rounds: response.rounds,
     matches: response.matches.map((match) => ({
       id: match.id,

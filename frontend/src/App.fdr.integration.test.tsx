@@ -115,8 +115,8 @@ describe('FDR shell integration', () => {
       .map((element) => element.textContent ?? '');
     expect(activeLabels.some((label) => label.includes('Market'))).toBe(true);
     expect(container.querySelector('nav[aria-label="Market navigation"]')).toBeNull();
-    expect(container.textContent).not.toContain('Fixture difficulty');
-    expect(container.textContent).toContain('Attack and defence FDR');
+    expect(container.textContent).toContain('Fixture difficulty');
+    expect(container.querySelector('[data-page-hero="shared"] h1')?.textContent).toBe('Fixture difficulty');
     expect(container.querySelector('[aria-label="Account menu for CDL Manager"]')).not.toBeNull();
   });
 
@@ -130,6 +130,6 @@ describe('FDR shell integration', () => {
     const { container } = renderApp('/fdr', session);
 
     expect(container.textContent).toContain('Sign in to access');
-    expect(container.textContent).not.toContain('Attack and defence FDR');
+    expect(container.textContent).not.toContain('Fixture difficulty');
   });
 });

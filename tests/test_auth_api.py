@@ -8,12 +8,16 @@ from sqlalchemy.exc import TimeoutError as SQLAlchemyTimeoutError
 from cdl_api.app import create_app
 from cdl_api.contracts.session import SessionState
 from cdl_api.google_identity import GoogleIdentity
+from cdl_api.repositories.auth import InMemorySessionRepository, InMemoryUserRepository
+from cdl_api.repositories.league_memberships import InMemoryLeagueMembershipRepository
 from cdl_api.routers.auth import (
     get_auth_service,
     get_google_identity_verifier,
     get_league_membership_repository,
     get_session_for_request,
+    get_user_repository,
 )
+from cdl_api.services.auth import AuthenticationService
 from cdl_api.settings import Settings
 
 
@@ -77,6 +81,7 @@ def test_anonymous_session_is_not_authenticated() -> None:
     assert response.status_code == 200
     assert response.json()["is_authenticated"] is False
     assert response.json()["user"] is None
+    assert response.json()["engineering_previews_enabled"] is True
 
 
 class StubGoogleIdentityVerifier:
@@ -200,6 +205,155 @@ def test_google_invite_registration_allows_a_verified_unlisted_email(
     )
 
     assert response.status_code == 200
+
+
+def test_production_google_login_allows_assigned_member_without_allowlist(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("CDL_ENVIRONMENT", "production")
+    monkeypatch.setenv("CDL_SESSION_COOKIE_SECURE", "true")
+    monkeypatch.setenv("CDL_REPOSITORY_MODE", "postgres")
+    monkeypatch.setenv("CDL_DATABASE_URL", "postgresql+psycopg://unused:unused@localhost/cdl")
+    monkeypatch.setenv("CDL_DEVELOPMENT_LOGIN_SECRET", "production-test-secret")
+    monkeypatch.setenv("CDL_GOOGLE_CLIENT_ID", "production-client.apps.googleusercontent.com")
+    monkeypatch.delenv("CDL_GOOGLE_ALLOWED_EMAILS", raising=False)
+
+    users = InMemoryUserRepository()
+    sessions = InMemorySessionRepository()
+    membership = InMemoryLeagueMembershipRepository()
+    invite = membership.create_invite("commissioner-1", "castle").token
+    membership.accept_invite(invite, "user-1", "manager@example.com", "Demo Manager")
+    service = AuthenticationService(users, sessions, "production-test-secret")
+
+    class ExistingMemberIdentityVerifier:
+        def verify(
+            self,
+            credential: str,
+            *,
+            allow_unlisted_email: bool = False,
+        ) -> GoogleIdentity | None:
+            if credential == "valid-google-credential" and allow_unlisted_email:
+                return GoogleIdentity("google-subject-1", "manager@example.com", "Demo Manager")
+            return None
+
+    app = create_app()
+    app.dependency_overrides[get_auth_service] = lambda: service
+    app.dependency_overrides[get_google_identity_verifier] = ExistingMemberIdentityVerifier
+    app.dependency_overrides[get_league_membership_repository] = lambda: membership
+    app.dependency_overrides[get_user_repository] = lambda: users
+    client = TestClient(app)
+
+    assert client.get("/api/auth/google/config").json() == {
+        "enabled": True,
+        "client_id": "production-client.apps.googleusercontent.com",
+    }
+    response = client.post(
+        "/api/auth/google",
+        json={"credential": "valid-google-credential"},
+        headers={"X-CDL-Google-Sign-In": "1"},
+    )
+    assert response.status_code == 200
+
+
+def test_production_google_login_denies_unlisted_nonmember(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("CDL_ENVIRONMENT", "production")
+    monkeypatch.setenv("CDL_SESSION_COOKIE_SECURE", "true")
+    monkeypatch.setenv("CDL_REPOSITORY_MODE", "postgres")
+    monkeypatch.setenv("CDL_DATABASE_URL", "postgresql+psycopg://unused:unused@localhost/cdl")
+    monkeypatch.setenv("CDL_DEVELOPMENT_LOGIN_SECRET", "production-test-secret")
+    monkeypatch.setenv("CDL_GOOGLE_CLIENT_ID", "production-client.apps.googleusercontent.com")
+    monkeypatch.delenv("CDL_GOOGLE_ALLOWED_EMAILS", raising=False)
+    users = InMemoryUserRepository()
+    membership = InMemoryLeagueMembershipRepository()
+
+    class NonMemberIdentityVerifier:
+        def verify(
+            self,
+            credential: str,
+            *,
+            allow_unlisted_email: bool = False,
+        ) -> GoogleIdentity | None:
+            if credential == "valid-google-credential" and allow_unlisted_email:
+                return GoogleIdentity("google-subject-2", "new@example.com", "New User")
+            return None
+
+    app = create_app()
+    app.dependency_overrides[get_auth_service] = lambda: AuthenticationService(
+        users, InMemorySessionRepository(), "production-test-secret"
+    )
+    app.dependency_overrides[get_google_identity_verifier] = NonMemberIdentityVerifier
+    app.dependency_overrides[get_league_membership_repository] = lambda: membership
+    app.dependency_overrides[get_user_repository] = lambda: users
+    response = TestClient(app).post(
+        "/api/auth/google",
+        json={"credential": "valid-google-credential"},
+        headers={"X-CDL-Google-Sign-In": "1"},
+    )
+    assert response.status_code == 401
+
+
+def test_production_google_login_rejects_invalid_identity_without_server_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("CDL_ENVIRONMENT", "production")
+    monkeypatch.setenv("CDL_SESSION_COOKIE_SECURE", "true")
+    monkeypatch.setenv("CDL_REPOSITORY_MODE", "postgres")
+    monkeypatch.setenv("CDL_DATABASE_URL", "postgresql+psycopg://unused:unused@localhost/cdl")
+    monkeypatch.setenv("CDL_DEVELOPMENT_LOGIN_SECRET", "production-test-secret")
+    app = create_app()
+
+    class InvalidIdentityVerifier:
+        @staticmethod
+        def verify(credential: str, *, allow_unlisted_email: bool = False) -> None:
+            return None
+
+    app.dependency_overrides[get_google_identity_verifier] = InvalidIdentityVerifier
+    response = TestClient(app).post(
+        "/api/auth/google",
+        json={"credential": "invalid-google-credential"},
+        headers={"X-CDL-Google-Sign-In": "1"},
+    )
+
+    assert response.status_code == 401
+    assert response.json()["code"] == "unauthenticated"
+
+
+def test_production_google_member_lookup_outage_returns_retryable_503(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("CDL_ENVIRONMENT", "production")
+    monkeypatch.setenv("CDL_SESSION_COOKIE_SECURE", "true")
+    monkeypatch.setenv("CDL_REPOSITORY_MODE", "postgres")
+    monkeypatch.setenv("CDL_DATABASE_URL", "postgresql+psycopg://unused:unused@localhost/cdl")
+    monkeypatch.setenv("CDL_DEVELOPMENT_LOGIN_SECRET", "production-test-secret")
+    app = create_app()
+
+    class ExistingMemberIdentityVerifier:
+        @staticmethod
+        def verify(credential: str, *, allow_unlisted_email: bool = False) -> GoogleIdentity:
+            return GoogleIdentity("google-subject-1", "manager@example.com", "Demo Manager")
+
+    class UnavailableUserRepository:
+        @staticmethod
+        def get_by_email(email: str) -> None:
+            raise OperationalError("select user", {}, RuntimeError("database unavailable"))
+
+    app.dependency_overrides[get_google_identity_verifier] = ExistingMemberIdentityVerifier
+    app.dependency_overrides[get_user_repository] = UnavailableUserRepository
+    response = TestClient(app).post(
+        "/api/auth/google",
+        json={"credential": "valid-google-credential"},
+        headers={"X-CDL-Google-Sign-In": "1"},
+    )
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "code": "server_error",
+        "message": "Google sign-in is temporarily unavailable. Try again.",
+        "details": {},
+    }
 
 
 def test_google_login_requires_same_origin_header() -> None:

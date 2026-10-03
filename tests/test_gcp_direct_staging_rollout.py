@@ -28,3 +28,15 @@ def test_direct_rollout_stays_bound_to_staging() -> None:
     assert "PROJECT_ID: cdl-react-staging-ast" in content
     assert 'test "${PROJECT_ID}" = "cdl-react-staging-ast"' in content
     assert "cdl-react-prod" not in content
+
+
+def test_failure_fallback_requires_manual_or_explicit_request_and_migration_gate() -> None:
+    content = WORKFLOW.read_text(encoding="utf-8")
+
+    assert "workflow_dispatch:" in content
+    assert "Run and verify migrations before changing application traffic" in content
+    assert 'gcloud run jobs execute "${migration_job}"' in content
+    assert 'test "${migration_image}" = "${IMAGE_DIGEST_URI}"' in content
+    assert "--no-traffic" in content
+    assert "update-traffic" in content
+    assert "if: >-" in content

@@ -115,7 +115,8 @@ export function PlayerProfilePage({
   const [player, setPlayer] = useState<SquadApiPlayer | null>(initialPlayer ?? null);
   const [history, setHistory] = useState<SquadApiHistoryResponse | null>(null);
   const [selection, setSelection] = useState<TeamSelectionSnapshot | null>(initialSelection ?? null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(initialPlayer == null);
+  const [historyLoading, setHistoryLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [selectionError, setSelectionError] = useState<string | null>(null);
@@ -130,7 +131,7 @@ export function PlayerProfilePage({
 
   useEffect(() => {
     let mounted = true;
-    setLoading(true);
+    setLoading(initialPlayer == null);
     setLoadError(null);
     setHistoryError(null);
     setSelectionError(null);
@@ -156,6 +157,7 @@ export function PlayerProfilePage({
       } else {
         setHistoryError(historyResult.reason instanceof Error ? historyResult.reason.message : 'Player history is unavailable.');
       }
+      setHistoryLoading(false);
       if (selectionResult.status === 'fulfilled') {
         setSelection(selectionResult.value);
       } else {
@@ -412,7 +414,7 @@ export function PlayerProfilePage({
       {selectionError ? <p className="player-profile__inline-error" role="alert">{selectionError}</p> : null}
 
       <ChartCard compact title="Form & minutes">
-        {historyError ? <ChartEmpty message={`Form and minutes history unavailable: ${historyError}`} /> : formFixtures.length > 0 ? <CombinedFormMinutesChart fixtures={formFixtures} fdrDisplayMode={fdrDisplayMode} onFixtureClick={(fixture) => setChartDetail({ kind: 'form', fixture: fixture as ProfileFixture })} /> : <ChartEmpty message="No completed FPL fixture history is available." />}
+        {historyLoading ? <ChartEmpty message="Loading form and minutes…" /> : historyError ? <ChartEmpty message={`Form and minutes history unavailable: ${historyError}`} /> : formFixtures.length > 0 ? <CombinedFormMinutesChart fixtures={formFixtures} fdrDisplayMode={fdrDisplayMode} onFixtureClick={(fixture) => setChartDetail({ kind: 'form', fixture: fixture as ProfileFixture })} /> : <ChartEmpty message="No completed FPL fixture history is available." />}
       </ChartCard>
 
       {defensiveHistoryGroups.length > 0 ? defensiveHistoryGroups.map((group) => {
@@ -428,7 +430,7 @@ export function PlayerProfilePage({
           heading={<OpponentChartHeading difficulty={opponentDifficulty} headingId={`opponent-${group.opponent_team_id}`} label={formatOpponentLabel(groupOpponentShortName, opponentIsHome)} title={fixtureDifficultyTitle(opponentDifficulty)} />}
           key={group.opponent_team_id}
         >
-          {group.fixtures.length > 0 ? <DefensiveChart fixtures={group.fixtures} fdrDisplayMode={fdrDisplayMode} onFixtureClick={(fixture) => setChartDetail({ kind: 'opponent', fixture })} /> : <ChartEmpty message={`No cached defensive history is available for ${groupOpponent}.`} />}
+          {historyLoading ? <ChartEmpty message="Loading opponent history…" /> : group.fixtures.length > 0 ? <DefensiveChart fixtures={group.fixtures} fdrDisplayMode={fdrDisplayMode} onFixtureClick={(fixture) => setChartDetail({ kind: 'opponent', fixture })} /> : <ChartEmpty message={`No cached defensive history is available for ${groupOpponent}.`} />}
         </ChartCard>;
       }) : <ChartCard title="Opponent form" className="player-profile__chart-card--full"><ChartEmpty message="No cached defensive history is available for the next opponent." /></ChartCard>}
 
@@ -470,7 +472,6 @@ export function PlayerProfilePage({
 
       {actionSheet === 'bench' ? (
         <ActionDialog labelledBy="player-profile-substitution-title" onClose={() => setActionSheet(null)} title="Choose substitution">
-          <p>Choose an eligible player to swap with {player.display_name}. The formation will be validated before the change is applied.</p>
           <div className="player-profile__action-options">
             {substitutionOptions.length === 0 ? <ChartEmpty message="No legal replacements are available for this formation." /> : substitutionOptions.map((option) => (
               <button
@@ -497,7 +498,7 @@ export function PlayerProfilePage({
 
       {actionSheet === 'remove' ? (
         <ActionDialog labelledBy="player-profile-remove-title" onClose={() => setActionSheet(null)} title="Remove player">
-          <p>Removing a player changes your season-long squad. Select the active replacement required by the squad rules before confirming.</p>
+          <p>Choose a replacement before confirming removal.</p>
           <div className="player-profile__action-options">
             {replacementPlayers.length === 0 && pendingAction !== 'remove' ? <ChartEmpty message="No active replacement rights are available." /> : null}
             {replacementPlayers.map((replacement) => (

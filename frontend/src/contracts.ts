@@ -27,6 +27,7 @@ export interface SessionState {
   isAuthenticated: boolean;
   user: SessionUser | null;
   expiresAt: string | null;
+  engineeringPreviewsEnabled?: boolean;
 }
 
 export interface ThemePresetTokens {

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 import { Card } from './components/ui/card';
-import { GlobalPageHeader } from './components/ui/global-notifications';
+import { PageHero } from './components/ui/page-hero';
 import { Select } from './components/ui/select';
 import type {
   FdrClient,
@@ -65,11 +65,7 @@ export function FixtureDifficultyPage({ fdrClient = defaultFdrClient, onNavigate
 
   return (
     <main aria-labelledby="fdr-title" className="feature-screen fdr-page">
-      <GlobalPageHeader onNavigate={onNavigate}>
-        <p className="eyebrow">Fixture Difficulty Ratings</p>
-        <h1 id="fdr-title">Attack and defence FDR</h1>
-        <p>Compare fixture difficulty by team, gameweek range, and attacking or defensive view.</p>
-      </GlobalPageHeader>
+      <PageHero actions={null} actionsLabel="Page actions" onNavigate={onNavigate} title="Fixture difficulty" titleId="fdr-title" />
 
       {status === 'loading' ? <p role="status">Loading fixture difficulty ratings</p> : null}
       {status === 'error' ? <p role="alert">Unable to load fixture difficulty ratings.</p> : null}

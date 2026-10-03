@@ -56,9 +56,13 @@ Theme modes remain configured in `frontend/src/theme-presets.ts`:
 - `teal-dark`
 - `adaptive`, which follows the device `prefers-color-scheme` setting.
 
-Theme colour palettes are configured in `frontend/src/theme-colours.ts`. The Theme colours page uses the same selection pattern as FDR: predefined four-accent templates are shown first, followed by a custom palette accordion using the shared colour selector and HSV editor. Selecting a palette persists the primary, secondary, tertiary, and quaternary accents through the existing preference contract.
+Theme colour palettes are configured in `frontend/src/theme-colours.ts`. The Theme colours page uses the same selection pattern as FDR: predefined four-accent templates are shown first, followed by a custom palette accordion using the shared colour selector and HSV editor. Light and dark palettes are stored independently. Templates retain their authored pairs, custom edits can target either mode, and old single-palette preferences derive a nearby companion using the same four accent hues.
 
-Dark Teal is the default appearance. Theme mode controls the interface surfaces only: every selected theme accent is applied unchanged in light, dark, and adaptive modes.
+Dark Teal is the default appearance. Theme mode controls the interface surfaces and chooses the corresponding accent variant. The selected accent fill is preserved exactly; `--theme-{accent}-text` provides an accessible text colour against the active background/card surfaces, while `--theme-{accent}-foreground` remains the foreground for text over a filled accent.
+
+Modal sheets use the shared lifecycle in `frontend/src/components/ui/sheet.tsx`: focus moves into the dialog, Tab stays within it, Escape requests close, background siblings are inert, and closing restores focus to the opener. Custom drawers can use the exported `useModalLifecycle` hook.
+
+Shared typography roles in `frontend/src/styles.css` use rem units so browser text scaling applies: primary player names and essential values start at `0.7rem`, metadata at `0.7rem`, and compact chart labels at `0.625rem`. Compact captain/vice markers remain smaller because they are single-character visual badges; chart and fixture text legibility still needs phone-size browser verification.
 
 The profile route is a compact summary of identity and settings. Theme mode is available at `/profile/appearance`, theme colours at `/profile/theme-colours`, FDR at `/profile/fdr`, and attacking orientation at `/profile/orientation`; `/account/*` aliases remain supported. Preferences continue to use `GET /api/me/preferences` and `PUT /api/me/preferences`, with the documented local-storage fallback.
 

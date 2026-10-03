@@ -1,6 +1,7 @@
 """Squad repositories for feature development and production-backed persistence."""
 
 from copy import deepcopy
+from datetime import UTC, datetime
 from typing import Protocol
 
 from cdl_api.contracts.domain import GameweekSummary, TeamSummary
@@ -11,6 +12,8 @@ from cdl_api.contracts.squad import (
     PlayerOwnershipStatus,
     PlayerPosition,
     ScoutingFilters,
+    TradeApprovalDecision,
+    TradeApprovalStatus,
     TradeProposal,
     TradeStatus,
 )
@@ -42,6 +45,14 @@ class SquadRepository(Protocol):
     def manager_id_for_team(self, team_id: str) -> str | None: ...
 
     def update_trade_status(self, trade_id: str, status: TradeStatus) -> TradeProposal | None: ...
+
+    def required_trade_approver_role(
+        self, offered_by_team_id: str, offered_to_team_id: str
+    ) -> str: ...
+
+    def approve_trade(
+        self, trade_id: str, actor_user_id: str, decision: TradeApprovalDecision, note: str | None
+    ) -> TradeProposal | None: ...
 
     def team_for_id(self, team_id: str) -> TeamSummary | None: ...
 
@@ -195,6 +206,39 @@ class InMemorySquadRepository:
         if trade is None:
             return None
         trade.status = status
+        if status == TradeStatus.ACCEPTED:
+            trade.approval_status = TradeApprovalStatus.PENDING
+        return deepcopy(trade)
+
+    def required_trade_approver_role(self, offered_by_team_id: str, offered_to_team_id: str) -> str:
+        return "commissioner"
+
+    def approve_trade(
+        self, trade_id: str, actor_user_id: str, decision: TradeApprovalDecision, note: str | None
+    ) -> TradeProposal | None:
+        del note
+        trade = self._trades.get(trade_id)
+        if trade is None:
+            return None
+        if trade.status != TradeStatus.ACCEPTED:
+            raise ValueError("Trade is not waiting for approval.")
+        if actor_user_id in {"manager-1", "manager-rival"}:
+            raise ValueError("A trade participant cannot approve their own trade.")
+        if trade.required_approver_role == "commissioner" and actor_user_id != "commissioner":
+            raise ValueError("Trade requires a commissioner approver.")
+        trade.approval_status = (
+            TradeApprovalStatus.APPROVED
+            if decision == TradeApprovalDecision.APPROVED
+            else TradeApprovalStatus.REJECTED
+        )
+        if decision == TradeApprovalDecision.APPROVED:
+            trade.executed_at = datetime.now(UTC)
+            for asset in trade.assets:
+                player = next((item for item in self._players if item.id == asset.player.id), None)
+                if player is not None:
+                    player.draft_team = asset.to_team
+                    player.status = PlayerOwnershipStatus.OWNED
+        trade.approved_by = actor_user_id
         return deepcopy(trade)
 
     def list_available_rights(self) -> list[PlayerDetail]:

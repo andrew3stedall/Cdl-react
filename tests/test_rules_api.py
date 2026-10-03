@@ -10,7 +10,7 @@ def test_rules_index_endpoint_returns_sections() -> None:
 
     assert response.status_code == 200
     payload = response.json()
-    assert payload["version"]["version"] == "2026.05"
+    assert payload["version"]["version"] == "2026.10"
     assert any(section["id"] == "squad-size" for section in payload["sections"])
 
 
@@ -44,3 +44,11 @@ def test_rule_detail_endpoint_supports_deep_links() -> None:
     payload = response.json()
     assert payload["id"] == "squad-size"
     assert "squad-size" in payload["anchors"]
+
+
+def test_every_selection_validation_rule_has_a_readable_section() -> None:
+    client = TestClient(create_app())
+    for rule_id in ("lineup-validation", "chip-usage", "captaincy", "chip-use"):
+        response = client.get(f"/api/rules/{rule_id}")
+        assert response.status_code == 200
+        assert response.json()["body"]

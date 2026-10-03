@@ -315,6 +315,15 @@ jobs:
             require_managed_resource "google_cloud_run_v2_job.synthetic_seed[0]"
           fi
 
+      - name: Resolve healthy runtime revision for the reviewed plan
+        if: env.DEPLOYMENT_STAGE == 'runtime'
+        run: |
+          set -euo pipefail
+          revision="$(gcloud run services describe cdl-react-staging-api \
+            --project "${PROJECT_ID}" --region "${REGION}" --format=json \
+            | python -c 'import json,sys; s=json.load(sys.stdin); t=s.get("status",{}).get("traffic",[]) or s.get("traffic",[]); a=[x for x in t if x.get("percent",0)>0]; assert len(a)==1 and a[0].get("percent")==100 and a[0].get("revisionName"), "Runtime apply requires one current 100% serving revision"; print(a[0]["revisionName"])')"
+          echo "RUNTIME_TRAFFIC_REVISION=${revision}" >> "${GITHUB_ENV}"
+
       - name: Recreate reviewed staging plan
         id: recreated_plan
         shell: bash
@@ -332,6 +341,7 @@ jobs:
             -var="enable_cloud_run=${ENABLE_CLOUD_RUN}" \
             -var="enable_google_sign_in=${ENABLE_GOOGLE_SIGN_IN}" \
             -var="backend_image=${BACKEND_IMAGE}" \
+            -var="runtime_traffic_revision=${RUNTIME_TRAFFIC_REVISION}" \
             -var="allow_public_invoker=${ALLOW_PUBLIC_INVOKER}"
           plan_exit_code=$?
           set -e
@@ -402,6 +412,7 @@ jobs:
             -var="enable_cloud_run=${ENABLE_CLOUD_RUN}" \
             -var="enable_google_sign_in=${ENABLE_GOOGLE_SIGN_IN}" \
             -var="backend_image=${BACKEND_IMAGE}" \
+            -var="runtime_traffic_revision=${RUNTIME_TRAFFIC_REVISION}" \
             -var="allow_public_invoker=${ALLOW_PUBLIC_INVOKER}"
           post_apply_exit_code=$?
           set -e
@@ -410,6 +421,54 @@ jobs:
             echo "Post-apply Terraform plan was not a clean no-change result." >&2
             exit 1
           fi
+
+      - name: Run migrations before traffic promotion
+        if: env.DEPLOYMENT_STAGE == 'runtime'
+        run: |
+          set -euo pipefail
+          migration_image="$(gcloud run jobs describe cdl-react-staging-db-migrate \
+            --project "${PROJECT_ID}" --region "${REGION}" \
+            --format='value(spec.template.spec.template.spec.containers[0].image)')"
+          test "${migration_image}" = "${BACKEND_IMAGE}"
+          gcloud run jobs execute cdl-react-staging-db-migrate \
+            --project "${PROJECT_ID}" --region "${REGION}" --wait
+
+      - name: Smoke staged runtime before traffic promotion
+        if: env.DEPLOYMENT_STAGE == 'runtime'
+        run: |
+          set -euo pipefail
+          service_json="$(gcloud run services describe cdl-react-staging-api \
+            --project "${PROJECT_ID}" --region "${REGION}" --format=json)"
+          revision="$(python - "${service_json}" "${RUNTIME_TRAFFIC_REVISION}" <<'PY'
+          import json
+          import sys
+
+          service = json.loads(sys.argv[1])
+          old_revision = sys.argv[2]
+          status = service.get("status", {})
+          latest = status.get("latestReadyRevisionName")
+          traffic = status.get("traffic", []) or service.get("traffic", [])
+          active = [item for item in traffic if item.get("percent", 0) > 0]
+          if not latest or latest == old_revision:
+              raise SystemExit("Staged runtime revision is not ready.")
+          if len(active) != 1 or active[0].get("revisionName") != old_revision or active[0].get("percent") != 100:
+              raise SystemExit("Runtime traffic moved before migration and smoke checks passed.")
+          print(latest)
+          PY
+          )"
+          candidate_url="$(gcloud run revisions describe "${revision}" \
+            --project "${PROJECT_ID}" --region "${REGION}" --format='value(status.url)')"
+          curl --fail --silent --show-error "${candidate_url}/health" | grep -Fq '"status":"ok"'
+          status_code="$(curl --silent --show-error --output /dev/null \
+            --write-out '%{http_code}' "${candidate_url}/api/fpl/status")"
+          test "${status_code}" = "401"
+
+      - name: Promote runtime after migration and smoke checks
+        if: env.DEPLOYMENT_STAGE == 'runtime'
+        run: |
+          set -euo pipefail
+          gcloud run services update-traffic cdl-react-staging-api \
+            --project "${PROJECT_ID}" --region "${REGION}" --to-latest --quiet
 
       - name: Verify applied stage resources and access boundary
         shell: bash

@@ -16,6 +16,8 @@ from cdl_api.contracts.squad import (
     SquadNotification,
     SquadNotificationsResponse,
     SquadSummaryResponse,
+    TradeApprovalDecision,
+    TradeApprovalStatus,
     TradeAsset,
     TradeCreateRequest,
     TradeProposal,
@@ -119,7 +121,15 @@ class SquadManagementService:
                         )
                     ],
                 )
-        owned_players = {player.id: player for player in self._repository.list_squad_players()}
+        # The repository read includes all teams' active ownerships so callers can
+        # build league views. A manager's projected squad must be calculated from
+        # their own team only; otherwise rival players incorrectly consume their
+        # position limits and can make a legal same-position replacement fail.
+        owned_players = {
+            player.id: player
+            for player in self._repository.list_squad_players()
+            if player.draft_team == self._repository.manager_team
+        }
         owned_ids = set(owned_players)
         for player_id in removals:
             if player_id not in owned_ids:
@@ -302,6 +312,9 @@ class SquadManagementService:
             gameweek=self._repository.gameweek,
             assets=assets,
             rule_references=[TRADE_WINDOW_RULE],
+            required_approver_role=self._repository.required_trade_approver_role(
+                self._repository.manager_team.id, offered_to.id
+            ),
         )
         return self._repository.save_trade(trade)
 
@@ -357,7 +370,42 @@ class SquadManagementService:
                     )
                 ],
             )
+        if updated is not None and status == TradeStatus.ACCEPTED:
+            updated.approval_status = TradeApprovalStatus.PENDING
         return updated
+
+    def approve_trade(
+        self,
+        trade_id: str,
+        decision: TradeApprovalDecision,
+        actor_user_id: str,
+        note: str | None = None,
+    ) -> TradeProposal | None:
+        trade = next((item for item in self._repository.list_trades() if item.id == trade_id), None)
+        if trade is None:
+            return None
+        if trade.status != TradeStatus.ACCEPTED:
+            raise SquadValidationError(
+                "Trade must be agreed before approval.",
+                [ValidationIssue(field="status", message="Both managers must agree first.")],
+            )
+        if trade.approval_status == TradeApprovalStatus.APPROVED:
+            return trade
+        if trade.approval_status != TradeApprovalStatus.PENDING:
+            raise SquadValidationError(
+                "Trade is not waiting for approval.",
+                [
+                    ValidationIssue(
+                        field="approval_status", message="Trade is not pending approval."
+                    )
+                ],
+            )
+        try:
+            return self._repository.approve_trade(trade_id, actor_user_id, decision, note)
+        except ValueError as exc:
+            raise SquadValidationError(
+                str(exc), [ValidationIssue(field="approval", message=str(exc))]
+            ) from exc
 
     def _require_player(self, player_id: str) -> PlayerDetail:
         player = self._repository.get_player(player_id)

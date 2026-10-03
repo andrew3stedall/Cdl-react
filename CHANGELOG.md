@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Hardened staging runtime releases so Terraform pins the currently serving
+  Cloud Run revision while the matching immutable migration image runs and
+  verifies Alembic heads; traffic is promoted only after staged checks. Docker
+  and CI now install from checked-in npm/uv locks, and PostgreSQL/Playwright
+  release journey coverage was added without enabling automatic screenshots.
+
 - Added the 3 October 2026 whole-app production retrospective and 70 scoped
   follow-up issues under milestone tracker #466, with evidence, priorities,
   dependencies and explicit production validation limits. No runtime behavior

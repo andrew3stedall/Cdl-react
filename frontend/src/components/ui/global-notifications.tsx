@@ -1,12 +1,16 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
 import type { SquadApiNotification, SquadClient } from '../../squad-api';
 import { HttpSquadClient } from '../../squad-api';
 
 interface GlobalNotificationsContextValue {
   close: () => void;
+  error: string | null;
+  loading: boolean;
   notifications: SquadApiNotification[];
   open: boolean;
+  retry: () => void;
+  stale: boolean;
   toggle: () => void;
 }
 
@@ -22,28 +26,50 @@ export function GlobalNotificationsProvider({
 }) {
   const [notifications, setNotifications] = useState<SquadApiNotification[]>([]);
   const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [stale, setStale] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const notificationCount = useRef(notifications.length);
+  notificationCount.current = notifications.length;
 
   useEffect(() => {
     let active = true;
+    setLoading(true);
+    setError(null);
     void squadClient.getNotifications()
       .then((response) => {
-        if (active) setNotifications(response.notifications ?? []);
+        if (active) {
+          setNotifications(response.notifications ?? []);
+          setStale(false);
+          setError(null);
+        }
       })
       .catch(() => {
-        if (active) setNotifications([]);
+        if (active) {
+          setStale(notificationCount.current > 0);
+          setError(notificationCount.current > 0 ? 'Refresh failed.' : 'Notifications are unavailable.');
+        }
+      })
+      .finally(() => {
+        if (active) setLoading(false);
       });
 
     return () => {
       active = false;
     };
-  }, [squadClient]);
+  }, [attempt, squadClient]);
 
   const value = useMemo<GlobalNotificationsContextValue>(() => ({
     close: () => setOpen(false),
+    error,
+    loading,
     notifications,
     open,
+    retry: () => setAttempt((current) => current + 1),
+    stale,
     toggle: () => setOpen((current) => !current),
-  }), [notifications, open]);
+  }), [error, loading, notifications, open, stale]);
 
   return (
     <GlobalNotificationsContext.Provider value={value}>
@@ -56,7 +82,7 @@ export function GlobalNotifications({ onNavigate }: { onNavigate: (href: string)
   const context = useContext(GlobalNotificationsContext);
   if (!context) return null;
 
-  const { close, notifications, open, toggle } = context;
+  const { close, error, loading, notifications, open, retry, stale, toggle } = context;
   const navigate = useCallback((href: string) => {
     close();
     onNavigate(href);
@@ -66,7 +92,7 @@ export function GlobalNotifications({ onNavigate }: { onNavigate: (href: string)
     <div className="global-notifications">
       <button
         aria-expanded={open}
-        aria-label={`Notifications${notifications.length ? `, ${notifications.length} unread` : ''}`}
+        aria-label={`Notifications${notifications.length ? `, ${notifications.length} alerts` : ''}`}
         className="global-notifications__button"
         onClick={toggle}
         title="Notifications"
@@ -83,9 +109,12 @@ export function GlobalNotifications({ onNavigate }: { onNavigate: (href: string)
         <div aria-label="Notifications" className="global-notifications__popover" role="dialog">
           <div className="global-notifications__heading">
             <strong>Notifications</strong>
-            <span>{notifications.length}</span>
+            <span>{notifications.length} alerts</span>
           </div>
-          {notifications.length === 0 ? <p className="global-notifications__empty">You are all caught up.</p> : notifications.map((notification) => (
+          {loading && notifications.length === 0 ? <p className="global-notifications__empty" role="status">Loading alerts…</p> : null}
+          {error && notifications.length === 0 ? <p className="global-notifications__empty" role="alert">{error} <button onClick={retry} type="button">Retry</button></p> : null}
+          {stale ? <p className="global-notifications__empty" role="status">Showing saved alerts. Refresh failed. <button onClick={retry} type="button">Retry</button></p> : null}
+          {!loading && !error && notifications.length === 0 ? <p className="global-notifications__empty">No alerts</p> : notifications.map((notification) => (
             <a
               className="global-notifications__item"
               href={notification.action_href || '#'}

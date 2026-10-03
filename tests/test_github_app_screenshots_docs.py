@@ -155,7 +155,8 @@ def test_browser_journey_exercises_protected_session_boundary() -> None:
     assert "getSession()" in app
     assert "demo-manager" not in app
     assert "SessionSplash" in app
-    assert "Preparing your workspace" in session_splash
+    assert "Loading" in session_splash
+    assert "Own your league." not in session_splash
     assert "VITE_STATIC_PREVIEW" in main
     assert "./login-page.css" in main
     assert "session: staticPreviewSession" in main

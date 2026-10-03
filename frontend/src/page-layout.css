@@ -67,6 +67,7 @@
      not move the title or notification control as users navigate. The 8.5rem
      role scales with large text; controls can wrap within the reserved bottom row. */
   .cdl-page-hero {
+    align-items: flex-start;
     block-size: 8.5rem;
     min-height: 8.5rem;
     position: relative;

@@ -438,7 +438,9 @@ def test_postgres_ranked_draw_persists_private_results_and_claims_once(
         repo_a.submit_preferences(
             draw.id, FreeAgencyPreferencesRequest(player_ids=[player_a, player_b])
         )
-        repo_b.submit_preferences(draw.id, FreeAgencyPreferencesRequest(player_ids=[player_a]))
+        repo_b.submit_preferences(
+            draw.id, FreeAgencyPreferencesRequest(player_ids=[player_a, player_b])
+        )
         with engine.begin() as connection:
             connection.execute(
                 text("UPDATE free_agency_draws SET closes_at = :closed WHERE id = :id"),

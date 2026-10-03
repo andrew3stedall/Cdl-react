@@ -458,8 +458,17 @@ jobs:
             "${RUNNER_TEMP}/staged-service.json" "${RUNNER_TEMP}/staged-revision.json" \
             "${RUNTIME_TRAFFIC_REVISION}" "${BACKEND_IMAGE}")"
           echo "STAGED_REVISION=${revision}" >> "${GITHUB_ENV}"
-          candidate_url="$(gcloud run revisions describe "${revision}" \
-            --project "${PROJECT_ID}" --region "${REGION}" --format='value(status.url)')"
+          CANDIDATE_TAG="cdl-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          echo "CANDIDATE_TAG=${CANDIDATE_TAG}" >> "${GITHUB_ENV}"
+          gcloud run services update-traffic cdl-react-staging-api \
+            --project "${PROJECT_ID}" --region "${REGION}" \
+            --update-tags="${CANDIDATE_TAG}=${revision}" --quiet
+          gcloud run services describe cdl-react-staging-api \
+            --project "${PROJECT_ID}" --region "${REGION}" --format=json \
+            > "${RUNNER_TEMP}/candidate-service.json"
+          candidate_url="$(python scripts/cloud_run_staged_revision.py candidate-url \
+            "${RUNNER_TEMP}/candidate-service.json" "${revision}" \
+            "${RUNTIME_TRAFFIC_REVISION}" "${CANDIDATE_TAG}")"
           curl --fail --silent --show-error "${candidate_url}/health" | grep -Fq '"status":"ok"'
           status_code="$(curl --silent --show-error --output /dev/null \
             --write-out '%{http_code}' "${candidate_url}/api/fpl/status")"
@@ -607,3 +616,11 @@ jobs:
           path: ${{ runner.temp }}/staging-terraform-apply.md
           if-no-files-found: error
           retention-days: 7
+
+      - name: Remove candidate revision traffic tag
+        if: always() && env.CANDIDATE_TAG != ''
+        run: |
+          set -euo pipefail
+          gcloud run services update-traffic cdl-react-staging-api \
+            --project "${PROJECT_ID}" --region "${REGION}" \
+            --remove-tags="${CANDIDATE_TAG}" --quiet

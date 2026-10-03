@@ -32,6 +32,8 @@ def test_direct_rollout_stays_bound_to_staging() -> None:
 
 def test_failure_fallback_requires_manual_or_explicit_request_and_migration_gate() -> None:
     content = WORKFLOW.read_text(encoding="utf-8")
+    smoke = content.index("- name: Verify staged revision and retained traffic")
+    promote = content.index("- name: Promote staged revision after migration smoke checks")
 
     assert "workflow_dispatch:" in content
     assert "Run and verify migrations before changing application traffic" in content
@@ -42,4 +44,8 @@ def test_failure_fallback_requires_manual_or_explicit_request_and_migration_gate
     assert "scripts/cloud_run_staged_revision.py verify" in content
     assert '--to-revisions "${STAGED_REVISION}=100"' in content
     assert "update-traffic" in content
+    assert '--update-tags="${CANDIDATE_TAG}=${latest_ready}"' in content
+    assert 'candidate-url \\\n            "${RUNNER_TEMP}/candidate-service.json"' in content
+    assert '--remove-tags="${CANDIDATE_TAG}"' in content
+    assert "--format='value(status.url)'" not in content[smoke:promote]
     assert "if: >-" in content

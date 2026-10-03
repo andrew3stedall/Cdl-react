@@ -62,7 +62,12 @@ def test_auto_rollout_pins_existing_traffic_until_verified_migration() -> None:
     assert "scripts/cloud_run_staged_revision.py verify" in content
     assert '"${candidate_url}/health"' in content
     assert '"${candidate_url}/api/fpl/status"' in content
+    assert '--update-tags="${CANDIDATE_TAG}=${STAGED_REVISION}"' in content
+    assert 'candidate-url \\\n            "${RUNNER_TEMP}/candidate-service.json"' in content
     assert '--to-revisions "${STAGED_REVISION}=100"' in content
+    assert '--remove-tags="${CANDIDATE_TAG}"' in content
+    assert "if: always() && env.CANDIDATE_TAG != ''" in content
+    assert 'gcloud run revisions describe "${STAGED_REVISION}"' not in content
 
 
 def test_runtime_service_has_a_stage_with_prior_revision_traffic_pin() -> None:
@@ -94,6 +99,9 @@ def test_direct_fallback_migrates_and_smokes_before_promoting_traffic() -> None:
     assert "scripts/cloud_run_staged_revision.py verify" in content
     assert '--to-revisions "${STAGED_REVISION}=100"' in content
     assert content.index('gcloud run jobs execute "${migration_job}"') < stage
+    assert '--update-tags="${CANDIDATE_TAG}=${latest_ready}"' in content
+    assert 'candidate-url \\\n            "${RUNNER_TEMP}/candidate-service.json"' in content
+    assert '--remove-tags="${CANDIDATE_TAG}"' in content
 
 
 def test_runtime_images_and_ci_install_from_checked_in_locks() -> None:
@@ -201,4 +209,7 @@ def test_reviewed_runtime_apply_smokes_and_promotes_the_exact_ready_revision() -
     assert "scripts/cloud_run_staged_revision.py verify" in content
     assert '"${candidate_url}/health"' in content
     assert '"${candidate_url}/api/fpl/status"' in content
+    assert '--update-tags="${CANDIDATE_TAG}=${revision}"' in content
+    assert 'candidate-url \\\n            "${RUNNER_TEMP}/candidate-service.json"' in content
     assert '--to-revisions "${STAGED_REVISION}=100"' in content
+    assert '--remove-tags="${CANDIDATE_TAG}"' in content

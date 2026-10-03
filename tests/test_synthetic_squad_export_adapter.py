@@ -2,7 +2,7 @@ import os
 from datetime import datetime
 
 import pytest
-from sqlalchemy import create_engine, insert, select
+from sqlalchemy import create_engine, insert, select, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
@@ -136,13 +136,19 @@ def _seed_dependencies(session_factory: sessionmaker[Session]) -> None:
                 name="Synthetic Team",
             )
         )
-        session.execute(
-            insert(fpl_positions_table).values(
-                id="MID",
-                singular_name="Midfielder",
-                plural_name="Midfielders",
+        if (
+            session.execute(
+                select(fpl_positions_table.c.id).where(fpl_positions_table.c.id == "MID")
+            ).scalar_one_or_none()
+            is None
+        ):
+            session.execute(
+                insert(fpl_positions_table).values(
+                    id="MID",
+                    singular_name="Midfielder",
+                    plural_name="Midfielders",
+                )
             )
-        )
         session.execute(
             insert(epl_teams_table).values(
                 id="epl-team-1",
@@ -172,7 +178,14 @@ def _assert_release_path(session_factory: sessionmaker[Session]) -> None:
     dry_run = service.execute(batch, dry_run=True)
     assert dry_run.projected_records == 1
     with session_factory() as session:
-        assert session.execute(select(squad_ownerships_table.c.id)).all() == []
+        assert (
+            session.execute(
+                select(squad_ownerships_table.c.id).where(
+                    squad_ownerships_table.c.id == "ownership-1"
+                )
+            ).all()
+            == []
+        )
 
     committed = service.execute(batch, dry_run=False)
     assert committed.projected_records == 1
@@ -223,7 +236,9 @@ def test_squad_adapter_projection_reviews_and_conflict_rollback() -> None:
 
     conflict = adapter.adapt(_document(batch_id="squad-conflict")).batch
     with session_factory() as session:
-        session.execute(squad_ownerships_table.delete())
+        session.execute(
+            squad_ownerships_table.delete().where(squad_ownerships_table.c.id == "ownership-1")
+        )
         session.execute(
             insert(squad_ownerships_table).values(
                 id="ownership-1",
@@ -260,9 +275,42 @@ def test_clean_postgres_squad_projection_uses_migrated_tables() -> None:
     engine = create_engine(os.environ["CDL_DATABASE_URL"])
     session_factory = sessionmaker(bind=engine, class_=Session)
     with session_factory() as session:
-        session.execute(squad_ownerships_table.delete())
-        for table in reversed(HISTORICAL_IMPORT_PERSISTENCE_TABLES):
-            session.execute(table.delete())
+        session.execute(
+            squad_ownerships_table.delete().where(squad_ownerships_table.c.id == "ownership-1")
+        )
+        session.execute(
+            text(
+                "DELETE FROM import_source_payloads "
+                "WHERE payload_json ->> 'batch_id' IN "
+                "('squad-batch-1', 'squad-missing', 'squad-conflict')"
+            )
+        )
+        session.execute(
+            text(
+                "DELETE FROM import_source_mappings "
+                "WHERE payload_json ->> 'source_system' IN "
+                "('deterministic-synthetic-squad', 'deterministic-synthetic-squad-missing')"
+            )
+        )
+        session.execute(
+            text(
+                "DELETE FROM import_review_items "
+                "WHERE payload_json ->> 'batch_id' IN "
+                "('squad-batch-1', 'squad-missing', 'squad-conflict')"
+            )
+        )
+        session.execute(
+            text(
+                "DELETE FROM import_conflicts "
+                "WHERE payload_json ->> 'batch_id' IN "
+                "('squad-batch-1', 'squad-missing', 'squad-conflict')"
+            )
+        )
+        session.execute(
+            import_batches_table.delete().where(
+                import_batches_table.c.id.in_(["squad-batch-1", "squad-missing", "squad-conflict"])
+            )
+        )
         session.commit()
     _seed_dependencies(session_factory)
     _assert_release_path(session_factory)

@@ -482,9 +482,17 @@ jobs:
         if: steps.database-migrations.outcome == 'success'
         run: |
           set -euo pipefail
-          candidate_url="$(gcloud run revisions describe "${STAGED_REVISION}" \
+          CANDIDATE_TAG="cdl-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          echo "CANDIDATE_TAG=${CANDIDATE_TAG}" >> "${GITHUB_ENV}"
+          gcloud run services update-traffic cdl-react-staging-api \
             --project "${PROJECT_ID}" --region "${REGION}" \
-            --format='value(status.url)')"
+            --update-tags="${CANDIDATE_TAG}=${STAGED_REVISION}" --quiet
+          gcloud run services describe cdl-react-staging-api \
+            --project "${PROJECT_ID}" --region "${REGION}" --format=json \
+            > "${RUNNER_TEMP}/candidate-service.json"
+          candidate_url="$(python scripts/cloud_run_staged_revision.py candidate-url \
+            "${RUNNER_TEMP}/candidate-service.json" "${STAGED_REVISION}" \
+            "${RUNTIME_TRAFFIC_REVISION}" "${CANDIDATE_TAG}")"
           test -n "${candidate_url}"
           curl --fail --silent --show-error "${candidate_url}/health" \
             | grep -Fq '"status":"ok"'
@@ -597,6 +605,14 @@ jobs:
             ${{ runner.temp }}/health.json
           if-no-files-found: error
           retention-days: 14
+
+      - name: Remove candidate revision traffic tag
+        if: always() && env.CANDIDATE_TAG != ''
+        run: |
+          set -euo pipefail
+          gcloud run services update-traffic cdl-react-staging-api \
+            --project "${PROJECT_ID}" --region "${REGION}" \
+            --remove-tags="${CANDIDATE_TAG}" --quiet
 
       - name: Record successful rollout
         run: |

@@ -9,7 +9,7 @@ Implemented means source and applicable automated coverage are delivered; deploy
 ## Release evidence
 
 - Initial CI found and prompted fixes for membership fixtures, stale table metadata, browser lineup fixtures and session capability expectations.
-- Local checks so far: backend 466 passed / 24 environment-dependent skips; frontend 232 passed, lint and typecheck pass. Ruff, formatting, frontend lint/typecheck and production build pass. The main entry is 616.56 kB (168.12 kB gzip); #536 remains open. Actual PostgreSQL and Chromium run in GitHub CI; no local browser/database pass is claimed.
+- Local checks so far: backend 467 passed / 24 environment-dependent skips; frontend 232 passed, lint and typecheck pass. Ruff, formatting, frontend lint/typecheck and production build pass. Actual Chromium CI run [37127705912](https://github.com/andrew3stedall/Cdl-react/actions/runs/37127705912) passes all eight strict layout/interaction checks; the combined final-source rerun remains required. PostgreSQL migrations pass; corrected fixture rerun is pending. The main entry is 616.56 kB (168.12 kB gzip); #536 remains open. Actual PostgreSQL and Chromium run in GitHub CI; no local browser/database pass is claimed.
 - Deployment: pending final CI, squash merge and the authenticated staging workflow.
 - Live signed-in device behavior, real legacy export compatibility and dated restore/recovery proof remain independent gates.
 

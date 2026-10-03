@@ -268,10 +268,17 @@ jobs:
           echo "STAGED_REVISION=${latest_ready}" >> "${GITHUB_ENV}"
           echo "ready_revision=${latest_ready}"
           echo "image=${IMAGE_DIGEST_URI}"
-
-          candidate_url="$(gcloud run revisions describe "${latest_ready}" \
+          CANDIDATE_TAG="cdl-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          echo "CANDIDATE_TAG=${CANDIDATE_TAG}" >> "${GITHUB_ENV}"
+          gcloud run services update-traffic "${SERVICE_NAME}" \
             --project "${PROJECT_ID}" --region "${REGION}" \
-            --format='value(status.url)')"
+            --update-tags="${CANDIDATE_TAG}=${latest_ready}" --quiet
+          gcloud run services describe "${SERVICE_NAME}" \
+            --project "${PROJECT_ID}" --region "${REGION}" --format=json \
+            > "${RUNNER_TEMP}/candidate-service.json"
+          candidate_url="$(python scripts/cloud_run_staged_revision.py candidate-url \
+            "${RUNNER_TEMP}/candidate-service.json" "${latest_ready}" \
+            "${RUNTIME_TRAFFIC_REVISION}" "${CANDIDATE_TAG}")"
           test -n "${candidate_url}"
           curl --fail --silent --show-error "${candidate_url}/health" \
             | grep -Fq '"status":"ok"'
@@ -309,3 +316,11 @@ jobs:
             --write-out '%{http_code}' \
             "${service_url}/api/fpl/status")"
           test "${status_code}" = "401"
+
+      - name: Remove candidate revision traffic tag
+        if: always() && env.CANDIDATE_TAG != ''
+        run: |
+          set -euo pipefail
+          gcloud run services update-traffic "${SERVICE_NAME}" \
+            --project "${PROJECT_ID}" --region "${REGION}" \
+            --remove-tags="${CANDIDATE_TAG}" --quiet

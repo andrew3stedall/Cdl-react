@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test';
+import type { ThemePresetName } from '../src/contracts';
 
 const team = { id: 'team-browser-fixture', name: 'Browser Fixture FC', short_name: 'BFC' };
 const gameweek = { id: 'gw-browser-fixture', name: 'Matchweek 1', number: 1, deadline_at: '2099-01-01T00:00:00Z' };
@@ -120,18 +121,22 @@ const marketPlayer = {
 
 export async function installLayoutFixtures(
   page: Page,
-  { apiDelayMs = 0, holdDataUntilReleased = false, roles = ['manager'] }: { apiDelayMs?: number; holdDataUntilReleased?: boolean; roles?: string[] } = {},
+  { apiDelayMs = 0, holdDataUntilReleased = false, roles = ['manager'], themePreset = 'teal-dark' }: {
+    apiDelayMs?: number;
+    holdDataUntilReleased?: boolean;
+    roles?: string[];
+    themePreset?: ThemePresetName;
+  } = {},
 ) {
   let releasePendingResponses!: () => void;
+  let configuredThemePreset = themePreset;
   const pendingResponses = new Promise<void>((resolve) => { releasePendingResponses = resolve; });
   await page.route('**/api/**', async (route) => {
     const path = new URL(route.request().url()).pathname;
     const getResponse = (body: unknown) => route.fulfill({ json: body });
 
     if (path === '/api/me/preferences') {
-      const cookie = route.request().headers().cookie ?? '';
-      const storedPreset = cookie.match(/(?:^|;\s*)cdl-theme-preset=([^;]+)/)?.[1];
-      return await getResponse({ theme_preset: storedPreset ? decodeURIComponent(storedPreset) : 'teal-dark' });
+      return await getResponse({ theme_preset: configuredThemePreset });
     }
 
     if (path === '/api/auth/session') {
@@ -180,5 +185,8 @@ export async function installLayoutFixtures(
     if (path.startsWith('/api/fpl/players/')) return await getResponse({ history: [], fixtures: [] });
     return await getResponse({});
   });
-  return { releasePendingResponses };
+  return {
+    releasePendingResponses,
+    setThemePreset: (preset: ThemePresetName) => { configuredThemePreset = preset; },
+  };
 }

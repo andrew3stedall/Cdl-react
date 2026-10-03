@@ -402,7 +402,9 @@ def test_postgres_trade_approval_transaction_and_received_squad_players(
     manager_a, manager_b = f"movement-a-{suffix}", f"movement-b-{suffix}"
     commissioner, vice = f"movement-c-{suffix}", f"movement-v-{suffix}"
     team_a, team_b = f"movement-ta-{suffix}", f"movement-tb-{suffix}"
-    position_def, position_mid = f"MDEF{suffix[:4]}", f"MMID{suffix[:4]}"
+    # These IDs are the public FPL position codes used by PlayerPosition.
+    # Reuse the globally seeded reference rows without deleting them in cleanup.
+    position_def, position_mid = "DEF", "MID"
     player_a, player_b = f"movement-pa-{suffix}", f"movement-pb-{suffix}"
     slot_a_def, slot_a_mid = f"movement-sad-{suffix}", f"movement-sam-{suffix}"
     slot_b_def, slot_b_mid = f"movement-sbd-{suffix}", f"movement-sbm-{suffix}"
@@ -482,7 +484,7 @@ def test_postgres_trade_approval_transaction_and_received_squad_players(
         connection.execute(
             text(
                 "INSERT INTO fpl_positions (id, singular_name, plural_name) "
-                "VALUES (:id, :name, :plural)"
+                "VALUES (:id, :name, :plural) ON CONFLICT (id) DO NOTHING"
             ),
             [
                 {"id": position_def, "name": "Defender", "plural": "Defenders"},
@@ -729,10 +731,6 @@ def test_postgres_trade_approval_transaction_and_received_squad_players(
             )
             connection.execute(
                 text("DELETE FROM fpl_players WHERE id IN (:a, :b)"), {"a": player_a, "b": player_b}
-            )
-            connection.execute(
-                text("DELETE FROM fpl_positions WHERE id IN (:def, :mid)"),
-                {"def": position_def, "mid": position_mid},
             )
             connection.execute(
                 text("DELETE FROM epl_teams WHERE id = :id"), {"id": f"movement-epl-{suffix}"}

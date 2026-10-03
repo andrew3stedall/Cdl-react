@@ -307,8 +307,10 @@ def test_postgres_ranked_draw_persists_private_results_and_claims_once(
                 {"now": now, "season": SEASON_ID},
             ).scalar_one_or_none()
             if gameweek is None:
-                seeded_gameweek_id = f"9{suffix[:7]}"
-                gameweek = seeded_gameweek_id
+                # Keep the draw's numeric gameweek separate from its generated
+                # ID: free_agency_draws.gameweek is an integer domain value.
+                gameweek = 100_000_000 + int(suffix[:5], 16)
+                seeded_gameweek_id = str(gameweek)
                 close_at = now + timedelta(days=30)
                 connection.execute(
                     text(

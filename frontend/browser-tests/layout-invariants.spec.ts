@@ -194,13 +194,14 @@ test('custom theme chooser remains in the viewport in portrait and landscape and
 });
 
 test('commissioner PageHero and bell retain measured bounds in light and dark appearance states', async ({ page }) => {
-  await installLayoutFixtures(page, { apiDelayMs: 0, roles: ['commissioner'] });
+  const { setThemePreset } = await installLayoutFixtures(page, { apiDelayMs: 0, roles: ['commissioner'] });
   const viewport = { width: 390, height: 844 };
   await setViewport(page, viewport.width, viewport.height);
   await page.goto('/login');
   const themeSurfaces: string[] = [];
 
-  for (const presetName of ['teal-light', 'teal-dark']) {
+  for (const presetName of ['teal-light', 'teal-dark'] as const) {
+    setThemePreset(presetName);
     await page.context().clearCookies();
     await page.evaluate(() => window.localStorage.clear());
     await page.context().addCookies([{

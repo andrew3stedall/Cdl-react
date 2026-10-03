@@ -23,6 +23,7 @@ from cdl_api.repositories.postgres_squad import (
     squad_ownerships_table,
     squad_roster_slots_table,
 )
+from cdl_api.repositories.rule_versions import ensure_initial_rule_version
 
 LEAGUE_ID = "league-cdl-2026-27"
 SEASON_ID = "season-cdl-2026-27"
@@ -700,6 +701,7 @@ def seed_staging_snake_draft(
                 "end_gameweek": 38,
             },
         )
+        ensure_initial_rule_version(session, SEASON_ID)
 
         manager_assignments = staging_manager_assignments(google_allowed_emails)
         assigned_user_nicknames = {
@@ -785,7 +787,11 @@ def seed_staging_snake_draft(
                     "id": f"membership-{index}",
                     "league_id": LEAGUE_ID,
                     "manager_id": manager_id,
-                    "role": "manager",
+                    "role": (
+                        "commissioner"
+                        if assigned_email == STAGING_COMMISSIONER_EMAIL.lower()
+                        else "manager"
+                    ),
                 },
             )
 

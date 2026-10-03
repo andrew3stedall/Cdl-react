@@ -25,6 +25,7 @@ from cdl_api.contracts.squad import (
     TradeStatus,
 )
 from cdl_api.repositories.squad import SquadRepository
+from cdl_api.services.live_draft import LiveDraftError
 
 SQUAD_SIZE_RULE = "squad-size"
 SQUAD_POSITION_LIMITS: dict[PlayerPosition, tuple[int, int]] = {
@@ -174,6 +175,8 @@ class SquadManagementService:
 
         try:
             self._repository.apply_squad_changes(additions, removals)
+        except LiveDraftError:
+            raise
         except ValueError as exc:
             raise SquadValidationError(
                 str(exc),
@@ -423,6 +426,8 @@ class SquadManagementService:
             )
         try:
             return self._repository.approve_trade(trade_id, actor_user_id, decision, note)
+        except LiveDraftError:
+            raise
         except ValueError as exc:
             raise SquadValidationError(
                 str(exc), [ValidationIssue(field="approval", message=str(exc))]

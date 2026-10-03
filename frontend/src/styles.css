@@ -4,6 +4,10 @@
   --cdl-type-value: 0.7rem;
   --cdl-type-metadata: 0.7rem;
   --cdl-type-chart-label: 0.625rem;
+  --cdl-type-section-title: 1.125rem;
+  --cdl-type-body: 0.9375rem;
+  --cdl-type-label: 0.8125rem;
+  --cdl-type-helper: 0.75rem;
   --background: #0b1111;
   --foreground: #e6fffb;
   --card: #111c1b;

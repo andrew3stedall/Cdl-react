@@ -103,6 +103,8 @@ describe('navigation configuration', () => {
   test('accepts addressable product tabs and known profile settings without accepting unknown paths', () => {
     for (const path of [
       '/league/knockout',
+      '/league/draft',
+      '/scouting/loans',
       '/league/head-to-head',
       '/scouting/draws',
       '/profile/appearance',

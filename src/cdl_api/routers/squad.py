@@ -36,6 +36,7 @@ from cdl_api.routers.auth import (
     get_session_for_request,
 )
 from cdl_api.services.auth import AuthenticationService
+from cdl_api.services.live_draft import LiveDraftError
 from cdl_api.services.squad import SquadManagementService, SquadValidationError
 from cdl_api.settings import Settings, get_settings
 from cdl_api.staging_draft_seed import UnassignedManagerContextError
@@ -144,6 +145,8 @@ def apply_squad_changes(
 ) -> SquadSummaryResponse | JSONResponse:
     try:
         return service.apply_changes(payload)
+    except LiveDraftError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     except SquadValidationError as exc:
         return validation_error_response(exc)
 
@@ -280,6 +283,8 @@ def approve_trade(
 ) -> TradeProposal | JSONResponse:
     try:
         trade = service.approve_trade(trade_id, payload.decision, user.id, payload.note)
+    except LiveDraftError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     except SquadValidationError as exc:
         return validation_error_response(exc)
     if trade is None:

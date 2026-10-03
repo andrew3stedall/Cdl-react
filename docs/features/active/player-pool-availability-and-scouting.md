@@ -65,6 +65,8 @@ unavailable_fpl_status
 - Market discovery shows an owner label in the existing player-card fixture slot, matching the player-name font size: the current manager's player uses the primary theme accent, a free agent uses the secondary accent, and another manager's player uses the tertiary accent. The label follows the selected FDR font/fill preference.
 - Market discovery does not show player availability or status fields and does not offer filters for availability, status, or ownership.
 - Watchlist and notes controls.
+- Player profile's private scouting disclosure reads the signed-in user's player record only when opened, saves the private watchlist flag and note together, and leaves draw Interest state untouched.
+- Private scouting reads and saves show explicit loading, error/retry, and saved feedback. Notes are limited to 4,000 characters and are labeled private.
 
 Availability remains domain data for workflow validation and dedicated player detail experiences. Ownership is retained as a compact high-scan Market cue rather than a separate list field.
 

@@ -1,4 +1,4 @@
-import { type MutableRefObject, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
+import { type MutableRefObject, type ReactNode, lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowRight,
   ArrowRightLeft,
@@ -33,7 +33,9 @@ interface MarketPageProps {
   session?: SessionState;
 }
 
-type MarketMode = 'discover' | 'interests' | 'trades' | 'draws';
+const LoansPanel = lazy(() => import('./LoansPanel').then((module) => ({ default: module.LoansPanel })));
+
+type MarketMode = 'discover' | 'interests' | 'trades' | 'draws' | 'loans';
 type PositionFilter = 'all' | 'GKP' | 'DEF' | 'MID' | 'FWD';
 type FixtureFilter = 'all' | 'easy';
 type SortKey = 'points' | 'form' | 'xg' | 'xa' | 'value';
@@ -572,7 +574,7 @@ export function MarketPage({ currentPath, onNavigate, preset, session }: MarketP
                 { value: 'trades', label: 'Trades', icon: <ArrowRightLeft aria-hidden="true" size={17} /> },
                 { value: 'draws', label: 'Free agency', icon: <ListOrdered aria-hidden="true" size={17} /> },
               ]}
-              value={mode}
+              value={mode === 'loans' ? 'trades' : mode}
             />
           </PageHeroControls>
         )}
@@ -592,6 +594,16 @@ export function MarketPage({ currentPath, onNavigate, preset, session }: MarketP
       {notice && !error ? <p className="market-page__status" role="status">{notice}</p> : null}
 
       <section className="market-page__workspace">
+        {mode === 'trades' || mode === 'loans' ? <nav aria-label="Trade workflows" className="market-page__workflow-links">
+          <Button aria-pressed={mode === 'trades'} onClick={() => selectMode('trades')} variant="secondary">Trades</Button>
+          <Button aria-pressed={mode === 'loans'} onClick={() => selectMode('loans')} variant="secondary">Loans</Button>
+        </nav> : null}
+        {mode === 'loans' ? <Suspense fallback={<p role="status">Loading loans…</p>}><LoansPanel
+          managerTeam={managerTeam}
+          players={players.map((player) => ({ id: player.id, name: player.displayName, ownerTeamId: player.draftTeamId, ownerTeamName: player.draftTeamName }))}
+          roles={session?.user?.roles ?? []}
+          teams={Array.from(new Map([[managerTeam.id, managerTeam], ...players.filter((player) => player.draftTeamId).map((player) => [player.draftTeamId!, { id: player.draftTeamId!, name: player.draftTeamName ?? player.draftTeamId! }] as const)]).values())}
+        /></Suspense> : null}
         {mode === 'discover' ? (
           <DiscoveryPanel
           filtersOpen={filtersOpen}
@@ -1002,6 +1014,7 @@ function ownershipToneFor(player: MarketPlayer, managerTeam: SquadApiTeam): Play
 function modeFromPath(path: string): MarketMode {
   if (path.startsWith('/scouting/interests')) return 'interests';
   if (path.startsWith('/scouting/trades')) return 'trades';
+  if (path.startsWith('/scouting/loans')) return 'loans';
   if (path.startsWith('/scouting/draws')) return 'draws';
   return 'discover';
 }

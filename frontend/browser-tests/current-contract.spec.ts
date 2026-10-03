@@ -123,7 +123,8 @@ test('current 20-player and five-chip selection fits and persists captaincy/chip
   await expect(page.locator('.squad-page__list-table tbody tr')).toHaveCount(20);
 
   await page.getByRole('button', { name: 'View Fixture Player 2 details' }).click();
-  await page.getByRole('button', { name: 'Captain' }).click();
+  await page.getByRole('button', { name: 'Captain', exact: true }).click();
+  await page.getByRole('button', { name: 'Close player profile' }).click();
   await page.getByRole('button', { name: 'Save lineup' }).click();
   await expect.poll(() => savedLineups.length).toBe(1);
   expect(savedLineups[0]).toHaveLength(20);
@@ -131,7 +132,6 @@ test('current 20-player and five-chip selection fits and persists captaincy/chip
     is_captain: true,
     is_vice_captain: false,
   });
-  await page.getByRole('button', { name: 'Close player profile' }).click();
 
   await page.getByRole('button', { name: 'Triple Captain, available' }).click();
   await expect(page.getByRole('button', { name: 'Triple Captain, active' })).toHaveAttribute('aria-pressed', 'true');
@@ -140,7 +140,7 @@ test('current 20-player and five-chip selection fits and persists captaincy/chip
   await expect(page.getByRole('button', { name: 'Triple Captain, active' })).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: 'View as list' }).click();
   await page.getByRole('button', { name: 'View Fixture Player 2 details' }).click();
-  await expect(page.getByRole('button', { name: 'Captain' })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByRole('button', { name: 'Captain', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: 'Close player profile' }).click();
 
   const documentWidth = await page.evaluate(() => document.documentElement.scrollWidth);

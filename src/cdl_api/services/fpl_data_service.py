@@ -41,10 +41,12 @@ class FplDataService:
         client: FplApiClientProtocol,
         repository: PostgreSQLFplDataRepository,
         settlement: Callable[[], object] | None = None,
+        after_refresh: Callable[[], object] | None = None,
     ) -> None:
         self._client = client
         self._repository = repository
         self._settlement = settlement
+        self._after_refresh = after_refresh
 
     def refresh(self, resources: Iterable[FplRefreshResource]) -> FplRefreshResponse:
         resources = list(resources)
@@ -87,6 +89,8 @@ class FplDataService:
                 raise
         if self._settlement is not None:
             self._settlement()
+        if self._after_refresh is not None:
+            self._after_refresh()
         return FplRefreshResponse(resources=results)
 
     def player_history(self, player_id: str) -> FplPlayerHistoryResponse:

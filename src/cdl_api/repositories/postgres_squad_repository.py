@@ -41,8 +41,10 @@ from cdl_api.repositories.postgres_league_fpl import (
     fpl_positions_table,
     league_memberships_table,
     managers_table,
+    seasons_table,
 )
 from cdl_api.repositories.postgres_squad import (
+    loans_table,
     player_rights_table,
     squad_audit_events_table,
     squad_interests_table,
@@ -53,6 +55,7 @@ from cdl_api.repositories.postgres_squad import (
     trade_proposals_table,
 )
 from cdl_api.repositories.squad import InMemorySquadRepository
+from cdl_api.services.live_draft import ensure_squad_moves_allowed
 from cdl_api.staging_draft_seed import (
     PRIMARY_MANAGER_ID,
     PRIMARY_TEAM_ID,
@@ -647,6 +650,14 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
             return
         now = datetime.now(UTC)
         with self._session_factory() as session:
+            season_exists = session.execute(
+                select(seasons_table.c.id)
+                .where(seasons_table.c.id == DEMO_SEASON_ID)
+                .with_for_update()
+            ).scalar_one_or_none()
+            if season_exists is None:
+                raise ValueError("Active season could not be found.")
+            ensure_squad_moves_allowed(session, DEMO_SEASON_ID)
             rights = list(
                 session.execute(
                     select(player_rights_table).where(
@@ -675,6 +686,18 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
             )
             if {str(row["player_id"]) for row in ownerships} != set(remove_player_ids):
                 raise ValueError("Every removed player must be in the active squad.")
+            active_loaned_players = set(
+                session.execute(
+                    select(loans_table.c.player_id).where(
+                        loans_table.c.season_id == DEMO_SEASON_ID,
+                        loans_table.c.borrower_team_id == self.manager_team.id,
+                        loans_table.c.player_id.in_(remove_player_ids),
+                        loans_table.c.status == "active",
+                    )
+                ).scalars()
+            )
+            if active_loaned_players:
+                raise ValueError("An active loan player cannot be removed before scheduled return.")
             slots_by_player = {str(row["player_id"]): row["roster_slot_id"] for row in ownerships}
             for player_id in remove_player_ids:
                 session.execute(
@@ -1145,6 +1168,25 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
         now = datetime.now(UTC)
         with self._session_factory() as session:
             with session.begin():
+                trade_summary = (
+                    session.execute(
+                        select(
+                            trade_proposals_table.c.season_id,
+                            trade_proposals_table.c.id,
+                        ).where(trade_proposals_table.c.id == trade_id)
+                    )
+                    .mappings()
+                    .first()
+                )
+                if trade_summary is None:
+                    return None
+                season_exists = session.execute(
+                    select(seasons_table.c.id)
+                    .where(seasons_table.c.id == trade_summary["season_id"])
+                    .with_for_update()
+                ).scalar_one_or_none()
+                if season_exists is None:
+                    raise ValueError("The trade season is not configured.")
                 trade = (
                     session.execute(
                         select(trade_proposals_table)
@@ -1225,6 +1267,7 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
                     else TradeApprovalStatus.REJECTED
                 )
                 if decision == TradeApprovalDecision.APPROVED:
+                    ensure_squad_moves_allowed(session, str(trade["season_id"]))
                     assets = list(
                         session.execute(
                             select(trade_assets_table).where(
@@ -1263,6 +1306,15 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
                     ).all()
                     transfers: list[tuple[object, object, str]] = []
                     for asset in assets:
+                        active_loan = session.execute(
+                            select(loans_table.c.id).where(
+                                loans_table.c.season_id == trade["season_id"],
+                                loans_table.c.player_id == asset["player_id"],
+                                loans_table.c.status == "active",
+                            )
+                        ).scalar_one_or_none()
+                        if active_loan is not None:
+                            raise ValueError("An active loan player cannot be traded.")
                         ownerships = list(
                             session.execute(
                                 select(squad_ownerships_table)
@@ -1328,6 +1380,25 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
                                     squad_ownerships_table.c.season_id == trade["season_id"],
                                     squad_ownerships_table.c.draft_team_id == team_id,
                                     squad_ownerships_table.c.ended_at.is_(None),
+                                )
+                            ).scalars()
+                        )
+                        team_players.extend(
+                            session.execute(
+                                select(fpl_positions_table.c.singular_name)
+                                .select_from(
+                                    loans_table.join(
+                                        fpl_players_table,
+                                        fpl_players_table.c.id == loans_table.c.player_id,
+                                    ).join(
+                                        fpl_positions_table,
+                                        fpl_positions_table.c.id == fpl_players_table.c.position_id,
+                                    )
+                                )
+                                .where(
+                                    loans_table.c.season_id == trade["season_id"],
+                                    loans_table.c.lender_team_id == team_id,
+                                    loans_table.c.status == "active",
                                 )
                             ).scalars()
                         )

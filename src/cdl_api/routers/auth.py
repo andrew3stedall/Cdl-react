@@ -41,6 +41,7 @@ def get_auth_service(settings: Settings = Depends(get_settings)) -> Authenticati
         settings.development_login_secret,
         settings.session_ttl_days,
         settings.commissioner_email_set,
+        repositories.league_memberships,
     )
 
 

@@ -7,7 +7,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
-from sqlalchemy import insert, inspect, select, update
+from sqlalchemy import case, func, insert, inspect, select, update
 from sqlalchemy.orm import Session
 
 from cdl_api.repositories.postgres_fpl_data import (
@@ -28,6 +28,7 @@ from cdl_api.repositories.postgres_team_selection import (
     team_selection_fixture_locks_table,
     team_selection_lineup_slots_table,
 )
+from cdl_api.repositories.rule_versions import active_rule_version_id
 from cdl_api.services.substitution_engine import (
     LineupPlayer,
     apply_automatic_substitutions,
@@ -71,6 +72,14 @@ class FplSettlementService:
         )
 
     @staticmethod
+    def _active_rule_version_id(session: Session) -> str | None:
+        # Keep pre-migration SQLite/unit fixtures usable; migrated production
+        # databases always have the state table and a seeded active version.
+        if not inspect(session.connection()).has_table("league_season_rule_state"):
+            return None
+        return active_rule_version_id(session, SEASON_ID)
+
+    @staticmethod
     def _due_gameweeks(session: Session, now: datetime) -> dict[int, datetime]:
         rows = session.execute(
             select(
@@ -99,6 +108,7 @@ class FplSettlementService:
         due_gameweeks: Mapping[int, datetime],
         now: datetime,
     ) -> int:
+        rule_version_id = FplSettlementService._active_rule_version_id(session)
         if not due_gameweeks:
             return 0
         team_ids = list(
@@ -146,6 +156,16 @@ class FplSettlementService:
                     )
                     created += 1
 
+                values = {"locked_at": deadline, "updated_at": now}
+                if rule_version_id is not None:
+                    existing_rule_version = team_selection_lineup_slots_table.c.rule_version_id
+                    values["rule_version_id"] = case(
+                        (
+                            team_selection_lineup_slots_table.c.locked_at.is_(None),
+                            func.coalesce(existing_rule_version, rule_version_id),
+                        ),
+                        else_=existing_rule_version,
+                    )
                 session.execute(
                     update(team_selection_lineup_slots_table)
                     .where(
@@ -153,7 +173,7 @@ class FplSettlementService:
                         team_selection_lineup_slots_table.c.draft_team_id == team_id,
                         team_selection_lineup_slots_table.c.gameweek == gameweek,
                     )
-                    .values(locked_at=deadline, updated_at=now)
+                    .values(**values)
                 )
 
                 # Keep the activation gameweek on the used row so the scorer can
@@ -355,6 +375,7 @@ class FplSettlementService:
                 select(cdl_fixtures_table.c.id, cdl_fixtures_table.c.payload_json)
             ).mappings()
         )
+        active_version_id = FplSettlementService._active_rule_version_id(session)
         settled = skipped = 0
         for row in fixture_rows:
             payload = row["payload_json"]
@@ -456,6 +477,16 @@ class FplSettlementService:
                 if was_finalised and isinstance(current_result.get("finalised_at"), str)
                 else now.isoformat()
             )
+            current_rules_version = snapshot_payload.get("rules_version_id") or (
+                current_result.get("rules_version_id")
+                if isinstance(current_result, Mapping)
+                else None
+            )
+            pinned_rules_version = (
+                current_rules_version
+                if was_finalised
+                else current_rules_version or (active_version_id if finalised else None)
+            )
             result_payload = {
                 **dict(current_result),
                 "fixture_id": fixture_id,
@@ -474,6 +505,7 @@ class FplSettlementService:
                     else current_result.get("automatic_substitution_version")
                 ),
                 "synthetic": False,
+                "rules_version_id": pinned_rules_version,
             }
             snapshot_payload = {
                 **dict(snapshot_payload),
@@ -500,6 +532,7 @@ class FplSettlementService:
                 if finalised
                 else snapshot_rows.get(fixture_id, {}).get("finalised_at"),
                 "synthetic": False,
+                "rules_version_id": pinned_rules_version,
             }
             result_id = f"result-{fixture_id}"
             snapshot_id = f"snapshot-{fixture_id}"

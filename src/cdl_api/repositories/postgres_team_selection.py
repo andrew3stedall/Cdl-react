@@ -66,6 +66,7 @@ team_selection_lineup_slots_table = Table(
     Column("is_captain", Boolean(), nullable=False),
     Column("is_vice_captain", Boolean(), nullable=False),
     Column("locked_at", DateTime(timezone=True), nullable=True),
+    Column("rule_version_id", String(96), nullable=True),
     Column("updated_at", DateTime(timezone=True), nullable=False),
 )
 
@@ -206,6 +207,24 @@ class PostgreSQLTeamSelectionRepository(InMemoryTeamSelectionRepository):
         selected_ids = {player.id for player in selected_players}
         selected_players.extend(player for player in players if player.id not in selected_ids)
         return sorted(selected_players, key=self._lineup_sort_key)
+
+    def get_locked_rule_version_id(self) -> str | None:
+        """Return the rule version frozen with this gameweek lineup, if locked."""
+        with self._session_factory() as session:
+            rows = list(
+                session.execute(
+                    select(team_selection_lineup_slots_table.c.rule_version_id)
+                    .where(
+                        team_selection_lineup_slots_table.c.season_id == DEMO_SEASON_ID,
+                        team_selection_lineup_slots_table.c.draft_team_id == self.manager_team.id,
+                        team_selection_lineup_slots_table.c.gameweek == self.gameweek.number,
+                        team_selection_lineup_slots_table.c.rule_version_id.is_not(None),
+                    )
+                    .limit(1)
+                ).mappings()
+            )
+        value = rows[0]["rule_version_id"] if rows else None
+        return str(value) if value is not None else None
 
     @staticmethod
     def repair_unlocked_lineups(

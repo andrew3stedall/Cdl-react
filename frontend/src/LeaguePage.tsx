@@ -241,6 +241,10 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
         titleId="league-title"
       />
 
+      <nav aria-label="League workspaces" className="league-workspace-shortcuts">
+        <Button onClick={() => onNavigate('/league/draft')} type="button" variant="secondary">Live draft</Button>
+      </nav>
+
       {view === 'table' || view === 'knockout' || view === 'head-to-head' ? <nav aria-label="League competitions" className="league-competition-tabs">{([
         ['table', 'Table'],
         ['knockout', 'Knockouts'],

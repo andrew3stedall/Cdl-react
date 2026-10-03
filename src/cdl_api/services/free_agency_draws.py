@@ -11,6 +11,7 @@ from cdl_api.contracts.free_agency import (
     FreeAgencyResultsResponse,
 )
 from cdl_api.repositories.free_agency_draws import PostgreSQLFreeAgencyDrawRepository
+from cdl_api.services.live_draft import LiveDraftError
 
 
 class FreeAgencyDrawError(ValueError):
@@ -93,6 +94,8 @@ class FreeAgencyDrawService:
         self._require_commissioner()
         try:
             return self._repository.process_draw(draw_id)
+        except LiveDraftError:
+            raise
         except ValueError as exc:
             raise FreeAgencyDrawError(str(exc)) from exc
 

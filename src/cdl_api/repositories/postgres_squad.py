@@ -248,6 +248,41 @@ free_agency_events_table = Table(
     Column("metadata_json", JSON(), nullable=False, server_default=text("'{}'")),
 )
 
+loans_table = Table(
+    "loans",
+    metadata,
+    Column("id", String(64), primary_key=True),
+    Column("season_id", String(64), ForeignKey("seasons.id"), nullable=False),
+    Column("player_id", String(64), ForeignKey("fpl_players.id"), nullable=False),
+    Column("lender_team_id", String(64), ForeignKey("draft_teams.id"), nullable=False),
+    Column("borrower_team_id", String(64), ForeignKey("draft_teams.id"), nullable=False),
+    Column("created_by_manager_id", String(64), ForeignKey("managers.id"), nullable=False),
+    Column("agreed_by_manager_id", String(64), ForeignKey("managers.id"), nullable=True),
+    Column("status", String(64), nullable=False),
+    Column("approval_status", String(64), nullable=False),
+    Column("required_approver_role", String(64), nullable=False),
+    Column("approved_by_manager_id", String(64), ForeignKey("managers.id"), nullable=True),
+    Column("duration_gameweeks", Integer(), nullable=False),
+    Column("start_gameweek", Integer(), nullable=True),
+    Column("due_gameweek", Integer(), nullable=True),
+    Column("lender_roster_slot_id", String(64), ForeignKey("squad_roster_slots.id"), nullable=True),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+    Column("updated_at", DateTime(timezone=True), nullable=False),
+    Column("approved_at", DateTime(timezone=True), nullable=True),
+    Column("returned_at", DateTime(timezone=True), nullable=True),
+)
+
+loan_events_table = Table(
+    "loan_events",
+    metadata,
+    Column("id", String(64), primary_key=True),
+    Column("loan_id", String(64), ForeignKey("loans.id"), nullable=False),
+    Column("actor_manager_id", String(64), ForeignKey("managers.id"), nullable=True),
+    Column("action", String(64), nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+    Column("metadata_json", JSON(), nullable=False, server_default=text("'{}'")),
+)
+
 SQUAD_PERSISTENCE_TABLES = (
     squad_roster_slots_table,
     squad_ownerships_table,
@@ -267,4 +302,6 @@ SQUAD_PERSISTENCE_TABLES = (
     free_agency_preferences_table,
     free_agency_results_table,
     free_agency_events_table,
+    loans_table,
+    loan_events_table,
 )

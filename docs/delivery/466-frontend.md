@@ -30,6 +30,7 @@ This lane owns `SquadPage`, `MarketPage`, `PlayerProfilePage`, `LeaguePage`, `Ap
 - Market Trades shows only role-matched pending approvals, supports approve/reject decisions, and reports ownership execution only after the API returns the committed result. Commissioner free-agency controls can create draws and open, lock, or process them within the API status/time windows.
 - Rules deep links preserve SPA pathname routing and pass the current hash into the cached workspace so same-path in-app anchor navigation scrolls correctly.
 - Rule-validation and chip-conflict Squad status feedback links directly to the relevant Rules section, and SPA route state keeps only the normalized pathname while preserving browser hashes.
+- Player profiles now expose collapsed, lazy-loaded private scouting and CDL ownership-history panels. Watchlist/note changes save through the current user's private record; ownership periods show season, team, start/end dates, and current status.
 
 ## Validation
 

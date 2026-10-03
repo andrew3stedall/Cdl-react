@@ -202,7 +202,7 @@ def test_postgres_historical_fixture_squads_use_locked_lineup_and_event_points()
                 "draft_team_id TEXT NOT NULL, player_id TEXT NOT NULL, "
                 "gameweek INTEGER NOT NULL, slot TEXT NOT NULL, "
                 "slot_order INTEGER NOT NULL, is_captain BOOLEAN NOT NULL, "
-                "is_vice_captain BOOLEAN NOT NULL)"
+                "is_vice_captain BOOLEAN NOT NULL, rule_version_id TEXT)"
             )
         )
         connection.execute(

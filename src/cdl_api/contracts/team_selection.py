@@ -51,6 +51,7 @@ class TeamSelectionResponse(BaseModel):
     chips: list[ChipState]
     validation_messages: list[ValidationIssue] = Field(default_factory=list)
     fixture_lock: FixtureLockState = Field(default_factory=FixtureLockState)
+    rules_version_id: str | None = None
 
 
 class LineupPlayerUpdate(BaseModel):

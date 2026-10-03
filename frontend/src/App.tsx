@@ -51,6 +51,7 @@ function storedLoginReturnPath(): string | null {
 }
 const AnalyticsDashboardPage = lazy(() => import('./AnalyticsDashboardPage').then((module) => ({ default: module.AnalyticsDashboardPage })));
 const FixtureDifficultyPage = lazy(() => import('./FixtureDifficultyPage').then((module) => ({ default: module.FixtureDifficultyPage })));
+const DraftWorkspacePage = lazy(() => import('./DraftWorkspacePage').then((module) => ({ default: module.DraftWorkspacePage })));
 
 interface AppProps {
   dashboardClient?: DashboardClient;
@@ -519,6 +520,11 @@ function AppRouteContent({
 
     if (path.startsWith('/league')) {
       routeContent = <LeaguePage attackDirection={attackDirection} currentPath={path} leagueClient={leagueClient} onNavigate={onNavigate} session={activeSession} squadClient={squadClient} teamSelectionClient={teamSelectionClient} />;
+    }
+
+    if (path === '/league/draft') {
+      const canCommission = Boolean(activeSession.user?.roles.some((role) => role === 'commissioner' || role === 'admin'));
+      routeContent = <Suspense fallback={<LazyRouteLoading label="Loading live draft" />}><DraftWorkspacePage canCommission={canCommission} onNavigate={onNavigate} preset={preset} /></Suspense>;
     }
 
     if (path.startsWith('/join/')) {

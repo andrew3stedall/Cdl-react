@@ -102,8 +102,9 @@ test('the four primary route headers and notification control stay fixed through
       } else if (title === 'Market') {
         await expect(routePage.getByRole('button', { name: 'View Fixture Available Midfielder details' })).toBeVisible();
       } else if (title === 'League') {
-        await expect(routePage.locator('.league-fixtures-view')).toBeVisible();
-        await expect(routePage.getByText('River Rangers')).toBeVisible();
+        const leagueFixtures = routePage.locator('.league-fixtures-view');
+        await expect(leagueFixtures).toBeVisible();
+        await expect(leagueFixtures.getByText('River Rangers', { exact: true })).toBeVisible();
       } else {
         await expect(routePage.locator('.manager-desk__fixture-focus--pre_deadline')).toBeVisible();
         await expect(routePage.locator('.manager-desk__fixture-matchup--featured'))
@@ -200,6 +201,8 @@ test('commissioner PageHero and bell retain measured bounds in light and dark ap
   const themeSurfaces: string[] = [];
 
   for (const presetName of ['teal-light', 'teal-dark']) {
+    await page.context().clearCookies();
+    await page.evaluate(() => window.localStorage.clear());
     await page.context().addCookies([{
       name: 'cdl-theme-preset',
       value: presetName,

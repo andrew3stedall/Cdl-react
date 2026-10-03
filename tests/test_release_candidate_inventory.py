@@ -32,6 +32,9 @@ def test_inventory_covers_every_mounted_product_router() -> None:
         "history_router",
         "squad_router",
         "free_agency_draws_router",
+        "private_scouting_router",
+        "loans_router",
+        "live_draft_router",
         "team_selection_router",
         "workspace_router",
     }

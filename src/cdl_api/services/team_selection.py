@@ -83,6 +83,7 @@ class TeamSelectionService:
             chips=self._repository.get_chips(),
             validation_messages=self.validate_players(players),
             fixture_lock=_fixture_lock_state(self._repository),
+            rules_version_id=self._locked_rules_version_id(),
         )
 
     def update_lineup(self, request: LineupUpdateRequest) -> TeamSelectionResponse:
@@ -98,7 +99,12 @@ class TeamSelectionService:
             chips=self._repository.get_chips(),
             validation_messages=[],
             fixture_lock=_fixture_lock_state(self._repository),
+            rules_version_id=self._locked_rules_version_id(),
         )
+
+    def _locked_rules_version_id(self) -> str | None:
+        getter = getattr(self._repository, "get_locked_rule_version_id", None)
+        return getter() if callable(getter) else None
 
     def validate_updates(self, request: LineupUpdateRequest) -> list[ValidationIssue]:
         known_players = self._repository.get_players()

@@ -7,15 +7,22 @@ from cdl_api.repositories.postgres_auth import users_table
 from cdl_api.repositories.postgres_league_fpl import (
     draft_teams_table,
     fpl_players_table,
+    league_memberships_table,
     managers_table,
 )
 from cdl_api.repositories.postgres_squad import squad_ownerships_table
 from cdl_api.repositories.postgres_squad_repository import PostgreSQLSquadRepository
 from cdl_api.repositories.postgres_team_selection import PostgreSQLTeamSelectionRepository
+from cdl_api.repositories.rule_versions import (
+    league_season_rule_state_table,
+    league_season_rule_versions_table,
+)
 from cdl_api.staging_draft_seed import (
+    LEAGUE_ID,
     POSITION_LIMITS,
     PRIMARY_TEAM_ID,
     SQUAD_SIZE,
+    STAGING_COMMISSIONER_EMAIL,
     TEAM_IDS,
     TEAM_MANAGER_NICKNAMES,
     UnassignedManagerContextError,
@@ -140,6 +147,13 @@ def test_seed_is_idempotent_and_persists_valid_position_counts() -> None:
             id TEXT PRIMARY KEY, league_id TEXT, name TEXT,
             start_gameweek INTEGER, end_gameweek INTEGER
         )""",
+        """CREATE TABLE league_season_rule_versions (
+            id TEXT PRIMARY KEY, season_id TEXT, version INTEGER, config_json JSON,
+            source_decision_version TEXT, created_at DATETIME
+        )""",
+        """CREATE TABLE league_season_rule_state (
+            season_id TEXT PRIMARY KEY, active_version_id TEXT, updated_at DATETIME
+        )""",
         "CREATE TABLE managers (id TEXT PRIMARY KEY, user_id TEXT, display_name TEXT)",
         """CREATE TABLE draft_teams (
             id TEXT PRIMARY KEY, league_id TEXT, manager_id TEXT, name TEXT
@@ -187,7 +201,8 @@ def test_seed_is_idempotent_and_persists_valid_position_counts() -> None:
         """CREATE TABLE team_selection_lineup_slots (
             id TEXT PRIMARY KEY, season_id TEXT, draft_team_id TEXT, player_id TEXT,
             gameweek INTEGER, slot TEXT, slot_order INTEGER, is_captain BOOLEAN,
-            is_vice_captain BOOLEAN, locked_at DATETIME, updated_at DATETIME
+            is_vice_captain BOOLEAN, locked_at DATETIME, rule_version_id TEXT,
+            updated_at DATETIME
         )""",
     )
     with engine.begin() as connection:
@@ -235,6 +250,17 @@ def test_seed_is_idempotent_and_persists_valid_position_counts() -> None:
         assert (
             session.execute(select(func.count()).select_from(fpl_players_table)).scalar_one() == 160
         )
+        rule_version = session.execute(
+            select(league_season_rule_versions_table.c.config_json).where(
+                league_season_rule_versions_table.c.version == 1
+            )
+        ).scalar_one()
+        active_version = session.execute(
+            select(league_season_rule_state_table.c.active_version_id)
+        ).scalar_one()
+        assert rule_version["squad"]["size"] == 20
+        assert rule_version["scoring"]["bonus_policy"] == "unconfigured_pending_494"
+        assert active_version == "rules-season-cdl-2026-27-v1"
         manager_assignments = dict(
             session.execute(
                 select(
@@ -335,6 +361,24 @@ def test_seed_is_idempotent_and_persists_valid_position_counts() -> None:
         )
         for position, (minimum, maximum) in POSITION_LIMITS.items():
             assert minimum <= counts[position] <= maximum
+
+    seed_staging_snake_draft(
+        session_factory,
+        google_allowed_emails=(
+            f"{STAGING_COMMISSIONER_EMAIL},reviewer.two@example.com,reviewer.three@example.com"
+        ),
+    )
+    with session_factory() as session:
+        commissioner_membership_role = session.execute(
+            select(league_memberships_table.c.role)
+            .join(managers_table, managers_table.c.id == league_memberships_table.c.manager_id)
+            .join(users_table, users_table.c.id == managers_table.c.user_id)
+            .where(
+                league_memberships_table.c.league_id == LEAGUE_ID,
+                users_table.c.email == STAGING_COMMISSIONER_EMAIL,
+            )
+        ).scalar_one()
+    assert commissioner_membership_role == "commissioner"
 
     repository = PostgreSQLSquadRepository(session_factory)
     summary_players = [

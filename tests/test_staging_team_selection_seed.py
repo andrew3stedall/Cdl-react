@@ -94,7 +94,7 @@ def test_seed_persists_complete_legal_lineups_for_all_eight_teams() -> None:
                 "player_id TEXT NOT NULL, gameweek INTEGER NOT NULL, slot TEXT NOT NULL, "
                 "slot_order INTEGER NOT NULL, is_captain BOOLEAN NOT NULL, "
                 "is_vice_captain BOOLEAN NOT NULL, locked_at DATETIME, "
-                "updated_at DATETIME NOT NULL)"
+                "rule_version_id TEXT, updated_at DATETIME NOT NULL)"
             )
         )
 

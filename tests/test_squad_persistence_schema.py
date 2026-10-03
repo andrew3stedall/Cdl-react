@@ -4,6 +4,7 @@ from cdl_api.repositories.postgres_squad import SQUAD_PERSISTENCE_TABLES
 
 MIGRATION_PATH = Path("migrations/versions/0004_squad_transfer_persistence.py")
 MOVEMENT_MIGRATION_PATH = Path("migrations/versions/0030_movement_workflows.py")
+LOAN_MIGRATION_PATH = Path("migrations/versions/0031_persistent_loans.py")
 
 EXPECTED_TABLES = {
     "squad_roster_slots",
@@ -27,6 +28,10 @@ MOVEMENT_TABLES = {
     "free_agency_results",
     "free_agency_events",
 }
+LOAN_TABLES = {
+    "loans",
+    "loan_events",
+}
 
 REQUIRED_COLUMNS = {
     "squad_roster_slots": {"season_id", "draft_team_id", "slot_key", "position_id"},
@@ -47,13 +52,23 @@ REQUIRED_COLUMNS = {
     "free_agency_preferences": {"draw_id", "draft_team_id", "manager_id", "player_id", "rank"},
     "free_agency_results": {"draw_id", "draft_team_id", "player_id", "reason_code"},
     "free_agency_events": {"draw_id", "actor_manager_id", "action", "metadata_json"},
+    "loans": {
+        "season_id",
+        "player_id",
+        "lender_team_id",
+        "borrower_team_id",
+        "status",
+        "duration_gameweeks",
+        "due_gameweek",
+    },
+    "loan_events": {"loan_id", "actor_manager_id", "action", "metadata_json"},
 }
 
 
 def test_squad_persistence_metadata_lists_expected_tables() -> None:
     table_names = {table.name for table in SQUAD_PERSISTENCE_TABLES}
 
-    assert table_names == EXPECTED_TABLES | MOVEMENT_TABLES
+    assert table_names == EXPECTED_TABLES | MOVEMENT_TABLES | LOAN_TABLES
 
 
 def test_squad_persistence_metadata_exposes_required_columns() -> None:
@@ -90,3 +105,12 @@ def test_movement_migration_adds_ranked_draw_tables_and_trade_approval_fields() 
     assert '"required_approver_role"' in content
     assert '"approved_by_manager_id"' in content
     assert '"executed_at"' in content
+
+
+def test_loan_migration_adds_persistent_agreement_and_event_tables() -> None:
+    content = LOAN_MIGRATION_PATH.read_text(encoding="utf-8")
+
+    assert 'revision: str = "0031_persistent_loans"' in content
+    assert 'down_revision: str | None = "0030_movement_workflows"' in content
+    assert '"loans"' in content
+    assert '"loan_events"' in content

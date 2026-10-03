@@ -248,12 +248,12 @@ const commissionerSession: SessionState = {
   expiresAt: null,
 };
 
-async function renderPage(currentPath = '/league', client = new MemoryLeagueClient(), attackDirection: 'up' | 'down' = 'up', session: SessionState = commissionerSession) {
+async function renderPage(currentPath = '/league', client = new MemoryLeagueClient(), attackDirection: 'up' | 'down' = 'up', session: SessionState = commissionerSession, onNavigate: (href: string) => void = () => undefined) {
   const container = document.createElement('div');
   document.body.append(container);
   const root = createRoot(container);
   await act(async () => {
-    root.render(<LeaguePage attackDirection={attackDirection} currentPath={currentPath} leagueClient={client} onNavigate={() => undefined} session={session} squadClient={new MemoryNotificationsClient()} />);
+    root.render(<LeaguePage attackDirection={attackDirection} currentPath={currentPath} leagueClient={client} onNavigate={onNavigate} session={session} squadClient={new MemoryNotificationsClient()} />);
     await Promise.resolve();
     await Promise.resolve();
   });
@@ -273,6 +273,19 @@ describe('LeaguePage', () => {
     expect(container.querySelector('.league-loading__gameweek')).not.toBeNull();
     expect(container.querySelectorAll('.league-loading__fixture-rows span')).toHaveLength(3);
 
+    act(() => root.unmount());
+  });
+
+  test('offers a compact Live draft link outside the shared hero controls', async () => {
+    const destinations: string[] = [];
+    const { container, root } = await renderPage('/league', new MemoryLeagueClient(), 'up', commissionerSession, (href) => destinations.push(href));
+
+    const shortcuts = container.querySelector('nav[aria-label="League workspaces"]');
+    expect(shortcuts?.textContent).toContain('Live draft');
+    expect(shortcuts?.closest('[data-page-hero="shared"]')).toBeNull();
+    const draftButton = [...(shortcuts?.querySelectorAll('button') ?? [])].find((button) => button.textContent?.trim() === 'Live draft');
+    act(() => draftButton?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(destinations).toEqual(['/league/draft']);
     act(() => root.unmount());
   });
 

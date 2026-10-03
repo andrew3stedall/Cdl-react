@@ -963,3 +963,5 @@
     background: var(--background);
   }
 }
+
+.market-page__workflow-links { display: flex; gap: 0.5rem; }

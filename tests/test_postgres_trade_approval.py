@@ -12,6 +12,7 @@ from cdl_api.contracts.domain import TeamSummary
 from cdl_api.contracts.squad import TradeApprovalDecision, TradeApprovalStatus
 from cdl_api.repositories.postgres_squad_repository import PostgreSQLSquadRepository
 from cdl_api.repositories.postgres_team_selection import PostgreSQLTeamSelectionRepository
+from cdl_api.services.live_draft import LiveDraftError
 from cdl_api.services.squad import SquadManagementService
 from cdl_api.services.team_selection import TeamSelectionService
 from cdl_api.staging_draft_seed import LEAGUE_ID, SEASON_ID
@@ -24,6 +25,8 @@ def trade_database(
     engine = create_engine("sqlite+pysqlite:///:memory:")
     session_factory = sessionmaker(engine)
     statements = (
+        "CREATE TABLE seasons (id TEXT PRIMARY KEY)",
+        "CREATE TABLE live_drafts (id TEXT PRIMARY KEY, season_id TEXT, status TEXT)",
         """CREATE TABLE managers (
             id TEXT PRIMARY KEY, user_id TEXT, display_name TEXT
         )""",
@@ -55,6 +58,10 @@ def trade_database(
         )""",
         "CREATE TABLE fpl_positions (id TEXT PRIMARY KEY, singular_name TEXT)",
         "CREATE TABLE fpl_players (id TEXT PRIMARY KEY, position_id TEXT)",
+        """CREATE TABLE loans (
+            id TEXT PRIMARY KEY, season_id TEXT, player_id TEXT,
+            lender_team_id TEXT, status TEXT
+        )""",
         """CREATE TABLE trade_approvals (
             id TEXT PRIMARY KEY, trade_id TEXT, manager_id TEXT,
             decision TEXT, note TEXT, decided_at TIMESTAMP
@@ -75,6 +82,7 @@ def trade_database(
                 "('manager-c', 'user-c', 'C'), ('manager-v', 'user-v', 'V')"
             )
         )
+        connection.execute(text("INSERT INTO seasons VALUES ('season-x')"))
         connection.execute(
             text(
                 "INSERT INTO draft_teams VALUES "
@@ -222,6 +230,34 @@ def test_team_lookup_does_not_disclose_a_foreign_league_team(
     assert repository.team_for_id("team-c") is None
 
 
+def test_trade_approval_rejects_ownership_move_during_live_draft(
+    trade_database: tuple[Engine, sessionmaker[Session]],
+) -> None:
+    engine, session_factory = trade_database
+    _seed_trade(session_factory)
+    with engine.begin() as connection:
+        connection.execute(text("INSERT INTO live_drafts VALUES ('draft-1', 'season-x', 'active')"))
+
+    with pytest.raises(LiveDraftError, match="draft is in progress"):
+        _repository(session_factory).approve_trade(
+            "trade-1", "user-c", TradeApprovalDecision.APPROVED, "Approved"
+        )
+
+    with engine.connect() as connection:
+        assert (
+            connection.execute(
+                text("SELECT approval_status FROM trade_proposals WHERE id = 'trade-1'")
+            ).scalar_one()
+            == "pending"
+        )
+        assert (
+            connection.execute(
+                text("SELECT draft_team_id FROM squad_ownerships WHERE player_id = 'a-0'")
+            ).scalar_one()
+            == "team-a"
+        )
+
+
 def test_postgres_trade_approval_moves_squad_history_and_assigns_compatible_slots(
     trade_database: tuple[Engine, sessionmaker[Session]],
 ) -> None:
@@ -316,6 +352,41 @@ def test_postgres_trade_roster_cap_failure_rolls_back_ownership_and_approval(
     assert audit == 0
 
 
+def test_postgres_trade_rejects_active_loan_player_without_mutation(
+    trade_database: tuple[Engine, sessionmaker[Session]],
+) -> None:
+    engine, session_factory = trade_database
+    _seed_trade(session_factory)
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                "INSERT INTO loans (id, season_id, player_id, lender_team_id, status) "
+                "VALUES ('loan-active', 'season-x', 'b-0', 'team-b', 'active')"
+            )
+        )
+    repository = _repository(session_factory)
+
+    with pytest.raises(ValueError, match="active loan player"):
+        repository.approve_trade("trade-1", "user-c", TradeApprovalDecision.APPROVED, None)
+
+    with engine.connect() as connection:
+        active_owner = connection.execute(
+            text(
+                "SELECT draft_team_id FROM squad_ownerships "
+                "WHERE player_id = 'b-0' AND ended_at IS NULL"
+            )
+        ).scalar_one()
+        status = connection.execute(
+            text("SELECT approval_status FROM trade_proposals WHERE id = 'trade-1'")
+        ).scalar_one()
+        approval_count = connection.execute(
+            text("SELECT COUNT(*) FROM trade_approvals WHERE trade_id = 'trade-1'")
+        ).scalar_one()
+    assert active_owner == "team-b"
+    assert status == TradeApprovalStatus.PENDING.value
+    assert approval_count == 0
+
+
 @pytest.mark.skipif(
     not os.getenv("CDL_DATABASE_URL", "").startswith("postgresql"),
     reason="requires the migrated PostgreSQL CI service",
@@ -343,6 +414,20 @@ def test_postgres_trade_approval_transaction_and_received_squad_players(
         staticmethod(lambda _session, _team_id, _owned_ids, _now: None),
     )
     with engine.begin() as connection:
+        connection.execute(
+            text(
+                "INSERT INTO leagues (id, name, code) VALUES (:id, 'Movement test', :code) "
+                "ON CONFLICT (id) DO NOTHING"
+            ),
+            {"id": league_id, "code": f"MOVE-{suffix}"},
+        )
+        connection.execute(
+            text(
+                "INSERT INTO seasons (id, league_id, name, start_gameweek, end_gameweek) "
+                "VALUES (:id, :league, 'Movement test', 1, 38) ON CONFLICT (id) DO NOTHING"
+            ),
+            {"id": season_id, "league": league_id},
+        )
         connection.execute(
             text("INSERT INTO managers (id, display_name) VALUES (:id, :name)"),
             [
@@ -609,6 +694,10 @@ def test_postgres_trade_approval_transaction_and_received_squad_players(
     finally:
         with engine.begin() as connection:
             connection.execute(
+                text("DELETE FROM team_selection_lineup_slots WHERE draft_team_id IN (:a, :b)"),
+                {"a": team_a, "b": team_b},
+            )
+            connection.execute(
                 text("DELETE FROM squad_audit_events WHERE subject_id = :id"), {"id": trade_id}
             )
             connection.execute(
@@ -619,10 +708,20 @@ def test_postgres_trade_approval_transaction_and_received_squad_players(
             )
             connection.execute(text("DELETE FROM trade_proposals WHERE id = :id"), {"id": trade_id})
             connection.execute(
-                text("DELETE FROM squad_ownerships WHERE season_id = :id"), {"id": season_id}
+                text(
+                    "DELETE FROM squad_ownerships "
+                    "WHERE season_id = :season AND draft_team_id IN (:a, :b)"
+                ),
+                {"season": season_id, "a": team_a, "b": team_b},
             )
             connection.execute(
-                text("DELETE FROM squad_roster_slots WHERE season_id = :id"), {"id": season_id}
+                text("DELETE FROM squad_roster_slots WHERE id IN (:ad, :am, :bd, :bm)"),
+                {
+                    "ad": slot_a_def,
+                    "am": slot_a_mid,
+                    "bd": slot_b_def,
+                    "bm": slot_b_mid,
+                },
             )
             connection.execute(
                 text("DELETE FROM fpl_player_values WHERE player_id IN (:a, :b)"),
@@ -639,10 +738,17 @@ def test_postgres_trade_approval_transaction_and_received_squad_players(
                 text("DELETE FROM epl_teams WHERE id = :id"), {"id": f"movement-epl-{suffix}"}
             )
             connection.execute(
-                text("DELETE FROM league_memberships WHERE league_id = :id"), {"id": league_id}
+                text("DELETE FROM league_memberships WHERE id IN (:a, :b, :c, :v)"),
+                {
+                    "a": f"m-a-{suffix}",
+                    "b": f"m-b-{suffix}",
+                    "c": f"m-c-{suffix}",
+                    "v": f"m-v-{suffix}",
+                },
             )
             connection.execute(
-                text("DELETE FROM draft_teams WHERE league_id = :id"), {"id": league_id}
+                text("DELETE FROM draft_teams WHERE id IN (:a, :b)"),
+                {"a": team_a, "b": team_b},
             )
             connection.execute(
                 text("DELETE FROM managers WHERE id IN (:a, :b, :c, :v)"),

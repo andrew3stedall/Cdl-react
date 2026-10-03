@@ -336,6 +336,7 @@ class PostgreSQLLeagueRepository:
                 bonus_points=snapshot.get("bonus_points", {}),
                 chips_played=snapshot.get("chips_played", {}),
                 epl_fixtures=linked_epl_fixtures,
+                rules_version_id=snapshot.get("rules_version_id"),
             )
             if isinstance(gameweek, Mapping):
                 gameweek = dict(gameweek)

@@ -9,12 +9,15 @@ from cdl_api.routers.fdr import router as fdr_router
 from cdl_api.routers.fpl_data import router as fpl_data_router
 from cdl_api.routers.free_agency_draws import router as free_agency_draws_router
 from cdl_api.routers.league import router as league_router
+from cdl_api.routers.live_draft import router as live_draft_router
+from cdl_api.routers.loans import router as loans_router
 from cdl_api.routers.modernisation import router as modernisation_router
 from cdl_api.routers.modernisation_competition_experience import router as competition_router
 from cdl_api.routers.modernisation_history import router as history_router
 from cdl_api.routers.modernisation_squad_movement import router as movement_router
 from cdl_api.routers.modernisation_weekly import router as modernisation_weekly_router
 from cdl_api.routers.preferences import router as preferences_router
+from cdl_api.routers.private_scouting import router as private_scouting_router
 from cdl_api.routers.rules import router as rules_router
 from cdl_api.routers.squad import router as squad_router
 from cdl_api.routers.team_selection import router as team_selection_router
@@ -44,6 +47,7 @@ def create_app() -> FastAPI:
             settings.development_login_secret,
             settings.session_ttl_days,
             settings.commissioner_email_set,
+            repositories.league_memberships,
         )
         app.middleware("http")(
             build_staging_access_middleware(
@@ -66,6 +70,9 @@ def create_app() -> FastAPI:
     app.include_router(history_router, prefix=settings.api_prefix)
     app.include_router(squad_router, prefix=settings.api_prefix)
     app.include_router(free_agency_draws_router, prefix=settings.api_prefix)
+    app.include_router(private_scouting_router, prefix=settings.api_prefix)
+    app.include_router(loans_router, prefix=settings.api_prefix)
+    app.include_router(live_draft_router, prefix=settings.api_prefix)
     app.include_router(team_selection_router, prefix=settings.api_prefix)
     app.include_router(workspace_router, prefix=settings.api_prefix)
 

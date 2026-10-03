@@ -88,3 +88,14 @@ The existing `accepted` trade status remains the two-party agreement state for c
 - Draw processing persists a randomized order once, awards each still-available player to the first team that ranked them, and stores one result per team. Reprocessing a completed draw returns the persisted draw unchanged.
 - `GET /api/free-agency/draws` returns the season's draw list, including status, windows, and order after processing. `GET /api/free-agency/draws/{draw_id}/results` returns public awards plus only the caller's preferences and result.
 - An awarded player is immediately added to the squad when the team has a compatible slot and remains within the 20-player and position limits. Otherwise, the team receives a temporary claim through the gameweek deadline. Future unlocked lineups are repaired in the same transaction as auto-additions.
+
+## Persistent loan contract
+
+- `POST /api/loans` creates a private proposal for a player currently owned by the signed-in manager's team and a team in the same league. A proposal does not change ownership.
+- `PUT /api/loans/{loan_id}` accepts `agreed`, `rejected`, or proposer-only `cancelled`. Agreement by the borrower submits the loan for commissioner approval; a loan participant cannot approve it.
+- `GET /api/loans/approvals` lists agreements visible to the required non-participant commissioner or vice commissioner. `POST /api/loans/{loan_id}/approve` records approval or rejection.
+- Approval moves the active ownership record to the borrower, stores the original lender slot, preserves the lender's cap count, checks the borrower's 20-player and position limits, and repairs future unlocked lineups in the same transaction.
+- Duration defaults to and cannot be shorter than four gameweeks. It starts at the next upcoming FPL gameweek and is clamped to the season's remaining gameweeks. Return is due after the due gameweek finishes. Successful FPL cache refresh runs the durable return processor; `GET /api/loans` also retries it. Each return moves ownership back and adds an audit event transactionally, so retries are idempotent.
+- `GET /api/loans` and `GET /api/loans/{loan_id}/events` are scoped to the signed-in manager's team. Proposal, party decision, approval, start, and return are persisted in PostgreSQL.
+
+Loan extension and permanent conversion remain unimplemented. The active rules contain no extension limit, extension approval workflow, conversion price or valuation date, or conversion rights/lineup semantics. Those terms must be specified before either operation can safely mutate ownership.

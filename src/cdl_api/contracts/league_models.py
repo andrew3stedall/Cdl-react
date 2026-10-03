@@ -35,6 +35,7 @@ class FixtureScore(BaseModel):
     chips_played: dict[str, list[str]] = Field(default_factory=dict)
     epl_fixtures: list[EplFixtureContext] = Field(default_factory=list)
     outcome: FixtureOutcome = FixtureOutcome.PENDING
+    rules_version_id: str | None = None
 
 
 class LeagueFixture(FixtureSummary):

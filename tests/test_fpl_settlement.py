@@ -84,7 +84,14 @@ def _session_factory() -> sessionmaker[Session]:
                 "player_id TEXT NOT NULL, gameweek INTEGER NOT NULL, slot TEXT NOT NULL, "
                 "slot_order INTEGER NOT NULL, is_captain BOOLEAN NOT NULL, "
                 "is_vice_captain BOOLEAN NOT NULL, locked_at DATETIME, "
+                "rule_version_id TEXT, "
                 "updated_at DATETIME NOT NULL)"
+            )
+        )
+        connection.execute(
+            text(
+                "CREATE TABLE league_season_rule_state (season_id TEXT PRIMARY KEY, "
+                "active_version_id TEXT NOT NULL, updated_at DATETIME NOT NULL)"
             )
         )
         connection.execute(
@@ -163,6 +170,14 @@ def test_settlement_locks_all_teams_marks_chips_used_and_freezes_results() -> No
     sessions = _session_factory()
     now = datetime.now(UTC)
     with sessions() as session:
+        session.execute(
+            text(
+                "INSERT INTO league_season_rule_state "
+                "(season_id, active_version_id, updated_at) VALUES "
+                "(:season, :version, :updated)"
+            ),
+            {"season": SEASON_ID, "version": "rules-season-cdl-2026-27-v1", "updated": now},
+        )
         session.execute(
             insert(fpl_gameweeks_table),
             [
@@ -302,8 +317,6 @@ def test_settlement_locks_all_teams_marks_chips_used_and_freezes_results() -> No
     assert result.locked_gameweeks == 2
     assert result.locked_teams == 4
     assert result.settled_fixtures == 1
-    assert result.skipped_fixtures == 0
-
     with sessions() as session:
         locks = list(session.execute(select(team_selection_fixture_locks_table)).mappings())
         assert {(row["gameweek"], row["draft_team_id"]) for row in locks} == {
@@ -347,10 +360,21 @@ def test_settlement_locks_all_teams_marks_chips_used_and_freezes_results() -> No
         assert snapshot_payload["epl_fixture_ids"] == ["epl-1"]
         assert snapshot_payload["substitutions"] == {"team-home": [], "team-away": []}
         assert snapshot_payload["automatic_substitution_version"] == 1
+        assert snapshot_payload["rules_version_id"] == "rules-season-cdl-2026-27-v1"
+        assert result_payloads["fixture-1"]["rules_version_id"] == "rules-season-cdl-2026-27-v1"
+        assert {
+            row[0]
+            for row in session.execute(
+                select(team_selection_lineup_slots_table.c.rule_version_id).where(
+                    team_selection_lineup_slots_table.c.gameweek == 1
+                )
+            ).all()
+        } == {"rules-season-cdl-2026-27-v1"}
         assert snapshot_payload["chips_played"] == {
             "team-home": ["Triple Captain"],
             "team-away": [],
         }
+        assert result.skipped_fixtures == 0
         next_rows = session.execute(
             select(team_selection_lineup_slots_table.c.id).where(
                 team_selection_lineup_slots_table.c.gameweek == 3
@@ -361,6 +385,18 @@ def test_settlement_locks_all_teams_marks_chips_used_and_freezes_results() -> No
     second = FplSettlementService(sessions).settle()
     assert second.locked_teams == 0
     assert second.settled_fixtures == 0
+
+    with sessions() as session:
+        session.execute(
+            text(
+                "UPDATE league_season_rule_state SET active_version_id = :version "
+                "WHERE season_id = :season"
+            ),
+            {"season": SEASON_ID, "version": "rules-season-cdl-2026-27-v2"},
+        )
+        session.commit()
+    third = FplSettlementService(sessions).settle()
+    assert third.settled_fixtures == 0
 
 
 def test_final_team_scores_apply_automatic_substitutions() -> None:
@@ -694,6 +730,14 @@ def test_settlement_repairs_a_finalised_fixture_missing_substitution_pass() -> N
 
     with sessions() as session:
         session.execute(
+            text(
+                "INSERT INTO league_season_rule_state "
+                "(season_id, active_version_id, updated_at) VALUES "
+                "(:season, :version, :updated)"
+            ),
+            {"season": SEASON_ID, "version": "rules-season-cdl-2026-27-v2", "updated": now},
+        )
+        session.execute(
             insert(fpl_gameweeks_table).values(
                 id="1",
                 name="Gameweek 1",
@@ -748,6 +792,7 @@ def test_settlement_repairs_a_finalised_fixture_missing_substitution_pass() -> N
                     "finalised_at": "2026-09-01T00:00:00+00:00",
                     "source_response_sha256": "r" * 64,
                     "synthetic": False,
+                    "rules_version_id": "rules-season-cdl-2026-27-v1",
                 },
             )
         )
@@ -758,6 +803,7 @@ def test_settlement_repairs_a_finalised_fixture_missing_substitution_pass() -> N
                     "fixture_id": "fixture-repair",
                     "substitutions": {"team-home": [], "team-away": []},
                     "synthetic": False,
+                    "rules_version_id": "rules-season-cdl-2026-27-v1",
                 },
             )
         )
@@ -787,10 +833,22 @@ def test_settlement_repairs_a_finalised_fixture_missing_substitution_pass() -> N
             .scalars()
             .all()
         )
+        lineup_rule_versions = (
+            session.execute(
+                select(team_selection_lineup_slots_table.c.rule_version_id).where(
+                    team_selection_lineup_slots_table.c.gameweek == 1
+                )
+            )
+            .scalars()
+            .all()
+        )
 
     assert (result_payload["home_score"], result_payload["away_score"]) == (13, 11)
     assert result_payload["finalised_at"] == "2026-09-01T00:00:00+00:00"
+    assert result_payload["rules_version_id"] == "rules-season-cdl-2026-27-v1"
     assert snapshot_payload["automatic_substitution_version"] == 1
+    assert snapshot_payload["rules_version_id"] == "rules-season-cdl-2026-27-v1"
+    assert set(lineup_rule_versions) == {None}
     assert snapshot_payload["substitutions"]["team-home"] == [
         {
             "starter_player_id": "fpl-2",

@@ -15,6 +15,7 @@ from cdl_api.contracts.free_agency import (
 )
 from cdl_api.repositories.free_agency_draws import PostgreSQLFreeAgencyDrawRepository
 from cdl_api.repositories.postgres_team_selection import PostgreSQLTeamSelectionRepository
+from cdl_api.services.live_draft import LiveDraftError
 from cdl_api.staging_draft_seed import LEAGUE_ID, SEASON_ID
 
 
@@ -29,6 +30,7 @@ def draw_database(
             id TEXT PRIMARY KEY, user_id TEXT, display_name TEXT
         )""",
         "CREATE TABLE seasons (id TEXT PRIMARY KEY)",
+        "CREATE TABLE live_drafts (id TEXT PRIMARY KEY, season_id TEXT, status TEXT)",
         """CREATE TABLE league_memberships (
             id TEXT PRIMARY KEY, league_id TEXT, manager_id TEXT, role TEXT
         )""",
@@ -41,6 +43,7 @@ def draw_database(
         """CREATE TABLE fpl_players (
             id TEXT PRIMARY KEY, web_name TEXT, position_id TEXT
         )""",
+        "CREATE TABLE loans (season_id TEXT, player_id TEXT, lender_team_id TEXT, status TEXT)",
         """CREATE TABLE fpl_gameweeks (
             id TEXT PRIMARY KEY, deadline_time TIMESTAMP
         )""",
@@ -173,6 +176,26 @@ def test_ranked_draw_process_is_private_atomic_and_idempotent(
             text("UPDATE free_agency_draws SET closes_at = :closed WHERE id = :draw_id"),
             {"closed": now - timedelta(seconds=1), "draw_id": draw.id},
         )
+        connection.execute(
+            text("INSERT INTO live_drafts VALUES ('draft-1', :season, 'active')"),
+            {"season": SEASON_ID},
+        )
+
+    with pytest.raises(LiveDraftError, match="draft is in progress"):
+        commissioner.process_draw(draw.id)
+    with engine.connect() as connection:
+        assert (
+            connection.execute(
+                text("SELECT status FROM free_agency_draws WHERE id = :id"), {"id": draw.id}
+            ).scalar_one()
+            == FreeAgencyDrawStatus.OPEN_FOR_PREFERENCES.value
+        )
+        result_count = connection.execute(
+            text("SELECT COUNT(*) FROM free_agency_results")
+        ).scalar_one()
+        assert result_count == 0
+    with engine.begin() as connection:
+        connection.execute(text("UPDATE live_drafts SET status = 'complete'"))
 
     processed = commissioner.process_draw(draw.id)
     repeated = commissioner.process_draw(draw.id)
@@ -265,6 +288,7 @@ def test_postgres_ranked_draw_persists_private_results_and_claims_once(
     player_a, player_b = f"draw-pa-{suffix}", f"draw-pb-{suffix}"
     slot_a, slot_b = f"draw-sa-{suffix}", f"draw-sb-{suffix}"
     draw_id = None
+    seeded_gameweek_id = None
     monkeypatch.setattr(
         PostgreSQLTeamSelectionRepository,
         "repair_unlocked_lineups",
@@ -281,11 +305,29 @@ def test_postgres_ranked_draw_persists_private_results_and_claims_once(
                     "ORDER BY gw.deadline_time LIMIT 1"
                 ),
                 {"now": now, "season": SEASON_ID},
-            ).scalar_one()
-            close_at = connection.execute(
-                text("SELECT deadline_time FROM fpl_gameweeks WHERE id = :id"),
-                {"id": gameweek},
-            ).scalar_one()
+            ).scalar_one_or_none()
+            if gameweek is None:
+                seeded_gameweek_id = f"9{suffix[:7]}"
+                gameweek = seeded_gameweek_id
+                close_at = now + timedelta(days=30)
+                connection.execute(
+                    text(
+                        "INSERT INTO fpl_gameweeks "
+                        "(id, name, deadline_time, is_previous, is_current, is_next, "
+                        "finished, data_checked) "
+                        "VALUES (:id, :name, :deadline, FALSE, FALSE, FALSE, FALSE, FALSE)"
+                    ),
+                    {
+                        "id": seeded_gameweek_id,
+                        "name": f"Draw test event {suffix}",
+                        "deadline": close_at,
+                    },
+                )
+            else:
+                close_at = connection.execute(
+                    text("SELECT deadline_time FROM fpl_gameweeks WHERE id = :id"),
+                    {"id": gameweek},
+                ).scalar_one()
             epl_team_id = connection.execute(text("SELECT id FROM epl_teams LIMIT 1")).scalar_one()
             league = connection.execute(
                 text("SELECT id FROM leagues WHERE id = :id"), {"id": LEAGUE_ID}
@@ -470,5 +512,16 @@ def test_postgres_ranked_draw_persists_private_results_and_claims_once(
                 connection.execute(
                     text("DELETE FROM managers WHERE id IN (:a, :b, :c)"),
                     {"a": manager_a, "b": manager_b, "c": commissioner},
+                )
+                if seeded_gameweek_id is not None:
+                    connection.execute(
+                        text("DELETE FROM fpl_gameweeks WHERE id = :id"),
+                        {"id": seeded_gameweek_id},
+                    )
+        elif seeded_gameweek_id is not None:
+            with engine.begin() as connection:
+                connection.execute(
+                    text("DELETE FROM fpl_gameweeks WHERE id = :id"),
+                    {"id": seeded_gameweek_id},
                 )
         engine.dispose()

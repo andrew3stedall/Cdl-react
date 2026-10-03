@@ -52,10 +52,13 @@ import {
 } from './team-selection-api';
 import { useOptionalThemePreset } from './theme-preset-provider';
 import { invalidateData, subscribeDataFreshness } from './data-freshness';
+import { OwnershipHistoryPanel, PrivateScoutingPanel } from './PlayerProfileScoutingPanels';
+import { HttpPlayerProfileDataClient, type PlayerProfileDataClient } from './player-profile-data-api';
 import './player-profile.css';
 
 const defaultSquadClient = new HttpSquadClient();
 const defaultTeamSelectionClient = new HttpTeamSelectionClient();
+const defaultPlayerProfileDataClient = new HttpPlayerProfileDataClient();
 
 interface PlayerProfilePageProps {
   initialPlayer?: SquadApiPlayer;
@@ -72,6 +75,7 @@ interface PlayerProfilePageProps {
   showActions?: boolean;
   squadClient?: PlayerProfileSquadClient;
   teamSelectionClient?: TeamSelectionClient;
+  playerProfileDataClient?: PlayerProfileDataClient;
 }
 
 type ProfileSquadStatus = TeamSelectionPlayer['slot'] | null;
@@ -110,6 +114,7 @@ export function PlayerProfilePage({
   showActions = true,
   squadClient = defaultSquadClient,
   teamSelectionClient = defaultTeamSelectionClient,
+  playerProfileDataClient = defaultPlayerProfileDataClient,
 }: PlayerProfilePageProps) {
   const themePreset = useOptionalThemePreset();
   const fdrDisplayMode = themePreset?.fdrDisplayMode ?? 'font';
@@ -442,6 +447,9 @@ export function PlayerProfilePage({
           {historyLoading ? <ChartEmpty message="Loading opponent history…" /> : group.fixtures.length > 0 ? <DefensiveChart fixtures={group.fixtures} fdrDisplayMode={fdrDisplayMode} onFixtureClick={(fixture) => setChartDetail({ kind: 'opponent', fixture })} /> : <ChartEmpty message={`No cached defensive history is available for ${groupOpponent}.`} />}
         </ChartCard>;
       }) : <ChartCard title="Opponent form" className="player-profile__chart-card--full"><ChartEmpty message="No cached defensive history is available for the next opponent." /></ChartCard>}
+
+      <PrivateScoutingPanel client={playerProfileDataClient} key={player.id} playerId={player.id} />
+      <OwnershipHistoryPanel client={playerProfileDataClient} key={player.id} playerId={player.id} />
 
       {notice ? <p className="player-profile__notice" role="status">{notice}</p> : null}
       {presentation === 'drawer' ? <div aria-hidden="true" className="player-profile__scroll-end-spacer" /> : null}

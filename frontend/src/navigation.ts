@@ -92,8 +92,8 @@ export function isProfileRoute(path: string): boolean {
 
 export function isSupportedRoute(path: string): boolean {
   if (isDeskRoute(path) || isSquadRoute(path)) return true;
-  if (path === '/scouting' || path === '/scouting/interests' || path === '/scouting/trades' || path === '/scouting/draws') return true;
-  if (path === '/league' || path === '/league/fixtures' || path === '/league/table' || path === '/league/manage' || path === '/league/knockout' || path === '/league/head-to-head') return true;
+  if (path === '/scouting' || path === '/scouting/interests' || path === '/scouting/trades' || path === '/scouting/draws' || path === '/scouting/loans') return true;
+  if (path === '/league' || path === '/league/fixtures' || path === '/league/table' || path === '/league/manage' || path === '/league/knockout' || path === '/league/head-to-head' || path === '/league/draft') return true;
   if ([
     '/profile', '/account',
     '/profile/appearance', '/account/appearance',

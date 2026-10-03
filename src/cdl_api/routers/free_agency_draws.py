@@ -17,7 +17,9 @@ from cdl_api.repositories.free_agency_draws import PostgreSQLFreeAgencyDrawRepos
 from cdl_api.repositories.postgres_squad_repository import PostgreSQLSquadRepository
 from cdl_api.routers.squad import require_manager_session, require_trade_approval_session
 from cdl_api.services.free_agency_draws import FreeAgencyDrawError, FreeAgencyDrawService
+from cdl_api.services.live_draft import LiveDraftError
 from cdl_api.settings import Settings, get_settings
+from cdl_api.staging_draft_seed import UnassignedManagerContextError
 
 router = APIRouter(tags=["free-agency-draws"])
 
@@ -34,7 +36,7 @@ def get_free_agency_draw_service(
     session_factory = build_session_factory(settings)
     try:
         squad = PostgreSQLSquadRepository(session_factory, user_id=user.id)
-    except ValueError as exc:
+    except UnassignedManagerContextError as exc:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Authenticated manager does not have an assigned team in this league.",
@@ -154,6 +156,8 @@ def process_draw(
 ) -> FreeAgencyDrawResponse | JSONResponse:
     try:
         draw = service.process_draw(draw_id)
+    except LiveDraftError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     except FreeAgencyDrawError as exc:
         return validation_error(exc)
     return _not_found(draw_id) if draw is None else draw

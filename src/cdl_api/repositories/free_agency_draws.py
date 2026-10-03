@@ -33,10 +33,12 @@ from cdl_api.repositories.postgres_squad import (
     free_agency_events_table,
     free_agency_preferences_table,
     free_agency_results_table,
+    loans_table,
     player_rights_table,
     squad_ownerships_table,
     squad_roster_slots_table,
 )
+from cdl_api.services.live_draft import ensure_squad_moves_allowed
 from cdl_api.staging_draft_seed import LEAGUE_ID, SEASON_ID
 
 
@@ -267,6 +269,7 @@ class PostgreSQLFreeAgencyDrawRepository:
                     raise ValueError(
                         "The draw must be locked or past its close time before processing."
                     )
+                ensure_squad_moves_allowed(session, self.season_id)
 
                 deadline = session.execute(
                     select(fpl_gameweeks_table.c.deadline_time).where(
@@ -356,6 +359,15 @@ class PostgreSQLFreeAgencyDrawRepository:
                                 squad_ownerships_table.c.ended_at.is_(None),
                             )
                         ).scalar_one()
+                        outgoing_count = session.execute(
+                            select(func.count())
+                            .select_from(loans_table)
+                            .where(
+                                loans_table.c.season_id == self.season_id,
+                                loans_table.c.lender_team_id == team_id,
+                                loans_table.c.status == "active",
+                            )
+                        ).scalar_one()
                         same_position_count = session.execute(
                             select(func.count())
                             .select_from(
@@ -374,13 +386,34 @@ class PostgreSQLFreeAgencyDrawRepository:
                                 fpl_positions_table.c.singular_name == position_name,
                             )
                         ).scalar_one()
+                        outgoing_same_position = session.execute(
+                            select(func.count())
+                            .select_from(
+                                loans_table.join(
+                                    fpl_players_table,
+                                    fpl_players_table.c.id == loans_table.c.player_id,
+                                ).join(
+                                    fpl_positions_table,
+                                    fpl_positions_table.c.id == fpl_players_table.c.position_id,
+                                )
+                            )
+                            .where(
+                                loans_table.c.season_id == self.season_id,
+                                loans_table.c.lender_team_id == team_id,
+                                loans_table.c.status == "active",
+                                fpl_positions_table.c.singular_name == position_name,
+                            )
+                        ).scalar_one()
                         positional_cap = {
                             "goalkeeper": 3,
                             "defender": 10,
                             "midfielder": 10,
                             "forward": 4,
                         }.get(str(position_name).casefold(), 0)
-                        auto_added = active_count < 20 and same_position_count < positional_cap
+                        auto_added = (
+                            active_count + outgoing_count < 20
+                            and same_position_count + outgoing_same_position < positional_cap
+                        )
                         slot_id = None
                         if auto_added:
                             slot_id = session.execute(

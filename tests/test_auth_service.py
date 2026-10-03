@@ -81,6 +81,45 @@ def test_sessions_are_persistent_and_expose_expiry() -> None:
     assert service.get_session(session_id).expires_at == session.expires_at
 
 
+def test_session_roles_include_only_current_league_membership_capability() -> None:
+    class Memberships:
+        roles_by_user = {"user-1": "vice_commissioner"}
+        user_ids: list[str] = []
+
+        def access_for_user(self, user_id: str) -> object | None:
+            self.user_ids.append(user_id)
+            role = self.roles_by_user.get(user_id)
+            return None if role is None else type("Access", (), {"role": role})()
+
+    users = InMemoryUserRepository()
+    memberships = Memberships()
+    service = AuthenticationService(
+        users=users,
+        sessions=InMemorySessionRepository(),
+        development_secret="demo-login-secret",
+        league_memberships=memberships,
+    )
+    result = service.login_google(
+        GoogleIdentity(
+            subject="member-subject",
+            email="manager@example.com",
+            display_name="Manager",
+        )
+    )
+    session_id, login_session = result
+    assert login_session.user is not None
+    user_id = login_session.user.id
+    assert "vice_commissioner" in login_session.user.roles
+
+    memberships.roles_by_user = {"unrelated-user": "commissioner"}
+    refreshed = service.get_session(session_id)
+
+    assert refreshed.user is not None
+    assert "vice_commissioner" not in refreshed.user.roles
+    assert "commissioner" not in refreshed.user.roles
+    assert memberships.user_ids == [user_id, user_id]
+
+
 def test_passkey_options_use_discoverable_user_verified_credentials() -> None:
     service = PasskeyService(
         InMemoryPasskeyRepository(),

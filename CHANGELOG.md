@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Delivered retrospective fixes for protected authentication, invites/passkeys,
+  squad mutations and staged edits, scoring/history/standings, trade approval
+  and execution, ranked draws, Rules, appearance, keyboard dialogs, compact
+  copy and route freshness. Added persistent basic loans, configured-season
+  drafting, immutable rule-version pins and private scouting/history panels.
+  Remaining policy, multi-season architecture and live recovery gates are
+  recorded item by item in the retrospective delivery register.
+
 - Hardened staging runtime releases so Terraform pins the currently serving
   Cloud Run revision while the matching immutable migration image runs and
   verifies Alembic heads; traffic is promoted only after staged checks. Docker

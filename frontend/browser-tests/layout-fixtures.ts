@@ -128,6 +128,12 @@ export async function installLayoutFixtures(
     const path = new URL(route.request().url()).pathname;
     const getResponse = (body: unknown) => route.fulfill({ json: body });
 
+    if (path === '/api/me/preferences') {
+      const cookie = route.request().headers().cookie ?? '';
+      const storedPreset = cookie.match(/(?:^|;\s*)cdl-theme-preset=([^;]+)/)?.[1];
+      return await getResponse({ theme_preset: storedPreset ? decodeURIComponent(storedPreset) : 'teal-dark' });
+    }
+
     if (path === '/api/auth/session') {
       await getResponse({
         is_authenticated: true,

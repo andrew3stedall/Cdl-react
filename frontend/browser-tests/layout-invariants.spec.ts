@@ -209,6 +209,7 @@ test('commissioner PageHero and bell retain measured bounds in light and dark ap
       url: new URL(page.url()).origin,
       sameSite: 'Lax',
     }]);
+    await page.evaluate((name) => window.localStorage.setItem('cdl-theme-preset', name), presetName);
     await page.goto('/league');
     await expect(page.locator('.app-shell')).toHaveAttribute('data-theme-preset', presetName);
     await expect(page.locator('[data-page-hero="shared"]:visible h1')).toHaveText('League');
@@ -217,7 +218,7 @@ test('commissioner PageHero and bell retain measured bounds in light and dark ap
 
     const fixtureHeader = await readHeaderBounds(page);
     expectHeaderDimensions(fixtureHeader, viewport);
-    themeSurfaces.push(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--background').trim()));
+    themeSurfaces.push(await page.locator('.app-shell').evaluate((shell) => getComputedStyle(shell).backgroundColor));
 
     await page.getByRole('button', { name: 'View commissioner management' }).click();
     const commissionerRegion = page.getByRole('region', { name: 'Commissioner management' });

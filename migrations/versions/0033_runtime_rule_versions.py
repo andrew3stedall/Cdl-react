@@ -67,7 +67,9 @@ def upgrade() -> None:
     # This first snapshot records only accepted, currently implemented rules.
     # Unresolved bonus, captain-absence, and playoff-tie policies are marked as
     # unavailable rather than assigned guessed values.
-    op.execute(
+    # Execute the immutable JSON literal as driver SQL: SQLAlchemy text()
+    # otherwise interprets JSON colons followed by numbers as bind parameters.
+    op.get_bind().exec_driver_sql(
         """
         INSERT INTO league_season_rule_versions
             (id, season_id, version, config_json, source_decision_version, created_at)

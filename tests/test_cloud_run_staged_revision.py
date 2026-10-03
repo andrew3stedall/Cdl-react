@@ -84,15 +84,18 @@ def test_prior_traffic_must_have_one_explicit_revision() -> None:
         resolve_serving_revision({"status": {"traffic": [{"percent": 100}]}})
 
 
-def test_postgres_release_ci_builds_staging_app_before_overrides() -> None:
+def test_postgres_release_journey_sets_staging_environment_only_for_itself() -> None:
     workflow = Path(".github/workflows/backend-postgres.yml").read_text(encoding="utf-8")
+    journey = Path("tests/test_postgres_release_journeys.py").read_text(encoding="utf-8")
+    assert "CDL_DATABASE_URL: postgresql+psycopg://cdl@localhost:5432/cdl" in workflow
     for setting in (
-        "CDL_ENVIRONMENT: staging",
-        "CDL_REPOSITORY_MODE: postgres",
-        'CDL_SESSION_COOKIE_SECURE: "true"',
-        "CDL_DEVELOPMENT_LOGIN_SECRET:",
-        "CDL_GOOGLE_CLIENT_ID:",
-        "CDL_GOOGLE_ALLOWED_EMAILS:",
-        "CDL_COMMISSIONER_EMAILS:",
+        '"CDL_ENVIRONMENT", settings.environment',
+        '"CDL_REPOSITORY_MODE", settings.repository_mode',
+        '"CDL_SESSION_COOKIE_SECURE", "true"',
+        '"CDL_DEVELOPMENT_LOGIN_SECRET", settings.development_login_secret',
+        '"CDL_GOOGLE_CLIENT_ID", "test-only-google-client"',
+        '"CDL_GOOGLE_ALLOWED_EMAILS", settings.google_allowed_emails',
+        '"CDL_COMMISSIONER_EMAILS", settings.commissioner_emails',
     ):
-        assert setting in workflow
+        assert setting in journey
+    assert "CDL_ENVIRONMENT: staging" not in workflow

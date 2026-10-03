@@ -160,7 +160,12 @@ def test_ranked_draw_process_is_private_atomic_and_idempotent(
             closes_at=now + timedelta(minutes=5),
         )
     )
-    commissioner.set_draw_status(draw.id, FreeAgencyDrawStatus.OPEN_FOR_PREFERENCES, "draw_opened")
+    commissioner.set_draw_status(
+        draw.id,
+        FreeAgencyDrawStatus.OPEN_FOR_PREFERENCES,
+        "draw_opened",
+        FreeAgencyDrawStatus.SCHEDULED,
+    )
     team_a.submit_preferences(draw.id, FreeAgencyPreferencesRequest(player_ids=["p1", "p2"]))
     team_b.submit_preferences(draw.id, FreeAgencyPreferencesRequest(player_ids=["p1", "p3"]))
     with engine.begin() as connection:
@@ -176,6 +181,13 @@ def test_ranked_draw_process_is_private_atomic_and_idempotent(
 
     assert processed is not None and processed.status == FreeAgencyDrawStatus.PROCESSED
     assert repeated is not None and repeated.draw_order == processed.draw_order
+    with pytest.raises(ValueError, match="status changed"):
+        commissioner.set_draw_status(
+            draw.id,
+            FreeAgencyDrawStatus.LOCKED,
+            "draw_locked",
+            FreeAgencyDrawStatus.OPEN_FOR_PREFERENCES,
+        )
     assert private_a is not None and private_b is not None
     assert [preference.model_dump() for preference in private_a.own_preferences] == [
         {"player_id": "p1", "rank": 1},
@@ -218,7 +230,12 @@ def test_preference_submission_rejects_duplicates_and_leaks_no_other_lists(
     draw = commissioner.create_draw(
         FreeAgencyDrawCreateRequest(gameweek=4, closes_at=now + timedelta(minutes=5))
     )
-    commissioner.set_draw_status(draw.id, FreeAgencyDrawStatus.OPEN_FOR_PREFERENCES, "draw_opened")
+    commissioner.set_draw_status(
+        draw.id,
+        FreeAgencyDrawStatus.OPEN_FOR_PREFERENCES,
+        "draw_opened",
+        FreeAgencyDrawStatus.SCHEDULED,
+    )
 
     with pytest.raises(ValueError, match="unique"):
         team_a.submit_preferences(draw.id, FreeAgencyPreferencesRequest(player_ids=["p1", "p1"]))
@@ -368,7 +385,12 @@ def test_postgres_ranked_draw_persists_private_results_and_claims_once(
             )
         )
         draw_id = draw.id
-        admin.set_draw_status(draw.id, FreeAgencyDrawStatus.OPEN_FOR_PREFERENCES, "draw_opened")
+        admin.set_draw_status(
+            draw.id,
+            FreeAgencyDrawStatus.OPEN_FOR_PREFERENCES,
+            "draw_opened",
+            FreeAgencyDrawStatus.SCHEDULED,
+        )
         repo_a.submit_preferences(
             draw.id, FreeAgencyPreferencesRequest(player_ids=[player_a, player_b])
         )

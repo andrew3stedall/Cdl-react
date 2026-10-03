@@ -148,7 +148,13 @@ def test_postgres_two_manager_auth_invite_lineup_chip_round_trip(
         captain_id = next(
             (player["id"] for player in lineup if player["is_captain"]), starter_ids[0]
         )
-        next_captain_id = next(player_id for player_id in starter_ids if player_id != captain_id)
+        next_captain_id = next(
+            player["id"]
+            for player in lineup
+            if player["slot"] == "starter"
+            and player["id"] != captain_id
+            and not player["is_vice_captain"]
+        )
         payload = {
             "players": [
                 {
@@ -162,7 +168,7 @@ def test_postgres_two_manager_auth_invite_lineup_chip_round_trip(
             ]
         }
         saved = manager.put("/api/team-selection/lineup", json=payload)
-        assert saved.status_code == 200
+        assert saved.status_code == 200, saved.text
         reloaded = manager.get("/api/team-selection").json()
         assert (
             next(player for player in reloaded["lineup"] if player["is_captain"])["id"]

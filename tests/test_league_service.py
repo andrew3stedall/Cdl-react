@@ -1,3 +1,5 @@
+from cdl_api.contracts.league_models import FixtureOutcome, FixtureScore, FixtureStatus
+from cdl_api.repositories.league_repository import LeagueRepository
 from cdl_api.services.league_service import (
     FixtureService,
     HeadToHeadService,
@@ -47,6 +49,29 @@ def test_league_table_service_calculates_standings_from_results() -> None:
     assert live_table.rows[0].team.id == "castle"
     assert table.mode == "official"
     assert live_table.mode == "live"
+
+
+def test_league_table_excludes_completed_knockout_scores() -> None:
+    repository = LeagueRepository()
+    baseline = LeagueTableService(repository).get_table("live")
+    repository._fixtures.append(
+        repository._fixtures[0].model_copy(
+            update={
+                "id": "fixture-knockout-complete",
+                "status": FixtureStatus.COMPLETE,
+                "round_label": "Final",
+                "score": FixtureScore(
+                    home_score=999,
+                    away_score=0,
+                    outcome=FixtureOutcome.HOME_WIN,
+                ),
+            }
+        )
+    )
+
+    after_knockout = LeagueTableService(repository).get_table("live")
+
+    assert after_knockout.rows == baseline.rows
 
 
 def test_head_to_head_and_knockout_services_expose_context() -> None:

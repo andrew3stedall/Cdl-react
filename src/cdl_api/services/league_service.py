@@ -92,6 +92,8 @@ class LeagueTableService:
         standings: dict[str, LeagueTableRow] = {}
 
         for fixture in self._repository.list_fixtures():
+            if fixture.synthetic or fixture.round_label.casefold() != "regular season":
+                continue
             self._ensure_row(standings, fixture)
             if fixture.score.outcome == FixtureOutcome.PENDING or (
                 mode == "official" and fixture.status != "complete"
@@ -142,7 +144,11 @@ class LeagueTableService:
             rows=rows,
             mode=mode,
             gameweek=max(
-                (fixture.gameweek.number for fixture in self._repository.list_fixtures()),
+                (
+                    fixture.gameweek.number
+                    for fixture in self._repository.list_fixtures()
+                    if fixture.round_label.casefold() == "regular season"
+                ),
                 default=None,
             ),
         )

@@ -6,13 +6,14 @@ Define knockout brackets, legs, aggregate scoring, playoff structure, and most-g
 
 ## Status
 
-Historical knockout persistence exists. A deterministic domain engine now seeds the documented 1v4/2v3 top-four ties and bottom-two final, resolves by aggregate then scoring-lineup goals, and leaves an aggregate-and-goals tie unresolved. The API has additive bracket, tie, leg, readiness, aggregate, goals, and unresolved-tiebreak fields. Persisted scheduled fixtures and winner progression are not yet connected. The 5th/6th pairings and a second-level rule for aggregate-and-goals ties remain unresolved and must not be guessed.
+Historical knockout persistence exists. Once every real regular-season fixture through GW35 is finalised, the repository stores deterministic 1v4/2v3 semi-final seeds and the bottom-two final in the existing knockout payload table. Missing scheduled legs are materialized as real pending CDL fixtures; existing fixtures attach by team pairing, round label, and gameweek. Settled legs use frozen fixture results and scoring-lineup-goal snapshots only. The top-four final and third-place playoff are stored only after both semi-final winners are decided. Aggregate ties use scoring-lineup goals; if both remain level the tie stays unresolved with no winner or progression. The 5th/6th bracket and a second-level rule for aggregate-and-goals ties remain unresolved and are explicitly surfaced.
 
 ## Business Rules
 
 - Knockout phase runs GW36-GW38 by default.
 - Top 4 have two-leg semi-finals, then final and 3rd/4th playoff.
 - Bottom 2 have a bye in GW36, then a two-leg final.
+- The top-four final and third-place playoff are single-match ties; the documented semi-finals and bottom-two final use two legs.
 - 5th and 6th have similar playoff/final mechanics.
 - Knockout ties can have multiple legs.
 - Tiebreaker is most goals.
@@ -39,6 +40,7 @@ fixture_player_scores
 - Calculate aggregate score.
 - Calculate most-goals tiebreaker.
 - Finalise tie winner.
+- Persist known seeds and winner progression only after the official GW35 regular-season cutoff is complete.
 
 ## React Requirements
 

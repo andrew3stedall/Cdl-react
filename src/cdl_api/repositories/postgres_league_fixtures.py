@@ -13,6 +13,7 @@ from cdl_api.contracts.league_models import (
     FixtureStatus,
     HeadToHeadRecord,
     HeadToHeadResponse,
+    KnockoutBracket,
     KnockoutMatch,
     KnockoutResponse,
     LeagueFixture,
@@ -539,24 +540,36 @@ class PostgreSQLLeagueRepository:
 
     def get_knockout_snapshot(self) -> KnockoutResponse:
         """Return persisted knockout matches without fixture-derived fallback."""
+        fixtures = self.list_fixtures()
+        manager_names = self._manager_names_for_fixtures()
+        self.refresh_knockout_schedule(fixtures, manager_names)
+        fixtures = self.list_fixtures()
+        fixture_by_id = {fixture.id: fixture for fixture in fixtures}
+        brackets = self.refresh_knockout_schedule(fixtures, manager_names)
         with self._session_factory() as session:
             payloads = self._payloads(session, knockout_matches_table)
             manager_names = self._manager_names(session)
 
         if not payloads and self._active_team_ids():
-            return KnockoutResponse(rounds=[], matches=[])
+            return KnockoutResponse(
+                rounds=[],
+                matches=[],
+                status="not_ready",
+                unconfigured_brackets=["middle"],
+            )
         if not payloads:
             raise MissingKnockoutSnapshotError(
                 "PostgreSQL mode requires persisted knockout matches."
             )
 
-        fixtures = {fixture.id: fixture for fixture in self.list_fixtures()}
         matches = []
         rounds: list[str] = []
         active_team_ids = self._active_team_ids()
         for payload in payloads:
+            if payload.get("record_type") == "tie":
+                continue
             fixture_id = str(payload["fixture_id"])
-            fixture = fixtures.get(fixture_id)
+            fixture = fixture_by_id.get(fixture_id)
             if fixture is None:
                 if active_team_ids:
                     continue
@@ -576,7 +589,32 @@ class PostgreSQLLeagueRepository:
                     }
                 )
             )
-        return KnockoutResponse(rounds=rounds if matches else [], matches=matches)
+        return KnockoutResponse(
+            rounds=rounds if matches else [],
+            matches=matches,
+            status="partially_configured" if brackets else "not_ready",
+            brackets=brackets,
+            unconfigured_brackets=["middle"],
+        )
+
+    def refresh_knockout_schedule(
+        self,
+        fixtures: list[LeagueFixture] | None = None,
+        manager_names: dict[str, str] | None = None,
+    ) -> list[KnockoutBracket]:
+        """Advance known bracket schedules from stored, settled fixture results."""
+        with self._session_factory() as session:
+            if not inspect(session.get_bind()).has_table(knockout_matches_table.name):
+                return []
+            names = manager_names if manager_names is not None else self._manager_names(session)
+        current_fixtures = fixtures if fixtures is not None else self.list_fixtures()
+        from cdl_api.repositories.knockout_brackets import refresh_knockout_brackets
+
+        return refresh_knockout_brackets(self._session_factory, current_fixtures, names)
+
+    def _manager_names_for_fixtures(self) -> dict[str, str]:
+        with self._session_factory() as session:
+            return self._manager_names(session)
 
     def get_head_to_head_snapshot(self) -> HeadToHeadResponse:
         """Return persisted matchup records without fixture-result fallback."""
@@ -656,6 +694,8 @@ def _table_from_fixtures(fixtures: Iterable[LeagueFixture]) -> LeagueTableRespon
     """Calculate the active-season table from persisted finalised fixture results."""
     standings: dict[str, LeagueTableRow] = {}
     for fixture in fixtures:
+        if fixture.synthetic or fixture.round_label.casefold() != "regular season":
+            continue
         for team in (fixture.home_team, fixture.away_team):
             standings.setdefault(
                 team.id,

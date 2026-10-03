@@ -43,6 +43,7 @@ class LeagueFixture(FixtureSummary):
     is_current: bool = False
     is_next: bool = False
     detail_available: bool = False
+    synthetic: bool = False
     score: FixtureScore = Field(default_factory=FixtureScore)
 
 
@@ -137,6 +138,8 @@ class KnockoutTie(BaseModel):
     round_label: str
     teams: list[TeamSummary]
     legs: list[KnockoutLeg] = Field(default_factory=list)
+    expected_legs: int = 0
+    start_gameweek: int | None = None
     aggregate: dict[str, int] = Field(default_factory=dict)
     scoring_lineup_goals: dict[str, int] = Field(default_factory=dict)
     winner: TeamSummary | None = None

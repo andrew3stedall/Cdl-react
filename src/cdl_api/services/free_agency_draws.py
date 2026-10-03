@@ -47,9 +47,15 @@ class FreeAgencyDrawService:
             raise FreeAgencyDrawError("The preference window has not opened yet.")
         if draw.closes_at <= now:
             raise FreeAgencyDrawError("The preference deadline has passed.")
-        return self._repository.set_draw_status(
-            draw_id, FreeAgencyDrawStatus.OPEN_FOR_PREFERENCES, "draw_opened"
-        )
+        try:
+            return self._repository.set_draw_status(
+                draw_id,
+                FreeAgencyDrawStatus.OPEN_FOR_PREFERENCES,
+                "draw_opened",
+                FreeAgencyDrawStatus.SCHEDULED,
+            )
+        except ValueError as exc:
+            raise FreeAgencyDrawError(str(exc)) from exc
 
     def lock_draw(self, draw_id: str) -> FreeAgencyDrawResponse | None:
         self._require_commissioner()
@@ -58,7 +64,15 @@ class FreeAgencyDrawService:
             return None
         if draw.status != FreeAgencyDrawStatus.OPEN_FOR_PREFERENCES:
             raise FreeAgencyDrawError("Only an open draw can be locked.")
-        return self._repository.set_draw_status(draw_id, FreeAgencyDrawStatus.LOCKED, "draw_locked")
+        try:
+            return self._repository.set_draw_status(
+                draw_id,
+                FreeAgencyDrawStatus.LOCKED,
+                "draw_locked",
+                FreeAgencyDrawStatus.OPEN_FOR_PREFERENCES,
+            )
+        except ValueError as exc:
+            raise FreeAgencyDrawError(str(exc)) from exc
 
     def submit_preferences(
         self, draw_id: str, request: FreeAgencyPreferencesRequest

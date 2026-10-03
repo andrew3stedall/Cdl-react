@@ -60,6 +60,9 @@ class FplSettlementService:
             locked_teams = self._finalise_due_selections(session, due_gameweeks, now)
             settled, skipped = self._settle_completed_fixtures(session, now, due_gameweeks)
             session.commit()
+        from cdl_api.repositories.postgres_league_fixtures import PostgreSQLLeagueRepository
+
+        PostgreSQLLeagueRepository(self._session_factory).refresh_knockout_schedule()
         return FplSettlementResult(
             locked_gameweeks=len(due_gameweeks),
             locked_teams=locked_teams,

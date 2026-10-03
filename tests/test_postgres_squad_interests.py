@@ -179,6 +179,7 @@ def test_authenticated_trade_persists_and_rejection_leaves_state_unchanged() -> 
     repository = PostgreSQLSquadRepository(session_factory)
     active_manager = {"id": "manager-1"}
     client = _authenticated_client(repository, active_manager)
+    trade_id = None
 
     try:
         created = client.post(
@@ -240,6 +241,14 @@ def test_authenticated_trade_persists_and_rejection_leaves_state_unchanged() -> 
         assert stored_status == "accepted"
     finally:
         with engine.begin() as connection:
+            if trade_id is not None:
+                connection.execute(
+                    text(
+                        "DELETE FROM squad_audit_events "
+                        "WHERE subject_type = 'trade' AND subject_id = :trade_id"
+                    ),
+                    {"trade_id": trade_id},
+                )
             connection.execute(text("DELETE FROM trade_assets"))
             connection.execute(text("DELETE FROM trade_proposals"))
             _clean_prerequisites(connection)

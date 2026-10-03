@@ -126,22 +126,34 @@ class PostgreSQLFreeAgencyDrawRepository:
         return [draw for draw_id in draw_ids if (draw := self.get_draw(str(draw_id))) is not None]
 
     def set_draw_status(
-        self, draw_id: str, status: FreeAgencyDrawStatus, action: str
+        self,
+        draw_id: str,
+        status: FreeAgencyDrawStatus,
+        action: str,
+        expected_status: FreeAgencyDrawStatus,
     ) -> FreeAgencyDrawResponse | None:
         now = datetime.now(UTC)
         with self._session_factory() as session:
-            result = session.execute(
-                update(free_agency_draws_table)
-                .where(
-                    free_agency_draws_table.c.id == draw_id,
-                    free_agency_draws_table.c.season_id == self.season_id,
+            with session.begin():
+                season_exists = session.execute(
+                    select(seasons_table.c.id)
+                    .where(seasons_table.c.id == self.season_id)
+                    .with_for_update()
+                ).scalar_one_or_none()
+                if season_exists is None:
+                    raise ValueError("The free-agency draw season is not configured.")
+                result = session.execute(
+                    update(free_agency_draws_table)
+                    .where(
+                        free_agency_draws_table.c.id == draw_id,
+                        free_agency_draws_table.c.season_id == self.season_id,
+                        free_agency_draws_table.c.status == expected_status.value,
+                    )
+                    .values(status=status.value)
                 )
-                .values(status=status.value)
-            )
-            if not result.rowcount:
-                return None
-            self._event(session, draw_id, action, self.manager_id, now)
-            session.commit()
+                if not result.rowcount:
+                    raise ValueError("The draw status changed before this transition completed.")
+                self._event(session, draw_id, action, self.manager_id, now)
         return self.get_draw(draw_id)
 
     def submit_preferences(

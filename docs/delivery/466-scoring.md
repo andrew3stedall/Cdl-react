@@ -13,15 +13,16 @@ This lane addresses scoring correctness, completed-fixture explanations, officia
 - Incomplete squads no longer get demo `3/1/1` lineup requirements. The selection contract reports the actual roster size and blocks submission until all 20 roster slots are filled.
 - Formation validation, substitution checks, and the checkpoint validator now share the accepted 1 GKP, 3–5 DEF, 2–5 MID, 1–3 FWD limits. The six-formation checkpoint list was stale; the shared ranges enumerate every legal eleven-player combination.
 - Event-live refresh avoids refetching completed historical gameweeks when a cache exists, records per-event failures, and prevents a failed refresh newer than the cached payload from being used to finalise a result. Cache rows expose the successful fetch time used by settlement.
-- `/league/knockout` has additive status/bracket/tie/leg fields for a bracket UI contract. A deterministic domain engine seeds documented 1v4/2v3 and bottom-two pairings and resolves ties by aggregate then scoring-lineup goals; it reports an aggregate-and-goals tie as unresolved. Persisted schedule generation and winner progression remain incomplete.
+- `/league/knockout` has additive status/bracket/tie/leg fields for a bracket UI contract. Once all real GW1–35 regular fixtures are finalised and GW35 is marked finished, it persists the 1v4/2v3 semi-final seeds and bottom-two two-leg final. Missing legs become pending CDL fixtures, and existing fixtures attach by pairing and round. Settlement refresh advances the bracket as ties resolve. Settled-leg totals come only from finalised results and frozen scoring-lineup goal snapshots. The top-four final and third-place playoff persist after both semi-finals resolve; aggregate-and-goals ties do not name a winner or advance.
+- League table calculations exclude non-regular rounds, so knockout scores cannot change regular-season positions or qualification.
 
 ## Rules still requiring product evidence
 
 - **#494 league automatic bonus criteria:** the accepted decision says win/draw points plus automatic bonuses, and persisted awards are now counted. No active document defines eligibility, points units, or how settlement calculates an award. Do not synthesize awards until an approved league rule or authoritative legacy source supplies those criteria.
 - **#499 captain and vice-captain fallback:** active rules state chip multipliers and require captain/vice in the starting XI, but do not define DNP/zero-minute fallback or Best XI omission behavior. No official FPL fallback is inferred. Auto Captain tie order is explicit above because the current implementation already orders equal scores by lineup slot.
-- **#496 incomplete bracket paths:** the active document supports top-four two-leg semi-finals/final/third-place playoff and a bottom-two two-leg final after a GW36 bye. It describes 5th/6th only as having “similar” playoff/final mechanics, with no pairings or tie progression. An aggregate-and-goals tie also has no second-level decision. The API can truthfully report not-ready, partially-configured, and unresolved tie states; no winner is invented.
+- **#496 incomplete bracket paths:** known top-four and bottom-two paths now persist and progress. The active document describes 5th/6th only as having “similar” playoff/final mechanics, with no pairings or tie progression; API reports this middle bracket as unconfigured. An aggregate-and-goals tie also has no second-level decision and remains unresolved, with no winner or progression.
 
 ## Validation
 
-- Full backend suite: 411 passed, 18 skipped. Ruff checks passed for changed Python files; bytecode compilation passed.
+- Full backend suite after persisted bracket work: 414 passed, 18 skipped. Ruff checks passed for changed Python files; bytecode compilation passed.
 - No migrations, GitHub changes, cloud changes, or staging deployment were performed.

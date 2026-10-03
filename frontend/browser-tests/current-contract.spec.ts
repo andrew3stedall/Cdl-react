@@ -14,6 +14,11 @@ const playerFixture = positions.map((position, index) => ({
   display_name: `Fixture Player ${index + 1}`,
   position,
   epl_team: { id: `club-${index % 4}`, name: `Club ${index % 4}`, short_name: `C${index % 4}` },
+  draft_team: { id: 'team-browser-fixture', name: 'Browser Fixture FC', short_name: 'BFC' },
+  status: 'owned',
+  points: 10 + index,
+  form: 2.5,
+  value: 45,
   slot: index < 11 ? 'starter' : index < 16 ? 'bench' : 'reserve',
   slot_order: index < 11
     ? index + 1
@@ -90,7 +95,17 @@ test.beforeEach(async ({ page }) => {
       summary: {
         manager_team: { id: 'team-browser-fixture', name: 'Browser Fixture FC', short_name: 'BFC' },
         gameweek: { id: 'gw-browser-fixture', name: 'Matchweek 1', number: 1, deadline_at: '2099-01-01T00:00:00Z' },
-        players: [],
+        players: lineup.map(({ id, display_name, position, epl_team, draft_team, status, points, form, value }) => ({
+          id,
+          display_name,
+          position,
+          epl_team,
+          draft_team,
+          status,
+          points,
+          form,
+          value,
+        })),
       },
       notifications: { notifications: [], proposed_trade_count: 0 },
     },

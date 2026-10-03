@@ -284,18 +284,26 @@ test('primary headers and essential player values remain legible at 200% text sc
     const brand = hero.locator('.cdl-page-hero__brand-lockup');
     const heading = hero.locator('h1');
     const actions = hero.locator('.cdl-page-hero__actions');
-    const [brandBox, headingBox, actionsBox] = await Promise.all([
+    const [brandBox, headingBox] = await Promise.all([
       bounds(brand),
       bounds(heading),
-      bounds(actions),
     ]);
+    const actionItems = await actions.locator(':scope > *').all();
+    const actionBoxes = await Promise.all(actionItems.map(async (item) => (
+      await item.isVisible() ? bounds(item) : null
+    )));
     expectWithinViewport(heroBox, viewport, `${title} PageHero`);
     expectWithinViewport(brandBox, viewport, `${title} brand`);
     expectWithinViewport(headingBox, viewport, `${title} heading`);
-    expectWithinViewport(actionsBox, viewport, `${title} actions`);
-    const brandAndActionsDoNotOverlap = brandBox.x + brandBox.width <= actionsBox.x + 1
-      || brandBox.y + brandBox.height <= actionsBox.y + 1;
-    expect(brandAndActionsDoNotOverlap, `${title} brand and actions must not overlap after responsive wrapping`).toBe(true);
+    actionBoxes.forEach((actionBox, index) => {
+      if (!actionBox) return;
+      expectWithinViewport(actionBox, viewport, `${title} action ${index + 1}`);
+      const brandAndActionDoNotOverlap = brandBox.x + brandBox.width <= actionBox.x + 1
+        || brandBox.y + brandBox.height <= actionBox.y + 1
+        || actionBox.x + actionBox.width <= brandBox.x + 1
+        || actionBox.y + actionBox.height <= brandBox.y + 1;
+      expect(brandAndActionDoNotOverlap, `${title} brand and action ${index + 1} must not overlap after responsive wrapping`).toBe(true);
+    });
     const titleFontSize = await heading.evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));
     expect(titleFontSize, `${title} title should respond to 200% text scaling`).toBeGreaterThanOrEqual(32);
     const heroOverflow = await hero.evaluate((element) => element.scrollWidth > element.clientWidth + 1);

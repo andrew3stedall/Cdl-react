@@ -89,12 +89,14 @@ async function expectModalAboveNavigation(page: Page, modal: Locator, overlay: L
 }
 
 async function expectModalKeyboardLifecycle(page: Page, dialog: Locator, opener: Locator, label: string) {
-  await expect(dialog).toBeFocused();
+  const focusIsContained = () => dialog.evaluate((element) => element === document.activeElement || element.contains(document.activeElement));
+  expect(await focusIsContained(), `${label} starts with focus inside the dialog`).toBe(true);
+  await expect(page.locator(':focus')).toBeVisible();
   const focusable = dialog.locator('button:visible, a:visible, input:visible, select:visible, textarea:visible, [tabindex]:not([tabindex="-1"]):visible');
   await expect(focusable.last()).toBeVisible();
   await focusable.last().focus();
   await page.keyboard.press('Tab');
-  await expect(dialog.locator(':focus')).toBeVisible();
+  expect(await focusIsContained(), `${label} keeps Tab focus inside the dialog`).toBe(true);
   await page.keyboard.press('Escape');
   await expect(dialog).toBeHidden();
   await expect(opener, `${label} returns focus to its opener after Escape`).toBeFocused();
@@ -249,10 +251,14 @@ test('primary headers and essential player values remain legible at 200% text sc
   const viewport = { width: 430, height: 932 };
   await setViewport(page, viewport.width, viewport.height);
   await page.addInitScript(() => {
-    document.documentElement.style.fontSize = '200%';
+    const applyTextScale = () => { document.documentElement.style.fontSize = '200%'; };
+    if (document.documentElement) applyTextScale();
+    else document.addEventListener('DOMContentLoaded', applyTextScale, { once: true });
   });
   await page.goto('/dashboard');
   await expect(page.locator('[data-page-hero="shared"]:visible h1')).toHaveText('Gaffers Desk');
+  const scaledRootFontSize = await page.evaluate(() => Number.parseFloat(getComputedStyle(document.documentElement).fontSize));
+  expect(scaledRootFontSize, 'the 200% text scale should apply before measuring content').toBeGreaterThanOrEqual(32);
 
   let firstHeader: Awaited<ReturnType<typeof readHeaderBounds>> | undefined;
   for (const [label, title] of [

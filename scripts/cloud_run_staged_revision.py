@@ -157,9 +157,10 @@ def safe_revision_diagnostics(
             else None
         ),
         "serviceGeneration": _enum(
-            service.get("generation")
-            or metadata.get("generation")
-            or (service.get("metadata") or {}).get("generation")
+            service.get("generation") or (service.get("metadata") or {}).get("generation")
+        ),
+        "revisionGeneration": _enum(
+            metadata.get("generation") or revision.get("generation")
         ),
         "serviceObservedGeneration": _enum(
             service.get("observedGeneration") or service.get("status", {}).get("observedGeneration")
@@ -256,6 +257,57 @@ def has_terminal_revision_failure(service: dict[str, Any]) -> bool:
 def reconciliation_finished(service: dict[str, Any]) -> bool | None:
     value = service.get("reconciling")
     return value is False if isinstance(value, bool) else None
+
+
+def resolve_created_candidate(
+    service: dict[str, Any],
+    revision: dict[str, Any],
+    previous: str,
+    expected_image: str,
+) -> str:
+    """Validate an immutable new revision while its readiness is pending."""
+    created = _latest_revision(service, "Created")
+    diagnostic = _diagnostic_suffix(service, revision, previous, expected_image)
+    if not created or created == _short_revision(previous):
+        raise ValueError(
+            "Cloud Run has not created a new candidate revision; "
+            f"safe_revision_diagnostics={diagnostic}"
+        )
+
+    named_revision = _short_revision(
+        (revision.get("metadata") or {}).get("name") or revision.get("name")
+    )
+    if not named_revision or named_revision != created:
+        raise ValueError(
+            "Described Cloud Run revision does not match the latest created revision; "
+            f"safe_revision_diagnostics={diagnostic}"
+        )
+
+    traffic = _traffic(service)
+    if (
+        len(traffic) != 1
+        or _revision_name(traffic[0]) != _short_revision(previous)
+        or traffic[0].get("percent") != 100
+    ):
+        raise ValueError(
+            "Serving traffic changed before candidate warmup; "
+            f"safe_revision_diagnostics={diagnostic}"
+        )
+
+    configured_images = [container.get("image") for container in _containers(revision)]
+    if expected_image not in configured_images:
+        raise ValueError(
+            "Created revision does not use the immutable image under review; "
+            f"safe_revision_diagnostics={diagnostic}"
+        )
+    resolved_digest = revision.get("status", {}).get("imageDigest") or revision.get("imageDigest")
+    expected_digest = _digest(expected_image)
+    if resolved_digest and _digest(resolved_digest) != expected_digest:
+        raise ValueError(
+            "Created revision resolved image digest does not match the reviewed digest; "
+            f"safe_revision_diagnostics={diagnostic}"
+        )
+    return created
 
 
 def resolve_staged_revision(
@@ -381,8 +433,17 @@ def main() -> None:
     service = _read(service_path)
     if mode == "pin":
         print(resolve_serving_revision(service))
+    elif mode == "created" and len(args) == 0:
+        print(_latest_revision(service, "Created") or "")
     elif mode == "ready" and len(args) == 1:
         print(resolve_ready_candidate(service, args[0]) or "")
+    elif mode == "candidate" and len(args) == 3:
+        revision_path, previous, expected_image = args
+        print(
+            resolve_created_candidate(
+                service, _read(revision_path), previous, expected_image
+            )
+        )
     elif mode == "failed" and len(args) == 0:
         print("true" if has_terminal_revision_failure(service) else "false")
     elif mode == "reconciling" and len(args) == 0:
@@ -406,7 +467,9 @@ def main() -> None:
     else:
         raise SystemExit(
             "usage: cloud_run_staged_revision.py pin SERVICE.json | "
-            "ready SERVICE.json PREVIOUS | failed SERVICE.json | reconciling SERVICE.json | "
+            "created SERVICE.json | ready SERVICE.json PREVIOUS | "
+            "candidate SERVICE.json REVISION.json PREVIOUS IMAGE | "
+            "failed SERVICE.json | reconciling SERVICE.json | "
             "verify SERVICE.json REVISION.json PREVIOUS IMAGE | "
             "diagnostics SERVICE.json REVISION.json|- PREVIOUS IMAGE | "
             "sanitize-logs LOGS.json | candidate-url SERVICE.json REVISION PREVIOUS TAG"

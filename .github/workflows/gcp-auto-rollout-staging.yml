@@ -29,9 +29,6 @@ permissions:
   id-token: write
   issues: write
 
-concurrency:
-  group: gcp-auto-rollout-staging
-  cancel-in-progress: false
 
 env:
   REGION: australia-southeast1
@@ -72,6 +69,9 @@ jobs:
       (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
       (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
+    concurrency:
+      group: cdl-staging-runtime-mutation
+      cancel-in-progress: false
     environment: staging
 
     env:
@@ -454,6 +454,57 @@ jobs:
           echo "execution=${execution}" >> "${GITHUB_OUTPUT}"
           exit "${status}"
 
+      - name: Tag and warm zero-percent candidate before readiness verification
+        if: steps.database-migrations.outcome == 'success'
+        run: |
+          set -euo pipefail
+          gcloud run services describe cdl-react-staging-api \
+            --project "${PROJECT_ID}" --region "${REGION}" --format=json \
+            > "${RUNNER_TEMP}/candidate-service.json"
+          created="$(python scripts/cloud_run_staged_revision.py created \
+            "${RUNNER_TEMP}/candidate-service.json")"
+          if [ -z "${created}" ] || [ "${created}" = "${RUNTIME_TRAFFIC_REVISION}" ]; then
+            echo "Cloud Run has not created a new candidate revision." >&2
+            exit 1
+          fi
+          gcloud run revisions describe "${created}" \
+            --project "${PROJECT_ID}" --region "${REGION}" --format=json \
+            > "${RUNNER_TEMP}/staged-revision.json"
+          CANDIDATE_REVISION="$(python scripts/cloud_run_staged_revision.py candidate \
+            "${RUNNER_TEMP}/candidate-service.json" "${RUNNER_TEMP}/staged-revision.json" \
+            "${RUNTIME_TRAFFIC_REVISION}" "${IMAGE_DIGEST_URI}")"
+          CANDIDATE_TAG="cdl-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          echo "CANDIDATE_REVISION=${CANDIDATE_REVISION}" >> "${GITHUB_ENV}"
+          echo "CANDIDATE_TAG=${CANDIDATE_TAG}" >> "${GITHUB_ENV}"
+          gcloud run services update-traffic cdl-react-staging-api \
+            --project "${PROJECT_ID}" --region "${REGION}" \
+            --update-tags="${CANDIDATE_TAG}=${CANDIDATE_REVISION}" --quiet
+          gcloud run services describe cdl-react-staging-api \
+            --project "${PROJECT_ID}" --region "${REGION}" --format=json \
+            > "${RUNNER_TEMP}/candidate-service.json"
+          candidate_url="$(python scripts/cloud_run_staged_revision.py candidate-url \
+            "${RUNNER_TEMP}/candidate-service.json" "${CANDIDATE_REVISION}" \
+            "${RUNTIME_TRAFFIC_REVISION}" "${CANDIDATE_TAG}")"
+          echo "CANDIDATE_URL=${candidate_url}" >> "${GITHUB_ENV}"
+          health_ready=false
+          for attempt in $(seq 1 12); do
+            status_code="$(curl --connect-timeout 5 --max-time 20 --silent \
+              --output /dev/null --write-out '%{http_code}' \
+              "${candidate_url}/health" || true)"
+            if [ "${status_code}" = "200" ]; then
+              health_ready=true
+              break
+            fi
+            if [ "${attempt}" -lt 12 ]; then
+              sleep 5
+            fi
+          done
+          if [ "${health_ready}" != "true" ]; then
+            echo "Candidate health endpoint did not respond with HTTP 200 within 12 bounded checks." >&2
+            exit 1
+          fi
+          echo "Candidate health wakeup passed without changing the 100% serving revision."
+
       - name: Verify new revision before traffic promotion
         if: steps.database-migrations.outcome == 'success'
         run: |
@@ -466,6 +517,10 @@ jobs:
             ready="$(python scripts/cloud_run_staged_revision.py ready \
               "${RUNNER_TEMP}/staged-service.json" "${RUNTIME_TRAFFIC_REVISION}")"
             if [ -n "${ready}" ]; then
+              if [ "${ready}" != "${CANDIDATE_REVISION}" ]; then
+                echo "Ready revision does not match the validated candidate." >&2
+                exit 1
+              fi
               gcloud run revisions describe "${ready}" \
                 --project "${PROJECT_ID}" --region "${REGION}" --format=json \
                 > "${RUNNER_TEMP}/staged-revision.json"
@@ -506,7 +561,7 @@ jobs:
               "${RUNTIME_TRAFFIC_REVISION}" "${IMAGE_DIGEST_URI}" \
               > "${RUNNER_TEMP}/staged-revision-diagnostics.json"
             cat "${RUNNER_TEMP}/staged-revision-diagnostics.json" >&2
-            echo "Cloud Run did not report a new ready revision within five minutes." >&2
+            echo "Cloud Run did not report a new ready revision within 60 checks." >&2
             exit 1
           fi
           echo "STAGED_REVISION=${STAGED_REVISION}" >> "${GITHUB_ENV}"
@@ -516,11 +571,7 @@ jobs:
         if: steps.database-migrations.outcome == 'success'
         run: |
           set -euo pipefail
-          CANDIDATE_TAG="cdl-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
-          echo "CANDIDATE_TAG=${CANDIDATE_TAG}" >> "${GITHUB_ENV}"
-          gcloud run services update-traffic cdl-react-staging-api \
-            --project "${PROJECT_ID}" --region "${REGION}" \
-            --update-tags="${CANDIDATE_TAG}=${STAGED_REVISION}" --quiet
+          test -n "${CANDIDATE_TAG}"
           gcloud run services describe cdl-react-staging-api \
             --project "${PROJECT_ID}" --region "${REGION}" --format=json \
             > "${RUNNER_TEMP}/candidate-service.json"
@@ -528,6 +579,7 @@ jobs:
             "${RUNNER_TEMP}/candidate-service.json" "${STAGED_REVISION}" \
             "${RUNTIME_TRAFFIC_REVISION}" "${CANDIDATE_TAG}")"
           test -n "${candidate_url}"
+          test "${candidate_url}" = "${CANDIDATE_URL}"
           curl --fail --silent --show-error "${candidate_url}/health" \
             | grep -Fq '"status":"ok"'
           status_code="$(curl --silent --show-error --output /dev/null \

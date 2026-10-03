@@ -107,9 +107,8 @@
 }
 
 @media (max-width: 360px) {
-  /* Fit the existing one-row shell at default text size by tightening only
-     the brand/control widths on the narrowest phones. At larger text sizes
-     the PageHero wraps and grows through its auto block size above. */
+  /* Tighten brand/control widths on the narrowest phones while retaining
+     the shared 8.5rem two-row role from the 520px rule. */
   .cdl-page-hero {
     block-size: 8.5rem;
     gap: 0.25rem;

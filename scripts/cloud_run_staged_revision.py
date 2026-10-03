@@ -11,7 +11,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 
-def _read(path: str) -> dict[str, Any]:
+def _read(path: str) -> Any:
     return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
@@ -27,7 +27,7 @@ def _traffic(service: dict[str, Any]) -> list[dict[str, Any]]:
     return [entry for entry in entries if entry.get("percent", 0) > 0]
 
 
-def _short_revision(value: Any) -> str | None:
+def _short_revision(value: object) -> str | None:
     if not isinstance(value, str) or not value.strip():
         return None
     value = value.strip().rstrip("/")
@@ -75,14 +75,14 @@ def _containers(resource: dict[str, Any]) -> list[dict[str, Any]]:
     return []
 
 
-def _digest(value: Any) -> str | None:
+def _digest(value: object) -> str | None:
     if not isinstance(value, str):
         return None
     suffix = value.rsplit("@", maxsplit=1)[-1]
     return suffix if suffix.startswith("sha256:") else None
 
 
-def _enum(value: Any) -> str | None:
+def _enum(value: object) -> str | None:
     if isinstance(value, (int, float)):
         value = str(value)
     if not isinstance(value, str):
@@ -94,18 +94,28 @@ def _condition_summary(resource: dict[str, Any], scope: str) -> list[dict[str, s
     status = resource.get("status") or {}
     conditions = status.get("conditions") or resource.get("conditions") or []
     result = []
+    terminal = resource.get("terminalCondition")
+    if isinstance(terminal, dict):
+        result.append(_condition_fields(terminal, f"{scope}-terminal"))
     for condition in conditions:
-        if not isinstance(condition, dict):
-            continue
-        result.append(
-            {
-                "scope": scope,
-                "type": _enum(condition.get("type")),
-                "status": _enum(condition.get("status")),
-                "reason": _enum(condition.get("reason")),
-            }
-        )
+        if isinstance(condition, dict):
+            result.append(_condition_fields(condition, scope))
     return result
+
+
+def _condition_fields(
+    condition: dict[str, Any], scope: str
+) -> dict[str, str | None]:
+    return {
+        "scope": scope,
+        "type": _enum(condition.get("type")),
+        "status": _enum(condition.get("status")),
+        "state": _enum(condition.get("state")),
+        "reason": _enum(condition.get("reason")),
+        "revisionReason": _enum(condition.get("revisionReason")),
+        "executionReason": _enum(condition.get("executionReason")),
+        "severity": _enum(condition.get("severity")),
+    }
 
 
 def safe_revision_diagnostics(
@@ -143,6 +153,16 @@ def safe_revision_diagnostics(
         "latestReadyRevisionResource": _latest_revision_raw(service, "Ready"),
         "previousServingRevision": _short_revision(previous),
         "previousServingRevisionResource": previous,
+        "reconciling": (
+            service.get("reconciling")
+            if isinstance(service.get("reconciling"), bool)
+            else None
+        ),
+        "terminalCondition": (
+            _condition_fields(service["terminalCondition"], "service-terminal")
+            if isinstance(service.get("terminalCondition"), dict)
+            else None
+        ),
         "serviceGeneration": _enum(
             service.get("generation")
             or metadata.get("generation")
@@ -218,12 +238,32 @@ def has_terminal_revision_failure(service: dict[str, Any]) -> bool:
         "ContainerStartFailed",
         "HealthCheckContainerError",
         "RevisionFailed",
+        "CONTAINER_MISSING",
+        "CONTAINER_PERMISSION_DENIED",
+        "CONTAINER_IMAGE_UNAUTHORIZED",
+        "CONTAINER_IMAGE_AUTHORIZATION_CHECK_FAILED",
+        "SECRETS_ACCESS_CHECK_FAILED",
+        "REVISION_FAILED",
+        "HEALTH_CHECK_CONTAINER_ERROR",
     }
     conditions = _condition_summary(service, "service")
     return any(
-        item["status"] == "False" and item["reason"] in terminal_reasons
+        item["state"] == "CONDITION_FAILED"
+        or (
+            item["status"] == "False"
+            and (
+                item["reason"] in terminal_reasons
+                or item["revisionReason"] in terminal_reasons
+                or item["executionReason"] in terminal_reasons
+            )
+        )
         for item in conditions
     )
+
+
+def reconciliation_finished(service: dict[str, Any]) -> bool | None:
+    value = service.get("reconciling")
+    return value is False if isinstance(value, bool) else None
 
 
 def resolve_staged_revision(
@@ -354,13 +394,23 @@ def main() -> None:
         print(resolve_ready_candidate(service, args[0]) or "")
     elif mode == "failed" and len(args) == 0:
         print("true" if has_terminal_revision_failure(service) else "false")
+    elif mode == "reconciling" and len(args) == 0:
+        value = reconciliation_finished(service)
+        print("unknown" if value is None else str(value).lower())
     elif mode == "verify" and len(args) == 3:
         revision_path, previous, expected_image = args
         print(resolve_staged_revision(service, _read(revision_path), previous, expected_image))
     elif mode == "diagnostics" and len(args) == 3:
         revision_path, previous, expected_image = args
-        revision = _read(revision_path) if revision_path != "-" and Path(revision_path).exists() else {}
-        print(json.dumps(safe_revision_diagnostics(service, revision, previous, expected_image), sort_keys=True))
+        revision = (
+            _read(revision_path)
+            if revision_path != "-" and Path(revision_path).exists()
+            else {}
+        )
+        diagnostics = safe_revision_diagnostics(
+            service, revision, previous, expected_image
+        )
+        print(json.dumps(diagnostics, sort_keys=True))
     elif mode == "sanitize-logs" and len(args) == 0:
         print(json.dumps(sanitize_startup_logs(service_path), sort_keys=True))
     elif mode == "candidate-url" and len(args) == 3:
@@ -369,7 +419,8 @@ def main() -> None:
     else:
         raise SystemExit(
             "usage: cloud_run_staged_revision.py pin SERVICE.json | "
-            "ready SERVICE.json PREVIOUS | failed SERVICE.json | verify SERVICE.json REVISION.json PREVIOUS IMAGE | "
+            "ready SERVICE.json PREVIOUS | failed SERVICE.json | reconciling SERVICE.json | "
+            "verify SERVICE.json REVISION.json PREVIOUS IMAGE | "
             "diagnostics SERVICE.json REVISION.json|- PREVIOUS IMAGE | "
             "sanitize-logs LOGS.json | candidate-url SERVICE.json REVISION PREVIOUS TAG"
         )

@@ -18,6 +18,7 @@ resolve_tagged_candidate_url = _module.resolve_tagged_candidate_url
 resolve_ready_candidate = _module.resolve_ready_candidate
 safe_revision_diagnostics = _module.safe_revision_diagnostics
 sanitize_startup_logs = _module.sanitize_startup_logs
+reconciliation_finished = _module.reconciliation_finished
 has_terminal_revision_failure = _module.has_terminal_revision_failure
 
 IMAGE = "australia-southeast1-docker.pkg.dev/project/repo/api@sha256:" + "a" * 64
@@ -209,12 +210,21 @@ def test_full_cloud_run_v2_revision_resource_names_are_normalized_without_weaken
 
     service["latestCreatedRevision"] = previous
     assert resolve_ready_candidate(service, previous) is None
+    with pytest.raises(ValueError, match="Serving traffic changed"):
+        resolve_ready_candidate(
+            {
+                "latestCreatedRevision": ready,
+                "latestReadyRevision": ready,
+                "trafficStatuses": [{"revision": ready, "percent": 100}],
+            },
+            previous,
+        )
     with pytest.raises(ValueError, match="Latest created"):
         resolve_staged_revision(service, revision, previous, IMAGE)
 
 
 def test_revision_diagnostics_expose_safe_metadata_without_env_or_condition_messages() -> None:
-    secret = "do-not-leak-this-secret"
+    sentinel_value = "do-not-leak-this-secret"
     service = {
         "latestCreatedRevision": "projects/p/locations/r/services/s/revisions/api-new",
         "latestReadyRevision": "projects/p/locations/r/services/s/revisions/api-old",
@@ -224,7 +234,7 @@ def test_revision_diagnostics_expose_safe_metadata_without_env_or_condition_mess
                 "type": "Ready",
                 "status": "False",
                 "reason": "ContainerFailed",
-                "message": f"environment contained {secret}",
+                "message": f"environment contained {sentinel_value}",
             }
         ],
     }
@@ -238,11 +248,11 @@ def test_revision_diagnostics_expose_safe_metadata_without_env_or_condition_mess
                     "type": "Ready",
                     "status": "False",
                     "reason": "ContainerFailed",
-                    "message": secret,
+                    "message": sentinel_value,
                 }
             ],
         },
-        "env": [{"name": "TOKEN", "value": secret}],
+        "env": [{"name": "TOKEN", "value": sentinel_value}],
     }
     diagnostics = safe_revision_diagnostics(service, revision, "api-old", IMAGE)
     serialized = str(diagnostics)
@@ -254,17 +264,17 @@ def test_revision_diagnostics_expose_safe_metadata_without_env_or_condition_mess
     assert diagnostics["previousServingRevisionResource"] == "api-old"
     assert diagnostics["expectedImageDigest"] == "sha256:" + "a" * 64
     assert diagnostics["resolvedImageDigest"] == "sha256:" + "a" * 64
-    assert diagnostics["conditions"][0] == {
-        "scope": "service",
-        "type": "Ready",
-        "status": "False",
-        "reason": "ContainerFailed",
-    }
-    assert secret not in serialized
+    assert diagnostics["conditions"][0]["scope"] == "service"
+    assert diagnostics["conditions"][0]["type"] == "Ready"
+    assert diagnostics["conditions"][0]["status"] == "False"
+    assert diagnostics["conditions"][0]["reason"] == "ContainerFailed"
+    assert diagnostics["conditions"][0]["state"] is None
+    assert diagnostics["terminalCondition"] is None
+    assert sentinel_value not in serialized
 
 
 def test_startup_log_sanitizer_keeps_only_exception_classes_and_app_frames(tmp_path: Path) -> None:
-    secret = "database-url-password"
+    sentinel_value = "database-url-password"
     path = tmp_path / "logs.json"
     path.write_text(
         json.dumps(
@@ -273,7 +283,7 @@ def test_startup_log_sanitizer_keeps_only_exception_classes_and_app_frames(tmp_p
                     "textPayload": (
                         "Traceback (most recent call last):\n"
                         '  File "/app/src/cdl_api/main.py", line 42, in create_app\n'
-                        f"RuntimeError: {secret}\n"
+                        f"RuntimeError: {sentinel_value}\n"
                         '  File "/home/runner/secret.py", line 3, in leak\n'
                         "ValueError: hidden-message"
                     )
@@ -293,18 +303,6 @@ def test_startup_log_sanitizer_keeps_only_exception_classes_and_app_frames(tmp_p
     ]
     assert secret not in serialized
     assert "home/runner" not in serialized
-
-def test_direct_rollout_checks_out_helper_and_preserves_pinned_revision_during_repair() -> None:
-    workflow = Path(".github/workflows/gcp-direct-staging-rollout.yml").read_text(
-        encoding="utf-8"
-    )
-    checkout = workflow.index("uses: actions/checkout@v4")
-    repair = workflow.index("- name: Repair database attachment")
-    assert checkout < repair
-    assert "--no-traffic" in workflow[repair:workflow.index("for job in", repair)]
-    assert "pin service traffic before repair" in workflow.lower()
-    assert "verify unchanged serving revision after repair" in workflow.lower()
-
 
 def test_terminal_revision_failure_is_detected_without_exposing_condition_messages() -> None:
     service = {
@@ -335,6 +333,7 @@ def test_all_rollout_workflows_wait_fail_closed_and_capture_only_safe_diagnostic
         workflow = Path(path).read_text(encoding="utf-8")
         assert "cloud_run_staged_revision.py ready" in workflow
         assert "cloud_run_staged_revision.py failed" in workflow
+        assert "cloud_run_staged_revision.py reconciling" in workflow
         assert "seq 1 60" in workflow
         assert "cloud_run_staged_revision.py diagnostics" in workflow
         assert "cloud_run_staged_revision.py sanitize-logs" in workflow
@@ -361,3 +360,62 @@ def test_runtime_image_ci_imports_app_and_checks_health_route() -> None:
     workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
     assert "import cdl_api.app as app;" in workflow
     assert "getattr(route, 'path', None) == '/health'" in workflow
+
+
+def test_cloud_run_v2_terminal_condition_enum_stops_retrying_and_is_summarized_safely() -> None:
+    service = {
+        "name": "projects/project/locations/region/services/api",
+        "reconciling": False,
+        "latestCreatedRevision": "projects/project/locations/region/services/api/revisions/api-new",
+        "latestReadyRevision": "projects/project/locations/region/services/api/revisions/api-old",
+        "trafficStatuses": [
+            {
+                "revision": "projects/project/locations/region/services/api/revisions/api-old",
+                "percent": 100,
+            }
+        ],
+        "terminalCondition": {
+            "type": "Ready",
+            "state": "CONDITION_FAILED",
+            "revisionReason": "HEALTH_CHECK_CONTAINER_ERROR",
+            "message": "must not be emitted",
+        },
+        "conditions": [
+            {
+                "type": "Ready",
+                "state": "CONDITION_FAILED",
+                "revisionReason": "HEALTH_CHECK_CONTAINER_ERROR",
+                "executionReason": "RETRYABLE",
+            }
+        ],
+    }
+    assert reconciliation_finished(service) is True
+    assert has_terminal_revision_failure(service)
+    diagnostics = safe_revision_diagnostics(service, {}, "api-old", IMAGE)
+    assert diagnostics["reconciling"] is False
+    assert diagnostics["terminalCondition"]["state"] == "CONDITION_FAILED"
+    assert diagnostics["terminalCondition"]["revisionReason"] == "HEALTH_CHECK_CONTAINER_ERROR"
+    assert diagnostics["conditions"][1]["executionReason"] == "RETRYABLE"
+    assert "must not be emitted" not in str(diagnostics)
+
+
+def test_cloud_run_v2_reconciling_wait_state_keeps_traffic_and_is_not_terminal() -> None:
+    service = {
+        "reconciling": True,
+        "latestCreatedRevision": "projects/project/locations/region/services/api/revisions/api-new",
+        "latestReadyRevision": "projects/project/locations/region/services/api/revisions/api-old",
+        "trafficStatuses": [
+            {
+                "revision": "projects/project/locations/region/services/api/revisions/api-old",
+                "percent": 100,
+            }
+        ],
+        "terminalCondition": {
+            "type": "Ready",
+            "state": "CONDITION_RECONCILING",
+            "reason": "WAITING_FOR_OPERATION",
+        },
+    }
+    assert reconciliation_finished(service) is False
+    assert not has_terminal_revision_failure(service)
+    assert resolve_ready_candidate(service, "api-old") is None

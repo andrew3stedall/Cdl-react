@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import importlib.util
 import json
 from pathlib import Path
@@ -16,6 +17,7 @@ resolve_serving_revision = _module.resolve_serving_revision
 resolve_staged_revision = _module.resolve_staged_revision
 resolve_tagged_candidate_url = _module.resolve_tagged_candidate_url
 resolve_ready_candidate = _module.resolve_ready_candidate
+resolve_created_candidate = _module.resolve_created_candidate
 safe_revision_diagnostics = _module.safe_revision_diagnostics
 sanitize_startup_logs = _module.sanitize_startup_logs
 reconciliation_finished = _module.reconciliation_finished
@@ -190,6 +192,65 @@ def test_postgres_release_journey_sets_staging_environment_only_for_itself() -> 
     assert "CDL_ENVIRONMENT: staging" not in workflow
 
 
+def test_created_candidate_validates_identity_image_and_prior_traffic_without_readiness() -> None:
+    previous = "projects/project/locations/region/services/api/revisions/api-old"
+    candidate = "projects/project/locations/region/services/api/revisions/api-new"
+    versions = [
+        (
+            {
+                "status": {
+                    "latestCreatedRevisionName": "api-new",
+                    "traffic": [{"revisionName": "api-old", "percent": 100}],
+                }
+            },
+            {
+                "metadata": {"name": "api-new", "generation": 1},
+                "spec": {"template": {"spec": {"containers": [{"image": IMAGE}]}}},
+                "status": {"imageDigest": IMAGE},
+            },
+        ),
+        (
+            {
+                "latestCreatedRevision": candidate,
+                "trafficStatuses": [{"revision": previous, "percent": 100}],
+            },
+            {
+                "name": candidate,
+                "containers": [{"image": IMAGE}],
+                "imageDigest": IMAGE,
+            },
+        ),
+    ]
+    for service, revision in versions:
+        assert resolve_created_candidate(service, revision, previous, IMAGE) == "api-new"
+
+    service, revision = copy.deepcopy(versions[1])
+    service["latestCreatedRevision"] = previous
+    with pytest.raises(ValueError, match="not created a new candidate"):
+        resolve_created_candidate(service, revision, previous, IMAGE)
+
+    service, revision = copy.deepcopy(versions[1])
+    revision["name"] = "api-mismatch"
+    with pytest.raises(ValueError, match="does not match the latest created"):
+        resolve_created_candidate(service, revision, previous, IMAGE)
+
+    service, revision = copy.deepcopy(versions[1])
+    service["trafficStatuses"] = [{"revision": candidate, "percent": 100}]
+    with pytest.raises(ValueError, match="Serving traffic changed"):
+        resolve_created_candidate(service, revision, previous, IMAGE)
+
+    service, revision = copy.deepcopy(versions[1])
+    revision["containers"][0]["image"] = IMAGE.replace("a" * 64, "b" * 64)
+    with pytest.raises(ValueError, match="does not use the immutable image"):
+        resolve_created_candidate(service, revision, previous, IMAGE)
+
+    service, revision = copy.deepcopy(versions[1])
+    revision["containers"][0]["image"] = IMAGE
+    revision["imageDigest"] = IMAGE.replace("a" * 64, "b" * 64)
+    with pytest.raises(ValueError, match="resolved image digest"):
+        resolve_created_candidate(service, revision, previous, IMAGE)
+
+
 def test_full_cloud_run_v2_revision_resource_names_are_normalized_without_weakening_guard() -> None:
     previous = "projects/project/locations/region/services/api/revisions/api-old"
     ready = "projects/project/locations/region/services/api/revisions/api-new"
@@ -225,6 +286,7 @@ def test_full_cloud_run_v2_revision_resource_names_are_normalized_without_weaken
 def test_revision_diagnostics_expose_safe_metadata_without_env_or_condition_messages() -> None:
     sentinel_value = "do-not-leak-this-secret"
     service = {
+        "metadata": {"generation": 323},
         "latestCreatedRevision": "projects/p/locations/r/services/s/revisions/api-new",
         "latestReadyRevision": "projects/p/locations/r/services/s/revisions/api-old",
         "trafficStatuses": [{"revision": "api-old", "percent": 100}],
@@ -238,7 +300,7 @@ def test_revision_diagnostics_expose_safe_metadata_without_env_or_condition_mess
         ],
     }
     revision = {
-        "metadata": {"name": "api-new"},
+        "metadata": {"name": "api-new", "generation": 1},
         "spec": {"containers": [{"image": IMAGE}]},
         "status": {
             "imageDigest": IMAGE,
@@ -256,6 +318,8 @@ def test_revision_diagnostics_expose_safe_metadata_without_env_or_condition_mess
     diagnostics = safe_revision_diagnostics(service, revision, "api-old", IMAGE)
     serialized = str(diagnostics)
     assert diagnostics["latestCreatedRevision"] == "api-new"
+    assert diagnostics["serviceGeneration"] == "323"
+    assert diagnostics["revisionGeneration"] == "1"
     assert diagnostics["latestReadyRevision"] == "api-old"
     assert diagnostics["previousServingRevision"] == "api-old"
     assert diagnostics["latestCreatedRevisionResource"].endswith("/revisions/api-new")
@@ -429,3 +493,42 @@ def test_cloud_run_v2_reconciling_wait_state_keeps_traffic_and_is_not_terminal()
     assert reconciliation_finished(service) is False
     assert not has_terminal_revision_failure(service)
     assert resolve_ready_candidate(service, "api-old") is None
+
+
+def test_zero_percent_candidate_warmup_precedes_readiness_and_uses_shared_mutation_lock() -> None:
+    paths = (
+        ".github/workflows/gcp-auto-rollout-staging.yml",
+        ".github/workflows/gcp-direct-staging-rollout.yml",
+        ".github/workflows/gcp-terraform-apply-staging.yml",
+    )
+    for path in paths:
+        workflow = Path(path).read_text(encoding="utf-8")
+        assert workflow.index("concurrency:") > workflow.index("\njobs:")
+        assert "group: cdl-staging-runtime-mutation" in workflow
+        assert "cancel-in-progress: false" in workflow
+        warm = workflow.index("Tag and warm zero-percent candidate before readiness verification")
+        ready = workflow.index("cloud_run_staged_revision.py ready")
+        promote = workflow.index("--to-revisions")
+        assert warm < ready < promote
+        warm_block = workflow[warm:ready]
+        assert 'echo "CANDIDATE_TAG=\u0024{CANDIDATE_TAG}" >> "\u0024{GITHUB_ENV}"' in warm_block
+        set_tag_env = 'echo "CANDIDATE_TAG=\u0024{CANDIDATE_TAG}" >> "\u0024{GITHUB_ENV}"'
+        assert warm_block.index(set_tag_env) < warm_block.index("--update-tags=")
+        assert "cloud_run_staged_revision.py candidate " in warm_block
+        assert "curl --connect-timeout 5 --max-time 20 --silent" in warm_block
+        assert '"\u0024{candidate_url}/health"' in warm_block
+        assert "Ready revision does not match the validated candidate." in workflow
+        assert "if: always() && env.CANDIDATE_TAG != ''" in workflow
+        assert '--remove-tags="\u0024{CANDIDATE_TAG}"' in workflow
+
+
+def test_direct_automatic_fallback_rejects_superseded_source_before_cloud_authentication() -> None:
+    workflow = Path(".github/workflows/gcp-direct-staging-rollout.yml").read_text(encoding="utf-8")
+    assert "github.event.workflow_run.head_sha == github.sha" in workflow
+    stale_check = workflow.index("Reject superseded automatic fallback")
+    cloud_auth = workflow.index("Authenticate to Google Cloud")
+    assert stale_check < cloud_auth
+    stale_block = workflow[stale_check:cloud_auth]
+    assert "git ls-remote --heads origin refs/heads/main" in stale_block
+    assert 'test "\u0024{FALLBACK_SOURCE_SHA}" = "\u0024{GITHUB_SHA}"' in stale_block
+    assert 'test "\u0024{FALLBACK_SOURCE_SHA}" = "\u0024{current_main_sha}"' in stale_block

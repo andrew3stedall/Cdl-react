@@ -159,9 +159,7 @@ def safe_revision_diagnostics(
         "serviceGeneration": _enum(
             service.get("generation") or (service.get("metadata") or {}).get("generation")
         ),
-        "revisionGeneration": _enum(
-            metadata.get("generation") or revision.get("generation")
-        ),
+        "revisionGeneration": _enum(metadata.get("generation") or revision.get("generation")),
         "serviceObservedGeneration": _enum(
             service.get("observedGeneration") or service.get("status", {}).get("observedGeneration")
         ),
@@ -439,11 +437,7 @@ def main() -> None:
         print(resolve_ready_candidate(service, args[0]) or "")
     elif mode == "candidate" and len(args) == 3:
         revision_path, previous, expected_image = args
-        print(
-            resolve_created_candidate(
-                service, _read(revision_path), previous, expected_image
-            )
-        )
+        print(resolve_created_candidate(service, _read(revision_path), previous, expected_image))
     elif mode == "failed" and len(args) == 0:
         print("true" if has_terminal_revision_failure(service) else "false")
     elif mode == "reconciling" and len(args) == 0:

@@ -515,7 +515,7 @@ def test_zero_percent_candidate_warmup_precedes_readiness_and_uses_shared_mutati
         set_tag_env = 'echo "CANDIDATE_TAG=\u0024{CANDIDATE_TAG}" >> "\u0024{GITHUB_ENV}"'
         assert warm_block.index(set_tag_env) < warm_block.index("--update-tags=")
         assert "cloud_run_staged_revision.py candidate " in warm_block
-        assert 'curl --connect-timeout 5 --max-time 20 --silent' in warm_block
+        assert "curl --connect-timeout 5 --max-time 20 --silent" in warm_block
         assert '"\u0024{candidate_url}/health"' in warm_block
         assert "Ready revision does not match the validated candidate." in workflow
         assert "if: always() && env.CANDIDATE_TAG != ''" in workflow

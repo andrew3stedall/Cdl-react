@@ -409,7 +409,7 @@ jobs:
           [ -f "${revision_json}" ] || revision_json="-"
           if ! python scripts/cloud_run_staged_revision.py diagnostics \
             "${service_json}" "${revision_json}" \
-            "${RUNTIME_TRAFFIC_REVISION:-}" "${IMAGE_DIGEST_URI}" \
+            "${RUNTIME_TRAFFIC_REVISION:-}" "${IMAGE_DIGEST_URI:-}" \
             > "${RUNNER_TEMP}/staged-revision-diagnostics.json" 2>/dev/null; then
             printf '{"diagnosticStatus":"unavailable"}\n' \
               > "${RUNNER_TEMP}/staged-revision-diagnostics.json"
@@ -422,7 +422,7 @@ jobs:
               > "${RUNNER_TEMP}/created-revision.json" 2>/dev/null; then
               if ! python scripts/cloud_run_staged_revision.py diagnostics \
                 "${service_json}" "${RUNNER_TEMP}/created-revision.json" \
-                "${RUNTIME_TRAFFIC_REVISION:-}" "${IMAGE_DIGEST_URI}" \
+                "${RUNTIME_TRAFFIC_REVISION:-}" "${IMAGE_DIGEST_URI:-}" \
                 > "${RUNNER_TEMP}/staged-revision-diagnostics.json" 2>/dev/null; then
                 printf '{"diagnosticStatus":"unavailable"}\n' \
                   > "${RUNNER_TEMP}/staged-revision-diagnostics.json"

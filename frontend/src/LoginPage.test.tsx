@@ -39,7 +39,7 @@ describe('LoginPage', () => {
 
     expect(container.textContent).toContain('Castle Draft League');
     expect(container.textContent).toContain('Welcome back');
-    expect(container.textContent).toContain('Build your squad. Shape your legacy.');
+    expect(container.textContent).not.toContain('Build your squad. Shape your legacy.');
     expect(container.querySelector('input[name="email"]')).not.toBeNull();
     expect(container.querySelector('input[name="password"]')).not.toBeNull();
     expect(container.textContent).not.toContain('Create an account');

@@ -57,7 +57,6 @@
 }
 
 .login-brand-name,
-.login-brand-tagline,
 .login-intro p,
 .login-intro h1,
 .login-divider-row p,
@@ -79,12 +78,6 @@
 .login-brand-name strong {
   color: var(--login-accent-strong);
   font-weight: inherit;
-}
-
-.login-brand-tagline {
-  color: var(--login-muted);
-  font-size: 0.9rem;
-  margin-top: 0.4rem;
 }
 
 .login-rule {
@@ -387,10 +380,6 @@
   .login-brand-mark {
     height: 4.75rem;
     width: 4.2rem;
-  }
-
-  .login-brand-tagline {
-    color: var(--muted-foreground);
   }
 
   .login-intro h1 {

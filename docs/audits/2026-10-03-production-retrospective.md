@@ -1133,3 +1133,7 @@ Backend domain agent independently ran actual-method scratch reproductions and r
 
 Current local checks passing should be reported alongside skipped PostgreSQL and unavailable browser/deployed-state validation, not as an app-wide all-clear.
 
+
+## Delivery record — 3 October 2026
+
+This document preserves the audited baseline and its 70 findings. The [item-by-item delivery register](../delivery/2026-10-03-retrospective-delivery.md) records every implementation, test result, open policy/architecture choice and hosted limitation. [PR #538](https://github.com/andrew3stedall/Cdl-react/pull/538) is merged with PostgreSQL and Chromium CI green. Consult the register for actual deployment status; a merge or health response is not production-readiness proof.

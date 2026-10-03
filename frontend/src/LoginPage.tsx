@@ -64,7 +64,6 @@ export function LoginPage({
               <span>Castle</span>
               <strong> Draft League</strong>
             </p>
-            <p className="login-brand-tagline">Build your squad. Shape your legacy.</p>
           </div>
         </header>
 

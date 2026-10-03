@@ -636,9 +636,9 @@ jobs:
           if [ -n "${created}" ] && [ "${created}" != "${RUNTIME_TRAFFIC_REVISION:-}" ]; then
             if gcloud run revisions describe "${created}" \
               --project "${PROJECT_ID}" --region "${REGION}" --format=json \
-              > "${revision_json}" 2>/dev/null; then
+              > "${RUNNER_TEMP}/created-revision.json" 2>/dev/null; then
               if ! python scripts/cloud_run_staged_revision.py diagnostics \
-                "${service_json}" "${revision_json}" \
+                "${service_json}" "${RUNNER_TEMP}/created-revision.json" \
                 "${RUNTIME_TRAFFIC_REVISION:-}" "${IMAGE_DIGEST_URI:-}" \
                 > "${RUNNER_TEMP}/staged-revision-diagnostics.json" 2>/dev/null; then
                 printf '{"diagnosticStatus":"unavailable"}\n' \

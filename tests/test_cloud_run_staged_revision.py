@@ -190,7 +190,6 @@ def test_postgres_release_journey_sets_staging_environment_only_for_itself() -> 
     assert "CDL_ENVIRONMENT: staging" not in workflow
 
 
-
 def test_full_cloud_run_v2_revision_resource_names_are_normalized_without_weakening_guard() -> None:
     previous = "projects/project/locations/region/services/api/revisions/api-old"
     ready = "projects/project/locations/region/services/api/revisions/api-new"
@@ -338,6 +337,7 @@ def test_all_rollout_workflows_wait_fail_closed_and_capture_only_safe_diagnostic
         assert "cloud_run_staged_revision.py diagnostics" in workflow
         assert "cloud_run_staged_revision.py sanitize-logs" in workflow
         assert "gcloud run revisions describe \"${created}\"" in workflow
+        assert "created-revision.json" in workflow
         assert "cat \"${RUNNER_TEMP}/staged-revision-diagnostics.json\" >&2" in workflow
         assert "cat \"${RUNNER_TEMP}/staged-revision-startup-errors.json\" >&2" in workflow
         assert workflow.count("- name: Upload safe failed rollout diagnostics") == 1
@@ -346,15 +346,13 @@ def test_all_rollout_workflows_wait_fail_closed_and_capture_only_safe_diagnostic
 
 
 def test_direct_rollout_captures_prior_revision_before_no_traffic_cloudsql_repair() -> None:
-    workflow = Path(".github/workflows/gcp-direct-staging-rollout.yml").read_text(
-        encoding="utf-8"
-    )
+    workflow = Path(".github/workflows/gcp-direct-staging-rollout.yml").read_text(encoding="utf-8")
     checkout = workflow.index("uses: actions/checkout@v4")
     pin = workflow.index("- name: Pin serving revision before fallback repair")
     repair = workflow.index("- name: Repair database attachment")
     unchanged = workflow.index("- name: Verify unchanged serving revision after repair")
     assert checkout < pin < repair < unchanged
-    service_repair = workflow[repair:workflow.index("for job in", repair)]
+    service_repair = workflow[repair : workflow.index("for job in", repair)]
     assert "--no-traffic" in service_repair
     assert "run.googleapis.com/cloudsql-instances" in service_repair
     assert 'test "${revision}" = "${RUNTIME_TRAFFIC_REVISION}"' in workflow

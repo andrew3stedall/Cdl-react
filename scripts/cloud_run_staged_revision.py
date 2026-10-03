@@ -103,9 +103,7 @@ def _condition_summary(resource: dict[str, Any], scope: str) -> list[dict[str, s
     return result
 
 
-def _condition_fields(
-    condition: dict[str, Any], scope: str
-) -> dict[str, str | None]:
+def _condition_fields(condition: dict[str, Any], scope: str) -> dict[str, str | None]:
     return {
         "scope": scope,
         "type": _enum(condition.get("type")),
@@ -133,10 +131,7 @@ def safe_revision_diagnostics(
             if (digest := _digest(container.get("image")))
         }
     )
-    resolved_digest = (
-        revision.get("status", {}).get("imageDigest")
-        or revision.get("imageDigest")
-    )
+    resolved_digest = revision.get("status", {}).get("imageDigest") or revision.get("imageDigest")
     service_template_digests = sorted(
         {
             digest
@@ -154,9 +149,7 @@ def safe_revision_diagnostics(
         "previousServingRevision": _short_revision(previous),
         "previousServingRevisionResource": previous,
         "reconciling": (
-            service.get("reconciling")
-            if isinstance(service.get("reconciling"), bool)
-            else None
+            service.get("reconciling") if isinstance(service.get("reconciling"), bool) else None
         ),
         "terminalCondition": (
             _condition_fields(service["terminalCondition"], "service-terminal")
@@ -169,8 +162,7 @@ def safe_revision_diagnostics(
             or (service.get("metadata") or {}).get("generation")
         ),
         "serviceObservedGeneration": _enum(
-            service.get("observedGeneration")
-            or service.get("status", {}).get("observedGeneration")
+            service.get("observedGeneration") or service.get("status", {}).get("observedGeneration")
         ),
         "revisionName": _short_revision(metadata.get("name") or revision.get("name")),
         "revisionResource": metadata.get("name") or revision.get("name"),
@@ -378,8 +370,7 @@ def sanitize_startup_logs(path: str) -> dict[str, Any]:
                 frames.append(frame)
     return {
         "exceptionClasses": [
-            {"name": name, "count": count}
-            for name, count in exception_classes.most_common()
+            {"name": name, "count": count} for name, count in exception_classes.most_common()
         ],
         "frames": frames[-40:],
     }
@@ -403,13 +394,9 @@ def main() -> None:
     elif mode == "diagnostics" and len(args) == 3:
         revision_path, previous, expected_image = args
         revision = (
-            _read(revision_path)
-            if revision_path != "-" and Path(revision_path).exists()
-            else {}
+            _read(revision_path) if revision_path != "-" and Path(revision_path).exists() else {}
         )
-        diagnostics = safe_revision_diagnostics(
-            service, revision, previous, expected_image
-        )
+        diagnostics = safe_revision_diagnostics(service, revision, previous, expected_image)
         print(json.dumps(diagnostics, sort_keys=True))
     elif mode == "sanitize-logs" and len(args) == 0:
         print(json.dumps(sanitize_startup_logs(service_path), sort_keys=True))

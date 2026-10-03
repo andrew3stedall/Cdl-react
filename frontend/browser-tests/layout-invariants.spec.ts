@@ -292,7 +292,9 @@ test('primary headers and essential player values remain legible at 200% text sc
     expectWithinViewport(brandBox, viewport, `${title} brand`);
     expectWithinViewport(headingBox, viewport, `${title} heading`);
     expectWithinViewport(actionsBox, viewport, `${title} actions`);
-    expect(brandBox.x + brandBox.width).toBeLessThanOrEqual(actionsBox.x + 1);
+    const brandAndActionsDoNotOverlap = brandBox.x + brandBox.width <= actionsBox.x + 1
+      || brandBox.y + brandBox.height <= actionsBox.y + 1;
+    expect(brandAndActionsDoNotOverlap, `${title} brand and actions must not overlap after responsive wrapping`).toBe(true);
     const titleFontSize = await heading.evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));
     expect(titleFontSize, `${title} title should respond to 200% text scaling`).toBeGreaterThanOrEqual(32);
     const heroOverflow = await hero.evaluate((element) => element.scrollWidth > element.clientWidth + 1);

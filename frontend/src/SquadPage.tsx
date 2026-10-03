@@ -4,7 +4,6 @@ import {
   ArrowDownUp,
   ArrowRightLeft,
   CalendarClock,
-  CalendarDays,
   ChevronDown,
   CircleAlert,
   CircleCheck,
@@ -12,7 +11,6 @@ import {
   CircleMinus,
   CirclePlus,
   Filter,
-  Home,
   List,
   LockKeyhole,
   Repeat2,
@@ -53,6 +51,7 @@ import {
 import './squad-page.css';
 import './squad-lineup-groups.css';
 import { PlayerProfilePage, SubstitutionReviewDrawer } from './PlayerProfilePage';
+import { invalidateData, subscribeDataFreshness } from './data-freshness';
 
 interface SquadPageProps {
   attackDirection?: AttackDirection;
@@ -328,6 +327,8 @@ export function SquadPage({
   const [lineupAvailable, setLineupAvailable] = useState(false);
   const [teamSelection, setTeamSelection] = useState<TeamSelectionSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [lineupDirty, setLineupDirty] = useState(false);
   const [lineupSaving, setLineupSaving] = useState(false);
   const [clockNow, setClockNow] = useState(() => Date.now());
@@ -360,6 +361,9 @@ export function SquadPage({
   const [availabilityFilter, setAvailabilityFilter] = useState<'all' | 'risk'>('all');
   const [fixtureFilter, setFixtureFilter] = useState<'all' | 'easy'>('all');
   const drawerRef = useRef<HTMLElement | null>(null);
+  const hasDraftRef = useRef(false);
+  const hasLoadedRef = useRef(false);
+  hasDraftRef.current = lineupDirty || stagedAdditionIds.size > 0 || stagedRemovalIds.size > 0;
 
   const navigateInternally = (event: MouseEvent<HTMLAnchorElement>, href: string) => {
     if (!onNavigate) return;
@@ -368,7 +372,20 @@ export function SquadPage({
   };
 
   useEffect(() => {
+    const unsubscribe = subscribeDataFreshness('squad', ['squad', 'lineup', 'trade', 'interest', 'global'], () => {
+      if (hasDraftRef.current) {
+        setStatus('Data may be out of date. Save or clear staged squad changes before refreshing.');
+        return;
+      }
+      setReloadKey((current) => current + 1);
+    });
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
     let mounted = true;
+    setLoading(!hasLoadedRef.current);
+    setLoadFailed(false);
     void Promise.allSettled([
       squadClient.getWorkspace(),
       teamSelectionClient.getTeamSelection(),
@@ -400,6 +417,7 @@ export function SquadPage({
         setLineupDirty(false);
         if (!hasLineup) setSquadView('list');
         setLoading(false);
+        hasLoadedRef.current = true;
         setStatus(
           hasLineup
             ? `${summary?.manager_team.name ?? normalizedLineup?.managerTeam.name ?? 'Your'} squad ready for review.`
@@ -408,6 +426,7 @@ export function SquadPage({
         const failures = [workspaceResult, lineupResult]
           .filter((result): result is PromiseRejectedResult => result.status === 'rejected');
         if (failures.length > 0) {
+          setLoadFailed(true);
           const reason = failures[0].reason instanceof Error ? failures[0].reason.message : 'one or more data sources failed';
           setStatus(`Squad loaded with partial data. ${reason}`);
         }
@@ -415,13 +434,14 @@ export function SquadPage({
       .catch((error: Error) => {
         if (mounted) {
           setLoading(false);
+          setLoadFailed(true);
           setStatus(error.message);
         }
       });
     return () => {
       mounted = false;
     };
-  }, [squadClient, teamSelectionClient]);
+  }, [reloadKey, squadClient, teamSelectionClient]);
 
   useEffect(() => {
     if (drawerMode !== 'compare' && drawerMode !== 'trade') return;
@@ -610,6 +630,7 @@ export function SquadPage({
     setSquadPlayers(mergeLineupPlayers(updatedSummary.players.map(mapPlayer), teamSelection?.players ?? null));
     closeDrawer();
     setStatus('Squad updated from the player profile.');
+    invalidateData(['squad', 'lineup'], 'squad');
   }
 
   function profilePlayer(player: PlayerView): SquadApiPlayer {
@@ -734,6 +755,7 @@ export function SquadPage({
       setSquadPlayers((current) => mergeLineupPlayers(current, updated.players));
       setLineupDirty(false);
       setStatus('Lineup saved and validated.');
+      invalidateData(['lineup'], 'squad');
     } catch (error) {
       setStatus(apiErrorMessage(error, 'Unable to save the lineup.'));
     } finally {
@@ -765,6 +787,7 @@ export function SquadPage({
         setSquadPlayers((current) => mergeLineupPlayers(current, updated.players));
       }
       setStatus(`${chip.name} chip state updated.`);
+      invalidateData(['lineup'], 'squad');
     } catch (error) {
       setStatus(apiErrorMessage(error, 'Unable to update the chip.'));
     }
@@ -778,6 +801,7 @@ export function SquadPage({
       if (trade.status === 'proposed') setProposedTradeCount((current) => current + 1);
       closeDrawer();
       setStatus(`Trade proposal for ${tradeSource.displayName} sent to ${tradeTarget.draftTeam?.name ?? 'the selected manager'}.`);
+      invalidateData(['trade'], 'squad');
     } catch (error) {
       setStatus(apiErrorMessage(error, 'Unable to submit the trade proposal.'));
     } finally {
@@ -817,6 +841,7 @@ export function SquadPage({
       setStatus(refreshFailures.length
         ? `Squad changes saved. ${refreshFailures.join(' and ')} could not refresh; retry loading data.`
         : 'Squad changes saved and temporary rights updated.');
+      invalidateData(['squad', 'lineup', 'trade'], 'squad');
     } catch (error) {
       setStatus(apiErrorMessage(error, 'Unable to save squad changes.'));
     } finally {
@@ -873,7 +898,8 @@ export function SquadPage({
           </div>
         ) : null}
         <p className="squad-page__status" role="status" aria-live="polite">
-          {lineupLocked ? `Lineup locked. ${teamSelection?.fixtureLock.reason ?? 'The gameweek deadline has passed.'}` : status}
+          {lineupLocked ? `Lineup locked. ${teamSelection?.fixtureLock.reason ?? 'The gameweek deadline has passed.'}` : <StatusMessage onNavigate={onNavigate} text={status} />}
+          {loadFailed ? <Button disabled={loading} onClick={() => setReloadKey((key) => key + 1)} type="button" variant="secondary">Retry</Button> : null}
         </p>
       </section>
 
@@ -1114,13 +1140,6 @@ export function SquadPage({
         </div>
       ) : null}
 
-      <nav aria-label="Squad mobile navigation" className="squad-page__mobile-nav">
-        <a href="/" onClick={(event) => navigateInternally(event, '/')}><Home size={19} /><span>Desk</span></a>
-        <a aria-current="page" href="/squad-management" onClick={(event) => navigateInternally(event, '/squad-management')}><Shield size={19} /><span>Squad</span></a>
-        <a href="/scouting" onClick={(event) => navigateInternally(event, '/scouting')}><Search size={19} /><span>Market</span></a>
-        <a href="/team-selection" onClick={(event) => navigateInternally(event, '/team-selection')}><CalendarDays size={19} /><span>Matchweek</span></a>
-        <a href="/league" onClick={(event) => navigateInternally(event, '/league')}><Trophy size={19} /><span>League</span></a>
-      </nav>
     </main>
   );
 }
@@ -2052,3 +2071,11 @@ function isAvailabilityRisk(player: PlayerView): boolean {
 }
 
 export { formBand, shortPlayerName } from './components/player/PlayerCard';
+
+function StatusMessage({ onNavigate, text }: { onNavigate?: (href: string) => void; text: string }) {
+  const match = text.match(/^(.*?)(\/rules#[a-z-]+)(\.?$)/);
+  if (!match) return text;
+  const [, before, href, punctuation] = match;
+  const label = href.split('#')[1].replaceAll('-', ' ');
+  return <>{before}<a href={href} onClick={(event) => { if (onNavigate) { event.preventDefault(); onNavigate(href); } }}>Review {label}</a>{punctuation}</>;
+}

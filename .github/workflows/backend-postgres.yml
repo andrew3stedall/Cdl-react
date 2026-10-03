@@ -25,6 +25,13 @@ jobs:
           --health-retries 10
     env:
       CDL_DATABASE_URL: postgresql+psycopg://cdl@localhost:5432/cdl
+      CDL_ENVIRONMENT: staging
+      CDL_REPOSITORY_MODE: postgres
+      CDL_SESSION_COOKIE_SECURE: "true"
+      CDL_DEVELOPMENT_LOGIN_SECRET: postgres-ci-test-only-secret
+      CDL_GOOGLE_CLIENT_ID: postgres-ci-test-client
+      CDL_GOOGLE_ALLOWED_EMAILS: andrew3stedall@gmail.com,manager@example.com,seed-reviewer@example.com
+      CDL_COMMISSIONER_EMAILS: manager@example.com
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v4
@@ -40,6 +47,8 @@ jobs:
           tests/test_postgres_fdr.py
           tests/test_postgres_release_journeys.py
           tests/test_postgres_squad_interests.py
+          tests/test_postgres_trade_approval.py
+          tests/test_free_agency_draw_repository.py
           tests/test_postgres_preferences.py
           tests/test_historical_import_migration.py
           tests/test_historical_import_service.py

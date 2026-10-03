@@ -1,4 +1,4 @@
-import { type FormEvent, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { type FormEvent, lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import {
   canAccessProtectedRoute,
@@ -9,11 +9,9 @@ import {
   type SessionClient,
 } from './auth';
 import { AppShell } from './AppShell';
-import { AnalyticsDashboardPage } from './AnalyticsDashboardPage';
 import { GlobalNotificationsProvider } from './components/ui/global-notifications';
 import type { SessionState } from './contracts';
 import type { DashboardClient } from './dashboard-api';
-import { FixtureDifficultyPage } from './FixtureDifficultyPage';
 import type { FdrClient } from './fdr-api';
 import { GlobalNavigation } from './GlobalNavigation';
 import { LeaguePage } from './LeaguePage';
@@ -25,6 +23,7 @@ import { ManagerDeskPage } from './ManagerDeskPage';
 import type { ManagerDeskClient } from './manager-desk-api';
 import { ModernisationCheckpointPage } from './ModernisationCheckpointPage';
 import { getPageRouteKey, isSquadRoute, isSupportedRoute } from './navigation';
+import { activateDataRoute } from './data-freshness';
 import { PlayerProfilePage } from './PlayerProfilePage';
 import { LocalStoragePreferenceClient, type PreferenceClient } from './preferences-api';
 import { ProfilePage } from './ProfilePage';
@@ -50,6 +49,8 @@ function storedLoginReturnPath(): string | null {
     return null;
   }
 }
+const AnalyticsDashboardPage = lazy(() => import('./AnalyticsDashboardPage').then((module) => ({ default: module.AnalyticsDashboardPage })));
+const FixtureDifficultyPage = lazy(() => import('./FixtureDifficultyPage').then((module) => ({ default: module.FixtureDifficultyPage })));
 
 interface AppProps {
   dashboardClient?: DashboardClient;
@@ -198,7 +199,8 @@ export function App({
     } catch {
       // Browser history can be unavailable in isolated DOM tests.
     }
-    setCurrentPath(href);
+    const normalizedPath = new URL(href, window.location.origin).pathname;
+    setCurrentPath(normalizedPath);
   }, []);
 
   const completeLogin = useCallback((resolvedSession: SessionState) => {
@@ -430,6 +432,8 @@ function AppRouteContent({
   const previousRouteKey = useRef(activeRouteKey);
   const scrollPositions = useRef(new Map<string, number>());
 
+  useEffect(() => activateDataRoute(activeRouteKey), [activeRouteKey]);
+
   // Browser history restoration runs before async page data exists. On a
   // fresh app mount that can restore a stale offset into the loading state,
   // then move the page again when the Desk content expands. SPA navigation
@@ -504,7 +508,7 @@ function AppRouteContent({
     }
 
     if (path.startsWith('/rules')) {
-      routeContent = <RulesWorkspacePage onNavigate={onNavigate} preset={preset} />;
+      routeContent = <RulesWorkspacePage anchor={window.location.hash} onNavigate={onNavigate} preset={preset} />;
     }
 
     if (path.startsWith('/league')) {
@@ -515,28 +519,15 @@ function AppRouteContent({
       routeContent = <LeagueInvitePage currentPath={path} leagueClient={leagueClient} onNavigate={onNavigate} session={activeSession} />;
     }
 
-    if (path.startsWith('/modernisation/checkpoint-1')) {
-      routeContent = <ModernisationCheckpointPage onNavigate={onNavigate} />;
-    }
-
-    if (path.startsWith('/modernisation/checkpoint-2')) {
-      routeContent = <ModernisationCheckpointPage checkpoint={2} onNavigate={onNavigate} />;
-    }
-
-    if (path.startsWith('/modernisation/checkpoint-3')) {
-      routeContent = <ModernisationCheckpointPage checkpoint={3} onNavigate={onNavigate} />;
-    }
-
-    if (path.startsWith('/modernisation/checkpoint-4')) {
-      routeContent = <ModernisationCheckpointPage checkpoint={4} onNavigate={onNavigate} />;
-    }
-
-    if (path.startsWith('/modernisation/checkpoint-5')) {
-      routeContent = <ModernisationCheckpointPage checkpoint={5} onNavigate={onNavigate} />;
+    const checkpointMatch = path.match(/^\/modernisation\/checkpoint-([1-5])$/);
+    if (checkpointMatch) {
+      routeContent = activeSession.engineeringPreviewsEnabled === true
+        ? <ModernisationCheckpointPage checkpoint={Number(checkpointMatch[1]) as 1 | 2 | 3 | 4 | 5} onNavigate={onNavigate} />
+        : <main aria-labelledby="preview-unavailable-title" className="feature-screen"><h1 id="preview-unavailable-title">Preview unavailable</h1><p>This engineering preview is not enabled for this environment.</p></main>;
     }
 
     if (path.startsWith('/dashboard/analytics') || path.startsWith('/analytics')) {
-      routeContent = <AnalyticsDashboardPage dashboardClient={dashboardClient} onNavigate={onNavigate} />;
+      routeContent = <Suspense fallback={<LazyRouteLoading label="Loading Analytics" />}><AnalyticsDashboardPage dashboardClient={dashboardClient} onNavigate={onNavigate} /></Suspense>;
     }
 
     if (path === '/dashboard' || path === '/team' || path === '/') {
@@ -554,7 +545,7 @@ function AppRouteContent({
     }
 
     if (path.startsWith('/fdr')) {
-      routeContent = <FixtureDifficultyPage fdrClient={fdrClient} onNavigate={onNavigate} />;
+      routeContent = <Suspense fallback={<LazyRouteLoading label="Loading FDR" />}><FixtureDifficultyPage fdrClient={fdrClient} onNavigate={onNavigate} /></Suspense>;
     }
 
     if (path.startsWith('/scouting')) {
@@ -603,4 +594,8 @@ function AppRouteContent({
       })}
     </div>
   );
+}
+
+function LazyRouteLoading({ label }: { label: string }) {
+  return <main aria-label={label} className="feature-screen" role="status"><p>{label}…</p></main>;
 }

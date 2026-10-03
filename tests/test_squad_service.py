@@ -93,6 +93,8 @@ def test_agreed_trade_waits_for_approval_before_changing_ownership() -> None:
     assert executed is not None
     assert executed.approval_status == TradeApprovalStatus.APPROVED
     assert executed.executed_at is not None
+    with pytest.raises(SquadValidationError, match="participant"):
+        service.approve_trade(trade.id, TradeApprovalDecision.APPROVED, "manager-1")
     assert repository.get_player("player-1").draft_team.id == "team-rival"
     assert repository.get_player("player-4").draft_team.id == "team-castle"
 

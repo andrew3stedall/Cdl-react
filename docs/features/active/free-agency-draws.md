@@ -56,10 +56,13 @@ corrected
 
 ## React Requirements
 
-- Free agency preference entry UI.
-- Private preference list.
-- Public draw result view.
+- The Market workspace exposes an addressable `/scouting/draws` view and lists the signed-in manager's season draws.
+- Managers can add available players, reorder ranked preferences, and save only while the API reports `open_for_preferences`.
+- The private preference list and post-processing outcome are shown only for the requesting manager; public awards can be viewed after processing.
+- Failed draw, preference, and results reads offer retry without exposing another team's preference list.
 - Manager-specific missed/won explanation.
+
+The React client uses `GET /api/free-agency/draws` (bare draw array), `GET`/`PUT /api/free-agency/draws/{draw_id}/preferences` (private ranked preference array; PUT body `{ player_ids }`), and `GET /api/free-agency/draws/{draw_id}/results` for public awards plus the authenticated team's private outcome. The server scopes preference reads and writes to the authenticated manager's team.
 - Temporary right action prompt.
 
 ## Data Access Requirements

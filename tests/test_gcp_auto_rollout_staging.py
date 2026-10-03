@@ -51,14 +51,18 @@ def test_auto_rollout_pins_existing_traffic_until_verified_migration() -> None:
     migration = content.index("- name: Run database migrations")
     diagnose = content.index("- name: Diagnose database migration failure")
     verify_staged = content.index("- name: Verify new revision before traffic promotion")
+    smoke_staged = content.index("- name: Smoke staged revision before traffic promotion")
     promote = content.index("- name: Promote staged revision after migration")
 
-    assert capture < apply < migration < verify_staged < promote < diagnose
+    assert capture < apply < migration < verify_staged < smoke_staged < promote < diagnose
     assert content.count('-var="runtime_traffic_revision=${RUNTIME_TRAFFIC_REVISION}"') == 2
     assert "if: steps.database-migrations.outcome == 'success'" in content
     assert "if: steps.database-migrations.outcome == 'failure'" in content
-    assert "Healthy revision traffic changed before the database migration completed" in content
-    assert "update-traffic cdl-react-staging-api" in content
+    assert "scripts/cloud_run_staged_revision.py pin" in content
+    assert "scripts/cloud_run_staged_revision.py verify" in content
+    assert '"${candidate_url}/health"' in content
+    assert '"${candidate_url}/api/fpl/status"' in content
+    assert '--to-revisions "${STAGED_REVISION}=100"' in content
 
 
 def test_runtime_service_has_a_stage_with_prior_revision_traffic_pin() -> None:
@@ -86,7 +90,9 @@ def test_direct_fallback_migrates_and_smokes_before_promoting_traffic() -> None:
 
     assert migration < stage < smoke < promote < verify_live
     assert "--no-traffic" in content
-    assert "Staged revision received traffic before migration smoke checks." in content
+    assert "scripts/cloud_run_staged_revision.py pin" in content
+    assert "scripts/cloud_run_staged_revision.py verify" in content
+    assert '--to-revisions "${STAGED_REVISION}=100"' in content
     assert content.index('gcloud run jobs execute "${migration_job}"') < stage
 
 
@@ -184,3 +190,15 @@ def test_manual_database_job_workflow_can_refresh_official_fpl_data() -> None:
     assert "fpl-refresh)" in content
     assert 'job_name="cdl-react-staging-fpl-refresh"' in content
     assert "confirm_synthetic_data" in content
+
+
+def test_reviewed_runtime_apply_smokes_and_promotes_the_exact_ready_revision() -> None:
+    content = Path(".github/workflows/gcp-terraform-apply-staging.yml").read_text(encoding="utf-8")
+    smoke = content.index("- name: Smoke staged runtime before traffic promotion")
+    promote = content.index("- name: Promote runtime after migration and smoke checks")
+    assert smoke < promote
+    assert "scripts/cloud_run_staged_revision.py pin" in content
+    assert "scripts/cloud_run_staged_revision.py verify" in content
+    assert '"${candidate_url}/health"' in content
+    assert '"${candidate_url}/api/fpl/status"' in content
+    assert '--to-revisions "${STAGED_REVISION}=100"' in content

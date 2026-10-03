@@ -107,7 +107,7 @@ describe('FDR shell integration', () => {
     const { container } = renderApp('/fdr', authenticatedSession);
 
     await act(async () => {
-      await Promise.resolve();
+      await import('./FixtureDifficultyPage');
       await Promise.resolve();
     });
 

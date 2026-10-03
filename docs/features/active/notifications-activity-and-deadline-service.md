@@ -6,7 +6,7 @@ Define notifications, activity feeds, audit separation, deadline reminders, watc
 
 ## Status
 
-Checkpoint 3 complete.
+Derived manager alerts with loading/error/stale/retry handling are implemented. Durable per-user events, read/dismiss state and scheduled reminders remain planned (#532); engineering checkpoint 3 does not implement this persistent lifecycle.
 
 ## Business Rules
 

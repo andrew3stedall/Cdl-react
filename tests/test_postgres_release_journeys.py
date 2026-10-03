@@ -45,9 +45,19 @@ def test_postgres_two_manager_auth_invite_lineup_chip_round_trip(
         database_url=database_url,
         session_cookie_secure=True,
         development_login_secret=f"test-only-{uuid4().hex}",
-        google_allowed_emails=f"{STAGING_COMMISSIONER_EMAIL},manager@example.com",
+        google_allowed_emails=(
+            f"{STAGING_COMMISSIONER_EMAIL},manager@example.com,seed-reviewer@example.com"
+        ),
         commissioner_emails="manager@example.com",
     )
+    monkeypatch.setenv("CDL_ENVIRONMENT", settings.environment)
+    monkeypatch.setenv("CDL_REPOSITORY_MODE", settings.repository_mode)
+    monkeypatch.setenv("CDL_DATABASE_URL", database_url)
+    monkeypatch.setenv("CDL_SESSION_COOKIE_SECURE", "true")
+    monkeypatch.setenv("CDL_DEVELOPMENT_LOGIN_SECRET", settings.development_login_secret)
+    monkeypatch.setenv("CDL_GOOGLE_CLIENT_ID", "test-only-google-client")
+    monkeypatch.setenv("CDL_GOOGLE_ALLOWED_EMAILS", settings.google_allowed_emails)
+    monkeypatch.setenv("CDL_COMMISSIONER_EMAILS", settings.commissioner_emails)
     monkeypatch.setenv("CDL_ALLOW_SYNTHETIC_STAGING_SEED", "true")
     seed_synthetic_staging_data(settings)
 

@@ -4,6 +4,7 @@
   --profile-text: var(--foreground);
   --profile-muted: var(--muted-foreground);
   --profile-accent: var(--primary);
+  --profile-accent-text: var(--theme-primary-text, var(--profile-accent));
   --profile-danger: var(--destructive);
   --profile-chart-track: color-mix(in srgb, var(--profile-text) 8%, transparent);
   --profile-chart-empty: color-mix(in srgb, var(--profile-text) 22%, transparent);
@@ -702,7 +703,7 @@
 .player-profile__action.is-active {
   background: var(--secondary);
   border-color: var(--profile-accent);
-  color: var(--profile-accent);
+  color: var(--profile-accent-text);
 }
 
 .player-profile__action.is-danger:hover,

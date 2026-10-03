@@ -169,7 +169,7 @@ export interface LeagueSnapshot {
   failedReads?: string[];
 }
 
-export type LeagueSnapshotView = 'fixtures' | 'table' | 'all';
+export type LeagueSnapshotView = 'fixtures' | 'table' | 'knockout' | 'head-to-head' | 'all';
 
 export interface LeagueManagement {
   leagueName: string;
@@ -209,6 +209,8 @@ export interface LeagueJoinResult {
 
 export interface LeagueClient {
   getLeagueSnapshot(view?: LeagueSnapshotView): Promise<LeagueSnapshot>;
+  getKnockout?(): Promise<KnockoutResponse>;
+  getHeadToHead?(): Promise<HeadToHeadResponse>;
   getLeagueManagement?(): Promise<LeagueManagement>;
   createLeagueInvite?(teamId: string): Promise<LeagueInvite>;
   previewLeagueInvite?(token: string): Promise<LeagueInvitePreview>;
@@ -392,6 +394,12 @@ export class HttpLeagueClient implements LeagueClient {
     const tableRead = view === 'table' || view === 'all'
       ? await Promise.allSettled([this.get<ApiTableResponse>('/league/table')])
       : [];
+    const knockoutRead = view === 'knockout' || view === 'all'
+      ? await Promise.allSettled([this.getKnockout()])
+      : [];
+    const headToHeadRead = view === 'head-to-head' || view === 'all'
+      ? await Promise.allSettled([this.getHeadToHead()])
+      : [];
     const failedReads: string[] = [];
     const fixtureValue = (index: number, label: string): LeagueFixturesResponse => {
       const result = fixtureReads[index];
@@ -403,18 +411,30 @@ export class HttpLeagueClient implements LeagueClient {
       return mapFixturesResponse(result.value);
     };
     let table = emptyTable;
-    if (view === 'table') {
+    if (view === 'table' || view === 'all') {
       const result = tableRead[0];
       if (result?.status === 'fulfilled') table = mapTableResponse(result.value);
       else failedReads.push('table');
+    }
+    let knockout: KnockoutResponse = { rounds: [], matches: [] };
+    if (view === 'knockout' || view === 'all') {
+      const result = knockoutRead[0];
+      if (result?.status === 'fulfilled') knockout = result.value;
+      else failedReads.push('knockout');
+    }
+    let headToHead: HeadToHeadResponse = { records: [] };
+    if (view === 'head-to-head' || view === 'all') {
+      const result = headToHeadRead[0];
+      if (result?.status === 'fulfilled') headToHead = result.value;
+      else failedReads.push('head-to-head');
     }
     return {
       currentFixtures: fixtureValue(0, 'current fixtures'),
       nextFixtures: fixtureValue(1, 'upcoming fixtures'),
       allFixtures: fixtureValue(2, 'fixture history'),
       table,
-      knockout: { rounds: [], matches: [] },
-      headToHead: { records: [] },
+      knockout,
+      headToHead,
       failedReads,
     };
   }

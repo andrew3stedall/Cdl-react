@@ -94,8 +94,12 @@ The order is:
    current revision heads, and exits unsuccessfully if they differ from the
    checked-in migration heads.
 5. Check staged revision readiness, `/health`, and the unauthenticated API
-   boundary without routing public traffic to the candidate.
-6. Promote the staged revision. A failed migration or staged check prevents
+   boundary without routing public traffic to the candidate. Cloud Run v1 and
+   v2 service shapes are both parsed; the candidate must be the latest created
+   and latest ready revision, and its configured and resolved image digest must
+   match the immutable image under review.
+6. Promote that exact checked revision at 100 percent, not a moving `latest`
+   target. A failed migration or staged check prevents
    this step. The direct fallback repeats the migration/image gate and stages
    with `--no-traffic` before it can promote.
 

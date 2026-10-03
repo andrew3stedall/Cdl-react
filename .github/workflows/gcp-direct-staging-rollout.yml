@@ -209,6 +209,15 @@ jobs:
             --project "${PROJECT_ID}" \
             --format='value(image_summary.digest)' | grep -Fxq "${IMAGE_DIGEST_URI##*@}"
 
+      - name: Capture current serving revision
+        run: |
+          set -euo pipefail
+          gcloud run services describe "${SERVICE_NAME}" \
+            --project "${PROJECT_ID}" --region "${REGION}" --format=json \
+            > "${RUNNER_TEMP}/current-service.json"
+          revision="$(python scripts/cloud_run_staged_revision.py pin "${RUNNER_TEMP}/current-service.json")"
+          echo "RUNTIME_TRAFFIC_REVISION=${revision}" >> "${GITHUB_ENV}"
+
       - name: Run and verify migrations before changing application traffic
         run: |
           set -euo pipefail
@@ -236,41 +245,29 @@ jobs:
       - name: Verify staged revision and retained traffic
         run: |
           set -euo pipefail
-          service_json="$(gcloud run services describe "${SERVICE_NAME}" \
+          gcloud run services describe "${SERVICE_NAME}" \
             --project "${PROJECT_ID}" \
-            --region "${REGION}" \
-            --format=json)"
-          python - "${service_json}" "${IMAGE_DIGEST_URI}" <<'PY'
+            --region "${REGION}" --format=json \
+            > "${RUNNER_TEMP}/staged-service.json"
+          ready="$(python - "${RUNNER_TEMP}/staged-service.json" <<'PY'
           import json
           import sys
 
-          service = json.loads(sys.argv[1])
-          expected_image = sys.argv[2]
+          service = json.load(open(sys.argv[1], encoding="utf-8"))
           status = service.get("status", {})
-          latest_ready = status.get("latestReadyRevisionName") or service.get("latestReadyRevision")
-          traffic = status.get("traffic", []) or service.get("traffic", [])
-          active_traffic = [item for item in traffic if item.get("percent", 0) > 0]
-          containers = service.get("template", {}).get("containers", [])
-          if not containers:
-              containers = service.get("template", {}).get("spec", {}).get("containers", [])
-          if not containers:
-              containers = service.get("spec", {}).get("template", {}).get("containers", [])
-          if not containers:
-              containers = service.get("spec", {}).get("template", {}).get("spec", {}).get("containers", [])
-          image = containers[0].get("image") if containers else None
-
-          if not latest_ready:
-              raise SystemExit("Cloud Run has no ready revision")
-          if not active_traffic or sum(item.get("percent", 0) for item in active_traffic) != 100:
-              raise SystemExit(f"Cloud Run traffic is not fully allocated: {traffic!r}")
-          if any(item.get("revisionName") == latest_ready for item in active_traffic):
-              raise SystemExit("Staged revision received traffic before migration smoke checks.")
-          if image != expected_image:
-              raise SystemExit(f"Cloud Run image mismatch: {image!r}")
-          print(f"ready_revision={latest_ready}")
-          print("existing_traffic_percent=100")
-          print(f"image={image}")
+          print(status.get("latestReadyRevisionName") or status.get("latestReadyRevision") or service.get("latestReadyRevision") or "")
           PY
+          )"
+          test -n "${ready}"
+          gcloud run revisions describe "${ready}" \
+            --project "${PROJECT_ID}" --region "${REGION}" --format=json \
+            > "${RUNNER_TEMP}/staged-revision.json"
+          latest_ready="$(python scripts/cloud_run_staged_revision.py verify \
+            "${RUNNER_TEMP}/staged-service.json" "${RUNNER_TEMP}/staged-revision.json" \
+            "${RUNTIME_TRAFFIC_REVISION}" "${IMAGE_DIGEST_URI}")"
+          echo "STAGED_REVISION=${latest_ready}" >> "${GITHUB_ENV}"
+          echo "ready_revision=${latest_ready}"
+          echo "image=${IMAGE_DIGEST_URI}"
 
           candidate_url="$(gcloud run revisions describe "${latest_ready}" \
             --project "${PROJECT_ID}" --region "${REGION}" \
@@ -286,7 +283,8 @@ jobs:
         run: |
           set -euo pipefail
           gcloud run services update-traffic "${SERVICE_NAME}" \
-            --project "${PROJECT_ID}" --region "${REGION}" --to-latest --quiet
+            --project "${PROJECT_ID}" --region "${REGION}" \
+            --to-revisions "${STAGED_REVISION}=100" --quiet
 
       - name: Verify promoted revision health and auth boundary
         run: |

@@ -10,6 +10,7 @@ from sqlalchemy import (
     MetaData,
     String,
     Table,
+    UniqueConstraint,
     text,
 )
 
@@ -180,6 +181,73 @@ squad_audit_events_table = Table(
     Column("metadata_json", JSON(), nullable=False, server_default=text("'{}'")),
 )
 
+free_agency_draws_table = Table(
+    "free_agency_draws",
+    metadata,
+    Column("id", String(64), primary_key=True),
+    Column("season_id", String(64), ForeignKey("seasons.id"), nullable=False),
+    Column("gameweek", Integer(), nullable=False),
+    Column("status", String(64), nullable=False),
+    Column("opens_at", DateTime(timezone=True), nullable=True),
+    Column("closes_at", DateTime(timezone=True), nullable=False),
+    Column("processed_at", DateTime(timezone=True), nullable=True),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+    UniqueConstraint("season_id", "gameweek", name="uq_free_agency_draw_season_gameweek"),
+)
+
+free_agency_draw_order_table = Table(
+    "free_agency_draw_order",
+    metadata,
+    Column("id", String(64), primary_key=True),
+    Column("draw_id", String(64), ForeignKey("free_agency_draws.id"), nullable=False),
+    Column("draft_team_id", String(64), ForeignKey("draft_teams.id"), nullable=False),
+    Column("position", Integer(), nullable=False),
+    UniqueConstraint("draw_id", "draft_team_id", name="uq_free_agency_draw_order_team"),
+    UniqueConstraint("draw_id", "position", name="uq_free_agency_draw_order_position"),
+)
+
+free_agency_preferences_table = Table(
+    "free_agency_preferences",
+    metadata,
+    Column("id", String(64), primary_key=True),
+    Column("draw_id", String(64), ForeignKey("free_agency_draws.id"), nullable=False),
+    Column("draft_team_id", String(64), ForeignKey("draft_teams.id"), nullable=False),
+    Column("manager_id", String(64), ForeignKey("managers.id"), nullable=False),
+    Column("player_id", String(64), ForeignKey("fpl_players.id"), nullable=False),
+    Column("rank", Integer(), nullable=False),
+    Column("submitted_at", DateTime(timezone=True), nullable=False),
+    UniqueConstraint("draw_id", "draft_team_id", "rank", name="uq_free_agency_preference_rank"),
+    UniqueConstraint(
+        "draw_id", "draft_team_id", "player_id", name="uq_free_agency_preference_player"
+    ),
+)
+
+free_agency_results_table = Table(
+    "free_agency_results",
+    metadata,
+    Column("id", String(64), primary_key=True),
+    Column("draw_id", String(64), ForeignKey("free_agency_draws.id"), nullable=False),
+    Column("draft_team_id", String(64), ForeignKey("draft_teams.id"), nullable=False),
+    Column("player_id", String(64), ForeignKey("fpl_players.id"), nullable=True),
+    Column("preference_rank", Integer(), nullable=True),
+    Column("reason_code", String(64), nullable=False),
+    Column("temporary_right_id", String(64), ForeignKey("player_rights.id"), nullable=True),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+    UniqueConstraint("draw_id", "draft_team_id", name="uq_free_agency_result_team"),
+    UniqueConstraint("draw_id", "player_id", name="uq_free_agency_result_player"),
+)
+
+free_agency_events_table = Table(
+    "free_agency_events",
+    metadata,
+    Column("id", String(64), primary_key=True),
+    Column("draw_id", String(64), ForeignKey("free_agency_draws.id"), nullable=False),
+    Column("actor_manager_id", String(64), ForeignKey("managers.id"), nullable=True),
+    Column("action", String(64), nullable=False),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+    Column("metadata_json", JSON(), nullable=False, server_default=text("'{}'")),
+)
+
 SQUAD_PERSISTENCE_TABLES = (
     squad_roster_slots_table,
     squad_ownerships_table,
@@ -194,4 +262,9 @@ SQUAD_PERSISTENCE_TABLES = (
     trade_approvals_table,
     squad_rejection_reasons_table,
     squad_audit_events_table,
+    free_agency_draws_table,
+    free_agency_draw_order_table,
+    free_agency_preferences_table,
+    free_agency_results_table,
+    free_agency_events_table,
 )

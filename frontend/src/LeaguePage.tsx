@@ -16,10 +16,13 @@ import { Card } from './components/ui/card';
 import { FIXTURE_REVIEW_VIEW_STORAGE_KEY, FixtureSquadComparison, FixtureSquadViewToggle, getStoredFixtureReviewView } from './components/fixture/FixtureSquadComparison';
 import type { FixtureGameweekStatus, FixtureSquadView } from './components/fixture/FixtureSquadComparison';
 import { LeagueManagementIcon } from './components/league/LeagueManagementIcon';
+import { HeadToHeadView, KnockoutView } from './LeagueCompetitionViews';
 import { managerNicknameForTeam } from './manager-nicknames';
+import { invalidateData, subscribeDataFreshness } from './data-freshness';
 import { PlayerChartDetailDialog } from './components/player/PlayerChartDetailDialog';
 import { TeamCrest } from './components/team/TeamCrest';
 import { PageHero, PageHeroControls, PageHeroViewToggle } from './components/ui/page-hero';
+import { useModalLifecycle } from './components/ui/sheet';
 import type { AttackDirection } from './contracts';
 import type { SessionState } from './contracts';
 import {
@@ -57,7 +60,7 @@ const defaultLeagueClient = new HttpLeagueClient();
 const defaultSquadClient = new HttpSquadClient();
 const defaultTeamSelectionClient = new HttpTeamSelectionClient();
 
-type LeagueView = 'fixtures' | 'table' | 'manage';
+type LeagueView = 'fixtures' | 'table' | 'manage' | 'knockout' | 'head-to-head';
 type GameweekState = 'not-started' | 'underway' | 'finished';
 
 interface LeaguePageProps {
@@ -92,6 +95,10 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
     setView(leagueViewFromPath(currentPath));
   }, [currentPath]);
 
+  useEffect(() => subscribeDataFreshness('league', ['league', 'squad', 'lineup', 'trade', 'global'], () => {
+    setReloadKey((current) => current + 1);
+  }), []);
+
   useEffect(() => {
     let isActive = true;
 
@@ -104,7 +111,7 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
     async function loadLeagueData() {
       setStatus('loading');
       try {
-        const snapshotView: LeagueSnapshotView = view === 'table' ? 'table' : 'fixtures';
+        const snapshotView: LeagueSnapshotView = view === 'table' || view === 'knockout' || view === 'head-to-head' ? view : 'fixtures';
         const leagueSnapshot = await leagueClient.getLeagueSnapshot(snapshotView);
         if (isActive) {
           setSnapshot(leagueSnapshot);
@@ -196,25 +203,6 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
     };
   }, [detailRetryKey, leagueClient, selectedFixture]);
 
-  useEffect(() => {
-    if (!selectedFixture) return undefined;
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        if (selectedFixturePlayer) {
-          setSelectedFixturePlayer(null);
-        } else {
-          closeFixture();
-        }
-      }
-    };
-    window.addEventListener('keydown', closeOnEscape);
-    return () => window.removeEventListener('keydown', closeOnEscape);
-  }, [selectedFixture, selectedFixturePlayer]);
-
-  useEffect(() => {
-    if (selectedFixture) drawerRef.current?.focus();
-  }, [selectedFixture]);
-
   const selectedFixturePlayerGameweekStatus = selectedFixturePlayer
     ? fixtureGameweekStatusForFixture(selectedFixturePlayer.fixture, snapshot)
     : null;
@@ -242,7 +230,7 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
                   ? [{ ariaLabel: 'View commissioner management', value: 'manage', label: 'Manage', icon: <LeagueManagementIcon size={18} /> }]
                   : []),
               ]}
-              value={view}
+              value={view === 'knockout' || view === 'head-to-head' ? 'table' : view}
             />
           </PageHeroControls>
         )}
@@ -251,6 +239,12 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
         title="League"
         titleId="league-title"
       />
+
+      {view === 'table' || view === 'knockout' || view === 'head-to-head' ? <nav aria-label="League competitions" className="league-competition-tabs">{([
+        ['table', 'Table'],
+        ['knockout', 'Knockouts'],
+        ['head-to-head', 'Head-to-head'],
+      ] as Array<[LeagueView, string]>).map(([destination, label]) => <Button aria-current={view === destination ? 'page' : undefined} key={destination} onClick={() => { setView(destination); onNavigate(destination === 'table' ? '/league/table' : `/league/${destination}`); }} type="button" variant={view === destination ? 'secondary' : 'ghost'}>{label}</Button>)}</nav> : null}
 
       {status === 'loading' ? <LeagueLoadingState /> : null}
       {status === 'error' ? (
@@ -290,7 +284,8 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
           squads={fixtureSquads}
           squadReadError={squadReadError}
           detailReadError={detailReadError}
-          onClose={closeFixture}
+          onClose={() => { if (selectedFixturePlayer) setSelectedFixturePlayer(null); else closeFixture(); }}
+          isOpen={!selectedFixturePlayer}
           onRetry={() => setDetailRetryKey((key) => key + 1)}
           drawerRef={drawerRef}
           onPlayerClick={openFixturePlayer}
@@ -446,7 +441,13 @@ function LeagueContent({
   view: LeagueView;
 }) {
   if (view === 'table') return <TableView onReload={onReload} snapshot={snapshot} />;
+  if (view === 'knockout') return snapshot.failedReads?.includes('knockout') ? <LeagueDataError label="Knockout fixtures" onReload={onReload} /> : <KnockoutView knockout={snapshot.knockout} onOpenFixture={onOpenFixture} />;
+  if (view === 'head-to-head') return snapshot.failedReads?.includes('head-to-head') ? <LeagueDataError label="Head-to-head records" onReload={onReload} /> : <HeadToHeadView records={snapshot.headToHead.records} />;
   return <><LeagueReadWarning failedReads={snapshot.failedReads ?? []} onReload={onReload} /><FixturesView leagueClient={leagueClient} managerTeamId={managerTeamId} onOpenFixture={onOpenFixture} snapshot={snapshot} /></>;
+}
+
+function LeagueDataError({ label, onReload }: { label: string; onReload: () => void }) {
+  return <Card className="league-state-card league-state-card--error" role="alert"><CircleAlert aria-hidden="true" size={18} /><div><strong>{label} unavailable</strong></div><Button onClick={onReload} type="button" variant="secondary"><RefreshCw aria-hidden="true" size={16} />Retry</Button></Card>;
 }
 
 function LeagueReadWarning({ failedReads, onReload }: { failedReads: string[]; onReload: () => void }) {
@@ -493,6 +494,7 @@ function CommissionerManagementView({ leagueClient }: { leagueClient: LeagueClie
       setManagement((current) => current ? { ...current, leagueName: invite.leagueName, availableTeamCount: invite.availableTeamCount } : current);
       setInviteUrls((current) => ({ ...current, [teamId]: `${window.location.origin}/join/${encodeURIComponent(invite.token)}` }));
       setInviteStatus((current) => ({ ...current, [teamId]: 'created' }));
+      invalidateData(['league'], 'league');
     } catch {
       setInviteStatus((current) => ({ ...current, [teamId]: 'error' }));
     }
@@ -1405,7 +1407,8 @@ function TableRow({ row }: { row: LeagueTableRow }) {
   return <tr><th scope="row"><span className={`league-rank league-rank--${row.position <= 3 ? row.position : 'other'}`}>{row.position}</span></th><th scope="row" className="league-table__team">{row.team.name}</th><td>{row.played}</td><td>{row.wins}-{row.draws}-{row.losses}</td><td>{row.pointsFor}</td><td>{row.pointsAgainst}</td><td>{row.pointsDifference > 0 ? '+' : ''}{row.pointsDifference}</td><td><strong>{row.leaguePoints}</strong></td></tr>;
 }
 
-function FixtureDetailDrawer({ attackDirection, detail, detailStatus, detailReadError, drawerRef, fixture, gameweekState, gameweekStatus, onClose, onPlayerClick, onRetry, squadReadError, squads }: { attackDirection: AttackDirection; detail: FixtureDetailResponse | null; detailStatus: 'idle' | 'loading' | 'loaded' | 'error'; detailReadError: boolean; drawerRef: RefObject<HTMLElement | null>; fixture: LeagueFixture; gameweekState: GameweekState; gameweekStatus: FixtureGameweekStatus; onClose: () => void; onPlayerClick: (player: FixtureSquadPlayer) => void; onRetry: () => void; squadReadError: boolean; squads: FixtureSquad[] }) {
+function FixtureDetailDrawer({ attackDirection, detail, detailStatus, detailReadError, drawerRef, fixture, gameweekState, gameweekStatus, isOpen, onClose, onPlayerClick, onRetry, squadReadError, squads }: { attackDirection: AttackDirection; detail: FixtureDetailResponse | null; detailStatus: 'idle' | 'loading' | 'loaded' | 'error'; detailReadError: boolean; drawerRef: RefObject<HTMLElement | null>; fixture: LeagueFixture; gameweekState: GameweekState; gameweekStatus: FixtureGameweekStatus; isOpen: boolean; onClose: () => void; onPlayerClick: (player: FixtureSquadPlayer) => void; onRetry: () => void; squadReadError: boolean; squads: FixtureSquad[] }) {
+  useModalLifecycle(drawerRef, isOpen, onClose);
   const isPreview = fixture.status === 'pending';
   const drawerLabel = isPreview ? (gameweekState === 'underway' ? 'Fixture preview' : 'Upcoming fixture') : fixture.status === 'started' ? 'Live fixture' : 'Finished fixture';
   const hasComparisonSquads = squads.length === 2;
@@ -1504,6 +1507,8 @@ function LeagueLoadingState() {
 function leagueViewFromPath(pathname: string): LeagueView {
   if (pathname === '/league/table') return 'table';
   if (pathname === '/league/manage') return 'manage';
+  if (pathname === '/league/knockout') return 'knockout';
+  if (pathname === '/league/head-to-head') return 'head-to-head';
   return 'fixtures';
 }
 

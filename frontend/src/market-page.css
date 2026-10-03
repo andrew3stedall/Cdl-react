@@ -691,6 +691,29 @@
   gap: 1rem;
 }
 
+.market-page__draw-panel h2,
+.market-page__draw-panel h3 { margin: 0; }
+.market-page__draw-header { align-items: end; display: flex; flex-wrap: wrap; gap: 0.75rem; justify-content: space-between; }
+.market-page__draw-header h2 { font-size: 1.15rem; }
+.market-page__draw-header label,
+.market-page__draw-search { display: grid; gap: 0.35rem; }
+.market-page__draw-header label > span,
+.market-page__draw-search > span { color: var(--muted-foreground); font-size: 0.8rem; }
+.market-page__draw-meta { align-items: center; display: flex; flex-wrap: wrap; gap: 0.65rem; margin: 0; }
+.market-page__draw-preferences,
+.market-page__draw-candidates,
+.market-page__draw-awards { display: grid; gap: 0.45rem; list-style: none; margin: 0; padding: 0; }
+.market-page__draw-preferences li,
+.market-page__draw-candidates li,
+.market-page__draw-awards li { align-items: center; border: 1px solid var(--border); border-radius: var(--radius); display: flex; gap: 0.65rem; justify-content: space-between; min-width: 0; padding: 0.4rem 0.55rem; }
+.market-page__draw-preferences li > strong,
+.market-page__draw-candidates li > span,
+.market-page__draw-awards li > strong { flex: 1; min-width: 0; }
+.market-page__draw-candidates small { color: var(--muted-foreground); display: block; font-size: 0.75rem; }
+.market-page__draw-rank { align-items: center; background: var(--muted); border-radius: 999px; display: inline-flex; flex: 0 0 1.65rem; height: 1.65rem; justify-content: center; }
+.market-page__draw-row-actions { align-items: center; display: flex; gap: 0.1rem; }
+.market-page__draw-privacy { color: var(--muted-foreground); font-size: 0.82rem; margin: 0; }
+
 .market-page__explainer {
   align-items: flex-start;
   background: var(--secondary);

@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 
 import type { SquadApiNotification, SquadClient } from '../../squad-api';
 import { HttpSquadClient } from '../../squad-api';
+import { subscribeScopedDataFreshness } from '../../data-freshness';
 
 interface GlobalNotificationsContextValue {
   close: () => void;
@@ -59,6 +60,10 @@ export function GlobalNotificationsProvider({
       active = false;
     };
   }, [attempt, squadClient]);
+
+  useEffect(() => subscribeScopedDataFreshness(['alerts'], () => {
+    setAttempt((current) => current + 1);
+  }), []);
 
   const value = useMemo<GlobalNotificationsContextValue>(() => ({
     close: () => setOpen(false),

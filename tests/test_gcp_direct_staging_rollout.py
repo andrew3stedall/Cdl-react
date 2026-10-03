@@ -38,5 +38,8 @@ def test_failure_fallback_requires_manual_or_explicit_request_and_migration_gate
     assert 'gcloud run jobs execute "${migration_job}"' in content
     assert 'test "${migration_image}" = "${IMAGE_DIGEST_URI}"' in content
     assert "--no-traffic" in content
+    assert "scripts/cloud_run_staged_revision.py pin" in content
+    assert "scripts/cloud_run_staged_revision.py verify" in content
+    assert '--to-revisions "${STAGED_REVISION}=100"' in content
     assert "update-traffic" in content
     assert "if: >-" in content

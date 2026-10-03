@@ -319,9 +319,10 @@ jobs:
         if: env.DEPLOYMENT_STAGE == 'runtime'
         run: |
           set -euo pipefail
-          revision="$(gcloud run services describe cdl-react-staging-api \
+          gcloud run services describe cdl-react-staging-api \
             --project "${PROJECT_ID}" --region "${REGION}" --format=json \
-            | python -c 'import json,sys; s=json.load(sys.stdin); t=s.get("status",{}).get("traffic",[]) or s.get("traffic",[]); a=[x for x in t if x.get("percent",0)>0]; assert len(a)==1 and a[0].get("percent")==100 and a[0].get("revisionName"), "Runtime apply requires one current 100% serving revision"; print(a[0]["revisionName"])')"
+            > "${RUNNER_TEMP}/current-service.json"
+          revision="$(python scripts/cloud_run_staged_revision.py pin "${RUNNER_TEMP}/current-service.json")"
           echo "RUNTIME_TRAFFIC_REVISION=${revision}" >> "${GITHUB_ENV}"
 
       - name: Recreate reviewed staging plan
@@ -439,23 +440,24 @@ jobs:
           set -euo pipefail
           service_json="$(gcloud run services describe cdl-react-staging-api \
             --project "${PROJECT_ID}" --region "${REGION}" --format=json)"
-          revision="$(python - "${service_json}" "${RUNTIME_TRAFFIC_REVISION}" <<'PY'
+          printf '%s\n' "${service_json}" > "${RUNNER_TEMP}/staged-service.json"
+          ready="$(python - "${RUNNER_TEMP}/staged-service.json" <<'PY'
           import json
           import sys
 
-          service = json.loads(sys.argv[1])
-          old_revision = sys.argv[2]
+          service = json.load(open(sys.argv[1], encoding="utf-8"))
           status = service.get("status", {})
-          latest = status.get("latestReadyRevisionName")
-          traffic = status.get("traffic", []) or service.get("traffic", [])
-          active = [item for item in traffic if item.get("percent", 0) > 0]
-          if not latest or latest == old_revision:
-              raise SystemExit("Staged runtime revision is not ready.")
-          if len(active) != 1 or active[0].get("revisionName") != old_revision or active[0].get("percent") != 100:
-              raise SystemExit("Runtime traffic moved before migration and smoke checks passed.")
-          print(latest)
+          print(status.get("latestReadyRevisionName") or status.get("latestReadyRevision") or service.get("latestReadyRevision") or "")
           PY
           )"
+          test -n "${ready}"
+          gcloud run revisions describe "${ready}" \
+            --project "${PROJECT_ID}" --region "${REGION}" --format=json \
+            > "${RUNNER_TEMP}/staged-revision.json"
+          revision="$(python scripts/cloud_run_staged_revision.py verify \
+            "${RUNNER_TEMP}/staged-service.json" "${RUNNER_TEMP}/staged-revision.json" \
+            "${RUNTIME_TRAFFIC_REVISION}" "${BACKEND_IMAGE}")"
+          echo "STAGED_REVISION=${revision}" >> "${GITHUB_ENV}"
           candidate_url="$(gcloud run revisions describe "${revision}" \
             --project "${PROJECT_ID}" --region "${REGION}" --format='value(status.url)')"
           curl --fail --silent --show-error "${candidate_url}/health" | grep -Fq '"status":"ok"'
@@ -468,7 +470,8 @@ jobs:
         run: |
           set -euo pipefail
           gcloud run services update-traffic cdl-react-staging-api \
-            --project "${PROJECT_ID}" --region "${REGION}" --to-latest --quiet
+            --project "${PROJECT_ID}" --region "${REGION}" \
+            --to-revisions "${STAGED_REVISION}=100" --quiet
 
       - name: Verify applied stage resources and access boundary
         shell: bash

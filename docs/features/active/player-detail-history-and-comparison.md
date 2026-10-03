@@ -6,7 +6,7 @@ Define player detail pages, FPL gameweek history, CDL ownership history, and pla
 
 ## Status
 
-Checkpoint 4 complete.
+FPL player detail/history and the compact squad comparison are implemented. Completed fixture explanations use frozen scoring snapshots. CDL ownership/transfer/loan history and expanded comparison views remain planned (#533); engineering checkpoint 4 is not proof of their persistent delivery.
 
 ## Business Rules
 

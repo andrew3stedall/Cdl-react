@@ -16,11 +16,11 @@ The auth session contract reports whether engineering previews are enabled; prod
 - Full frontend suite passed: 191 tests across 41 files, including invite-return reload, failed-logout retry, and multi-passkey management.
 - Python compileall passed.
 - Ruff passed for changed Python files.
-- Full backend suite passed: 408 tests, 18 skipped, 170 warnings (including existing Starlette/httpx and SQLite datetime deprecations).
+- Full backend suite passed: 411 tests, 18 skipped, 170 warnings (including existing Starlette/httpx and SQLite datetime deprecations).
 - Ruff passed for all changed Python files.
 - No migration was needed. No staging or production cloud action was performed.
 - Security review follow-up: unknown `CDL_ENVIRONMENT` values now fail Settings validation, and invalid production Google credentials return a structured 401.
-- Auth capability and production Google database-outage regressions passed in the focused 36-test run.
+- Auth, invite lifecycle, staging-boundary and production Google database-outage regressions passed in the focused 41-test run. Session API capability mapping passes both enabled and disabled cases.
 
 ## Remaining integration and policy
 

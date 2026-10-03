@@ -32,10 +32,10 @@ def _seed_prerequisites(connection: Connection) -> None:
         ON CONFLICT (id) DO NOTHING
         """,
         """
-        INSERT INTO managers (id, display_name)
+        INSERT INTO managers (id, user_id, display_name)
         VALUES
-            ('manager-1', 'Manager'),
-            ('manager-2', 'Rival Manager')
+            ('manager-1', 'manager-1', 'Manager'),
+            ('manager-2', 'manager-2', 'Rival Manager')
         ON CONFLICT (id) DO NOTHING
         """,
         """

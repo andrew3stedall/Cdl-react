@@ -40,10 +40,7 @@ def upgrade() -> None:
         "trade_proposals",
         sa.Column("executed_at", sa.DateTime(timezone=True), nullable=True),
     )
-    op.execute(
-        "UPDATE trade_proposals SET approval_status = 'pending', "
-        "required_approver_role = 'commissioner' WHERE status = 'accepted'"
-    )
+    op.execute("UPDATE trade_proposals SET approval_status = 'pending' WHERE status = 'accepted'")
 
     op.create_table(
         "free_agency_draws",
@@ -106,7 +103,12 @@ def upgrade() -> None:
         ),
         sa.Column("preference_rank", sa.Integer(), nullable=True),
         sa.Column("reason_code", sa.String(length=64), nullable=False),
-        sa.Column("temporary_right_id", sa.String(length=64), nullable=True),
+        sa.Column(
+            "temporary_right_id",
+            sa.String(length=64),
+            sa.ForeignKey("player_rights.id"),
+            nullable=True,
+        ),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.UniqueConstraint("draw_id", "draft_team_id", name="uq_free_agency_result_team"),
         sa.UniqueConstraint("draw_id", "player_id", name="uq_free_agency_result_player"),

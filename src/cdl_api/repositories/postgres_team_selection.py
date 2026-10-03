@@ -214,27 +214,22 @@ class PostgreSQLTeamSelectionRepository(InMemoryTeamSelectionRepository):
         owned_player_ids: set[str],
         now: datetime,
     ) -> None:
-        """Reconcile future unlocked lineup rows within an ownership transaction."""
+        """Repair future unlocked lineups without changing locked history."""
         next_gameweek = session.execute(
             select(fpl_gameweeks_table.c.id).where(fpl_gameweeks_table.c.is_next.is_(True)).limit(1)
         ).scalar_one_or_none()
         try:
             first_future_gameweek = int(str(next_gameweek))
         except (TypeError, ValueError):
-            first_future_gameweek = None
-        future_condition = (
-            team_selection_lineup_slots_table.c.gameweek >= first_future_gameweek
-            if first_future_gameweek is not None
-            else team_selection_lineup_slots_table.c.gameweek > 0
-        )
+            return
+
         rows = list(
             session.execute(
                 select(team_selection_lineup_slots_table)
                 .where(
                     team_selection_lineup_slots_table.c.season_id == SEASON_ID,
                     team_selection_lineup_slots_table.c.draft_team_id == team_id,
-                    team_selection_lineup_slots_table.c.locked_at.is_(None),
-                    future_condition,
+                    team_selection_lineup_slots_table.c.gameweek >= first_future_gameweek,
                 )
                 .order_by(
                     team_selection_lineup_slots_table.c.gameweek,
@@ -247,30 +242,41 @@ class PostgreSQLTeamSelectionRepository(InMemoryTeamSelectionRepository):
             return
         owned_rows = list(
             session.execute(
-                select(
-                    fpl_players_table.c.id,
-                    squad_roster_slots_table.c.sort_order,
-                )
+                select(fpl_players_table.c.id, squad_roster_slots_table.c.sort_order)
                 .join(
                     squad_ownerships_table,
                     squad_ownerships_table.c.player_id == fpl_players_table.c.id,
                 )
-                .join(
+                .outerjoin(
                     squad_roster_slots_table,
                     squad_ownerships_table.c.roster_slot_id == squad_roster_slots_table.c.id,
                 )
-                .where(fpl_players_table.c.id.in_(owned_player_ids))
                 .where(
+                    fpl_players_table.c.id.in_(owned_player_ids),
                     squad_ownerships_table.c.season_id == SEASON_ID,
                     squad_ownerships_table.c.draft_team_id == team_id,
                     squad_ownerships_table.c.ended_at.is_(None),
                 )
-                .order_by(squad_roster_slots_table.c.sort_order, fpl_players_table.c.id)
+                .order_by(
+                    squad_roster_slots_table.c.sort_order.nulls_last(),
+                    fpl_players_table.c.id,
+                )
             ).mappings()
         )
         owned_order = [str(row["id"]) for row in owned_rows]
+        all_player_ids = {str(row["player_id"]) for row in rows} | set(owned_order)
+        positions = {
+            str(row["id"]): str(row["position_id"])
+            for row in session.execute(
+                select(fpl_players_table.c.id, fpl_players_table.c.position_id).where(
+                    fpl_players_table.c.id.in_(all_player_ids)
+                )
+            ).mappings()
+        }
         for gameweek in sorted({int(row["gameweek"]) for row in rows}):
             gameweek_rows = [row for row in rows if int(row["gameweek"]) == gameweek]
+            # Treat a gameweek as an atomic selection. A partially locked lineup
+            # is inconsistent; fail closed instead of rewriting any of it.
             if any(row["locked_at"] is not None for row in gameweek_rows):
                 continue
             used = {
@@ -279,15 +285,31 @@ class PostgreSQLTeamSelectionRepository(InMemoryTeamSelectionRepository):
                 if str(row["player_id"]) in owned_player_ids
             }
             replacements = [player_id for player_id in owned_order if player_id not in used]
-            repaired = []
-            for row in gameweek_rows:
+            repaired: list[dict[str, object]] = []
+            for source_row in gameweek_rows:
+                row = dict(source_row)
                 player_id = str(row["player_id"])
                 if player_id not in owned_player_ids:
-                    if not replacements:
+                    replacement = next(
+                        (
+                            candidate
+                            for candidate in replacements
+                            if PostgreSQLTeamSelectionRepository._repair_slot_compatible(
+                                row,
+                                candidate,
+                                positions,
+                            )
+                        ),
+                        None,
+                    )
+                    if replacement is None:
                         continue
-                    player_id = replacements.pop(0)
+                    player_id = replacement
+                    replacements.remove(replacement)
                     used.add(player_id)
-                repaired.append({**dict(row), "player_id": player_id})
+                row["player_id"] = player_id
+                repaired.append(row)
+
             starters = sorted(
                 (row for row in repaired if row["slot"] == "starter"),
                 key=lambda row: int(row["slot_order"]),
@@ -326,6 +348,28 @@ class PostgreSQLTeamSelectionRepository(InMemoryTeamSelectionRepository):
                         for row in repaired
                     ],
                 )
+
+    @staticmethod
+    def _repair_slot_compatible(
+        row: Mapping[str, object],
+        candidate: str,
+        positions: Mapping[str, str],
+    ) -> bool:
+        from cdl_api.services.lineup_rules import normalize_position
+
+        slot = str(row["slot"])
+        old_position = normalize_position(positions.get(str(row["player_id"]), ""))
+        candidate_position = normalize_position(positions.get(candidate, ""))
+        if not old_position or not candidate_position:
+            return False
+        if slot == "bench":
+            return (candidate_position == "GKP") == (old_position == "GKP")
+        if slot != "starter":
+            return True
+        # Keep starter position counts exactly stable. This is conservative for
+        # partially filled rosters and guarantees an accepted formation cannot
+        # become invalid through a trade replacement.
+        return candidate_position == old_position
 
     def get_historical_fixture_squads(self, fixture: LeagueFixture) -> list[FixtureSquad]:
         """Return the locked lineups and gameweek points for a past fixture.

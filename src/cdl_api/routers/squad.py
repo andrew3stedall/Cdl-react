@@ -21,6 +21,7 @@ from cdl_api.contracts.squad import (
     SquadNotificationsResponse,
     SquadSummaryResponse,
     TradeApprovalRequest,
+    TradeAuditEventResponse,
     TradeCreateRequest,
     TradeProposal,
     TradesResponse,
@@ -227,6 +228,14 @@ def list_trades(
     return TradesResponse(trades=service.list_trades())
 
 
+@router.get("/trades/approvals", response_model=TradesResponse)
+def list_trade_approvals(
+    user: SessionUser = Depends(require_trade_approval_session),
+    service: SquadManagementService = Depends(get_squad_service),
+) -> TradesResponse:
+    return TradesResponse(trades=service.list_pending_trade_approvals(user.id))
+
+
 @router.post("/trades", response_model=TradeProposal)
 def create_trade(
     payload: TradeCreateRequest,
@@ -283,3 +292,22 @@ def approve_trade(
             },
         )
     return trade
+
+
+@router.get("/trades/{trade_id}/audit", response_model=list[TradeAuditEventResponse])
+def trade_audit(
+    trade_id: str,
+    user: SessionUser = Depends(require_trade_approval_session),
+    service: SquadManagementService = Depends(get_squad_service),
+) -> list[TradeAuditEventResponse] | JSONResponse:
+    events = service.trade_audit(trade_id, user.id)
+    if events is None:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={
+                "code": "not_found",
+                "message": "Trade audit trail not found.",
+                "details": {"trade_id": trade_id},
+            },
+        )
+    return events

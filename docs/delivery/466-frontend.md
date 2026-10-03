@@ -20,6 +20,13 @@ This lane owns `SquadPage`, `MarketPage`, `PlayerProfilePage`, `LeaguePage`, `Ap
 - Notifications distinguish initial loading, failure, empty, and stale states, provide Retry, and label counts as alerts without claiming unread state.
 - Commissioner management labels membership as assigned managers and removes unsupported online-presence and invite-process narration.
 - Concrete explanatory copy identified in Squad, Player Profile and League was reduced to concise limits, consequence labels and controls.
+- Shared route activation, visibility, network, and scoped mutation invalidation revalidate cached pages. Squad preserves staged lineup work and reports stale reads rather than replacing the draft.
+- League now has addressable Knockouts and Head-to-head workspace views backed by additive competition client methods. Profile setting paths remain explicitly allowlisted alongside those routes.
+- Retired Squad-local mobile navigation markup and dead styles are removed so the global navigation remains the single destination bar.
+- Market has an addressable free-agency draw view with private ranked preferences, open-window editing, save feedback, the manager's own outcome, public awards, and retry for failed reads.
+- Desk and Player Profile cached reads participate in shared freshness updates. Active visible routes poll every 60 seconds; hidden and inactive route subscribers do not refresh.
+- Engineering checkpoint routes render only when the session explicitly enables engineering previews. Analytics and FDR are split into lazy-loaded route chunks.
+- Rule-validation and chip-conflict Squad status feedback links directly to the relevant Rules section, and SPA route state keeps only the normalized pathname while preserving browser hashes.
 
 ## Validation
 
@@ -28,11 +35,9 @@ This lane owns `SquadPage`, `MarketPage`, `PlayerProfilePage`, `LeaguePage`, `Ap
 - `npm test -- --maxWorkers=2 src/SquadPage.test.tsx src/MarketPage.test.tsx`
 - `npm test -- --maxWorkers=2 src/LeaguePage.test.tsx src/MarketPage.test.tsx src/SquadPage.test.tsx`
 
-The full frontend suite and production build remain to be run after cache freshness and the competition-view integration are complete. An intermediate four-file test run including AppShell had four unrelated integration failures after the Rules and shared UI changes: test stubs do not resolve Rules API reads, and shared header/account selectors need reconciliation.
+Focused validation also covers `src/App.engineering-previews.test.tsx`, `src/data-freshness.test.ts`, and `src/navigation.test.ts` (66 tests passed across six files). `npm run build` succeeds. Its current entry chunk is 605.79 kB minified / 166.15 kB gzip; Analytics and FDR are separate route chunks at 6.33 kB / 2.28 kB gzip and 4.86 kB / 1.78 kB gzip respectively. Vite still warns that the entry chunk exceeds 500 kB. The full frontend suite remains to be run after Rules/Auth/UI integration settles. An intermediate AppShell run had four integration failures after the Rules and shared UI changes: test stubs do not resolve Rules API reads, and shared header/account selectors need reconciliation.
 
 ## Deferred within this lane
 
-- Shared route activation/visibility freshness and mutation invalidation, preserving staged Squad work.
-- League knockout and head-to-head view wiring depends on the coordinator's competition components and additive API contract.
 - Full Rules/AppShell integration test reconciliation remains.
-- Ranked draws require a stable draw-discovery/readiness contract in addition to the movement lane's preference/results endpoints.
+- Full AppShell integration reconciliation and generated bundle size comparison remain.

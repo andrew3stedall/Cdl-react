@@ -190,3 +190,13 @@ class TradeProposal(BaseModel):
 
 class TradesResponse(BaseModel):
     trades: list[TradeProposal]
+
+
+class TradeAuditEventResponse(BaseModel):
+    id: str
+    subject_type: str
+    subject_id: str
+    action: str
+    actor_manager_id: str | None = None
+    created_at: datetime
+    metadata: dict[str, object] = Field(default_factory=dict)

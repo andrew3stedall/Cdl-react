@@ -569,7 +569,7 @@ def test_ownership_repair_replaces_departed_player_only_in_future_unlocked_lineu
                     "draft_team_id": "team-home",
                     "sort_order": order,
                 }
-                for order, player_id in enumerate(("fpl-2", "fpl-3", "fpl-24"), start=1)
+                for order, player_id in enumerate(("fpl-1", "fpl-3", "fpl-24"), start=1)
             ],
         )
         session.execute(
@@ -580,11 +580,11 @@ def test_ownership_repair_replaces_departed_player_only_in_future_unlocked_lineu
                     "season_id": SEASON_ID,
                     "draft_team_id": "team-home",
                     "player_id": player_id,
-                    "roster_slot_id": f"slot-{player_id}",
+                    "roster_slot_id": None if player_id == "fpl-24" else f"slot-{player_id}",
                     "started_at": now,
                     "ended_at": None,
                 }
-                for player_id in ("fpl-2", "fpl-3", "fpl-24")
+                for player_id in ("fpl-1", "fpl-3", "fpl-24")
             ],
         )
         rows = []
@@ -605,9 +605,25 @@ def test_ownership_repair_replaces_departed_player_only_in_future_unlocked_lineu
                         "updated_at": now,
                     }
                 )
+        for slot_order, player_id in enumerate(("fpl-1", "fpl-2", "fpl-3"), start=1):
+            rows.append(
+                {
+                    "id": f"lineup-team-home-3-{player_id}",
+                    "season_id": SEASON_ID,
+                    "draft_team_id": "team-home",
+                    "player_id": player_id,
+                    "gameweek": 3,
+                    "slot": "starter",
+                    "slot_order": slot_order,
+                    "is_captain": slot_order == 1,
+                    "is_vice_captain": slot_order == 2,
+                    "locked_at": now if slot_order == 1 else None,
+                    "updated_at": now,
+                }
+            )
         session.execute(insert(team_selection_lineup_slots_table), rows)
         PostgreSQLTeamSelectionRepository.repair_unlocked_lineups(
-            session, "team-home", {"fpl-2", "fpl-3", "fpl-24"}, now
+            session, "team-home", {"fpl-1", "fpl-3", "fpl-24"}, now
         )
         session.commit()
         updated = list(
@@ -624,9 +640,14 @@ def test_ownership_repair_replaces_departed_player_only_in_future_unlocked_lineu
 
     assert updated[:3] == [(1, "fpl-1"), (1, "fpl-2"), (1, "fpl-3")]
     assert {player_id for gameweek, player_id in updated if gameweek == 2} == {
-        "fpl-2",
+        "fpl-1",
         "fpl-3",
         "fpl-24",
+    }
+    assert {player_id for gameweek, player_id in updated if gameweek == 3} == {
+        "fpl-1",
+        "fpl-2",
+        "fpl-3",
     }
 
 

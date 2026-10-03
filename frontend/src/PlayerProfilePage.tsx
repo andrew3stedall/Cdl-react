@@ -51,6 +51,7 @@ import {
   type TeamSelectionSnapshot,
 } from './team-selection-api';
 import { useOptionalThemePreset } from './theme-preset-provider';
+import { invalidateData, subscribeDataFreshness } from './data-freshness';
 import './player-profile.css';
 
 const defaultSquadClient = new HttpSquadClient();
@@ -128,15 +129,21 @@ export function PlayerProfilePage({
   const [replacementId, setReplacementId] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
   const [chartDetail, setChartDetail] = useState<ChartDetailSelection | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => subscribeDataFreshness('player-profile', ['squad', 'lineup', 'global'], () => {
+    setRefreshKey((current) => current + 1);
+  }), []);
 
   useEffect(() => {
     let mounted = true;
     setLoading(initialPlayer == null);
+    setHistoryLoading(true);
     setLoadError(null);
     setHistoryError(null);
     setSelectionError(null);
     setNotice(null);
-    const playerPromise = initialPlayer
+    const playerPromise = initialPlayer && refreshKey === 0
       ? Promise.resolve(initialPlayer)
       : squadClient.getPlayer
         ? squadClient.getPlayer(playerId)
@@ -168,7 +175,7 @@ export function PlayerProfilePage({
     return () => {
       mounted = false;
     };
-  }, [playerId, squadClient, teamSelectionClient]);
+  }, [initialPlayer, playerId, refreshKey, squadClient, teamSelectionClient]);
 
   const selectedLineupPlayer = selection?.players.find((candidate) => candidate.id === playerId) ?? null;
   const squadStatus: ProfileSquadStatus = selectedLineupPlayer?.slot ?? null;
@@ -242,6 +249,7 @@ export function PlayerProfilePage({
       setActionSheet(null);
       setSelectedSubstitution(null);
       setNotice(successMessage);
+      invalidateData(['lineup', 'squad'], 'player-profile');
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Unable to update the lineup.');
     } finally {
@@ -330,6 +338,7 @@ export function PlayerProfilePage({
       setSelection(updatedSelection);
       onSelectionChange?.(updatedSelection);
       onSquadChange?.(updatedSummary);
+      invalidateData(['squad', 'lineup'], 'player-profile');
       setActionSheet(null);
       setNotice(`${player.display_name} was removed and replaced by ${selectedReplacement.display_name}.`);
     } catch (error) {

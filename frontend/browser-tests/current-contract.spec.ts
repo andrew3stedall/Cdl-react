@@ -15,7 +15,11 @@ const playerFixture = positions.map((position, index) => ({
   position,
   epl_team: { id: `club-${index % 4}`, name: `Club ${index % 4}`, short_name: `C${index % 4}` },
   slot: index < 11 ? 'starter' : index < 16 ? 'bench' : 'reserve',
-  slot_order: index < 11 ? index + 1 : index < 16 ? index - 10 : index - 15,
+  slot_order: index < 11
+    ? index + 1
+    : index < 16
+      ? ([1, 2, 0, 3, 4][index - 11] ?? 0)
+      : index - 15,
   is_captain: index === 0,
   is_vice_captain: index === 1,
 }));
@@ -30,6 +34,7 @@ const chips = [
 
 let lineup = structuredClone(playerFixture);
 let currentChips = structuredClone(chips);
+let savedLineups: Array<Array<Record<string, unknown>>> = [];
 
 function teamSelectionResponse() {
   return {
@@ -45,6 +50,7 @@ function teamSelectionResponse() {
 test.beforeEach(async ({ page }) => {
   lineup = structuredClone(playerFixture);
   currentChips = structuredClone(chips);
+  savedLineups = [];
   await page.route('**/api/auth/session', (route) => route.fulfill({
     json: {
       is_authenticated: true,
@@ -59,6 +65,7 @@ test.beforeEach(async ({ page }) => {
     const request = route.request();
     if (request.method() === 'PUT') {
       const payload = request.postDataJSON() as { players: Array<Record<string, unknown>> };
+      savedLineups.push(structuredClone(payload.players));
       lineup = lineup.map((player) => {
         const next = payload.players.find((candidate) => candidate.player_id === player.id);
         return next
@@ -90,7 +97,7 @@ test.beforeEach(async ({ page }) => {
   }));
 });
 
-test('current 20-player and five-chip selection fits, updates and reloads', async ({ page }) => {
+test('current 20-player and five-chip selection fits and persists captaincy/chip updates', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/team-selection');
 
@@ -100,8 +107,26 @@ test('current 20-player and five-chip selection fits, updates and reloads', asyn
   await expect(page.getByText('Fixture Player 20')).toHaveCount(1);
   await expect(page.locator('.squad-page__list-table tbody tr')).toHaveCount(20);
 
+  await page.getByRole('button', { name: 'View Fixture Player 2 details' }).click();
+  await page.getByRole('button', { name: 'Captain' }).click();
+  await page.getByRole('button', { name: 'Save lineup' }).click();
+  await expect.poll(() => savedLineups.length).toBe(1);
+  expect(savedLineups[0]).toHaveLength(20);
+  expect(savedLineups[0].find((player) => player.player_id === 'player-2')).toMatchObject({
+    is_captain: true,
+    is_vice_captain: false,
+  });
+  await page.getByRole('button', { name: 'Close player profile' }).click();
+
   await page.getByRole('button', { name: 'Triple Captain, available' }).click();
   await expect(page.getByRole('button', { name: 'Triple Captain, active' })).toHaveAttribute('aria-pressed', 'true');
+
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Triple Captain, active' })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'View as list' }).click();
+  await page.getByRole('button', { name: 'View Fixture Player 2 details' }).click();
+  await expect(page.getByRole('button', { name: 'Captain' })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'Close player profile' }).click();
 
   const documentWidth = await page.evaluate(() => document.documentElement.scrollWidth);
   expect(documentWidth).toBeLessThanOrEqual(390);

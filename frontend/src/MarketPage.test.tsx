@@ -52,11 +52,13 @@ const otherOwnedPlayer = {
 let marketPlayers = [player];
 let interestActive = false;
 let marketTrades: Array<Record<string, unknown>> = [];
+let savedDrawPlayerIds: string[] = [];
 
 beforeEach(() => {
   marketPlayers = [player];
   interestActive = false;
   marketTrades = [];
+  savedDrawPlayerIds = [];
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const path = String(input);
     if (path === '/api/squad/summary') {
@@ -79,6 +81,12 @@ beforeEach(() => {
     }
     if (path === '/api/trades') return new Response(JSON.stringify({ trades: marketTrades }), { status: 200 });
     if (path.startsWith('/api/fpl/players/')) return new Response(JSON.stringify({ history: [{ gameweek: 9, fixture_id: 900, total_points: 9, minutes: 90, expected_goals: 0.84, expected_assists: 0.12 }], fixtures: [] }), { status: 200 });
+    if (path === '/api/free-agency/draws') return new Response(JSON.stringify([{ id: 'draw-1', season_id: 1, gameweek: 1, status: 'open_for_preferences', opens_at: null, closes_at: '2026-10-10T12:00:00Z', processed_at: null, draw_order: [] }]), { status: 200 });
+    if (path === '/api/free-agency/draws/draw-1/preferences' && init?.method === 'PUT') {
+      savedDrawPlayerIds = (JSON.parse(String(init.body)) as { player_ids: string[] }).player_ids;
+      return new Response(JSON.stringify(savedDrawPlayerIds.map((player_id, index) => ({ player_id, rank: index + 1 }))), { status: 200 });
+    }
+    if (path === '/api/free-agency/draws/draw-1/preferences') return new Response(JSON.stringify([]), { status: 200 });
     return new Response('{}', { status: 200 });
   }));
 });
@@ -112,6 +120,28 @@ describe('MarketPage', () => {
     expect(container.textContent).not.toContain('Player discovery');
     expect(container.textContent).not.toContain('Official FPL evidence');
     expect(container.querySelector('nav[aria-label="Squad mobile navigation"]')).toBeNull();
+  });
+
+  test('submits an ordered private preference list for an open draw', async () => {
+    const { container } = await renderPage('/scouting/draws');
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+
+    expect(container.textContent).toContain('Gameweek 1');
+    expect(container.textContent).toContain('Rank your player preferences');
+    await act(async () => {
+      (container.querySelector('.market-page__draw-candidates button') as HTMLButtonElement).click();
+      await Promise.resolve();
+    });
+    await act(async () => {
+      (container.querySelector('button') as HTMLButtonElement);
+      const saveButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Save preferences');
+      saveButton?.click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(savedDrawPlayerIds).toEqual(['player-3']);
+    expect(container.textContent).toContain('Only your team can view this ranked list.');
   });
 
   test('presents discovery players in the Squad-style three-column list', async () => {

@@ -351,13 +351,13 @@ describe('AppShell integration', () => {
       await Promise.resolve();
     });
 
-    expect(getLeagueSnapshot).toHaveBeenCalledTimes(1);
+    expect(getLeagueSnapshot).toHaveBeenCalledTimes(2);
     expect(container.querySelectorAll('[data-route-key="league"]')).toHaveLength(1);
     expect(container.querySelector('[data-route-key="league"]')?.hasAttribute('hidden')).toBe(false);
     root.unmount();
   });
 
-  test('returns from Profile to the parsed Desk without reloading it', async () => {
+  test('preserves parsed Desk state while revalidating after Profile', async () => {
     const gameweek = { id: 'gw-1', name: 'Gameweek 1', number: 1, deadlineAt: null };
     const team = { id: 'team-1', name: 'Test Team', shortName: 'TST' };
     const deskSnapshot: ManagerDeskSnapshot = {
@@ -425,7 +425,7 @@ describe('AppShell integration', () => {
       await Promise.resolve();
     });
 
-    expect(getDesk).toHaveBeenCalledTimes(1);
+    expect(getDesk).toHaveBeenCalledTimes(2);
     expect(container.querySelector('[data-route-key="desk"] .manager-desk__loading-state')).toBeNull();
     expect(container.querySelector('[data-route-key="desk"]')?.hasAttribute('hidden')).toBe(false);
     root.unmount();

@@ -10,6 +10,7 @@ import {
   isPrimaryNavigationItemActive,
   isRouteActive,
   isSquadRoute,
+  isSupportedRoute,
   primaryNavigationItems,
   utilityNavigationItems,
 } from './navigation';
@@ -97,5 +98,24 @@ describe('navigation configuration', () => {
     expect(getPageRouteKey('/league/table')).toBe('league');
     expect(getPageRouteKey('/profile/result-colours')).toBe('result-colours');
     expect(getPageRouteKey('/players/player-1')).toBe('player-profile');
+  });
+
+  test('accepts addressable product tabs and known profile settings without accepting unknown paths', () => {
+    for (const path of [
+      '/league/knockout',
+      '/league/head-to-head',
+      '/scouting/draws',
+      '/profile/appearance',
+      '/profile/theme-colours',
+      '/profile/fdr',
+      '/profile/orientation',
+      '/profile/player-positions',
+      '/profile/player-metrics',
+      '/profile/result-colours',
+    ]) {
+      expect(isSupportedRoute(path), path).toBe(true);
+    }
+    expect(isSupportedRoute('/profile/unknown')).toBe(false);
+    expect(isSupportedRoute('/league/unknown')).toBe(false);
   });
 });

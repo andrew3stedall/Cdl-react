@@ -74,7 +74,17 @@ approval_requests
 - `PUT /api/trades/{trade_id}` with `accepted` records the receiving manager's agreement; it does not move ownership.
 - `POST /api/trades/{trade_id}/approve` accepts `{ "decision": "approved" | "rejected", "note": "..." }` from the required league approver after party agreement.
 - Trade responses expose `approval_status`, `required_approver_role`, `approved_by`, and `executed_at`.
+- `GET /api/trades/approvals` returns pending agreements the signed-in eligible league approver may act on, including trades between other managers. Manager `GET /api/trades` remains participant-scoped.
+- `GET /api/trades/{trade_id}/audit` returns the immutable trade audit events to participating managers or an eligible league approver. Other users receive not found.
 - Commissioner-involved trades route to the vice commissioner. A trade participant cannot approve their own movement.
 - Approval, ownership end/start records, audit events, and unlocked future-lineup repair commit in one transaction. A rejected or stale trade changes no ownership.
 
 The existing `accepted` trade status remains the two-party agreement state for compatibility. Execution is represented by approved `approval_status` plus `executed_at`, preventing accepted proposals from silently changing ownership.
+
+## Implemented ranked free-agency draw contract
+
+- Commissioners create and open scheduled draws, then lock and process them after the preference window closes and before that gameweek's FPL deadline.
+- Managers save an ordered private preference list with `PUT /api/free-agency/draws/{draw_id}/preferences` (`{ "player_ids": [...] }`). GET returns only that manager's `{ player_id, rank }` rows.
+- Draw processing persists a randomized order once, awards each still-available player to the first team that ranked them, and stores one result per team. Reprocessing a completed draw returns the persisted draw unchanged.
+- `GET /api/free-agency/draws` returns the season's draw list, including status, windows, and order after processing. `GET /api/free-agency/draws/{draw_id}/results` returns public awards plus only the caller's preferences and result.
+- An awarded player is immediately added to the squad when the team has a compatible slot and remains within the 20-player and position limits. Otherwise, the team receives a temporary claim through the gameweek deadline. Future unlocked lineups are repaired in the same transaction as auto-additions.

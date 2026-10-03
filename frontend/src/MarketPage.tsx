@@ -6,6 +6,9 @@ import {
   ChartNoAxesCombined,
   CircleAlert,
   Filter,
+  ListOrdered,
+  MoveDown,
+  MoveUp,
   Search,
   Star,
   Users,
@@ -15,8 +18,10 @@ import {
 import { Button } from './components/ui/button';
 import { FormDots, PlayerCard, type PlayerCardFixtureTone, type PlayerCardFormGameweek, type PlayerCardPlayer } from './components/player/PlayerCard';
 import { PageHero, PageHeroControls, PageHeroViewToggle } from './components/ui/page-hero';
+import { useModalLifecycle } from './components/ui/sheet';
 import type { ThemePreset } from './contracts';
 import { managerNicknameForTeam } from './manager-nicknames';
+import { invalidateData, subscribeDataFreshness } from './data-freshness';
 import type { SquadApiFormGameweek, SquadApiPlayer, SquadApiTeam } from './squad-api';
 import { formHistoryFromRows, toPlayerCardFormHistory } from './player-form';
 import './market-page.css';
@@ -27,7 +32,7 @@ interface MarketPageProps {
   preset: ThemePreset;
 }
 
-type MarketMode = 'discover' | 'interests' | 'trades';
+type MarketMode = 'discover' | 'interests' | 'trades' | 'draws';
 type PositionFilter = 'all' | 'GKP' | 'DEF' | 'MID' | 'FWD';
 type FixtureFilter = 'all' | 'easy';
 type SortKey = 'points' | 'form' | 'xg' | 'xa' | 'value';
@@ -108,6 +113,29 @@ interface ApiScoutingResponse {
   players: SquadApiPlayer[];
 }
 
+interface FreeAgencyDraw {
+  id: string;
+  season_id: string | number;
+  gameweek: number;
+  status: 'scheduled' | 'open_for_preferences' | 'locked' | 'processing' | 'processed' | string;
+  opens_at: string | null;
+  closes_at: string;
+  processed_at: string | null;
+  draw_order?: string[] | null;
+}
+
+interface DrawResult {
+  draw: FreeAgencyDraw;
+  awards: Array<{ draft_team_id: string; team_name: string; player_id: string; player_name: string }>;
+  own_preferences: Array<{ player_id: string; rank: number }>;
+  own_result: { draft_team_id: string; won_player_id: string | null; preference_rank: number | null; reason_code: string | null } | null;
+}
+
+interface DrawPreference {
+  player_id: string;
+  rank: number;
+}
+
 const positionOptions: Array<{ label: string; value: PositionFilter }> = [
   { label: 'All positions', value: 'all' },
   { label: 'Goalkeepers', value: 'GKP' },
@@ -145,12 +173,84 @@ export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps)
   const [refreshKey, setRefreshKey] = useState(0);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [pendingTradeAction, setPendingTradeAction] = useState<string | null>(null);
+  const [draws, setDraws] = useState<FreeAgencyDraw[]>([]);
+  const [selectedDrawId, setSelectedDrawId] = useState('');
+  const [drawLoadStatus, setDrawLoadStatus] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
+  const [drawError, setDrawError] = useState('');
+  const [drawRefreshKey, setDrawRefreshKey] = useState(0);
+  const [drawDetailsRefreshKey, setDrawDetailsRefreshKey] = useState(0);
+  const [drawPreferences, setDrawPreferences] = useState<string[]>([]);
+  const [drawResult, setDrawResult] = useState<DrawResult | null>(null);
+  const [drawDetailsLoading, setDrawDetailsLoading] = useState(false);
+  const [drawDetailsError, setDrawDetailsError] = useState('');
+  const [drawActionPending, setDrawActionPending] = useState(false);
+  const [drawNotice, setDrawNotice] = useState('');
   const drawerRef = useRef<HTMLElement | null>(null);
   const selectedPlayerId = selectedPlayer?.id;
 
   useEffect(() => {
     setMode(modeFromPath(currentPath));
   }, [currentPath]);
+
+  useEffect(() => subscribeDataFreshness('market', ['squad', 'lineup', 'interest', 'trade', 'draw', 'global'], () => {
+    setRefreshKey((current) => current + 1);
+  }), []);
+
+  useEffect(() => {
+    if (mode !== 'draws') return undefined;
+    let active = true;
+    setDrawLoadStatus('loading');
+    setDrawError('');
+    void fetchJson<FreeAgencyDraw[] | { draws: FreeAgencyDraw[] }>('/api/free-agency/draws')
+      .then((payload) => {
+        if (!active) return;
+        const nextDraws = Array.isArray(payload) ? payload : payload.draws;
+        setDraws(nextDraws);
+        setSelectedDrawId((current) => nextDraws.some((draw) => draw.id === current) ? current : nextDraws[0]?.id ?? '');
+        setDrawLoadStatus('loaded');
+      })
+      .catch((loadError) => {
+        if (!active) return;
+        setDrawError(loadError instanceof Error ? loadError.message : 'Free agency draws are unavailable.');
+        setDrawLoadStatus('error');
+      });
+    return () => { active = false; };
+  }, [drawRefreshKey, mode]);
+
+  const selectedDraw = draws.find((draw) => draw.id === selectedDrawId) ?? null;
+
+  useEffect(() => {
+    if (!selectedDraw) {
+      setDrawPreferences([]);
+      setDrawResult(null);
+      setDrawDetailsError('');
+      return undefined;
+    }
+    let active = true;
+    setDrawDetailsLoading(true);
+    setDrawDetailsError('');
+    setDrawPreferences([]);
+    setDrawResult(null);
+    const reads: Array<Promise<unknown>> = [fetchJson<DrawPreference[]>(`/api/free-agency/draws/${encodeURIComponent(selectedDraw.id)}/preferences`)];
+    if (selectedDraw.status === 'processed') reads.push(fetchJson<DrawResult>(`/api/free-agency/draws/${encodeURIComponent(selectedDraw.id)}/results`));
+    void Promise.allSettled(reads).then(([preferencesRead, resultRead]) => {
+      if (!active) return;
+      if (preferencesRead.status === 'fulfilled') {
+        setDrawPreferences(mapDrawPreferences(preferencesRead.value));
+      } else {
+        setDrawPreferences([]);
+        setDrawDetailsError('Your private preferences are unavailable.');
+      }
+      if (selectedDraw.status === 'processed' && resultRead) {
+        if (resultRead.status === 'fulfilled') setDrawResult(resultRead.value as DrawResult);
+        else setDrawDetailsError((current) => current ? `${current} Results are unavailable.` : 'Draw results are unavailable.');
+      } else {
+        setDrawResult(null);
+      }
+      setDrawDetailsLoading(false);
+    });
+    return () => { active = false; };
+  }, [drawDetailsRefreshKey, selectedDraw?.id, selectedDraw?.status]);
 
   useEffect(() => {
     let active = true;
@@ -221,14 +321,8 @@ export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps)
         if (active) setHistoryStatus('Official FPL history is currently unavailable.');
       });
 
-    drawerRef.current?.focus();
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setSelectedPlayer(null);
-    };
-    window.addEventListener('keydown', closeOnEscape);
     return () => {
       active = false;
-      window.removeEventListener('keydown', closeOnEscape);
     };
   }, [selectedPlayerId]);
 
@@ -262,6 +356,36 @@ export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps)
     onNavigate(path);
   }
 
+  function moveDrawPreference(index: number, direction: -1 | 1) {
+    setDrawPreferences((current) => {
+      const destination = index + direction;
+      if (destination < 0 || destination >= current.length) return current;
+      const next = [...current];
+      [next[index], next[destination]] = [next[destination], next[index]];
+      return next;
+    });
+  }
+
+  async function saveDrawPreferences() {
+    if (!selectedDraw || selectedDraw.status !== 'open_for_preferences' || drawActionPending) return;
+    setDrawActionPending(true);
+    setDrawNotice('');
+    try {
+      const response = await fetchJson<DrawPreference[]>(`/api/free-agency/draws/${encodeURIComponent(selectedDraw.id)}/preferences`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ player_ids: drawPreferences }),
+      });
+      setDrawPreferences(mapDrawPreferences(response));
+      setDrawNotice('Preferences saved. Only your team can view this ranked list.');
+      invalidateData(['draw'], 'market');
+    } catch (actionError) {
+      setDrawNotice(actionError instanceof Error ? actionError.message : 'Unable to save draw preferences.');
+    } finally {
+      setDrawActionPending(false);
+    }
+  }
+
   async function registerInterest(player: MarketPlayer) {
     if (pendingAction) return;
     setPendingAction(player.id);
@@ -279,6 +403,7 @@ export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps)
       setPlayers((current) => current.map((candidate) => candidate.id === player.id ? { ...candidate, status: 'interested' } : candidate));
       setSelectedPlayer((current) => current?.id === player.id ? { ...current, status: 'interested' } : current);
       setNotice(`${player.displayName} added to Interests.`);
+      invalidateData(['interest'], 'market');
     } catch (actionError) {
       setNotice(actionError instanceof Error ? actionError.message : 'Unable to add this player to Interests.');
     } finally {
@@ -303,6 +428,7 @@ export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps)
       setPlayers((current) => current.map((player) => player.id === interest.player.id ? { ...player, status: 'available' } : player));
       setNotice(`${interest.player.displayName} removed from Interests.`);
       setSelectedPlayer((current) => current?.id === interest.player.id ? { ...current, status: 'available' } : current);
+      invalidateData(['interest'], 'market');
     } catch (actionError) {
       setNotice(actionError instanceof Error ? actionError.message : 'Unable to remove this Interest.');
     } finally {
@@ -325,6 +451,7 @@ export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps)
       setNotice(status === 'accepted'
         ? 'Trade accepted. Commissioner approval is still required before ownership changes.'
         : status === 'rejected' ? 'Trade rejected.' : 'Trade proposal cancelled.');
+      invalidateData(status === 'accepted' ? ['trade', 'squad'] : ['trade'], 'market');
     } catch (actionError) {
       setNotice(actionError instanceof Error ? actionError.message : 'Unable to update this trade.');
     } finally {
@@ -345,6 +472,7 @@ export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps)
                 { value: 'discover', label: 'Discovery', icon: <Search aria-hidden="true" size={17} /> },
                 { value: 'interests', label: 'Interests', icon: <Bookmark aria-hidden="true" size={17} /> },
                 { value: 'trades', label: 'Trades', icon: <ArrowRightLeft aria-hidden="true" size={17} /> },
+                { value: 'draws', label: 'Free agency', icon: <ListOrdered aria-hidden="true" size={17} /> },
               ]}
               value={mode}
             />
@@ -394,6 +522,30 @@ export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps)
           <InterestsPanel failed={failedSections.has('Interests')} interests={interests} loading={loading} managerTeam={managerTeam} onBrowse={() => selectMode('discover')} onOpenPlayer={openPlayer} onRemove={removeInterest} onRetry={() => setRefreshKey((key) => key + 1)} pendingAction={pendingAction} />
         ) : null}
         {mode === 'trades' ? <TradesPanel failed={failedSections.has('trade activity')} loading={loading} managerTeam={managerTeam} onBrowse={() => selectMode('discover')} onRetry={() => setRefreshKey((key) => key + 1)} onUpdateTrade={updateTrade} pendingTradeAction={pendingTradeAction} trades={trades} /> : null}
+        {mode === 'draws' ? <FreeAgencyDrawPanel
+          availablePlayers={players.filter((player) => !player.draftTeamId && player.status !== 'owned' && player.status !== 'owned_by_other')}
+          draw={selectedDraw}
+          drawActionPending={drawActionPending}
+          drawDetailsError={drawDetailsError}
+          drawDetailsLoading={drawDetailsLoading}
+          drawError={drawError}
+          drawLoadStatus={drawLoadStatus}
+          drawNotice={drawNotice}
+          drawResult={drawResult}
+          draws={draws}
+          loadingPlayers={loading && players.length === 0}
+          onAddPlayer={(playerId) => setDrawPreferences((current) => current.includes(playerId) ? current : [...current, playerId])}
+          onMovePreference={moveDrawPreference}
+          onRefresh={() => {
+            setDrawRefreshKey((key) => key + 1);
+            setDrawDetailsRefreshKey((key) => key + 1);
+          }}
+          onRemovePlayer={(playerId) => setDrawPreferences((current) => current.filter((id) => id !== playerId))}
+          onSave={() => void saveDrawPreferences()}
+          onSelectDraw={setSelectedDrawId}
+          preferences={drawPreferences}
+          saving={drawActionPending}
+        /> : null}
       </section>
 
       {selectedPlayer ? (
@@ -585,7 +737,80 @@ function TradesPanel({ failed, loading, managerTeam, onBrowse, onRetry, onUpdate
   })}</section>;
 }
 
+function FreeAgencyDrawPanel({ availablePlayers, draw, drawActionPending, drawDetailsError, drawDetailsLoading, drawError, drawLoadStatus, drawNotice, drawResult, draws, loadingPlayers, onAddPlayer, onMovePreference, onRefresh, onRemovePlayer, onSave, onSelectDraw, preferences, saving }: {
+  availablePlayers: MarketPlayer[];
+  draw: FreeAgencyDraw | null;
+  drawActionPending: boolean;
+  drawDetailsError: string;
+  drawDetailsLoading: boolean;
+  drawError: string;
+  drawLoadStatus: 'idle' | 'loading' | 'loaded' | 'error';
+  drawNotice: string;
+  drawResult: DrawResult | null;
+  draws: FreeAgencyDraw[];
+  loadingPlayers: boolean;
+  onAddPlayer: (playerId: string) => void;
+  onMovePreference: (index: number, direction: -1 | 1) => void;
+  onRefresh: () => void;
+  onRemovePlayer: (playerId: string) => void;
+  onSave: () => void;
+  onSelectDraw: (drawId: string) => void;
+  preferences: string[];
+  saving: boolean;
+}) {
+  const [playerQuery, setPlayerQuery] = useState('');
+  const preferenceSet = new Set(preferences);
+  const availableMatches = availablePlayers
+    .filter((player) => !preferenceSet.has(player.id))
+    .filter((player) => `${player.displayName} ${player.club} ${player.position}`.toLowerCase().includes(playerQuery.trim().toLowerCase()))
+    .slice(0, 20);
+  const preferenceNames = preferences.map((playerId) => availablePlayers.find((player) => player.id === playerId)?.displayName ?? `Player ${playerId}`);
+  const mayEdit = draw?.status === 'open_for_preferences';
+
+  if (drawLoadStatus === 'loading' && draws.length === 0) return <section aria-label="Free agency draw" className="market-page__activity-panel"><p role="status">Loading free agency draws…</p></section>;
+  if (drawLoadStatus === 'error' && draws.length === 0) return <section aria-label="Free agency draw" className="market-page__activity-panel"><p role="alert">{drawError || 'Free agency draws are unavailable.'} <Button onClick={onRefresh} type="button" variant="secondary">Retry</Button></p></section>;
+  if (draws.length === 0) return <section aria-label="Free agency draw" className="market-page__activity-panel"><EmptyActivity action="Retry" icon={<ListOrdered aria-hidden="true" size={23} />} onAction={onRefresh} title="No free agency draws" /></section>;
+
+  return (
+    <section aria-label="Free agency draw" className="market-page__activity-panel market-page__draw-panel">
+      <header className="market-page__draw-header">
+        <div><span className="eyebrow">Free agency</span><h2>{draw ? `Gameweek ${draw.gameweek}` : 'Draw preferences'}</h2></div>
+        {draws.length > 1 ? <label><span>Draw</span><select aria-label="Select free agency draw" onChange={(event) => onSelectDraw(event.target.value)} value={draw?.id ?? ''}>{draws.map((item) => <option key={item.id} value={item.id}>GW {item.gameweek} · {formatDrawStatus(item.status)}</option>)}</select></label> : null}
+      </header>
+      {draw ? <p className="market-page__draw-meta"><StatusBadge status={draw.status} /><span>Closes {formatDrawDate(draw.closes_at)}</span>{draw.opens_at ? <span>Opens {formatDrawDate(draw.opens_at)}</span> : null}</p> : null}
+      {drawLoadStatus === 'loading' ? <p role="status">Refreshing draws…</p> : null}
+      {drawLoadStatus === 'error' ? <p role="alert">{drawError} <Button onClick={onRefresh} type="button" variant="secondary">Retry</Button></p> : null}
+      {draw ? <>
+        {drawDetailsLoading ? <p role="status">Loading your private preferences…</p> : null}
+        {drawDetailsError ? <p role="alert">{drawDetailsError} <Button onClick={onRefresh} type="button" variant="secondary">Retry</Button></p> : null}
+        {drawNotice ? <p role="status">{drawNotice}</p> : null}
+        {mayEdit ? <>
+          <h3>Rank your player preferences</h3>
+          <ol aria-label="Ranked draw preferences" className="market-page__draw-preferences">
+            {preferences.map((playerId, index) => <li key={playerId}><span className="market-page__draw-rank">{index + 1}</span><strong>{preferenceNames[index]}</strong><div className="market-page__draw-row-actions"><Button aria-label={`Move ${preferenceNames[index]} up`} disabled={index === 0 || saving} onClick={() => onMovePreference(index, -1)} type="button" variant="ghost"><MoveUp aria-hidden="true" size={16} /></Button><Button aria-label={`Move ${preferenceNames[index]} down`} disabled={index === preferences.length - 1 || saving} onClick={() => onMovePreference(index, 1)} type="button" variant="ghost"><MoveDown aria-hidden="true" size={16} /></Button><Button aria-label={`Remove ${preferenceNames[index]}`} disabled={saving} onClick={() => onRemovePlayer(playerId)} type="button" variant="ghost">Remove</Button></div></li>)}
+          </ol>
+          <label className="market-page__draw-search"><span>Add an available player</span><input onChange={(event) => setPlayerQuery(event.target.value)} placeholder="Search players" value={playerQuery} /></label>
+          {loadingPlayers ? <p role="status">Loading available players…</p> : availablePlayers.length === 0 ? <p>No unowned players are available in the current player pool.</p> : availableMatches.length === 0 ? <p>No matching available players.</p> : <ul className="market-page__draw-candidates">{availableMatches.map((player) => <li key={player.id}><span>{player.displayName} <small>{positionLabel(player.position)} · {player.club}</small></span><Button disabled={drawActionPending} onClick={() => onAddPlayer(player.id)} type="button" variant="secondary">Add</Button></li>)}</ul>}
+          <Button disabled={drawActionPending || drawDetailsLoading} onClick={onSave} type="button">{drawActionPending ? 'Saving…' : 'Save preferences'}</Button>
+          <p className="market-page__draw-privacy">Your ranked preferences stay private to your team.</p>
+        </> : null}
+        {!mayEdit && !drawDetailsLoading ? <>
+          <h3>Your saved preferences</h3>
+          {preferences.length ? <ol className="market-page__draw-preferences">{preferences.map((playerId, index) => <li key={playerId}><span className="market-page__draw-rank">{index + 1}</span><strong>{preferenceNames[index]}</strong></li>)}</ol> : <p>No preferences were saved for this draw.</p>}
+        </> : null}
+        {draw.status === 'processed' && drawResult ? <>
+          <h3>Your draw result</h3>
+          {drawResult.own_result?.won_player_id ? <p>You received {drawResult.awards.find((award) => award.player_id === drawResult.own_result?.won_player_id)?.player_name ?? 'a player'}{drawResult.own_result.preference_rank ? ` at preference ${drawResult.own_result.preference_rank}` : ''}.</p> : <p>No player was awarded to your team.</p>}
+          <h3>Public awards</h3>
+          {drawResult.awards.length ? <ul className="market-page__draw-awards">{drawResult.awards.map((award) => <li key={`${award.draft_team_id}-${award.player_id}`}><span>{award.team_name}</span><strong>{award.player_name}</strong></li>)}</ul> : <p>No players were awarded in this draw.</p>}
+        </> : null}
+      </> : null}
+    </section>
+  );
+}
+
 function PlayerDrawer({ drawerRef, history, historyStatus, interest, managerTeam, onAddInterest, onClose, onNavigate, onRemoveInterest, pendingAction, player }: { drawerRef: MutableRefObject<HTMLElement | null>; history: PlayerHistoryResponse | null; historyStatus: string; interest: InterestView | null; managerTeam: SquadApiTeam; onAddInterest: () => void; onClose: () => void; onNavigate: (href: string) => void; onRemoveInterest: (interest: InterestView) => Promise<void>; pendingAction: string | null; player: MarketPlayer }) {
+  useModalLifecycle(drawerRef, true, onClose);
   const status = interest ? 'interested' : effectiveStatus(player, new Set(), managerTeam);
   const ownershipTone = ownershipToneFor(player, managerTeam);
   return (
@@ -629,6 +854,7 @@ function ownershipToneFor(player: MarketPlayer, managerTeam: SquadApiTeam): Play
 function modeFromPath(path: string): MarketMode {
   if (path.startsWith('/scouting/interests')) return 'interests';
   if (path.startsWith('/scouting/trades')) return 'trades';
+  if (path.startsWith('/scouting/draws')) return 'draws';
   return 'discover';
 }
 
@@ -680,11 +906,35 @@ function comparePlayers(left: MarketPlayer, right: MarketPlayer, key: SortKey): 
 }
 
 function formatTradeStatus(status: string): string {
+  if (status === 'open_for_preferences') return 'Preferences open';
+  if (status === 'scheduled') return 'Scheduled';
+  if (status === 'locked') return 'Locked';
+  if (status === 'processing') return 'Processing';
+  if (status === 'processed') return 'Processed';
+  if (status === 'cancelled') return 'Cancelled';
+  if (status === 'corrected') return 'Corrected';
   if (status === 'trade_target') return 'Trade target';
   if (status === 'proposed') return 'Needs review';
   if (status === 'accepted') return 'Accepted';
   if (status === 'rejected') return 'Rejected';
   return 'Pending';
+}
+
+function formatDrawStatus(status: string): string {
+  return formatTradeStatus(status);
+}
+
+function formatDrawDate(value: string): string {
+  const timestamp = Date.parse(value);
+  return Number.isNaN(timestamp) ? value : new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(timestamp);
+}
+
+function mapDrawPreferences(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return (value as DrawPreference[])
+    .filter((preference) => preference && typeof preference.player_id === 'string' && Number.isFinite(preference.rank))
+    .sort((left, right) => left.rank - right.rank)
+    .map((preference) => preference.player_id);
 }
 
 function formatInteger(value: number | null): string {

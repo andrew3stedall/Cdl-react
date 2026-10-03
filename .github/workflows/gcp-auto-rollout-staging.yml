@@ -122,18 +122,7 @@ jobs:
           gcloud run services describe cdl-react-staging-api \
             --project "${PROJECT_ID}" --region "${REGION}" --format=json \
             > "${RUNNER_TEMP}/current-service.json"
-          revision="$(python - "${RUNNER_TEMP}/current-service.json" <<'PY'
-          import json
-          import sys
-
-          service = json.load(open(sys.argv[1], encoding="utf-8"))
-          traffic = service.get("status", {}).get("traffic", []) or service.get("traffic", [])
-          active = [entry for entry in traffic if entry.get("percent", 0) > 0]
-          if len(active) != 1 or active[0].get("revisionName") is None or active[0]["percent"] != 100:
-              raise SystemExit("Staging must have one explicitly identified 100% serving revision before an automatic rollout.")
-          print(active[0]["revisionName"])
-          PY
-          )"
+          revision="$(python scripts/cloud_run_staged_revision.py pin "${RUNNER_TEMP}/current-service.json")"
           echo "RUNTIME_TRAFFIC_REVISION=${revision}" >> "${GITHUB_ENV}"
 
       - name: Diagnose recent staging auth failures
@@ -472,36 +461,44 @@ jobs:
           gcloud run services describe cdl-react-staging-api \
             --project "${PROJECT_ID}" --region "${REGION}" --format=json \
             > "${RUNNER_TEMP}/staged-service.json"
-          python - "${RUNNER_TEMP}/staged-service.json" "${RUNTIME_TRAFFIC_REVISION}" "${IMAGE_DIGEST_URI}" <<'PY'
-          import json
-          import sys
-
-          service = json.load(open(sys.argv[1], encoding="utf-8"))
-          previous, expected_image = sys.argv[2:]
-          status = service.get("status", {})
-          ready = status.get("latestReadyRevisionName")
-          traffic = status.get("traffic", []) or service.get("traffic", [])
-          current = [entry for entry in traffic if entry.get("percent", 0) > 0]
-          containers = service.get("template", {}).get("containers", [])
-          if not containers:
-              containers = service.get("template", {}).get("spec", {}).get("containers", [])
-          if ready is None or ready == previous:
-              raise SystemExit("New image did not become a ready Cloud Run revision.")
-          if len(current) != 1 or current[0].get("revisionName") != previous or current[0].get("percent") != 100:
-              raise SystemExit("Healthy revision traffic changed before the database migration completed.")
-          if not containers or containers[0].get("image") != expected_image:
-              raise SystemExit("Staged Cloud Run revision does not use the immutable image under review.")
-          print(f"staged_revision={ready}")
-          print(f"serving_revision={previous}")
-          print("serving_traffic_percent=100")
+          ready="$(python - "${RUNNER_TEMP}/staged-service.json" <<'PY'
+          import json, sys
+          service=json.load(open(sys.argv[1], encoding="utf-8"))
+          status=service.get("status", {})
+          print(status.get("latestReadyRevisionName") or status.get("latestReadyRevision") or service.get("latestReadyRevision") or "")
           PY
+          )"
+          test -n "${ready}"
+          gcloud run revisions describe "${ready}" \
+            --project "${PROJECT_ID}" --region "${REGION}" --format=json \
+            > "${RUNNER_TEMP}/staged-revision.json"
+          STAGED_REVISION="$(python scripts/cloud_run_staged_revision.py verify \
+            "${RUNNER_TEMP}/staged-service.json" "${RUNNER_TEMP}/staged-revision.json" \
+            "${RUNTIME_TRAFFIC_REVISION}" "${IMAGE_DIGEST_URI}")"
+          echo "STAGED_REVISION=${STAGED_REVISION}" >> "${GITHUB_ENV}"
+          echo "Verified staged revision ${STAGED_REVISION}; serving revision remains ${RUNTIME_TRAFFIC_REVISION}."
+
+      - name: Smoke staged revision before traffic promotion
+        if: steps.database-migrations.outcome == 'success'
+        run: |
+          set -euo pipefail
+          candidate_url="$(gcloud run revisions describe "${STAGED_REVISION}" \
+            --project "${PROJECT_ID}" --region "${REGION}" \
+            --format='value(status.url)')"
+          test -n "${candidate_url}"
+          curl --fail --silent --show-error "${candidate_url}/health" \
+            | grep -Fq '"status":"ok"'
+          status_code="$(curl --silent --show-error --output /dev/null \
+            --write-out '%{http_code}' "${candidate_url}/api/fpl/status")"
+          test "${status_code}" = "401"
 
       - name: Promote staged revision after migration
         if: steps.database-migrations.outcome == 'success'
         run: |
           set -euo pipefail
           gcloud run services update-traffic cdl-react-staging-api \
-            --project "${PROJECT_ID}" --region "${REGION}" --to-latest --quiet
+            --project "${PROJECT_ID}" --region "${REGION}" \
+            --to-revisions "${STAGED_REVISION}=100" --quiet
 
       - name: Diagnose database migration failure
         if: steps.database-migrations.outcome == 'failure'

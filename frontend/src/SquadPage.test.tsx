@@ -433,18 +433,9 @@ describe('SquadPage', () => {
     expect(paths).not.toContain('/api/squad/notifications');
   });
 
-  test('uses the application navigation handler for page links', async () => {
-    const onNavigate = vi.fn();
-    const { container } = await renderPage(undefined, 'up', onNavigate);
-    const leagueLink = container.querySelector<HTMLAnchorElement>('nav[aria-label="Squad mobile navigation"] a[href="/league"]');
-
-    expect(leagueLink).not.toBeNull();
-    await act(async () => {
-      leagueLink?.click();
-      await Promise.resolve();
-    });
-
-    expect(onNavigate).toHaveBeenCalledWith('/league');
+  test('uses the shared shell navigation without rendering a duplicate mobile bar', async () => {
+    const { container } = await renderPage();
+    expect(container.querySelector('.squad-page__mobile-nav')).toBeNull();
   });
 
   test('maps FDR values to a restrained centred opponent colour scale', () => {

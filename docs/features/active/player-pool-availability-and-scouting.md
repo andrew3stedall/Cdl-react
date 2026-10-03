@@ -6,7 +6,7 @@ Define a unified player pool used across draft, free agency, trades, squad manag
 
 ## Status
 
-Checkpoint 4 complete.
+Live player discovery, availability, generic Interests and trade entry are implemented. Draw-specific preferences are separate from these generic Interests. Private watchlists, notes and availability-alert subscriptions remain planned (#526), with no bookmark or durable notification promise in the current manager interface.
 
 ## Business Rules
 

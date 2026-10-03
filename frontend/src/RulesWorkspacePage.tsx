@@ -7,9 +7,10 @@ import type { RulesIndexResponse, ThemePreset } from './contracts';
 import { fetchRules } from './rules';
 import { RulesPage } from './RulesPage';
 
-export function RulesWorkspacePage({ onNavigate, preset, loadRules = fetchRules }: {
+export function RulesWorkspacePage({ onNavigate, preset, anchor = window.location.hash, loadRules = fetchRules }: {
   onNavigate?: (href: string) => void;
   preset: ThemePreset;
+  anchor?: string;
   loadRules?: () => Promise<RulesIndexResponse>;
 }) {
   const [rules, setRules] = useState<RulesIndexResponse | null>(null);
@@ -27,13 +28,13 @@ export function RulesWorkspacePage({ onNavigate, preset, loadRules = fetchRules 
   useEffect(() => {
     if (!rules) return;
     const scrollToRule = () => {
-      const anchor = window.location.hash.slice(1);
-      if (anchor) document.getElementById(anchor)?.scrollIntoView?.({ block: 'start' });
+      const currentAnchor = anchor.replace(/^#/, '');
+      if (currentAnchor) document.getElementById(currentAnchor)?.scrollIntoView?.({ block: 'start' });
     };
     scrollToRule();
     window.addEventListener('hashchange', scrollToRule);
     return () => window.removeEventListener('hashchange', scrollToRule);
-  }, [rules]);
+  }, [anchor, rules]);
 
   if (rules) return <RulesPage categories={rules.categories} onNavigate={onNavigate} preset={preset} sections={rules.sections} />;
 

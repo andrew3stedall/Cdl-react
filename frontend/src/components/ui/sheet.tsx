@@ -90,5 +90,5 @@ export function useModalLifecycle(
       inerted.forEach(([element, wasInert]) => { element.inert = wasInert; });
       opener?.focus();
     };
-  }, [isOpen]);
+  }, [dialogRef, isOpen]);
 }

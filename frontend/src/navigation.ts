@@ -92,9 +92,18 @@ export function isProfileRoute(path: string): boolean {
 
 export function isSupportedRoute(path: string): boolean {
   if (isDeskRoute(path) || isSquadRoute(path)) return true;
-  if (path === '/scouting' || path === '/scouting/interests' || path === '/scouting/trades') return true;
-  if (path === '/league' || path === '/league/fixtures' || path === '/league/table' || path === '/league/manage') return true;
-  if (path === '/profile' || path === '/account' || path === '/profile/result-colours' || path === '/account/result-colours') return true;
+  if (path === '/scouting' || path === '/scouting/interests' || path === '/scouting/trades' || path === '/scouting/draws') return true;
+  if (path === '/league' || path === '/league/fixtures' || path === '/league/table' || path === '/league/manage' || path === '/league/knockout' || path === '/league/head-to-head') return true;
+  if ([
+    '/profile', '/account',
+    '/profile/appearance', '/account/appearance',
+    '/profile/theme-colours', '/account/theme-colours',
+    '/profile/fdr', '/account/fdr',
+    '/profile/orientation', '/account/orientation',
+    '/profile/player-positions', '/account/player-positions',
+    '/profile/player-metrics', '/account/player-metrics',
+    '/profile/result-colours', '/account/result-colours',
+  ].includes(path)) return true;
   if (path === '/rules' || path === '/fdr' || path === '/analytics' || path === '/dashboard/analytics') return true;
   if (/^\/players\/[^/]+$/.test(path) || /^\/join\/[^/]+$/.test(path)) return true;
   return /^\/modernisation\/checkpoint-[1-5]$/.test(path);

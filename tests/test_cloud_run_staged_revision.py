@@ -229,22 +229,22 @@ def test_created_candidate_validates_identity_image_and_prior_traffic_without_re
     with pytest.raises(ValueError, match="not created a new candidate"):
         resolve_created_candidate(service, revision, previous, IMAGE)
 
-    service, revision = versions[1]
+    service, revision = copy.deepcopy(versions[1])
     revision["name"] = "api-mismatch"
     with pytest.raises(ValueError, match="does not match the latest created"):
         resolve_created_candidate(service, revision, previous, IMAGE)
 
-    service, revision = versions[1]
+    service, revision = copy.deepcopy(versions[1])
     service["trafficStatuses"] = [{"revision": candidate, "percent": 100}]
     with pytest.raises(ValueError, match="Serving traffic changed"):
         resolve_created_candidate(service, revision, previous, IMAGE)
 
-    service, revision = versions[1]
+    service, revision = copy.deepcopy(versions[1])
     revision["containers"][0]["image"] = IMAGE.replace("a" * 64, "b" * 64)
     with pytest.raises(ValueError, match="does not use the immutable image"):
         resolve_created_candidate(service, revision, previous, IMAGE)
 
-    service, revision = versions[1]
+    service, revision = copy.deepcopy(versions[1])
     revision["containers"][0]["image"] = IMAGE
     revision["imageDigest"] = IMAGE.replace("a" * 64, "b" * 64)
     with pytest.raises(ValueError, match="resolved image digest"):
@@ -508,7 +508,7 @@ def test_zero_percent_candidate_warmup_precedes_readiness_and_uses_shared_mutati
         assert "cancel-in-progress: false" in workflow
         warm = workflow.index("Tag and warm zero-percent candidate before readiness verification")
         ready = workflow.index("cloud_run_staged_revision.py ready")
-        promote = workflow.index("--to-revisions=")
+        promote = workflow.index("--to-revisions")
         assert warm < ready < promote
         warm_block = workflow[warm:ready]
         assert 'echo "CANDIDATE_TAG=\u0024{CANDIDATE_TAG}" >> "\u0024{GITHUB_ENV}"' in warm_block

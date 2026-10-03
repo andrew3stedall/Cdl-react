@@ -458,23 +458,47 @@ jobs:
         if: steps.database-migrations.outcome == 'success'
         run: |
           set -euo pipefail
-          gcloud run services describe cdl-react-staging-api \
-            --project "${PROJECT_ID}" --region "${REGION}" --format=json \
-            > "${RUNNER_TEMP}/staged-service.json"
-          ready="$(python - "${RUNNER_TEMP}/staged-service.json" <<'PY'
-          import json, sys
-          service=json.load(open(sys.argv[1], encoding="utf-8"))
-          status=service.get("status", {})
-          print(status.get("latestReadyRevisionName") or status.get("latestReadyRevision") or service.get("latestReadyRevision") or "")
-          PY
-          )"
-          test -n "${ready}"
-          gcloud run revisions describe "${ready}" \
-            --project "${PROJECT_ID}" --region "${REGION}" --format=json \
-            > "${RUNNER_TEMP}/staged-revision.json"
-          STAGED_REVISION="$(python scripts/cloud_run_staged_revision.py verify \
-            "${RUNNER_TEMP}/staged-service.json" "${RUNNER_TEMP}/staged-revision.json" \
-            "${RUNTIME_TRAFFIC_REVISION}" "${IMAGE_DIGEST_URI}")"
+          STAGED_REVISION=""
+          for attempt in $(seq 1 60); do
+            gcloud run services describe cdl-react-staging-api \
+              --project "${PROJECT_ID}" --region "${REGION}" --format=json \
+              > "${RUNNER_TEMP}/staged-service.json"
+            ready="$(python scripts/cloud_run_staged_revision.py ready \
+              "${RUNNER_TEMP}/staged-service.json" "${RUNTIME_TRAFFIC_REVISION}")"
+            if [ -n "${ready}" ]; then
+              gcloud run revisions describe "${ready}" \
+                --project "${PROJECT_ID}" --region "${REGION}" --format=json \
+                > "${RUNNER_TEMP}/staged-revision.json"
+              if ! STAGED_REVISION="$(python scripts/cloud_run_staged_revision.py verify \
+                "${RUNNER_TEMP}/staged-service.json" "${RUNNER_TEMP}/staged-revision.json" \
+                "${RUNTIME_TRAFFIC_REVISION}" "${IMAGE_DIGEST_URI}" \
+                2>"${RUNNER_TEMP}/staged-revision-verification-error.txt")"; then
+                cat "${RUNNER_TEMP}/staged-revision-verification-error.txt" >&2
+                exit 1
+              fi
+              break
+            fi
+            if [ "$(python scripts/cloud_run_staged_revision.py failed \
+              "${RUNNER_TEMP}/staged-service.json")" = "true" ]; then
+              python scripts/cloud_run_staged_revision.py diagnostics \
+                "${RUNNER_TEMP}/staged-service.json" - \
+                "${RUNTIME_TRAFFIC_REVISION}" "${IMAGE_DIGEST_URI}" \
+                > "${RUNNER_TEMP}/staged-revision-diagnostics.json"
+              cat "${RUNNER_TEMP}/staged-revision-diagnostics.json" >&2
+              echo "Cloud Run reports a terminal staged revision failure." >&2
+              exit 1
+            fi
+            sleep 5
+          done
+          if [ -z "${STAGED_REVISION}" ]; then
+            python scripts/cloud_run_staged_revision.py diagnostics \
+              "${RUNNER_TEMP}/staged-service.json" - \
+              "${RUNTIME_TRAFFIC_REVISION}" "${IMAGE_DIGEST_URI}" \
+              > "${RUNNER_TEMP}/staged-revision-diagnostics.json"
+            cat "${RUNNER_TEMP}/staged-revision-diagnostics.json" >&2
+            echo "Cloud Run did not report a new ready revision within five minutes." >&2
+            exit 1
+          fi
           echo "STAGED_REVISION=${STAGED_REVISION}" >> "${GITHUB_ENV}"
           echo "Verified staged revision ${STAGED_REVISION}; serving revision remains ${RUNTIME_TRAFFIC_REVISION}."
 
@@ -570,6 +594,44 @@ jobs:
           )"
           test "${status_code}" = "401"
 
+      - name: Capture safe staged revision diagnostics
+        if: always()
+        run: |
+          set -euo pipefail
+          service_json="${RUNNER_TEMP}/staged-service.json"
+          revision_json="${RUNNER_TEMP}/staged-revision.json"
+          [ -f "${service_json}" ] || printf '{}\n' > "${service_json}"
+          if [ ! -f "${revision_json}" ]; then
+            revision_json="-"
+          fi
+          if ! python scripts/cloud_run_staged_revision.py diagnostics \
+            "${service_json}" "${revision_json}" \
+            "${RUNTIME_TRAFFIC_REVISION:-}" "${IMAGE_DIGEST_URI:-}" \
+            > "${RUNNER_TEMP}/staged-revision-diagnostics.json" 2>/dev/null; then
+            printf '{"diagnosticStatus":"unavailable"}\n' \
+              > "${RUNNER_TEMP}/staged-revision-diagnostics.json"
+          fi
+          created="$(python -c 'import json,sys; print(json.load(open(sys.argv[1])).get("latestCreatedRevision") or "")' \
+            "${RUNNER_TEMP}/staged-revision-diagnostics.json")"
+          if [ -n "${created}" ] && [ "${created}" != "${RUNTIME_TRAFFIC_REVISION:-}" ]; then
+            if gcloud logging read \
+              'resource.type="cloud_run_revision" AND resource.labels.service_name="cdl-react-staging-api" AND resource.labels.revision_name="'${created}'" AND severity>=ERROR' \
+              --project "${PROJECT_ID}" --freshness=2h --limit=100 --format=json \
+              > "${RUNNER_TEMP}/staged-revision-error-logs.json" 2>/dev/null; then
+              python scripts/cloud_run_staged_revision.py sanitize-logs \
+                "${RUNNER_TEMP}/staged-revision-error-logs.json" \
+                > "${RUNNER_TEMP}/staged-revision-startup-errors.json" 2>/dev/null \
+                || printf '{"exceptionClasses":[],"frames":[]}\n' \
+                  > "${RUNNER_TEMP}/staged-revision-startup-errors.json"
+            else
+              printf '{"exceptionClasses":[],"frames":[]}\n' \
+                > "${RUNNER_TEMP}/staged-revision-startup-errors.json"
+            fi
+          else
+            printf '{"exceptionClasses":[],"frames":[]}\n' \
+              > "${RUNNER_TEMP}/staged-revision-startup-errors.json"
+          fi
+
       - name: Create rollout evidence
         run: |
           set -euo pipefail
@@ -620,6 +682,30 @@ jobs:
           run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
           body="Automatic staging rollout succeeded for commit \`${GITHUB_SHA}\`. Migrations and official FPL refresh completed. Service: ${SERVICE_URL}. Evidence: ${run_url}"
           gh api "repos/${GITHUB_REPOSITORY}/issues/96/comments" -f body="${body}"
+
+      - name: Upload safe failed rollout diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-revision-diagnostics-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/staged-revision-diagnostics.json
+            ${{ runner.temp }}/staged-revision-startup-errors.json
+            ${{ runner.temp }}/staged-revision-verification-error.txt
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Upload safe failed rollout diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: staging-revision-diagnostics-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/staged-revision-diagnostics.json
+            ${{ runner.temp }}/staged-revision-startup-errors.json
+            ${{ runner.temp }}/staged-revision-verification-error.txt
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Record failed rollout
         if: failure()

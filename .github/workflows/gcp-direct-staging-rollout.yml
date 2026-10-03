@@ -53,6 +53,11 @@ jobs:
       DEPLOY_SERVICE_ACCOUNT: ${{ vars.GCP_STAGING_DEPLOY_SERVICE_ACCOUNT }}
 
     steps:
+      - name: Checkout trusted workflow commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
       - name: Validate staging identity
         run: |
           set -euo pipefail
@@ -74,6 +79,17 @@ jobs:
         uses: google-github-actions/setup-gcloud@v3
         with:
           version: ">= 416.0.0"
+
+      - name: Pin serving revision before fallback repair
+        run: |
+          set -euo pipefail
+          gcloud run services describe "${SERVICE_NAME}" \
+            --project "${PROJECT_ID}" --region "${REGION}" --format=json \
+            > "${RUNNER_TEMP}/pre-repair-service.json"
+          revision="$(python scripts/cloud_run_staged_revision.py pin \
+            "${RUNNER_TEMP}/pre-repair-service.json")"
+          echo "RUNTIME_TRAFFIC_REVISION=${revision}" >> "${GITHUB_ENV}"
+          echo "Pinned existing 100% serving revision ${revision} before repair."
 
       - name: Repair database attachment for the active staging secret
         run: |
@@ -125,6 +141,10 @@ jobs:
           def find_instances(value):
               if isinstance(value, dict):
                   for key, child in value.items():
+                      if key == "annotations" and isinstance(child, dict):
+                          annotated = child.get("run.googleapis.com/cloudsql-instances", "")
+                          if isinstance(annotated, str):
+                              yield from (item.strip() for item in annotated.split(",") if item.strip())
                       if key in {"instances", "cloudSql", "cloud_sql_instance"}:
                           if isinstance(child, list) and all(isinstance(item, str) for item in child):
                               yield from child
@@ -145,6 +165,7 @@ jobs:
               --project "${PROJECT_ID}" \
               --region "${REGION}" \
               --add-cloudsql-instances "${connection_name}" \
+              --no-traffic \
               --quiet
           fi
 
@@ -167,6 +188,20 @@ jobs:
           done
 
           echo "STAGING_DATABASE_CONNECTION=${connection_name}" >> "${GITHUB_ENV}"
+
+      - name: Verify unchanged serving revision after repair
+        run: |
+          set -euo pipefail
+          gcloud run services describe "${SERVICE_NAME}" \
+            --project "${PROJECT_ID}" --region "${REGION}" --format=json \
+            > "${RUNNER_TEMP}/post-repair-service.json"
+          revision="$(python scripts/cloud_run_staged_revision.py pin \
+            "${RUNNER_TEMP}/post-repair-service.json")"
+          if [ "${revision}" != "${RUNTIME_TRAFFIC_REVISION}" ]; then
+            echo "Serving revision changed during repair: expected ${RUNTIME_TRAFFIC_REVISION}; got ${revision}." >&2
+            exit 1
+          fi
+          echo "Verified repair preserved serving revision ${revision} at 100% traffic."
 
       - name: Resolve immutable image for this rollout
         run: |
@@ -209,14 +244,15 @@ jobs:
             --project "${PROJECT_ID}" \
             --format='value(image_summary.digest)' | grep -Fxq "${IMAGE_DIGEST_URI##*@}"
 
-      - name: Capture current serving revision
+      - name: Verify pinned serving revision before migration
         run: |
           set -euo pipefail
           gcloud run services describe "${SERVICE_NAME}" \
             --project "${PROJECT_ID}" --region "${REGION}" --format=json \
             > "${RUNNER_TEMP}/current-service.json"
           revision="$(python scripts/cloud_run_staged_revision.py pin "${RUNNER_TEMP}/current-service.json")"
-          echo "RUNTIME_TRAFFIC_REVISION=${revision}" >> "${GITHUB_ENV}"
+          test "${revision}" = "${RUNTIME_TRAFFIC_REVISION}"
+          echo "Serving revision is still pinned to ${revision}."
 
       - name: Run and verify migrations before changing application traffic
         run: |
@@ -249,22 +285,48 @@ jobs:
             --project "${PROJECT_ID}" \
             --region "${REGION}" --format=json \
             > "${RUNNER_TEMP}/staged-service.json"
-          ready="$(python - "${RUNNER_TEMP}/staged-service.json" <<'PY'
-          import json
-          import sys
-
-          service = json.load(open(sys.argv[1], encoding="utf-8"))
-          status = service.get("status", {})
-          print(status.get("latestReadyRevisionName") or status.get("latestReadyRevision") or service.get("latestReadyRevision") or "")
-          PY
-          )"
-          test -n "${ready}"
-          gcloud run revisions describe "${ready}" \
-            --project "${PROJECT_ID}" --region "${REGION}" --format=json \
-            > "${RUNNER_TEMP}/staged-revision.json"
-          latest_ready="$(python scripts/cloud_run_staged_revision.py verify \
-            "${RUNNER_TEMP}/staged-service.json" "${RUNNER_TEMP}/staged-revision.json" \
-            "${RUNTIME_TRAFFIC_REVISION}" "${IMAGE_DIGEST_URI}")"
+          STAGED_REVISION=""
+          for attempt in $(seq 1 60); do
+            gcloud run services describe "${SERVICE_NAME}" \
+              --project "${PROJECT_ID}" --region "${REGION}" --format=json \
+              > "${RUNNER_TEMP}/staged-service.json"
+            ready="$(python scripts/cloud_run_staged_revision.py ready \
+              "${RUNNER_TEMP}/staged-service.json" "${RUNTIME_TRAFFIC_REVISION}")"
+            if [ -n "${ready}" ]; then
+              gcloud run revisions describe "${ready}" \
+                --project "${PROJECT_ID}" --region "${REGION}" --format=json \
+                > "${RUNNER_TEMP}/staged-revision.json"
+              if ! STAGED_REVISION="$(python scripts/cloud_run_staged_revision.py verify \
+                "${RUNNER_TEMP}/staged-service.json" "${RUNNER_TEMP}/staged-revision.json" \
+                "${RUNTIME_TRAFFIC_REVISION}" "${IMAGE_DIGEST_URI}" \
+                2>"${RUNNER_TEMP}/staged-revision-verification-error.txt")"; then
+                cat "${RUNNER_TEMP}/staged-revision-verification-error.txt" >&2
+                exit 1
+              fi
+              break
+            fi
+            if [ "$(python scripts/cloud_run_staged_revision.py failed \
+              "${RUNNER_TEMP}/staged-service.json")" = "true" ]; then
+              python scripts/cloud_run_staged_revision.py diagnostics \
+                "${RUNNER_TEMP}/staged-service.json" - \
+                "${RUNTIME_TRAFFIC_REVISION}" "${IMAGE_DIGEST_URI}" \
+                > "${RUNNER_TEMP}/staged-revision-diagnostics.json"
+              cat "${RUNNER_TEMP}/staged-revision-diagnostics.json" >&2
+              echo "Cloud Run reports a terminal staged revision failure." >&2
+              exit 1
+            fi
+            sleep 5
+          done
+          if [ -z "${STAGED_REVISION}" ]; then
+            python scripts/cloud_run_staged_revision.py diagnostics \
+              "${RUNNER_TEMP}/staged-service.json" - \
+              "${RUNTIME_TRAFFIC_REVISION}" "${IMAGE_DIGEST_URI}" \
+              > "${RUNNER_TEMP}/staged-revision-diagnostics.json"
+            cat "${RUNNER_TEMP}/staged-revision-diagnostics.json" >&2
+            echo "Cloud Run did not report a new ready revision within five minutes." >&2
+            exit 1
+          fi
+          latest_ready="${STAGED_REVISION}"
           echo "STAGED_REVISION=${latest_ready}" >> "${GITHUB_ENV}"
           echo "ready_revision=${latest_ready}"
           echo "image=${IMAGE_DIGEST_URI}"
@@ -316,6 +378,54 @@ jobs:
             --write-out '%{http_code}' \
             "${service_url}/api/fpl/status")"
           test "${status_code}" = "401"
+
+      - name: Capture safe staged revision diagnostics
+        if: always()
+        run: |
+          set -euo pipefail
+          service_json="${RUNNER_TEMP}/staged-service.json"
+          revision_json="${RUNNER_TEMP}/staged-revision.json"
+          [ -f "${service_json}" ] || printf '{}\n' > "${service_json}"
+          [ -f "${revision_json}" ] || revision_json="-"
+          if ! python scripts/cloud_run_staged_revision.py diagnostics \
+            "${service_json}" "${revision_json}" \
+            "${RUNTIME_TRAFFIC_REVISION:-}" "${IMAGE_DIGEST_URI}" \
+            > "${RUNNER_TEMP}/staged-revision-diagnostics.json" 2>/dev/null; then
+            printf '{"diagnosticStatus":"unavailable"}\n' \
+              > "${RUNNER_TEMP}/staged-revision-diagnostics.json"
+          fi
+          created="$(python -c 'import json,sys; print(json.load(open(sys.argv[1])).get("latestCreatedRevision") or "")' \
+            "${RUNNER_TEMP}/staged-revision-diagnostics.json")"
+          if [ -n "${created}" ] && [ "${created}" != "${RUNTIME_TRAFFIC_REVISION:-}" ]; then
+            if gcloud logging read \
+              'resource.type="cloud_run_revision" AND resource.labels.service_name="'${SERVICE_NAME}'" AND resource.labels.revision_name="'${created}'" AND severity>=ERROR' \
+              --project "${PROJECT_ID}" --freshness=2h --limit=100 --format=json \
+              > "${RUNNER_TEMP}/staged-revision-error-logs.json" 2>/dev/null; then
+              python scripts/cloud_run_staged_revision.py sanitize-logs \
+                "${RUNNER_TEMP}/staged-revision-error-logs.json" \
+                > "${RUNNER_TEMP}/staged-revision-startup-errors.json" 2>/dev/null \
+                || printf '{"exceptionClasses":[],"frames":[]}\n' \
+                  > "${RUNNER_TEMP}/staged-revision-startup-errors.json"
+            else
+              printf '{"exceptionClasses":[],"frames":[]}\n' \
+                > "${RUNNER_TEMP}/staged-revision-startup-errors.json"
+            fi
+          else
+            printf '{"exceptionClasses":[],"frames":[]}\n' \
+              > "${RUNNER_TEMP}/staged-revision-startup-errors.json"
+          fi
+
+      - name: Upload safe failed rollout diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: direct-staging-revision-diagnostics-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/staged-revision-diagnostics.json
+            ${{ runner.temp }}/staged-revision-startup-errors.json
+            ${{ runner.temp }}/staged-revision-verification-error.txt
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Remove candidate revision traffic tag
         if: always() && env.CANDIDATE_TAG != ''

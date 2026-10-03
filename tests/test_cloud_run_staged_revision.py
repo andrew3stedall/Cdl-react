@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 from pathlib import Path
 
 import pytest
@@ -14,6 +15,10 @@ _spec.loader.exec_module(_module)
 resolve_serving_revision = _module.resolve_serving_revision
 resolve_staged_revision = _module.resolve_staged_revision
 resolve_tagged_candidate_url = _module.resolve_tagged_candidate_url
+resolve_ready_candidate = _module.resolve_ready_candidate
+safe_revision_diagnostics = _module.safe_revision_diagnostics
+sanitize_startup_logs = _module.sanitize_startup_logs
+has_terminal_revision_failure = _module.has_terminal_revision_failure
 
 IMAGE = "australia-southeast1-docker.pkg.dev/project/repo/api@sha256:" + "a" * 64
 
@@ -182,3 +187,177 @@ def test_postgres_release_journey_sets_staging_environment_only_for_itself() -> 
     ):
         assert setting in journey
     assert "CDL_ENVIRONMENT: staging" not in workflow
+
+
+
+def test_full_cloud_run_v2_revision_resource_names_are_normalized_without_weakening_guard() -> None:
+    previous = "projects/project/locations/region/services/api/revisions/api-old"
+    ready = "projects/project/locations/region/services/api/revisions/api-new"
+    service = {
+        "latestCreatedRevision": ready,
+        "latestReadyRevision": ready,
+        "trafficStatuses": [{"revision": previous, "percent": 100}],
+    }
+    assert resolve_serving_revision(service) == "api-old"
+    assert resolve_ready_candidate(service, previous) == "api-new"
+    revision = {
+        "name": ready,
+        "containers": [{"image": IMAGE}],
+        "imageDigest": IMAGE,
+    }
+    assert resolve_staged_revision(service, revision, previous, IMAGE) == "api-new"
+
+    service["latestCreatedRevision"] = previous
+    assert resolve_ready_candidate(service, previous) is None
+    with pytest.raises(ValueError, match="Latest created"):
+        resolve_staged_revision(service, revision, previous, IMAGE)
+
+
+def test_revision_diagnostics_expose_safe_metadata_without_env_or_condition_messages() -> None:
+    secret = "do-not-leak-this-secret"
+    service = {
+        "latestCreatedRevision": "projects/p/locations/r/services/s/revisions/api-new",
+        "latestReadyRevision": "projects/p/locations/r/services/s/revisions/api-old",
+        "trafficStatuses": [{"revision": "api-old", "percent": 100}],
+        "conditions": [
+            {
+                "type": "Ready",
+                "status": "False",
+                "reason": "ContainerFailed",
+                "message": f"environment contained {secret}",
+            }
+        ],
+    }
+    revision = {
+        "metadata": {"name": "api-new"},
+        "spec": {"containers": [{"image": IMAGE}]},
+        "status": {
+            "imageDigest": IMAGE,
+            "conditions": [
+                {
+                    "type": "Ready",
+                    "status": "False",
+                    "reason": "ContainerFailed",
+                    "message": secret,
+                }
+            ],
+        },
+        "env": [{"name": "TOKEN", "value": secret}],
+    }
+    diagnostics = safe_revision_diagnostics(service, revision, "api-old", IMAGE)
+    serialized = str(diagnostics)
+    assert diagnostics["latestCreatedRevision"] == "api-new"
+    assert diagnostics["latestReadyRevision"] == "api-old"
+    assert diagnostics["previousServingRevision"] == "api-old"
+    assert diagnostics["latestCreatedRevisionResource"].endswith("/revisions/api-new")
+    assert diagnostics["latestReadyRevisionResource"].endswith("/revisions/api-old")
+    assert diagnostics["previousServingRevisionResource"] == "api-old"
+    assert diagnostics["expectedImageDigest"] == "sha256:" + "a" * 64
+    assert diagnostics["resolvedImageDigest"] == "sha256:" + "a" * 64
+    assert diagnostics["conditions"][0] == {
+        "scope": "service",
+        "type": "Ready",
+        "status": "False",
+        "reason": "ContainerFailed",
+    }
+    assert secret not in serialized
+
+
+def test_startup_log_sanitizer_keeps_only_exception_classes_and_app_frames(tmp_path: Path) -> None:
+    secret = "database-url-password"
+    path = tmp_path / "logs.json"
+    path.write_text(
+        json.dumps(
+            [
+                {
+                    "textPayload": (
+                        "Traceback (most recent call last):\n"
+                        '  File "/app/src/cdl_api/main.py", line 42, in create_app\n'
+                        f"RuntimeError: {secret}\n"
+                        '  File "/home/runner/secret.py", line 3, in leak\n'
+                        "ValueError: hidden-message"
+                    )
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+    sanitized = sanitize_startup_logs(str(path))
+    serialized = str(sanitized)
+    assert sanitized["exceptionClasses"] == [
+        {"name": "RuntimeError", "count": 1},
+        {"name": "ValueError", "count": 1},
+    ]
+    assert sanitized["frames"] == [
+        {"file": "/app/src/cdl_api/main.py", "line": 42, "function": "create_app"}
+    ]
+    assert secret not in serialized
+    assert "home/runner" not in serialized
+
+def test_direct_rollout_checks_out_helper_and_preserves_pinned_revision_during_repair() -> None:
+    workflow = Path(".github/workflows/gcp-direct-staging-rollout.yml").read_text(
+        encoding="utf-8"
+    )
+    checkout = workflow.index("uses: actions/checkout@v4")
+    repair = workflow.index("- name: Repair database attachment")
+    assert checkout < repair
+    assert "--no-traffic" in workflow[repair:workflow.index("for job in", repair)]
+    assert "pin service traffic before repair" in workflow.lower()
+    assert "verify unchanged serving revision after repair" in workflow.lower()
+
+
+def test_terminal_revision_failure_is_detected_without_exposing_condition_messages() -> None:
+    service = {
+        "status": {
+            "conditions": [
+                {
+                    "type": "Ready",
+                    "status": "False",
+                    "reason": "ContainerFailed",
+                    "message": "secret or raw platform detail",
+                }
+            ]
+        }
+    }
+    assert has_terminal_revision_failure(service)
+    assert not has_terminal_revision_failure(
+        {"status": {"conditions": [{"type": "Ready", "status": "Unknown", "reason": "Deploying"}]}}
+    )
+
+
+def test_all_rollout_workflows_wait_fail_closed_and_capture_only_safe_diagnostics() -> None:
+    paths = (
+        ".github/workflows/gcp-auto-rollout-staging.yml",
+        ".github/workflows/gcp-direct-staging-rollout.yml",
+        ".github/workflows/gcp-terraform-apply-staging.yml",
+    )
+    for path in paths:
+        workflow = Path(path).read_text(encoding="utf-8")
+        assert "cloud_run_staged_revision.py ready" in workflow
+        assert "cloud_run_staged_revision.py failed" in workflow
+        assert "seq 1 60" in workflow
+        assert "cloud_run_staged_revision.py diagnostics" in workflow
+        assert "cloud_run_staged_revision.py sanitize-logs" in workflow
+        assert "staged-revision-startup-errors.json" in workflow
+        assert "staged-service.json" not in workflow.split("path: |")[-1]
+
+
+def test_direct_rollout_captures_prior_revision_before_no_traffic_cloudsql_repair() -> None:
+    workflow = Path(".github/workflows/gcp-direct-staging-rollout.yml").read_text(
+        encoding="utf-8"
+    )
+    checkout = workflow.index("uses: actions/checkout@v4")
+    pin = workflow.index("- name: Pin serving revision before fallback repair")
+    repair = workflow.index("- name: Repair database attachment")
+    unchanged = workflow.index("- name: Verify unchanged serving revision after repair")
+    assert checkout < pin < repair < unchanged
+    service_repair = workflow[repair:workflow.index("for job in", repair)]
+    assert "--no-traffic" in service_repair
+    assert "run.googleapis.com/cloudsql-instances" in service_repair
+    assert 'test "${revision}" = "${RUNTIME_TRAFFIC_REVISION}"' in workflow
+
+
+def test_runtime_image_ci_imports_app_and_checks_health_route() -> None:
+    workflow = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    assert "import cdl_api.app as app;" in workflow
+    assert "getattr(route, 'path', None) == '/health'" in workflow

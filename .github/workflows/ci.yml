@@ -17,6 +17,8 @@ jobs:
         run: >-
           docker run --rm --entrypoint python cdl-runtime-ci
           -c "import sys; import cdl_api.migrate; import cdl_api.refresh_fpl;
+          import cdl_api.app as app;
+          assert any(getattr(route, 'path', None) == '/health' for route in app.app.routes);
           assert sys.executable.startswith('/app/.venv/'), sys.executable"
 
   backend:

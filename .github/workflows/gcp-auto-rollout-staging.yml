@@ -634,6 +634,17 @@ jobs:
           created="$(python -c 'import json,sys; print(json.load(open(sys.argv[1])).get("latestCreatedRevision") or "")' \
             "${RUNNER_TEMP}/staged-revision-diagnostics.json")"
           if [ -n "${created}" ] && [ "${created}" != "${RUNTIME_TRAFFIC_REVISION:-}" ]; then
+            if gcloud run revisions describe "${created}" \
+              --project "${PROJECT_ID}" --region "${REGION}" --format=json \
+              > "${revision_json}" 2>/dev/null; then
+              if ! python scripts/cloud_run_staged_revision.py diagnostics \
+                "${service_json}" "${revision_json}" \
+                "${RUNTIME_TRAFFIC_REVISION:-}" "${IMAGE_DIGEST_URI:-}" \
+                > "${RUNNER_TEMP}/staged-revision-diagnostics.json" 2>/dev/null; then
+                printf '{"diagnosticStatus":"unavailable"}\n' \
+                  > "${RUNNER_TEMP}/staged-revision-diagnostics.json"
+              fi
+            fi
             if gcloud logging read \
               'resource.type="cloud_run_revision" AND resource.labels.service_name="cdl-react-staging-api" AND resource.labels.revision_name="'${created}'" AND severity>=ERROR' \
               --project "${PROJECT_ID}" --freshness=2h --limit=100 --format=json \
@@ -651,7 +662,8 @@ jobs:
             printf '{"exceptionClasses":[],"frames":[]}\n' \
               > "${RUNNER_TEMP}/staged-revision-startup-errors.json"
           fi
-
+          cat "${RUNNER_TEMP}/staged-revision-diagnostics.json" >&2
+          cat "${RUNNER_TEMP}/staged-revision-startup-errors.json" >&2
       - name: Create rollout evidence
         run: |
           set -euo pipefail
@@ -702,18 +714,6 @@ jobs:
           run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
           body="Automatic staging rollout succeeded for commit \`${GITHUB_SHA}\`. Migrations and official FPL refresh completed. Service: ${SERVICE_URL}. Evidence: ${run_url}"
           gh api "repos/${GITHUB_REPOSITORY}/issues/96/comments" -f body="${body}"
-
-      - name: Upload safe failed rollout diagnostics
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: staging-revision-diagnostics-${{ github.run_id }}
-          path: |
-            ${{ runner.temp }}/staged-revision-diagnostics.json
-            ${{ runner.temp }}/staged-revision-startup-errors.json
-            ${{ runner.temp }}/staged-revision-verification-error.txt
-          if-no-files-found: warn
-          retention-days: 7
 
       - name: Upload safe failed rollout diagnostics
         if: failure()

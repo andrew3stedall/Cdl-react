@@ -11,7 +11,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 
-def _read(path: str) -> Any:
+def _read(path: str) -> dict[str, Any] | list[dict[str, Any]]:
     return json.loads(Path(path).read_text(encoding="utf-8"))
 
 
@@ -98,7 +98,7 @@ def _condition_summary(resource: dict[str, Any], scope: str) -> list[dict[str, s
     if isinstance(terminal, dict):
         result.append(_condition_fields(terminal, f"{scope}-terminal"))
     for condition in conditions:
-        if isinstance(condition, dict):
+        if isinstance(condition, dict) and condition != terminal:
             result.append(_condition_fields(condition, scope))
     return result
 

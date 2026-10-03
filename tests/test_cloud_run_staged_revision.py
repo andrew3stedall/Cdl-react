@@ -301,7 +301,7 @@ def test_startup_log_sanitizer_keeps_only_exception_classes_and_app_frames(tmp_p
     assert sanitized["frames"] == [
         {"file": "/app/src/cdl_api/main.py", "line": 42, "function": "create_app"}
     ]
-    assert secret not in serialized
+    assert sentinel_value not in serialized
     assert "home/runner" not in serialized
 
 def test_terminal_revision_failure_is_detected_without_exposing_condition_messages() -> None:
@@ -337,6 +337,10 @@ def test_all_rollout_workflows_wait_fail_closed_and_capture_only_safe_diagnostic
         assert "seq 1 60" in workflow
         assert "cloud_run_staged_revision.py diagnostics" in workflow
         assert "cloud_run_staged_revision.py sanitize-logs" in workflow
+        assert "gcloud run revisions describe \"${created}\"" in workflow
+        assert "cat \"${RUNNER_TEMP}/staged-revision-diagnostics.json\" >&2" in workflow
+        assert "cat \"${RUNNER_TEMP}/staged-revision-startup-errors.json\" >&2" in workflow
+        assert workflow.count("- name: Upload safe failed rollout diagnostics") == 1
         assert "staged-revision-startup-errors.json" in workflow
         assert "staged-service.json" not in workflow.split("path: |")[-1]
 
@@ -386,7 +390,13 @@ def test_cloud_run_v2_terminal_condition_enum_stops_retrying_and_is_summarized_s
                 "state": "CONDITION_FAILED",
                 "revisionReason": "HEALTH_CHECK_CONTAINER_ERROR",
                 "executionReason": "RETRYABLE",
-            }
+            },
+            {
+                "type": "Ready",
+                "state": "CONDITION_FAILED",
+                "revisionReason": "HEALTH_CHECK_CONTAINER_ERROR",
+                "message": "must not be emitted",
+            },
         ],
     }
     assert reconciliation_finished(service) is True

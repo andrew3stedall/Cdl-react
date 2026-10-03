@@ -417,6 +417,17 @@ jobs:
           created="$(python -c 'import json,sys; print(json.load(open(sys.argv[1])).get("latestCreatedRevision") or "")' \
             "${RUNNER_TEMP}/staged-revision-diagnostics.json")"
           if [ -n "${created}" ] && [ "${created}" != "${RUNTIME_TRAFFIC_REVISION:-}" ]; then
+            if gcloud run revisions describe "${created}" \
+              --project "${PROJECT_ID}" --region "${REGION}" --format=json \
+              > "${revision_json}" 2>/dev/null; then
+              if ! python scripts/cloud_run_staged_revision.py diagnostics \
+                "${service_json}" "${revision_json}" \
+                "${RUNTIME_TRAFFIC_REVISION:-}" "${IMAGE_DIGEST_URI}" \
+                > "${RUNNER_TEMP}/staged-revision-diagnostics.json" 2>/dev/null; then
+                printf '{"diagnosticStatus":"unavailable"}\n' \
+                  > "${RUNNER_TEMP}/staged-revision-diagnostics.json"
+              fi
+            fi
             if gcloud logging read \
               'resource.type="cloud_run_revision" AND resource.labels.service_name="'${SERVICE_NAME}'" AND resource.labels.revision_name="'${created}'" AND severity>=ERROR' \
               --project "${PROJECT_ID}" --freshness=2h --limit=100 --format=json \
@@ -434,7 +445,8 @@ jobs:
             printf '{"exceptionClasses":[],"frames":[]}\n' \
               > "${RUNNER_TEMP}/staged-revision-startup-errors.json"
           fi
-
+          cat "${RUNNER_TEMP}/staged-revision-diagnostics.json" >&2
+          cat "${RUNNER_TEMP}/staged-revision-startup-errors.json" >&2
       - name: Upload safe failed rollout diagnostics
         if: failure()
         uses: actions/upload-artifact@v4

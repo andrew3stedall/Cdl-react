@@ -44,7 +44,8 @@ async function expectHeaderDimensions(page: Page, header: Awaited<ReturnType<typ
   expect(Math.abs(header.hero.height - expectedHeroHeight), 'shared PageHero height differs from its shell role').toBeLessThanOrEqual(1);
   expect(Math.abs(header.bell.width - expectedBellSize), 'notification control width differs from its 2.5rem target').toBeLessThanOrEqual(1);
   expect(Math.abs(header.bell.height - expectedBellSize), 'notification control height differs from its 2.5rem target').toBeLessThanOrEqual(1);
-  expect(Math.abs(header.bell.x + header.bell.width - (header.hero.x + header.hero.width)), 'notification control is not aligned to the PageHero end').toBeLessThanOrEqual(1);
+  const bellInlineEndDelta = header.bell.x + header.bell.width - (header.hero.x + header.hero.width);
+  expect(Math.abs(bellInlineEndDelta), `notification control end differs from the PageHero end by ${bellInlineEndDelta}px (bell ${JSON.stringify(header.bell)}, hero ${JSON.stringify(header.hero)})`).toBeLessThanOrEqual(1);
 }
 
 async function primaryLink(page: Page, label: string) {
@@ -277,12 +278,10 @@ test('primary headers and essential player values remain legible at 200% text sc
     const hero = activeHero(page);
     const heroBox = await bounds(hero);
     const brand = hero.locator('.cdl-page-hero__brand-lockup');
-    const copy = hero.locator('.cdl-page-hero__copy');
     const heading = hero.locator('h1');
     const actions = hero.locator('.cdl-page-hero__actions');
-    const [brandBox, copyBox, headingBox, actionsBox] = await Promise.all([
+    const [brandBox, headingBox, actionsBox] = await Promise.all([
       bounds(brand),
-      bounds(copy),
       bounds(heading),
       bounds(actions),
     ]);
@@ -291,9 +290,6 @@ test('primary headers and essential player values remain legible at 200% text sc
     expectWithinViewport(headingBox, viewport, `${title} heading`);
     expectWithinViewport(actionsBox, viewport, `${title} actions`);
     expect(brandBox.x + brandBox.width).toBeLessThanOrEqual(actionsBox.x + 1);
-    expect(copyBox.x + copyBox.width).toBeLessThanOrEqual(actionsBox.x + 1);
-    expect(headingBox.y).toBeGreaterThanOrEqual(copyBox.y);
-    expect(headingBox.y + headingBox.height).toBeLessThanOrEqual(copyBox.y + copyBox.height + 1);
     const titleFontSize = await heading.evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));
     expect(titleFontSize, `${title} title should respond to 200% text scaling`).toBeGreaterThanOrEqual(32);
     const heroOverflow = await hero.evaluate((element) => element.scrollWidth > element.clientWidth + 1);

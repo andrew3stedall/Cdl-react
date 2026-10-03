@@ -302,7 +302,7 @@ test('primary headers and essential player values remain legible at 200% text sc
         || brandBox.y + brandBox.height <= actionBox.y + 1
         || actionBox.x + actionBox.width <= brandBox.x + 1
         || actionBox.y + actionBox.height <= brandBox.y + 1;
-      expect(brandAndActionDoNotOverlap, `${title} brand and action ${index + 1} must not overlap after responsive wrapping`).toBe(true);
+      expect(brandAndActionDoNotOverlap, `${title} brand ${JSON.stringify(brandBox)} and action ${index + 1} ${JSON.stringify(actionBox)} must not overlap after responsive wrapping`).toBe(true);
     });
     const titleFontSize = await heading.evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));
     expect(titleFontSize, `${title} title should respond to 200% text scaling`).toBeGreaterThanOrEqual(32);

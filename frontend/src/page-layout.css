@@ -72,7 +72,20 @@
   }
 
   .cdl-page-hero__actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
     margin-left: auto;
+    max-width: 100%;
+  }
+
+  .cdl-page-hero__controls {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    max-width: 100%;
+  }
+
+  .cdl-page-hero__view-toggle {
+    max-width: 100%;
   }
 }
 

@@ -25,6 +25,7 @@ import type { LeagueClient, LeagueFixture, LeagueTableRow } from './league-api';
 import { HttpLeagueClient } from './league-api';
 import { ManagerAccountSection } from './ManagerAccountSection';
 import { managerNicknameForTeam } from './manager-nicknames';
+import { subscribeDataFreshness } from './data-freshness';
 import {
   defaultManagerDeskClient,
   type ManagerDeskClient,
@@ -73,6 +74,10 @@ export function ManagerDeskPage({
   const [reloadRequest, setReloadRequest] = useState(0);
   const [now, setNow] = useState(() => Date.now());
   const legacyClientsSupplied = Boolean(leagueClient || squadClient || teamSelectionClient);
+
+  useEffect(() => subscribeDataFreshness('desk', ['squad', 'lineup', 'interest', 'trade', 'draw', 'league', 'alerts', 'global'], () => {
+    setReloadRequest((current) => current + 1);
+  }), []);
 
   useEffect(() => {
     let active = true;

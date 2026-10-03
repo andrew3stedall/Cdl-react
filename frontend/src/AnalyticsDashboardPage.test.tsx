@@ -141,7 +141,8 @@ describe('AnalyticsDashboardPage', () => {
   test('renders dashboard filters, chart fallback table, and widget data', async () => {
     const { container } = await renderPage();
 
-    expect(container.textContent).toContain('Manager Analytics Dashboard');
+    expect(container.textContent).toContain('Analytics');
+    expect(container.querySelector('[data-page-hero="shared"] h1')?.textContent).toBe('Analytics');
     expect(container.textContent).toContain('Gameweek');
     expect(container.textContent).toContain('Points by CDL team');
     expect(container.textContent).toContain('Castle FC');

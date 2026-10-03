@@ -22,6 +22,13 @@ from cdl_api.staging_draft_seed import TEAM_IDS
 def _seed_prerequisites(connection: Connection) -> None:
     statements = (
         """
+        INSERT INTO users (id, email, display_name, roles)
+        VALUES
+            ('manager-1', 'movement-manager-1@example.test', 'Manager', '[\"manager\"]'),
+            ('manager-2', 'movement-manager-2@example.test', 'Rival Manager', '[\"manager\"]')
+        ON CONFLICT (id) DO NOTHING
+        """,
+        """
         INSERT INTO leagues (id, name, code)
         VALUES ('league-squad-test', 'Squad Test', 'SQUAD-TEST')
         ON CONFLICT (id) DO NOTHING
@@ -32,11 +39,11 @@ def _seed_prerequisites(connection: Connection) -> None:
         ON CONFLICT (id) DO NOTHING
         """,
         """
-        INSERT INTO managers (id, display_name)
+        INSERT INTO managers (id, user_id, display_name)
         VALUES
-            ('manager-1', 'Manager'),
-            ('manager-2', 'Rival Manager')
-        ON CONFLICT (id) DO NOTHING
+            ('manager-1', 'manager-1', 'Manager'),
+            ('manager-2', 'manager-2', 'Rival Manager')
+        ON CONFLICT (id) DO UPDATE SET user_id = EXCLUDED.user_id
         """,
         """
         INSERT INTO draft_teams (id, league_id, manager_id, name)
@@ -95,11 +102,8 @@ def _clean_prerequisites(connection: Connection) -> None:
         "DELETE FROM squad_ownerships WHERE id LIKE 'test-ownership-%'",
         "DELETE FROM fpl_players WHERE id IN ('player-1', 'player-3', 'player-4')",
         "DELETE FROM fpl_positions WHERE id IN ('GKP-TRADE', 'MID-INT', 'FWD-TRADE')",
-        "DELETE FROM epl_teams WHERE id IN ('epl-ars', 'epl-mci')",
-        "DELETE FROM draft_teams WHERE id IN ('team-exeter-gently', 'team-stan-still-sells-tik')",
-        "DELETE FROM managers WHERE id IN ('manager-1', 'manager-2')",
-        "DELETE FROM seasons WHERE id = 'season-cdl-2026-27'",
-        "DELETE FROM leagues WHERE id = 'league-squad-test'",
+        # EPL teams, managers, teams, league, and season are shared reference
+        # fixtures and can own rows created by other PostgreSQL tests.
     )
     for statement in statements:
         connection.execute(text(statement))
@@ -179,6 +183,7 @@ def test_authenticated_trade_persists_and_rejection_leaves_state_unchanged() -> 
     repository = PostgreSQLSquadRepository(session_factory)
     active_manager = {"id": "manager-1"}
     client = _authenticated_client(repository, active_manager)
+    trade_id = None
 
     try:
         created = client.post(
@@ -240,6 +245,14 @@ def test_authenticated_trade_persists_and_rejection_leaves_state_unchanged() -> 
         assert stored_status == "accepted"
     finally:
         with engine.begin() as connection:
+            if trade_id is not None:
+                connection.execute(
+                    text(
+                        "DELETE FROM squad_audit_events "
+                        "WHERE subject_type = 'trade' AND subject_id = :trade_id"
+                    ),
+                    {"trade_id": trade_id},
+                )
             connection.execute(text("DELETE FROM trade_assets"))
             connection.execute(text("DELETE FROM trade_proposals"))
             _clean_prerequisites(connection)

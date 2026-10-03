@@ -48,6 +48,10 @@ class SessionRepository(Protocol):
     def delete(self, session_id: str | None) -> None: ...
 
 
+class LeagueMembershipRepository(Protocol):
+    def access_for_user(self, user_id: str) -> object | None: ...
+
+
 class AuthenticationService:
     def __init__(
         self,
@@ -56,12 +60,14 @@ class AuthenticationService:
         development_secret: str,
         session_ttl_days: int = 30,
         commissioner_emails: set[str] | None = None,
+        league_memberships: LeagueMembershipRepository | None = None,
     ) -> None:
         self._users = users
         self._sessions = sessions
         self._development_secret = development_secret
         self._session_ttl = timedelta(days=session_ttl_days)
         self._commissioner_emails = commissioner_emails or set()
+        self._league_memberships = league_memberships
 
     def login(self, request: LoginRequest) -> tuple[str, SessionState] | None:
         user_record = self._users.get_by_email(request.email)
@@ -99,7 +105,11 @@ class AuthenticationService:
             id=user_record.id,
             email=user_record.email,
             display_name=user_record.display_name,
-            roles=self._effective_roles(user_record.email, user_record.roles),
+            roles=self._effective_roles(
+                user_record.id,
+                user_record.email,
+                user_record.roles,
+            ),
         )
         expires_at = datetime.now(UTC) + self._session_ttl
         session_id = self._sessions.create(user, expires_at)
@@ -113,17 +123,30 @@ class AuthenticationService:
         record = self._sessions.get_record(session_id)
         user = record.user if record is not None else None
         if user is not None:
-            user = user.model_copy(update={"roles": self._effective_roles(user.email, user.roles)})
+            user_record = self._users.get_by_id(user.id)
+            roles = self._effective_roles(
+                user.id,
+                user.email,
+                user_record.roles if user_record is not None else user.roles,
+            )
+            user = user.model_copy(update={"roles": roles})
         return SessionState(
             is_authenticated=record is not None,
             user=user,
             expires_at=record.expires_at if record is not None else None,
         )
 
-    def _effective_roles(self, email: str, roles: list[str]) -> list[str]:
-        if email.lower() not in self._commissioner_emails or "commissioner" in roles:
-            return roles
-        return [*roles, "commissioner"]
+    def _effective_roles(self, user_id: str, email: str, roles: list[str]) -> list[str]:
+        effective = list(roles)
+        if email.lower() in self._commissioner_emails and "commissioner" not in effective:
+            effective.append("commissioner")
+        if self._league_memberships is not None:
+            access = self._league_memberships.access_for_user(user_id)
+            membership_role = getattr(access, "role", None)
+            if membership_role in {"commissioner", "vice_commissioner"}:
+                if membership_role not in effective:
+                    effective.append(membership_role)
+        return effective
 
     def logout(self, session_id: str | None) -> SessionState:
         self._sessions.delete(session_id)

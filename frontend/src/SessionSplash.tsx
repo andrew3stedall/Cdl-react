@@ -1,7 +1,9 @@
 import { LoaderCircle, RotateCcw } from 'lucide-react';
 import type { CSSProperties } from 'react';
 
-import { defaultThemeColour } from './theme-colours';
+import { defaultThemeColour, resolveThemeAccentColours, resolveThemeColourVariants } from './theme-colours';
+import { getStoredThemePreset } from './theme-cookie';
+import { getThemeMode, resolveThemePreset } from './theme-presets';
 import './session-splash.css';
 
 interface SessionSplashProps {
@@ -10,8 +12,9 @@ interface SessionSplashProps {
 }
 
 export function SessionSplash({ error, onRetry }: SessionSplashProps) {
+  const savedAccent = getPersistedSplashAccent();
   const splashStyle = {
-    '--session-splash-background': defaultThemeColour,
+    '--session-splash-background': savedAccent,
   } as CSSProperties;
 
   return (
@@ -21,11 +24,7 @@ export function SessionSplash({ error, onRetry }: SessionSplashProps) {
 
       <section className="session-splash__content">
         <div aria-hidden="true" className="session-splash__mark">CDL</div>
-        <div className="session-splash__copy">
-          <p className="session-splash__kicker">Castle Draft League</p>
-          <h1>Own your league.</h1>
-          <p className="session-splash__tagline">Your league. Your strategy. All season long.</p>
-        </div>
+        <span className="sr-only">Castle Draft League</span>
 
         {error ? (
           <div className="session-splash__error" role="alert">
@@ -41,11 +40,24 @@ export function SessionSplash({ error, onRetry }: SessionSplashProps) {
             <div aria-hidden="true" className="session-splash__progress">
               <span />
             </div>
-            <span>Preparing your workspace</span>
+            <span>Loading</span>
             <LoaderCircle aria-hidden="true" className="session-splash__spinner" size={17} />
           </div>
         )}
       </section>
     </main>
   );
+}
+
+function getPersistedSplashAccent(): string {
+  if (typeof window === 'undefined') return defaultThemeColour;
+  try {
+    const stored = window.localStorage.getItem('cdl-theme-colour-variants');
+    if (!stored) return defaultThemeColour;
+    const variants = resolveThemeColourVariants(JSON.parse(stored) as Parameters<typeof resolveThemeColourVariants>[0]);
+    const mode = getThemeMode(resolveThemePreset(getStoredThemePreset()));
+    return resolveThemeAccentColours(variants[mode]).primary;
+  } catch {
+    return defaultThemeColour;
+  }
 }

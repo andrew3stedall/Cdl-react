@@ -50,6 +50,7 @@ interface ApiSessionState {
   is_authenticated: boolean;
   user: ApiSessionUser | null;
   expires_at: string | null;
+  engineering_previews_enabled?: boolean;
 }
 
 interface ApiLoginResponse {
@@ -228,5 +229,6 @@ function mapSession(session: ApiSessionState): SessionState {
         }
       : null,
     expiresAt: session.expires_at,
+    engineeringPreviewsEnabled: session.engineering_previews_enabled === true,
   };
 }

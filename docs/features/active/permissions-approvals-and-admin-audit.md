@@ -6,7 +6,7 @@ Define league roles, approval routing, commissioner/vice commissioner responsibi
 
 ## Status
 
-Checkpoint 1 complete.
+Trade agreement/approval/execution and its audit records are being delivered in milestone #466. General commissioner corrections, global audit browsing and assigned-team reassignment are not completed by the engineering checkpoint; #524 and #535 track their remaining scope.
 
 ## Business Rules
 
@@ -44,7 +44,9 @@ else -> commissioner
 
 ## React Requirements
 
-- Approval queue.
+- The Market Trades view shows an approval queue only to eligible commissioner, vice commissioner, or admin roles; the server-returned queue is filtered again against each trade's required approver role.
+- Approvers can approve or reject an accepted proposal. The UI states that only approval executes ownership changes and reports the API's committed execution state.
+- Approval queue loading failures offer retry independently of participant trade activity.
 - Conflict-of-interest indicator.
 - Correction forms with mandatory reason.
 - Audit timeline on relevant detail screens.

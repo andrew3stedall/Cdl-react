@@ -23,6 +23,7 @@ from cdl_api.repositories.postgres_league_fixtures import (
     metadata,
 )
 from cdl_api.routers.league import get_league_repository
+from cdl_api.services.league_service import LeagueTableService
 
 EXPECTED_FIXTURE_RESULT_MATRIX = {
     "fixture-1202": ("pending", "pending", None, None),
@@ -96,8 +97,12 @@ def test_sqlite_repository_round_trip_uses_persisted_results_and_scoring() -> No
     )
 
     table = repository.get_table_snapshot()
-    assert table.source == "postgresql-synthetic-snapshot"
-    assert table.rows[0].team.id == "castle"
+    assert table.source == "postgresql-no-fresh-official-snapshot"
+    assert table.rows == []
+    official_table = LeagueTableService(repository).get_table()
+    assert official_table.source == "service-calculated"
+    assert official_table.mode == "official"
+    assert official_table.rows == []
 
     knockout = repository.get_knockout_snapshot()
     assert knockout.rounds == ["Semi Final", "Final"]
@@ -257,9 +262,8 @@ def test_active_staging_league_hides_unrelated_synthetic_results() -> None:
         session.commit()
 
     current_table = repository.get_table_snapshot()
-    assert current_table.source == "postgresql-current-season"
-    assert current_table.rows[0].team.name == "Exeter Gently"
-    assert current_table.rows[0].played == 1
+    assert current_table.source == "postgresql-active-season"
+    assert all(row.played == 0 for row in current_table.rows)
 
 
 @pytest.mark.skipif(
@@ -305,8 +309,9 @@ def test_clean_postgres_league_api_reads_persisted_fixture_state() -> None:
     )
     assert pending_detail_response.status_code == 404
     assert table_response.status_code == 200
-    assert table_response.json()["source"] == "postgresql-synthetic-snapshot"
-    assert table_response.json()["rows"][0]["team"]["id"] == "castle"
+    assert table_response.json()["source"] == "service-calculated"
+    assert table_response.json()["mode"] == "official"
+    assert table_response.json()["rows"] == []
     assert knockout_response.status_code == 200
     assert knockout_response.json()["rounds"] == ["Semi Final", "Final"]
     assert knockout_response.json()["matches"][0]["id"] == "fixture-sf-01"

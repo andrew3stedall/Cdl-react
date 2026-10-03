@@ -1,4 +1,10 @@
 :root {
+  --cdl-z-navigation: 40;
+  --cdl-z-modal-backdrop: 60;
+  --cdl-z-modal: 61;
+  --cdl-z-modal-nested: 80;
+  --cdl-z-modal-picker-backdrop: 99;
+  --cdl-z-modal-picker: 100;
   --cdl-mobile-navigation-height: 0px;
   --cdl-mobile-navigation-clearance: 0px;
 }
@@ -30,7 +36,7 @@
       max(0.45rem, env(safe-area-inset-left));
     position: fixed !important;
     transform: none;
-    z-index: 40;
+    z-index: var(--cdl-z-navigation);
   }
 
   .global-mobile-navigation a {

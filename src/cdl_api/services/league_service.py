@@ -82,16 +82,22 @@ class LeagueTableService:
     def __init__(self, repository: LeagueReadRepository | None = None) -> None:
         self._repository = repository or LeagueRepository()
 
-    def get_table(self) -> LeagueTableResponse:
-        snapshot = self._repository.get_table_snapshot()
-        if snapshot is not None:
+    def get_table(self, mode: str = "official") -> LeagueTableResponse:
+        if mode not in {"official", "live"}:
+            raise ValueError("Table mode must be 'official' or 'live'.")
+        snapshot = self._repository.get_table_snapshot() if mode == "official" else None
+        if snapshot is not None and snapshot.rows and "no-fresh" not in snapshot.source:
             return snapshot
 
         standings: dict[str, LeagueTableRow] = {}
 
         for fixture in self._repository.list_fixtures():
+            if fixture.synthetic or fixture.round_label.casefold() != "regular season":
+                continue
             self._ensure_row(standings, fixture)
-            if fixture.score.outcome == FixtureOutcome.PENDING:
+            if fixture.score.outcome == FixtureOutcome.PENDING or (
+                mode == "official" and fixture.status != "complete"
+            ):
                 continue
 
             home = standings[fixture.home_team.id]
@@ -118,6 +124,8 @@ class LeagueTableService:
                 away.draws += 1
                 home.league_points += 1
                 away.league_points += 1
+            home.league_points += fixture.score.bonus_points.get(home.team.id, 0)
+            away.league_points += fixture.score.bonus_points.get(away.team.id, 0)
 
         rows = sorted(
             standings.values(),
@@ -132,7 +140,18 @@ class LeagueTableService:
             row.position = index
             row.points_difference = row.points_for - row.points_against
 
-        return LeagueTableResponse(rows=rows)
+        return LeagueTableResponse(
+            rows=rows,
+            mode=mode,
+            gameweek=max(
+                (
+                    fixture.gameweek.number
+                    for fixture in self._repository.list_fixtures()
+                    if fixture.round_label.casefold() == "regular season"
+                ),
+                default=None,
+            ),
+        )
 
     def _ensure_row(self, standings: dict[str, LeagueTableRow], fixture: LeagueFixture) -> None:
         for team in (fixture.home_team, fixture.away_team):

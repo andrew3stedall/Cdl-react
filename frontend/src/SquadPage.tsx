@@ -4,7 +4,6 @@ import {
   ArrowDownUp,
   ArrowRightLeft,
   CalendarClock,
-  CalendarDays,
   ChevronDown,
   CircleAlert,
   CircleCheck,
@@ -12,7 +11,6 @@ import {
   CircleMinus,
   CirclePlus,
   Filter,
-  Home,
   List,
   LockKeyhole,
   Repeat2,
@@ -53,6 +51,7 @@ import {
 import './squad-page.css';
 import './squad-lineup-groups.css';
 import { PlayerProfilePage, SubstitutionReviewDrawer } from './PlayerProfilePage';
+import { invalidateData, subscribeDataFreshness } from './data-freshness';
 
 interface SquadPageProps {
   attackDirection?: AttackDirection;
@@ -328,6 +327,8 @@ export function SquadPage({
   const [lineupAvailable, setLineupAvailable] = useState(false);
   const [teamSelection, setTeamSelection] = useState<TeamSelectionSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
+  const [reloadKey, setReloadKey] = useState(0);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [lineupDirty, setLineupDirty] = useState(false);
   const [lineupSaving, setLineupSaving] = useState(false);
   const [clockNow, setClockNow] = useState(() => Date.now());
@@ -353,11 +354,16 @@ export function SquadPage({
   const [scoutingLoaded, setScoutingLoaded] = useState(false);
   const [scoutingLoading, setScoutingLoading] = useState(false);
   const [scoutingError, setScoutingError] = useState<string | null>(null);
+  const [scoutingRetry, setScoutingRetry] = useState(0);
   const [confirmationOpen, setConfirmationOpen] = useState(false);
   const [changesSaving, setChangesSaving] = useState(false);
+  const [tradeSubmitting, setTradeSubmitting] = useState(false);
   const [availabilityFilter, setAvailabilityFilter] = useState<'all' | 'risk'>('all');
   const [fixtureFilter, setFixtureFilter] = useState<'all' | 'easy'>('all');
   const drawerRef = useRef<HTMLElement | null>(null);
+  const hasDraftRef = useRef(false);
+  const hasLoadedRef = useRef(false);
+  hasDraftRef.current = lineupDirty || stagedAdditionIds.size > 0 || stagedRemovalIds.size > 0;
 
   const navigateInternally = (event: MouseEvent<HTMLAnchorElement>, href: string) => {
     if (!onNavigate) return;
@@ -366,7 +372,20 @@ export function SquadPage({
   };
 
   useEffect(() => {
+    const unsubscribe = subscribeDataFreshness('squad', ['squad', 'lineup', 'trade', 'interest', 'global'], () => {
+      if (hasDraftRef.current) {
+        setStatus('Data may be out of date. Save or clear staged squad changes before refreshing.');
+        return;
+      }
+      setReloadKey((current) => current + 1);
+    });
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
     let mounted = true;
+    setLoading(!hasLoadedRef.current);
+    setLoadFailed(false);
     void Promise.allSettled([
       squadClient.getWorkspace(),
       teamSelectionClient.getTeamSelection(),
@@ -398,6 +417,7 @@ export function SquadPage({
         setLineupDirty(false);
         if (!hasLineup) setSquadView('list');
         setLoading(false);
+        hasLoadedRef.current = true;
         setStatus(
           hasLineup
             ? `${summary?.manager_team.name ?? normalizedLineup?.managerTeam.name ?? 'Your'} squad ready for review.`
@@ -406,6 +426,7 @@ export function SquadPage({
         const failures = [workspaceResult, lineupResult]
           .filter((result): result is PromiseRejectedResult => result.status === 'rejected');
         if (failures.length > 0) {
+          setLoadFailed(true);
           const reason = failures[0].reason instanceof Error ? failures[0].reason.message : 'one or more data sources failed';
           setStatus(`Squad loaded with partial data. ${reason}`);
         }
@@ -413,17 +434,18 @@ export function SquadPage({
       .catch((error: Error) => {
         if (mounted) {
           setLoading(false);
+          setLoadFailed(true);
           setStatus(error.message);
         }
       });
     return () => {
       mounted = false;
     };
-  }, [squadClient, teamSelectionClient]);
+  }, [reloadKey, squadClient, teamSelectionClient]);
 
   useEffect(() => {
     if (drawerMode !== 'compare' && drawerMode !== 'trade') return;
-    if (scoutingLoaded || scoutingLoading) return;
+    if (scoutingLoaded) return;
     let mounted = true;
     setScoutingLoading(true);
     setScoutingError(null);
@@ -441,8 +463,9 @@ export function SquadPage({
       });
     return () => {
       mounted = false;
+      setScoutingLoading(false);
     };
-  }, [drawerMode, scoutingLoaded, squadClient]);
+  }, [drawerMode, scoutingLoaded, scoutingRetry, squadClient]);
 
   useEffect(() => {
     try {
@@ -607,6 +630,7 @@ export function SquadPage({
     setSquadPlayers(mergeLineupPlayers(updatedSummary.players.map(mapPlayer), teamSelection?.players ?? null));
     closeDrawer();
     setStatus('Squad updated from the player profile.');
+    invalidateData(['squad', 'lineup'], 'squad');
   }
 
   function profilePlayer(player: PlayerView): SquadApiPlayer {
@@ -731,6 +755,7 @@ export function SquadPage({
       setSquadPlayers((current) => mergeLineupPlayers(current, updated.players));
       setLineupDirty(false);
       setStatus('Lineup saved and validated.');
+      invalidateData(['lineup'], 'squad');
     } catch (error) {
       setStatus(apiErrorMessage(error, 'Unable to save the lineup.'));
     } finally {
@@ -750,23 +775,37 @@ export function SquadPage({
       return;
     }
     try {
-      const updated = await teamSelectionClient.updateChip(chip.id, chip.status !== 'active');
-      setTeamSelection(normalizeTeamSelection(updated));
+      const updated = normalizeTeamSelection(await teamSelectionClient.updateChip(chip.id, chip.status !== 'active'));
+      // Chip writes return the persisted lineup. Keep the locally staged lineup
+      // as the source of truth until the user explicitly saves it.
+      if (lineupDirty && teamSelection) {
+        const preserved = { ...updated, players: teamSelection.players };
+        setTeamSelection(preserved);
+        setSquadPlayers((current) => mergeLineupPlayers(current, preserved.players));
+      } else {
+        setTeamSelection(updated);
+        setSquadPlayers((current) => mergeLineupPlayers(current, updated.players));
+      }
       setStatus(`${chip.name} chip state updated.`);
+      invalidateData(['lineup'], 'squad');
     } catch (error) {
       setStatus(apiErrorMessage(error, 'Unable to update the chip.'));
     }
   }
 
   async function submitTrade() {
-    if (!tradeSource || !tradeTarget || !tradeTeamId) return;
+    if (!tradeSource || !tradeTarget || !tradeTeamId || tradeSubmitting) return;
+    setTradeSubmitting(true);
     try {
       const trade = await squadClient.createTrade(tradeTeamId, [tradeSource.id], [tradeTarget.id]);
       if (trade.status === 'proposed') setProposedTradeCount((current) => current + 1);
       closeDrawer();
       setStatus(`Trade proposal for ${tradeSource.displayName} sent to ${tradeTarget.draftTeam?.name ?? 'the selected manager'}.`);
+      invalidateData(['trade'], 'squad');
     } catch (error) {
       setStatus(apiErrorMessage(error, 'Unable to submit the trade proposal.'));
+    } finally {
+      setTradeSubmitting(false);
     }
   }
 
@@ -778,18 +817,31 @@ export function SquadPage({
         stagedAdditionPlayers.map((player) => player.id),
         [...stagedRemovalIds],
       );
-      const updatedLineup = await teamSelectionClient.getTeamSelection();
-      const normalizedLineup = normalizeTeamSelection(updatedLineup);
-      setTeamSelection(normalizedLineup);
-      setSquadPlayers(mergeLineupPlayers(summary.players.map(mapPlayer), normalizedLineup.players));
-      setDrawWins((await squadClient.getChanges()).available_to_add.map(mapPlayer));
-      setChangesLoaded(true);
       setStagedRemovalIds(new Set());
       setStagedAdditionIds(new Set());
       setConfirmationOpen(false);
       setChangesPanelOpen(false);
-      setLineupDirty(false);
-      setStatus('Squad changes saved and temporary rights updated.');
+      setSquadPlayers(summary.players.map(mapPlayer));
+      setStatus('Squad changes saved. Refreshing lineup and temporary rights…');
+      const [lineupResult, rightsResult] = await Promise.allSettled([
+        teamSelectionClient.getTeamSelection(),
+        squadClient.getChanges(),
+      ]);
+      const refreshFailures: string[] = [];
+      if (lineupResult.status === 'fulfilled') {
+        const normalizedLineup = normalizeTeamSelection(lineupResult.value);
+        setTeamSelection(normalizedLineup);
+        setSquadPlayers(mergeLineupPlayers(summary.players.map(mapPlayer), normalizedLineup.players));
+        setLineupDirty(false);
+      } else refreshFailures.push('lineup');
+      if (rightsResult.status === 'fulfilled') {
+        setDrawWins(rightsResult.value.available_to_add.map(mapPlayer));
+        setChangesLoaded(true);
+      } else refreshFailures.push('temporary rights');
+      setStatus(refreshFailures.length
+        ? `Squad changes saved. ${refreshFailures.join(' and ')} could not refresh; retry loading data.`
+        : 'Squad changes saved and temporary rights updated.');
+      invalidateData(['squad', 'lineup', 'trade'], 'squad');
     } catch (error) {
       setStatus(apiErrorMessage(error, 'Unable to save squad changes.'));
     } finally {
@@ -845,16 +897,17 @@ export function SquadPage({
             </Button>
           </div>
         ) : null}
-        <p className="sr-only" role="status">
-          {lineupLocked ? `Lineup locked. ${teamSelection?.fixtureLock.reason ?? 'The gameweek deadline has passed.'}` : status}
+        <p className="squad-page__status" role="status" aria-live="polite">
+          {lineupLocked ? `Lineup locked. ${teamSelection?.fixtureLock.reason ?? 'The gameweek deadline has passed.'}` : <StatusMessage onNavigate={onNavigate} text={status} />}
+          {loadFailed ? <Button disabled={loading} onClick={() => setReloadKey((key) => key + 1)} type="button" variant="secondary">Retry</Button> : null}
         </p>
       </section>
 
       {proposedTradeCount > 0 ? (
         <section aria-label="Squad attention" className="squad-page__attention">
           <CircleAlert aria-hidden="true" size={18} />
-          <div><strong>{proposedTradeCount} proposed {proposedTradeCount === 1 ? 'trade' : 'trades'} need review</strong><span>Trade activity is managed in Market.</span></div>
-          <a href="/scouting" onClick={(event) => navigateInternally(event, '/scouting')}>Review</a>
+          <div><strong>{proposedTradeCount} proposed {proposedTradeCount === 1 ? 'trade' : 'trades'} need review</strong></div>
+          <a href="/scouting/trades" onClick={(event) => navigateInternally(event, '/scouting/trades')}>Review</a>
         </section>
       ) : null}
 
@@ -1018,6 +1071,7 @@ export function SquadPage({
                 candidates={comparisonCandidates}
                 error={scoutingError}
                 loading={scoutingLoading}
+                onRetry={() => setScoutingRetry((current) => current + 1)}
                 onAdd={addComparisonPlayer}
                 onClose={closeDrawer}
                 onQueryChange={setCompareQuery}
@@ -1045,6 +1099,8 @@ export function SquadPage({
                 teams={tradeTeams}
                 teamId={tradeTeamId}
                 onSubmit={() => void submitTrade()}
+                submitting={tradeSubmitting}
+                onRetry={() => setScoutingRetry((current) => current + 1)}
               />
             ) : null}
             </aside> : null}
@@ -1084,13 +1140,6 @@ export function SquadPage({
         </div>
       ) : null}
 
-      <nav aria-label="Squad mobile navigation" className="squad-page__mobile-nav">
-        <a href="/" onClick={(event) => navigateInternally(event, '/')}><Home size={19} /><span>Desk</span></a>
-        <a aria-current="page" href="/squad-management" onClick={(event) => navigateInternally(event, '/squad-management')}><Shield size={19} /><span>Squad</span></a>
-        <a href="/scouting" onClick={(event) => navigateInternally(event, '/scouting')}><Search size={19} /><span>Market</span></a>
-        <a href="/team-selection" onClick={(event) => navigateInternally(event, '/team-selection')}><CalendarDays size={19} /><span>Matchweek</span></a>
-        <a href="/league" onClick={(event) => navigateInternally(event, '/league')}><Trophy size={19} /><span>League</span></a>
-      </nav>
     </main>
   );
 }
@@ -1493,6 +1542,7 @@ function CompareDrawer({
   onAdd,
   onClose,
   onQueryChange,
+  onRetry,
   onRemove,
   players,
   query,
@@ -1503,6 +1553,7 @@ function CompareDrawer({
   onAdd: (player: PlayerView) => void;
   onClose: () => void;
   onQueryChange: (query: string) => void;
+  onRetry: () => void;
   onRemove: (playerId: string) => void;
   players: PlayerView[];
   query: string;
@@ -1511,7 +1562,7 @@ function CompareDrawer({
     <>
       <span aria-hidden="true" className="squad-page__sheet-handle" />
       <DrawerHeader onClose={onClose} title="Player comparison" />
-      <p className="squad-page__drawer-copy">Compare up to three players in the order you select them.</p>
+      <p className="squad-page__drawer-copy">Up to 3 players</p>
       <div className="squad-page__compare-grid">
         {players.map((player, index) => (
           <article className="squad-page__compare-card" key={player.id}>
@@ -1526,7 +1577,7 @@ function CompareDrawer({
         <section className="squad-page__search-add">
           <label><Search size={16} /><span className="sr-only">Search comparison players</span><input aria-label="Search comparison players" onChange={(event) => onQueryChange(event.target.value)} placeholder="Search player or club" value={query} /></label>
           {loading ? <p className="squad-page__empty-copy">Loading comparison players…</p> : null}
-          {error ? <p className="squad-page__error-copy">Comparison players unavailable: {error}</p> : null}
+          {error ? <p className="squad-page__error-copy">Comparison players unavailable: {error} <Button onClick={onRetry} type="button" variant="secondary">Retry</Button></p> : null}
           {query.trim() ? <div className="squad-page__search-results">{candidates.map((player) => <button key={player.id} onClick={() => onAdd(player)} type="button"><PlayerIdentity player={player} /><span>Add</span></button>)}</div> : null}
         </section>
       ) : null}
@@ -1541,6 +1592,7 @@ function TradeDrawer({
   onClose,
   onQueryChange,
   onSubmit,
+  onRetry,
   onTargetChange,
   onTeamChange,
   query,
@@ -1548,6 +1600,7 @@ function TradeDrawer({
   target,
   teams,
   teamId,
+  submitting,
 }: {
   candidates: PlayerView[];
   error: string | null;
@@ -1555,6 +1608,7 @@ function TradeDrawer({
   onClose: () => void;
   onQueryChange: (query: string) => void;
   onSubmit: () => void;
+  onRetry: () => void;
   onTargetChange: (player: PlayerView) => void;
   onTeamChange: (teamId: string) => void;
   query: string;
@@ -1562,13 +1616,14 @@ function TradeDrawer({
   target: PlayerView | null;
   teams: TeamRef[];
   teamId: string;
+  submitting: boolean;
 }) {
   return (
     <>
       <span aria-hidden="true" className="squad-page__sheet-handle" />
       <DrawerHeader onClose={onClose} title="Start a trade" />
       {loading ? <p className="squad-page__empty-copy">Loading trade players…</p> : null}
-      {error ? <p className="squad-page__error-copy">Trade players unavailable: {error}</p> : null}
+      {error ? <p className="squad-page__error-copy">Trade players unavailable: {error} <Button onClick={onRetry} type="button" variant="secondary">Retry</Button></p> : null}
       <section className="squad-page__drawer-section"><h3>You would offer</h3><PlayerIdentity large player={source} /></section>
       <label className="squad-page__field"><span>Other manager</span><select onChange={(event) => onTeamChange(event.target.value)} value={teamId}><option value="">Choose a team</option>{teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}</select></label>
       {teamId ? (
@@ -1578,7 +1633,7 @@ function TradeDrawer({
         </section>
       ) : null}
       {target ? <section className="squad-page__drawer-section"><h3>Target</h3><PlayerIdentity large player={target} /><div className="squad-page__trade-guidance"><div><strong>FPL evidence</strong><span className="squad-page__api-chip">Official data</span></div><p>{source.displayName}: {formatInteger(source.points)} pts · {formatMetric(source.form)} form. {target.displayName}: {formatInteger(target.points)} pts · {formatMetric(target.form)} form.</p></div></section> : null}
-      <Button disabled={!target} onClick={onSubmit} type="button">Send trade proposal</Button>
+      <Button disabled={!target || submitting} onClick={onSubmit} type="button">{submitting ? 'Sending…' : 'Send trade proposal'}</Button>
     </>
   );
 }
@@ -2016,3 +2071,11 @@ function isAvailabilityRisk(player: PlayerView): boolean {
 }
 
 export { formBand, shortPlayerName } from './components/player/PlayerCard';
+
+function StatusMessage({ onNavigate, text }: { onNavigate?: (href: string) => void; text: string }) {
+  const match = text.match(/^(.*?)(\/rules#[a-z-]+)(\.?$)/);
+  if (!match) return text;
+  const [, before, href, punctuation] = match;
+  const label = href.split('#')[1].replaceAll('-', ' ');
+  return <>{before}<a href={href} onClick={(event) => { if (onNavigate) { event.preventDefault(); onNavigate(href); } }}>Review {label}</a>{punctuation}</>;
+}

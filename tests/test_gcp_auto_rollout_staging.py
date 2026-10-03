@@ -44,6 +44,90 @@ def test_auto_rollout_is_staging_only_and_failure_closed() -> None:
     assert "-auto-approve" not in content
 
 
+def test_auto_rollout_pins_existing_traffic_until_verified_migration() -> None:
+    content = WORKFLOW.read_text(encoding="utf-8")
+    capture = content.index("- name: Pin currently healthy revision during rollout")
+    apply = content.index("- name: Apply exact automatic staging plan")
+    migration = content.index("- name: Run database migrations")
+    diagnose = content.index("- name: Diagnose database migration failure")
+    verify_staged = content.index("- name: Verify new revision before traffic promotion")
+    smoke_staged = content.index("- name: Smoke staged revision before traffic promotion")
+    promote = content.index("- name: Promote staged revision after migration")
+
+    assert capture < apply < migration < verify_staged < smoke_staged < promote < diagnose
+    assert content.count('-var="runtime_traffic_revision=${RUNTIME_TRAFFIC_REVISION}"') == 2
+    assert "if: steps.database-migrations.outcome == 'success'" in content
+    assert "if: steps.database-migrations.outcome == 'failure'" in content
+    assert "scripts/cloud_run_staged_revision.py pin" in content
+    assert "scripts/cloud_run_staged_revision.py verify" in content
+    assert '"${candidate_url}/health"' in content
+    assert '"${candidate_url}/api/fpl/status"' in content
+    assert '--update-tags="${CANDIDATE_TAG}=${STAGED_REVISION}"' in content
+    assert 'candidate-url \\\n            "${RUNNER_TEMP}/candidate-service.json"' in content
+    assert '--to-revisions "${STAGED_REVISION}=100"' in content
+    assert '--remove-tags="${CANDIDATE_TAG}"' in content
+    assert "if: always() && env.CANDIDATE_TAG != ''" in content
+    assert 'gcloud run revisions describe "${STAGED_REVISION}"' not in content
+
+
+def test_runtime_service_has_a_stage_with_prior_revision_traffic_pin() -> None:
+    module = Path("infra/terraform/modules/cloud-run-api/main.tf").read_text(encoding="utf-8")
+    variables = Path("infra/terraform/modules/cloud-run-api/variables.tf").read_text(
+        encoding="utf-8"
+    )
+
+    assert 'variable "traffic_revision"' in variables
+    assert '"TRAFFIC_TARGET_ALLOCATION_TYPE_REVISION"' in module
+    assert "revision = var.traffic_revision" in module
+    assert "percent  = 100" in module
+    assert "Staging revisions must pin an existing healthy traffic revision" in module
+
+
+def test_direct_fallback_migrates_and_smokes_before_promoting_traffic() -> None:
+    content = Path(".github/workflows/gcp-direct-staging-rollout.yml").read_text(encoding="utf-8")
+    migration = content.index(
+        "- name: Run and verify migrations before changing application traffic"
+    )
+    stage = content.index("- name: Stage image without changing application traffic")
+    smoke = content.index("- name: Verify staged revision and retained traffic")
+    promote = content.index("- name: Promote staged revision after migration smoke checks")
+    verify_live = content.index("- name: Verify promoted revision health and auth boundary")
+
+    assert migration < stage < smoke < promote < verify_live
+    assert "--no-traffic" in content
+    assert "scripts/cloud_run_staged_revision.py pin" in content
+    assert "scripts/cloud_run_staged_revision.py verify" in content
+    assert '--to-revisions "${STAGED_REVISION}=100"' in content
+    assert content.index('gcloud run jobs execute "${migration_job}"') < stage
+    assert '--update-tags="${CANDIDATE_TAG}=${latest_ready}"' in content
+    assert 'candidate-url \\\n            "${RUNNER_TEMP}/candidate-service.json"' in content
+    assert '--remove-tags="${CANDIDATE_TAG}"' in content
+
+
+def test_runtime_images_and_ci_install_from_checked_in_locks() -> None:
+    dockerfile = Path("Dockerfile").read_text(encoding="utf-8")
+    ci = Path(".github/workflows/ci.yml").read_text(encoding="utf-8")
+    postgres_ci = Path(".github/workflows/backend-postgres.yml").read_text(encoding="utf-8")
+
+    assert "COPY frontend/package.json frontend/package-lock.json ./" in dockerfile
+    assert "RUN npm ci --no-audit --no-fund" in dockerfile
+    assert "COPY pyproject.toml uv.lock ./" in dockerfile
+    assert "uv sync --frozen --no-dev" in dockerfile
+    assert "uv sync --locked" in ci
+    assert "npm ci" in ci
+    assert "uv sync --locked" in postgres_ci
+
+
+def test_migration_entrypoint_checks_the_database_revision_after_upgrade() -> None:
+    migration = Path("src/cdl_api/migrate.py").read_text(encoding="utf-8")
+
+    assert 'command.upgrade(config, "head")' in migration
+    assert "verify_schema_head(config, os.environ[DATABASE_URL_ENV])" in migration
+    assert "MigrationContext.configure(connection).get_current_heads()" in migration
+    assert "Alembic schema verification failed" in migration
+    assert "Alembic schema verification passed" in migration
+
+
 def test_staging_migration_keeps_existing_secret_binding_address() -> None:
     content = STAGING_MAIN.read_text(encoding="utf-8")
 
@@ -114,3 +198,18 @@ def test_manual_database_job_workflow_can_refresh_official_fpl_data() -> None:
     assert "fpl-refresh)" in content
     assert 'job_name="cdl-react-staging-fpl-refresh"' in content
     assert "confirm_synthetic_data" in content
+
+
+def test_reviewed_runtime_apply_smokes_and_promotes_the_exact_ready_revision() -> None:
+    content = Path(".github/workflows/gcp-terraform-apply-staging.yml").read_text(encoding="utf-8")
+    smoke = content.index("- name: Smoke staged runtime before traffic promotion")
+    promote = content.index("- name: Promote runtime after migration and smoke checks")
+    assert smoke < promote
+    assert "scripts/cloud_run_staged_revision.py pin" in content
+    assert "scripts/cloud_run_staged_revision.py verify" in content
+    assert '"${candidate_url}/health"' in content
+    assert '"${candidate_url}/api/fpl/status"' in content
+    assert '--update-tags="${CANDIDATE_TAG}=${revision}"' in content
+    assert 'candidate-url \\\n            "${RUNNER_TEMP}/candidate-service.json"' in content
+    assert '--to-revisions "${STAGED_REVISION}=100"' in content
+    assert '--remove-tags="${CANDIDATE_TAG}"' in content

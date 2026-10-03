@@ -41,10 +41,12 @@ class FplDataService:
         client: FplApiClientProtocol,
         repository: PostgreSQLFplDataRepository,
         settlement: Callable[[], object] | None = None,
+        after_refresh: Callable[[], object] | None = None,
     ) -> None:
         self._client = client
         self._repository = repository
         self._settlement = settlement
+        self._after_refresh = after_refresh
 
     def refresh(self, resources: Iterable[FplRefreshResource]) -> FplRefreshResponse:
         resources = list(resources)
@@ -87,6 +89,8 @@ class FplDataService:
                 raise
         if self._settlement is not None:
             self._settlement()
+        if self._after_refresh is not None:
+            self._after_refresh()
         return FplRefreshResponse(resources=results)
 
     def player_history(self, player_id: str) -> FplPlayerHistoryResponse:
@@ -168,9 +172,22 @@ class FplDataService:
         fetch_event_live = getattr(self._client, "fetch_event_live", None)
         if not callable(fetch_event_live):
             return
+        # Keep current/provisional events fresh. Completed historical events
+        # remain immutable unless their cache is absent; explicit player-history
+        # reads still refresh expired event data on demand.
         gameweeks = {
-            _as_optional_int(row.get("event")) for row in payload if bool(row.get("started"))
+            _as_optional_int(row.get("event"))
+            for row in payload
+            if bool(row.get("started")) and not bool(row.get("finished"))
         }
+        cached_gameweeks = getattr(self._repository, "cached_event_gameweeks", None)
+        if callable(cached_gameweeks):
+            cached = set(cached_gameweeks())
+            gameweeks.update(
+                _as_optional_int(row.get("event"))
+                for row in payload
+                if bool(row.get("started")) and _as_optional_int(row.get("event")) not in cached
+            )
         for gameweek in sorted(gameweek for gameweek in gameweeks if gameweek is not None):
             self._fetch_and_cache_event_live(gameweek)
 
@@ -185,6 +202,7 @@ class FplDataService:
         return self._fetch_and_cache_event_live(gameweek)
 
     def _fetch_and_cache_event_live(self, gameweek: int) -> object | None:
+        resource = f"event-live:{gameweek}"
         fetch_event_live = getattr(self._client, "fetch_event_live", None)
         if not callable(fetch_event_live):
             return None
@@ -204,7 +222,21 @@ class FplDataService:
                 fetched_at=fetched_at,
             )
             return response.payload
-        except (FplApiError, AttributeError):
+        except (FplApiError, AttributeError) as exc:
+            endpoint_for = getattr(self._client, "endpoint_for", None)
+            endpoint = (
+                endpoint_for(f"event/{gameweek}/live/")
+                if callable(endpoint_for)
+                else f"event/{gameweek}/live/"
+            )
+            record_failure = getattr(self._repository, "record_failure", None)
+            if callable(record_failure):
+                record_failure(
+                    resource=resource,
+                    endpoint=endpoint,
+                    fetched_at=datetime.now(UTC),
+                    error=str(exc),
+                )
             return None
 
     def status(self) -> FplCacheStatusResponse:

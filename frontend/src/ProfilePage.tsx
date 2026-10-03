@@ -64,7 +64,7 @@ import {
   type ThemeAccentColours,
   type ThemeColourVariants,
 } from './theme-colours';
-import { getPasskeyStatus, registerPasskey, type PasskeyStatus } from './passkeys';
+import { getPasskeyStatus, registerPasskey, revokePasskey, type PasskeyStatus } from './passkeys';
 import { getResultColourPaletteLabel } from './result-colours';
 import { managerNicknameForName } from './manager-nicknames';
 import { GlobalPageHeader } from './components/ui/global-notifications';
@@ -141,7 +141,7 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
         if (active) setPasskeyStatus(status);
       })
       .catch(() => {
-        if (active) setPasskeyStatus({ enabled: false, registeredCount: 0 });
+        if (active) setPasskeyStatus({ enabled: false, registeredCount: 0, credentials: [] });
       });
 
     return () => {
@@ -373,12 +373,12 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
               <dd>{user?.email ?? 'Not available'}</dd>
             </div>
           </dl>
-          {passkeyStatus?.enabled && passkeyStatus.registeredCount === 0 ? (
+          {passkeyStatus?.enabled ? (
             <div className="profile-settings-row profile-settings-row--static profile-security-card">
               <span aria-hidden="true" className="profile-settings-row__icon"><Fingerprint size={20} /></span>
               <span className="profile-settings-row__copy">
                 <strong>Device sign-in</strong>
-                <small>Use Face ID or fingerprint</small>
+                <small>{passkeyStatus.registeredCount ? `${passkeyStatus.registeredCount} device passkey${passkeyStatus.registeredCount === 1 ? '' : 's'} registered` : 'Use Face ID or fingerprint'}</small>
               </span>
               <Button
                 disabled={passkeyPending}
@@ -388,7 +388,7 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
                   void registerPasskey()
                     .then((result) => {
                       if (result.ok) {
-                        setPasskeyStatus({ enabled: true, registeredCount: 1 });
+                        void getPasskeyStatus().then(setPasskeyStatus);
                         setPasskeyMessage('Passkey added on this device.');
                       } else {
                         setPasskeyMessage(result.error.message);
@@ -400,8 +400,30 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
                 variant="secondary"
               >
                 <Fingerprint aria-hidden="true" size={17} />
-                {passkeyPending ? 'Waiting…' : 'Enable'}
+                {passkeyPending ? 'Waiting…' : passkeyStatus.registeredCount ? 'Add' : 'Enable'}
               </Button>
+              {passkeyStatus.credentials.map((credential) => (
+                <span className="profile-settings-row__status" key={credential.credentialId}>
+                  {credential.nickname}
+                  <Button
+                    disabled={passkeyPending}
+                    onClick={() => {
+                      if (!window.confirm('Remove this passkey? It will no longer be able to sign in.')) return;
+                      setPasskeyPending(true);
+                      void revokePasskey(credential.credentialId)
+                        .then((result) => {
+                          if (result.ok) {
+                            void getPasskeyStatus().then(setPasskeyStatus);
+                            setPasskeyMessage('Passkey removed.');
+                          } else setPasskeyMessage(result.error.message);
+                        })
+                        .finally(() => setPasskeyPending(false));
+                    }}
+                    type="button"
+                    variant="ghost"
+                  >Remove</Button>
+                </span>
+              ))}
               {passkeyMessage ? <span aria-live="polite" className="profile-settings-row__status" role="status">{passkeyMessage}</span> : null}
             </div>
           ) : null}
@@ -735,7 +757,7 @@ function PlayerColourPaletteChooser({
   return (
     <>
       {isOpen ? <button aria-label={`Close ${title} chooser`} className="profile-fdr-sheet-backdrop" onClick={onClose} type="button" /> : null}
-      <Sheet id={isPosition ? 'position-colour-sheet' : 'metric-colour-sheet'} isOpen={isOpen} labelledBy={`${family}-colour-sheet-title`}>
+      <Sheet id={isPosition ? 'position-colour-sheet' : 'metric-colour-sheet'} isOpen={isOpen} labelledBy={`${family}-colour-sheet-title`} onClose={onClose}>
         <div className="profile-fdr-sheet profile-player-colour-sheet">
           <header className="profile-fdr-sheet__header">
             <div>
@@ -1179,7 +1201,7 @@ function FdrScaleChooser({
   return (
     <>
       {isOpen ? <button aria-label="Close FDR colour scale chooser" className="profile-fdr-sheet-backdrop" onClick={onClose} type="button" /> : null}
-      <Sheet id="fdr-scale-sheet" isOpen={isOpen} labelledBy="fdr-scale-sheet-title">
+      <Sheet id="fdr-scale-sheet" isOpen={isOpen} labelledBy="fdr-scale-sheet-title" onClose={onClose}>
         <div className="profile-fdr-sheet">
           <header className="profile-fdr-sheet__header">
             <div>
@@ -1439,12 +1461,13 @@ function ThemeColourChooser({
   themeMode: 'light' | 'dark';
 }) {
   const [isCustomOpen, setIsCustomOpen] = useState(false);
+  const [customEditMode, setCustomEditMode] = useState<'light' | 'dark'>(themeMode);
   const selectedPalette = getThemeColourPalette(themeColours, themeMode);
 
   return (
     <>
       {isOpen ? <button aria-label="Close theme colour chooser" className="profile-fdr-sheet-backdrop" onClick={onClose} type="button" /> : null}
-      <Sheet id="theme-colour-sheet" isOpen={isOpen} labelledBy="theme-colour-sheet-title">
+      <Sheet id="theme-colour-sheet" isOpen={isOpen} labelledBy="theme-colour-sheet-title" onClose={onClose}>
         <div className="profile-fdr-sheet">
         <header className="profile-fdr-sheet__header">
           <div>
@@ -1490,13 +1513,26 @@ function ThemeColourChooser({
           <details className="profile-colour-accordion" id="theme-custom-accordion" onToggle={(event) => setIsCustomOpen(event.currentTarget.open)} open={isCustomOpen}>
             <summary className="profile-colour-accordion__summary">Custom palette</summary>
             <div className="profile-colour-accordion__content">
+              <div aria-label="Custom palette appearance" className="profile-theme-colour-edit-modes" role="group">
+                {(['light', 'dark'] as const).map((mode) => (
+                  <Button
+                    aria-pressed={customEditMode === mode}
+                    key={mode}
+                    onClick={() => setCustomEditMode(mode)}
+                    type="button"
+                    variant={customEditMode === mode ? 'primary' : 'secondary'}
+                  >
+                    {mode === 'light' ? 'Light appearance' : 'Dark appearance'}
+                  </Button>
+                ))}
+              </div>
               <CustomThemeColourEditor
-                initialColours={themeColours}
-                key={Object.values(themeColours).join('-')}
+                initialColours={themeColourVariants[customEditMode]}
+                key={`${customEditMode}-${Object.values(themeColourVariants[customEditMode]).join('-')}`}
                 onUse={(colours) => {
-                  onSetThemeColourVariants({ ...themeColourVariants, [themeMode]: colours });
-                  onClose();
+                  onSetThemeColourVariants({ ...themeColourVariants, [customEditMode]: colours });
                 }}
+                useLabel={`Apply ${customEditMode} palette`}
               />
             </div>
           </details>
@@ -1510,9 +1546,11 @@ function ThemeColourChooser({
 function CustomThemeColourEditor({
   initialColours,
   onUse,
+  useLabel = 'Use custom',
 }: {
   initialColours: ThemeAccentColours;
   onUse: (colours: ThemeAccentColours) => void;
+  useLabel?: string;
 }) {
   const [colours, setColours] = useState<ThemeAccentColours>(() => ({ ...initialColours }));
   const [activeAccent, setActiveAccent] = useState<ThemeAccent>('primary');
@@ -1547,7 +1585,7 @@ function CustomThemeColourEditor({
   return (
     <div className="profile-fdr-custom-editor profile-theme-custom-editor">
       <div className="profile-fdr-custom-editor__header">
-        <Button onClick={() => onUse(colours)} type="button" variant="secondary">Use custom</Button>
+        <Button onClick={() => onUse(colours)} type="button" variant="secondary">{useLabel}</Button>
       </div>
       <div
         aria-label={`Colour field for ${activeDefinition.label}`}

@@ -203,7 +203,21 @@ class CurrentPendingLeagueClient extends MemoryLeagueClient {
   }
 }
 
+class UnpublishedLineupClient extends MemoryLeagueClient {
+  async getFixtureSquads(): Promise<FixtureSquad[]> {
+    return [];
+  }
+}
+
+class OnePublishedLineupClient extends MemoryLeagueClient {
+  async getFixtureSquads(fixtureId: string): Promise<FixtureSquad[]> {
+    return (await super.getFixtureSquads(fixtureId)).slice(0, 1);
+  }
+}
+
 class CommissionerLeagueClient extends MemoryLeagueClient {
+  revokedInviteIds: string[] = [];
+
   async getLeagueManagement() {
     return {
       leagueName: 'CDL',
@@ -218,6 +232,14 @@ class CommissionerLeagueClient extends MemoryLeagueClient {
   async createLeagueInvite(teamId: string) {
     return { leagueName: 'CDL', teamId, teamName: 'Drafton Rovers', token: 'invite-token', availableTeamCount: 5 };
   }
+
+  async getLeagueManagementInvites() {
+    return [{ inviteId: 'invite-1', leagueName: 'CDL', teamId: 'drafton', teamName: 'Drafton Rovers', createdAt: '2026-10-01T12:00:00Z' }];
+  }
+
+  async revokeLeagueInvite(inviteId: string) {
+    this.revokedInviteIds.push(inviteId);
+  }
 }
 
 const commissionerSession: SessionState = {
@@ -226,12 +248,12 @@ const commissionerSession: SessionState = {
   expiresAt: null,
 };
 
-async function renderPage(currentPath = '/league', client = new MemoryLeagueClient(), attackDirection: 'up' | 'down' = 'up', session: SessionState = commissionerSession) {
+async function renderPage(currentPath = '/league', client = new MemoryLeagueClient(), attackDirection: 'up' | 'down' = 'up', session: SessionState = commissionerSession, onNavigate: (href: string) => void = () => undefined) {
   const container = document.createElement('div');
   document.body.append(container);
   const root = createRoot(container);
   await act(async () => {
-    root.render(<LeaguePage attackDirection={attackDirection} currentPath={currentPath} leagueClient={client} onNavigate={() => undefined} session={session} squadClient={new MemoryNotificationsClient()} />);
+    root.render(<LeaguePage attackDirection={attackDirection} currentPath={currentPath} leagueClient={client} onNavigate={onNavigate} session={session} squadClient={new MemoryNotificationsClient()} />);
     await Promise.resolve();
     await Promise.resolve();
   });
@@ -251,6 +273,19 @@ describe('LeaguePage', () => {
     expect(container.querySelector('.league-loading__gameweek')).not.toBeNull();
     expect(container.querySelectorAll('.league-loading__fixture-rows span')).toHaveLength(3);
 
+    act(() => root.unmount());
+  });
+
+  test('offers a compact Live draft link outside the shared hero controls', async () => {
+    const destinations: string[] = [];
+    const { container, root } = await renderPage('/league', new MemoryLeagueClient(), 'up', commissionerSession, (href) => destinations.push(href));
+
+    const shortcuts = container.querySelector('nav[aria-label="League workspaces"]');
+    expect(shortcuts?.textContent).toContain('Live draft');
+    expect(shortcuts?.closest('[data-page-hero="shared"]')).toBeNull();
+    const draftButton = [...(shortcuts?.querySelectorAll('button') ?? [])].find((button) => button.textContent?.trim() === 'Live draft');
+    act(() => draftButton?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(destinations).toEqual(['/league/draft']);
     act(() => root.unmount());
   });
 
@@ -316,7 +351,8 @@ describe('LeaguePage', () => {
 
   test('shows invite link controls on commissioner management and hides them for managers', async () => {
     const commissioner = await renderPage('/league/manage', new CommissionerLeagueClient());
-    expect(commissioner.container.textContent).toContain('Active managers');
+    expect(commissioner.container.textContent).toContain('Assigned managers');
+    expect(commissioner.container.textContent).not.toContain('currently signed in');
     expect(commissioner.container.textContent).toContain('Andrew');
     expect(commissioner.container.textContent).toContain('Castle United');
     expect(commissioner.container.textContent).toContain('Invite by team');
@@ -556,6 +592,38 @@ describe('LeaguePage', () => {
     act(() => root.unmount());
   });
 
+  test('shows retry and an explicit state when upcoming lineups are not published', async () => {
+    const client = new UnpublishedLineupClient();
+    const { container, root } = await renderPage('/league', client);
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('button[aria-label="Select Gameweek 13"]')?.click();
+    });
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('button[aria-label*="Open preview for Andrew versus DJ"]')?.click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(container.querySelector('[role="dialog"]')?.textContent).toContain('Lineups unavailable');
+    expect(container.querySelector('[role="dialog"]')?.textContent).toContain('Lineups will appear when managers publish them.');
+    expect(container.querySelector('[role="dialog"] button')?.textContent).not.toContain('Retry');
+    act(() => root.unmount());
+  });
+
+  test('defines the one-lineup published preview state', async () => {
+    const { container, root } = await renderPage('/league', new OnePublishedLineupClient());
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('button[aria-label="Select Gameweek 13"]')?.click();
+    });
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('button[aria-label*="Open preview for Andrew versus DJ"]')?.click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(container.querySelector('[role="dialog"]')?.textContent).toContain('One lineup is available');
+    expect(container.querySelector('[role="dialog"]')?.textContent).toContain('other manager’s lineup has not been published yet.');
+    act(() => root.unmount());
+  });
+
   test('hides point gauges for current-gameweek players before kickoff', async () => {
     const { container, root } = await renderPage('/league', new CurrentPendingLeagueClient());
 
@@ -753,6 +821,28 @@ describe('LeaguePage', () => {
 
     expect(container.querySelector('button[aria-label="View commissioner management"]')?.getAttribute('aria-pressed')).toBe('true');
     expect(container.querySelector('.league-management-view')).not.toBeNull();
+    act(() => root.unmount());
+  });
+
+  test('loads commissioner management without waiting for fixture reads', async () => {
+    const { container, root } = await renderPage('/league/manage', new CommissionerLeagueClient());
+    expect(container.querySelector('.league-management-view')).not.toBeNull();
+    expect(container.textContent).toContain('Assigned managers');
+    act(() => root.unmount());
+  });
+
+  test('shows and revokes a pending team invite', async () => {
+    const client = new CommissionerLeagueClient();
+    const { container, root } = await renderPage('/league/manage', client);
+    expect(container.textContent).toContain('Pending invites');
+    expect(container.textContent).toContain('Drafton Rovers');
+    await act(async () => {
+      Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Revoke invite')?.click();
+      await Promise.resolve();
+    });
+    expect(client.revokedInviteIds).toEqual(['invite-1']);
+    expect(container.textContent).toContain('Invite for Drafton Rovers revoked.');
+    expect(container.querySelectorAll('[aria-label="Pending league invites"] .league-management-row')).toHaveLength(0);
     act(() => root.unmount());
   });
 

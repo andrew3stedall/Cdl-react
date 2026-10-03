@@ -6,7 +6,7 @@ Define player detail pages, FPL gameweek history, CDL ownership history, and pla
 
 ## Status
 
-Checkpoint 4 complete.
+FPL player detail/history and the compact squad comparison are implemented. Completed fixture explanations use frozen scoring snapshots. CDL ownership/transfer/loan history and expanded comparison views remain planned (#533); engineering checkpoint 4 is not proof of their persistent delivery.
 
 ## Business Rules
 
@@ -50,6 +50,8 @@ Suggested routes:
 - Fixture run display.
 - Availability/action panel.
 - Player-vs-player comparison view.
+- A collapsed CDL ownership-history disclosure lists dated team ownership periods across the signed-in manager's league seasons, with current ownership and empty/error/retry states.
+- Ownership history and private scouting reads are loaded only when their profile disclosures open.
 
 ## Data Access Requirements
 

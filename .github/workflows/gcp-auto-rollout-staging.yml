@@ -116,6 +116,15 @@ jobs:
         with:
           version: ">= 416.0.0"
 
+      - name: Pin currently healthy revision during rollout
+        run: |
+          set -euo pipefail
+          gcloud run services describe cdl-react-staging-api \
+            --project "${PROJECT_ID}" --region "${REGION}" --format=json \
+            > "${RUNNER_TEMP}/current-service.json"
+          revision="$(python scripts/cloud_run_staged_revision.py pin "${RUNNER_TEMP}/current-service.json")"
+          echo "RUNTIME_TRAFFIC_REVISION=${revision}" >> "${GITHUB_ENV}"
+
       - name: Diagnose recent staging auth failures
         continue-on-error: true
         run: |
@@ -279,6 +288,7 @@ jobs:
             -var="enable_cloud_run=true" \
             -var="enable_google_sign_in=true" \
             -var="backend_image=${IMAGE_DIGEST_URI}" \
+            -var="runtime_traffic_revision=${RUNTIME_TRAFFIC_REVISION}" \
             -var="allow_public_invoker=true"
           exit_code=$?
           set -e
@@ -395,6 +405,7 @@ jobs:
             -var="enable_cloud_run=true" \
             -var="enable_google_sign_in=true" \
             -var="backend_image=${IMAGE_DIGEST_URI}" \
+            -var="runtime_traffic_revision=${RUNTIME_TRAFFIC_REVISION}" \
             -var="allow_public_invoker=true"
           exit_code=$?
           set -e
@@ -442,6 +453,60 @@ jobs:
           execution="$(sed -n 's/.*gcloud run jobs executions describe \([^[:space:]]*\).*/\1/p' "${output_file}" | tail -n 1)"
           echo "execution=${execution}" >> "${GITHUB_OUTPUT}"
           exit "${status}"
+
+      - name: Verify new revision before traffic promotion
+        if: steps.database-migrations.outcome == 'success'
+        run: |
+          set -euo pipefail
+          gcloud run services describe cdl-react-staging-api \
+            --project "${PROJECT_ID}" --region "${REGION}" --format=json \
+            > "${RUNNER_TEMP}/staged-service.json"
+          ready="$(python - "${RUNNER_TEMP}/staged-service.json" <<'PY'
+          import json, sys
+          service=json.load(open(sys.argv[1], encoding="utf-8"))
+          status=service.get("status", {})
+          print(status.get("latestReadyRevisionName") or status.get("latestReadyRevision") or service.get("latestReadyRevision") or "")
+          PY
+          )"
+          test -n "${ready}"
+          gcloud run revisions describe "${ready}" \
+            --project "${PROJECT_ID}" --region "${REGION}" --format=json \
+            > "${RUNNER_TEMP}/staged-revision.json"
+          STAGED_REVISION="$(python scripts/cloud_run_staged_revision.py verify \
+            "${RUNNER_TEMP}/staged-service.json" "${RUNNER_TEMP}/staged-revision.json" \
+            "${RUNTIME_TRAFFIC_REVISION}" "${IMAGE_DIGEST_URI}")"
+          echo "STAGED_REVISION=${STAGED_REVISION}" >> "${GITHUB_ENV}"
+          echo "Verified staged revision ${STAGED_REVISION}; serving revision remains ${RUNTIME_TRAFFIC_REVISION}."
+
+      - name: Smoke staged revision before traffic promotion
+        if: steps.database-migrations.outcome == 'success'
+        run: |
+          set -euo pipefail
+          CANDIDATE_TAG="cdl-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          echo "CANDIDATE_TAG=${CANDIDATE_TAG}" >> "${GITHUB_ENV}"
+          gcloud run services update-traffic cdl-react-staging-api \
+            --project "${PROJECT_ID}" --region "${REGION}" \
+            --update-tags="${CANDIDATE_TAG}=${STAGED_REVISION}" --quiet
+          gcloud run services describe cdl-react-staging-api \
+            --project "${PROJECT_ID}" --region "${REGION}" --format=json \
+            > "${RUNNER_TEMP}/candidate-service.json"
+          candidate_url="$(python scripts/cloud_run_staged_revision.py candidate-url \
+            "${RUNNER_TEMP}/candidate-service.json" "${STAGED_REVISION}" \
+            "${RUNTIME_TRAFFIC_REVISION}" "${CANDIDATE_TAG}")"
+          test -n "${candidate_url}"
+          curl --fail --silent --show-error "${candidate_url}/health" \
+            | grep -Fq '"status":"ok"'
+          status_code="$(curl --silent --show-error --output /dev/null \
+            --write-out '%{http_code}' "${candidate_url}/api/fpl/status")"
+          test "${status_code}" = "401"
+
+      - name: Promote staged revision after migration
+        if: steps.database-migrations.outcome == 'success'
+        run: |
+          set -euo pipefail
+          gcloud run services update-traffic cdl-react-staging-api \
+            --project "${PROJECT_ID}" --region "${REGION}" \
+            --to-revisions "${STAGED_REVISION}=100" --quiet
 
       - name: Diagnose database migration failure
         if: steps.database-migrations.outcome == 'failure'
@@ -540,6 +605,14 @@ jobs:
             ${{ runner.temp }}/health.json
           if-no-files-found: error
           retention-days: 14
+
+      - name: Remove candidate revision traffic tag
+        if: always() && env.CANDIDATE_TAG != ''
+        run: |
+          set -euo pipefail
+          gcloud run services update-traffic cdl-react-staging-api \
+            --project "${PROJECT_ID}" --region "${REGION}" \
+            --remove-tags="${CANDIDATE_TAG}" --quiet
 
       - name: Record successful rollout
         run: |

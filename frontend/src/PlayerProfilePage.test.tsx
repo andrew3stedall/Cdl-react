@@ -10,6 +10,7 @@ import type {
   SquadClient,
 } from './squad-api';
 import type { PreferenceClient } from './preferences-api';
+import type { PlayerProfileDataClient, PrivateScoutingRecord } from './player-profile-data-api';
 import { ThemePresetProvider } from './theme-preset-provider';
 import type { UserPreferences } from './contracts';
 import type {
@@ -198,6 +199,7 @@ function renderPage(
   squadClient = new MemorySquadClient(),
   teamSelectionClient = new MemoryTeamSelectionClient(),
   presentation: 'page' | 'drawer' = 'page',
+  playerProfileDataClient?: PlayerProfileDataClient,
 ) {
   const container = document.createElement('div');
   document.body.appendChild(container);
@@ -210,6 +212,7 @@ function renderPage(
           presentation={presentation}
           squadClient={squadClient}
           teamSelectionClient={teamSelectionClient}
+          playerProfileDataClient={playerProfileDataClient}
         />
       </ThemePresetProvider>,
     );
@@ -229,6 +232,134 @@ afterEach(() => {
 });
 
 describe('PlayerProfilePage', () => {
+  test('loads private scouting and CDL ownership only when their disclosures open', async () => {
+    const scoutingRecord: PrivateScoutingRecord = { player_id: player.id, watchlisted: false, note: '', updated_at: null };
+    const saved: Array<{ watchlisted: boolean; note: string }> = [];
+    let scoutingReads = 0;
+    let ownershipReads = 0;
+    const dataClient: PlayerProfileDataClient = {
+      getScoutingRecord: async () => { scoutingReads += 1; return scoutingRecord; },
+      saveScoutingRecord: async (_playerId, values) => {
+        saved.push(values);
+        return { ...scoutingRecord, ...values, updated_at: '2026-10-03T00:00:00Z' };
+      },
+      getWatchlist: async () => [scoutingRecord],
+      getOwnershipHistory: async () => {
+        ownershipReads += 1;
+        return {
+          player_id: player.id,
+          periods: [
+            { id: 'old', season_id: 's1', season_name: 'Season 1', team_id: 't1', team_name: 'Harbour', started_at: '2025-08-01T00:00:00Z', ended_at: '2026-01-01T00:00:00Z' },
+            { id: 'new', season_id: 's2', season_name: 'Season 2', team_id: 't2', team_name: 'Castle', started_at: '2026-08-01T00:00:00Z', ended_at: null },
+          ],
+        };
+      },
+    };
+    const { container, root } = renderPage(new MemorySquadClient(), new MemoryTeamSelectionClient(), 'page', dataClient);
+    await settle();
+
+    expect(scoutingReads).toBe(0);
+    expect(ownershipReads).toBe(0);
+    expect(container.querySelector('[aria-label="Private scouting"]')?.textContent).toContain('Private');
+    expect(container.textContent).not.toContain('Season 1');
+
+    const privateToggle = [...container.querySelectorAll('button')].find((button) => button.textContent?.includes('Private scouting'));
+    await act(async () => { privateToggle?.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+    await settle();
+    expect(scoutingReads).toBe(1);
+    expect(ownershipReads).toBe(0);
+    expect(container.textContent).toContain('0/4000');
+
+    const checkbox = container.querySelector<HTMLInputElement>('input[type="checkbox"]');
+    const noteInput = container.querySelector<HTMLTextAreaElement>('textarea');
+    await act(async () => {
+      checkbox?.click();
+      if (noteInput) {
+        Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set?.call(noteInput, 'Monitor next fixture');
+        noteInput.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    });
+    const saveButton = [...container.querySelectorAll('button')].find((button) => button.textContent?.trim() === 'Save');
+    await act(async () => { saveButton?.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+    await settle();
+    expect(saved).toEqual([{ watchlisted: true, note: 'Monitor next fixture' }]);
+    expect(container.querySelector('[aria-label="Private scouting"]')?.textContent).toContain('Watchlisted');
+
+    const ownershipToggle = [...container.querySelectorAll('button')].find((button) => button.textContent?.includes('CDL ownership history'));
+    await act(async () => { ownershipToggle?.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+    await settle();
+    expect(ownershipReads).toBe(1);
+    expect(container.textContent).toContain('Castle');
+    expect(container.textContent).toContain('Harbour');
+    expect(container.textContent).toContain('Current');
+    root.unmount();
+  });
+
+  test('keeps failed private reads explicit and retries only after user action', async () => {
+    let reads = 0;
+    const dataClient: PlayerProfileDataClient = {
+      getScoutingRecord: async () => {
+        reads += 1;
+        if (reads === 1) throw new Error('Private scouting is unavailable.');
+        return { player_id: player.id, watchlisted: true, note: 'Keep an eye on minutes', updated_at: null };
+      },
+      saveScoutingRecord: async (_playerId, values) => ({ player_id: player.id, ...values, updated_at: null }),
+      getWatchlist: async () => [],
+      getOwnershipHistory: async () => ({ player_id: player.id, periods: [] }),
+    };
+    const { container, root } = renderPage(new MemorySquadClient(), new MemoryTeamSelectionClient(), 'page', dataClient);
+    await settle();
+    expect(reads).toBe(0);
+    const toggle = [...container.querySelectorAll('button')].find((button) => button.textContent?.includes('Private scouting'));
+    await act(async () => { toggle?.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+    await settle();
+    expect(container.textContent).toContain('Private scouting is unavailable.');
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain('Retry');
+    const retry = [...container.querySelectorAll('button')].find((button) => button.textContent?.trim() === 'Retry');
+    await act(async () => { retry?.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+    await settle();
+    expect(reads).toBe(2);
+    expect(container.querySelector('textarea')?.value).toBe('Keep an eye on minutes');
+    root.unmount();
+  });
+
+  test('retries a failed private save without discarding the note draft', async () => {
+    const saveAttempts: string[] = [];
+    const dataClient: PlayerProfileDataClient = {
+      getScoutingRecord: async () => ({ player_id: player.id, watchlisted: false, note: '', updated_at: null }),
+      saveScoutingRecord: async (_playerId, values) => {
+        saveAttempts.push(values.note);
+        if (saveAttempts.length === 1) throw new Error('Save failed.');
+        return { player_id: player.id, ...values, updated_at: null };
+      },
+      getWatchlist: async () => [],
+      getOwnershipHistory: async () => ({ player_id: player.id, periods: [] }),
+    };
+    const { container, root } = renderPage(new MemorySquadClient(), new MemoryTeamSelectionClient(), 'page', dataClient);
+    await settle();
+    const toggle = [...container.querySelectorAll('button')].find((button) => button.textContent?.includes('Private scouting'));
+    await act(async () => { toggle?.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+    await settle();
+    const noteInput = container.querySelector<HTMLTextAreaElement>('textarea');
+    await act(async () => {
+      if (noteInput) {
+        Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set?.call(noteInput, 'Retain this note');
+        noteInput.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    });
+    const save = [...container.querySelectorAll('button')].find((button) => button.textContent?.trim() === 'Save');
+    await act(async () => { save?.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+    await settle();
+    expect(container.textContent).toContain('Save failed.');
+    expect(container.querySelector('textarea')?.value).toBe('Retain this note');
+    const retry = [...container.querySelectorAll('button')].find((button) => button.textContent?.trim() === 'Retry');
+    await act(async () => { retry?.dispatchEvent(new MouseEvent('click', { bubbles: true })); });
+    await settle();
+    expect(saveAttempts).toEqual(['Retain this note', 'Retain this note']);
+    expect(container.textContent).toContain('Saved privately');
+    root.unmount();
+  });
+
   test('uses the shared player card in the drawer header', async () => {
     const { container, root } = renderPage();
     await settle();

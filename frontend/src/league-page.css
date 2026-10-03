@@ -1,12 +1,26 @@
+.league-workspace-shortcuts {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -0.25rem;
+}
+
+.league-workspace-shortcuts button {
+  font-size: 0.76rem;
+  min-height: 2rem;
+  padding: 0.35rem 0.65rem;
+}
+
 .league-page {
   background: var(--background);
   color: var(--foreground);
   align-content: start;
   display: grid;
   gap: 0.9rem;
+  grid-template-columns: minmax(0, 1fr);
   min-height: 100%;
   min-width: 0;
-  padding: clamp(1rem, 2.4vw, 1.65rem) 0 1.65rem;
+  padding: 0;
+  width: 100%;
 }
 
 .shell-main[data-active-route='league'] {
@@ -55,7 +69,7 @@
 }
 
 .league-page__brand-name {
-  color: var(--primary);
+  color: var(--theme-primary-text, var(--primary));
   font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.055em;
@@ -115,7 +129,7 @@
 }
 
 .league-page__view-toggle button[aria-pressed='true'] svg {
-  color: var(--primary);
+  color: var(--theme-primary-text, var(--primary));
 }
 
 .league-page__notifications {
@@ -140,7 +154,7 @@
 .league-page__icon-button:focus-visible {
   background: var(--secondary);
   border-color: var(--border);
-  color: var(--primary);
+  color: var(--theme-primary-text, var(--primary));
 }
 
 .league-page__notification-count {
@@ -471,7 +485,7 @@
 }
 
 .league-gameweek-section__heading .league-gameweek-section__title {
-  color: var(--primary);
+  color: var(--theme-primary-text, var(--primary));
   font-size: 1.05rem;
   font-weight: 750;
   letter-spacing: -0.015em;
@@ -612,7 +626,7 @@
   background: var(--secondary);
   border: 1px solid var(--border);
   border-radius: 0.5rem;
-  color: var(--primary);
+  color: var(--theme-primary-text, var(--primary));
   display: inline-flex;
   flex: 0 0 auto;
   height: 2rem;
@@ -621,7 +635,7 @@
 }
 
 .league-history-browser__action {
-  color: var(--primary);
+  color: var(--theme-primary-text, var(--primary));
   flex: 0 0 auto;
   font-size: 0.67rem;
   font-weight: 800;
@@ -680,7 +694,7 @@
 }
 
 .league-history-browser__item.is-selected strong {
-  color: var(--primary);
+  color: var(--theme-primary-text, var(--primary));
 }
 
 .league-history-browser__empty {
@@ -826,7 +840,7 @@
 
 .league-hero__kicker {
   align-items: center;
-  color: var(--primary);
+  color: var(--theme-primary-text, var(--primary));
   display: flex;
   font-size: 0.74rem;
   font-weight: 800;
@@ -922,7 +936,7 @@
   background: var(--secondary);
   border: 1px solid var(--border);
   border-radius: 0.5rem;
-  color: var(--primary);
+  color: var(--theme-primary-text, var(--primary));
   display: inline-flex;
   height: 2rem;
   justify-content: center;
@@ -976,7 +990,7 @@
 
 .league-text-link {
   align-items: center;
-  color: var(--primary);
+  color: var(--theme-primary-text, var(--primary));
   display: inline-flex;
   font-size: 0.78rem;
   font-weight: 800;
@@ -1009,7 +1023,7 @@
 }
 
 .league-fixture-card__meta span:first-child {
-  color: var(--primary);
+  color: var(--theme-primary-text, var(--primary));
   font-weight: 800;
 }
 
@@ -1056,7 +1070,7 @@
   background: var(--secondary);
   border: 1px solid var(--border);
   border-radius: 50%;
-  color: var(--primary);
+  color: var(--theme-primary-text, var(--primary));
   font-size: 0.59rem;
   font-weight: 850;
   letter-spacing: 0.02em;
@@ -1094,7 +1108,7 @@
 .league-fixture-card__footer .ui-button,
 .league-fixture-row > .ui-button,
 .league-knockout-match__footer .ui-button {
-  color: var(--primary);
+  color: var(--theme-primary-text, var(--primary));
   min-height: 2rem;
   padding: 0.3rem 0.4rem;
 }
@@ -1115,7 +1129,7 @@
 
 .league-status-badge--started {
   border-color: var(--primary);
-  color: var(--primary);
+  color: var(--theme-primary-text, var(--primary));
 }
 
 .league-status-badge--started > span {
@@ -1263,7 +1277,7 @@
 }
 
 .league-fixture-row__arrow {
-  color: var(--primary);
+  color: var(--theme-primary-text, var(--primary));
   flex: 0 0 auto;
 }
 
@@ -1362,7 +1376,7 @@
 }
 
 .league-gameweek-team__position {
-  color: var(--primary);
+  color: var(--theme-primary-text, var(--primary));
   font-size: 0.63rem;
   font-weight: 850;
   left: 0;
@@ -1401,7 +1415,7 @@
 }
 
 .league-gameweek-team__chips {
-  color: var(--primary);
+  color: var(--theme-primary-text, var(--primary));
   font-weight: 800;
   letter-spacing: 0.02em;
 }
@@ -1458,7 +1472,7 @@
 }
 
 .league-gameweek-live-summary span:first-child {
-  color: var(--primary);
+  color: var(--theme-primary-text, var(--primary));
 }
 
 .league-gameweek-other-fixtures {
@@ -1679,7 +1693,7 @@
 
 .league-rank--2,
 .league-rank--3 {
-  color: var(--primary);
+  color: var(--theme-primary-text, var(--primary));
 }
 
 .league-info-card {
@@ -1688,7 +1702,7 @@
 }
 
 .league-info-card > svg {
-  color: var(--primary);
+  color: var(--theme-primary-text, var(--primary));
   flex: 0 0 auto;
 }
 
@@ -1791,7 +1805,7 @@
 }
 
 .league-h2h-card__header > svg {
-  color: var(--primary);
+  color: var(--theme-primary-text, var(--primary));
 }
 
 .league-h2h-card__score {
@@ -1833,7 +1847,7 @@
 }
 
 .league-empty-state svg {
-  color: var(--primary);
+  color: var(--theme-primary-text, var(--primary));
   flex: 0 0 auto;
 }
 
@@ -1955,7 +1969,7 @@
 }
 
 .league-management-row__status {
-  color: var(--primary);
+  color: var(--theme-primary-text, var(--primary));
 }
 
 .league-management-team + .league-management-team {
@@ -2023,7 +2037,7 @@
 }
 
 .league-invite-card__success {
-  color: var(--primary);
+  color: var(--theme-primary-text, var(--primary));
 }
 
 .league-invite-card__signed-in {
@@ -2192,7 +2206,7 @@
   inset: 0;
   padding: 0;
   position: fixed;
-  z-index: 29;
+  z-index: var(--cdl-z-modal-backdrop, 60);
 }
 
 .league-drawer {
@@ -2207,7 +2221,8 @@
   right: 0;
   top: 0;
   width: 100%;
-  z-index: 30;
+  padding-bottom: var(--cdl-mobile-navigation-clearance);
+  z-index: var(--cdl-z-modal, 61);
 }
 
 .league-drawer__header {
@@ -2357,7 +2372,7 @@
 }
 
 .fixture-historical-squad > header > strong {
-  color: var(--primary);
+  color: var(--theme-primary-text, var(--primary));
   white-space: nowrap;
 }
 
@@ -2524,7 +2539,7 @@
     border-radius: 0;
     gap: 0.5rem;
     min-height: 100dvh;
-    padding: 0 0 5rem;
+    padding: 0;
   }
 
   .league-page__hero {

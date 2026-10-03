@@ -8,6 +8,7 @@ from cdl_api.contracts.team_selection import (
     LineupUpdateRequest,
 )
 from cdl_api.repositories.team_selection import InMemoryTeamSelectionRepository
+from cdl_api.services.lineup_rules import valid_formation_names
 from cdl_api.services.team_selection import (
     ChipService,
     FixtureSummaryService,
@@ -57,6 +58,13 @@ def test_team_selection_load_includes_lineup_chips_and_gameweek() -> None:
         "bench-boost",
         "best-xi",
     ]
+
+
+def test_incomplete_roster_uses_actual_slot_counts_and_shared_formation_ranges() -> None:
+    assert TeamSelectionService._slot_counts(19) == (11, 5, 3)
+    assert "5-2-3" in valid_formation_names()
+    assert "5-3-2" in valid_formation_names()
+    assert "5-4-1" in valid_formation_names()
 
 
 def test_lineup_update_accepts_valid_payload() -> None:

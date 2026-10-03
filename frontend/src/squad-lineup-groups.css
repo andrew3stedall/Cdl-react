@@ -111,7 +111,7 @@
 .squad-page__lineup-role.starter {
   background: var(--secondary);
   border-color: var(--border);
-  color: var(--squad-accent);
+  color: var(--theme-primary-text, var(--squad-accent));
 }
 
 .squad-page__lineup-role.bench {

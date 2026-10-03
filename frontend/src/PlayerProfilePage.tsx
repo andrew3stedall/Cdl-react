@@ -51,10 +51,14 @@ import {
   type TeamSelectionSnapshot,
 } from './team-selection-api';
 import { useOptionalThemePreset } from './theme-preset-provider';
+import { invalidateData, subscribeDataFreshness } from './data-freshness';
+import { OwnershipHistoryPanel, PrivateScoutingPanel } from './PlayerProfileScoutingPanels';
+import { HttpPlayerProfileDataClient, type PlayerProfileDataClient } from './player-profile-data-api';
 import './player-profile.css';
 
 const defaultSquadClient = new HttpSquadClient();
 const defaultTeamSelectionClient = new HttpTeamSelectionClient();
+const defaultPlayerProfileDataClient = new HttpPlayerProfileDataClient();
 
 interface PlayerProfilePageProps {
   initialPlayer?: SquadApiPlayer;
@@ -71,6 +75,7 @@ interface PlayerProfilePageProps {
   showActions?: boolean;
   squadClient?: PlayerProfileSquadClient;
   teamSelectionClient?: TeamSelectionClient;
+  playerProfileDataClient?: PlayerProfileDataClient;
 }
 
 type ProfileSquadStatus = TeamSelectionPlayer['slot'] | null;
@@ -109,13 +114,15 @@ export function PlayerProfilePage({
   showActions = true,
   squadClient = defaultSquadClient,
   teamSelectionClient = defaultTeamSelectionClient,
+  playerProfileDataClient = defaultPlayerProfileDataClient,
 }: PlayerProfilePageProps) {
   const themePreset = useOptionalThemePreset();
   const fdrDisplayMode = themePreset?.fdrDisplayMode ?? 'font';
   const [player, setPlayer] = useState<SquadApiPlayer | null>(initialPlayer ?? null);
   const [history, setHistory] = useState<SquadApiHistoryResponse | null>(null);
   const [selection, setSelection] = useState<TeamSelectionSnapshot | null>(initialSelection ?? null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(initialPlayer == null);
+  const [historyLoading, setHistoryLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [selectionError, setSelectionError] = useState<string | null>(null);
@@ -127,15 +134,21 @@ export function PlayerProfilePage({
   const [replacementId, setReplacementId] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
   const [chartDetail, setChartDetail] = useState<ChartDetailSelection | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => subscribeDataFreshness('player-profile', ['squad', 'lineup', 'global'], () => {
+    setRefreshKey((current) => current + 1);
+  }), []);
 
   useEffect(() => {
     let mounted = true;
-    setLoading(true);
+    setLoading(initialPlayer == null);
+    setHistoryLoading(true);
     setLoadError(null);
     setHistoryError(null);
     setSelectionError(null);
     setNotice(null);
-    const playerPromise = initialPlayer
+    const playerPromise = initialPlayer && refreshKey === 0
       ? Promise.resolve(initialPlayer)
       : squadClient.getPlayer
         ? squadClient.getPlayer(playerId)
@@ -156,6 +169,7 @@ export function PlayerProfilePage({
       } else {
         setHistoryError(historyResult.reason instanceof Error ? historyResult.reason.message : 'Player history is unavailable.');
       }
+      setHistoryLoading(false);
       if (selectionResult.status === 'fulfilled') {
         setSelection(selectionResult.value);
       } else {
@@ -166,7 +180,7 @@ export function PlayerProfilePage({
     return () => {
       mounted = false;
     };
-  }, [playerId, squadClient, teamSelectionClient]);
+  }, [initialPlayer, playerId, refreshKey, squadClient, teamSelectionClient]);
 
   const selectedLineupPlayer = selection?.players.find((candidate) => candidate.id === playerId) ?? null;
   const squadStatus: ProfileSquadStatus = selectedLineupPlayer?.slot ?? null;
@@ -240,6 +254,7 @@ export function PlayerProfilePage({
       setActionSheet(null);
       setSelectedSubstitution(null);
       setNotice(successMessage);
+      invalidateData(['lineup', 'squad'], 'player-profile');
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Unable to update the lineup.');
     } finally {
@@ -328,6 +343,7 @@ export function PlayerProfilePage({
       setSelection(updatedSelection);
       onSelectionChange?.(updatedSelection);
       onSquadChange?.(updatedSummary);
+      invalidateData(['squad', 'lineup'], 'player-profile');
       setActionSheet(null);
       setNotice(`${player.display_name} was removed and replaced by ${selectedReplacement.display_name}.`);
     } catch (error) {
@@ -412,7 +428,7 @@ export function PlayerProfilePage({
       {selectionError ? <p className="player-profile__inline-error" role="alert">{selectionError}</p> : null}
 
       <ChartCard compact title="Form & minutes">
-        {historyError ? <ChartEmpty message={`Form and minutes history unavailable: ${historyError}`} /> : formFixtures.length > 0 ? <CombinedFormMinutesChart fixtures={formFixtures} fdrDisplayMode={fdrDisplayMode} onFixtureClick={(fixture) => setChartDetail({ kind: 'form', fixture: fixture as ProfileFixture })} /> : <ChartEmpty message="No completed FPL fixture history is available." />}
+        {historyLoading ? <ChartEmpty message="Loading form and minutes…" /> : historyError ? <ChartEmpty message={`Form and minutes history unavailable: ${historyError}`} /> : formFixtures.length > 0 ? <CombinedFormMinutesChart fixtures={formFixtures} fdrDisplayMode={fdrDisplayMode} onFixtureClick={(fixture) => setChartDetail({ kind: 'form', fixture: fixture as ProfileFixture })} /> : <ChartEmpty message="No completed FPL fixture history is available." />}
       </ChartCard>
 
       {defensiveHistoryGroups.length > 0 ? defensiveHistoryGroups.map((group) => {
@@ -428,9 +444,12 @@ export function PlayerProfilePage({
           heading={<OpponentChartHeading difficulty={opponentDifficulty} headingId={`opponent-${group.opponent_team_id}`} label={formatOpponentLabel(groupOpponentShortName, opponentIsHome)} title={fixtureDifficultyTitle(opponentDifficulty)} />}
           key={group.opponent_team_id}
         >
-          {group.fixtures.length > 0 ? <DefensiveChart fixtures={group.fixtures} fdrDisplayMode={fdrDisplayMode} onFixtureClick={(fixture) => setChartDetail({ kind: 'opponent', fixture })} /> : <ChartEmpty message={`No cached defensive history is available for ${groupOpponent}.`} />}
+          {historyLoading ? <ChartEmpty message="Loading opponent history…" /> : group.fixtures.length > 0 ? <DefensiveChart fixtures={group.fixtures} fdrDisplayMode={fdrDisplayMode} onFixtureClick={(fixture) => setChartDetail({ kind: 'opponent', fixture })} /> : <ChartEmpty message={`No cached defensive history is available for ${groupOpponent}.`} />}
         </ChartCard>;
       }) : <ChartCard title="Opponent form" className="player-profile__chart-card--full"><ChartEmpty message="No cached defensive history is available for the next opponent." /></ChartCard>}
+
+      <PrivateScoutingPanel client={playerProfileDataClient} key={player.id} playerId={player.id} />
+      <OwnershipHistoryPanel client={playerProfileDataClient} key={player.id} playerId={player.id} />
 
       {notice ? <p className="player-profile__notice" role="status">{notice}</p> : null}
       {presentation === 'drawer' ? <div aria-hidden="true" className="player-profile__scroll-end-spacer" /> : null}
@@ -470,7 +489,6 @@ export function PlayerProfilePage({
 
       {actionSheet === 'bench' ? (
         <ActionDialog labelledBy="player-profile-substitution-title" onClose={() => setActionSheet(null)} title="Choose substitution">
-          <p>Choose an eligible player to swap with {player.display_name}. The formation will be validated before the change is applied.</p>
           <div className="player-profile__action-options">
             {substitutionOptions.length === 0 ? <ChartEmpty message="No legal replacements are available for this formation." /> : substitutionOptions.map((option) => (
               <button
@@ -497,7 +515,7 @@ export function PlayerProfilePage({
 
       {actionSheet === 'remove' ? (
         <ActionDialog labelledBy="player-profile-remove-title" onClose={() => setActionSheet(null)} title="Remove player">
-          <p>Removing a player changes your season-long squad. Select the active replacement required by the squad rules before confirming.</p>
+          <p>Choose a replacement before confirming removal.</p>
           <div className="player-profile__action-options">
             {replacementPlayers.length === 0 && pendingAction !== 'remove' ? <ChartEmpty message="No active replacement rights are available." /> : null}
             {replacementPlayers.map((replacement) => (

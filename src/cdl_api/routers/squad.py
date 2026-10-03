@@ -20,6 +20,8 @@ from cdl_api.contracts.squad import (
     SquadChangesResponse,
     SquadNotificationsResponse,
     SquadSummaryResponse,
+    TradeApprovalRequest,
+    TradeAuditEventResponse,
     TradeCreateRequest,
     TradeProposal,
     TradesResponse,
@@ -34,8 +36,10 @@ from cdl_api.routers.auth import (
     get_session_for_request,
 )
 from cdl_api.services.auth import AuthenticationService
+from cdl_api.services.live_draft import LiveDraftError
 from cdl_api.services.squad import SquadManagementService, SquadValidationError
 from cdl_api.settings import Settings, get_settings
+from cdl_api.staging_draft_seed import UnassignedManagerContextError
 
 router = APIRouter(tags=["squad-management"])
 
@@ -45,12 +49,15 @@ def get_squad_service(
     user: SessionUser | None = Depends(get_optional_authenticated_session),
 ) -> SquadManagementService:
     if settings.repository_mode == "postgres":
-        return SquadManagementService(
-            PostgreSQLSquadRepository(
-                build_session_factory(settings),
-                user_id=user.id if user is not None else None,
+        try:
+            return SquadManagementService(
+                PostgreSQLSquadRepository(
+                    build_session_factory(settings),
+                    user_id=user.id if user is not None else None,
+                )
             )
-        )
+        except UnassignedManagerContextError as exc:
+            raise HTTPException(status_code=403, detail=str(exc)) from exc
     repositories = build_repositories(settings)
     return SquadManagementService(repositories.squad)
 
@@ -78,6 +85,30 @@ def require_manager_session(
             detail="Manager role required.",
         )
     return session.user
+
+
+def require_trade_approval_session(
+    request: Request,
+    settings: Settings = Depends(get_settings),
+    auth_service: AuthenticationService = Depends(get_auth_service),
+) -> SessionUser:
+    try:
+        session = get_session_for_request(request, settings, auth_service)
+    except (OperationalError, SQLAlchemyTimeoutError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Session verification is temporarily unavailable.",
+        ) from exc
+    user = session.user
+    if not session.is_authenticated or user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required."
+        )
+    if not {"manager", "commissioner", "vice_commissioner", "admin"}.intersection(user.roles):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="League approver role required."
+        )
+    return user
 
 
 def validation_error_response(exc: SquadValidationError) -> JSONResponse:
@@ -114,6 +145,8 @@ def apply_squad_changes(
 ) -> SquadSummaryResponse | JSONResponse:
     try:
         return service.apply_changes(payload)
+    except LiveDraftError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     except SquadValidationError as exc:
         return validation_error_response(exc)
 
@@ -198,6 +231,14 @@ def list_trades(
     return TradesResponse(trades=service.list_trades())
 
 
+@router.get("/trades/approvals", response_model=TradesResponse)
+def list_trade_approvals(
+    user: SessionUser = Depends(require_trade_approval_session),
+    service: SquadManagementService = Depends(get_squad_service),
+) -> TradesResponse:
+    return TradesResponse(trades=service.list_pending_trade_approvals(user.id))
+
+
 @router.post("/trades", response_model=TradeProposal)
 def create_trade(
     payload: TradeCreateRequest,
@@ -231,3 +272,47 @@ def update_trade(
             },
         )
     return trade
+
+
+@router.post("/trades/{trade_id}/approve", response_model=TradeProposal)
+def approve_trade(
+    trade_id: str,
+    payload: TradeApprovalRequest,
+    user: SessionUser = Depends(require_trade_approval_session),
+    service: SquadManagementService = Depends(get_squad_service),
+) -> TradeProposal | JSONResponse:
+    try:
+        trade = service.approve_trade(trade_id, payload.decision, user.id, payload.note)
+    except LiveDraftError as exc:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    except SquadValidationError as exc:
+        return validation_error_response(exc)
+    if trade is None:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={
+                "code": "not_found",
+                "message": "Trade not found.",
+                "details": {"trade_id": trade_id},
+            },
+        )
+    return trade
+
+
+@router.get("/trades/{trade_id}/audit", response_model=list[TradeAuditEventResponse])
+def trade_audit(
+    trade_id: str,
+    user: SessionUser = Depends(require_trade_approval_session),
+    service: SquadManagementService = Depends(get_squad_service),
+) -> list[TradeAuditEventResponse] | JSONResponse:
+    events = service.trade_audit(trade_id, user.id)
+    if events is None:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={
+                "code": "not_found",
+                "message": "Trade audit trail not found.",
+                "details": {"trade_id": trade_id},
+            },
+        )
+    return events

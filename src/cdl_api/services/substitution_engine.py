@@ -5,6 +5,8 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 
+from cdl_api.services.lineup_rules import is_valid_formation, normalize_position
+
 
 @dataclass(frozen=True)
 class LineupPlayer:
@@ -94,19 +96,7 @@ def is_valid_starting_formation(players: Sequence[LineupPlayer]) -> bool:
     if len(players) != 11:
         return False
 
-    counts = {position: 0 for position in ("GKP", "DEF", "MID", "FWD")}
-    for player in players:
-        position = _normalise_position(player.position)
-        if position not in counts:
-            return False
-        counts[position] += 1
-
-    return (
-        counts["GKP"] == 1
-        and 3 <= counts["DEF"] <= 5
-        and 2 <= counts["MID"] <= 5
-        and 1 <= counts["FWD"] <= 3
-    )
+    return is_valid_formation([player.position for player in players])
 
 
 def _minutes_for(player_id: str, minutes_by_player: Mapping[str, int]) -> int | None:
@@ -123,12 +113,4 @@ def _positions_compatible(starter_position: str, candidate_position: str) -> boo
 
 
 def _normalise_position(position: str) -> str:
-    normalized = position.strip().upper()
-    return {
-        "GK": "GKP",
-        "GOALKEEPER": "GKP",
-        "DEFENDER": "DEF",
-        "MIDFIELDER": "MID",
-        "FORWARD": "FWD",
-        "STRIKER": "FWD",
-    }.get(normalized, normalized)
+    return normalize_position(position)

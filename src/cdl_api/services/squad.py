@@ -16,12 +16,16 @@ from cdl_api.contracts.squad import (
     SquadNotification,
     SquadNotificationsResponse,
     SquadSummaryResponse,
+    TradeApprovalDecision,
+    TradeApprovalStatus,
     TradeAsset,
+    TradeAuditEventResponse,
     TradeCreateRequest,
     TradeProposal,
     TradeStatus,
 )
 from cdl_api.repositories.squad import SquadRepository
+from cdl_api.services.live_draft import LiveDraftError
 
 SQUAD_SIZE_RULE = "squad-size"
 SQUAD_POSITION_LIMITS: dict[PlayerPosition, tuple[int, int]] = {
@@ -119,7 +123,15 @@ class SquadManagementService:
                         )
                     ],
                 )
-        owned_players = {player.id: player for player in self._repository.list_squad_players()}
+        # The repository read includes all teams' active ownerships so callers can
+        # build league views. A manager's projected squad must be calculated from
+        # their own team only; otherwise rival players incorrectly consume their
+        # position limits and can make a legal same-position replacement fail.
+        owned_players = {
+            player.id: player
+            for player in self._repository.list_squad_players()
+            if player.draft_team == self._repository.manager_team
+        }
         owned_ids = set(owned_players)
         for player_id in removals:
             if player_id not in owned_ids:
@@ -163,6 +175,8 @@ class SquadManagementService:
 
         try:
             self._repository.apply_squad_changes(additions, removals)
+        except LiveDraftError:
+            raise
         except ValueError as exc:
             raise SquadValidationError(
                 str(exc),
@@ -249,6 +263,25 @@ class SquadManagementService:
         return self._repository.list_trades()
 
     def create_trade(self, request: TradeCreateRequest) -> TradeProposal:
+        if len(request.offered_player_ids) != len(set(request.offered_player_ids)):
+            raise SquadValidationError(
+                "Trade assets must be unique.",
+                [
+                    ValidationIssue(
+                        field="offered_player_ids", message="Duplicate player IDs are not allowed."
+                    )
+                ],
+            )
+        if len(request.requested_player_ids) != len(set(request.requested_player_ids)):
+            raise SquadValidationError(
+                "Trade assets must be unique.",
+                [
+                    ValidationIssue(
+                        field="requested_player_ids",
+                        message="Duplicate player IDs are not allowed.",
+                    )
+                ],
+            )
         offered_to = self._repository.team_for_id(request.offered_to_team_id)
         if offered_to is None or offered_to.id == self._repository.manager_team.id:
             raise SquadValidationError(
@@ -302,6 +335,9 @@ class SquadManagementService:
             gameweek=self._repository.gameweek,
             assets=assets,
             rule_references=[TRADE_WINDOW_RULE],
+            required_approver_role=self._repository.required_trade_approver_role(
+                self._repository.manager_team.id, offered_to.id
+            ),
         )
         return self._repository.save_trade(trade)
 
@@ -346,7 +382,7 @@ class SquadManagementService:
                     )
                 ],
             )
-        updated = self._repository.update_trade_status(trade_id, status)
+        updated = self._repository.update_trade_status(trade_id, status, actor_manager_id)
         if updated is not None and updated.status != status:
             raise SquadValidationError(
                 "Trade is no longer pending.",
@@ -357,7 +393,53 @@ class SquadManagementService:
                     )
                 ],
             )
+        if updated is not None and status == TradeStatus.ACCEPTED:
+            updated.approval_status = TradeApprovalStatus.PENDING
         return updated
+
+    def approve_trade(
+        self,
+        trade_id: str,
+        decision: TradeApprovalDecision,
+        actor_user_id: str,
+        note: str | None = None,
+    ) -> TradeProposal | None:
+        trade = self._repository.get_trade(trade_id)
+        if trade is None:
+            return None
+        if trade.status != TradeStatus.ACCEPTED:
+            raise SquadValidationError(
+                "Trade must be agreed before approval.",
+                [ValidationIssue(field="status", message="Both managers must agree first.")],
+            )
+        if trade.approval_status not in {
+            TradeApprovalStatus.PENDING,
+            TradeApprovalStatus.APPROVED,
+        }:
+            raise SquadValidationError(
+                "Trade is not waiting for approval.",
+                [
+                    ValidationIssue(
+                        field="approval_status", message="Trade is not pending approval."
+                    )
+                ],
+            )
+        try:
+            return self._repository.approve_trade(trade_id, actor_user_id, decision, note)
+        except LiveDraftError:
+            raise
+        except ValueError as exc:
+            raise SquadValidationError(
+                str(exc), [ValidationIssue(field="approval", message=str(exc))]
+            ) from exc
+
+    def list_pending_trade_approvals(self, actor_user_id: str) -> list[TradeProposal]:
+        return self._repository.list_pending_trade_approvals(actor_user_id)
+
+    def trade_audit(
+        self, trade_id: str, actor_user_id: str
+    ) -> list[TradeAuditEventResponse] | None:
+        return self._repository.trade_audit(trade_id, actor_user_id)
 
     def _require_player(self, player_id: str) -> PlayerDetail:
         player = self._repository.get_player(player_id)

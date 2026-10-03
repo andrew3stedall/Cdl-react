@@ -16,3 +16,4 @@ class SessionState(BaseModel):
     is_authenticated: bool
     user: SessionUser | None = None
     expires_at: datetime | None = None
+    engineering_previews_enabled: bool = False

@@ -90,6 +90,25 @@ export function isProfileRoute(path: string): boolean {
   return path === '/profile' || path.startsWith('/profile/') || path === '/account' || path.startsWith('/account/');
 }
 
+export function isSupportedRoute(path: string): boolean {
+  if (isDeskRoute(path) || isSquadRoute(path)) return true;
+  if (path === '/scouting' || path === '/scouting/interests' || path === '/scouting/trades' || path === '/scouting/draws' || path === '/scouting/loans') return true;
+  if (path === '/league' || path === '/league/fixtures' || path === '/league/table' || path === '/league/manage' || path === '/league/knockout' || path === '/league/head-to-head' || path === '/league/draft') return true;
+  if ([
+    '/profile', '/account',
+    '/profile/appearance', '/account/appearance',
+    '/profile/theme-colours', '/account/theme-colours',
+    '/profile/fdr', '/account/fdr',
+    '/profile/orientation', '/account/orientation',
+    '/profile/player-positions', '/account/player-positions',
+    '/profile/player-metrics', '/account/player-metrics',
+    '/profile/result-colours', '/account/result-colours',
+  ].includes(path)) return true;
+  if (path === '/rules' || path === '/fdr' || path === '/analytics' || path === '/dashboard/analytics') return true;
+  if (/^\/players\/[^/]+$/.test(path) || /^\/join\/[^/]+$/.test(path)) return true;
+  return /^\/modernisation\/checkpoint-[1-5]$/.test(path);
+}
+
 /**
  * Returns the stable page identity used by the shell and the in-memory route
  * cache. Nested paths within a page intentionally share one identity so that

@@ -180,6 +180,7 @@ module "cloud_run_api" {
   region                        = var.region
   service_name                  = local.api_service_name
   image                         = var.backend_image
+  traffic_revision              = var.runtime_traffic_revision
   runtime_service_account_email = google_service_account.runtime.email
   cloud_sql_connection_name     = module.cloud_sql.connection_name
   environment                   = var.environment

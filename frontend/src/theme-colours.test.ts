@@ -2,6 +2,9 @@ import { describe, expect, test } from 'vitest';
 
 import {
   applyThemeColours,
+  contrastRatio,
+  deriveThemeColourVariants,
+  getAccessibleAccentText,
   getThemeAccentColoursForMode,
   getThemeColourPalette,
   resolveThemeAccentColours,
@@ -46,6 +49,37 @@ describe('theme accent colours', () => {
     expect(resolveThemeColourVariants({ light: ocean?.lightColours, dark: ocean?.darkColours })).toEqual({
       light: ocean?.lightColours,
       dark: ocean?.darkColours,
+    });
+  });
+
+  test('derives a nearby companion while retaining the selected colour weight', () => {
+    const variants = deriveThemeColourVariants('#0F766E', 'dark');
+    expect(variants.light.primary).toBe('#0C615A');
+    expect(variants.dark.primary).toBe('#0F766E');
+  });
+
+  test('provides readable text tokens without changing exact custom fills', () => {
+    const custom = '#000000';
+    const darkSurfaces = ['#0B1111', '#111C1B', '#192523', '#182321', '#1C2E2B'];
+    const text = getAccessibleAccentText(custom, darkSurfaces);
+    expect(custom).toBe('#000000');
+    expect(text).not.toBe(custom);
+    darkSurfaces.forEach((surface) => expect(contrastRatio(text, surface)).toBeGreaterThanOrEqual(4.5));
+  });
+
+  test('text tokens retain original preset accents only where they meet normal text contrast', () => {
+    const surfacePairs = [
+      ['#F8FAFC', '#FFFFFF', '#F1F5F9'],
+      ['#0B1111', '#111C1B', '#192523', '#182321', '#1C2E2B'],
+    ];
+    themeColourPalettes.forEach(({ lightColours, darkColours }) => {
+      [lightColours, darkColours].forEach((palette, modeIndex) => {
+        Object.values(palette).forEach((colour) => {
+          const surfaces = surfacePairs[modeIndex];
+          const text = getAccessibleAccentText(colour, surfaces);
+          surfaces.forEach((surface) => expect(contrastRatio(text, surface)).toBeGreaterThanOrEqual(4.5));
+        });
+      });
     });
   });
 

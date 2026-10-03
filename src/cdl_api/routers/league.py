@@ -1,6 +1,6 @@
 """League fixture and table API routes."""
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import JSONResponse
 
 from cdl_api.contracts.common import ApiErrorResponse, ErrorCode
@@ -129,6 +129,49 @@ def create_league_invite(
         token=invite.token,
         available_team_count=invite.available_team_count,
     )
+
+
+@router.get("/management/invites", response_model=None)
+def list_pending_league_invites(
+    user: SessionUser = Depends(require_authenticated_session),
+    settings: Settings = Depends(get_settings),
+    repository: InMemoryLeagueMembershipRepository | PostgreSQLLeagueMembershipRepository = Depends(
+        get_membership_repository
+    ),
+) -> dict[str, object] | JSONResponse:
+    if not _is_commissioner(user, settings):
+        return _forbidden()
+    return {
+        "invites": [
+            {
+                "invite_id": invite.invite_id,
+                "league_name": invite.league_name,
+                "team_id": invite.team_id,
+                "team_name": invite.team_name,
+                "created_at": invite.created_at.isoformat(),
+            }
+            for invite in repository.list_pending_invites()
+        ]
+    }
+
+
+@router.delete("/management/invites/{invite_id}", response_model=None)
+def revoke_league_invite(
+    invite_id: str,
+    user: SessionUser = Depends(require_authenticated_session),
+    settings: Settings = Depends(get_settings),
+    repository: InMemoryLeagueMembershipRepository | PostgreSQLLeagueMembershipRepository = Depends(
+        get_membership_repository
+    ),
+) -> dict[str, bool] | JSONResponse:
+    if not _is_commissioner(user, settings):
+        return _forbidden()
+    if not repository.revoke_invite(invite_id):
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={"code": "not_found", "message": "Pending invite not found.", "details": {}},
+        )
+    return {"revoked": True}
 
 
 @router.get(
@@ -506,9 +549,10 @@ def _attach_fixture_contexts(
 
 @router.get("/table", response_model=LeagueTableResponse)
 def league_table(
+    mode: str = Query(default="official", pattern="^(official|live)$"),
     repository: LeagueReadRepository = Depends(get_league_repository),
 ) -> LeagueTableResponse:
-    return LeagueTableService(repository).get_table()
+    return LeagueTableService(repository).get_table(mode)
 
 
 @router.get("/knockout", response_model=KnockoutResponse)

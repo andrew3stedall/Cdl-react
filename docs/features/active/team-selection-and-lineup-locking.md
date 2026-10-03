@@ -6,7 +6,7 @@ Define weekly team selection, lineup rollover, auto-adjustment, validation, capt
 
 ## Status
 
-Checkpoint 3 complete. The primary team-selection API reports persisted or official-deadline fixture-lock state and rejects lineup or chip mutations with a structured `409 conflict` once locked. A scheduled backend pass finalises every team at the FPL deadline, including managers who never open the app, and rolls the saved lineup into the next official editable gameweek. The React page loads this API state, renders the backend lock reason, and disables every lineup, chip, and save control while locked.
+The primary team-selection API reports persisted or official-deadline fixture-lock state and rejects lineup or chip mutations with a structured `409 conflict` once locked. A scheduled backend pass finalises every team at the FPL deadline, including managers who never open the app, and rolls the saved lineup into the next official editable gameweek. Ownership movement and unattended rollover use a shared repair helper for future unlocked rows; locked history is not rewritten. Lineup submission is blocked while a team has fewer than 20 rostered players, with actual slot counts reported instead of demo counts. The React page loads this API state, renders the backend lock reason, and disables every lineup, chip, and save control while locked.
 
 ## Business Rules
 

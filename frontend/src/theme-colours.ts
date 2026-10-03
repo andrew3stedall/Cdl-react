@@ -158,7 +158,8 @@ function isThemeColourVariants(value: unknown): value is ThemeColourVariantsInpu
 function adjustColourForMode(colour: string, mode: ThemeColourMode): string {
   // A light surface needs a darker version of a vivid accent. Dark surfaces
   // benefit from a small lift so controls do not disappear into the canvas.
-  return mixHex(colour, mode === 'light' ? '#000000' : '#FFFFFF', mode === 'light' ? 0.18 : 0.16);
+  // Keep 82–84% of the user's selected hue and adjust only the remainder.
+  return mixHex(colour, mode === 'light' ? '#000000' : '#FFFFFF', mode === 'light' ? 0.82 : 0.84);
 }
 
 export function deriveThemeColourVariants(
@@ -214,6 +215,23 @@ function getContrastForeground(background: string): '#000000' | '#FFFFFF' {
   const blackContrast = (luminance + 0.05) / 0.05;
   const whiteContrast = 1.05 / (luminance + 0.05);
   return blackContrast >= whiteContrast ? '#000000' : '#FFFFFF';
+}
+
+/** Returns a readable text colour derived from an accent without changing its fill token. */
+export function getAccessibleAccentText(value: string, surface: string | readonly string[], minimumContrast = 4.5): string {
+  const surfaces = typeof surface === 'string' ? [surface] : surface;
+  if (surfaces.every((candidate) => contrastRatio(value, candidate) >= minimumContrast)) return value.toUpperCase();
+  const endpoint = relativeLuminance(surfaces[0]) > 0.45 ? '#000000' : '#FFFFFF';
+  for (let weight = 0.1; weight <= 1; weight += 0.1) {
+    const adjusted = mixHex(value, endpoint, 1 - weight);
+    if (surfaces.every((candidate) => contrastRatio(adjusted, candidate) >= minimumContrast)) return adjusted;
+  }
+  return endpoint;
+}
+
+export function contrastRatio(first: string, second: string): number {
+  const [lighter, darker] = [relativeLuminance(first), relativeLuminance(second)].sort((a, b) => b - a);
+  return (lighter + 0.05) / (darker + 0.05);
 }
 
 export function getThemeColourForMode(value: string | null | undefined, mode: ThemeColourMode): string {

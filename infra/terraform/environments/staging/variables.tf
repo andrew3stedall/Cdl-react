@@ -59,6 +59,13 @@ variable "backend_image" {
   }
 }
 
+variable "runtime_traffic_revision" {
+  description = "Current serving Cloud Run revision. Keeps application traffic on the healthy revision until the rollout migrates and verifies the staged image."
+  type        = string
+  default     = null
+  nullable    = true
+}
+
 variable "runtime_repository_mode" {
   description = "Repository mode for the staging Cloud Run service."
   type        = string

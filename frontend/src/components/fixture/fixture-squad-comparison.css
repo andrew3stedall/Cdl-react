@@ -49,7 +49,7 @@
 }
 
 .fixture-squad-comparison__view-toggle button[aria-pressed='true'] svg {
-  color: var(--primary);
+  color: var(--theme-primary-text, var(--primary));
 }
 
 .fixture-squad-comparison__view-toggle button:focus-visible {
@@ -236,7 +236,7 @@
   align-items: center;
   border: 1px solid var(--primary);
   border-radius: 999px;
-  color: var(--primary);
+  color: var(--theme-primary-text, var(--primary));
   display: inline-flex;
   flex: 0 0 auto;
   font-size: 0.42rem;

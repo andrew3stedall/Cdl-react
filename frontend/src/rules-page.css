@@ -1,0 +1,9 @@
+.rules-page__filters { display: flex; align-items: end; gap: 1rem; flex-wrap: wrap; }
+.rules-page__filters label { display: grid; gap: .5rem; flex: 1 1 12rem; }
+.rules-page__filters input { width: 100%; padding: .65rem; border: 1px solid var(--border); border-radius: var(--radius-md, .5rem); color: var(--foreground); background: var(--surface); font: inherit; }
+.rules-page__count, .rules-page__category { color: var(--muted-foreground); }
+.rules-page__contents { display: flex; flex-wrap: wrap; gap: .5rem 1rem; }
+.rules-page__sections { display: grid; gap: 1rem; }
+.rules-page__section { scroll-margin-top: 2rem; }
+.rules-page__section h2 { font-size: 1.25rem; margin: .25rem 0 .75rem; }
+.rules-page__section p { line-height: 1.5; }

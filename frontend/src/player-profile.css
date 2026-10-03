@@ -4,6 +4,7 @@
   --profile-text: var(--foreground);
   --profile-muted: var(--muted-foreground);
   --profile-accent: var(--primary);
+  --profile-accent-text: var(--theme-primary-text, var(--profile-accent));
   --profile-danger: var(--destructive);
   --profile-chart-track: color-mix(in srgb, var(--profile-text) 8%, transparent);
   --profile-chart-empty: color-mix(in srgb, var(--profile-text) 22%, transparent);
@@ -702,7 +703,7 @@
 .player-profile__action.is-active {
   background: var(--secondary);
   border-color: var(--profile-accent);
-  color: var(--profile-accent);
+  color: var(--profile-accent-text);
 }
 
 .player-profile__action.is-danger:hover,
@@ -850,7 +851,7 @@
 .player-profile__dialog-layer {
   inset: 0;
   position: fixed;
-  z-index: 40;
+  z-index: var(--cdl-z-modal-nested, 80);
 }
 
 .player-profile__dialog-backdrop {
@@ -971,6 +972,142 @@
 
 .player-profile__state p {
   color: var(--profile-muted);
+}
+
+.player-profile__support-panel {
+  background: var(--profile-panel);
+  border: 1px solid var(--profile-border);
+  border-radius: var(--radius);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.player-profile__support-toggle {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--profile-text);
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 750;
+  justify-content: space-between;
+  min-height: 2.8rem;
+  padding: 0.65rem 0.8rem;
+  text-align: left;
+  width: 100%;
+}
+
+.player-profile__support-toggle:hover {
+  background: color-mix(in srgb, var(--profile-text) 4%, transparent);
+}
+
+.player-profile__support-toggle-meta,
+.player-profile__support-status {
+  color: var(--profile-muted);
+  font-size: 0.72rem;
+  font-weight: 550;
+}
+
+.player-profile__support-content {
+  border-top: 1px solid var(--profile-border);
+  display: grid;
+  gap: 0.7rem;
+  padding: 0.75rem;
+}
+
+.player-profile__support-content p {
+  margin: 0;
+}
+
+.player-profile__watchlist-control {
+  align-items: center;
+  display: flex;
+  font-size: 0.8rem;
+  gap: 0.5rem;
+}
+
+.player-profile__watchlist-control input {
+  accent-color: var(--profile-accent);
+  height: 1rem;
+  margin: 0;
+  width: 1rem;
+}
+
+.player-profile__note-control {
+  color: var(--profile-muted);
+  display: grid;
+  font-size: 0.75rem;
+  gap: 0.35rem;
+}
+
+.player-profile__note-control textarea {
+  background: var(--background);
+  border: 1px solid var(--profile-border);
+  border-radius: calc(var(--radius) - 0.2rem);
+  color: var(--profile-text);
+  font: inherit;
+  font-size: 0.82rem;
+  min-height: 4.5rem;
+  padding: 0.55rem;
+  resize: vertical;
+  width: 100%;
+}
+
+.player-profile__support-footer,
+.player-profile__support-feedback {
+  align-items: center;
+  display: flex;
+  gap: 0.65rem;
+  justify-content: space-between;
+}
+
+.player-profile__small-button {
+  font-size: 0.74rem;
+  min-height: 1.85rem;
+  padding: 0.3rem 0.65rem;
+}
+
+.player-profile__support-feedback {
+  color: var(--profile-danger);
+  font-size: 0.78rem;
+}
+
+.player-profile__ownership-list {
+  display: grid;
+  gap: 0.35rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.player-profile__ownership-list li {
+  align-items: center;
+  border-bottom: 1px solid var(--profile-border);
+  display: grid;
+  font-size: 0.76rem;
+  gap: 0.3rem 0.6rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 0.45rem 0;
+}
+
+.player-profile__ownership-list li:last-child {
+  border-bottom: 0;
+}
+
+.player-profile__ownership-team {
+  font-weight: 750;
+}
+
+.player-profile__ownership-list time {
+  color: var(--profile-muted);
+  grid-column: 1;
+}
+
+.player-profile__ownership-list .player-profile__support-status {
+  grid-column: 2;
+  grid-row: 1 / span 2;
 }
 
 @media (min-width: 901px) {

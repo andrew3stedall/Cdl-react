@@ -110,3 +110,7 @@ than during first paint.
 ## Changelog Requirements
 
 - Add implementation changelog entry when built.
+
+## Retrospective follow-up
+
+Market reads now distinguish loading, empty and failed sections with retry. Removing an Interest clears local pool state, and player history refresh replaces matching form data even when the row count is unchanged. Proposed trades expose participant-appropriate accept/reject/cancel controls; accepted proposals explicitly remain subject to commissioner approval before ownership changes.

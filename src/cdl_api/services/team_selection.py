@@ -14,16 +14,11 @@ from cdl_api.contracts.team_selection import (
     TeamSelectionResponse,
 )
 from cdl_api.repositories.team_selection import InMemoryTeamSelectionRepository
+from cdl_api.services.lineup_rules import STARTER_LIMITS
 
 LINEUP_RULE = "lineup-validation"
 CHIP_RULE = "chip-usage"
 FULL_SQUAD_SIZE = 20
-STARTER_LIMITS = {
-    "GKP": (1, 1),
-    "DEF": (3, 5),
-    "MID": (2, 5),
-    "FWD": (1, 3),
-}
 
 
 class TeamSelectionValidationError(ValueError):
@@ -88,6 +83,7 @@ class TeamSelectionService:
             chips=self._repository.get_chips(),
             validation_messages=self.validate_players(players),
             fixture_lock=_fixture_lock_state(self._repository),
+            rules_version_id=self._locked_rules_version_id(),
         )
 
     def update_lineup(self, request: LineupUpdateRequest) -> TeamSelectionResponse:
@@ -103,7 +99,12 @@ class TeamSelectionService:
             chips=self._repository.get_chips(),
             validation_messages=[],
             fixture_lock=_fixture_lock_state(self._repository),
+            rules_version_id=self._locked_rules_version_id(),
         )
+
+    def _locked_rules_version_id(self) -> str | None:
+        getter = getattr(self._repository, "get_locked_rule_version_id", None)
+        return getter() if callable(getter) else None
 
     def validate_updates(self, request: LineupUpdateRequest) -> list[ValidationIssue]:
         known_players = self._repository.get_players()
@@ -113,6 +114,14 @@ class TeamSelectionService:
         starter_count, bench_count, reserve_count = self._slot_counts(len(known_player_ids))
         is_full_squad = len(known_player_ids) == FULL_SQUAD_SIZE
         issues: list[ValidationIssue] = []
+        if 6 <= len(known_player_ids) < FULL_SQUAD_SIZE:
+            issues.append(
+                _lineup_issue(
+                    "players",
+                    f"Your squad has {len(known_player_ids)} of {FULL_SQUAD_SIZE} players; "
+                    "complete the squad before submitting a lineup.",
+                )
+            )
         if requested_ids != known_player_ids:
             issues.append(
                 _lineup_issue("players", "Lineup update must include every selectable player.")
@@ -236,6 +245,13 @@ class TeamSelectionService:
         reserves = [player for player in players if player.slot == LineupSlot.RESERVE]
         starter_count, bench_count, reserve_count = self._slot_counts(len(players))
         issues: list[ValidationIssue] = []
+        if 6 <= len(players) < FULL_SQUAD_SIZE:
+            issues.append(
+                _lineup_issue(
+                    "players",
+                    f"Squad incomplete: {len(players)} of {FULL_SQUAD_SIZE} players rostered.",
+                )
+            )
         if len(starters) != starter_count:
             issues.append(
                 _lineup_issue("players", f"Team selection needs exactly {starter_count} starters.")
@@ -282,7 +298,13 @@ class TeamSelectionService:
 
     @staticmethod
     def _slot_counts(player_count: int) -> tuple[int, int, int]:
-        return (11, 5, 4) if player_count == FULL_SQUAD_SIZE else (3, 1, 1)
+        if player_count <= 5:
+            # Tiny in-memory examples are contract fixtures, not draft rosters.
+            return 3, 1, max(0, player_count - 4)
+        starters = min(11, player_count)
+        bench = min(5, max(0, player_count - starters))
+        reserves = max(0, player_count - starters - bench)
+        return starters, bench, reserves
 
 
 class ChipService:

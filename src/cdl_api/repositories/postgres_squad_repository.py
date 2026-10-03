@@ -4,7 +4,7 @@ from collections.abc import Callable, Mapping
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from sqlalchemy import Integer, cast, exists, func, insert, literal, or_, select, update
+from sqlalchemy import Integer, and_, cast, exists, func, insert, literal, or_, select, update
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from sqlalchemy.sql.selectable import Subquery
@@ -18,7 +18,10 @@ from cdl_api.contracts.squad import (
     PlayerNextFixture,
     PlayerOwnershipStatus,
     ScoutingFilters,
+    TradeApprovalDecision,
+    TradeApprovalStatus,
     TradeAsset,
+    TradeAuditEventResponse,
     TradeProposal,
     TradeStatus,
 )
@@ -35,21 +38,31 @@ from cdl_api.repositories.postgres_league_fpl import (
     fpl_player_availability_table,
     fpl_player_values_table,
     fpl_players_table,
+    fpl_positions_table,
+    league_memberships_table,
+    managers_table,
+    seasons_table,
 )
 from cdl_api.repositories.postgres_squad import (
+    loans_table,
     player_rights_table,
+    squad_audit_events_table,
     squad_interests_table,
     squad_ownerships_table,
+    squad_roster_slots_table,
+    trade_approvals_table,
     trade_assets_table,
     trade_proposals_table,
 )
 from cdl_api.repositories.squad import InMemorySquadRepository
+from cdl_api.services.live_draft import ensure_squad_moves_allowed
 from cdl_api.staging_draft_seed import (
     PRIMARY_MANAGER_ID,
     PRIMARY_TEAM_ID,
     SEASON_ID,
     TEAM_IDS,
     TEAM_NAMES,
+    UnassignedManagerContextError,
     resolve_staging_manager_context,
 )
 
@@ -197,6 +210,8 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
         self._players_cache: list[PlayerDetail] | None = None
 
         context = resolve_staging_manager_context(session_factory, user_id)
+        if user_id is not None and context is None:
+            raise UnassignedManagerContextError("A team assignment is required.")
         if context is not None:
             (
                 self._manager_id,
@@ -635,6 +650,14 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
             return
         now = datetime.now(UTC)
         with self._session_factory() as session:
+            season_exists = session.execute(
+                select(seasons_table.c.id)
+                .where(seasons_table.c.id == DEMO_SEASON_ID)
+                .with_for_update()
+            ).scalar_one_or_none()
+            if season_exists is None:
+                raise ValueError("Active season could not be found.")
+            ensure_squad_moves_allowed(session, DEMO_SEASON_ID)
             rights = list(
                 session.execute(
                     select(player_rights_table).where(
@@ -663,6 +686,18 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
             )
             if {str(row["player_id"]) for row in ownerships} != set(remove_player_ids):
                 raise ValueError("Every removed player must be in the active squad.")
+            active_loaned_players = set(
+                session.execute(
+                    select(loans_table.c.player_id).where(
+                        loans_table.c.season_id == DEMO_SEASON_ID,
+                        loans_table.c.borrower_team_id == self.manager_team.id,
+                        loans_table.c.player_id.in_(remove_player_ids),
+                        loans_table.c.status == "active",
+                    )
+                ).scalars()
+            )
+            if active_loaned_players:
+                raise ValueError("An active loan player cannot be removed before scheduled return.")
             slots_by_player = {str(row["player_id"]): row["roster_slot_id"] for row in ownerships}
             for player_id in remove_player_ids:
                 session.execute(
@@ -797,11 +832,184 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
         with self._session_factory() as session:
             trade_ids = list(
                 session.execute(
-                    select(trade_proposals_table.c.id).order_by(trade_proposals_table.c.created_at)
+                    select(trade_proposals_table.c.id)
+                    .where(
+                        or_(
+                            trade_proposals_table.c.offered_by_team_id == self.manager_team.id,
+                            trade_proposals_table.c.offered_to_team_id == self.manager_team.id,
+                        )
+                    )
+                    .order_by(trade_proposals_table.c.created_at)
                 ).scalars()
             )
         trades = [self._get_trade(trade_id) for trade_id in trade_ids]
         return [trade for trade in trades if trade is not None]
+
+    def get_trade(self, trade_id: str) -> TradeProposal | None:
+        return self._get_trade(trade_id)
+
+    def list_pending_trade_approvals(self, actor_user_id: str) -> list[TradeProposal]:
+        with self._session_factory() as session:
+            actor_manager_id = session.execute(
+                select(managers_table.c.id).where(
+                    or_(
+                        managers_table.c.user_id == actor_user_id,
+                        managers_table.c.id == actor_user_id,
+                    )
+                )
+            ).scalar_one_or_none()
+            if actor_manager_id is None:
+                return []
+            rows = list(
+                session.execute(
+                    select(
+                        trade_proposals_table.c.id,
+                        trade_proposals_table.c.offered_by_team_id,
+                        trade_proposals_table.c.offered_to_team_id,
+                        trade_proposals_table.c.required_approver_role,
+                    )
+                    .where(
+                        trade_proposals_table.c.status == TradeStatus.ACCEPTED.value,
+                        trade_proposals_table.c.approval_status
+                        == TradeApprovalStatus.PENDING.value,
+                    )
+                    .order_by(trade_proposals_table.c.created_at)
+                ).mappings()
+            )
+            visible_ids: list[str] = []
+            for row in rows:
+                team_ids = [row["offered_by_team_id"], row["offered_to_team_id"]]
+                participant_managers = set(
+                    session.execute(
+                        select(draft_teams_table.c.manager_id).where(
+                            draft_teams_table.c.id.in_(team_ids),
+                            draft_teams_table.c.manager_id.is_not(None),
+                        )
+                    ).scalars()
+                )
+                if actor_manager_id in participant_managers:
+                    continue
+                league_id = session.execute(
+                    select(draft_teams_table.c.league_id).where(
+                        draft_teams_table.c.id == row["offered_by_team_id"]
+                    )
+                ).scalar_one_or_none()
+                if league_id is None:
+                    continue
+                actor_roles = set(
+                    session.execute(
+                        select(league_memberships_table.c.role).where(
+                            league_memberships_table.c.league_id == league_id,
+                            league_memberships_table.c.manager_id == actor_manager_id,
+                        )
+                    ).scalars()
+                )
+                participant_roles = set(
+                    session.execute(
+                        select(league_memberships_table.c.role).where(
+                            league_memberships_table.c.league_id == league_id,
+                            league_memberships_table.c.manager_id.in_(participant_managers),
+                        )
+                    ).scalars()
+                )
+                required_role = row["required_approver_role"] or (
+                    "vice_commissioner" if "commissioner" in participant_roles else "commissioner"
+                )
+                if required_role in actor_roles:
+                    visible_ids.append(str(row["id"]))
+        trades = [self._get_trade(trade_id) for trade_id in visible_ids]
+        return [trade for trade in trades if trade is not None]
+
+    def trade_audit(
+        self, trade_id: str, actor_user_id: str
+    ) -> list[TradeAuditEventResponse] | None:
+        with self._session_factory() as session:
+            trade = (
+                session.execute(
+                    select(
+                        trade_proposals_table.c.offered_by_team_id,
+                        trade_proposals_table.c.offered_to_team_id,
+                        trade_proposals_table.c.required_approver_role,
+                    ).where(trade_proposals_table.c.id == trade_id)
+                )
+                .mappings()
+                .first()
+            )
+            if trade is None:
+                return None
+            actor_manager_id = session.execute(
+                select(managers_table.c.id).where(
+                    or_(
+                        managers_table.c.user_id == actor_user_id,
+                        managers_table.c.id == actor_user_id,
+                    )
+                )
+            ).scalar_one_or_none()
+            if actor_manager_id is None:
+                return None
+            participants = set(
+                session.execute(
+                    select(draft_teams_table.c.manager_id).where(
+                        draft_teams_table.c.id.in_(
+                            [trade["offered_by_team_id"], trade["offered_to_team_id"]]
+                        ),
+                        draft_teams_table.c.manager_id.is_not(None),
+                    )
+                ).scalars()
+            )
+            allowed = actor_manager_id in participants
+            if not allowed:
+                league_id = session.execute(
+                    select(draft_teams_table.c.league_id).where(
+                        draft_teams_table.c.id == trade["offered_by_team_id"]
+                    )
+                ).scalar_one_or_none()
+                if league_id is None:
+                    return None
+                actor_roles = set(
+                    session.execute(
+                        select(league_memberships_table.c.role).where(
+                            league_memberships_table.c.league_id == league_id,
+                            league_memberships_table.c.manager_id == actor_manager_id,
+                        )
+                    ).scalars()
+                )
+                participant_roles = set(
+                    session.execute(
+                        select(league_memberships_table.c.role).where(
+                            league_memberships_table.c.league_id == league_id,
+                            league_memberships_table.c.manager_id.in_(participants),
+                        )
+                    ).scalars()
+                )
+                required_role = trade["required_approver_role"] or (
+                    "vice_commissioner" if "commissioner" in participant_roles else "commissioner"
+                )
+                allowed = required_role in actor_roles
+            if not allowed:
+                return None
+            rows = list(
+                session.execute(
+                    select(squad_audit_events_table)
+                    .where(
+                        squad_audit_events_table.c.subject_type == "trade",
+                        squad_audit_events_table.c.subject_id == trade_id,
+                    )
+                    .order_by(squad_audit_events_table.c.created_at)
+                ).mappings()
+            )
+        return [
+            TradeAuditEventResponse(
+                id=str(row["id"]),
+                subject_type=str(row["subject_type"]),
+                subject_id=str(row["subject_id"]),
+                action=str(row["action"]),
+                actor_manager_id=row["actor_manager_id"],
+                created_at=row["created_at"],
+                metadata=dict(row["metadata_json"] or {}),
+            )
+            for row in rows
+        ]
 
     def save_trade(self, trade: TradeProposal) -> TradeProposal:
         now = datetime.now(UTC)
@@ -814,6 +1022,10 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
                     offered_to_team_id=trade.offered_to.id,
                     gameweek=self.gameweek.number,
                     status=trade.status.value,
+                    approval_status=trade.approval_status.value,
+                    required_approver_role=trade.required_approver_role,
+                    approved_by_manager_id=trade.approved_by,
+                    executed_at=trade.executed_at,
                     created_at=now,
                     updated_at=now,
                 )
@@ -828,14 +1040,44 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
                         to_team_id=asset.to_team.id,
                     )
                 )
+            session.execute(
+                insert(squad_audit_events_table).values(
+                    id=f"squad-audit-{uuid4().hex[:12]}",
+                    subject_type="trade",
+                    subject_id=trade.id,
+                    action="trade_proposed",
+                    actor_manager_id=self._manager_id,
+                    created_at=now,
+                    metadata_json={},
+                )
+            )
             session.commit()
         return trade
 
     def manager_id_for_team(self, team_id: str) -> str | None:
         with self._session_factory() as session:
             return session.execute(
-                select(draft_teams_table.c.manager_id).where(draft_teams_table.c.id == team_id)
+                select(managers_table.c.user_id)
+                .join(managers_table, managers_table.c.id == draft_teams_table.c.manager_id)
+                .where(draft_teams_table.c.id == team_id)
             ).scalar_one_or_none()
+
+    def required_trade_approver_role(self, offered_by_team_id: str, offered_to_team_id: str) -> str:
+        with self._session_factory() as session:
+            roles = list(
+                session.execute(
+                    select(league_memberships_table.c.role)
+                    .join(
+                        draft_teams_table,
+                        draft_teams_table.c.league_id == league_memberships_table.c.league_id,
+                    )
+                    .where(
+                        draft_teams_table.c.id.in_([offered_by_team_id, offered_to_team_id]),
+                        draft_teams_table.c.manager_id == league_memberships_table.c.manager_id,
+                    )
+                ).scalars()
+            )
+        return "vice_commissioner" if "commissioner" in roles else "commissioner"
 
     def team_for_id(self, team_id: str) -> TeamSummary | None:
         if team_id == self.manager_team.id:
@@ -843,10 +1085,18 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
         if team_id == self.rival_team.id:
             return self.rival_team
         with self._session_factory() as session:
+            league_id = session.execute(
+                select(draft_teams_table.c.league_id).where(
+                    draft_teams_table.c.id == self.manager_team.id
+                )
+            ).scalar_one_or_none()
+            if league_id is None:
+                return None
             row = (
                 session.execute(
                     select(draft_teams_table.c.id, draft_teams_table.c.name).where(
-                        draft_teams_table.c.id == team_id
+                        draft_teams_table.c.id == team_id,
+                        draft_teams_table.c.league_id == league_id,
                     )
                 )
                 .mappings()
@@ -858,20 +1108,405 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
         self,
         trade_id: str,
         status: TradeStatus,
+        actor_user_id: str,
     ) -> TradeProposal | None:
         with self._session_factory() as session:
-            result = session.execute(
-                update(trade_proposals_table)
-                .where(
-                    trade_proposals_table.c.id == trade_id,
-                    trade_proposals_table.c.status == TradeStatus.PROPOSED.value,
+            with session.begin():
+                result = session.execute(
+                    update(trade_proposals_table)
+                    .where(
+                        trade_proposals_table.c.id == trade_id,
+                        trade_proposals_table.c.status == TradeStatus.PROPOSED.value,
+                    )
+                    .values(
+                        status=status.value,
+                        approval_status=(
+                            TradeApprovalStatus.PENDING.value
+                            if status == TradeStatus.ACCEPTED
+                            else TradeApprovalStatus.NOT_SUBMITTED.value
+                        ),
+                        updated_at=datetime.now(UTC),
+                    )
                 )
-                .values(status=status.value, updated_at=datetime.now(UTC))
-            )
-            session.commit()
+                if result.rowcount:
+                    actor_manager_id = session.execute(
+                        select(managers_table.c.id)
+                        .where(
+                            or_(
+                                managers_table.c.user_id == actor_user_id,
+                                managers_table.c.id == actor_user_id,
+                            )
+                        )
+                        .limit(1)
+                    ).scalar_one_or_none()
+                    session.execute(
+                        insert(squad_audit_events_table).values(
+                            id=f"squad-audit-{uuid4().hex[:12]}",
+                            subject_type="trade",
+                            subject_id=trade_id,
+                            action={
+                                TradeStatus.ACCEPTED: "trade_agreed",
+                                TradeStatus.REJECTED: "trade_rejected_by_party",
+                                TradeStatus.CANCELLED: "trade_cancelled",
+                            }[status],
+                            actor_manager_id=actor_manager_id,
+                            created_at=datetime.now(UTC),
+                            metadata_json={},
+                        )
+                    )
         if result.rowcount == 0:
             return self._get_trade(trade_id)
         return self._get_trade(trade_id)
+
+    def approve_trade(
+        self,
+        trade_id: str,
+        actor_user_id: str,
+        decision: TradeApprovalDecision,
+        note: str | None,
+    ) -> TradeProposal | None:
+        now = datetime.now(UTC)
+        with self._session_factory() as session:
+            with session.begin():
+                trade_summary = (
+                    session.execute(
+                        select(
+                            trade_proposals_table.c.season_id,
+                            trade_proposals_table.c.id,
+                        ).where(trade_proposals_table.c.id == trade_id)
+                    )
+                    .mappings()
+                    .first()
+                )
+                if trade_summary is None:
+                    return None
+                season_exists = session.execute(
+                    select(seasons_table.c.id)
+                    .where(seasons_table.c.id == trade_summary["season_id"])
+                    .with_for_update()
+                ).scalar_one_or_none()
+                if season_exists is None:
+                    raise ValueError("The trade season is not configured.")
+                trade = (
+                    session.execute(
+                        select(trade_proposals_table)
+                        .where(trade_proposals_table.c.id == trade_id)
+                        .with_for_update()
+                    )
+                    .mappings()
+                    .first()
+                )
+                if trade is None:
+                    return None
+                actor_manager_id = session.execute(
+                    select(managers_table.c.id)
+                    .where(
+                        or_(
+                            managers_table.c.user_id == actor_user_id,
+                            managers_table.c.id == actor_user_id,
+                        )
+                    )
+                    .limit(1)
+                ).scalar_one_or_none()
+                if actor_manager_id is None:
+                    raise ValueError("Approver must be a league member.")
+                involved_manager_ids = set(
+                    session.execute(
+                        select(draft_teams_table.c.manager_id).where(
+                            draft_teams_table.c.id.in_(
+                                [trade["offered_by_team_id"], trade["offered_to_team_id"]]
+                            ),
+                            draft_teams_table.c.manager_id.is_not(None),
+                        )
+                    ).scalars()
+                )
+                if actor_manager_id in involved_manager_ids:
+                    raise ValueError("A trade participant cannot approve their own trade.")
+
+                league_id = session.execute(
+                    select(draft_teams_table.c.league_id).where(
+                        draft_teams_table.c.id == trade["offered_by_team_id"]
+                    )
+                ).scalar_one()
+                actor_roles = set(
+                    session.execute(
+                        select(league_memberships_table.c.role).where(
+                            league_memberships_table.c.league_id == league_id,
+                            league_memberships_table.c.manager_id == actor_manager_id,
+                        )
+                    ).scalars()
+                )
+                party_roles = set(
+                    session.execute(
+                        select(league_memberships_table.c.role).where(
+                            league_memberships_table.c.league_id == league_id,
+                            league_memberships_table.c.manager_id.in_(involved_manager_ids),
+                        )
+                    ).scalars()
+                )
+                required_role = str(
+                    trade["required_approver_role"]
+                    or ("vice_commissioner" if "commissioner" in party_roles else "commissioner")
+                )
+                if required_role not in actor_roles:
+                    raise ValueError(f"Trade requires a {required_role} approver.")
+                if (
+                    trade["status"] == TradeStatus.ACCEPTED.value
+                    and trade["approval_status"] == TradeApprovalStatus.APPROVED.value
+                ):
+                    return self._get_trade(trade_id)
+                if (
+                    trade["status"] != TradeStatus.ACCEPTED.value
+                    or trade["approval_status"] != TradeApprovalStatus.PENDING.value
+                ):
+                    raise ValueError("Trade is not waiting for approval.")
+
+                approval_status = (
+                    TradeApprovalStatus.APPROVED
+                    if decision == TradeApprovalDecision.APPROVED
+                    else TradeApprovalStatus.REJECTED
+                )
+                if decision == TradeApprovalDecision.APPROVED:
+                    ensure_squad_moves_allowed(session, str(trade["season_id"]))
+                    assets = list(
+                        session.execute(
+                            select(trade_assets_table).where(
+                                trade_assets_table.c.trade_id == trade_id
+                            )
+                        ).mappings()
+                    )
+                    asset_player_ids = [str(asset["player_id"]) for asset in assets]
+                    if not assets:
+                        raise ValueError("Trade has no transferable assets.")
+                    if len(asset_player_ids) != len(set(asset_player_ids)):
+                        raise ValueError("Trade assets must be unique.")
+                    valid_directions = {
+                        (trade["offered_by_team_id"], trade["offered_to_team_id"]),
+                        (trade["offered_to_team_id"], trade["offered_by_team_id"]),
+                    }
+                    changed_team_ids = {
+                        str(team_id)
+                        for asset in assets
+                        for team_id in (asset["from_team_id"], asset["to_team_id"])
+                    }
+                    if any(
+                        (asset["from_team_id"], asset["to_team_id"]) not in valid_directions
+                        for asset in assets
+                    ):
+                        raise ValueError("Trade asset has an invalid team direction.")
+                    if {
+                        (asset["from_team_id"], asset["to_team_id"]) for asset in assets
+                    } != valid_directions:
+                        raise ValueError("Trade must include assets for both participating teams.")
+                    session.execute(
+                        select(draft_teams_table.c.id)
+                        .where(draft_teams_table.c.id.in_(changed_team_ids))
+                        .order_by(draft_teams_table.c.id)
+                        .with_for_update()
+                    ).all()
+                    transfers: list[tuple[object, object, str]] = []
+                    for asset in assets:
+                        active_loan = session.execute(
+                            select(loans_table.c.id).where(
+                                loans_table.c.season_id == trade["season_id"],
+                                loans_table.c.player_id == asset["player_id"],
+                                loans_table.c.status == "active",
+                            )
+                        ).scalar_one_or_none()
+                        if active_loan is not None:
+                            raise ValueError("An active loan player cannot be traded.")
+                        ownerships = list(
+                            session.execute(
+                                select(squad_ownerships_table)
+                                .where(
+                                    squad_ownerships_table.c.season_id == trade["season_id"],
+                                    squad_ownerships_table.c.draft_team_id == asset["from_team_id"],
+                                    squad_ownerships_table.c.player_id == asset["player_id"],
+                                    squad_ownerships_table.c.ended_at.is_(None),
+                                )
+                                .with_for_update()
+                            ).mappings()
+                        )
+                        if len(ownerships) != 1:
+                            raise ValueError("Trade asset is no longer owned by its offering team.")
+                        ownership = ownerships[0]
+                        position_id = session.execute(
+                            select(fpl_players_table.c.position_id).where(
+                                fpl_players_table.c.id == asset["player_id"]
+                            )
+                        ).scalar_one_or_none()
+                        if position_id is None:
+                            raise ValueError("Trade asset position could not be verified.")
+                        transfers.append((asset, ownership, str(position_id)))
+                    for _, ownership, _ in transfers:
+                        session.execute(
+                            update(squad_ownerships_table)
+                            .where(squad_ownerships_table.c.id == ownership["id"])
+                            .values(ended_at=now)
+                        )
+                    for asset, _, position_id in transfers:
+                        session.execute(
+                            insert(squad_ownerships_table).values(
+                                id=f"ownership-trade-{uuid4().hex[:12]}",
+                                season_id=trade["season_id"],
+                                draft_team_id=asset["to_team_id"],
+                                player_id=asset["player_id"],
+                                roster_slot_id=self._available_roster_slot(
+                                    session,
+                                    str(asset["to_team_id"]),
+                                    trade["season_id"],
+                                    position_id,
+                                ),
+                                started_at=now,
+                                ended_at=None,
+                            )
+                        )
+
+                    for team_id in changed_team_ids:
+                        team_players = list(
+                            session.execute(
+                                select(fpl_positions_table.c.singular_name)
+                                .select_from(
+                                    squad_ownerships_table.join(
+                                        fpl_players_table,
+                                        fpl_players_table.c.id
+                                        == squad_ownerships_table.c.player_id,
+                                    ).join(
+                                        fpl_positions_table,
+                                        fpl_positions_table.c.id == fpl_players_table.c.position_id,
+                                    )
+                                )
+                                .where(
+                                    squad_ownerships_table.c.season_id == trade["season_id"],
+                                    squad_ownerships_table.c.draft_team_id == team_id,
+                                    squad_ownerships_table.c.ended_at.is_(None),
+                                )
+                            ).scalars()
+                        )
+                        team_players.extend(
+                            session.execute(
+                                select(fpl_positions_table.c.singular_name)
+                                .select_from(
+                                    loans_table.join(
+                                        fpl_players_table,
+                                        fpl_players_table.c.id == loans_table.c.player_id,
+                                    ).join(
+                                        fpl_positions_table,
+                                        fpl_positions_table.c.id == fpl_players_table.c.position_id,
+                                    )
+                                )
+                                .where(
+                                    loans_table.c.season_id == trade["season_id"],
+                                    loans_table.c.lender_team_id == team_id,
+                                    loans_table.c.status == "active",
+                                )
+                            ).scalars()
+                        )
+                        if len(team_players) > 20:
+                            raise ValueError("Trade would exceed the 20-player squad limit.")
+                        position_limits = {
+                            "goalkeeper": 3,
+                            "defender": 10,
+                            "midfielder": 10,
+                            "forward": 4,
+                        }
+                        position_counts = {
+                            position: sum(name.casefold() == position for name in team_players)
+                            for position in position_limits
+                        }
+                        if any(
+                            position_counts[position] > maximum
+                            for position, maximum in position_limits.items()
+                        ):
+                            raise ValueError("Trade would exceed a squad position limit.")
+                        owned_ids = set(
+                            session.execute(
+                                select(squad_ownerships_table.c.player_id).where(
+                                    squad_ownerships_table.c.season_id == trade["season_id"],
+                                    squad_ownerships_table.c.draft_team_id == team_id,
+                                    squad_ownerships_table.c.ended_at.is_(None),
+                                )
+                            ).scalars()
+                        )
+                        from cdl_api.repositories.postgres_team_selection import (
+                            PostgreSQLTeamSelectionRepository,
+                        )
+
+                        PostgreSQLTeamSelectionRepository.repair_unlocked_lineups(
+                            session, team_id, owned_ids, now
+                        )
+
+                session.execute(
+                    update(trade_proposals_table)
+                    .where(trade_proposals_table.c.id == trade_id)
+                    .values(
+                        approval_status=approval_status.value,
+                        required_approver_role=required_role,
+                        approved_by_manager_id=actor_manager_id,
+                        executed_at=now if decision == TradeApprovalDecision.APPROVED else None,
+                        updated_at=now,
+                    )
+                )
+                session.execute(
+                    insert(trade_approvals_table).values(
+                        id=f"trade-approval-{uuid4().hex[:12]}",
+                        trade_id=trade_id,
+                        manager_id=actor_manager_id,
+                        decision=decision.value,
+                        note=note or "",
+                        decided_at=now,
+                    )
+                )
+                session.execute(
+                    insert(squad_audit_events_table).values(
+                        id=f"squad-audit-{uuid4().hex[:12]}",
+                        subject_type="trade",
+                        subject_id=trade_id,
+                        action=(
+                            "trade_executed"
+                            if decision == TradeApprovalDecision.APPROVED
+                            else "trade_rejected"
+                        ),
+                        actor_manager_id=actor_manager_id,
+                        created_at=now,
+                        metadata_json={"note": note or "", "required_approver_role": required_role},
+                    )
+                )
+        self._invalidate_players_cache()
+        return self._get_trade(trade_id)
+
+    @staticmethod
+    def _available_roster_slot(
+        session: Session, team_id: str, season_id: str, position_id: str
+    ) -> str:
+        slot_id = session.execute(
+            select(squad_roster_slots_table.c.id)
+            .select_from(
+                squad_roster_slots_table.outerjoin(
+                    squad_ownerships_table,
+                    and_(
+                        squad_ownerships_table.c.roster_slot_id == squad_roster_slots_table.c.id,
+                        squad_ownerships_table.c.season_id == season_id,
+                        squad_ownerships_table.c.ended_at.is_(None),
+                    ),
+                )
+            )
+            .where(
+                squad_roster_slots_table.c.season_id == season_id,
+                squad_roster_slots_table.c.draft_team_id == team_id,
+                or_(
+                    squad_roster_slots_table.c.position_id == position_id,
+                    squad_roster_slots_table.c.position_id.is_(None),
+                ),
+                squad_ownerships_table.c.id.is_(None),
+            )
+            .order_by(squad_roster_slots_table.c.sort_order)
+            .limit(1)
+            .with_for_update(of=squad_roster_slots_table)
+        ).scalar_one_or_none()
+        if slot_id is None:
+            raise ValueError("No compatible squad slot is available for the incoming player.")
+        return str(slot_id)
 
     def _get_trade(self, trade_id: str) -> TradeProposal | None:
         with self._session_factory() as session:
@@ -882,6 +1517,10 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
                         trade_proposals_table.c.status,
                         trade_proposals_table.c.offered_by_team_id,
                         trade_proposals_table.c.offered_to_team_id,
+                        trade_proposals_table.c.approval_status,
+                        trade_proposals_table.c.required_approver_role,
+                        trade_proposals_table.c.approved_by_manager_id,
+                        trade_proposals_table.c.executed_at,
                     ).where(trade_proposals_table.c.id == trade_id)
                 )
                 .mappings()
@@ -905,6 +1544,10 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
             offered_to=self._team_for_id(trade_row["offered_to_team_id"]),
             gameweek=self.gameweek,
             assets=[self._asset_from_row(row) for row in asset_rows],
+            approval_status=TradeApprovalStatus(trade_row["approval_status"]),
+            required_approver_role=trade_row["required_approver_role"],
+            approved_by=trade_row["approved_by_manager_id"],
+            executed_at=trade_row["executed_at"],
         )
 
     def _asset_from_row(self, row: object) -> TradeAsset:

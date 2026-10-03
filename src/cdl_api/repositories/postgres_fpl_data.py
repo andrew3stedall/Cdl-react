@@ -393,6 +393,20 @@ class PostgreSQLFplDataRepository:
             return None
         return row["payload_json"], row["fetched_at"], str(row["response_sha256"])
 
+    def cached_event_gameweeks(self) -> set[int]:
+        """Return gameweeks with an event-live payload in the cache."""
+        with self._session_factory() as session:
+            resources = session.execute(
+                select(external_payload_cache_table.c.resource).where(
+                    external_payload_cache_table.c.resource.like("event-live:%")
+                )
+            ).scalars()
+        return {
+            int(str(resource).removeprefix("event-live:"))
+            for resource in resources
+            if str(resource).removeprefix("event-live:").isdigit()
+        }
+
     def enrich_player_history(
         self,
         response: FplPlayerHistoryResponse,

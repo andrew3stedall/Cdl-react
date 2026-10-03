@@ -92,3 +92,7 @@ Managers view their selected team, bench, reserves, next deadline, and compact i
 ## Changelog Requirements
 
 - Add implementation changelog entry when built.
+
+## Retrospective follow-up
+
+Chip updates preserve any locally staged lineup until **Save lineup**. Squad mutation success is reported at the commit boundary, visible status feedback remains available while the lineup is locked, and dependent page data refresh is being added through the shared freshness contract.

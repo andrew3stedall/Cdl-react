@@ -58,6 +58,24 @@ test('maps the backend snake-case session contract for React', async () => {
       roles: ['manager'],
     },
     expiresAt: '2099-01-01T00:00:00Z',
+    engineeringPreviewsEnabled: false,
+  });
+  vi.unstubAllGlobals();
+});
+
+test('maps the engineering preview capability only when the backend enables it', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+    is_authenticated: false,
+    user: null,
+    expires_at: null,
+    engineering_previews_enabled: true,
+  }), { status: 200 })));
+
+  await expect(getSession()).resolves.toEqual({
+    isAuthenticated: false,
+    user: null,
+    expiresAt: null,
+    engineeringPreviewsEnabled: true,
   });
   vi.unstubAllGlobals();
 });
@@ -122,6 +140,7 @@ test('maps a successful backend login response', async () => {
           roles: ['manager'],
         },
         expiresAt: '2099-01-01T00:00:00Z',
+        engineeringPreviewsEnabled: false,
       },
     },
   });

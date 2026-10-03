@@ -17,6 +17,15 @@ const testGlobal = globalThis as typeof globalThis & {
 };
 testGlobal.IS_REACT_ACT_ENVIRONMENT = true;
 
+vi.mock('./rules', async (importOriginal) => {
+  const original = await importOriginal<typeof import('./rules')>();
+  return { ...original, fetchRules: async () => ({
+    version: { version: '2026.10', effectiveDate: '2026-10-03', status: 'active', source: 'accepted rules' },
+    categories: ['squads'],
+    sections: [{ id: 'squad-size', title: 'Squad Size', category: 'squads', summary: 'Twenty players.', body: ['Use your own roster.'], tags: [], anchors: ['squad-size'], relatedRuleIds: [], version: { version: '2026.10', effectiveDate: '2026-10-03', status: 'active', source: 'accepted rules' } }],
+  }) };
+});
+
 const authenticatedSession: SessionState = {
   isAuthenticated: true,
   user: {
@@ -197,7 +206,7 @@ describe('AppShell integration', () => {
 
     expect(squadClient.getNotifications).toHaveBeenCalledTimes(1);
     expect(container.querySelector('.global-notifications__count')?.textContent).toBe('1');
-    expect(container.querySelector('.global-page-header .global-notifications__button')).not.toBeNull();
+    expect(container.querySelector('.cdl-page-hero .global-notifications__button')).not.toBeNull();
     expect(container.querySelector('nav[aria-label="Global mobile navigation"] .global-notifications')).toBeNull();
     expect(container.querySelectorAll('nav[aria-label="Global mobile navigation"] a')).toHaveLength(4);
 
@@ -229,7 +238,7 @@ describe('AppShell integration', () => {
     const supportNavigation = container.querySelector('nav[aria-label="Support navigation"]');
 
     expect(container.querySelector('[aria-current="page"]')?.textContent).toContain('Rules');
-    expect(container.textContent).toContain('Rules Knowledge Base');
+    expect(container.querySelector('#rules-title')?.textContent).toBe('Rules');
     expect(primaryNavigation?.textContent).toContain('Desk');
     expect(primaryNavigation?.textContent).toContain('Squad');
     expect(primaryNavigation?.textContent).toContain('Market');
@@ -342,13 +351,13 @@ describe('AppShell integration', () => {
       await Promise.resolve();
     });
 
-    expect(getLeagueSnapshot).toHaveBeenCalledTimes(1);
+    expect(getLeagueSnapshot).toHaveBeenCalledTimes(2);
     expect(container.querySelectorAll('[data-route-key="league"]')).toHaveLength(1);
     expect(container.querySelector('[data-route-key="league"]')?.hasAttribute('hidden')).toBe(false);
     root.unmount();
   });
 
-  test('returns from Profile to the parsed Desk without reloading it', async () => {
+  test('preserves parsed Desk state while revalidating after Profile', async () => {
     const gameweek = { id: 'gw-1', name: 'Gameweek 1', number: 1, deadlineAt: null };
     const team = { id: 'team-1', name: 'Test Team', shortName: 'TST' };
     const deskSnapshot: ManagerDeskSnapshot = {
@@ -416,13 +425,13 @@ describe('AppShell integration', () => {
       await Promise.resolve();
     });
 
-    expect(getDesk).toHaveBeenCalledTimes(1);
+    expect(getDesk).toHaveBeenCalledTimes(2);
     expect(container.querySelector('[data-route-key="desk"] .manager-desk__loading-state')).toBeNull();
     expect(container.querySelector('[data-route-key="desk"]')?.hasAttribute('hidden')).toBe(false);
     root.unmount();
   });
 
-  test('hides passkey setup after a device credential is already registered', async () => {
+  test('allows another passkey after a device credential is already registered', async () => {
     const previousFetch = globalThis.fetch;
     globalThis.fetch = vi.fn(async () => ({
       ok: true,
@@ -436,7 +445,8 @@ describe('AppShell integration', () => {
         await Promise.resolve();
       });
 
-      expect(container.querySelector('.profile-security-card')).toBeNull();
+      expect(container.querySelector('.profile-security-card')?.textContent).toContain('1 device passkey registered');
+      expect(container.querySelector('.profile-security-card button')?.textContent).toContain('Add');
       root.unmount();
     } finally {
       globalThis.fetch = previousFetch;

@@ -111,6 +111,17 @@ class PostgreSQLPasskeyRepository:
             )
             session.commit()
 
+    def delete_for_user(self, credential_id: str, user_id: str) -> bool:
+        with self._session_factory() as session:
+            result = session.execute(
+                delete(passkey_credentials_table).where(
+                    passkey_credentials_table.c.credential_id == credential_id,
+                    passkey_credentials_table.c.user_id == user_id,
+                )
+            )
+            session.commit()
+            return bool(result.rowcount)
+
 
 class PostgreSQLAuthChallengeRepository:
     def __init__(self, session_factory: Callable[[], Session]) -> None:

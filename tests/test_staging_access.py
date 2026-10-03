@@ -78,6 +78,56 @@ def test_application_boundary_is_inactive_outside_staging() -> None:
     assert client.get("/openapi.json").status_code == 200
 
 
+def test_production_rejects_anonymous_private_apis_and_hides_checkpoint_previews(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("CDL_ENVIRONMENT", "production")
+    monkeypatch.setenv("CDL_SESSION_COOKIE_SECURE", "true")
+    monkeypatch.setenv("CDL_REPOSITORY_MODE", "postgres")
+    monkeypatch.setenv("CDL_DATABASE_URL", "postgresql+psycopg://unused:unused@localhost/cdl")
+    monkeypatch.setenv("CDL_DEVELOPMENT_LOGIN_SECRET", "production-test-secret")
+    client = TestClient(create_app())
+
+    assert client.get("/health").status_code == 200
+    assert client.get("/api/auth/session").json()["engineering_previews_enabled"] is False
+    assert client.get("/api/team-selection").status_code == 401
+    assert client.put("/api/team-selection/chips/triple-captain", json={}).status_code == 401
+    assert client.get("/api/modernisation/checkpoint-1").status_code == 404
+    assert (
+        client.post(
+            "/api/auth/login",
+            json={"email": "manager@example.com", "password": "some-password"},
+        ).status_code
+        == 403
+    )
+
+
+def test_production_refuses_memory_repositories_and_insecure_cookie(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("CDL_ENVIRONMENT", "production")
+    monkeypatch.setenv("CDL_DEVELOPMENT_LOGIN_SECRET", "production-test-secret")
+    monkeypatch.setenv("CDL_SESSION_COOKIE_SECURE", "false")
+    monkeypatch.setenv("CDL_REPOSITORY_MODE", "memory")
+    monkeypatch.delenv("CDL_DATABASE_URL", raising=False)
+
+    with pytest.raises(RuntimeError, match="secure session cookies"):
+        create_app()
+
+    monkeypatch.setenv("CDL_SESSION_COOKIE_SECURE", "true")
+    with pytest.raises(RuntimeError, match="PostgreSQL persistence"):
+        create_app()
+
+
+def test_unknown_environment_name_fails_closed(monkeypatch: pytest.MonkeyPatch) -> None:
+    from pydantic import ValidationError
+
+    monkeypatch.setenv("CDL_ENVIRONMENT", "prod")
+
+    with pytest.raises(ValidationError):
+        create_app()
+
+
 def test_staging_refuses_known_default_login_secret(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

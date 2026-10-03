@@ -79,6 +79,15 @@ class PendingTeamSelectionClient extends FullTeamSelectionClient {
   }
 }
 
+class StagedChipResponseClient extends FullTeamSelectionClient {
+  savedPlayers: TeamSelectionSnapshot['players'] | null = null;
+
+  async saveLineup(players: TeamSelectionSnapshot['players']): Promise<TeamSelectionSnapshot> {
+    this.savedPlayers = players;
+    return { ...fullSelectionSnapshot, players };
+  }
+}
+
 let reducedChance = false;
 
 beforeEach(() => {
@@ -424,18 +433,9 @@ describe('SquadPage', () => {
     expect(paths).not.toContain('/api/squad/notifications');
   });
 
-  test('uses the application navigation handler for page links', async () => {
-    const onNavigate = vi.fn();
-    const { container } = await renderPage(undefined, 'up', onNavigate);
-    const leagueLink = container.querySelector<HTMLAnchorElement>('nav[aria-label="Squad mobile navigation"] a[href="/league"]');
-
-    expect(leagueLink).not.toBeNull();
-    await act(async () => {
-      leagueLink?.click();
-      await Promise.resolve();
-    });
-
-    expect(onNavigate).toHaveBeenCalledWith('/league');
+  test('uses the shared shell navigation without rendering a duplicate mobile bar', async () => {
+    const { container } = await renderPage();
+    expect(container.querySelector('.squad-page__mobile-nav')).toBeNull();
   });
 
   test('maps FDR values to a restrained centred opponent colour scale', () => {
@@ -471,7 +471,8 @@ describe('SquadPage', () => {
     expect(container.textContent).toContain('Next deadline');
     expect(container.querySelector('[aria-label="Matchweek controls"]')).not.toBeNull();
     expect(Array.from(container.querySelector('.squad-page__matchweek-controls')?.children ?? [])
-      .filter((child) => !child.classList.contains('sr-only'))).toHaveLength(2);
+      .filter((child) => !child.classList.contains('sr-only'))).toHaveLength(3);
+    expect(container.querySelector('.squad-page__matchweek-controls [role="status"]')?.classList.contains('sr-only')).toBe(false);
     expect(container.querySelector('.squad-page__deadline')).not.toBeNull();
     expect(container.querySelector('.squad-page__chips')).not.toBeNull();
     expect(Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Save lineup'))).toBeUndefined();
@@ -829,6 +830,33 @@ describe('SquadPage', () => {
     const body = JSON.parse(String(putCallsAfterSave[0]?.[1]?.body ?? '{}')) as { players?: Array<{ player_id: string; is_captain: boolean; is_vice_captain: boolean }> };
     expect(body.players?.find((candidate) => candidate.player_id === 'fpl-235')).toMatchObject({ is_captain: true, is_vice_captain: false });
     expect(body.players?.find((candidate) => candidate.player_id === 'fpl-411')).toMatchObject({ is_captain: false, is_vice_captain: false });
+    act(() => { root.unmount(); });
+  });
+
+  test('keeps staged captaincy when a chip response contains the persisted lineup', async () => {
+    const client = new StagedChipResponseClient();
+    const { container, root } = await renderPage(client);
+
+    await act(async () => {
+      (container.querySelector('button[aria-label="View Starting Defender 1 details"]') as HTMLButtonElement).click();
+      await Promise.resolve();
+    });
+    const captainButton = [...container.querySelectorAll<HTMLButtonElement>('.player-profile__action')]
+      .find((button) => button.textContent?.trim() === 'Captain');
+    await act(async () => {
+      captainButton?.click();
+      await Promise.resolve();
+    });
+    await act(async () => {
+      (container.querySelector('.squad-page__chip-toggle[data-chip-id="triple-captain"]') as HTMLButtonElement).click();
+      await Promise.resolve();
+    });
+    await act(async () => {
+      buttonByText(container, 'Save lineup').click();
+      await Promise.resolve();
+    });
+
+    expect(client.savedPlayers?.find((player) => player.name === 'Starting Defender 1')?.captain).toBe(true);
     act(() => { root.unmount(); });
   });
 

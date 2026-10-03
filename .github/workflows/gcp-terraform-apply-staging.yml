@@ -315,6 +315,16 @@ jobs:
             require_managed_resource "google_cloud_run_v2_job.synthetic_seed[0]"
           fi
 
+      - name: Resolve healthy runtime revision for the reviewed plan
+        if: env.DEPLOYMENT_STAGE == 'runtime'
+        run: |
+          set -euo pipefail
+          gcloud run services describe cdl-react-staging-api \
+            --project "${PROJECT_ID}" --region "${REGION}" --format=json \
+            > "${RUNNER_TEMP}/current-service.json"
+          revision="$(python scripts/cloud_run_staged_revision.py pin "${RUNNER_TEMP}/current-service.json")"
+          echo "RUNTIME_TRAFFIC_REVISION=${revision}" >> "${GITHUB_ENV}"
+
       - name: Recreate reviewed staging plan
         id: recreated_plan
         shell: bash
@@ -332,6 +342,7 @@ jobs:
             -var="enable_cloud_run=${ENABLE_CLOUD_RUN}" \
             -var="enable_google_sign_in=${ENABLE_GOOGLE_SIGN_IN}" \
             -var="backend_image=${BACKEND_IMAGE}" \
+            -var="runtime_traffic_revision=${RUNTIME_TRAFFIC_REVISION}" \
             -var="allow_public_invoker=${ALLOW_PUBLIC_INVOKER}"
           plan_exit_code=$?
           set -e
@@ -402,6 +413,7 @@ jobs:
             -var="enable_cloud_run=${ENABLE_CLOUD_RUN}" \
             -var="enable_google_sign_in=${ENABLE_GOOGLE_SIGN_IN}" \
             -var="backend_image=${BACKEND_IMAGE}" \
+            -var="runtime_traffic_revision=${RUNTIME_TRAFFIC_REVISION}" \
             -var="allow_public_invoker=${ALLOW_PUBLIC_INVOKER}"
           post_apply_exit_code=$?
           set -e
@@ -410,6 +422,65 @@ jobs:
             echo "Post-apply Terraform plan was not a clean no-change result." >&2
             exit 1
           fi
+
+      - name: Run migrations before traffic promotion
+        if: env.DEPLOYMENT_STAGE == 'runtime'
+        run: |
+          set -euo pipefail
+          migration_image="$(gcloud run jobs describe cdl-react-staging-db-migrate \
+            --project "${PROJECT_ID}" --region "${REGION}" \
+            --format='value(spec.template.spec.template.spec.containers[0].image)')"
+          test "${migration_image}" = "${BACKEND_IMAGE}"
+          gcloud run jobs execute cdl-react-staging-db-migrate \
+            --project "${PROJECT_ID}" --region "${REGION}" --wait
+
+      - name: Smoke staged runtime before traffic promotion
+        if: env.DEPLOYMENT_STAGE == 'runtime'
+        run: |
+          set -euo pipefail
+          service_json="$(gcloud run services describe cdl-react-staging-api \
+            --project "${PROJECT_ID}" --region "${REGION}" --format=json)"
+          printf '%s\n' "${service_json}" > "${RUNNER_TEMP}/staged-service.json"
+          ready="$(python - "${RUNNER_TEMP}/staged-service.json" <<'PY'
+          import json
+          import sys
+
+          service = json.load(open(sys.argv[1], encoding="utf-8"))
+          status = service.get("status", {})
+          print(status.get("latestReadyRevisionName") or status.get("latestReadyRevision") or service.get("latestReadyRevision") or "")
+          PY
+          )"
+          test -n "${ready}"
+          gcloud run revisions describe "${ready}" \
+            --project "${PROJECT_ID}" --region "${REGION}" --format=json \
+            > "${RUNNER_TEMP}/staged-revision.json"
+          revision="$(python scripts/cloud_run_staged_revision.py verify \
+            "${RUNNER_TEMP}/staged-service.json" "${RUNNER_TEMP}/staged-revision.json" \
+            "${RUNTIME_TRAFFIC_REVISION}" "${BACKEND_IMAGE}")"
+          echo "STAGED_REVISION=${revision}" >> "${GITHUB_ENV}"
+          CANDIDATE_TAG="cdl-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          echo "CANDIDATE_TAG=${CANDIDATE_TAG}" >> "${GITHUB_ENV}"
+          gcloud run services update-traffic cdl-react-staging-api \
+            --project "${PROJECT_ID}" --region "${REGION}" \
+            --update-tags="${CANDIDATE_TAG}=${revision}" --quiet
+          gcloud run services describe cdl-react-staging-api \
+            --project "${PROJECT_ID}" --region "${REGION}" --format=json \
+            > "${RUNNER_TEMP}/candidate-service.json"
+          candidate_url="$(python scripts/cloud_run_staged_revision.py candidate-url \
+            "${RUNNER_TEMP}/candidate-service.json" "${revision}" \
+            "${RUNTIME_TRAFFIC_REVISION}" "${CANDIDATE_TAG}")"
+          curl --fail --silent --show-error "${candidate_url}/health" | grep -Fq '"status":"ok"'
+          status_code="$(curl --silent --show-error --output /dev/null \
+            --write-out '%{http_code}' "${candidate_url}/api/fpl/status")"
+          test "${status_code}" = "401"
+
+      - name: Promote runtime after migration and smoke checks
+        if: env.DEPLOYMENT_STAGE == 'runtime'
+        run: |
+          set -euo pipefail
+          gcloud run services update-traffic cdl-react-staging-api \
+            --project "${PROJECT_ID}" --region "${REGION}" \
+            --to-revisions "${STAGED_REVISION}=100" --quiet
 
       - name: Verify applied stage resources and access boundary
         shell: bash
@@ -545,3 +616,11 @@ jobs:
           path: ${{ runner.temp }}/staging-terraform-apply.md
           if-no-files-found: error
           retention-days: 7
+
+      - name: Remove candidate revision traffic tag
+        if: always() && env.CANDIDATE_TAG != ''
+        run: |
+          set -euo pipefail
+          gcloud run services update-traffic cdl-react-staging-api \
+            --project "${PROJECT_ID}" --region "${REGION}" \
+            --remove-tags="${CANDIDATE_TAG}" --quiet

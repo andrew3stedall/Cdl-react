@@ -11,6 +11,7 @@ from cdl_api.contracts.fpl_data import (
 from cdl_api.contracts.session import SessionUser
 from cdl_api.database import build_session_factory
 from cdl_api.fpl_client import FplApiClient, FplApiError
+from cdl_api.repositories.loans import PostgreSQLLoanRepository
 from cdl_api.repositories.postgres_fpl_data import (
     InvalidFplPayloadError,
     PostgreSQLFplDataRepository,
@@ -39,6 +40,9 @@ def get_fpl_service(settings: Settings = Depends(get_settings)) -> FplDataServic
         client,
         repository,
         settlement=FplSettlementService(session_factory).settle,
+        after_refresh=lambda: PostgreSQLLoanRepository(
+            session_factory, user_id="", manager_id="", team_id=""
+        ).process_due_returns(),
     )
 
 

@@ -21,7 +21,7 @@ def test_container_builds_and_packages_frontend_with_api() -> None:
 
     for phrase in [
         "FROM node:22-slim AS frontend-build",
-        "COPY frontend/package.json ./",
+        "COPY frontend/package.json frontend/package-lock.json ./",
         "RUN npm run build",
         "COPY --from=frontend-build /frontend/dist ./frontend-dist",
         "CDL_FRONTEND_DIST_DIR=/app/frontend-dist",

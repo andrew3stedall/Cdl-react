@@ -3,7 +3,11 @@ from fastapi.testclient import TestClient
 from cdl_api.app import create_app
 from cdl_api.contracts.session import SessionUser
 from cdl_api.repositories.squad import InMemorySquadRepository
-from cdl_api.routers.squad import get_squad_service, require_manager_session
+from cdl_api.routers.squad import (
+    get_squad_service,
+    require_manager_session,
+    require_trade_approval_session,
+)
 from cdl_api.services.squad import SquadManagementService
 
 
@@ -136,12 +140,19 @@ def test_trade_create_reload_update_and_rejected_write_flow() -> None:
     app = create_app()
     service = SquadManagementService(InMemorySquadRepository())
     active_manager = {"id": "manager-1"}
+    approval_actor = {"id": "commissioner"}
     app.dependency_overrides[get_squad_service] = lambda: service
     app.dependency_overrides[require_manager_session] = lambda: SessionUser(
         id=active_manager["id"],
         email="manager@example.com",
         display_name="Manager",
         roles=["manager"],
+    )
+    app.dependency_overrides[require_trade_approval_session] = lambda: SessionUser(
+        id=approval_actor["id"],
+        email="commissioner@example.com",
+        display_name="Commissioner",
+        roles=["commissioner"],
     )
     client = TestClient(app)
 
@@ -187,7 +198,31 @@ def test_trade_create_reload_update_and_rejected_write_flow() -> None:
     )
     assert accepted.status_code == 200
     assert accepted.json()["status"] == "accepted"
+    assert accepted.json()["approval_status"] == "pending"
+    assert service.get_player("player-1").draft_team.id == "team-castle"
 
+    queue = client.get("/api/trades/approvals")
+    assert queue.status_code == 200
+    assert [proposal["id"] for proposal in queue.json()["trades"]] == [trade["id"]]
+
+    approved = client.post(
+        f"/api/trades/{trade['id']}/approve",
+        json={"decision": "approved", "note": "Reviewed"},
+    )
+    assert approved.status_code == 200
+    assert approved.json()["approval_status"] == "approved"
+    assert approved.json()["approved_by"] == "commissioner"
+    assert approved.json()["executed_at"] is not None
+    assert service.get_player("player-1").draft_team.id == "team-rival"
+    assert service.get_player("player-4").draft_team.id == "team-castle"
+    audit = client.get(f"/api/trades/{trade['id']}/audit")
+    assert audit.status_code == 200
+    audit_actions = [event["action"] for event in audit.json()]
+    assert audit_actions == ["trade_proposed", "trade_agreed", "trade_executed"]
+    approval_actor["id"] = "unrelated-user"
+    assert client.get(f"/api/trades/{trade['id']}/audit").status_code == 404
+
+    approval_actor["id"] = "commissioner"
     stale = client.put(
         f"/api/trades/{trade['id']}",
         json={"status": "rejected"},

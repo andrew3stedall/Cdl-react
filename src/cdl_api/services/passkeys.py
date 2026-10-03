@@ -174,6 +174,16 @@ class PasskeyService:
     def registered_count(self, user_id: str) -> int:
         return len(self._passkeys.list_for_user(user_id))
 
+    def registered_passkeys(self, user_id: str) -> list[PasskeyRecord]:
+        return self._passkeys.list_for_user(user_id)
+
+    def revoke(self, user_id: str, credential_id: str) -> None:
+        record = self._passkeys.get(credential_id)
+        if record is None or record.user_id != user_id:
+            raise PasskeyError("Passkey could not be found.")
+        if not self._passkeys.delete_for_user(credential_id, user_id):
+            raise PasskeyError("Passkey could not be removed. Retry.")
+
     def verify_authentication(
         self,
         *,

@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from cdl_api.contracts.common import ErrorCode, ValidationErrorResponse, ValidationIssue
+from cdl_api.services.lineup_rules import valid_formation_names
 
 router = APIRouter(prefix="/modernisation", tags=["modernisation"])
 
@@ -27,7 +28,7 @@ GAMEWEEK = {
     "next_editable_gameweek_id": "gw-2",
 }
 RULE_VERSION_ID = "rule-version-2026-active"
-VALID_FORMATIONS = {"3-4-3", "3-5-2", "4-3-3", "4-4-2", "4-5-1", "5-4-1"}
+VALID_FORMATIONS = valid_formation_names()
 PLAYERS = {
     "fpl-101": {"id": "fpl-101", "display_name": "Alex Keeper", "position": "GKP"},
     "fpl-102": {"id": "fpl-102", "display_name": "Ben Defender", "position": "DEF"},
@@ -108,16 +109,46 @@ SNAPSHOTS: list[dict[str, Any]] = []
 FINAL_RESULTS: dict[str, dict[str, Any]] = {}
 TABLE_SNAPSHOTS: dict[str, list[dict[str, Any]]] = {
     "live": [
-        {"season_team_id": "season-team-castle", "position": 1, "previous_position": 2, "points": 21},
-        {"season_team_id": "season-team-drafton", "position": 2, "previous_position": 1, "points": 20},
+        {
+            "season_team_id": "season-team-castle",
+            "position": 1,
+            "previous_position": 2,
+            "points": 21,
+        },
+        {
+            "season_team_id": "season-team-drafton",
+            "position": 2,
+            "previous_position": 1,
+            "points": 20,
+        },
     ],
     "provisional": [
-        {"season_team_id": "season-team-castle", "position": 1, "previous_position": 2, "points": 22},
-        {"season_team_id": "season-team-drafton", "position": 2, "previous_position": 1, "points": 20},
+        {
+            "season_team_id": "season-team-castle",
+            "position": 1,
+            "previous_position": 2,
+            "points": 22,
+        },
+        {
+            "season_team_id": "season-team-drafton",
+            "position": 2,
+            "previous_position": 1,
+            "points": 20,
+        },
     ],
     "official": [
-        {"season_team_id": "season-team-castle", "position": 2, "previous_position": 2, "points": 18},
-        {"season_team_id": "season-team-drafton", "position": 1, "previous_position": 1, "points": 20},
+        {
+            "season_team_id": "season-team-castle",
+            "position": 2,
+            "previous_position": 2,
+            "points": 18,
+        },
+        {
+            "season_team_id": "season-team-drafton",
+            "position": 1,
+            "previous_position": 1,
+            "points": 20,
+        },
     ],
 }
 
@@ -204,7 +235,9 @@ def _validate_lineup(lineup: dict[str, Any]) -> list[dict[str, str]]:
     if lineup["vice_captain_id"] not in starters:
         issues.append({"field": "vice_captain_id", "message": "Vice captain must be a starter."})
     if lineup["captain_id"] == lineup["vice_captain_id"]:
-        issues.append({"field": "vice_captain_id", "message": "Vice captain must differ from captain."})
+        issues.append(
+            {"field": "vice_captain_id", "message": "Vice captain must differ from captain."}
+        )
     if _formation(starters) not in VALID_FORMATIONS:
         issues.append({"field": "starters", "message": "Lineup does not match a valid formation."})
     return issues

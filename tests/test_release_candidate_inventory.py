@@ -31,6 +31,10 @@ def test_inventory_covers_every_mounted_product_router() -> None:
         "competition_router",
         "history_router",
         "squad_router",
+        "free_agency_draws_router",
+        "private_scouting_router",
+        "loans_router",
+        "live_draft_router",
         "team_selection_router",
         "workspace_router",
     }
@@ -172,7 +176,7 @@ def test_authenticated_squad_and_market_evidence_is_focused_and_truthful() -> No
         "stale repeated transitions fail without changing the accepted state",
         "browser uses a deterministic API test double",
         "PostgreSQL persistence is proved separately by backend CI",
-        "UI does not expose counterparty acceptance/rejection controls",
+        "UI exposes participant acceptance/rejection/cancellation",
     )
     for claim in required_inventory_claims:
         assert claim in inventory

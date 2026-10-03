@@ -2,7 +2,7 @@
 
 ## Status
 
-Audit and backlog complete; implementation not started. Parent milestone tracker: [#466](https://github.com/andrew3stedall/Cdl-react/issues/466).
+Audit and backlog complete; implementation and independent integration validation in progress in [PR #538](https://github.com/andrew3stedall/Cdl-react/pull/538). Parent milestone tracker: [#466](https://github.com/andrew3stedall/Cdl-react/issues/466).
 
 ## Source of truth
 
@@ -31,10 +31,14 @@ Audit and backlog complete; implementation not started. Parent milestone tracker
 - Future draft/loans/watchlists/analytics scope has explicit targets or deferral and guarded surfaces.
 - Production operational evidence is dated and linked; no launch inferred from green unit tests or health only.
 
-## Validation boundary
+## Audit baseline validation
 
 Local frontend checks and 187 tests passed; backend Ruff/format and 402 tests passed, 18 skipped. Targeted scratch reproductions confirm defects, not fixes. Browser unavailable; live signed-in and recovery gates remain unproven. No data/API/cloud/runtime changes made in this audit.
 
 ## Cross-feature ownership
 
 Each child links its existing active feature document. Any implementation changing shared rules, API contracts, ownership or persistence must update the affected owning docs together. This follow-up records the backlog; it does not silently approve unresolved rule/launch decisions.
+
+## Delivery evidence
+
+[Capability and parked decision register](../../delivery/466-release-scope.md) and the lane records under `docs/delivery/466-*.md` describe actual implemented work and its limits. PR #538 is the integration source. A historical checkpoint label must not be treated as a completed persistent production workflow.

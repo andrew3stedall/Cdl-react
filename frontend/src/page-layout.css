@@ -73,6 +73,10 @@
     position: relative;
   }
 
+  .cdl-page-hero__brand-lockup {
+    max-width: calc(100% - 2.5rem);
+  }
+
   .cdl-page-hero__actions {
     align-items: flex-end;
     display: flex;

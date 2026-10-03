@@ -16,7 +16,8 @@ COPY --from=ghcr.io/astral-sh/uv:0.8.17 /uv /uvx /bin/
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
-    CDL_FRONTEND_DIST_DIR=/app/frontend-dist
+    CDL_FRONTEND_DIST_DIR=/app/frontend-dist \
+    PATH="/app/.venv/bin:${PATH}"
 
 WORKDIR /app
 
@@ -29,7 +30,8 @@ COPY src ./src
 COPY --from=frontend-build /frontend/dist ./frontend-dist
 
 RUN uv sync --frozen --no-dev --no-install-project && \
-    uv sync --frozen --no-dev
+    uv sync --frozen --no-dev && \
+    python -c "import cdl_api.migrate"
 
 USER app
 

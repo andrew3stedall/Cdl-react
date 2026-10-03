@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Ensure Cloud Run jobs use the installed project Python environment and verify migration-module imports during image builds; remove the remaining login marketing tagline.
+
 - Delivered retrospective fixes for protected authentication, invites/passkeys,
   squad mutations and staged edits, scoring/history/standings, trade approval
   and execution, ranked draws, Rules, appearance, keyboard dialogs, compact

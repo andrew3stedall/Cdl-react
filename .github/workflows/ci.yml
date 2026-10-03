@@ -7,6 +7,18 @@ on:
       - main
 
 jobs:
+  runtime-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build production runtime image
+        run: docker build --tag cdl-runtime-ci .
+      - name: Verify Cloud Run job interpreter and package imports
+        run: >-
+          docker run --rm --entrypoint python cdl-runtime-ci
+          -c "import sys; import cdl_api.migrate; import cdl_api.refresh_fpl;
+          assert sys.executable.startswith('/app/.venv/'), sys.executable"
+
   backend:
     runs-on: ubuntu-latest
     steps:

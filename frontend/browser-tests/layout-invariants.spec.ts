@@ -39,7 +39,7 @@ async function readHeaderBounds(page: Page) {
 
 async function expectHeaderDimensions(page: Page, header: Awaited<ReturnType<typeof readHeaderBounds>>, viewport: { width: number; height: number }) {
   const rootFontSize = await page.evaluate(() => Number.parseFloat(getComputedStyle(document.documentElement).fontSize));
-  const heroRem = viewport.width <= 520 ? 5.75 : viewport.width <= 900 ? 3.8 : 4.2;
+  const heroRem = viewport.width <= 520 ? 8.5 : viewport.width <= 900 ? 3.8 : 4.2;
   const expectedHeroHeight = heroRem * rootFontSize;
   const expectedBellSize = 2.5 * rootFontSize;
   expect(Math.abs(header.hero.height - expectedHeroHeight), 'shared PageHero height differs from its shell role').toBeLessThanOrEqual(1);

@@ -77,7 +77,8 @@ export function App({
   squadClient,
   teamSelectionClient,
 }: AppProps) {
-  const [currentPath, setCurrentPath] = useState(initialPath);
+  const [currentPath, setCurrentPath] = useState(() => new URL(initialPath, window.location.origin).pathname);
+  const [currentHash, setCurrentHash] = useState(() => new URL(initialPath, window.location.origin).hash);
   const [loginReturnPath, setLoginReturnPath] = useState<string | null>(() => initialPath.startsWith('/join/') ? initialPath : storedLoginReturnPath());
   const [activeSession, setActiveSession] = useState<SessionState | null>(session ?? null);
   const [sessionCheckError, setSessionCheckError] = useState<string | null>(null);
@@ -181,6 +182,7 @@ export function App({
   useEffect(() => {
     const handlePopState = () => {
       setCurrentPath(window.location.pathname);
+      setCurrentHash(window.location.hash);
     };
 
     window.addEventListener('popstate', handlePopState);
@@ -201,6 +203,7 @@ export function App({
     }
     const normalizedPath = new URL(href, window.location.origin).pathname;
     setCurrentPath(normalizedPath);
+    setCurrentHash(new URL(href, window.location.origin).hash);
   }, []);
 
   const completeLogin = useCallback((resolvedSession: SessionState) => {
@@ -375,6 +378,7 @@ export function App({
           >
             <AppRouteContent
               activeSession={activeSession}
+              currentHash={currentHash}
               currentPath={currentPath}
               dashboardClient={dashboardClient}
               fdrClient={fdrClient}
@@ -401,6 +405,7 @@ function inviteTokenFromPath(path: string | null): string | null {
 
 interface AppRouteContentProps {
   activeSession: SessionState;
+  currentHash: string;
   currentPath: string;
   dashboardClient?: DashboardClient;
   fdrClient?: FdrClient;
@@ -414,6 +419,7 @@ interface AppRouteContentProps {
 
 function AppRouteContent({
   activeSession,
+  currentHash,
   currentPath,
   dashboardClient,
   fdrClient,
@@ -508,7 +514,7 @@ function AppRouteContent({
     }
 
     if (path.startsWith('/rules')) {
-      routeContent = <RulesWorkspacePage anchor={window.location.hash} onNavigate={onNavigate} preset={preset} />;
+      routeContent = <RulesWorkspacePage anchor={currentHash} onNavigate={onNavigate} preset={preset} />;
     }
 
     if (path.startsWith('/league')) {
@@ -549,7 +555,7 @@ function AppRouteContent({
     }
 
     if (path.startsWith('/scouting')) {
-      routeContent = <MarketPage currentPath={path} onNavigate={onNavigate} preset={preset} />;
+      routeContent = <MarketPage currentPath={path} onNavigate={onNavigate} preset={preset} session={activeSession} />;
     }
 
     const playerProfileMatch = path.match(/^\/players\/([^/]+)$/);

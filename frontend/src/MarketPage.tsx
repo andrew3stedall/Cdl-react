@@ -19,7 +19,7 @@ import { Button } from './components/ui/button';
 import { FormDots, PlayerCard, type PlayerCardFixtureTone, type PlayerCardFormGameweek, type PlayerCardPlayer } from './components/player/PlayerCard';
 import { PageHero, PageHeroControls, PageHeroViewToggle } from './components/ui/page-hero';
 import { useModalLifecycle } from './components/ui/sheet';
-import type { ThemePreset } from './contracts';
+import type { SessionState, ThemePreset } from './contracts';
 import { managerNicknameForTeam } from './manager-nicknames';
 import { invalidateData, subscribeDataFreshness } from './data-freshness';
 import type { SquadApiFormGameweek, SquadApiPlayer, SquadApiTeam } from './squad-api';
@@ -30,6 +30,7 @@ interface MarketPageProps {
   currentPath: string;
   onNavigate: (href: string) => void;
   preset: ThemePreset;
+  session?: SessionState;
 }
 
 type MarketMode = 'discover' | 'interests' | 'trades' | 'draws';
@@ -71,6 +72,8 @@ interface TradeView {
   offeredBy: string | null;
   offeredTo: string | null;
   approvalStatus?: string | null;
+  requiredApproverRole?: string | null;
+  executedAt?: string | null;
   assetNames: string[];
 }
 
@@ -100,6 +103,8 @@ interface ApiTrade {
   offered_by?: { id?: string | null; name?: string | null } | null;
   offered_to?: { id?: string | null; name?: string | null } | null;
   approval_status?: string | null;
+  required_approver_role?: string | null;
+  executed_at?: string | null;
   assets?: Array<{ player?: { display_name?: string | null } | null }>;
 }
 
@@ -152,7 +157,7 @@ const sortOptions: Array<{ label: string; value: SortKey }> = [
   { label: 'Value', value: 'value' },
 ];
 
-export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps) {
+export function MarketPage({ currentPath, onNavigate, preset, session }: MarketPageProps) {
   const [mode, setMode] = useState<MarketMode>(() => modeFromPath(currentPath));
   const [players, setPlayers] = useState<MarketPlayer[]>([]);
   const [interests, setInterests] = useState<InterestView[]>([]);
@@ -173,6 +178,10 @@ export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps)
   const [refreshKey, setRefreshKey] = useState(0);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [pendingTradeAction, setPendingTradeAction] = useState<string | null>(null);
+  const [approvalTrades, setApprovalTrades] = useState<TradeView[]>([]);
+  const [approvalStatus, setApprovalStatus] = useState<'idle' | 'loading' | 'ready' | 'error'>('idle');
+  const [approvalRefreshKey, setApprovalRefreshKey] = useState(0);
+  const [approvalNotice, setApprovalNotice] = useState('');
   const [draws, setDraws] = useState<FreeAgencyDraw[]>([]);
   const [selectedDrawId, setSelectedDrawId] = useState('');
   const [drawLoadStatus, setDrawLoadStatus] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
@@ -185,8 +194,13 @@ export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps)
   const [drawDetailsError, setDrawDetailsError] = useState('');
   const [drawActionPending, setDrawActionPending] = useState(false);
   const [drawNotice, setDrawNotice] = useState('');
+  const [drawManagementPending, setDrawManagementPending] = useState(false);
+  const [drawManagementNotice, setDrawManagementNotice] = useState('');
+  const [drawManagementError, setDrawManagementError] = useState(false);
   const drawerRef = useRef<HTMLElement | null>(null);
   const selectedPlayerId = selectedPlayer?.id;
+  const canReviewTrades = Boolean(session?.user?.roles.some((role) => ['commissioner', 'vice_commissioner', 'admin'].includes(role)));
+  const canManageDraws = Boolean(session?.user?.roles.some((role) => role === 'commissioner' || role === 'admin'));
 
   useEffect(() => {
     setMode(modeFromPath(currentPath));
@@ -194,6 +208,7 @@ export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps)
 
   useEffect(() => subscribeDataFreshness('market', ['squad', 'lineup', 'interest', 'trade', 'draw', 'global'], () => {
     setRefreshKey((current) => current + 1);
+    setApprovalRefreshKey((current) => current + 1);
   }), []);
 
   useEffect(() => {
@@ -299,6 +314,25 @@ export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps)
   }, [refreshKey]);
 
   useEffect(() => {
+    if (mode !== 'trades' || !canReviewTrades) {
+      setApprovalStatus('idle');
+      return undefined;
+    }
+    let active = true;
+    setApprovalStatus('loading');
+    void fetchJson<{ trades?: ApiTrade[] }>('/api/trades/approvals')
+      .then((response) => {
+        if (!active) return;
+        setApprovalTrades((response.trades ?? []).map(mapTrade));
+        setApprovalStatus('ready');
+      })
+      .catch(() => {
+        if (active) setApprovalStatus('error');
+      });
+    return () => { active = false; };
+  }, [approvalRefreshKey, canReviewTrades, mode]);
+
+  useEffect(() => {
     if (!selectedPlayerId) {
       setHistory(null);
       setHistoryStatus('');
@@ -386,6 +420,47 @@ export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps)
     }
   }
 
+  async function createFreeAgencyDraw(gameweek: number, opensAt: string, closesAt: string) {
+    if (!canManageDraws || drawManagementPending) return;
+    setDrawManagementPending(true);
+    setDrawManagementNotice('');
+    setDrawManagementError(false);
+    try {
+      const draw = await fetchJson<FreeAgencyDraw>('/api/free-agency/draws', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ gameweek, opens_at: opensAt || undefined, closes_at: closesAt }),
+      });
+      setDraws((current) => [draw, ...current.filter((item) => item.id !== draw.id)]);
+      setSelectedDrawId(draw.id);
+      setDrawManagementNotice(`Gameweek ${draw.gameweek} draw created.`);
+      invalidateData(['draw'], 'market');
+    } catch (actionError) {
+      setDrawManagementNotice(actionError instanceof Error ? actionError.message : 'Unable to create the draw.');
+      setDrawManagementError(true);
+    } finally {
+      setDrawManagementPending(false);
+    }
+  }
+
+  async function manageFreeAgencyDraw(draw: FreeAgencyDraw, action: 'open' | 'lock' | 'process') {
+    if (!canManageDraws || drawManagementPending) return;
+    setDrawManagementPending(true);
+    setDrawManagementNotice('');
+    setDrawManagementError(false);
+    try {
+      const updated = await fetchJson<FreeAgencyDraw>(`/api/free-agency/draws/${encodeURIComponent(draw.id)}/${action}`, { method: 'POST' });
+      setDraws((current) => current.map((item) => item.id === updated.id ? updated : item));
+      setDrawManagementNotice(`Gameweek ${updated.gameweek} draw ${action === 'process' ? 'processed' : action === 'lock' ? 'locked' : 'opened'}.`);
+      invalidateData(['draw'], 'market');
+    } catch (actionError) {
+      setDrawManagementNotice(actionError instanceof Error ? actionError.message : `Unable to ${action} the draw.`);
+      setDrawManagementError(true);
+    } finally {
+      setDrawManagementPending(false);
+    }
+  }
+
   async function registerInterest(player: MarketPlayer) {
     if (pendingAction) return;
     setPendingAction(player.id);
@@ -448,12 +523,35 @@ export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps)
       });
       const response = await fetchJson<{ trades?: ApiTrade[] }>('/api/trades');
       setTrades((response.trades ?? []).map(mapTrade));
+      setApprovalRefreshKey((key) => key + 1);
       setNotice(status === 'accepted'
         ? 'Trade accepted. Commissioner approval is still required before ownership changes.'
         : status === 'rejected' ? 'Trade rejected.' : 'Trade proposal cancelled.');
       invalidateData(status === 'accepted' ? ['trade', 'squad'] : ['trade'], 'market');
     } catch (actionError) {
       setNotice(actionError instanceof Error ? actionError.message : 'Unable to update this trade.');
+    } finally {
+      setPendingTradeAction(null);
+    }
+  }
+
+  async function decideTradeApproval(trade: TradeView, decision: 'approved' | 'rejected') {
+    if (pendingTradeAction) return;
+    setPendingTradeAction(trade.id);
+    setApprovalNotice('');
+    try {
+      const updated = await fetchJson<ApiTrade>(`/api/trades/${encodeURIComponent(trade.id)}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ decision }),
+      });
+      setApprovalNotice(decision === 'approved'
+        ? updated.executed_at ? 'Trade approved and ownership updated.' : 'Trade approved.'
+        : 'Trade approval rejected. Ownership remains unchanged.');
+      setApprovalRefreshKey((key) => key + 1);
+      invalidateData(decision === 'approved' ? ['trade', 'squad'] : ['trade'], 'market');
+    } catch (actionError) {
+      setApprovalNotice(actionError instanceof Error ? actionError.message : 'Unable to record the trade decision.');
     } finally {
       setPendingTradeAction(null);
     }
@@ -521,7 +619,7 @@ export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps)
         {mode === 'interests' ? (
           <InterestsPanel failed={failedSections.has('Interests')} interests={interests} loading={loading} managerTeam={managerTeam} onBrowse={() => selectMode('discover')} onOpenPlayer={openPlayer} onRemove={removeInterest} onRetry={() => setRefreshKey((key) => key + 1)} pendingAction={pendingAction} />
         ) : null}
-        {mode === 'trades' ? <TradesPanel failed={failedSections.has('trade activity')} loading={loading} managerTeam={managerTeam} onBrowse={() => selectMode('discover')} onRetry={() => setRefreshKey((key) => key + 1)} onUpdateTrade={updateTrade} pendingTradeAction={pendingTradeAction} trades={trades} /> : null}
+        {mode === 'trades' ? <TradesPanel approvalFailed={approvalStatus === 'error'} approvalLoading={approvalStatus === 'loading'} approvalNotice={approvalNotice} approvalTrades={approvalTrades} approverRoles={session?.user?.roles ?? []} canReviewTrades={canReviewTrades} failed={failedSections.has('trade activity')} loading={loading} managerTeam={managerTeam} onApprovalRetry={() => setApprovalRefreshKey((key) => key + 1)} onBrowse={() => selectMode('discover')} onDecideApproval={decideTradeApproval} onRetry={() => setRefreshKey((key) => key + 1)} onUpdateTrade={updateTrade} pendingTradeAction={pendingTradeAction} trades={trades} /> : null}
         {mode === 'draws' ? <FreeAgencyDrawPanel
           availablePlayers={players.filter((player) => !player.draftTeamId && player.status !== 'owned' && player.status !== 'owned_by_other')}
           draw={selectedDraw}
@@ -531,10 +629,16 @@ export function MarketPage({ currentPath, onNavigate, preset }: MarketPageProps)
           drawError={drawError}
           drawLoadStatus={drawLoadStatus}
           drawNotice={drawNotice}
+          canManageDraws={canManageDraws}
+          drawManagementNotice={drawManagementNotice}
+          drawManagementError={drawManagementError}
+          drawManagementPending={drawManagementPending}
           drawResult={drawResult}
           draws={draws}
           loadingPlayers={loading && players.length === 0}
           onAddPlayer={(playerId) => setDrawPreferences((current) => current.includes(playerId) ? current : [...current, playerId])}
+          onCreateDraw={createFreeAgencyDraw}
+          onManageDraw={manageFreeAgencyDraw}
           onMovePreference={moveDrawPreference}
           onRefresh={() => {
             setDrawRefreshKey((key) => key + 1);
@@ -724,32 +828,57 @@ function InterestsPanel({ failed, interests, loading, managerTeam, onBrowse, onO
   );
 }
 
-function TradesPanel({ failed, loading, managerTeam, onBrowse, onRetry, onUpdateTrade, pendingTradeAction, trades }: { failed: boolean; loading: boolean; managerTeam: SquadApiTeam; onBrowse: () => void; onRetry: () => void; onUpdateTrade: (trade: TradeView, status: 'accepted' | 'rejected' | 'cancelled') => Promise<void>; pendingTradeAction: string | null; trades: TradeView[] }) {
-  if (loading) return <p role="status">Loading trade activity…</p>;
-  if (failed) return <p role="alert">Trade activity unavailable. <Button onClick={onRetry} type="button" variant="secondary">Retry</Button></p>;
-  if (trades.length === 0) return <EmptyActivity icon={<ArrowRightLeft aria-hidden="true" size={23} />} onAction={onBrowse} action="Browse players" title="No trade proposals" />;
-  return <section aria-label="Trade activity" className="market-page__activity-list">{trades.map((trade) => {
-    const recipient = trade.offeredToId === managerTeam.id;
-    const sender = trade.offeredById === managerTeam.id;
-    const pending = pendingTradeAction === trade.id;
-    const terminal = ['rejected', 'cancelled', 'executed'].includes(trade.status);
-    return <article className="market-page__trade-row" key={trade.id}><span className="market-page__trade-icon"><ArrowRightLeft aria-hidden="true" size={18} /></span><div><strong>{trade.assetNames.length > 0 ? trade.assetNames.join(' ↔ ') : 'Player trade proposal'}</strong><span>{trade.offeredBy ?? 'Another manager'} → {trade.offeredTo ?? 'Your team'}</span><StatusBadge status={trade.status} />{trade.status === 'accepted' && trade.approvalStatus !== 'approved' ? <span>Awaiting commissioner approval</span> : null}{!terminal && trade.status === 'proposed' && recipient ? <div className="market-page__trade-actions"><Button disabled={pending} onClick={() => void onUpdateTrade(trade, 'accepted')} type="button">{pending ? 'Saving…' : 'Accept'}</Button><Button disabled={pending} onClick={() => void onUpdateTrade(trade, 'rejected')} type="button" variant="secondary">Reject</Button></div> : null}{!terminal && trade.status === 'proposed' && sender ? <Button disabled={pending} onClick={() => void onUpdateTrade(trade, 'cancelled')} type="button" variant="secondary">{pending ? 'Cancelling…' : 'Cancel proposal'}</Button> : null}</div></article>;
-  })}</section>;
+function TradesPanel({ approvalFailed, approvalLoading, approvalNotice, approvalTrades, approverRoles, canReviewTrades, failed, loading, managerTeam, onApprovalRetry, onBrowse, onDecideApproval, onRetry, onUpdateTrade, pendingTradeAction, trades }: { approvalFailed: boolean; approvalLoading: boolean; approvalNotice: string; approvalTrades: TradeView[]; approverRoles: string[]; canReviewTrades: boolean; failed: boolean; loading: boolean; managerTeam: SquadApiTeam; onApprovalRetry: () => void; onBrowse: () => void; onDecideApproval: (trade: TradeView, decision: 'approved' | 'rejected') => Promise<void>; onRetry: () => void; onUpdateTrade: (trade: TradeView, status: 'accepted' | 'rejected' | 'cancelled') => Promise<void>; pendingTradeAction: string | null; trades: TradeView[] }) {
+  const eligibleApprovals = approvalTrades.filter((trade) => approverRoles.includes('admin')
+    || (trade.requiredApproverRole === 'vice_commissioner' ? approverRoles.includes('vice_commissioner') : approverRoles.includes('commissioner')));
+  return <div className="market-page__trade-workspace">
+    <section aria-label="Trade activity" className="market-page__activity-panel">
+      <h2>Trade activity</h2>
+      {loading ? <p role="status">Loading trade activity…</p> : null}
+      {!loading && failed ? <p role="alert">Trade activity unavailable. <Button onClick={onRetry} type="button" variant="secondary">Retry</Button></p> : null}
+      {!loading && !failed && trades.length === 0 ? <EmptyActivity icon={<ArrowRightLeft aria-hidden="true" size={23} />} onAction={onBrowse} action="Browse players" title="No trade proposals" /> : null}
+      {!loading && !failed && trades.length > 0 ? <div className="market-page__activity-list">{trades.map((trade) => {
+        const recipient = trade.offeredToId === managerTeam.id;
+        const sender = trade.offeredById === managerTeam.id;
+        const pending = pendingTradeAction === trade.id;
+        const terminal = ['rejected', 'cancelled', 'executed'].includes(trade.status);
+        return <article className="market-page__trade-row" key={trade.id}><span className="market-page__trade-icon"><ArrowRightLeft aria-hidden="true" size={18} /></span><div><strong>{trade.assetNames.length > 0 ? trade.assetNames.join(' ↔ ') : 'Player trade proposal'}</strong><span>{trade.offeredBy ?? 'Another manager'} → {trade.offeredTo ?? 'Your team'}</span><StatusBadge status={trade.status} />{trade.status === 'accepted' && trade.approvalStatus !== 'approved' ? <span>Awaiting commissioner approval</span> : null}{!terminal && trade.status === 'proposed' && recipient ? <div className="market-page__trade-actions"><Button disabled={pending} onClick={() => void onUpdateTrade(trade, 'accepted')} type="button">{pending ? 'Saving…' : 'Accept'}</Button><Button disabled={pending} onClick={() => void onUpdateTrade(trade, 'rejected')} type="button" variant="secondary">Reject</Button></div> : null}{!terminal && trade.status === 'proposed' && sender ? <Button disabled={pending} onClick={() => void onUpdateTrade(trade, 'cancelled')} type="button" variant="secondary">{pending ? 'Cancelling…' : 'Cancel proposal'}</Button> : null}</div></article>;
+      })}</div> : null}
+    </section>
+    {canReviewTrades ? <section aria-label="Trade approvals" className="market-page__activity-panel">
+      <div className="market-page__trade-approval-heading"><h2>Trade approvals</h2><span>Eligible decisions</span></div>
+      {approvalNotice ? <p role="status">{approvalNotice}</p> : null}
+      {approvalLoading ? <p role="status">Loading eligible approvals…</p> : null}
+      {approvalFailed ? <p role="alert">Approval queue unavailable. <Button onClick={onApprovalRetry} type="button" variant="secondary">Retry</Button></p> : null}
+      {!approvalLoading && !approvalFailed && eligibleApprovals.length === 0 ? <p className="market-page__empty">No trades need your approval.</p> : null}
+      {!approvalLoading && !approvalFailed && eligibleApprovals.map((trade) => {
+        const pending = pendingTradeAction === trade.id;
+        const roleLabel = trade.requiredApproverRole === 'vice_commissioner' ? 'Vice commissioner' : 'Commissioner';
+        return <article className="market-page__trade-row" key={trade.id}><div><strong>{trade.assetNames.length ? trade.assetNames.join(' ↔ ') : 'Player trade'}</strong><span>{trade.offeredBy ?? 'Manager'} → {trade.offeredTo ?? 'Manager'}</span><span>Requires {roleLabel} approval</span><StatusBadge status={trade.approvalStatus ?? 'pending'} /><div className="market-page__trade-actions"><Button disabled={pending} onClick={() => void onDecideApproval(trade, 'approved')} type="button">{pending ? 'Saving…' : 'Approve'}</Button><Button disabled={pending} onClick={() => void onDecideApproval(trade, 'rejected')} type="button" variant="secondary">Reject</Button></div></div></article>;
+      })}
+    </section> : null}
+  </div>;
 }
 
-function FreeAgencyDrawPanel({ availablePlayers, draw, drawActionPending, drawDetailsError, drawDetailsLoading, drawError, drawLoadStatus, drawNotice, drawResult, draws, loadingPlayers, onAddPlayer, onMovePreference, onRefresh, onRemovePlayer, onSave, onSelectDraw, preferences, saving }: {
+function FreeAgencyDrawPanel({ availablePlayers, canManageDraws, draw, drawActionPending, drawDetailsError, drawDetailsLoading, drawError, drawLoadStatus, drawManagementError, drawManagementNotice, drawManagementPending, drawNotice, drawResult, draws, loadingPlayers, onAddPlayer, onCreateDraw, onManageDraw, onMovePreference, onRefresh, onRemovePlayer, onSave, onSelectDraw, preferences, saving }: {
   availablePlayers: MarketPlayer[];
+  canManageDraws: boolean;
   draw: FreeAgencyDraw | null;
   drawActionPending: boolean;
   drawDetailsError: string;
   drawDetailsLoading: boolean;
   drawError: string;
   drawLoadStatus: 'idle' | 'loading' | 'loaded' | 'error';
+  drawManagementError: boolean;
+  drawManagementNotice: string;
+  drawManagementPending: boolean;
   drawNotice: string;
   drawResult: DrawResult | null;
   draws: FreeAgencyDraw[];
   loadingPlayers: boolean;
   onAddPlayer: (playerId: string) => void;
+  onCreateDraw: (gameweek: number, opensAt: string, closesAt: string) => Promise<void>;
+  onManageDraw: (draw: FreeAgencyDraw, action: 'open' | 'lock' | 'process') => Promise<void>;
   onMovePreference: (index: number, direction: -1 | 1) => void;
   onRefresh: () => void;
   onRemovePlayer: (playerId: string) => void;
@@ -759,6 +888,9 @@ function FreeAgencyDrawPanel({ availablePlayers, draw, drawActionPending, drawDe
   saving: boolean;
 }) {
   const [playerQuery, setPlayerQuery] = useState('');
+  const [newDrawGameweek, setNewDrawGameweek] = useState('');
+  const [newDrawOpensAt, setNewDrawOpensAt] = useState('');
+  const [newDrawClosesAt, setNewDrawClosesAt] = useState('');
   const preferenceSet = new Set(preferences);
   const availableMatches = availablePlayers
     .filter((player) => !preferenceSet.has(player.id))
@@ -767,9 +899,9 @@ function FreeAgencyDrawPanel({ availablePlayers, draw, drawActionPending, drawDe
   const preferenceNames = preferences.map((playerId) => availablePlayers.find((player) => player.id === playerId)?.displayName ?? `Player ${playerId}`);
   const mayEdit = draw?.status === 'open_for_preferences';
 
-  if (drawLoadStatus === 'loading' && draws.length === 0) return <section aria-label="Free agency draw" className="market-page__activity-panel"><p role="status">Loading free agency draws…</p></section>;
-  if (drawLoadStatus === 'error' && draws.length === 0) return <section aria-label="Free agency draw" className="market-page__activity-panel"><p role="alert">{drawError || 'Free agency draws are unavailable.'} <Button onClick={onRefresh} type="button" variant="secondary">Retry</Button></p></section>;
-  if (draws.length === 0) return <section aria-label="Free agency draw" className="market-page__activity-panel"><EmptyActivity action="Retry" icon={<ListOrdered aria-hidden="true" size={23} />} onAction={onRefresh} title="No free agency draws" /></section>;
+  if (drawLoadStatus === 'loading' && draws.length === 0 && !canManageDraws) return <section aria-label="Free agency draw" className="market-page__activity-panel"><p role="status">Loading free agency draws…</p></section>;
+  if (drawLoadStatus === 'error' && draws.length === 0 && !canManageDraws) return <section aria-label="Free agency draw" className="market-page__activity-panel"><p role="alert">{drawError || 'Free agency draws are unavailable.'} <Button onClick={onRefresh} type="button" variant="secondary">Retry</Button></p></section>;
+  if (draws.length === 0 && !canManageDraws) return <section aria-label="Free agency draw" className="market-page__activity-panel"><EmptyActivity action="Retry" icon={<ListOrdered aria-hidden="true" size={23} />} onAction={onRefresh} title="No free agency draws" /></section>;
 
   return (
     <section aria-label="Free agency draw" className="market-page__activity-panel market-page__draw-panel">
@@ -780,6 +912,22 @@ function FreeAgencyDrawPanel({ availablePlayers, draw, drawActionPending, drawDe
       {draw ? <p className="market-page__draw-meta"><StatusBadge status={draw.status} /><span>Closes {formatDrawDate(draw.closes_at)}</span>{draw.opens_at ? <span>Opens {formatDrawDate(draw.opens_at)}</span> : null}</p> : null}
       {drawLoadStatus === 'loading' ? <p role="status">Refreshing draws…</p> : null}
       {drawLoadStatus === 'error' ? <p role="alert">{drawError} <Button onClick={onRefresh} type="button" variant="secondary">Retry</Button></p> : null}
+      {canManageDraws ? <section aria-label="Commissioner draw controls" className="market-page__draw-admin">
+        <h3>Commissioner controls</h3>
+        <div className="market-page__draw-create">
+          <label><span>Gameweek</span><input aria-label="New draw gameweek" min="1" onChange={(event) => setNewDrawGameweek(event.target.value)} type="number" value={newDrawGameweek} /></label>
+          <label><span>Opens at (optional)</span><input aria-label="New draw opens at" onChange={(event) => setNewDrawOpensAt(event.target.value)} type="datetime-local" value={newDrawOpensAt} /></label>
+          <label><span>Closes at</span><input aria-label="New draw closes at" onChange={(event) => setNewDrawClosesAt(event.target.value)} type="datetime-local" value={newDrawClosesAt} /></label>
+          <Button disabled={drawManagementPending || Number(newDrawGameweek) < 1 || !newDrawClosesAt} onClick={() => void onCreateDraw(Number(newDrawGameweek), newDrawOpensAt ? new Date(newDrawOpensAt).toISOString() : '', new Date(newDrawClosesAt).toISOString())} type="button">{drawManagementPending ? 'Saving…' : 'Create draw'}</Button>
+        </div>
+        {draw ? <div className="market-page__draw-admin-actions">
+          {draw.status === 'scheduled' ? <Button disabled={drawManagementPending || !drawCanOpen(draw)} onClick={() => void onManageDraw(draw, 'open')} type="button" variant="secondary">Open preferences</Button> : null}
+          {draw.status === 'open_for_preferences' ? <Button disabled={drawManagementPending} onClick={() => void onManageDraw(draw, 'lock')} type="button" variant="secondary">Lock draw</Button> : null}
+          {draw.status === 'locked' ? <Button disabled={drawManagementPending || !drawCanProcess(draw)} onClick={() => void onManageDraw(draw, 'process')} type="button" variant="secondary">Process draw</Button> : null}
+        </div> : null}
+        {drawManagementNotice ? <p role={drawManagementError ? 'alert' : 'status'}>{drawManagementNotice}</p> : null}
+      </section> : null}
+      {!draw && draws.length === 0 ? <p>No free agency draws are scheduled.</p> : null}
       {draw ? <>
         {drawDetailsLoading ? <p role="status">Loading your private preferences…</p> : null}
         {drawDetailsError ? <p role="alert">{drawDetailsError} <Button onClick={onRefresh} type="button" variant="secondary">Retry</Button></p> : null}
@@ -887,7 +1035,7 @@ function mapInterest(interest: ApiInterest): InterestView {
 }
 
 function mapTrade(trade: ApiTrade): TradeView {
-  return { id: trade.id, status: trade.status, offeredById: trade.offered_by?.id ?? null, offeredToId: trade.offered_to?.id ?? null, offeredBy: trade.offered_by?.name ?? null, offeredTo: trade.offered_to?.name ?? null, approvalStatus: trade.approval_status ?? null, assetNames: (trade.assets ?? []).map((asset) => asset.player?.display_name ?? '').filter(Boolean) };
+  return { id: trade.id, status: trade.status, offeredById: trade.offered_by?.id ?? null, offeredToId: trade.offered_to?.id ?? null, offeredBy: trade.offered_by?.name ?? null, offeredTo: trade.offered_to?.name ?? null, approvalStatus: trade.approval_status ?? null, requiredApproverRole: trade.required_approver_role ?? null, executedAt: trade.executed_at ?? null, assetNames: (trade.assets ?? []).map((asset) => asset.player?.display_name ?? '').filter(Boolean) };
 }
 
 function effectiveStatus(player: MarketPlayer, interestedPlayerIds: Set<string>, managerTeam: SquadApiTeam): MarketPlayer['status'] {
@@ -927,6 +1075,19 @@ function formatDrawStatus(status: string): string {
 function formatDrawDate(value: string): string {
   const timestamp = Date.parse(value);
   return Number.isNaN(timestamp) ? value : new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(timestamp);
+}
+
+function drawCanOpen(draw: FreeAgencyDraw): boolean {
+  const now = Date.now();
+  const opensAt = draw.opens_at ? Date.parse(draw.opens_at) : null;
+  const closesAt = Date.parse(draw.closes_at);
+  return (opensAt === null || (Number.isFinite(opensAt) && opensAt <= now))
+    && Number.isFinite(closesAt) && closesAt > now;
+}
+
+function drawCanProcess(draw: FreeAgencyDraw): boolean {
+  const closesAt = Date.parse(draw.closes_at);
+  return Number.isFinite(closesAt) && closesAt <= Date.now();
 }
 
 function mapDrawPreferences(value: unknown): string[] {

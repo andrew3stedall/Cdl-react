@@ -713,6 +713,18 @@
 .market-page__draw-rank { align-items: center; background: var(--muted); border-radius: 999px; display: inline-flex; flex: 0 0 1.65rem; height: 1.65rem; justify-content: center; }
 .market-page__draw-row-actions { align-items: center; display: flex; gap: 0.1rem; }
 .market-page__draw-privacy { color: var(--muted-foreground); font-size: 0.82rem; margin: 0; }
+.market-page__draw-admin { border: 1px solid var(--border); border-radius: var(--radius); display: grid; gap: 0.6rem; padding: 0.75rem; }
+.market-page__draw-admin h3 { font-size: 0.9rem; }
+.market-page__draw-create { align-items: end; display: flex; flex-wrap: wrap; gap: 0.55rem; }
+.market-page__draw-create label { display: grid; flex: 1 1 9rem; gap: 0.25rem; }
+.market-page__draw-create label > span { color: var(--muted-foreground); font-size: 0.75rem; }
+.market-page__draw-admin-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.market-page__trade-workspace { display: grid; gap: 1rem; }
+.market-page__trade-workspace > .market-page__activity-panel > h2,
+.market-page__trade-approval-heading h2 { font-size: 1rem; margin: 0; }
+.market-page__trade-approval-heading { align-items: center; display: flex; justify-content: space-between; }
+.market-page__trade-approval-heading > span { color: var(--muted-foreground); font-size: 0.75rem; }
+.market-page__trade-workspace .market-page__empty { min-height: auto; padding: 0.85rem; }
 
 .market-page__explainer {
   align-items: flex-start;

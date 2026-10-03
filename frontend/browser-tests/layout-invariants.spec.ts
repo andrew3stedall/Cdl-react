@@ -16,9 +16,12 @@ async function bounds(locator: Locator): Promise<Bounds> {
   return box as Bounds;
 }
 
-function expectBoundsStable(before: Bounds, after: Bounds) {
+function expectBoundsStable(before: Bounds, after: Bounds, label: string) {
   for (const key of ['x', 'y', 'width', 'height'] as const) {
-    expect(Math.abs(before[key] - after[key]), `${key} changed by more than 1 CSS pixel`).toBeLessThanOrEqual(1);
+    expect(
+      Math.abs(before[key] - after[key]),
+      `${label} ${key} changed by more than 1 CSS pixel (${before[key]} → ${after[key]})`,
+    ).toBeLessThanOrEqual(1);
   }
 }
 
@@ -84,6 +87,8 @@ test('the four primary route headers and notification control stay fixed through
       ['Market', 'Market'],
       ['League', 'League'],
     ];
+    let firstLoadedHeader: Awaited<ReturnType<typeof readHeaderBounds>> | undefined;
+    let firstLoadedTitle = '';
     for (const [label, title] of [['Desk', 'Gaffers Desk'], ...routeTitles]) {
       await (await primaryLink(routePage, label)).click();
       await expect(await primaryLink(routePage, label)).toHaveAttribute('aria-current', 'page');
@@ -95,22 +100,29 @@ test('the four primary route headers and notification control stay fixed through
         await expect(routePage.locator('.squad-page__list-table tbody tr')).toHaveCount(20);
         await expect(routePage.getByLabel('Chip controls').getByRole('button')).toHaveCount(5);
       } else if (title === 'Market') {
-        await expect(routePage.getByText('Fixture Available Midfielder')).toBeVisible();
+        await expect(routePage.getByRole('button', { name: 'View Fixture Available Midfielder details' })).toBeVisible();
       } else if (title === 'League') {
         await expect(routePage.locator('.league-fixtures-view')).toBeVisible();
         await expect(routePage.getByText('River Rangers')).toBeVisible();
       } else {
         await expect(routePage.locator('.manager-desk__fixture-focus--pre_deadline')).toBeVisible();
-        await expect(routePage.locator('.manager-desk__fixture-matchup--featured')).toBeVisible();
-        await expect(routePage.getByText('BFC')).toBeVisible();
+        await expect(routePage.locator('.manager-desk__fixture-matchup--featured'))
+          .toHaveAttribute('aria-label', 'Browser Fixture FC versus River Rangers');
       }
 
       const routeHeader = await readHeaderBounds(routePage);
       expectHeaderDimensions(routeHeader, viewport);
       const pending = pendingByTitle.get(label);
       expect(pending).toBeDefined();
-      expectBoundsStable(pending!.hero, routeHeader.hero);
-      expectBoundsStable(pending!.bell, routeHeader.bell);
+      expectBoundsStable(pending!.hero, routeHeader.hero, `${label} PageHero loading→loaded`);
+      expectBoundsStable(pending!.bell, routeHeader.bell, `${label} notification loading→loaded`);
+      if (!firstLoadedHeader) {
+        firstLoadedHeader = routeHeader;
+        firstLoadedTitle = title;
+      } else {
+        expectBoundsStable(firstLoadedHeader.hero, routeHeader.hero, `${firstLoadedTitle}→${title} PageHero`);
+        expectBoundsStable(firstLoadedHeader.bell, routeHeader.bell, `${firstLoadedTitle}→${title} notification`);
+      }
     }
 
     await routePage.goBack();
@@ -119,8 +131,8 @@ test('the four primary route headers and notification control stay fixed through
     expectHeaderDimensions(afterBack, viewport);
     const marketPending = pendingByTitle.get('Market');
     expect(marketPending).toBeDefined();
-    expectBoundsStable(marketPending!.hero, afterBack.hero);
-    expectBoundsStable(marketPending!.bell, afterBack.bell);
+    expectBoundsStable(marketPending!.hero, afterBack.hero, 'Market PageHero loading→browser back');
+    expectBoundsStable(marketPending!.bell, afterBack.bell, 'Market notification loading→browser back');
 
     if (routePage !== page) await routePage.close();
   }
@@ -136,8 +148,8 @@ test('custom theme chooser remains in the viewport in portrait and landscape and
   await expect(page.locator('main[aria-labelledby="account-settings-title"] h1')).toHaveText('Theme colours');
   await page.getByRole('button', { name: 'Profile', exact: true }).click();
   await expect(page.locator('[data-page-hero="shared"]:visible h1')).toHaveText('Profile');
-  expectBoundsStable(profileHeader.hero, await bounds(activeHero(page)));
-  expectBoundsStable(profileHeader.bell, await bounds(activeBell(page)));
+  expectBoundsStable(profileHeader.hero, await bounds(activeHero(page)), 'Profile→Theme colours→Profile PageHero');
+  expectBoundsStable(profileHeader.bell, await bounds(activeBell(page)), 'Profile→Theme colours→Profile notification');
   await page.getByRole('button', { name: 'Open theme colour settings' }).click();
   await expect(page.locator('main[aria-labelledby="account-settings-title"] h1')).toHaveText('Theme colours');
 
@@ -205,12 +217,13 @@ test('commissioner PageHero and bell retain measured bounds in light and dark ap
     themeSurfaces.push(await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--background').trim()));
 
     await page.getByRole('button', { name: 'View commissioner management' }).click();
-    await expect(page.getByRole('region', { name: 'Commissioner management' })).toBeVisible();
-    await expect(page.getByText('Open Team')).toBeVisible();
+    const commissionerRegion = page.getByRole('region', { name: 'Commissioner management' });
+    await expect(commissionerRegion).toBeVisible();
+    await expect(commissionerRegion.getByRole('heading', { name: 'Invite by team' })).toBeVisible();
     const managementHeader = await readHeaderBounds(page);
     expectHeaderDimensions(managementHeader, viewport);
-    expectBoundsStable(fixtureHeader.hero, managementHeader.hero);
-    expectBoundsStable(fixtureHeader.bell, managementHeader.bell);
+    expectBoundsStable(fixtureHeader.hero, managementHeader.hero, `${presetName} commissioner PageHero`);
+    expectBoundsStable(fixtureHeader.bell, managementHeader.bell, `${presetName} commissioner notification`);
   }
 
   expect(themeSurfaces[0]).not.toBe(themeSurfaces[1]);

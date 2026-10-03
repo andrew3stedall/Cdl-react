@@ -4,7 +4,7 @@ Frontend implementation lane for the 3 October 2026 production retrospective.
 
 ## Scope and coordination
 
-This lane owns `SquadPage`, `MarketPage`, `PlayerProfilePage`, `LeaguePage`, `AppRouteContent`, and `components/ui/global-notifications.tsx`. Authentication and invite changes remain with the auth lane; shared modal/theme/layout changes remain with the UI lane; Rules content and future contextual routes remain with the coordinator unless reassigned. Trade acceptance uses the existing `PUT /api/trades/{trade_id}` participant transition. `accepted` records counterparty agreement and still requires commissioner approval before ownership moves. Ranked draw submission is held to the movement lane's documented draw contract.
+This lane owns `SquadPage`, `MarketPage`, `PlayerProfilePage`, `LeaguePage`, `AppRouteContent`, and `components/ui/global-notifications.tsx`. Authentication and invitation API changes remain with the auth lane; shared modal/theme/layout changes remain with the UI lane; Rules content and future contextual routes remain with the coordinator unless reassigned. Trade acceptance uses the existing `PUT /api/trades/{trade_id}` participant transition. `accepted` records counterparty agreement and still requires commissioner approval before ownership moves. Ranked draw submission follows the movement lane's documented draw contract.
 
 ## Delivered
 
@@ -26,6 +26,9 @@ This lane owns `SquadPage`, `MarketPage`, `PlayerProfilePage`, `LeaguePage`, `Ap
 - Market has an addressable free-agency draw view with private ranked preferences, open-window editing, save feedback, the manager's own outcome, public awards, and retry for failed reads.
 - Desk and Player Profile cached reads participate in shared freshness updates. Active visible routes poll every 60 seconds; hidden and inactive route subscribers do not refresh.
 - Engineering checkpoint routes render only when the session explicitly enables engineering previews. Analytics and FDR are split into lazy-loaded route chunks.
+- Commissioner League management lists pending invitations from the scoped API and supports revoking an outstanding invite with independent retry and success/failure feedback.
+- Market Trades shows only role-matched pending approvals, supports approve/reject decisions, and reports ownership execution only after the API returns the committed result. Commissioner free-agency controls can create draws and open, lock, or process them within the API status/time windows.
+- Rules deep links preserve SPA pathname routing and pass the current hash into the cached workspace so same-path in-app anchor navigation scrolls correctly.
 - Rule-validation and chip-conflict Squad status feedback links directly to the relevant Rules section, and SPA route state keeps only the normalized pathname while preserving browser hashes.
 
 ## Validation
@@ -35,9 +38,8 @@ This lane owns `SquadPage`, `MarketPage`, `PlayerProfilePage`, `LeaguePage`, `Ap
 - `npm test -- --maxWorkers=2 src/SquadPage.test.tsx src/MarketPage.test.tsx`
 - `npm test -- --maxWorkers=2 src/LeaguePage.test.tsx src/MarketPage.test.tsx src/SquadPage.test.tsx`
 
-Focused validation also covers `src/App.engineering-previews.test.tsx`, `src/data-freshness.test.ts`, and `src/navigation.test.ts` (66 tests passed across six files). `npm run build` succeeds. Its current entry chunk is 605.79 kB minified / 166.15 kB gzip; Analytics and FDR are separate route chunks at 6.33 kB / 2.28 kB gzip and 4.86 kB / 1.78 kB gzip respectively. Vite still warns that the entry chunk exceeds 500 kB. The full frontend suite remains to be run after Rules/Auth/UI integration settles. An intermediate AppShell run had four integration failures after the Rules and shared UI changes: test stubs do not resolve Rules API reads, and shared header/account selectors need reconciliation.
+Focused validation also covers `src/App.engineering-previews.test.tsx`, `src/data-freshness.test.ts`, and `src/navigation.test.ts`; the focused run passed 53 tests across five files. `npm run build` succeeds. Its current entry chunk is 615.42 kB minified / 168.21 kB gzip; Analytics and FDR are separate route chunks at 6.33 kB / 2.28 kB gzip and 4.86 kB / 1.78 kB gzip respectively. Vite still warns that the entry chunk exceeds 500 kB. The isolated lane run before integration passed 200/206 tests across 45 files; root's subsequent integrated frontend run passed 212 tests after reconciling the AppShell and lazy-route assertions.
 
 ## Deferred within this lane
 
-- Full Rules/AppShell integration test reconciliation remains.
-- Full AppShell integration reconciliation and generated bundle size comparison remain.
+- Generated bundle size comparison remains outside this lane's validation.

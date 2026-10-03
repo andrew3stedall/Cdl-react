@@ -55,6 +55,7 @@ setup -> inviting -> ready_for_draft -> draft_live -> draft_complete -> active -
 
 - League creation flow.
 - Invite acceptance flow.
+- Commissioner League management lists pending invitations and supports revocation through the authenticated management API.
 - League/season switcher.
 - Team history view.
 - Commissioner season setup view.

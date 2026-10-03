@@ -216,6 +216,8 @@ class OnePublishedLineupClient extends MemoryLeagueClient {
 }
 
 class CommissionerLeagueClient extends MemoryLeagueClient {
+  revokedInviteIds: string[] = [];
+
   async getLeagueManagement() {
     return {
       leagueName: 'CDL',
@@ -229,6 +231,14 @@ class CommissionerLeagueClient extends MemoryLeagueClient {
 
   async createLeagueInvite(teamId: string) {
     return { leagueName: 'CDL', teamId, teamName: 'Drafton Rovers', token: 'invite-token', availableTeamCount: 5 };
+  }
+
+  async getLeagueManagementInvites() {
+    return [{ inviteId: 'invite-1', leagueName: 'CDL', teamId: 'drafton', teamName: 'Drafton Rovers', createdAt: '2026-10-01T12:00:00Z' }];
+  }
+
+  async revokeLeagueInvite(inviteId: string) {
+    this.revokedInviteIds.push(inviteId);
   }
 }
 
@@ -805,6 +815,21 @@ describe('LeaguePage', () => {
     const { container, root } = await renderPage('/league/manage', new CommissionerLeagueClient());
     expect(container.querySelector('.league-management-view')).not.toBeNull();
     expect(container.textContent).toContain('Assigned managers');
+    act(() => root.unmount());
+  });
+
+  test('shows and revokes a pending team invite', async () => {
+    const client = new CommissionerLeagueClient();
+    const { container, root } = await renderPage('/league/manage', client);
+    expect(container.textContent).toContain('Pending invites');
+    expect(container.textContent).toContain('Drafton Rovers');
+    await act(async () => {
+      Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Revoke invite')?.click();
+      await Promise.resolve();
+    });
+    expect(client.revokedInviteIds).toEqual(['invite-1']);
+    expect(container.textContent).toContain('Invite for Drafton Rovers revoked.');
+    expect(container.querySelectorAll('[aria-label="Pending league invites"] .league-management-row')).toHaveLength(0);
     act(() => root.unmount());
   });
 

@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { MarketPage } from './MarketPage';
 import { getDefaultThemePreset } from './theme-presets';
+import type { SessionState } from './contracts';
 
 const testGlobal = globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT: boolean };
 testGlobal.IS_REACT_ACT_ENVIRONMENT = true;
@@ -53,12 +54,16 @@ let marketPlayers = [player];
 let interestActive = false;
 let marketTrades: Array<Record<string, unknown>> = [];
 let savedDrawPlayerIds: string[] = [];
+let approvalTrades: Array<Record<string, unknown>> = [];
+let marketDraws: Array<Record<string, unknown>> = [];
 
 beforeEach(() => {
   marketPlayers = [player];
   interestActive = false;
   marketTrades = [];
   savedDrawPlayerIds = [];
+  approvalTrades = [];
+  marketDraws = [{ id: 'draw-1', season_id: 1, gameweek: 1, status: 'open_for_preferences', opens_at: null, closes_at: '2026-10-10T12:00:00Z', processed_at: null, draw_order: [] }];
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const path = String(input);
     if (path === '/api/squad/summary') {
@@ -81,7 +86,25 @@ beforeEach(() => {
     }
     if (path === '/api/trades') return new Response(JSON.stringify({ trades: marketTrades }), { status: 200 });
     if (path.startsWith('/api/fpl/players/')) return new Response(JSON.stringify({ history: [{ gameweek: 9, fixture_id: 900, total_points: 9, minutes: 90, expected_goals: 0.84, expected_assists: 0.12 }], fixtures: [] }), { status: 200 });
-    if (path === '/api/free-agency/draws') return new Response(JSON.stringify([{ id: 'draw-1', season_id: 1, gameweek: 1, status: 'open_for_preferences', opens_at: null, closes_at: '2026-10-10T12:00:00Z', processed_at: null, draw_order: [] }]), { status: 200 });
+    if (path === '/api/trades/approvals') return new Response(JSON.stringify({ trades: approvalTrades }), { status: 200 });
+    if (path.endsWith('/approve') && init?.method === 'POST') {
+      const decision = (JSON.parse(String(init.body)) as { decision: string }).decision;
+      approvalTrades = [];
+      return new Response(JSON.stringify({ id: 'trade-approval', status: 'accepted', approval_status: decision, executed_at: decision === 'approved' ? '2026-10-03T12:00:00Z' : null }), { status: 200 });
+    }
+    if (path === '/api/free-agency/draws' && init?.method === 'POST') {
+      const payload = JSON.parse(String(init.body)) as { gameweek: number; opens_at?: string; closes_at: string };
+      const created = { id: 'draw-2', season_id: 1, gameweek: payload.gameweek, status: 'scheduled', opens_at: payload.opens_at ?? null, closes_at: payload.closes_at, processed_at: null, draw_order: [] };
+      marketDraws = [created, ...marketDraws];
+      return new Response(JSON.stringify(created), { status: 200 });
+    }
+    if (path === '/api/free-agency/draws') return new Response(JSON.stringify(marketDraws), { status: 200 });
+    if (path.startsWith('/api/free-agency/draws/draw-1/') && init?.method === 'POST') {
+      const action = path.split('/').at(-1);
+      const draw = marketDraws.find((candidate) => candidate.id === 'draw-1');
+      if (draw) draw.status = action === 'lock' ? 'locked' : action === 'open' ? 'open_for_preferences' : 'processed';
+      return new Response(JSON.stringify(draw), { status: 200 });
+    }
     if (path === '/api/free-agency/draws/draw-1/preferences' && init?.method === 'PUT') {
       savedDrawPlayerIds = (JSON.parse(String(init.body)) as { player_ids: string[] }).player_ids;
       return new Response(JSON.stringify(savedDrawPlayerIds.map((player_id, index) => ({ player_id, rank: index + 1 }))), { status: 200 });
@@ -96,12 +119,12 @@ afterEach(() => {
   document.body.replaceChildren();
 });
 
-async function renderPage(currentPath = '/scouting') {
+async function renderPage(currentPath = '/scouting', session?: SessionState) {
   const container = document.createElement('div');
   document.body.append(container);
   const root = createRoot(container);
   await act(async () => {
-    root.render(<MarketPage currentPath={currentPath} onNavigate={vi.fn()} preset={getDefaultThemePreset()} />);
+    root.render(<MarketPage currentPath={currentPath} onNavigate={vi.fn()} preset={getDefaultThemePreset()} session={session} />);
     await Promise.resolve();
     await Promise.resolve();
   });
@@ -123,7 +146,7 @@ describe('MarketPage', () => {
   });
 
   test('submits an ordered private preference list for an open draw', async () => {
-    const { container } = await renderPage('/scouting/draws');
+    const { container, root } = await renderPage('/scouting/draws');
     await act(async () => { await Promise.resolve(); await Promise.resolve(); });
 
     expect(container.textContent).toContain('Gameweek 1');
@@ -142,6 +165,60 @@ describe('MarketPage', () => {
 
     expect(savedDrawPlayerIds).toEqual(['player-3']);
     expect(container.textContent).toContain('Only your team can view this ranked list.');
+    act(() => root.unmount());
+  });
+
+  test('shows a role-matched trade approval queue and reports committed ownership changes', async () => {
+    approvalTrades = [{
+      id: 'trade-approval',
+      status: 'accepted',
+      offered_by: { id: 'team-a', name: 'Team A' },
+      offered_to: { id: 'team-b', name: 'Team B' },
+      approval_status: 'pending',
+      required_approver_role: 'vice_commissioner',
+      assets: [{ player: { display_name: 'Casey Midfielder' } }],
+    }];
+    const viceSession: SessionState = {
+      isAuthenticated: true,
+      user: { id: 'vice-1', email: 'vice@example.com', displayName: 'Vice', roles: ['manager', 'vice_commissioner'] },
+      expiresAt: null,
+    };
+    const { container, root } = await renderPage('/scouting/trades', viceSession);
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+
+    expect(container.querySelector('[aria-label="Trade approvals"]')?.textContent).toContain('Requires Vice commissioner approval');
+    const approve = Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Approve');
+    await act(async () => { approve?.click(); await Promise.resolve(); await Promise.resolve(); });
+    expect(container.textContent).toContain('Trade approved and ownership updated.');
+    act(() => root.unmount());
+  });
+
+  test('shows commissioner lifecycle controls only to commissioners and gates processing until close', async () => {
+    const commissionerSession: SessionState = {
+      isAuthenticated: true,
+      user: { id: 'comm-1', email: 'comm@example.com', displayName: 'Commissioner', roles: ['manager', 'commissioner'] },
+      expiresAt: null,
+    };
+    const commissioner = await renderPage('/scouting/draws', commissionerSession);
+    const { container } = commissioner;
+    await act(async () => { await Promise.resolve(); await Promise.resolve(); });
+
+    expect(container.querySelector('[aria-label="Commissioner draw controls"]')).not.toBeNull();
+    await act(async () => {
+      Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Lock draw')?.click();
+      await Promise.resolve();
+    });
+    const processButton = Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Process draw');
+    expect(processButton?.hasAttribute('disabled')).toBe(true);
+
+    const managerSession: SessionState = {
+      isAuthenticated: true,
+      user: { id: 'manager-2', email: 'manager@example.com', displayName: 'Manager', roles: ['manager'] },
+      expiresAt: null,
+    };
+    const manager = await renderPage('/scouting/draws', managerSession);
+    expect(manager.container.querySelector('[aria-label="Commissioner draw controls"]')).toBeNull();
+    act(() => { commissioner.root.unmount(); manager.root.unmount(); });
   });
 
   test('presents discovery players in the Squad-style three-column list', async () => {

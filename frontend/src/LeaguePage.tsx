@@ -39,6 +39,7 @@ import {
   type FixtureSquadPlayer,
   type LeagueClient,
   type LeagueFixture,
+  type LeagueManagementInvite,
   type LeagueManagementTeam,
   type LeagueTeam,
   type LeagueSnapshot,
@@ -461,6 +462,35 @@ function CommissionerManagementView({ leagueClient }: { leagueClient: LeagueClie
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [inviteStatus, setInviteStatus] = useState<Record<string, 'idle' | 'creating' | 'created' | 'error'>>({});
   const [copyStatus, setCopyStatus] = useState<Record<string, 'idle' | 'copied' | 'error'>>({});
+  const [pendingInvites, setPendingInvites] = useState<LeagueManagementInvite[]>([]);
+  const [pendingInviteStatus, setPendingInviteStatus] = useState<'loading' | 'ready' | 'error' | 'unavailable'>('loading');
+  const [pendingInviteRefresh, setPendingInviteRefresh] = useState(0);
+  const [pendingInviteAction, setPendingInviteAction] = useState<string | null>(null);
+  const [pendingInviteNotice, setPendingInviteNotice] = useState('');
+
+  useEffect(() => subscribeDataFreshness('league', ['league'], () => {
+    setPendingInviteRefresh((current) => current + 1);
+  }), []);
+
+  useEffect(() => {
+    if (!leagueClient.getLeagueManagementInvites) {
+      setPendingInviteStatus('unavailable');
+      return undefined;
+    }
+    let active = true;
+    setPendingInviteStatus('loading');
+    void leagueClient.getLeagueManagementInvites()
+      .then((result) => {
+        if (active) {
+          setPendingInvites(result);
+          setPendingInviteStatus('ready');
+        }
+      })
+      .catch(() => {
+        if (active) setPendingInviteStatus('error');
+      });
+    return () => { active = false; };
+  }, [leagueClient, pendingInviteRefresh]);
 
   useEffect(() => {
     if (!leagueClient.getLeagueManagement) {
@@ -494,9 +524,26 @@ function CommissionerManagementView({ leagueClient }: { leagueClient: LeagueClie
       setManagement((current) => current ? { ...current, leagueName: invite.leagueName, availableTeamCount: invite.availableTeamCount } : current);
       setInviteUrls((current) => ({ ...current, [teamId]: `${window.location.origin}/join/${encodeURIComponent(invite.token)}` }));
       setInviteStatus((current) => ({ ...current, [teamId]: 'created' }));
+      setPendingInviteRefresh((current) => current + 1);
       invalidateData(['league'], 'league');
     } catch {
       setInviteStatus((current) => ({ ...current, [teamId]: 'error' }));
+    }
+  }
+
+  async function revokeInvite(invite: LeagueManagementInvite) {
+    if (!leagueClient.revokeLeagueInvite || pendingInviteAction) return;
+    setPendingInviteAction(invite.inviteId);
+    setPendingInviteNotice('');
+    try {
+      await leagueClient.revokeLeagueInvite(invite.inviteId);
+      setPendingInvites((current) => current.filter((candidate) => candidate.inviteId !== invite.inviteId));
+      setPendingInviteNotice(`Invite for ${invite.teamName} revoked.`);
+      invalidateData(['league'], 'league');
+    } catch {
+      setPendingInviteNotice(`Invite for ${invite.teamName} could not be revoked.`);
+    } finally {
+      setPendingInviteAction(null);
     }
   }
 
@@ -587,6 +634,17 @@ function CommissionerManagementView({ leagueClient }: { leagueClient: LeagueClie
           {openTeams.length === 0 && teams.length > 0 ? <p className="league-management-card__empty">Every team has an active manager.</p> : null}
         </Card>
       ) : null}
+      {pendingInviteStatus !== 'unavailable' ? <Card className="league-management-card">
+        <div className="league-management-card__heading">
+          <div><p className="eyebrow">Team access</p><h2>Pending invites</h2></div>
+          <Button disabled={pendingInviteStatus === 'loading'} onClick={() => setPendingInviteRefresh((current) => current + 1)} type="button" variant="secondary">{pendingInviteStatus === 'loading' ? 'Loading…' : 'Refresh'}</Button>
+        </div>
+        {pendingInviteStatus === 'loading' ? <p className="league-management-card__status" role="status">Loading pending invites…</p> : null}
+        {pendingInviteStatus === 'error' ? <p className="league-management-card__status" role="alert">Pending invites are unavailable. <Button onClick={() => setPendingInviteRefresh((current) => current + 1)} type="button" variant="secondary">Retry</Button></p> : null}
+        {pendingInviteStatus === 'ready' && pendingInvites.length === 0 ? <p className="league-management-card__empty">No pending invites.</p> : null}
+        {pendingInviteStatus === 'ready' && pendingInvites.length > 0 ? <div aria-label="Pending league invites" className="league-management-list">{pendingInvites.map((invite) => <div className="league-management-row" key={invite.inviteId}><div className="league-management-row__identity"><strong>{invite.teamName}</strong><span>{invite.leagueName} · Created {formatInviteDate(invite.createdAt)}</span></div><Button disabled={pendingInviteAction === invite.inviteId} onClick={() => void revokeInvite(invite)} type="button" variant="secondary">{pendingInviteAction === invite.inviteId ? 'Revoking…' : 'Revoke invite'}</Button></div>)}</div> : null}
+        {pendingInviteNotice ? <p className="league-management-card__status" role="status">{pendingInviteNotice}</p> : null}
+      </Card> : null}
     </section>
   );
 }
@@ -1574,6 +1632,12 @@ function formatDeadline(deadlineAt?: string | null): string {
     month: 'short',
     weekday: 'short',
   }).format(deadline);
+}
+
+function formatInviteDate(createdAt: string): string {
+  const created = new Date(createdAt);
+  if (Number.isNaN(created.getTime())) return 'date unavailable';
+  return new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'short' }).format(created);
 }
 
 function deadlinePassed(deadlineAt?: string | null): boolean {

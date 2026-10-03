@@ -185,6 +185,14 @@ export interface LeagueManagementTeam {
   isAssigned: boolean;
 }
 
+export interface LeagueManagementInvite {
+  inviteId: string;
+  leagueName: string;
+  teamId: string;
+  teamName: string;
+  createdAt: string;
+}
+
 export interface LeagueInvite {
   leagueName: string;
   teamId: string;
@@ -212,6 +220,8 @@ export interface LeagueClient {
   getKnockout?(): Promise<KnockoutResponse>;
   getHeadToHead?(): Promise<HeadToHeadResponse>;
   getLeagueManagement?(): Promise<LeagueManagement>;
+  getLeagueManagementInvites?(): Promise<LeagueManagementInvite[]>;
+  revokeLeagueInvite?(inviteId: string): Promise<void>;
   createLeagueInvite?(teamId: string): Promise<LeagueInvite>;
   previewLeagueInvite?(token: string): Promise<LeagueInvitePreview>;
   acceptLeagueInvite?(token: string): Promise<LeagueJoinResult>;
@@ -348,6 +358,14 @@ interface ApiLeagueManagementResponse {
   teams: ApiLeagueManagementTeam[];
 }
 
+interface ApiLeagueManagementInvite {
+  invite_id: string;
+  league_name: string;
+  team_id: string;
+  team_name: string;
+  created_at: string;
+}
+
 interface ApiLeagueManagementTeam {
   team_id: string;
   team_name: string;
@@ -460,6 +478,26 @@ export class HttpLeagueClient implements LeagueClient {
         isAssigned: team.is_assigned,
       })),
     };
+  }
+
+  async getLeagueManagementInvites(): Promise<LeagueManagementInvite[]> {
+    const response = await this.get<{ invites: ApiLeagueManagementInvite[] }>('/league/management/invites');
+    return (response.invites ?? []).map((invite) => ({
+      inviteId: invite.invite_id,
+      leagueName: invite.league_name,
+      teamId: invite.team_id,
+      teamName: invite.team_name,
+      createdAt: invite.created_at,
+    }));
+  }
+
+  async revokeLeagueInvite(inviteId: string): Promise<void> {
+    const response = await fetch(`${this.baseUrl}/league/management/invites/${encodeURIComponent(inviteId)}`, {
+      method: 'DELETE',
+      headers: { Accept: 'application/json' },
+      credentials: 'include',
+    });
+    if (!response.ok) throw new Error(`Unable to revoke invite ${inviteId}.`);
   }
 
   async createLeagueInvite(teamId: string): Promise<LeagueInvite> {

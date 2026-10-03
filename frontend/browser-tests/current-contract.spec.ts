@@ -119,7 +119,7 @@ test('current 20-player and five-chip selection fits and persists captaincy/chip
   await expect(page.getByRole('heading', { name: 'Squad' })).toBeVisible();
   await page.getByRole('button', { name: 'View as list' }).click();
   await expect(page.getByLabel('Chip controls').getByRole('button')).toHaveCount(5);
-  await expect(page.getByText('Fixture Player 20')).toHaveCount(1);
+  await expect(page.getByRole('button', { name: 'View Fixture Player 20 details' })).toHaveCount(1);
   await expect(page.locator('.squad-page__list-table tbody tr')).toHaveCount(20);
 
   await page.getByRole('button', { name: 'View Fixture Player 2 details' }).click();

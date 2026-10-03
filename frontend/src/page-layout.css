@@ -63,25 +63,37 @@
 
 
 @media (max-width: 520px) {
-  /* Let the shared title and controls reflow instead of collapsing the title
-     at high text sizes. At default size the PageHero remains on one row. */
+  /* Reserve one shared two-row role so route-specific controls wrapping does
+     not move the title or notification control as users navigate. The 5.75rem
+     role scales with text; controls can wrap within the reserved bottom row. */
   .cdl-page-hero {
-    block-size: auto;
-    flex-wrap: wrap;
-    min-height: 3.8rem;
+    block-size: 5.75rem;
+    min-height: 5.75rem;
+    position: relative;
   }
 
   .cdl-page-hero__actions {
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    margin-left: auto;
-    max-width: 100%;
+    align-items: flex-end;
+    display: flex;
+    flex-direction: column;
+    inset: 0;
+    justify-content: space-between;
+    margin: 0;
+    max-width: none;
+    pointer-events: none;
+    position: absolute;
   }
 
   .cdl-page-hero__controls {
     flex-wrap: wrap;
     justify-content: flex-end;
     max-width: 100%;
+    pointer-events: auto;
+  }
+
+  .cdl-page-hero__actions > .global-notifications {
+    order: -1;
+    pointer-events: auto;
   }
 
   .cdl-page-hero__view-toggle {

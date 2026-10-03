@@ -889,11 +889,15 @@
 .market-page__history th { color: var(--market-muted); font-size: 0.66rem; text-transform: uppercase; }
 
 .market-page__drawer-actions {
+  background: var(--card);
+  bottom: 0;
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
   margin-top: auto;
   padding-top: 0.4rem;
+  position: sticky;
+  z-index: 1;
 }
 
 .market-page__drawer-actions .ui-button { flex: 1 1 auto; }

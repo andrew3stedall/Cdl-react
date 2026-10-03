@@ -60,3 +60,31 @@
     padding: 0;
   }
 }
+
+
+@media (max-width: 520px) {
+  /* Let the shared title and controls reflow instead of collapsing the title
+     at high text sizes. At default size the PageHero remains on one row. */
+  .cdl-page-hero {
+    block-size: auto;
+    flex-wrap: wrap;
+    min-height: 3.8rem;
+  }
+
+  .cdl-page-hero__actions {
+    margin-left: auto;
+  }
+}
+
+@media (max-width: 360px) {
+  /* Preserve one-row geometry on the smallest phones by reclaiming only
+     inter-control spacing before the action group reaches the viewport edge. */
+  .cdl-page-hero {
+    gap: 0.45rem;
+  }
+
+  .cdl-page-hero__actions,
+  .cdl-page-hero__controls {
+    gap: 0.25rem;
+  }
+}

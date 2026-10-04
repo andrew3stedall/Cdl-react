@@ -241,6 +241,9 @@ describe('ManagerDeskPage', () => {
     expect(container.textContent).not.toContain('Quick actions');
     expect(container.textContent).not.toContain('Shortcuts');
     expect(container.textContent).not.toContain('Refresh data');
+    expect(container.textContent).not.toContain('Only your starting XI is highlighted here');
+    expect(container.textContent).not.toContain('Act now to give yourself a chance');
+    expect(container.textContent).not.toContain('Register preferred free agents before the draw closes');
     expect(container.querySelector('[aria-label="Account settings"]')).toBeNull();
     expect(container.querySelector('[aria-label="Account menu for Alex Manager"]')).not.toBeNull();
     expect(container.querySelector('[aria-label="Account menu"]')?.textContent).toContain('Profile');
@@ -447,6 +450,7 @@ describe('ManagerDeskPage', () => {
 
     expect(container.textContent).toContain('Locked in');
     expect(container.textContent).toContain('View your team');
+    expect(container.textContent).not.toContain('The deadline has passed. Review the submitted lineup and gameweek context.');
     expect(container.textContent).not.toContain('Choose a captain');
   });
 

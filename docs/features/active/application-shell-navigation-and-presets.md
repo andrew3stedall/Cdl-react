@@ -16,6 +16,8 @@ Implemented. The global shell, teal token system, authenticated profile route, a
 
 ## Current Behaviour
 
+Audit batch 2 enforces the compact-copy rule on the Manager's Desk: priority cards retain state, values, affected players and actions without repeating explanatory or motivational prose.
+
 The application provides responsive shared navigation, manual reload, route-aware active state, an authenticated profile/preferences route, and account actions for profile access and sign out.
 
 ## Business Rules

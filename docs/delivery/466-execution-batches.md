@@ -2,7 +2,19 @@
 
 Updated: 4 October 2026 (Australia/Melbourne). Parent [#466](https://github.com/andrew3stedall/Cdl-react/issues/466). This index covers every issue; an item being tackled is not a claim that its acceptance is complete.
 
-## Batch 1 — current candidate
+## Batch 2 — current candidate
+
+- Finish #527 by removing the residual Manager's Desk narration while retaining status, player flags, counts and actions.
+- Add regression assertions for the removed copy so the no-narrative rule stays enforceable.
+- Reconcile acceptance-complete issues only where their exact issue criteria and dedicated tests already exist; policy/device/recovery-gated items remain open.
+
+### What to review after Batch 2 is deployed
+
+1. Desk injury cards should show the affected players and actions without an explanatory paragraph.
+2. Locked Desk state should show the lock state and **View your team** action without repeating that the deadline passed.
+3. Waiver cards should keep the countdown, interest count and action, without motivational/instructional prose when no interests exist.
+
+## Batch 1 — merged
 
 - Player identity and drawer controls render as soon as the player read completes; slower history has its own state (#518).
 - Removed only proven unused Squad/League hero selectors; shared PageHero/gutter geometry remains authoritative (#486).
@@ -94,7 +106,7 @@ Updated: 4 October 2026 (Australia/Melbourne). Parent [#466](https://github.com/
 | [#524](https://github.com/andrew3stedall/Cdl-react/issues/524) | Open: general correction authority and affected records need definition | [docs/features/active/permissions-approvals-and-admin-audit.md](../features/active/permissions-approvals-and-admin-audit.md) |
 | [#525](https://github.com/andrew3stedall/Cdl-react/issues/525) | Open: extension/conversion terms remain unspecified | [tests/test_postgres_loans.py](../../tests/test_postgres_loans.py) |
 | [#526](https://github.com/andrew3stedall/Cdl-react/issues/526) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [tests/test_private_scouting.py](../../tests/test_private_scouting.py) |
-| [#527](https://github.com/andrew3stedall/Cdl-react/issues/527) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [docs/delivery/466-frontend.md](../delivery/466-frontend.md) |
+| [#527](https://github.com/andrew3stedall/Cdl-react/issues/527) | Batch 2: residual Desk narration removed; hosted acceptance pending | [frontend/src/ManagerDeskPage.test.tsx](../../frontend/src/ManagerDeskPage.test.tsx) |
 | [#528](https://github.com/andrew3stedall/Cdl-react/issues/528) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [docs/delivery/466-ui.md](../delivery/466-ui.md) |
 | [#529](https://github.com/andrew3stedall/Cdl-react/issues/529) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/App.tsx](../../frontend/src/App.tsx) |
 | [#530](https://github.com/andrew3stedall/Cdl-react/issues/530) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [docs/delivery/466-release-scope.md](../delivery/466-release-scope.md) |

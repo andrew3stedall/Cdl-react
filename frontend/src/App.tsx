@@ -15,21 +15,16 @@ import type { DashboardClient } from './dashboard-api';
 import type { FdrClient } from './fdr-api';
 import { GlobalNavigation } from './GlobalNavigation';
 import { LeaguePage } from './LeaguePage';
-import { LeagueInvitePage } from './LeagueInvitePage';
 import type { LeagueClient } from './league-api';
 import { LoginPage } from './LoginPage';
 import { MarketPage } from './MarketPage';
 import { ManagerDeskPage } from './ManagerDeskPage';
 import type { ManagerDeskClient } from './manager-desk-api';
-import { ModernisationCheckpointPage } from './ModernisationCheckpointPage';
+import { PlayerProfilePage } from './PlayerProfilePage';
 import { getPageRouteKey, isSquadRoute, isSupportedRoute } from './navigation';
 import { activateDataRoute } from './data-freshness';
-import { PlayerProfilePage } from './PlayerProfilePage';
 import { LocalStoragePreferenceClient, type PreferenceClient } from './preferences-api';
-import { ProfilePage } from './ProfilePage';
-import { ResultColourProfilePage } from './ResultColourProfilePage';
 import { loginWithPasskey } from './passkeys';
-import { RulesWorkspacePage } from './RulesWorkspacePage';
 import { SessionSplash } from './SessionSplash';
 import { SquadWorkspacePage } from './SquadWorkspacePage';
 import { HttpSquadClient, type SquadClient } from './squad-api';
@@ -52,6 +47,11 @@ function storedLoginReturnPath(): string | null {
 const AnalyticsDashboardPage = lazy(() => import('./AnalyticsDashboardPage').then((module) => ({ default: module.AnalyticsDashboardPage })));
 const FixtureDifficultyPage = lazy(() => import('./FixtureDifficultyPage').then((module) => ({ default: module.FixtureDifficultyPage })));
 const DraftWorkspacePage = lazy(() => import('./DraftWorkspacePage').then((module) => ({ default: module.DraftWorkspacePage })));
+const LeagueInvitePage = lazy(() => import('./LeagueInvitePage').then((module) => ({ default: module.LeagueInvitePage })));
+const ModernisationCheckpointPage = lazy(() => import('./ModernisationCheckpointPage').then((module) => ({ default: module.ModernisationCheckpointPage })));
+const ProfilePage = lazy(() => import('./ProfilePage').then((module) => ({ default: module.ProfilePage })));
+const ResultColourProfilePage = lazy(() => import('./ResultColourProfilePage').then((module) => ({ default: module.ResultColourProfilePage })));
+const RulesWorkspacePage = lazy(() => import('./RulesWorkspacePage').then((module) => ({ default: module.RulesWorkspacePage })));
 
 interface AppProps {
   dashboardClient?: DashboardClient;
@@ -507,15 +507,15 @@ function AppRouteContent({
     );
 
     if (path.startsWith('/account') || path.startsWith('/profile')) {
-      routeContent = <ProfilePage currentPath={path} onNavigate={onNavigate} session={activeSession} />;
+      routeContent = <Suspense fallback={<LazyRouteLoading label="Loading profile" />}><ProfilePage currentPath={path} onNavigate={onNavigate} session={activeSession} /></Suspense>;
     }
 
     if (path === '/account/result-colours' || path === '/profile/result-colours') {
-      routeContent = <ResultColourProfilePage onNavigate={onNavigate} />;
+      routeContent = <Suspense fallback={<LazyRouteLoading label="Loading colour settings" />}><ResultColourProfilePage onNavigate={onNavigate} /></Suspense>;
     }
 
     if (path.startsWith('/rules')) {
-      routeContent = <RulesWorkspacePage anchor={currentHash} onNavigate={onNavigate} preset={preset} />;
+      routeContent = <Suspense fallback={<LazyRouteLoading label="Loading Rules" />}><RulesWorkspacePage anchor={currentHash} onNavigate={onNavigate} preset={preset} /></Suspense>;
     }
 
     if (path.startsWith('/league')) {
@@ -528,13 +528,13 @@ function AppRouteContent({
     }
 
     if (path.startsWith('/join/')) {
-      routeContent = <LeagueInvitePage currentPath={path} leagueClient={leagueClient} onNavigate={onNavigate} session={activeSession} />;
+      routeContent = <Suspense fallback={<LazyRouteLoading label="Loading invitation" />}><LeagueInvitePage currentPath={path} leagueClient={leagueClient} onNavigate={onNavigate} session={activeSession} /></Suspense>;
     }
 
     const checkpointMatch = path.match(/^\/modernisation\/checkpoint-([1-5])$/);
     if (checkpointMatch) {
       routeContent = activeSession.engineeringPreviewsEnabled === true
-        ? <ModernisationCheckpointPage checkpoint={Number(checkpointMatch[1]) as 1 | 2 | 3 | 4 | 5} onNavigate={onNavigate} />
+        ? <Suspense fallback={<LazyRouteLoading label="Loading preview" />}><ModernisationCheckpointPage checkpoint={Number(checkpointMatch[1]) as 1 | 2 | 3 | 4 | 5} onNavigate={onNavigate} /></Suspense>
         : <main aria-labelledby="preview-unavailable-title" className="feature-screen"><h1 id="preview-unavailable-title">Preview unavailable</h1><p>This engineering preview is not enabled for this environment.</p></main>;
     }
 

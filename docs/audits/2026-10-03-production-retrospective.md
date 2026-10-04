@@ -4,6 +4,10 @@ Audit date: **3 October 2026 (Australia/Melbourne)**. Repository: `andrew3stedal
 
 Milestone tracker: [#466 — Production retrospective](https://github.com/andrew3stedall/Cdl-react/issues/466).
 
+## Current execution status
+
+This is the preserved **3 October audit baseline**, not a claim that every defect below still exists. The [all-70 execution index](../delivery/466-execution-batches.md) and [item-by-item delivery register](../delivery/2026-10-03-retrospective-delivery.md) record later fixes, CI, staging and remaining gates. All issues are being tackled in batches; source delivery, issue acceptance, deployment and physical/recovery evidence remain distinct.
+
 ## Assessment
 
 **The app is not ready for production yet.** Its four main screens have a clear purpose and useful shared foundations, but secure team access, repeat onboarding login, scoring, ownership changes, mutation feedback and complete acquisition/trade workflows have material gaps. Passing existing tests does not resolve these gaps.

@@ -2,7 +2,7 @@
 
 ## Status
 
-Audit and backlog complete; implementation and independent integration validation in progress in [PR #538](https://github.com/andrew3stedall/Cdl-react/pull/538). Parent milestone tracker: [#466](https://github.com/andrew3stedall/Cdl-react/issues/466).
+Audit and backlog complete; the original implementation and corrective rollouts are merged and deployed to staging. All 70 findings are now being reconciled and completed in [execution batches](../../delivery/466-execution-batches.md). Parent milestone tracker: [#466](https://github.com/andrew3stedall/Cdl-react/issues/466).
 
 ## Source of truth
 
@@ -41,4 +41,4 @@ Each child links its existing active feature document. Any implementation changi
 
 ## Delivery evidence
 
-[Capability and parked decision register](../../delivery/466-release-scope.md) and the lane records under `docs/delivery/466-*.md` describe actual implemented work and its limits. PR #538 is the integration source. A historical checkpoint label must not be treated as a completed persistent production workflow.
+[Capability and parked decision register](../../delivery/466-release-scope.md) and the lane records under `docs/delivery/466-*.md` describe actual implemented work and its limits. PR #538 is the historical first integration; the execution index records current batches. A historical checkpoint label must not be treated as a completed persistent production workflow.

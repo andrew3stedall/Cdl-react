@@ -185,6 +185,15 @@ function renderApp({
   return { container, preferenceClient, root };
 }
 
+async function waitForRouteReady(assertReady: () => void): Promise<void> {
+  await vi.waitFor(async () => {
+    await act(async () => {
+      await Promise.resolve();
+    });
+    assertReady();
+  });
+}
+
 describe('AppShell integration', () => {
   test('keeps one notification centre consistent across routes', async () => {
     const notifications = [{
@@ -202,6 +211,10 @@ describe('AppShell integration', () => {
     await act(async () => {
       await Promise.resolve();
       await Promise.resolve();
+    });
+    await waitForRouteReady(() => {
+      expect(container.querySelector('#rules-title')).not.toBeNull();
+      expect(container.querySelector('.global-notifications__count')?.textContent).toBe('1');
     });
 
     expect(squadClient.getNotifications).toHaveBeenCalledTimes(1);
@@ -232,6 +245,7 @@ describe('AppShell integration', () => {
     await act(async () => {
       await Promise.resolve();
     });
+    await waitForRouteReady(() => expect(container.querySelector('#rules-title')).not.toBeNull());
 
     const primaryNavigation = container.querySelector('nav[aria-label="Primary navigation"]');
     const mobileNavigation = container.querySelector('nav[aria-label="Global mobile navigation"]');
@@ -274,12 +288,16 @@ describe('AppShell integration', () => {
 
     const accountMenu = container.querySelector<HTMLElement>('.manager-account-menu');
     expect(accountMenu).not.toBeNull();
-    const accountButton = accountMenu?.querySelector<HTMLButtonElement>('button');
     await act(async () => {
-      accountButton?.click();
+      accountMenu?.querySelector<HTMLElement>('summary')?.click();
+    });
+    const profileButton = [...(accountMenu?.querySelectorAll<HTMLButtonElement>('button') ?? [])]
+      .find((button) => button.textContent?.includes('Profile'));
+    await act(async () => {
+      profileButton?.click();
       await Promise.resolve();
     });
-    expect(container.querySelector('main[aria-labelledby="profile-title"]')).not.toBeNull();
+    await waitForRouteReady(() => expect(container.querySelector('main[aria-labelledby="profile-title"]')).not.toBeNull());
     expect(container.querySelector('.profile-page')?.textContent).not.toContain('Refresh data');
   });
 
@@ -801,6 +819,7 @@ describe('AppShell integration', () => {
       container.querySelector<HTMLButtonElement>('[aria-label="Open result colour settings"]')?.click();
       await Promise.resolve();
     });
+    await waitForRouteReady(() => expect(container.querySelector('#result-custom-accordion')).not.toBeNull());
     expect(container.querySelectorAll('.result-colour-settings__preset-copy small')).toHaveLength(0);
     expect(container.querySelector<HTMLDetailsElement>('#result-custom-accordion')?.open).toBe(false);
     await act(async () => {

@@ -6,13 +6,17 @@ The [original retrospective](../audits/2026-10-03-production-retrospective.md) c
 
 Implemented means source and applicable automated coverage are delivered; deployment and hosted check evidence below must be assessed separately. Partial, parked and deferred rows remain open. Planned capability is not a production claim. The staging candidate supports the already drafted league and a persistent draft for a configured empty season. Creating or switching to the next season still needs the explicitly tracked context/setup redesign.
 
+## Current execution
+
+See the [all-70 execution batches](466-execution-batches.md) for current acceptance reconciliation, newly approved decisions, review instructions and follow-up work. The rows below retain the original delivery scope; “Implemented” does not automatically mean the GitHub issue is closed.
+
 ## Release evidence
 
 - Implementation [PR #538](https://github.com/andrew3stedall/Cdl-react/pull/538) squash-merged as `f1d217f80e6baff508a14a605d3077257236d883`.
 - Final premerge CI: [37128282280](https://github.com/andrew3stedall/Cdl-react/actions/runs/37128282280) passes backend checks, 232 frontend tests across 51 files, all eight actual Chromium checks and production build. [PostgreSQL 37128282277](https://github.com/andrew3stedall/Cdl-react/actions/runs/37128282277) passes migrated release paths (57 tests) and the isolated staging auth journey (1 test). Main push repeats those checks successfully in [CI 37128508916](https://github.com/andrew3stedall/Cdl-react/actions/runs/37128508916) and [PostgreSQL 37128508881](https://github.com/andrew3stedall/Cdl-react/actions/runs/37128508881).
 - Local full backend: 467 passed / 24 environment-dependent skips; Ruff and formatting pass. Frontend lint/typecheck/build pass. The main entry remains 616.56 kB (168.11 kB gzip); #536 stays open.
 - First hosted attempt [37128508858](https://github.com/andrew3stedall/Cdl-react/actions/runs/37128508858): exact plan/apply has 0 adds, 4 in-place updates, 0 destroys; post-apply no-change check passes. The migration job fails before Alembic because system Python cannot import the virtual-environment project. Revision verification, candidate smoke and promotion are correctly skipped. Previous `cdl-react-staging-api-00318-pl9` keeps serving; no new application traffic is promoted.
-- Follow-up fixes Docker's PATH and adds a migration-module import check during image build. The hosted review also identifies/removes the remaining login marketing tagline. Follow-up deployment and its image/job proof remain pending.
+- Follow-ups #539/#540/#542 corrected the runtime Python path and zero-traffic candidate readiness sequence. Latest layout-inclusive main `4a98d69` staging rollout [37135264135](https://github.com/andrew3stedall/Cdl-react/actions/runs/37135264135) succeeded, including migrations, readiness, candidate health/auth smoke, exact-revision promotion, FPL refresh and final live checks. No synthetic reseed was requested.
 - Hosted browser reaches the protected login page with no authenticated session. Signed-in critical reads/writes (#475/#531), real Google/device passkeys, installed PWA and dated restore/recovery are independent open gates.
 
 ## Every finding and its disposition

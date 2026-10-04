@@ -17,6 +17,8 @@ Implemented foundation. The legacy combined screen remains mapped here for migra
 
 ## Current Behaviour
 
+Committed squad mutations are reported independently from subsequent refresh reads. If a post-save lineup or temporary-right refresh fails, the saved action remains successful and Retry reloads data rather than reposting the mutation. Trade proposal submission is single-flight while pending.
+
 Managers view squad totals, inspect players, filter scouting lists, register interests, review interest players, and manage proposed trades.
 
 ## Business Rules

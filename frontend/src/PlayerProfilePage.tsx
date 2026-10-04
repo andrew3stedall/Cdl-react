@@ -357,13 +357,17 @@ export function PlayerProfilePage({
     setNotice(null);
     try {
       const updatedSummary = await squadClient.applyChanges([selectedReplacement.id], [player.id]);
-      const updatedSelection = await teamSelectionClient.getTeamSelection();
-      setSelection(updatedSelection);
-      onSelectionChange?.(updatedSelection);
       onSquadChange?.(updatedSummary);
       invalidateData(['squad', 'lineup'], 'player-profile');
       setActionSheet(null);
-      setNotice(`${player.display_name} was removed and replaced by ${selectedReplacement.display_name}.`);
+      try {
+        const updatedSelection = await teamSelectionClient.getTeamSelection();
+        setSelection(updatedSelection);
+        onSelectionChange?.(updatedSelection);
+        setNotice(`${player.display_name} was removed and replaced by ${selectedReplacement.display_name}.`);
+      } catch {
+        setNotice(`${player.display_name} was removed and replaced by ${selectedReplacement.display_name}. Lineup refresh is unavailable; retry loading data.`);
+      }
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Unable to remove this player.');
     } finally {

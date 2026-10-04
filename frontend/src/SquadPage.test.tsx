@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { fixtureOpponentClassName, SquadPage } from './SquadPage';
 import { availabilityChance } from './player-availability';
+import { HttpSquadClient, type SquadApiTrade, type SquadClient } from './squad-api';
 import { getDefaultThemePreset } from './theme-presets';
 import type {
   TeamSelectionClient,
@@ -85,6 +86,23 @@ class StagedChipResponseClient extends FullTeamSelectionClient {
   async saveLineup(players: TeamSelectionSnapshot['players']): Promise<TeamSelectionSnapshot> {
     this.savedPlayers = players;
     return { ...fullSelectionSnapshot, players };
+  }
+}
+
+class DeferredTradeSquadClient extends HttpSquadClient {
+  createTradeCalls = 0;
+  private resolveTrade: ((trade: SquadApiTrade) => void) | null = null;
+
+  override createTrade(): Promise<SquadApiTrade> {
+    this.createTradeCalls += 1;
+    return new Promise<SquadApiTrade>((resolve) => {
+      this.resolveTrade = resolve;
+    });
+  }
+
+  completeTrade() {
+    this.resolveTrade?.({ id: 'trade-1', status: 'proposed' });
+    this.resolveTrade = null;
   }
 }
 
@@ -385,12 +403,13 @@ async function renderPage(
   teamSelectionClient?: TeamSelectionClient,
   attackDirection: 'up' | 'down' = 'up',
   onNavigate?: (href: string) => void,
+  squadClient?: SquadClient,
 ) {
   const container = document.createElement('div');
   document.body.append(container);
   const root = createRoot(container);
   await act(async () => {
-    root.render(<SquadPage attackDirection={attackDirection} onNavigate={onNavigate} preset={getDefaultThemePreset()} teamSelectionClient={teamSelectionClient} />);
+    root.render(<SquadPage attackDirection={attackDirection} onNavigate={onNavigate} preset={getDefaultThemePreset()} squadClient={squadClient} teamSelectionClient={teamSelectionClient} />);
     await Promise.resolve();
     await Promise.resolve();
   });
@@ -875,5 +894,61 @@ describe('SquadPage', () => {
 
     expect(container.querySelector('.player-profile__dialog')).not.toBeNull();
     expect(container.querySelector('.player-profile__dialog')?.textContent).toContain('Remove player');
+  });
+
+  test('guards a pending trade proposal against duplicate submission', async () => {
+    const squadClient = new DeferredTradeSquadClient();
+    const { container, root } = await renderPage(undefined, 'up', undefined, squadClient);
+
+    await act(async () => {
+      (container.querySelector('button[aria-label="View Haaland details"]') as HTMLButtonElement).click();
+      await Promise.resolve();
+    });
+    await act(async () => {
+      (container.querySelector('button[aria-label="Open player actions"]') as HTMLButtonElement).click();
+      await Promise.resolve();
+    });
+    await act(async () => {
+      buttonByText(container, 'Draft trade').click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    const teamSelect = container.querySelector('.squad-page__drawer select') as HTMLSelectElement;
+    const selectSetter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')?.set;
+    await act(async () => {
+      selectSetter?.call(teamSelect, 'team-2');
+      teamSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      await Promise.resolve();
+    });
+    const search = container.querySelector('input[aria-label="Search trade targets"]') as HTMLInputElement;
+    await act(async () => {
+      setInputValue(search, 'Palmer');
+      await Promise.resolve();
+    });
+    const palmer = Array.from(container.querySelectorAll<HTMLButtonElement>('.squad-page__search-results button'))
+      .find((button) => button.textContent?.includes('Palmer'));
+    await act(async () => {
+      palmer?.click();
+      await Promise.resolve();
+    });
+
+    const send = buttonByText(container, 'Send trade proposal');
+    await act(async () => {
+      send.click();
+      send.click();
+      await Promise.resolve();
+    });
+
+    expect(squadClient.createTradeCalls).toBe(1);
+    expect(buttonByText(container, 'Sending…').disabled).toBe(true);
+
+    await act(async () => {
+      squadClient.completeTrade();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(container.textContent).toContain('Trade proposal for Haaland sent to Castle FC.');
+    act(() => root.unmount());
   });
 });

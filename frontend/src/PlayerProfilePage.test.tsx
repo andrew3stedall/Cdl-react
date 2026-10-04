@@ -885,4 +885,35 @@ describe('PlayerProfilePage', () => {
     expect(squadClient.changesApplied).toEqual([[replacementPlayer.id, player.id]]);
     root.unmount();
   });
+
+  test('keeps a committed replacement successful when the lineup refresh fails', async () => {
+    const squadClient = new MemorySquadClient();
+    const selectionClient = new MemoryTeamSelectionClient();
+    let selectionReads = 0;
+    selectionClient.getTeamSelection = async () => {
+      selectionReads += 1;
+      if (selectionReads > 1) throw new Error('Lineup refresh failed.');
+      return selectionClient.current;
+    };
+    const { container, root } = renderPage(squadClient, selectionClient);
+    await settle();
+
+    const removeButton = [...container.querySelectorAll('button')].find((button) => button.textContent?.trim() === 'Remove');
+    act(() => { removeButton?.click(); });
+    await settle();
+    const replacement = [...container.querySelectorAll('button')].find((button) => button.textContent?.includes('Replacement Player'));
+    act(() => { replacement?.click(); });
+    const confirm = [...container.querySelectorAll('button')].find((button) => button.textContent?.includes('Confirm removal'));
+    await act(async () => {
+      confirm?.click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(squadClient.changesApplied).toEqual([[replacementPlayer.id, player.id]]);
+    expect(container.textContent).toContain('was removed and replaced by Replacement Player');
+    expect(container.textContent).toContain('Lineup refresh is unavailable; retry loading data.');
+    expect(container.textContent).not.toContain('Lineup refresh failed.');
+    root.unmount();
+  });
 });

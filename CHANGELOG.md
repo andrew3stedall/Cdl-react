@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Audit batch 3 hardens Market failed/empty retry states and authoritative form-history refresh, separates committed squad mutations from refresh failures, and prevents duplicate pending trade proposal submissions with focused regression coverage.
+
 - Audit batch 2 removes the remaining explanatory/motivational prose from
   Manager's Desk priority cards while preserving status, counts, affected
   players and actions, with regression coverage for the compact-copy contract.

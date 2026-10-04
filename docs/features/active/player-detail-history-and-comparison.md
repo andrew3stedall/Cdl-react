@@ -10,6 +10,8 @@ FPL player detail/history and the compact squad comparison are implemented. Comp
 
 ## Supported and deferred history/comparison
 
+Market player detail always adopts authoritative fetched fixture history, including same-gameweek points/minutes corrections and newly-added fixtures in a double gameweek; it does not rely on grouped-history length to decide whether to refresh form.
+
 | Capability | Current support | Boundary / deferred work |
 |---|---|---|
 | FPL player profile and gameweek history | Player profile shows FPL facts, form/minutes, fixture difficulty and opponent history from the current cached history API. | No CDL movement attribution is inferred from FPL data. |

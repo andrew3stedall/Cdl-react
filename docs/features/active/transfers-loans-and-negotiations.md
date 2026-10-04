@@ -6,7 +6,7 @@ Define in-app trade/loan negotiation, offer counters, party agreement, commissio
 
 ## Status
 
-Checkpoint 3 complete.
+Checkpoint 3 complete. Client trade creation is single-flight while a proposal request is pending; the send control remains disabled until the request resolves, while failed submissions can be retried.
 
 ## Business Rules
 

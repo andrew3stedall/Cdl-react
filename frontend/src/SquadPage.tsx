@@ -358,6 +358,7 @@ export function SquadPage({
   const [confirmationOpen, setConfirmationOpen] = useState(false);
   const [changesSaving, setChangesSaving] = useState(false);
   const [tradeSubmitting, setTradeSubmitting] = useState(false);
+  const tradeSubmittingRef = useRef(false);
   const [availabilityFilter, setAvailabilityFilter] = useState<'all' | 'risk'>('all');
   const [fixtureFilter, setFixtureFilter] = useState<'all' | 'easy'>('all');
   const drawerRef = useRef<HTMLElement | null>(null);
@@ -794,7 +795,8 @@ export function SquadPage({
   }
 
   async function submitTrade() {
-    if (!tradeSource || !tradeTarget || !tradeTeamId || tradeSubmitting) return;
+    if (!tradeSource || !tradeTarget || !tradeTeamId || tradeSubmittingRef.current) return;
+    tradeSubmittingRef.current = true;
     setTradeSubmitting(true);
     try {
       const trade = await squadClient.createTrade(tradeTeamId, [tradeSource.id], [tradeTarget.id]);
@@ -805,6 +807,7 @@ export function SquadPage({
     } catch (error) {
       setStatus(apiErrorMessage(error, 'Unable to submit the trade proposal.'));
     } finally {
+      tradeSubmittingRef.current = false;
       setTradeSubmitting(false);
     }
   }

@@ -56,6 +56,8 @@ let marketTrades: Array<Record<string, unknown>> = [];
 let savedDrawPlayerIds: string[] = [];
 let approvalTrades: Array<Record<string, unknown>> = [];
 let marketDraws: Array<Record<string, unknown>> = [];
+let failedMarketReads = new Set<string>();
+let marketHistory: Array<Record<string, unknown>> = [];
 
 beforeEach(() => {
   marketPlayers = [player];
@@ -64,8 +66,13 @@ beforeEach(() => {
   savedDrawPlayerIds = [];
   approvalTrades = [];
   marketDraws = [{ id: 'draw-1', season_id: 1, gameweek: 1, status: 'open_for_preferences', opens_at: null, closes_at: '2026-10-10T12:00:00Z', processed_at: null, draw_order: [] }];
+  failedMarketReads = new Set();
+  marketHistory = [{ gameweek: 9, fixture_id: 900, total_points: 9, minutes: 90, expected_goals: 0.84, expected_assists: 0.12 }];
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const path = String(input);
+    if ((!init?.method || init.method === 'GET') && failedMarketReads.has(path)) {
+      return new Response(JSON.stringify({ message: 'Temporary market read failure.' }), { status: 503 });
+    }
     if (path === '/api/squad/summary') {
       return new Response(JSON.stringify({ manager_team: { id: 'team-exeter-gently', name: 'Exeter Gently' }, gameweek: { name: 'Gameweek 1' }, players: [player] }), { status: 200 });
     }
@@ -85,7 +92,7 @@ beforeEach(() => {
       return new Response(JSON.stringify(trade ?? {}), { status: 200 });
     }
     if (path === '/api/trades') return new Response(JSON.stringify({ trades: marketTrades }), { status: 200 });
-    if (path.startsWith('/api/fpl/players/')) return new Response(JSON.stringify({ history: [{ gameweek: 9, fixture_id: 900, total_points: 9, minutes: 90, expected_goals: 0.84, expected_assists: 0.12 }], fixtures: [] }), { status: 200 });
+    if (path.startsWith('/api/fpl/players/')) return new Response(JSON.stringify({ history: marketHistory, fixtures: [] }), { status: 200 });
     if (path === '/api/trades/approvals') return new Response(JSON.stringify({ trades: approvalTrades }), { status: 200 });
     if (path.endsWith('/approve') && init?.method === 'POST') {
       const decision = (JSON.parse(String(init.body)) as { decision: string }).decision;
@@ -358,5 +365,72 @@ describe('MarketPage', () => {
     expect(drawer?.querySelector('[aria-label="Recent FPL gameweek history"]')?.textContent).toContain('0.84');
     expect(drawer?.querySelector('.player-card__form-dots')?.getAttribute('aria-label')).toContain('Gameweek 9: 9 points, 90 minutes');
     expect(drawer?.textContent).toContain('OwnerFree');
+  });
+
+  test('keeps failed Market reads distinct from empty states and retries them in place', async () => {
+    failedMarketReads.add('/api/interests');
+    const interestsPage = await renderPage('/scouting/interests');
+    const interestsPanel = interestsPage.container.querySelector('section[aria-label="Your Interests"]') as HTMLElement;
+    expect(interestsPanel.textContent).toContain('Interests unavailable.');
+    expect(interestsPanel.textContent).not.toContain('No Interests');
+
+    failedMarketReads.delete('/api/interests');
+    await act(async () => {
+      Array.from(interestsPanel.querySelectorAll('button')).find((button) => button.textContent === 'Retry')?.click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(interestsPanel.textContent).toContain('No Interests');
+    expect(interestsPanel.textContent).not.toContain('Interests unavailable.');
+    act(() => interestsPage.root.unmount());
+
+    failedMarketReads.add('/api/trades');
+    const tradesPage = await renderPage('/scouting/trades');
+    const tradesPanel = tradesPage.container.querySelector('section[aria-label="Trade activity"]') as HTMLElement;
+    expect(tradesPanel.textContent).toContain('Trade activity unavailable.');
+    expect(tradesPanel.textContent).not.toContain('No trade proposals');
+
+    failedMarketReads.delete('/api/trades');
+    await act(async () => {
+      Array.from(tradesPanel.querySelectorAll('button')).find((button) => button.textContent === 'Retry')?.click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(tradesPanel.textContent).toContain('No trade proposals');
+    expect(tradesPanel.textContent).not.toContain('Trade activity unavailable.');
+    act(() => tradesPage.root.unmount());
+  });
+
+  test('refreshes corrected same-gameweek form data including a new double-gameweek fixture', async () => {
+    marketHistory = [{ gameweek: 9, fixture_id: 900, total_points: 2, minutes: 45, expected_goals: 0.1, expected_assists: 0.05 }];
+    const { container, root } = await renderPage('/scouting');
+    const openPlayer = () => container.querySelector('tr[aria-label="View Casey Midfielder details"]') as HTMLTableRowElement;
+
+    await act(async () => {
+      openPlayer().click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(container.querySelector('[role="dialog"] .player-card__form-dots')?.getAttribute('aria-label')).toContain('Gameweek 9: 2 points, 45 minutes');
+
+    await act(async () => {
+      (container.querySelector('button[aria-label="Close player details"]') as HTMLButtonElement).click();
+      await Promise.resolve();
+    });
+    marketHistory = [
+      { gameweek: 9, fixture_id: 900, total_points: 5, minutes: 90, expected_goals: 0.4, expected_assists: 0.1 },
+      { gameweek: 9, fixture_id: 901, total_points: 3, minutes: 20, expected_goals: 0.2, expected_assists: 0.3 },
+    ];
+    await act(async () => {
+      openPlayer().click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    const formLabel = container.querySelector('[role="dialog"] .player-card__form-dots')?.getAttribute('aria-label');
+    expect(formLabel).toContain('Gameweek 9: 5 points, 90 minutes; 3 points, 20 minutes');
+    expect(container.querySelector('[aria-label="Recent FPL gameweek history"]')?.textContent).toContain('5');
+    expect(container.querySelector('[aria-label="Recent FPL gameweek history"]')?.textContent).toContain('20');
+    act(() => root.unmount());
   });
 });

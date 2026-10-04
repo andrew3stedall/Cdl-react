@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Audit batch 3 hardens Market failed/empty retry states and authoritative form-history refresh, separates committed squad mutations from refresh failures, and prevents duplicate pending trade proposal submissions with focused regression coverage.
+- Batch 3 is merged as [PR #545](https://github.com/andrew3stedall/Cdl-react/pull/545) and validated on staging revision `cdl-react-staging-api-00329-2q9`; CI, PostgreSQL smoke, migrations, official FPL refresh and live service/auth checks passed.
 
 - Audit batch 2 removes the remaining explanatory/motivational prose from
   Manager's Desk priority cards while preserving status, counts, affected

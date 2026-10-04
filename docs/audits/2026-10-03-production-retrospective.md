@@ -1140,7 +1140,7 @@ Current local checks passing should be reported alongside skipped PostgreSQL and
 
 ## Delivery record — 3 October 2026
 
-**4 October Batch 3 follow-up:** #513–#516 now have exact journey acceptance coverage; #515 also fixes the remaining committed-mutation/refresh-failure coupling in Player Profile and exposes retry after Squad post-save refresh failures. Closure remains gated on hosted checks.
+**5 October Batch 3 staging validation:** PR [#545](https://github.com/andrew3stedall/Cdl-react/pull/545) is merged as `4d884fe`; #513–#516 are closed. [CI 37203312911](https://github.com/andrew3stedall/Cdl-react/actions/runs/37203312911), [PostgreSQL 37203312905](https://github.com/andrew3stedall/Cdl-react/actions/runs/37203312905) and [staging rollout 37203312984](https://github.com/andrew3stedall/Cdl-react/actions/runs/37203312984) passed. Staging revision `cdl-react-staging-api-00329-2q9` serves 100% traffic; migrations, official FPL refresh and live service/auth checks completed.
 
 **4 October Batch 2 follow-up:** #527's residual Manager's Desk narration is removed on the batch branch with regression assertions. This updates the preserved baseline; issue closure still depends on hosted checks for the batch.
 

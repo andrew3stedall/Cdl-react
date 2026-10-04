@@ -1,13 +1,18 @@
 # All 70 audit findings — execution batches
 
-Updated: 4 October 2026 (Australia/Melbourne). Parent [#466](https://github.com/andrew3stedall/Cdl-react/issues/466). This index covers every issue; an item being tackled is not a claim that its acceptance is complete.
+Updated: 5 October 2026 (Australia/Melbourne). Parent [#466](https://github.com/andrew3stedall/Cdl-react/issues/466). This index covers every issue; an item being tackled is not a claim that its acceptance is complete.
 
-## Batch 3 — current candidate
+## Batch 3 — merged and staging-validated
 
-- Close #513 with explicit failed-vs-empty Market retry coverage for Interests and Trades.
-- Close #514 with same-gameweek authoritative history correction coverage, including a second fixture in the same gameweek.
-- Close #515 by separating a committed squad replacement from a failed lineup refresh and exposing the existing Squad Retry path after post-save refresh failures.
-- Close #516 with single-flight trade submission coverage while the first proposal remains pending.
+PR [#545](https://github.com/andrew3stedall/Cdl-react/pull/545) is merged as `4d884fe1671d69deb9caadef4462fd05ebaa1dfe`. The four batch-3 issues (#513–#516) are closed after the focused journey coverage passed CI, PostgreSQL smoke passed, and the post-merge staging rollout completed successfully.
+
+- #513: Market Interests and Trades keep failed reads distinct from empty states and retry in place.
+- #514: authoritative same-gameweek history corrections refresh form, including an added double-gameweek fixture.
+- #515: committed squad mutations remain successful when a later lineup refresh fails; Retry reloads data without reposting the mutation.
+- #516: pending trade submission is single-flight, with a disabled **Sending…** state and retry after rejection.
+- Hosted evidence: [CI 37203312911](https://github.com/andrew3stedall/Cdl-react/actions/runs/37203312911), [Backend PostgreSQL 37203312905](https://github.com/andrew3stedall/Cdl-react/actions/runs/37203312905), and [staging rollout 37203312984](https://github.com/andrew3stedall/Cdl-react/actions/runs/37203312984).
+- Staging is serving revision `cdl-react-staging-api-00329-2q9` at 100% traffic from [the staging service](https://cdl-react-staging-api-tkhbn7jfsa-ts.a.run.app). Migrations, official FPL refresh and live service/auth checks passed.
+- The review list below remains useful for manual app review; automated hosted evidence does not replace device-specific checks.
 
 ### What to review after Batch 3 is deployed
 
@@ -106,10 +111,10 @@ Updated: 4 October 2026 (Australia/Melbourne). Parent [#466](https://github.com/
 | [#510](https://github.com/andrew3stedall/Cdl-react/issues/510) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/LeaguePage.tsx](../../frontend/src/LeaguePage.tsx) |
 | [#511](https://github.com/andrew3stedall/Cdl-react/issues/511) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/LeagueCompetitionViews.tsx](../../frontend/src/LeagueCompetitionViews.tsx) |
 | [#512](https://github.com/andrew3stedall/Cdl-react/issues/512) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/components/ui/global-notifications.tsx](../../frontend/src/components/ui/global-notifications.tsx) |
-| [#513](https://github.com/andrew3stedall/Cdl-react/issues/513) | Batch 3: failed reads stay distinct from empty states and retry in place; hosted acceptance pending | [frontend/src/MarketPage.test.tsx](../../frontend/src/MarketPage.test.tsx) |
-| [#514](https://github.com/andrew3stedall/Cdl-react/issues/514) | Batch 3: authoritative same-gameweek corrections refresh form, including added DGW fixtures; hosted acceptance pending | [frontend/src/MarketPage.test.tsx](../../frontend/src/MarketPage.test.tsx) |
-| [#515](https://github.com/andrew3stedall/Cdl-react/issues/515) | Batch 3: committed mutations remain successful when refresh fails; Retry reloads data; hosted acceptance pending | [frontend/src/PlayerProfilePage.test.tsx](../../frontend/src/PlayerProfilePage.test.tsx) |
-| [#516](https://github.com/andrew3stedall/Cdl-react/issues/516) | Batch 3: pending trade submission is single-flight and disables repeat send; hosted acceptance pending | [frontend/src/SquadPage.test.tsx](../../frontend/src/SquadPage.test.tsx) |
+| [#513](https://github.com/andrew3stedall/Cdl-react/issues/513) | Batch 3: failed reads stay distinct from empty states and retry in place; PR #545 merged and post-merge staging validation green | [frontend/src/MarketPage.test.tsx](../../frontend/src/MarketPage.test.tsx) |
+| [#514](https://github.com/andrew3stedall/Cdl-react/issues/514) | Batch 3: authoritative same-gameweek corrections refresh form, including added DGW fixtures; PR #545 merged and post-merge staging validation green | [frontend/src/MarketPage.test.tsx](../../frontend/src/MarketPage.test.tsx) |
+| [#515](https://github.com/andrew3stedall/Cdl-react/issues/515) | Batch 3: committed mutations remain successful when refresh fails; Retry reloads data; PR #545 merged and post-merge staging validation green | [frontend/src/PlayerProfilePage.test.tsx](../../frontend/src/PlayerProfilePage.test.tsx) |
+| [#516](https://github.com/andrew3stedall/Cdl-react/issues/516) | Batch 3: pending trade submission is single-flight and disables repeat send; PR #545 merged and post-merge staging validation green | [frontend/src/SquadPage.test.tsx](../../frontend/src/SquadPage.test.tsx) |
 | [#517](https://github.com/andrew3stedall/Cdl-react/issues/517) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/LeaguePage.tsx](../../frontend/src/LeaguePage.tsx) |
 | [#518](https://github.com/andrew3stedall/Cdl-react/issues/518) | Batch 1: direct profile identity is no longer blocked by history fetch | [frontend/src/PlayerProfilePage.tsx](../../frontend/src/PlayerProfilePage.tsx) |
 | [#519](https://github.com/andrew3stedall/Cdl-react/issues/519) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/navigation.test.ts](../../frontend/src/navigation.test.ts) |

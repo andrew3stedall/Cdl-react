@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Audit batch 2 removes the remaining explanatory/motivational prose from
+  Manager's Desk priority cards while preserving status, counts, affected
+  players and actions, with regression coverage for the compact-copy contract.
+
 - Audit batch 1 keeps known player identity and controls visible while history
   loads, removes unused header CSS, defers optional profile/support modules,
   extends PostgreSQL assigned-member release checks, and publishes an exhaustive

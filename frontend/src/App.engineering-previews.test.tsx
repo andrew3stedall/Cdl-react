@@ -47,6 +47,9 @@ describe('engineering preview route capability', () => {
     const { container } = await renderPreview(true);
 
     expect(container.querySelector('#preview-unavailable-title')).toBeNull();
-    expect(container.querySelector('#modernisation-checkpoint-title')?.textContent).toBe('Weekly gameplay contracts');
+    await vi.waitFor(async () => {
+      await act(async () => { await Promise.resolve(); });
+      expect(container.querySelector('#modernisation-checkpoint-title')?.textContent).toBe('Weekly gameplay contracts');
+    });
   });
 });

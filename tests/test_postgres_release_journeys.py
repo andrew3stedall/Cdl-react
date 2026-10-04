@@ -130,6 +130,12 @@ def test_postgres_two_manager_auth_invite_lineup_chip_round_trip(
         assert auth.status_code == 200
         assert auth.json()["is_authenticated"] is True
         assert auth.json()["user"]["id"] == manager_record.id
+        unassigned_read = manager.get("/api/team-selection")
+        assert unassigned_read.status_code == 403
+        unassigned_write = manager.put(
+            "/api/team-selection/chips/triple-captain", json={"active": True}
+        )
+        assert unassigned_write.status_code == 403
         accepted = manager.post(f"/api/league/invites/{invite_token}/accept")
         assert accepted.status_code == 200
         assert accepted.json()["team_id"] == invited_team_id
@@ -193,6 +199,43 @@ def test_postgres_two_manager_auth_invite_lineup_chip_round_trip(
                 "id"
             ]
         )
+
+        signed_out = manager.post("/api/auth/logout")
+        assert signed_out.status_code == 200
+        assert manager.get("/api/auth/session").json()["is_authenticated"] is False
+
+        production_settings = Settings(
+            environment="production",
+            repository_mode="postgres",
+            database_url=database_url,
+            session_cookie_secure=True,
+            development_login_secret=f"test-only-{uuid4().hex}",
+            google_client_id="test-only-google-client",
+        )
+        app.dependency_overrides[get_settings] = lambda: production_settings
+        reauthenticated = manager.post(
+            "/api/auth/google",
+            headers={"X-CDL-Google-Sign-In": "1"},
+            json={"credential": "verified-release-journey-token"},
+        )
+        assert reauthenticated.status_code == 200, reauthenticated.text
+        assert reauthenticated.json()["session"]["is_authenticated"] is True
+        assert manager.get("/api/team-selection").json()["manager_team"]["id"] == invited_team_id
+
+        with session_factory() as session:
+            session.execute(
+                update(managers_table)
+                .where(managers_table.c.user_id == manager_record.id)
+                .values(user_id=None)
+            )
+            session.commit()
+        assert manager.post("/api/auth/logout").status_code == 200
+        revoked_login = manager.post(
+            "/api/auth/google",
+            headers={"X-CDL-Google-Sign-In": "1"},
+            json={"credential": "verified-release-journey-token"},
+        )
+        assert revoked_login.status_code == 401
     finally:
         commissioner.close()
         manager.close()

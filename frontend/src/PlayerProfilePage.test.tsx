@@ -232,6 +232,80 @@ afterEach(() => {
 });
 
 describe('PlayerProfilePage', () => {
+  test('shows a loaded player and drawer controls while FPL history is still loading', async () => {
+    let resolveHistory!: (response: SquadApiHistoryResponse) => void;
+    const historyRequest = new Promise<SquadApiHistoryResponse>((resolve) => { resolveHistory = resolve; });
+    const client = new MemorySquadClient();
+    client.getPlayerHistory = async () => historyRequest;
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    act(() => {
+      root.render(
+        <ThemePresetProvider initialPresetName="teal-dark" preferenceClient={preferenceClient}>
+          <PlayerProfilePage
+            onClose={() => undefined}
+            playerId={player.id}
+            presentation="drawer"
+            squadClient={client}
+            teamSelectionClient={new MemoryTeamSelectionClient()}
+          />
+        </ThemePresetProvider>,
+      );
+    });
+
+    await settle();
+    expect(container.querySelector('.player-profile--drawer')).not.toBeNull();
+    expect(container.querySelector('[aria-label="Close player profile"]')).not.toBeNull();
+    expect(container.textContent).toContain('M. Santos');
+    expect(container.textContent).toContain('Loading form and minutes');
+
+    await act(async () => { resolveHistory(history); await historyRequest; });
+    expect(container.textContent).not.toContain('Loading form and minutes');
+    act(() => root.unmount());
+  });
+
+  test('does not show a previous player while the same profile component changes identity', async () => {
+    const nextPlayer: SquadApiPlayer = { ...player, id: 'fpl-20', display_name: 'L. New' };
+    let resolvePlayer!: (value: SquadApiPlayer) => void;
+    const nextPlayerRequest = new Promise<SquadApiPlayer>((resolve) => { resolvePlayer = resolve; });
+    let resolveNextHistory!: (value: SquadApiHistoryResponse) => void;
+    const nextHistoryRequest = new Promise<SquadApiHistoryResponse>((resolve) => { resolveNextHistory = resolve; });
+    const client = new MemorySquadClient();
+    client.getPlayer = async (playerId?: string) => playerId === nextPlayer.id ? nextPlayerRequest : player;
+    client.getPlayerHistory = async (playerId?: string) => playerId === nextPlayer.id ? nextHistoryRequest : history;
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    const renderProfile = (playerId: string) => (
+      <ThemePresetProvider initialPresetName="teal-dark" preferenceClient={preferenceClient}>
+        <PlayerProfilePage
+          onClose={() => undefined}
+          playerId={playerId}
+          presentation="drawer"
+          squadClient={client}
+          teamSelectionClient={new MemoryTeamSelectionClient()}
+        />
+      </ThemePresetProvider>
+    );
+    act(() => { root.render(renderProfile(player.id)); });
+    await settle();
+    expect(container.textContent).toContain('M. Santos');
+
+    act(() => { root.render(renderProfile(nextPlayer.id)); });
+    expect(container.textContent).not.toContain('M. Santos');
+    expect(container.textContent).toContain('Loading player profile');
+
+    await act(async () => { resolvePlayer(nextPlayer); await nextPlayerRequest; });
+    expect(container.textContent).toContain('L. New');
+    expect(container.querySelector('[aria-label="Close player profile"]')).not.toBeNull();
+    expect(container.textContent).toContain('Loading form and minutes');
+
+    await act(async () => { resolveNextHistory(history); await nextHistoryRequest; });
+    expect(container.textContent).not.toContain('Loading form and minutes');
+    act(() => root.unmount());
+  });
+
   test('loads private scouting and CDL ownership only when their disclosures open', async () => {
     const scoutingRecord: PrivateScoutingRecord = { player_id: player.id, watchlisted: false, note: '', updated_at: null };
     const saved: Array<{ watchlisted: boolean; note: string }> = [];

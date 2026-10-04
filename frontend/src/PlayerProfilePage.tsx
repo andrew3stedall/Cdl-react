@@ -119,7 +119,9 @@ export function PlayerProfilePage({
   const themePreset = useOptionalThemePreset();
   const fdrDisplayMode = themePreset?.fdrDisplayMode ?? 'font';
   const [player, setPlayer] = useState<SquadApiPlayer | null>(initialPlayer ?? null);
+  const [loadedPlayerId, setLoadedPlayerId] = useState<string | null>(initialPlayer ? playerId : null);
   const [history, setHistory] = useState<SquadApiHistoryResponse | null>(null);
+  const [loadedHistoryPlayerId, setLoadedHistoryPlayerId] = useState<string | null>(null);
   const [selection, setSelection] = useState<TeamSelectionSnapshot | null>(initialSelection ?? null);
   const [loading, setLoading] = useState(initialPlayer == null);
   const [historyLoading, setHistoryLoading] = useState(true);
@@ -142,7 +144,7 @@ export function PlayerProfilePage({
 
   useEffect(() => {
     let mounted = true;
-    setLoading(initialPlayer == null);
+    setLoading((current) => current && initialPlayer == null);
     setHistoryLoading(true);
     setLoadError(null);
     setHistoryError(null);
@@ -153,29 +155,42 @@ export function PlayerProfilePage({
       : squadClient.getPlayer
         ? squadClient.getPlayer(playerId)
         : Promise.reject(new Error('Player could not be loaded.'));
-    void Promise.allSettled([
-      playerPromise,
-      squadClient.getPlayerHistory(playerId),
-      initialSelection !== undefined ? Promise.resolve(initialSelection) : teamSelectionClient.getTeamSelection(),
-    ]).then(([playerResult, historyResult, selectionResult]) => {
+    const historyPromise = squadClient.getPlayerHistory(playerId);
+    const selectionPromise = initialSelection !== undefined
+      ? Promise.resolve(initialSelection)
+      : teamSelectionClient.getTeamSelection();
+
+    void playerPromise.then((nextPlayer) => {
       if (!mounted) return;
-      if (playerResult.status === 'fulfilled') {
-        setPlayer(playerResult.value);
-      } else {
-        setLoadError(playerResult.reason instanceof Error ? playerResult.reason.message : 'Player could not be loaded.');
-      }
-      if (historyResult.status === 'fulfilled') {
-        setHistory(historyResult.value);
-      } else {
-        setHistoryError(historyResult.reason instanceof Error ? historyResult.reason.message : 'Player history is unavailable.');
-      }
-      setHistoryLoading(false);
-      if (selectionResult.status === 'fulfilled') {
-        setSelection(selectionResult.value);
-      } else {
-        setSelectionError(selectionResult.reason instanceof Error ? selectionResult.reason.message : 'Squad status is unavailable.');
-      }
+      setPlayer(nextPlayer);
+      setLoadedPlayerId(playerId);
+      setLoadError(null);
       setLoading(false);
+    }, (error: unknown) => {
+      if (!mounted) return;
+      setLoadError(error instanceof Error ? error.message : 'Player could not be loaded.');
+      setLoading(false);
+    });
+    void historyPromise.then((nextHistory) => {
+      if (!mounted) return;
+      setHistory(nextHistory);
+      setLoadedHistoryPlayerId(playerId);
+      setHistoryError(null);
+      setHistoryLoading(false);
+    }, (error: unknown) => {
+      if (!mounted) return;
+      setHistory(null);
+      setLoadedHistoryPlayerId(playerId);
+      setHistoryError(error instanceof Error ? error.message : 'Player history is unavailable.');
+      setHistoryLoading(false);
+    });
+    void selectionPromise.then((nextSelection) => {
+      if (!mounted) return;
+      setSelection(nextSelection);
+      setSelectionError(null);
+    }, (error: unknown) => {
+      if (!mounted) return;
+      setSelectionError(error instanceof Error ? error.message : 'Squad status is unavailable.');
     });
     return () => {
       mounted = false;
@@ -189,10 +204,13 @@ export function PlayerProfilePage({
     : selectedLineupPlayer?.viceCaptain
       ? 'vice_captain'
       : null;
+  const currentHistory = loadedHistoryPlayerId === playerId ? history : null;
+  const currentHistoryLoading = loadedHistoryPlayerId !== playerId || historyLoading;
+  const currentHistoryError = loadedHistoryPlayerId === playerId ? historyError : null;
   const playerPosition = player?.position ?? null;
   const formFixtures = useMemo(
-    () => (history?.history ?? []).map((row) => mapHistoryFixture(row, playerPosition)).slice(-10),
-    [history, playerPosition],
+    () => (currentHistory?.history ?? []).map((row) => mapHistoryFixture(row, playerPosition)).slice(-10),
+    [currentHistory, playerPosition],
   );
   const nextFixtures = useMemo(
     () => selectNextGameweekFixtures(
@@ -200,22 +218,22 @@ export function PlayerProfilePage({
         ? player.next_fixtures
         : player?.next_fixture
           ? [player.next_fixture]
-          : history?.fixtures ?? [],
+          : currentHistory?.fixtures ?? [],
     ),
-    [history, player],
+    [currentHistory, player],
   );
   const defensiveHistoryGroups = useMemo(
-    () => history?.opponent_defensive_histories?.length
-      ? history.opponent_defensive_histories
-      : nextFixtures.length > 0 && history?.opponent_defensive_history?.length
+    () => currentHistory?.opponent_defensive_histories?.length
+      ? currentHistory.opponent_defensive_histories
+      : nextFixtures.length > 0 && currentHistory?.opponent_defensive_history?.length
         ? [{
             opponent_team_id: nextFixtures[0].opponent_team_id,
             opponent_name: nextFixtures[0].opponent_name,
             opponent_short_name: nextFixtures[0].opponent_short_name,
-            fixtures: history.opponent_defensive_history,
+            fixtures: currentHistory.opponent_defensive_history,
           }]
         : [],
-    [history, nextFixtures],
+    [currentHistory, nextFixtures],
   );
   const substitutionOptions = useMemo(
     () => selection && selectedLineupPlayer
@@ -365,7 +383,7 @@ export function PlayerProfilePage({
     await saveLineup(nextPlayers, `${player?.display_name ?? 'Player'} swapped with ${selectedSubstitution.target.name}.`);
   }
 
-  if (loading) {
+  if (loading || (loadedPlayerId !== playerId && !loadError)) {
     return <ProfileState title="Loading player profile…" />;
   }
   if (loadError || !player) {
@@ -393,7 +411,7 @@ export function PlayerProfilePage({
           className="player-profile__header-player-card"
           formPosition="hidden"
           layout="token"
-          player={toPlayerCardPlayer(player, nextFixtures, captaincy, history ? toPlayerCardFormHistory(formHistoryFromRows(history.history)) : undefined)}
+          player={toPlayerCardPlayer(player, nextFixtures, captaincy, currentHistory ? toPlayerCardFormHistory(formHistoryFromRows(currentHistory.history)) : undefined)}
           size="md"
         />
         <div className="player-profile__header-actions">
@@ -428,7 +446,7 @@ export function PlayerProfilePage({
       {selectionError ? <p className="player-profile__inline-error" role="alert">{selectionError}</p> : null}
 
       <ChartCard compact title="Form & minutes">
-        {historyLoading ? <ChartEmpty message="Loading form and minutes…" /> : historyError ? <ChartEmpty message={`Form and minutes history unavailable: ${historyError}`} /> : formFixtures.length > 0 ? <CombinedFormMinutesChart fixtures={formFixtures} fdrDisplayMode={fdrDisplayMode} onFixtureClick={(fixture) => setChartDetail({ kind: 'form', fixture: fixture as ProfileFixture })} /> : <ChartEmpty message="No completed FPL fixture history is available." />}
+        {currentHistoryLoading ? <ChartEmpty message="Loading form and minutes…" /> : currentHistoryError ? <ChartEmpty message={`Form and minutes history unavailable: ${currentHistoryError}`} /> : formFixtures.length > 0 ? <CombinedFormMinutesChart fixtures={formFixtures} fdrDisplayMode={fdrDisplayMode} onFixtureClick={(fixture) => setChartDetail({ kind: 'form', fixture: fixture as ProfileFixture })} /> : <ChartEmpty message="No completed FPL fixture history is available." />}
       </ChartCard>
 
       {defensiveHistoryGroups.length > 0 ? defensiveHistoryGroups.map((group) => {
@@ -444,7 +462,7 @@ export function PlayerProfilePage({
           heading={<OpponentChartHeading difficulty={opponentDifficulty} headingId={`opponent-${group.opponent_team_id}`} label={formatOpponentLabel(groupOpponentShortName, opponentIsHome)} title={fixtureDifficultyTitle(opponentDifficulty)} />}
           key={group.opponent_team_id}
         >
-          {historyLoading ? <ChartEmpty message="Loading opponent history…" /> : group.fixtures.length > 0 ? <DefensiveChart fixtures={group.fixtures} fdrDisplayMode={fdrDisplayMode} onFixtureClick={(fixture) => setChartDetail({ kind: 'opponent', fixture })} /> : <ChartEmpty message={`No cached defensive history is available for ${groupOpponent}.`} />}
+          {currentHistoryLoading ? <ChartEmpty message="Loading opponent history…" /> : group.fixtures.length > 0 ? <DefensiveChart fixtures={group.fixtures} fdrDisplayMode={fdrDisplayMode} onFixtureClick={(fixture) => setChartDetail({ kind: 'opponent', fixture })} /> : <ChartEmpty message={`No cached defensive history is available for ${groupOpponent}.`} />}
         </ChartCard>;
       }) : <ChartCard title="Opponent form" className="player-profile__chart-card--full"><ChartEmpty message="No cached defensive history is available for the next opponent." /></ChartCard>}
 

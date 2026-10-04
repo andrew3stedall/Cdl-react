@@ -40,62 +40,6 @@
   font: inherit;
 }
 
-.league-page__hero {
-  align-items: center;
-  display: flex;
-  justify-content: space-between;
-  min-height: 4.2rem;
-  padding: 0.15rem clamp(0.72rem, 2.4vw, 1.65rem) 0.35rem;
-}
-
-.league-page__brand-lockup {
-  align-items: center;
-  display: flex;
-  gap: 0.75rem;
-  min-width: 0;
-}
-
-.league-page__brand-mark {
-  align-items: center;
-  background: var(--primary);
-  border: 1px solid var(--primary);
-  border-radius: var(--radius);
-  color: var(--primary-foreground);
-  display: inline-flex;
-  flex: 0 0 auto;
-  height: 3rem;
-  justify-content: center;
-  width: 2.65rem;
-}
-
-.league-page__brand-name {
-  color: var(--theme-primary-text, var(--primary));
-  font-size: 0.72rem;
-  font-weight: 800;
-  letter-spacing: 0.055em;
-  margin: 0 0 0.1rem;
-  text-transform: uppercase;
-}
-
-.league-page__hero h1 {
-  font-size: clamp(1.65rem, 5vw, 2.25rem);
-  letter-spacing: -0.04em;
-  line-height: 1;
-  margin: 0;
-}
-
-.league-page__context-name {
-  color: var(--muted-foreground);
-  font-size: 0.7rem;
-  margin: 0.28rem 0 0;
-}
-
-.league-page__hero-icons {
-  align-items: center;
-  display: flex;
-  gap: 0.5rem;
-}
-
 .league-page__view-toggle {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -2542,19 +2486,6 @@
     padding: 0;
   }
 
-  .league-page__hero {
-    align-items: flex-start;
-  }
-
-  .league-page__brand-mark {
-    height: 2.65rem;
-    width: 2.35rem;
-  }
-
-  .league-page__hero-icons {
-    gap: 0.25rem;
-  }
-
   .league-page__view-toggle {
     grid-template-columns: repeat(2, 2.2rem);
   }
@@ -2645,22 +2576,6 @@
 }
 
 @media (max-width: 430px) {
-  .league-page__hero {
-    gap: 0.4rem;
-  }
-
-  .league-page__brand-lockup {
-    gap: 0.55rem;
-  }
-
-  .league-page__brand-name {
-    font-size: 0.62rem;
-  }
-
-  .league-page__hero h1 {
-    font-size: 1.55rem;
-  }
-
   .league-gameweek-section {
     padding-left: 0.7rem;
     padding-right: 0.7rem;

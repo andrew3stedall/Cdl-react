@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Audit batch 1 keeps known player identity and controls visible while history
+  loads, removes unused header CSS, defers optional profile/support modules,
+  extends PostgreSQL assigned-member release checks, and publishes an exhaustive
+  execution index with staging review instructions for all 70 findings.
+
 - Ensure Cloud Run jobs use the installed project Python environment and verify migration-module imports during image builds; remove the remaining login marketing tagline.
 
 - Delivered retrospective fixes for protected authentication, invites/passkeys,

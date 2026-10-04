@@ -42,8 +42,10 @@ listing and owner-checked revocation.
 
 - Existing password storage and session mechanics must be audited before migration.
 - Legacy pages may rely on PHP session globals.
-- Users may have multiple passkeys, and passkeys must be revocable per device in a later account
-  management pass.
+- Google identity claims are verified by a test verifier in automated release journeys; real
+  provider-account and device/WebAuthn checks remain separate release evidence.
+- Membership revocation must remove protected API access on the next request, while invite preview
+  and acceptance remain available to an authenticated user who has not yet been assigned.
 
 ## Target Architecture
 

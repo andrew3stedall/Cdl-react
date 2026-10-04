@@ -838,6 +838,7 @@ export function SquadPage({
         setDrawWins(rightsResult.value.available_to_add.map(mapPlayer));
         setChangesLoaded(true);
       } else refreshFailures.push('temporary rights');
+      setLoadFailed(refreshFailures.length > 0);
       setStatus(refreshFailures.length
         ? `Squad changes saved. ${refreshFailures.join(' and ')} could not refresh; retry loading data.`
         : 'Squad changes saved and temporary rights updated.');

@@ -2,7 +2,21 @@
 
 Updated: 4 October 2026 (Australia/Melbourne). Parent [#466](https://github.com/andrew3stedall/Cdl-react/issues/466). This index covers every issue; an item being tackled is not a claim that its acceptance is complete.
 
-## Batch 2 — current candidate
+## Batch 3 — current candidate
+
+- Close #513 with explicit failed-vs-empty Market retry coverage for Interests and Trades.
+- Close #514 with same-gameweek authoritative history correction coverage, including a second fixture in the same gameweek.
+- Close #515 by separating a committed squad replacement from a failed lineup refresh and exposing the existing Squad Retry path after post-save refresh failures.
+- Close #516 with single-flight trade submission coverage while the first proposal remains pending.
+
+### What to review after Batch 3 is deployed
+
+1. Market → Interests/Trades should show **unavailable + Retry** on read failure, never a false empty state.
+2. Reopening a player after corrected FPL history should refresh points/minutes and split double-gameweek form.
+3. A committed replacement must remain reported as committed even if the lineup refresh fails.
+4. A slow trade submission should disable **Send trade proposal** and show **Sending…** until completion.
+
+## Batch 2 — merged
 
 - Finish #527 by removing the residual Manager's Desk narration while retaining status, player flags, counts and actions.
 - Add regression assertions for the removed copy so the no-narrative rule stays enforceable.
@@ -92,10 +106,10 @@ Updated: 4 October 2026 (Australia/Melbourne). Parent [#466](https://github.com/
 | [#510](https://github.com/andrew3stedall/Cdl-react/issues/510) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/LeaguePage.tsx](../../frontend/src/LeaguePage.tsx) |
 | [#511](https://github.com/andrew3stedall/Cdl-react/issues/511) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/LeagueCompetitionViews.tsx](../../frontend/src/LeagueCompetitionViews.tsx) |
 | [#512](https://github.com/andrew3stedall/Cdl-react/issues/512) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/components/ui/global-notifications.tsx](../../frontend/src/components/ui/global-notifications.tsx) |
-| [#513](https://github.com/andrew3stedall/Cdl-react/issues/513) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/MarketPage.test.tsx](../../frontend/src/MarketPage.test.tsx) |
-| [#514](https://github.com/andrew3stedall/Cdl-react/issues/514) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/MarketPage.test.tsx](../../frontend/src/MarketPage.test.tsx) |
-| [#515](https://github.com/andrew3stedall/Cdl-react/issues/515) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/SquadPage.test.tsx](../../frontend/src/SquadPage.test.tsx) |
-| [#516](https://github.com/andrew3stedall/Cdl-react/issues/516) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/MarketPage.test.tsx](../../frontend/src/MarketPage.test.tsx) |
+| [#513](https://github.com/andrew3stedall/Cdl-react/issues/513) | Batch 3: failed reads stay distinct from empty states and retry in place; hosted acceptance pending | [frontend/src/MarketPage.test.tsx](../../frontend/src/MarketPage.test.tsx) |
+| [#514](https://github.com/andrew3stedall/Cdl-react/issues/514) | Batch 3: authoritative same-gameweek corrections refresh form, including added DGW fixtures; hosted acceptance pending | [frontend/src/MarketPage.test.tsx](../../frontend/src/MarketPage.test.tsx) |
+| [#515](https://github.com/andrew3stedall/Cdl-react/issues/515) | Batch 3: committed mutations remain successful when refresh fails; Retry reloads data; hosted acceptance pending | [frontend/src/PlayerProfilePage.test.tsx](../../frontend/src/PlayerProfilePage.test.tsx) |
+| [#516](https://github.com/andrew3stedall/Cdl-react/issues/516) | Batch 3: pending trade submission is single-flight and disables repeat send; hosted acceptance pending | [frontend/src/SquadPage.test.tsx](../../frontend/src/SquadPage.test.tsx) |
 | [#517](https://github.com/andrew3stedall/Cdl-react/issues/517) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/LeaguePage.tsx](../../frontend/src/LeaguePage.tsx) |
 | [#518](https://github.com/andrew3stedall/Cdl-react/issues/518) | Batch 1: direct profile identity is no longer blocked by history fetch | [frontend/src/PlayerProfilePage.tsx](../../frontend/src/PlayerProfilePage.tsx) |
 | [#519](https://github.com/andrew3stedall/Cdl-react/issues/519) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/navigation.test.ts](../../frontend/src/navigation.test.ts) |

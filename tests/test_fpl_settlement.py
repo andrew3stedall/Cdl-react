@@ -574,6 +574,85 @@ def test_auto_captain_applies_only_one_bonus_and_explains_player_totals() -> Non
     assert explanation["fpl-2"]["multiplier"] == 2
 
 
+def test_auto_captain_tie_uses_starting_slot_and_ignores_bench() -> None:
+    sessions = _session_factory()
+    now = datetime.now(UTC)
+    lineup_rows = []
+    for team_id, starters, bench in (
+        ("team-home", range(1, 12), range(23, 28)),
+        ("team-away", range(12, 23), range(28, 33)),
+    ):
+        lineup_rows.extend(
+            {
+                "id": f"lineup-{team_id}-{player_id}",
+                "season_id": SEASON_ID,
+                "draft_team_id": team_id,
+                "player_id": f"fpl-{player_id}",
+                "gameweek": 1,
+                "slot": "starter",
+                "slot_order": slot_order,
+                "is_captain": slot_order == 1,
+                "is_vice_captain": slot_order == 2,
+                "locked_at": now,
+                "updated_at": now,
+            }
+            for slot_order, player_id in enumerate(starters, start=1)
+        )
+        lineup_rows.extend(
+            {
+                "id": f"lineup-{team_id}-{player_id}",
+                "season_id": SEASON_ID,
+                "draft_team_id": team_id,
+                "player_id": f"fpl-{player_id}",
+                "gameweek": 1,
+                "slot": "bench",
+                "slot_order": slot_order,
+                "is_captain": False,
+                "is_vice_captain": False,
+                "locked_at": now,
+                "updated_at": now,
+            }
+            for slot_order, player_id in enumerate(bench, start=1)
+        )
+
+    with sessions() as session:
+        session.execute(insert(team_selection_lineup_slots_table), lineup_rows)
+        session.execute(
+            insert(team_selection_chips_table).values(
+                id="chip-team-home-auto-tie",
+                season_id=SEASON_ID,
+                draft_team_id="team-home",
+                chip_id="auto-captain",
+                status="used",
+                active_gameweek=1,
+                used_gameweek=1,
+                updated_at=now,
+            )
+        )
+        session.commit()
+
+    points = {str(player_id): 1 for player_id in range(1, 33)}
+    points.update({"1": 5, "2": 5, "23": 20})
+
+    with sessions() as session:
+        scores = FplSettlementService._team_scores(
+            session,
+            1,
+            ("team-home", "team-away"),
+            points,
+            {str(player_id): 90 for player_id in range(1, 33)},
+            apply_substitutions=False,
+        )
+
+    assert scores is not None
+    assert scores[0] == 24
+    explanation = {row["player_id"]: row for row in scores[5]["team-home"]}
+    assert explanation["fpl-1"]["multiplier"] == 2
+    assert explanation["fpl-2"]["multiplier"] == 1
+    assert explanation["fpl-23"]["included"] is False
+    assert explanation["fpl-23"]["reason"] == "bench_not_scoring"
+
+
 def test_ownership_repair_replaces_departed_player_only_in_future_unlocked_lineup() -> None:
     from cdl_api.repositories.postgres_squad import (
         squad_ownerships_table,
@@ -667,6 +746,8 @@ def test_ownership_repair_replaces_departed_player_only_in_future_unlocked_lineu
                 select(
                     team_selection_lineup_slots_table.c.gameweek,
                     team_selection_lineup_slots_table.c.player_id,
+                    team_selection_lineup_slots_table.c.is_captain,
+                    team_selection_lineup_slots_table.c.is_vice_captain,
                 ).order_by(
                     team_selection_lineup_slots_table.c.gameweek,
                     team_selection_lineup_slots_table.c.slot_order,
@@ -674,13 +755,24 @@ def test_ownership_repair_replaces_departed_player_only_in_future_unlocked_lineu
             ).all()
         )
 
-    assert updated[:3] == [(1, "fpl-1"), (1, "fpl-2"), (1, "fpl-3")]
-    assert {player_id for gameweek, player_id in updated if gameweek == 2} == {
-        "fpl-1",
-        "fpl-3",
-        "fpl-24",
+    assert updated[:3] == [
+        (1, "fpl-1", True, False),
+        (1, "fpl-2", False, True),
+        (1, "fpl-3", False, False),
+    ]
+    future_flags = {
+        player_id: (is_captain, is_vice_captain)
+        for gameweek, player_id, is_captain, is_vice_captain in updated
+        if gameweek == 2
     }
-    assert {player_id for gameweek, player_id in updated if gameweek == 3} == {
+    assert future_flags == {
+        "fpl-1": (True, False),
+        "fpl-3": (False, False),
+        "fpl-24": (False, True),
+    }
+    assert {
+        player_id for gameweek, player_id, _, _ in updated if gameweek == 3
+    } == {
         "fpl-1",
         "fpl-2",
         "fpl-3",

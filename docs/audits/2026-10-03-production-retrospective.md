@@ -1145,3 +1145,10 @@ Current local checks passing should be reported alongside skipped PostgreSQL and
 **4 October Batch 2 follow-up:** #527's residual Manager's Desk narration is removed on the batch branch with regression assertions. This updates the preserved baseline; issue closure still depends on hosted checks for the batch.
 
 This document preserves the audited baseline and its 70 findings. The [item-by-item delivery register](../delivery/2026-10-03-retrospective-delivery.md) records every implementation, test result, open policy/architecture choice and hosted limitation. [PR #538](https://github.com/andrew3stedall/Cdl-react/pull/538) is merged with PostgreSQL and Chromium CI green. Consult the register for actual deployment status; a merge or health response is not production-readiness proof.
+
+
+## Settlement verification record — 6 October 2026
+
+PR [#550](https://github.com/andrew3stedall/Cdl-react/pull/550) merged the #497 fix as 65f254b. The final event-live refresh is now a distinct verified-source boundary: stale ordinary cache data cannot become official after a failed final refresh, and the provisional fixture result records final_event_live_unverified for operator visibility. The new ingestion and settlement regressions cover bootstrap finished/data_checked plus both successful final-source persistence and old-cache/failure recovery.
+
+PostgreSQL release paths passed in [run 37369127085](https://github.com/andrew3stedall/Cdl-react/actions/runs/37369127085). The final CI/staging workflow runs were queued at the time of this record, so #497 remains open until those hosted checks settle.

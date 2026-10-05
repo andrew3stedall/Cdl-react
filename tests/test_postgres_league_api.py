@@ -266,6 +266,70 @@ def test_active_staging_league_hides_unrelated_synthetic_results() -> None:
     assert all(row.played == 0 for row in current_table.rows)
 
 
+def test_table_snapshot_prefers_newest_calculated_at_over_identifier_order() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    metadata.create_all(engine)
+    sessions = sessionmaker(bind=engine, class_=Session)
+
+    with sessions() as session:
+        session.execute(
+            league_table_snapshots_table.insert(),
+            [
+                {
+                    "id": "table-z-older-id",
+                    "payload_json": {
+                        "mode": "official",
+                        "calculated_at": "2026-10-05T00:00:00+00:00",
+                        "source": "older-official",
+                        "rows": [
+                            {
+                                "position": 1,
+                                "team": {"id": "team-home", "name": "Home"},
+                                "played": 1,
+                                "wins": 1,
+                                "draws": 0,
+                                "losses": 0,
+                                "points_for": 10,
+                                "points_against": 5,
+                                "points_difference": 5,
+                                "league_points": 3,
+                            }
+                        ],
+                    },
+                },
+                {
+                    "id": "table-a-newer-id",
+                    "payload_json": {
+                        "mode": "official",
+                        "calculated_at": "2026-10-05T01:00:00+00:00",
+                        "source": "newer-official",
+                        "rows": [
+                            {
+                                "position": 1,
+                                "team": {"id": "team-home", "name": "Home"},
+                                "played": 2,
+                                "wins": 2,
+                                "draws": 0,
+                                "losses": 0,
+                                "points_for": 20,
+                                "points_against": 5,
+                                "points_difference": 15,
+                                "league_points": 6,
+                            }
+                        ],
+                    },
+                },
+            ],
+        )
+        session.commit()
+
+    snapshot = PostgreSQLLeagueRepository(sessions).get_table_snapshot()
+
+    assert snapshot.source == "newer-official"
+    assert snapshot.rows[0].played == 2
+    assert snapshot.rows[0].league_points == 6
+
+
 @pytest.mark.skipif(
     not os.getenv("CDL_DATABASE_URL", "").startswith("postgresql"),
     reason="requires the migrated PostgreSQL CI service",

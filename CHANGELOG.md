@@ -1,3 +1,16 @@
+## 2026-10-06 - Gate final settlement on verified event-live data
+
+### Fixed
+
+- Prevented a stale ordinary event-live cache from becoming official after a failed final refresh for a finished/data-checked FPL event.
+- Persisted explicit final-source provenance and recorded final_event_live_unverified on held provisional results.
+- Added ingestion and settlement regressions for successful final verification and stale-cache recovery.
+
+### Validation
+
+- Merged in [PR #550](https://github.com/andrew3stedall/Cdl-react/pull/550) as 65f254b.
+- PostgreSQL release paths passed in [run 37369127085](https://github.com/andrew3stedall/Cdl-react/actions/runs/37369127085); final CI/staging checks were queued at record time.
+
 # Changelog
 
 ## Unreleased

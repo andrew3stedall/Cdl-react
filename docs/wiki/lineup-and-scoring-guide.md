@@ -28,3 +28,8 @@ Fixture scores are calculated from:
 - automatic bonus points
 
 Final results are frozen against score snapshots so history does not drift.
+
+
+## Final-source settlement guard
+
+Official scores for a non-synthetic completed fixture require a verified final event-live source. The ordinary event-live cache may support provisional scoring, but it is not sufficient after FPL reports finished=true and data_checked=true. When the final refresh fails, operators can use the per-event fetch log and the fixture result's settlement_skipped_reason=final_event_live_unverified to distinguish a held settlement from a missing fixture.

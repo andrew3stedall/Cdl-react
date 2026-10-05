@@ -179,3 +179,8 @@ Remaining for the full feature:
 
 - `event-live` scoring and freshness are visible in product routes;
 - commissioner-facing refresh/recalculation controls are implemented.
+
+
+## Final event-live verification boundary
+
+For a bootstrap event marked both finished and data_checked, refresh persists a separate event-live-final:<gameweek> cache marker only after the event-live request succeeds. Settlement uses that marker as the authoritative final source. If the request fails, the prior ordinary event-live:<gameweek> payload remains available for provisional context but cannot be frozen as official; the fixture result records final_event_live_unverified until a later successful retry.

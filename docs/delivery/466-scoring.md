@@ -30,3 +30,8 @@ This lane addresses scoring correctness, completed-fixture explanations, officia
 
 - Full backend suite after persisted bracket work: 414 passed, 18 skipped. Ruff checks passed for changed Python files; bytecode compilation passed.
 - No migrations, GitHub changes, cloud changes, or staging deployment were performed.
+
+
+## #497 final event-live verification — 6 October 2026
+
+PR [#550](https://github.com/andrew3stedall/Cdl-react/pull/550) is merged as 65f254b. Official settlement now requires a successful verified final event-live source, or an explicit previously verified final source. The old ordinary cache remains provisional when the final request fails; the failure is recorded and the result stores final_event_live_unverified. The focused ingestion/settlement regressions cover both successful retry and the stale-cache failure path. PostgreSQL release-path validation passed in [run 37369127085](https://github.com/andrew3stedall/Cdl-react/actions/runs/37369127085); final CI/staging checks were queued at record time.

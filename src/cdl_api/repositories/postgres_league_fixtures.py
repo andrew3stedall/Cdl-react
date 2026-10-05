@@ -655,11 +655,23 @@ class PostgreSQLLeagueRepository:
     @staticmethod
     def _payloads(session: Session, table: Table) -> list[dict[str, object]]:
         result = session.execute(select(table.c.payload_json).order_by(table.c.id))
-        return [
+        payloads = [
             dict(row["payload_json"])
             for row in _mapping_rows(result)
             if isinstance(row["payload_json"], Mapping)
         ]
+
+        def freshness_key(payload: Mapping[str, object]) -> tuple[int, str]:
+            for field in ("calculated_at", "finalised_at", "fetched_at", "created_at"):
+                value = payload.get(field)
+                if value is not None:
+                    return (1, str(value))
+            return (0, "")
+
+        # IDs are not timestamps. Keep the deterministic ID order only as the
+        # tie-breaker, while making official table reads choose the newest
+        # calculated snapshot.
+        return sorted(payloads, key=freshness_key)
 
     @staticmethod
     def _existing_ids(session: Session, table: Table) -> set[str]:

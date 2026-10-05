@@ -65,3 +65,10 @@ lineup_substitutions
 - A final fixture result can be explained without refetching FPL.
 - Recalculation before finalisation creates new snapshot when source changes.
 - Commissioner correction preserves previous and corrected values.
+
+
+## Verification — 6 October 2026
+
+PR [#550](https://github.com/andrew3stedall/Cdl-react/pull/550) is merged as 65f254b. A finished and data-checked bootstrap event now requires a separately persisted event-live-final:<gameweek> source before official settlement. A failed final refresh records the per-event fetch failure, leaves the ordinary cached event payload non-authoritative, and records final_event_live_unverified on the provisional fixture result. A successful retry is idempotent and records the verified response hash and fetch timestamp.
+
+Regression coverage is in [test_fpl_data_ingestion.py](../../../tests/test_fpl_data_ingestion.py) and [test_fpl_settlement.py](../../../tests/test_fpl_settlement.py). PostgreSQL release-path validation passed in [run 37369127085](https://github.com/andrew3stedall/Cdl-react/actions/runs/37369127085); the final CI/staging runs for the merged change were queued at record time.

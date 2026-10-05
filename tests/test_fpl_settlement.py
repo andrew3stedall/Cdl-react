@@ -770,9 +770,7 @@ def test_ownership_repair_replaces_departed_player_only_in_future_unlocked_lineu
         "fpl-3": (False, False),
         "fpl-24": (False, True),
     }
-    assert {
-        player_id for gameweek, player_id, _, _ in updated if gameweek == 3
-    } == {
+    assert {player_id for gameweek, player_id, _, _ in updated if gameweek == 3} == {
         "fpl-1",
         "fpl-2",
         "fpl-3",

@@ -184,9 +184,7 @@ class FplDataService:
             gameweek = _as_optional_int(row.get("id"))
             if gameweek is None:
                 continue
-            cached_final = self._repository.cached_payload(
-                f"{FINAL_EVENT_LIVE_PREFIX}{gameweek}"
-            )
+            cached_final = self._repository.cached_payload(f"{FINAL_EVENT_LIVE_PREFIX}{gameweek}")
             if cached_final is None:
                 self._fetch_and_cache_event_live(gameweek, final=True)
 
@@ -224,11 +222,7 @@ class FplDataService:
         return self._fetch_and_cache_event_live(gameweek)
 
     def _fetch_and_cache_event_live(self, gameweek: int, *, final: bool = False) -> object | None:
-        resource = (
-            f"{FINAL_EVENT_LIVE_PREFIX}{gameweek}"
-            if final
-            else f"event-live:{gameweek}"
-        )
+        resource = f"{FINAL_EVENT_LIVE_PREFIX}{gameweek}" if final else f"event-live:{gameweek}"
         fetch_event_live = getattr(self._client, "fetch_event_live", None)
         if not callable(fetch_event_live):
             return None

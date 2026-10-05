@@ -21,6 +21,7 @@ from cdl_api.repositories.postgres_fpl_data import PostgreSQLFplDataRepository
 
 ELEMENT_SUMMARY_TTL = timedelta(hours=6)
 EVENT_LIVE_TTL = timedelta(hours=6)
+FINAL_EVENT_LIVE_PREFIX = "event-live-final:"
 
 
 class FplApiClientProtocol(Protocol):
@@ -67,6 +68,7 @@ class FplDataService:
                         response_sha256=response_sha256,
                         fetched_at=fetched_at,
                     )
+                    self._refresh_final_event_live(response.payload)
                 else:
                     if not isinstance(response.payload, list):
                         raise FplApiError("FPL fixtures payload must be a list.")
@@ -168,6 +170,24 @@ class FplDataService:
                 event_live_payloads[gameweek] = payload
         return enrich(response, event_live_payloads=event_live_payloads)
 
+    def _refresh_final_event_live(self, payload: Mapping[str, object]) -> None:
+        events = payload.get("events")
+        if not isinstance(events, list):
+            return
+        for row in events:
+            if (
+                not isinstance(row, Mapping)
+                or not row.get("finished")
+                or not row.get("data_checked")
+            ):
+                continue
+            gameweek = _as_optional_int(row.get("id"))
+            if gameweek is None:
+                continue
+            cached_final = self._repository.cached_payload(f"{FINAL_EVENT_LIVE_PREFIX}{gameweek}")
+            if cached_final is None:
+                self._fetch_and_cache_event_live(gameweek, final=True)
+
     def _refresh_completed_event_live(self, payload: list[Mapping[str, object]]) -> None:
         fetch_event_live = getattr(self._client, "fetch_event_live", None)
         if not callable(fetch_event_live):
@@ -201,8 +221,8 @@ class FplDataService:
                 return payload
         return self._fetch_and_cache_event_live(gameweek)
 
-    def _fetch_and_cache_event_live(self, gameweek: int) -> object | None:
-        resource = f"event-live:{gameweek}"
+    def _fetch_and_cache_event_live(self, gameweek: int, *, final: bool = False) -> object | None:
+        resource = f"{FINAL_EVENT_LIVE_PREFIX}{gameweek}" if final else f"event-live:{gameweek}"
         fetch_event_live = getattr(self._client, "fetch_event_live", None)
         if not callable(fetch_event_live):
             return None
@@ -213,14 +233,26 @@ class FplDataService:
             if not isinstance(response.payload.get("elements"), list):
                 raise FplApiError("FPL event live payload is missing elements.")
             fetched_at = datetime.now(UTC)
+            response_sha256 = _payload_sha256(response.payload)
             self._repository.persist_event_live(
                 gameweek,
                 response.payload,
                 endpoint=response.endpoint,
                 status_code=response.status_code,
-                response_sha256=_payload_sha256(response.payload),
+                response_sha256=response_sha256,
                 fetched_at=fetched_at,
             )
+            if final:
+                persist_final = getattr(self._repository, "persist_final_event_live", None)
+                if callable(persist_final):
+                    persist_final(
+                        gameweek,
+                        response.payload,
+                        endpoint=response.endpoint,
+                        status_code=response.status_code,
+                        response_sha256=response_sha256,
+                        fetched_at=fetched_at,
+                    )
             return response.payload
         except (FplApiError, AttributeError) as exc:
             endpoint_for = getattr(self._client, "endpoint_for", None)

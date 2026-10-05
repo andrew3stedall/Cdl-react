@@ -373,6 +373,33 @@ class PostgreSQLFplDataRepository:
             )
             session.commit()
 
+    def persist_final_event_live(
+        self,
+        gameweek: int,
+        payload: Mapping[str, object],
+        *,
+        endpoint: str,
+        status_code: int,
+        response_sha256: str,
+        fetched_at: datetime,
+    ) -> None:
+        """Persist the source explicitly verified after FPL marked an event final."""
+        resource = f"event-live-final:{gameweek}"
+        elements = payload.get("elements")
+        record_count = len(elements) if isinstance(elements, list) else 0
+        with self._session_factory() as session:
+            self._record_success(
+                session,
+                resource=resource,
+                endpoint=endpoint,
+                status_code=status_code,
+                response_sha256=response_sha256,
+                payload=dict(payload),
+                fetched_at=fetched_at,
+                record_count=record_count,
+            )
+            session.commit()
+
     def cached_payload(
         self,
         resource: str,

@@ -328,32 +328,57 @@ class FplSettlementService:
                 external_payload_cache_table.c.payload_json,
                 external_payload_cache_table.c.response_sha256,
                 external_payload_cache_table.c.fetched_at,
-            ).where(external_payload_cache_table.c.resource.like("event-live:%"))
-        ).mappings()
-        live_payloads = {
-            int(str(row["resource"]).removeprefix("event-live:")): (
-                row["payload_json"],
-                str(row["response_sha256"]),
-                row["fetched_at"],
+            ).where(
+                external_payload_cache_table.c.resource.like("event-live:%")
+                | external_payload_cache_table.c.resource.like("event-live-final:%")
             )
-            for row in live_rows
-            if str(row["resource"]).removeprefix("event-live:").isdigit()
-        }
-        failed_attempts: dict[int, datetime] = {}
+        ).mappings()
+        live_payloads: dict[int, tuple[object, str, datetime]] = {}
+        final_live_payloads: dict[int, tuple[object, str, datetime]] = {}
+        for row in live_rows:
+            resource = str(row["resource"])
+            if resource.startswith("event-live-final:"):
+                suffix = resource.removeprefix("event-live-final:")
+                if suffix.isdigit():
+                    final_live_payloads[int(suffix)] = (
+                        row["payload_json"],
+                        str(row["response_sha256"]),
+                        row["fetched_at"],
+                    )
+            elif resource.startswith("event-live:"):
+                suffix = resource.removeprefix("event-live:")
+                if suffix.isdigit():
+                    live_payloads[int(suffix)] = (
+                        row["payload_json"],
+                        str(row["response_sha256"]),
+                        row["fetched_at"],
+                    )
+        bootstrap_fetched_at = session.execute(
+            select(external_payload_cache_table.c.fetched_at).where(
+                external_payload_cache_table.c.resource == "bootstrap-static"
+            )
+        ).scalar_one_or_none()
+        failed_attempts: dict[str, datetime] = {}
         for row in session.execute(
             select(
                 external_fetch_log_table.c.resource,
                 external_fetch_log_table.c.fetched_at,
             )
             .where(
-                external_fetch_log_table.c.resource.like("event-live:%"),
                 external_fetch_log_table.c.error.is_not(None),
+                external_fetch_log_table.c.resource.like("event-live%"),
             )
             .order_by(external_fetch_log_table.c.fetched_at.desc())
         ).mappings():
-            gameweek_resource = str(row["resource"]).removeprefix("event-live:")
-            if gameweek_resource.isdigit():
-                failed_attempts.setdefault(int(gameweek_resource), row["fetched_at"])
+            resource = str(row["resource"])
+            if resource.startswith("event-live-final:") or resource.startswith("event-live:"):
+                suffix = (
+                    resource.removeprefix("event-live-final:")
+                    if resource.startswith("event-live-final:")
+                    else resource.removeprefix("event-live:")
+                )
+                if suffix.isdigit():
+                    failed_attempts.setdefault(resource, row["fetched_at"])
         result_rows = {
             str(row["payload_json"].get("fixture_id")): (str(row["id"]), row["payload_json"])
             for row in session.execute(
@@ -406,7 +431,51 @@ class FplSettlementService:
             )
             if was_finalised and not needs_automatic_substitution_repair:
                 continue
-            live_payload, source_hash, fetched_at = live_payloads.get(gameweek, (None, "", None))
+            live_payload = None
+            source_hash = ""
+            fetched_at = None
+            if gameweek in ready_gameweeks and not synthetic_fixture:
+                final_source = final_live_payloads.get(gameweek)
+                normal_source = live_payloads.get(gameweek)
+                if final_source is not None:
+                    live_payload, source_hash, fetched_at = final_source
+                    verified_event_refresh = True
+                elif normal_source is not None and cls._normal_event_source_is_verified(
+                    normal_source[2],
+                    bootstrap_fetched_at,
+                    failed_attempts.get(f"event-live:{gameweek}"),
+                    failed_attempts.get(f"event-live-final:{gameweek}"),
+                ):
+                    # Compatibility for historical/unit fixtures that predate the
+                    # explicit final-source cache. Production refreshes persist the
+                    # final marker above and do not use an older in-play payload.
+                    live_payload, source_hash, fetched_at = normal_source
+                    verified_event_refresh = True
+                else:
+                    verified_event_refresh = False
+            else:
+                normal_source = live_payloads.get(gameweek)
+                if normal_source is not None:
+                    live_payload, source_hash, fetched_at = normal_source
+                failed_at = failed_attempts.get(f"event-live:{gameweek}")
+                verified_event_refresh = fetched_at is not None and (
+                    failed_at is None or failed_at <= fetched_at
+                )
+
+            finalised = (gameweek in ready_gameweeks and verified_event_refresh) or (
+                was_finalised and verified_event_refresh
+            )
+            if gameweek in ready_gameweeks and not verified_event_refresh:
+                cls._record_fixture_settlement_skip(
+                    session,
+                    result_row=result_row,
+                    fixture_id=fixture_id,
+                    gameweek=gameweek,
+                    reason="final_event_live_unverified",
+                    now=now,
+                )
+                skipped += 1
+                continue
             if (
                 was_finalised
                 and needs_automatic_substitution_repair
@@ -417,31 +486,12 @@ class FplSettlementService:
                 # Legacy snapshots may acquire explanation metadata only by
                 # replaying the exact source that was originally frozen.
                 continue
+
             player_points = _event_player_points(live_payload)
             player_minutes = _event_player_minutes(live_payload)
             player_goals = _event_player_goals(live_payload)
             if not player_points:
                 skipped += 1
-                continue
-            # A previously finalised result is repaired with the latest
-            # substitution-aware calculation, even if the current scheduler
-            # pass no longer sees the gameweek in the ready set.
-            failed_at = failed_attempts.get(gameweek)
-            verified_event_refresh = fetched_at is not None and (
-                failed_at is None or failed_at <= fetched_at
-            )
-            finalised = (gameweek in ready_gameweeks and verified_event_refresh) or (
-                was_finalised and verified_event_refresh
-            )
-            if gameweek in ready_gameweeks and not verified_event_refresh:
-                skipped += 1
-                continue
-            if (
-                not finalised
-                and result_row is not None
-                and isinstance(current_result, Mapping)
-                and current_result.get("source_response_sha256") == source_hash
-            ):
                 continue
             home_team = payload.get("home_team")
             away_team = payload.get("away_team")
@@ -487,6 +537,13 @@ class FplSettlementService:
                 if was_finalised
                 else current_rules_version or (active_version_id if finalised else None)
             )
+            source_resource = (
+                f"event-live-final:{gameweek}"
+                if gameweek in ready_gameweeks
+                and not synthetic_fixture
+                and gameweek in final_live_payloads
+                else f"event-live:{gameweek}"
+            )
             result_payload = {
                 **dict(current_result),
                 "fixture_id": fixture_id,
@@ -496,7 +553,7 @@ class FplSettlementService:
                 "finalised": finalised,
                 "finalised_at": finalised_at if finalised else current_result.get("finalised_at"),
                 "gameweek": gameweek,
-                "source_resource": f"event-live:{gameweek}",
+                "source_resource": source_resource,
                 "source_response_sha256": source_hash,
                 "source_fetched_at": fetched_at.isoformat() if fetched_at is not None else None,
                 "automatic_substitution_version": (
@@ -507,6 +564,8 @@ class FplSettlementService:
                 "synthetic": False,
                 "rules_version_id": pinned_rules_version,
             }
+            result_payload.pop("settlement_skipped_reason", None)
+            result_payload.pop("settlement_skipped_at", None)
             snapshot_payload = {
                 **dict(snapshot_payload),
                 "fixture_id": fixture_id,
@@ -520,7 +579,7 @@ class FplSettlementService:
                 },
                 "chips_played": chips_played,
                 "substitutions": substitutions,
-                "source_resource": f"event-live:{gameweek}",
+                "source_resource": source_resource,
                 "source_response_sha256": source_hash,
                 "source_fetched_at": fetched_at.isoformat() if fetched_at is not None else None,
                 "automatic_substitution_version": (
@@ -575,6 +634,60 @@ class FplSettlementService:
             if finalised:
                 settled += 1
         return settled, skipped
+
+    @staticmethod
+    def _normal_event_source_is_verified(
+        fetched_at: datetime,
+        bootstrap_fetched_at: datetime | None,
+        failed_at: datetime | None,
+        final_failed_at: datetime | None,
+    ) -> bool:
+        if bootstrap_fetched_at is not None and fetched_at < bootstrap_fetched_at:
+            return False
+        return all(
+            failure_at is None or failure_at <= fetched_at
+            for failure_at in (failed_at, final_failed_at)
+        )
+
+    @staticmethod
+    def _record_fixture_settlement_skip(
+        session: Session,
+        *,
+        result_row: Mapping[str, object] | tuple[object, object] | None,
+        fixture_id: str,
+        gameweek: int,
+        reason: str,
+        now: datetime,
+    ) -> None:
+        current_payload = (
+            (result_row[1] if isinstance(result_row, tuple) else result_row["payload_json"])
+            if result_row is not None
+            else {}
+        )
+        payload = dict(current_payload) if isinstance(current_payload, Mapping) else {}
+        payload.update(
+            {
+                "fixture_id": fixture_id,
+                "gameweek": gameweek,
+                "finalised": False,
+                "settlement_skipped_reason": reason,
+                "settlement_skipped_at": now.isoformat(),
+            }
+        )
+        if result_row is not None:
+            result_id = result_row[0] if isinstance(result_row, tuple) else result_row["id"]
+            session.execute(
+                update(fixture_results_table)
+                .where(fixture_results_table.c.id == result_id)
+                .values(payload_json=payload)
+            )
+        else:
+            session.execute(
+                insert(fixture_results_table).values(
+                    id=f"result-{fixture_id}",
+                    payload_json=payload,
+                )
+            )
 
     @staticmethod
     def _ready_gameweeks(session: Session) -> set[int]:

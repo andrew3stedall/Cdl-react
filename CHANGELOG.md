@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Audit batch 4 hardens P1 gameplay acceptance for Auto Captain ties and bench exclusion, ownership-driven lineup repair, frozen completed-fixture scoring metadata, and fresh official table snapshot selection.
+- Batch 4 is merged as [PR #547](https://github.com/andrew3stedall/Cdl-react/pull/547) (`f7d543886f96c24662e570932d589c54ada2d8c1`) and validated with [CI 37304958586](https://github.com/andrew3stedall/Cdl-react/actions/runs/37304958586), [PostgreSQL 37304958650](https://github.com/andrew3stedall/Cdl-react/actions/runs/37304958650), and [staging rollout 37304958609](https://github.com/andrew3stedall/Cdl-react/actions/runs/37304958609). Staging revision `cdl-react-staging-api-00330-fs7` serves 100% traffic; migrations, official FPL refresh and live service/auth checks passed.
 - Audit batch 3 hardens Market failed/empty retry states and authoritative form-history refresh, separates committed squad mutations from refresh failures, and prevents duplicate pending trade proposal submissions with focused regression coverage.
 - Batch 3 is merged as [PR #545](https://github.com/andrew3stedall/Cdl-react/pull/545) and validated on staging revision `cdl-react-staging-api-00329-2q9`; CI, PostgreSQL smoke, migrations, official FPL refresh and live service/auth checks passed.
 

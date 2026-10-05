@@ -2,6 +2,25 @@
 
 Updated: 5 October 2026 (Australia/Melbourne). Parent [#466](https://github.com/andrew3stedall/Cdl-react/issues/466). This index covers every issue; an item being tackled is not a claim that its acceptance is complete.
 
+## Batch 4 — merged and staging-validated
+
+PR [#547](https://github.com/andrew3stedall/Cdl-react/pull/547) is merged as `f7d543886f96c24662e570932d589c54ada2d8c1`. The five Batch-4 issues (#489–#493) are closed after acceptance hardening passed CI, PostgreSQL validation, and the post-merge staging rollout.
+
+- #489: Auto Captain applies exactly one deterministic bonus; tie ordering and bench exclusion are covered.
+- #490: squad changes retain team-scoped ownership validation.
+- #491: unlocked lineup repair preserves captain/vice state and slot ordering while locked history remains unchanged.
+- #492: completed fixture player breakdowns use frozen base points, multipliers and reasons rather than mutable event-live totals.
+- #493: official table snapshots are selected by calculated freshness instead of identifier ordering.
+- Hosted evidence: [CI 37304958586](https://github.com/andrew3stedall/Cdl-react/actions/runs/37304958586), [Backend PostgreSQL 37304958650](https://github.com/andrew3stedall/Cdl-react/actions/runs/37304958650), and [staging rollout 37304958609](https://github.com/andrew3stedall/Cdl-react/actions/runs/37304958609).
+- Staging serves revision `cdl-react-staging-api-00330-fs7` at 100% traffic from [the staging service](https://cdl-react-staging-api-tkhbn7jfsa-ts.a.run.app); migrations, official FPL refresh, readiness, smoke and live service/auth checks passed.
+
+### What to review after Batch 4 is deployed
+
+1. Confirm Auto Captain tie and bench cases choose one eligible scorer and one bonus.
+2. Verify an ownership change repairs only unlocked future lineups and leaves locked fixture history intact.
+3. Confirm completed fixture explanations remain stable if event-live data changes after settlement.
+4. Confirm a newer calculated official snapshot wins even when an older row has a larger identifier.
+
 ## Batch 3 — merged and staging-validated
 
 PR [#545](https://github.com/andrew3stedall/Cdl-react/pull/545) is merged as `4d884fe1671d69deb9caadef4462fd05ebaa1dfe`. The four batch-3 issues (#513–#516) are closed after the focused journey coverage passed CI, PostgreSQL smoke passed, and the post-merge staging rollout completed successfully.
@@ -87,11 +106,11 @@ PR [#545](https://github.com/andrew3stedall/Cdl-react/pull/545) is merged as `4d
 | [#486](https://github.com/andrew3stedall/Cdl-react/issues/486) | Batch 1: proven unused Squad/League header selectors removed | [docs/delivery/466-ui.md](../delivery/466-ui.md) |
 | [#487](https://github.com/andrew3stedall/Cdl-react/issues/487) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [docs/delivery/466-ui.md](../delivery/466-ui.md) |
 | [#488](https://github.com/andrew3stedall/Cdl-react/issues/488) | Open: physical installed-PWA safe-area/keyboard/chrome checks | [frontend/browser-tests/layout-invariants.spec.ts](../../frontend/browser-tests/layout-invariants.spec.ts) |
-| [#489](https://github.com/andrew3stedall/Cdl-react/issues/489) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [tests/test_team_selection_service.py](../../tests/test_team_selection_service.py) |
-| [#490](https://github.com/andrew3stedall/Cdl-react/issues/490) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [tests/test_squad_service.py](../../tests/test_squad_service.py) |
-| [#491](https://github.com/andrew3stedall/Cdl-react/issues/491) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [tests/test_fpl_settlement.py](../../tests/test_fpl_settlement.py) |
-| [#492](https://github.com/andrew3stedall/Cdl-react/issues/492) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [docs/delivery/466-scoring.md](../delivery/466-scoring.md) |
-| [#493](https://github.com/andrew3stedall/Cdl-react/issues/493) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [tests/test_postgres_league_api.py](../../tests/test_postgres_league_api.py) |
+| [#489](https://github.com/andrew3stedall/Cdl-react/issues/489) | Batch 4: Auto Captain tie and bench acceptance hardened; PR #547 merged and post-merge CI/PostgreSQL/staging evidence green; issue closed | [tests/test_team_selection_service.py](../../tests/test_team_selection_service.py) |
+| [#490](https://github.com/andrew3stedall/Cdl-react/issues/490) | Batch 4: team-scoped squad validation retained and verified; PR #547 merged and post-merge CI/PostgreSQL/staging evidence green; issue closed | [tests/test_squad_service.py](../../tests/test_squad_service.py) |
+| [#491](https://github.com/andrew3stedall/Cdl-react/issues/491) | Batch 4: unlocked lineup repair and captain/vice preservation verified; PR #547 merged and post-merge CI/PostgreSQL/staging evidence green; issue closed | [tests/test_fpl_settlement.py](../../tests/test_fpl_settlement.py) |
+| [#492](https://github.com/andrew3stedall/Cdl-react/issues/492) | Batch 4: frozen completed-fixture scoring metadata verified; PR #547 merged and post-merge CI/PostgreSQL/staging evidence green; issue closed | [docs/delivery/466-scoring.md](../delivery/466-scoring.md) |
+| [#493](https://github.com/andrew3stedall/Cdl-react/issues/493) | Batch 4: fresh official table snapshot selection verified; PR #547 merged and post-merge CI/PostgreSQL/staging evidence green; issue closed | [tests/test_postgres_league_api.py](../../tests/test_postgres_league_api.py) |
 | [#494](https://github.com/andrew3stedall/Cdl-react/issues/494) | Blocked: exact bonus criteria and award amounts still needed | [docs/delivery/466-scoring.md](../delivery/466-scoring.md) |
 | [#495](https://github.com/andrew3stedall/Cdl-react/issues/495) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [tests/test_postgres_trade_approval.py](../../tests/test_postgres_trade_approval.py) |
 | [#496](https://github.com/andrew3stedall/Cdl-react/issues/496) | In progress: approved final league-rank tie-break; middle bracket path still needed | [docs/delivery/466-scoring.md](../delivery/466-scoring.md) |
@@ -125,7 +144,7 @@ PR [#545](https://github.com/andrew3stedall/Cdl-react/pull/545) is merged as `4d
 | [#524](https://github.com/andrew3stedall/Cdl-react/issues/524) | Open: general correction authority and affected records need definition | [docs/features/active/permissions-approvals-and-admin-audit.md](../features/active/permissions-approvals-and-admin-audit.md) |
 | [#525](https://github.com/andrew3stedall/Cdl-react/issues/525) | Open: extension/conversion terms remain unspecified | [tests/test_postgres_loans.py](../../tests/test_postgres_loans.py) |
 | [#526](https://github.com/andrew3stedall/Cdl-react/issues/526) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [tests/test_private_scouting.py](../../tests/test_private_scouting.py) |
-| [#527](https://github.com/andrew3stedall/Cdl-react/issues/527) | Batch 2: residual Desk narration removed; hosted acceptance pending | [frontend/src/ManagerDeskPage.test.tsx](../../frontend/src/ManagerDeskPage.test.tsx) |
+| [#527](https://github.com/andrew3stedall/Cdl-react/issues/527) | Batch 2: residual Desk narration removed; PR #544 merged and issue closed | [frontend/src/ManagerDeskPage.test.tsx](../../frontend/src/ManagerDeskPage.test.tsx) |
 | [#528](https://github.com/andrew3stedall/Cdl-react/issues/528) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [docs/delivery/466-ui.md](../delivery/466-ui.md) |
 | [#529](https://github.com/andrew3stedall/Cdl-react/issues/529) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/App.tsx](../../frontend/src/App.tsx) |
 | [#530](https://github.com/andrew3stedall/Cdl-react/issues/530) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [docs/delivery/466-release-scope.md](../delivery/466-release-scope.md) |

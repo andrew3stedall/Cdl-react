@@ -452,16 +452,7 @@ class FplSettlementService:
                     live_payload, source_hash, fetched_at = normal_source
                     verified_event_refresh = True
                 else:
-                    cls._record_fixture_settlement_skip(
-                        session,
-                        result_row=result_row,
-                        fixture_id=fixture_id,
-                        gameweek=gameweek,
-                        reason="final_event_live_unverified",
-                        now=now,
-                    )
-                    skipped += 1
-                    continue
+                    verified_event_refresh = False
             else:
                 normal_source = live_payloads.get(gameweek)
                 if normal_source is not None:
@@ -470,6 +461,21 @@ class FplSettlementService:
                 verified_event_refresh = fetched_at is not None and (
                     failed_at is None or failed_at <= fetched_at
                 )
+
+            finalised = (gameweek in ready_gameweeks and verified_event_refresh) or (
+                was_finalised and verified_event_refresh
+            )
+            if gameweek in ready_gameweeks and not verified_event_refresh:
+                cls._record_fixture_settlement_skip(
+                    session,
+                    result_row=result_row,
+                    fixture_id=fixture_id,
+                    gameweek=gameweek,
+                    reason="final_event_live_unverified",
+                    now=now,
+                )
+                skipped += 1
+                continue
             if (
                 was_finalised
                 and needs_automatic_substitution_repair
@@ -479,6 +485,13 @@ class FplSettlementService:
             ):
                 # Legacy snapshots may acquire explanation metadata only by
                 # replaying the exact source that was originally frozen.
+                continue
+
+            player_points = _event_player_points(live_payload)
+            player_minutes = _event_player_minutes(live_payload)
+            player_goals = _event_player_goals(live_payload)
+            if not player_points:
+                skipped += 1
                 continue
             home_team = payload.get("home_team")
             away_team = payload.get("away_team")

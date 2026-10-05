@@ -396,7 +396,8 @@ class PostgreSQLTeamSelectionRepository(InMemoryTeamSelectionRepository):
         The live squad read model is intentionally not used here: transfers and
         current FPL totals can change after a fixture has finished. Historical
         fixture views must use the lineup saved for that gameweek and the
-        corresponding cached event-live points instead.
+        corresponding frozen scoring snapshot. The event-live cache is only a
+        provisional fallback when a fixture has not been completed.
         """
         team_ids = (fixture.home_team.id, fixture.away_team.id)
         with self._session_factory() as session:

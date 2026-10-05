@@ -685,3 +685,134 @@ def test_failed_event_live_refresh_is_recorded_for_settlement_guard() -> None:
         ).one()
 
     assert failure == ("event-live:1", "event-live unavailable")
+
+
+def test_final_bootstrap_refresh_persists_an_explicit_verified_event_source() -> None:
+    sessions = _session_factory()
+    final_bootstrap = {
+        **BOOTSTRAP,
+        "events": [
+            {
+                **BOOTSTRAP["events"][0],
+                "finished": True,
+                "data_checked": True,
+            }
+        ],
+    }
+
+    class FinalClient(FakeClient):
+        def fetch_bootstrap_static(self) -> FplApiResponse:
+            return FplApiResponse(
+                endpoint=self.endpoint_for("bootstrap-static/"),
+                payload=final_bootstrap,
+                status_code=200,
+            )
+
+        def fetch_fixtures(self) -> FplApiResponse:
+            return FplApiResponse(
+                endpoint=self.endpoint_for("fixtures/"),
+                payload=[
+                    {
+                        **FIXTURES[0],
+                        "started": True,
+                        "finished": True,
+                        "finished_provisional": False,
+                    }
+                ],
+                status_code=200,
+            )
+
+    client = FinalClient()
+    service = FplDataService(client, PostgreSQLFplDataRepository(sessions))
+
+    service.refresh(list(FplRefreshResource))
+
+    assert client.event_live_calls == 1
+    with sessions() as session:
+        final_source = session.execute(
+            select(external_payload_cache_table).where(
+                external_payload_cache_table.c.resource == "event-live-final:1"
+            )
+        ).mappings().one()
+        normal_source = session.execute(
+            select(external_payload_cache_table).where(
+                external_payload_cache_table.c.resource == "event-live:1"
+            )
+        ).mappings().one()
+        assert final_source["response_sha256"] == normal_source["response_sha256"]
+        assert final_source["payload_json"] == EVENT_LIVE
+
+
+def test_failed_final_event_refresh_keeps_an_older_event_cache_unverified() -> None:
+    sessions = _session_factory()
+    repository = PostgreSQLFplDataRepository(sessions)
+    old_fetched_at = datetime(2026, 8, 14, tzinfo=UTC)
+    repository.persist_event_live(
+        1,
+        EVENT_LIVE,
+        endpoint="https://fantasy.premierleague.com/api/event/1/live/",
+        status_code=200,
+        response_sha256="old-event-live-sha",
+        fetched_at=old_fetched_at,
+    )
+    final_bootstrap = {
+        **BOOTSTRAP,
+        "events": [
+            {
+                **BOOTSTRAP["events"][0],
+                "finished": True,
+                "data_checked": True,
+            }
+        ],
+    }
+
+    class FailingFinalClient(FakeClient):
+        def fetch_bootstrap_static(self) -> FplApiResponse:
+            return FplApiResponse(
+                endpoint=self.endpoint_for("bootstrap-static/"),
+                payload=final_bootstrap,
+                status_code=200,
+            )
+
+        def fetch_fixtures(self) -> FplApiResponse:
+            return FplApiResponse(
+                endpoint=self.endpoint_for("fixtures/"),
+                payload=[
+                    {
+                        **FIXTURES[0],
+                        "started": True,
+                        "finished": True,
+                        "finished_provisional": False,
+                    }
+                ],
+                status_code=200,
+            )
+
+        def fetch_event_live(self, gameweek: int) -> FplApiResponse:
+            self.event_live_calls += 1
+            raise FplApiError(f"event {gameweek} final refresh failed")
+
+    client = FailingFinalClient()
+    service = FplDataService(client, repository)
+
+    service.refresh(list(FplRefreshResource))
+
+    assert client.event_live_calls == 1
+    with sessions() as session:
+        assert session.execute(
+            select(external_payload_cache_table.c.resource).where(
+                external_payload_cache_table.c.resource == "event-live-final:1"
+            )
+        ).scalar_one_or_none() is None
+        failure = session.execute(
+            select(external_fetch_log_table).where(
+                external_fetch_log_table.c.resource == "event-live-final:1"
+            )
+        ).mappings().one()
+        assert "final refresh failed" in failure["error"]
+        cached = session.execute(
+            select(external_payload_cache_table).where(
+                external_payload_cache_table.c.resource == "event-live:1"
+            )
+        ).mappings().one()
+        assert cached["fetched_at"] == old_fetched_at

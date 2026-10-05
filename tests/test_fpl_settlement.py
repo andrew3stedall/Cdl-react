@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from cdl_api.repositories.postgres_fpl_data import (
+    external_fetch_log_table,
     external_payload_cache_table,
     fpl_gameweeks_table,
 )
@@ -958,3 +959,113 @@ def test_settlement_repairs_a_finalised_fixture_missing_substitution_pass() -> N
         },
     ]
     assert substitution_rows == ["fpl-2", "fpl-10"]
+
+
+def test_completed_fixture_stays_provisional_after_failed_final_event_refresh() -> None:
+    sessions = _session_factory()
+    now = datetime.now(UTC)
+    old_fetched_at = now - timedelta(hours=1)
+
+    with sessions() as session:
+        session.execute(
+            insert(fpl_gameweeks_table).values(
+                id="1",
+                name="Gameweek 1",
+                deadline_time=now - timedelta(hours=2),
+                is_previous=True,
+                is_current=False,
+                is_next=False,
+                finished=True,
+                data_checked=True,
+            )
+        )
+        session.execute(
+            insert(external_payload_cache_table).values(
+                resource="event-live:1",
+                endpoint="https://fantasy.premierleague.com/api/event/1/live/",
+                payload_json={
+                    "elements": [
+                        {"id": player_id, "stats": {"total_points": 1}}
+                        for player_id in range(1, 23)
+                    ]
+                },
+                response_sha256="old" * 16,
+                fetched_at=old_fetched_at,
+            )
+        )
+        session.execute(
+            insert(external_fetch_log_table).values(
+                id="failed-final-event-live-1",
+                resource="event-live-final:1",
+                endpoint="https://fantasy.premierleague.com/api/event/1/live/",
+                status_code=None,
+                response_sha256=None,
+                record_count=0,
+                error="upstream final event refresh failed",
+                fetched_at=now,
+            )
+        )
+        fixture_payload = {
+            "id": "fixture-unverified-final",
+            "gameweek": {"id": "gw-1", "name": "Gameweek 1", "number": 1},
+            "home_team": {"id": "team-home", "name": "Home"},
+            "away_team": {"id": "team-away", "name": "Away"},
+            "status": "pending",
+            "synthetic": False,
+        }
+        session.execute(
+            insert(cdl_fixtures_table).values(
+                id="fixture-unverified-final",
+                payload_json=fixture_payload,
+            )
+        )
+        session.execute(
+            insert(fixture_results_table).values(
+                id="result-fixture-unverified-final",
+                payload_json={
+                    "fixture_id": "fixture-unverified-final",
+                    "home_score": 11,
+                    "away_score": 10,
+                    "outcome": "home_win",
+                    "finalised": False,
+                },
+            )
+        )
+        session.execute(insert(team_selection_lineup_slots_table), [
+            {
+                "id": f"lineup-unverified-{team_id}-{player_id}",
+                "season_id": SEASON_ID,
+                "draft_team_id": team_id,
+                "player_id": f"fpl-{player_id}",
+                "gameweek": 1,
+                "slot": "starter",
+                "slot_order": slot_order,
+                "is_captain": False,
+                "is_vice_captain": False,
+                "locked_at": None,
+                "updated_at": now,
+            }
+            for team_id, player_ids in (
+                ("team-home", range(1, 12)),
+                ("team-away", range(12, 23)),
+            )
+            for slot_order, player_id in enumerate(player_ids, start=1)
+        ])
+        session.commit()
+
+    with sessions() as session:
+        settled, skipped = FplSettlementService._settle_completed_fixtures(
+            session, now, {1: now - timedelta(hours=1)}
+        )
+        session.commit()
+
+    assert settled == 0
+    assert skipped == 1
+    with sessions() as session:
+        payload = session.execute(
+            select(fixture_results_table.c.payload_json).where(
+                fixture_results_table.c.id == "result-fixture-unverified-final"
+            )
+        ).scalar_one()
+    assert payload["finalised"] is False
+    assert payload["settlement_skipped_reason"] == "final_event_live_unverified"

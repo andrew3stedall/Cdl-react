@@ -729,16 +729,24 @@ def test_final_bootstrap_refresh_persists_an_explicit_verified_event_source() ->
 
     assert client.event_live_calls == 1
     with sessions() as session:
-        final_source = session.execute(
-            select(external_payload_cache_table).where(
-                external_payload_cache_table.c.resource == "event-live-final:1"
+        final_source = (
+            session.execute(
+                select(external_payload_cache_table).where(
+                    external_payload_cache_table.c.resource == "event-live-final:1"
+                )
             )
-        ).mappings().one()
-        normal_source = session.execute(
-            select(external_payload_cache_table).where(
-                external_payload_cache_table.c.resource == "event-live:1"
+            .mappings()
+            .one()
+        )
+        normal_source = (
+            session.execute(
+                select(external_payload_cache_table).where(
+                    external_payload_cache_table.c.resource == "event-live:1"
+                )
             )
-        ).mappings().one()
+            .mappings()
+            .one()
+        )
         assert final_source["response_sha256"] == normal_source["response_sha256"]
         assert final_source["payload_json"] == EVENT_LIVE
 
@@ -799,20 +807,31 @@ def test_failed_final_event_refresh_keeps_an_older_event_cache_unverified() -> N
 
     assert client.event_live_calls == 1
     with sessions() as session:
-        assert session.execute(
-            select(external_payload_cache_table.c.resource).where(
-                external_payload_cache_table.c.resource == "event-live-final:1"
+        assert (
+            session.execute(
+                select(external_payload_cache_table.c.resource).where(
+                    external_payload_cache_table.c.resource == "event-live-final:1"
+                )
+            ).scalar_one_or_none()
+            is None
+        )
+        failure = (
+            session.execute(
+                select(external_fetch_log_table).where(
+                    external_fetch_log_table.c.resource == "event-live-final:1"
+                )
             )
-        ).scalar_one_or_none() is None
-        failure = session.execute(
-            select(external_fetch_log_table).where(
-                external_fetch_log_table.c.resource == "event-live-final:1"
-            )
-        ).mappings().one()
+            .mappings()
+            .one()
+        )
         assert "final refresh failed" in failure["error"]
-        cached = session.execute(
-            select(external_payload_cache_table).where(
-                external_payload_cache_table.c.resource == "event-live:1"
+        cached = (
+            session.execute(
+                select(external_payload_cache_table).where(
+                    external_payload_cache_table.c.resource == "event-live:1"
+                )
             )
-        ).mappings().one()
+            .mappings()
+            .one()
+        )
         assert cached["fetched_at"] == old_fetched_at

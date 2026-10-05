@@ -68,7 +68,7 @@ The application provides responsive shared navigation, manual reload, route-awar
 - Shared typography roles keep primary player names and essential values at or above `0.7rem`, metadata at or above `0.7rem`, and compact chart labels at or above `0.625rem`; all use rem sizing for browser text scaling.
 - Global mobile navigation stays below the shared modal stack; drawers and full-height palette sheets reserve safe-area and dynamic viewport space.
 - The shared page shell owns page gutters and PageHero geometry. Primary routes use PageHero instead of page-specific hero styles.
-- Profile sheets, Market player drawers, and League fixture drawers use a shared keyboard lifecycle: focus enters, Tab stays in the modal, Escape closes, background siblings become inert, and close restores the opener. Other custom dialogs remain on their existing per-surface behavior until migrated.
+- Profile sheets, Scouting player drawers, and League fixture drawers use a shared keyboard lifecycle: focus enters, Tab stays in the modal, Escape closes, background siblings become inert, and close restores the opener. Scouting player drawers render the canonical PlayerProfilePage used by Squad and inject only workflow-specific actions. Other custom dialogs remain on their existing per-surface behavior until migrated.
 - Surfaces must avoid gradients, shadows, glows, and information-heavy colour highlighting.
 
 ## Data Access Requirements

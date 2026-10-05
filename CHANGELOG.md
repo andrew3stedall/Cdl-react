@@ -15,6 +15,7 @@
 
 ## Unreleased
 
+- Scouting player details now use the same canonical PlayerProfilePage surface as Squad, including the shared header, history charts, scroll container and fixed action-bar geometry; Scouting injects only Interest/View in Squad/Close actions. See [PR #552](https://github.com/andrew3stedall/Cdl-react/pull/552).
 - Release verification on 6 October 2026 authenticated the deployed staging Squad path, saved a captaincy change, confirmed persistence after reload, and restored the original captain without leaving the staging team changed.
 - Issues #475 and #531 remain open for exact candidate-before-promotion authenticated gating, real device passkey evidence, and dated restore/rollback proof.
 - Audit batch 4 hardens P1 gameplay acceptance for Auto Captain ties and bench exclusion, ownership-driven lineup repair, frozen completed-fixture scoring metadata, and fresh official table snapshot selection.

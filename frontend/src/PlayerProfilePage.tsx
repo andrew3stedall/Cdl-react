@@ -70,6 +70,8 @@ interface PlayerProfilePageProps {
   onSquadChange?: (summary: SquadApiSummary) => void;
   onSelectionChange?: (selection: TeamSelectionSnapshot, options?: { persisted?: boolean }) => void;
   onTrade?: () => void;
+  actionBar?: ReactNode;
+  actionBarLabel?: string;
   playerId: string;
   presentation?: 'page' | 'drawer';
   showActions?: boolean;
@@ -109,6 +111,8 @@ export function PlayerProfilePage({
   onSquadChange,
   onSelectionChange,
   onTrade,
+  actionBar,
+  actionBarLabel = 'Player actions',
   playerId,
   presentation = 'page',
   showActions = true,
@@ -402,7 +406,7 @@ export function PlayerProfilePage({
     <main
       aria-label={`Player profile for ${player.display_name}`}
       className={`player-profile${presentation === 'drawer' ? ' player-profile--drawer' : ''}`}
-      data-actions-visible={showActions}
+      data-actions-visible={showActions || actionBar !== undefined}
       data-presentation={presentation}
     >
       {presentation === 'drawer' ? <span aria-hidden="true" className="player-profile__sheet-handle" /> : null}
@@ -477,35 +481,39 @@ export function PlayerProfilePage({
       {presentation === 'drawer' ? <div aria-hidden="true" className="player-profile__scroll-end-spacer" /> : null}
       </div>
 
-      {showActions ? (
-        <div aria-label="Squad-management actions" className="player-profile__action-bar" role="toolbar">
-          <ActionButton
-            disabled={isLocked || selectedLineupPlayer === null || pendingAction !== null}
-            icon={Repeat2}
-            label="Sub"
-            onClick={onStartSubstitution ?? openBenchActions}
-          />
-          <ActionButton
-            danger
-            disabled={player.status !== 'owned' || pendingAction !== null}
-            icon={CircleX}
-            label={pendingAction === 'remove' ? 'Loading…' : 'Remove'}
-            onClick={() => void openRemoveActions()}
-          />
-          <ActionButton
-            active={captaincy === 'captain'}
-            disabled={isLocked || squadStatus !== 'starter' || captaincy === 'captain' || pendingAction !== null}
-            visual={<PlayerRoleBadge role="captain" />}
-            label="Captain"
-            onClick={() => changeCaptaincy('captain')}
-          />
-          <ActionButton
-            active={captaincy === 'vice_captain'}
-            disabled={isLocked || squadStatus !== 'starter' || captaincy === 'vice_captain' || pendingAction !== null}
-            visual={<PlayerRoleBadge role="vice" />}
-            label="Vice"
-            onClick={() => changeCaptaincy('vice_captain')}
-          />
+      {actionBar !== undefined || showActions ? (
+        <div aria-label={actionBarLabel} className="player-profile__action-bar" role="toolbar">
+          {actionBar ?? (
+            <>
+              <ActionButton
+                disabled={isLocked || selectedLineupPlayer === null || pendingAction !== null}
+                icon={Repeat2}
+                label="Sub"
+                onClick={onStartSubstitution ?? openBenchActions}
+              />
+              <ActionButton
+                danger
+                disabled={player.status !== 'owned' || pendingAction !== null}
+                icon={CircleX}
+                label={pendingAction === 'remove' ? 'Loading…' : 'Remove'}
+                onClick={() => void openRemoveActions()}
+              />
+              <ActionButton
+                active={captaincy === 'captain'}
+                disabled={isLocked || squadStatus !== 'starter' || captaincy === 'captain' || pendingAction !== null}
+                visual={<PlayerRoleBadge role="captain" />}
+                label="Captain"
+                onClick={() => changeCaptaincy('captain')}
+              />
+              <ActionButton
+                active={captaincy === 'vice_captain'}
+                disabled={isLocked || squadStatus !== 'starter' || captaincy === 'vice_captain' || pendingAction !== null}
+                visual={<PlayerRoleBadge role="vice" />}
+                label="Vice"
+                onClick={() => changeCaptaincy('vice_captain')}
+              />
+            </>
+          )}
         </div>
       ) : null}
 

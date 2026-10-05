@@ -269,6 +269,10 @@ def test_active_staging_league_hides_unrelated_synthetic_results() -> None:
 def test_table_snapshot_prefers_newest_calculated_at_over_identifier_order() -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:")
     metadata.create_all(engine)
+    with engine.begin() as connection:
+        connection.execute(
+            text("CREATE TABLE draft_teams (id TEXT PRIMARY KEY, league_id TEXT, name TEXT)")
+        )
     sessions = sessionmaker(bind=engine, class_=Session)
 
     with sessions() as session:

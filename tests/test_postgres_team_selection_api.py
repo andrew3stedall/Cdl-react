@@ -163,7 +163,7 @@ def test_postgres_team_selection_fixture_lock_is_persisted() -> None:
     assert "team_selection_fixture_locks" in _statement_table_names(session, Insert)
 
 
-def test_postgres_historical_fixture_squads_use_locked_lineup_and_event_points() -> None:
+def test_postgres_historical_fixture_squads_use_locked_lineup_and_frozen_snapshot_points() -> None:
     engine = create_engine(
         "sqlite+pysqlite:///:memory:",
         connect_args={"check_same_thread": False},
@@ -243,7 +243,11 @@ def test_postgres_historical_fixture_squads_use_locked_lineup_and_event_points()
             {
                 "payload": (
                     '{"fixture_id": "fixture-history-1", "player_scores": '
-                    '{"team-home:fpl-1": 10, "team-home:fpl-2": 5}, "substitutions": '
+                    '{"team-home:fpl-1": 10, "team-home:fpl-2": 5}, '
+                    '"player_explanations": {"team-home": [{"player_id": "fpl-1", '
+                    '"base_points": 5, "multiplier": 2, "final_points": 10, '
+                    '"included": true, "reason": "auto_captain_highest_scorer"}], '
+                    '"team-away": []}, "substitutions": '
                     '{"team-home": [{"starter_player_id": "fpl-1", '
                     '"substitute_player_id": "fpl-2"}], "team-away": []}}'
                 )
@@ -315,7 +319,9 @@ def test_postgres_historical_fixture_squads_use_locked_lineup_and_event_points()
 
     assert [squad.team.id for squad in squads] == ["team-home", "team-away"]
     assert squads[0].starters[0].display_name == "Keeper One"
-    assert squads[0].starters[0].points == 10
+    assert squads[0].starters[0].points == 5
+    assert squads[0].starters[0].points_multiplier == 2
+    assert squads[0].starters[0].scoring_reason == "auto_captain_highest_scorer"
     assert squads[0].bench[0].points == 5
     assert squads[0].starters[0].is_captain is True
     assert squads[0].starters[0].is_substituted_out is True

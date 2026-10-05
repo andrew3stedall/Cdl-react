@@ -579,7 +579,7 @@ class FplSettlementService:
                 },
                 "chips_played": chips_played,
                 "substitutions": substitutions,
-                "source_resource": f"event-live:{gameweek}",
+                "source_resource": source_resource,
                 "source_response_sha256": source_hash,
                 "source_fetched_at": fetched_at.isoformat() if fetched_at is not None else None,
                 "automatic_substitution_version": (

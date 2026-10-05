@@ -24,6 +24,18 @@ fixture and checks mobile/desktop interactions and layout invariants. It does
 not collect screenshots; screenshot capture remains manual through the
 existing workflow.
 
+## Authenticated deployed reviewer exercise
+
+After the unauthenticated boundary checks, use an allowlisted staging reviewer session to verify one read/write/reload path:
+
+1. Open the live staging URL and sign in through the configured staging identity.
+2. Open **Squad** and confirm live players, formation, chips and deadline data load.
+3. Open a starter, stage a captain change, close the profile, and select **Save lineup**.
+4. Require the visible **Lineup saved and validated** result.
+5. Reload **Squad** and verify the captain change persisted.
+6. Restore the original captain, save, reload, and verify the original state is restored.
+7. Record this as post-promotion deployed evidence; do not label it as candidate-before-promotion evidence.
+
 ## Result record
 
 Record the date, staging URL, commit SHA, tester, failed checks, and follow-up issues.

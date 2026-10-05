@@ -2,6 +2,14 @@
 
 Updated: 5 October 2026 (Australia/Melbourne). Parent [#466](https://github.com/andrew3stedall/Cdl-react/issues/466). This index covers every issue; an item being tackled is not a claim that its acceptance is complete.
 
+## Release verification — issues #475 and #531
+
+The release-verification pass is partially complete. Existing CI and rollout controls are green, and a deployed authenticated reviewer exercise passed on staging revision `cdl-react-staging-api-00330-fs7`.
+
+- #475: migrations, schema-head verification, retained serving traffic and named-revision promotion are implemented and passed in [staging rollout 37304958609](https://github.com/andrew3stedall/Cdl-react/actions/runs/37304958609). The live reviewer completed a Squad read, lineup write, reload verification and restoration.
+- #531: current-contract Playwright passed in [CI 37305913049](https://github.com/andrew3stedall/Cdl-react/actions/runs/37305913049), the real PostgreSQL release journey passed in [PostgreSQL 37305911567](https://github.com/andrew3stedall/Cdl-react/actions/runs/37305911567), and the deployed browser path was exercised.
+- Remaining blockers are exact candidate-before-promotion authenticated gating for #475, plus real device passkey and dated restore/rollback evidence for #531. These issues remain open.
+
 ## Batch 4 — merged and staging-validated
 
 PR [#547](https://github.com/andrew3stedall/Cdl-react/pull/547) is merged as `f7d543886f96c24662e570932d589c54ada2d8c1`. The five Batch-4 issues (#489–#493) are closed after acceptance hardening passed CI, PostgreSQL validation, and the post-merge staging rollout.
@@ -92,7 +100,7 @@ PR [#545](https://github.com/andrew3stedall/Cdl-react/pull/545) is merged as `4d
 | [#472](https://github.com/andrew3stedall/Cdl-react/issues/472) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/ProfilePage.tsx](../../frontend/src/ProfilePage.tsx) |
 | [#473](https://github.com/andrew3stedall/Cdl-react/issues/473) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/LeagueInvitePage.tsx](../../frontend/src/LeagueInvitePage.tsx) |
 | [#474](https://github.com/andrew3stedall/Cdl-react/issues/474) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/LeaguePage.tsx](../../frontend/src/LeaguePage.tsx) |
-| [#475](https://github.com/andrew3stedall/Cdl-react/issues/475) | Partial: migrations/promotion deployed; signed-in hosted write verification remains | [scripts/cloud_run_staged_revision.py](../../scripts/cloud_run_staged_revision.py) |
+| [#475](https://github.com/andrew3stedall/Cdl-react/issues/475) | Partial: migration/promotion gate and deployed signed-in read/write verified; candidate-time authenticated gate remains | [docs/delivery/466-ops.md](466-ops.md) |
 | [#476](https://github.com/andrew3stedall/Cdl-react/issues/476) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [Dockerfile](../../Dockerfile) |
 | [#477](https://github.com/andrew3stedall/Cdl-react/issues/477) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/market-page.css](../../frontend/src/market-page.css) |
 | [#478](https://github.com/andrew3stedall/Cdl-react/issues/478) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/theme-presets.ts](../../frontend/src/theme-presets.ts) |
@@ -148,7 +156,7 @@ PR [#545](https://github.com/andrew3stedall/Cdl-react/pull/545) is merged as `4d
 | [#528](https://github.com/andrew3stedall/Cdl-react/issues/528) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [docs/delivery/466-ui.md](../delivery/466-ui.md) |
 | [#529](https://github.com/andrew3stedall/Cdl-react/issues/529) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/App.tsx](../../frontend/src/App.tsx) |
 | [#530](https://github.com/andrew3stedall/Cdl-react/issues/530) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [docs/delivery/466-release-scope.md](../delivery/466-release-scope.md) |
-| [#531](https://github.com/andrew3stedall/Cdl-react/issues/531) | Open: deployed signed-in, real-device and dated recovery evidence | [docs/delivery/466-ops.md](../delivery/466-ops.md) |
+| [#531](https://github.com/andrew3stedall/Cdl-react/issues/531) | Partial: current-contract browser, real PostgreSQL and deployed signed-in read/write evidence verified; device/recovery evidence remains | [docs/delivery/466-ops.md](466-ops.md) |
 | [#532](https://github.com/andrew3stedall/Cdl-react/issues/532) | In progress: saved in-app state and opt-in 24h/1h FPL deadline reminders | [docs/features/active/notifications-activity-and-deadline-service.md](../features/active/notifications-activity-and-deadline-service.md) |
 | [#533](https://github.com/andrew3stedall/Cdl-react/issues/533) | Open: canonical movement attribution and expanded comparison remain | [frontend/src/PlayerProfileScoutingPanels.tsx](../../frontend/src/PlayerProfileScoutingPanels.tsx) |
 | [#534](https://github.com/andrew3stedall/Cdl-react/issues/534) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/LeaguePage.tsx](../../frontend/src/LeaguePage.tsx) |

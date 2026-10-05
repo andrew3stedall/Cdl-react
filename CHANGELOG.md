@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Release verification on 6 October 2026 authenticated the deployed staging Squad path, saved a captaincy change, confirmed persistence after reload, and restored the original captain without leaving the staging team changed.
+- Issues #475 and #531 remain open for exact candidate-before-promotion authenticated gating, real device passkey evidence, and dated restore/rollback proof.
 - Audit batch 4 hardens P1 gameplay acceptance for Auto Captain ties and bench exclusion, ownership-driven lineup repair, frozen completed-fixture scoring metadata, and fresh official table snapshot selection.
 - Batch 4 is merged as [PR #547](https://github.com/andrew3stedall/Cdl-react/pull/547) (`f7d543886f96c24662e570932d589c54ada2d8c1`) and validated with [CI 37304958586](https://github.com/andrew3stedall/Cdl-react/actions/runs/37304958586), [PostgreSQL 37304958650](https://github.com/andrew3stedall/Cdl-react/actions/runs/37304958650), and [staging rollout 37304958609](https://github.com/andrew3stedall/Cdl-react/actions/runs/37304958609). Staging revision `cdl-react-staging-api-00330-fs7` serves 100% traffic; migrations, official FPL refresh and live service/auth checks passed.
 - Audit batch 3 hardens Market failed/empty retry states and authoritative form-history refresh, separates committed squad mutations from refresh failures, and prevents duplicate pending trade proposal submissions with focused regression coverage.

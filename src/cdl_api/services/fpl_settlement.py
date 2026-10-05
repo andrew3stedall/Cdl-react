@@ -470,6 +470,16 @@ class FplSettlementService:
                 verified_event_refresh = fetched_at is not None and (
                     failed_at is None or failed_at <= fetched_at
                 )
+            if (
+                was_finalised
+                and needs_automatic_substitution_repair
+                and isinstance(current_result, Mapping)
+                and current_result.get("source_response_sha256")
+                and current_result.get("source_response_sha256") != source_hash
+            ):
+                # Legacy snapshots may acquire explanation metadata only by
+                # replaying the exact source that was originally frozen.
+                continue
             home_team = payload.get("home_team")
             away_team = payload.get("away_team")
             if not isinstance(home_team, Mapping) or not isinstance(away_team, Mapping):

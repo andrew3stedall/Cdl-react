@@ -1031,26 +1031,29 @@ def test_completed_fixture_stays_provisional_after_failed_final_event_refresh() 
                 },
             )
         )
-        session.execute(insert(team_selection_lineup_slots_table), [
-            {
-                "id": f"lineup-unverified-{team_id}-{player_id}",
-                "season_id": SEASON_ID,
-                "draft_team_id": team_id,
-                "player_id": f"fpl-{player_id}",
-                "gameweek": 1,
-                "slot": "starter",
-                "slot_order": slot_order,
-                "is_captain": False,
-                "is_vice_captain": False,
-                "locked_at": None,
-                "updated_at": now,
-            }
-            for team_id, player_ids in (
-                ("team-home", range(1, 12)),
-                ("team-away", range(12, 23)),
-            )
-            for slot_order, player_id in enumerate(player_ids, start=1)
-        ])
+        session.execute(
+            insert(team_selection_lineup_slots_table),
+            [
+                {
+                    "id": f"lineup-unverified-{team_id}-{player_id}",
+                    "season_id": SEASON_ID,
+                    "draft_team_id": team_id,
+                    "player_id": f"fpl-{player_id}",
+                    "gameweek": 1,
+                    "slot": "starter",
+                    "slot_order": slot_order,
+                    "is_captain": False,
+                    "is_vice_captain": False,
+                    "locked_at": None,
+                    "updated_at": now,
+                }
+                for team_id, player_ids in (
+                    ("team-home", range(1, 12)),
+                    ("team-away", range(12, 23)),
+                )
+                for slot_order, player_id in enumerate(player_ids, start=1)
+            ],
+        )
         session.commit()
 
     with sessions() as session:

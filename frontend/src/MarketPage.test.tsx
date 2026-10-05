@@ -311,23 +311,21 @@ describe('MarketPage', () => {
     expect(container.querySelector('button[aria-label="Add Casey Midfielder to Interests"]')).not.toBeNull();
   });
 
-  test('opens player details without an availability or ownership field', async () => {
-    const { container } = await renderPage('/scouting/interests');
-    expect(container.querySelector('section[aria-label="Your Interests"]')?.textContent).toContain('No Interests');
-
-    const { container: discoveryContainer } = await renderPage('/scouting');
-    const player = discoveryContainer.querySelector('tr[aria-label="View Casey Midfielder details"]') as HTMLTableRowElement;
+  test('uses the canonical player profile surface from Scouting with contextual actions', async () => {
+    const { container } = await renderPage('/scouting');
+    const player = container.querySelector('tr[aria-label="View Casey Midfielder details"]') as HTMLTableRowElement;
     await act(async () => {
       player.click();
       await Promise.resolve();
       await Promise.resolve();
     });
-    expect(discoveryContainer.querySelector('[role="dialog"]')?.textContent).toContain('Casey Midfielder');
-    expect(discoveryContainer.querySelector('[role="dialog"]')?.textContent).toContain('Owner');
-    expect(discoveryContainer.querySelector('[role="dialog"]')?.textContent).toContain('Free');
-    expect(discoveryContainer.querySelector('[role="dialog"]')?.textContent).not.toContain('Next fixture');
-    expect(discoveryContainer.querySelector('[role="dialog"]')?.textContent).not.toContain('Availability');
-    expect(discoveryContainer.querySelector('[role="dialog"]')?.textContent).not.toContain('Owned');
+
+    const dialog = container.querySelector('[role="dialog"]');
+    expect(dialog?.querySelector('main.player-profile[data-presentation="drawer"]')).not.toBeNull();
+    expect(dialog?.querySelector('[aria-label="Scouting player actions"]')).not.toBeNull();
+    expect(dialog?.textContent).toContain('Casey Midfielder');
+    expect(dialog?.textContent).not.toContain('Owner');
+    expect(dialog?.textContent).not.toContain('Market workspace');
   });
 
   test('offers authorised trade responses and explains that acceptance awaits commissioner approval', async () => {
@@ -351,7 +349,7 @@ describe('MarketPage', () => {
     expect(container.querySelector('button')?.textContent).not.toContain('Reject');
   });
 
-  test('shows official FPL evidence and accessible form history in player details', async () => {
+  test('shows official FPL history in the shared player profile chart', async () => {
     const { container } = await renderPage('/scouting');
     const player = container.querySelector('tr[aria-label="View Casey Midfielder details"]') as HTMLTableRowElement;
     await act(async () => {
@@ -360,11 +358,11 @@ describe('MarketPage', () => {
       await Promise.resolve();
     });
 
-    const drawer = container.querySelector('[role="dialog"]');
-    expect(drawer?.querySelector('[aria-label="Player metrics"]')?.textContent).toContain('5.7');
-    expect(drawer?.querySelector('[aria-label="Recent FPL gameweek history"]')?.textContent).toContain('0.84');
-    expect(drawer?.querySelector('.player-card__form-dots')?.getAttribute('aria-label')).toContain('Gameweek 9: 9 points, 90 minutes');
-    expect(drawer?.textContent).toContain('OwnerFree');
+    const dialog = container.querySelector('[role="dialog"]');
+    const chart = dialog?.querySelector('[data-chart-kind="combined-form-minutes"]');
+    expect(chart).not.toBeNull();
+    expect(chart?.getAttribute('aria-label')).toContain('Fantasy points above the zero line');
+    expect(dialog?.querySelector('button[aria-label*="9 points"]')).not.toBeNull();
   });
 
   test('keeps failed Market reads distinct from empty states and retries them in place', async () => {
@@ -401,7 +399,7 @@ describe('MarketPage', () => {
     act(() => tradesPage.root.unmount());
   });
 
-  test('refreshes corrected same-gameweek form data including a new double-gameweek fixture', async () => {
+  test('refreshes corrected same-gameweek history in the shared profile', async () => {
     marketHistory = [{ gameweek: 9, fixture_id: 900, total_points: 2, minutes: 45, expected_goals: 0.1, expected_assists: 0.05 }];
     const { container, root } = await renderPage('/scouting');
     const openPlayer = () => container.querySelector('tr[aria-label="View Casey Midfielder details"]') as HTMLTableRowElement;
@@ -411,7 +409,7 @@ describe('MarketPage', () => {
       await Promise.resolve();
       await Promise.resolve();
     });
-    expect(container.querySelector('[role="dialog"] .player-card__form-dots')?.getAttribute('aria-label')).toContain('Gameweek 9: 2 points, 45 minutes');
+    expect(container.querySelector('[role="dialog"] button[aria-label*="2 points"]')).not.toBeNull();
 
     await act(async () => {
       (container.querySelector('button[aria-label="Close player details"]') as HTMLButtonElement).click();
@@ -427,10 +425,9 @@ describe('MarketPage', () => {
       await Promise.resolve();
     });
 
-    const formLabel = container.querySelector('[role="dialog"] .player-card__form-dots')?.getAttribute('aria-label');
-    expect(formLabel).toContain('Gameweek 9: 5 points, 90 minutes; 3 points, 20 minutes');
-    expect(container.querySelector('[aria-label="Recent FPL gameweek history"]')?.textContent).toContain('5');
-    expect(container.querySelector('[aria-label="Recent FPL gameweek history"]')?.textContent).toContain('20');
+    const dialog = container.querySelector('[role="dialog"]');
+    expect(dialog?.querySelector('button[aria-label*="5 points"]')).not.toBeNull();
+    expect(dialog?.querySelector('button[aria-label*="3 points"]')).not.toBeNull();
     act(() => root.unmount());
   });
 });

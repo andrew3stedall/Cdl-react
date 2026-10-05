@@ -537,6 +537,13 @@ class FplSettlementService:
                 if was_finalised
                 else current_rules_version or (active_version_id if finalised else None)
             )
+            source_resource = (
+                f"event-live-final:{gameweek}"
+                if gameweek in ready_gameweeks
+                and not synthetic_fixture
+                and gameweek in final_live_payloads
+                else f"event-live:{gameweek}"
+            )
             result_payload = {
                 **dict(current_result),
                 "fixture_id": fixture_id,
@@ -546,7 +553,7 @@ class FplSettlementService:
                 "finalised": finalised,
                 "finalised_at": finalised_at if finalised else current_result.get("finalised_at"),
                 "gameweek": gameweek,
-                "source_resource": f"event-live:{gameweek}",
+                "source_resource": source_resource,
                 "source_response_sha256": source_hash,
                 "source_fetched_at": fetched_at.isoformat() if fetched_at is not None else None,
                 "automatic_substitution_version": (

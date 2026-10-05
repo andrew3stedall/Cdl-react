@@ -175,7 +175,11 @@ class FplDataService:
         if not isinstance(events, list):
             return
         for row in events:
-            if not isinstance(row, Mapping) or not row.get("finished") or not row.get("data_checked"):
+            if (
+                not isinstance(row, Mapping)
+                or not row.get("finished")
+                or not row.get("data_checked")
+            ):
                 continue
             gameweek = _as_optional_int(row.get("id"))
             if gameweek is None:

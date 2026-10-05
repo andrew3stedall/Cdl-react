@@ -6,7 +6,7 @@ Define player detail pages, FPL gameweek history, CDL ownership history, and pla
 
 ## Status
 
-FPL player detail/history and the compact squad comparison are implemented. Completed fixture explanations use frozen scoring snapshots. A collapsed player-profile panel now reads dated team ownership periods from the persistent CDL ownership table, within the configured league. That read model does not identify why an ownership period started or ended, so it cannot distinguish draft, transfer, trade, draw, free-agent, or loan events. Event-level history and expanded comparison remain deferred under #533; engineering checkpoint 4 is not evidence of their persistent delivery.
+FPL player detail/history and the compact squad comparison are implemented. Squad and Scouting now mount the same canonical PlayerProfilePage surface; only the bottom action bar changes by context. Completed fixture explanations use frozen scoring snapshots. A collapsed player-profile panel now reads dated team ownership periods from the persistent CDL ownership table, within the configured league. That read model does not identify why an ownership period started or ended, so it cannot distinguish draft, transfer, trade, draw, free-agent, or loan events. Event-level history and expanded comparison remain deferred under #533; engineering checkpoint 4 is not evidence of their persistent delivery.
 
 ## Supported and deferred history/comparison
 
@@ -19,7 +19,7 @@ Market player detail always adopts authoritative fetched fixture history, includ
 | CDL ownership periods | Lazy profile disclosure reads persisted ownership rows and displays team, season, start/end date, and current status, with loading, empty, error and retry states. The endpoint is league-scoped and requires an assigned manager session. | Rows carry no movement/event type or source identifier. They cannot explain whether a period came from draft, transfer, trade, free-agency draw, other acquisition, or loan. |
 | Movement timeline | None. | Requires an agreed canonical event projection across movement sources, identity/season context, and correction semantics. Until then, do not label periods as transfers or loans and do not invent event classifications. |
 
-When a player record is not passed into the route, player detail now renders as soon as the player request resolves. FPL history and team-selection reads finish independently, so slow history does not hide a known player or drawer close control; history retains its own loading and unavailable states.
+When a player record is not passed into the route, player detail now renders as soon as the player request resolves. FPL history and team-selection reads finish independently, so slow history does not hide a known player or drawer close control; history retains its own loading and unavailable states. Scouting uses the same full-height drawer, independently scrolling content, header card, chart layout and fixed action bar as Squad; it supplies only contextual Interest, View in Squad and Close actions.
 
 ## Business Rules
 
@@ -58,7 +58,7 @@ Suggested routes:
 
 ## React Requirements
 
-- Player profile page.
+- Player profile page and drawer, with contextual action bars injected by the owning workflow.
 - Gameweek history table.
 - Fixture run display.
 - Availability/action panel.

@@ -653,8 +653,10 @@ class FplSettlementService:
         now: datetime,
     ) -> None:
         current_payload = (
-            result_row[1] if isinstance(result_row, tuple) else result_row["payload_json"]
-        ) if result_row is not None else {}
+            (result_row[1] if isinstance(result_row, tuple) else result_row["payload_json"])
+            if result_row is not None
+            else {}
+        )
         payload = dict(current_payload) if isinstance(current_payload, Mapping) else {}
         payload.update(
             {

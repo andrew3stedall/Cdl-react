@@ -62,6 +62,23 @@ metadata = MetaData()\n\nclass UtcDateTime(TypeDecorator[datetime]):
         return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
 
 
+class UtcDateTime(TypeDecorator[datetime]):
+    """Keep UTC-aware datetimes consistent across PostgreSQL and SQLite tests."""
+
+    impl = DateTime
+    cache_ok = True
+
+    def process_bind_param(self, value: datetime | None, dialect: object) -> datetime | None:
+        if value is None:
+            return None
+        return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+
+    def process_result_value(self, value: datetime | None, dialect: object) -> datetime | None:
+        if value is None:
+            return None
+        return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+
+
 fpl_gameweeks_table = Table(
     "fpl_gameweeks",
     metadata,

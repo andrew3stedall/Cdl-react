@@ -10,7 +10,7 @@ The following source-complete items are now closed after the merged implementati
 - #478–#481 and #483 close the theme, splash and negative-chart findings.
 - #498, #500 and #501 close formation-contract, incomplete-roster and historical-refresh findings.
 - #502 closes production isolation for checkpoint APIs and engineering routes.
-- #497 remains open: its implementation is merged, but PR #550's backend check failed in [CI 37369669312](https://github.com/andrew3stedall/Cdl-react/actions/runs/37369669312); no closure is claimed from its passing PostgreSQL-only run.
+- #497 now closes after the current tree passed [CI 37541864031](https://github.com/andrew3stedall/Cdl-react/actions/runs/37541864031) and [Backend PostgreSQL 37541864055](https://github.com/andrew3stedall/Cdl-react/actions/runs/37541864055). PR #550's earlier backend failure was the SQLite naive-versus-UTC timestamp assertion at `tests/test_fpl_data_ingestion.py:837`; later current-tree validation passed.
 
 ## Release verification — issues #475 and #531
 
@@ -132,7 +132,7 @@ PR [#545](https://github.com/andrew3stedall/Cdl-react/pull/545) is merged as `4d
 | [#494](https://github.com/andrew3stedall/Cdl-react/issues/494) | Blocked: exact bonus criteria and award amounts still needed | [docs/delivery/466-scoring.md](../delivery/466-scoring.md) |
 | [#495](https://github.com/andrew3stedall/Cdl-react/issues/495) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [tests/test_postgres_trade_approval.py](../../tests/test_postgres_trade_approval.py) |
 | [#496](https://github.com/andrew3stedall/Cdl-react/issues/496) | In progress: approved final league-rank tie-break; middle bracket path still needed | [docs/delivery/466-scoring.md](../delivery/466-scoring.md) |
-| [#497](https://github.com/andrew3stedall/Cdl-react/issues/497) | Merged in PR #550; final-source gate and stale-cache regression documented; issue remains open until queued CI/staging checks complete | [PR #550](https://github.com/andrew3stedall/Cdl-react/pull/550); [tests/test_fpl_settlement.py](../../tests/test_fpl_settlement.py) |
+| [#497](https://github.com/andrew3stedall/Cdl-react/issues/497) | Closed after merged implementation and current-tree hosted validation | [PR #550](https://github.com/andrew3stedall/Cdl-react/pull/550); [tests/test_fpl_data_ingestion.py](../../tests/test_fpl_data_ingestion.py); [tests/test_fpl_settlement.py](../../tests/test_fpl_settlement.py) |
 | [#498](https://github.com/andrew3stedall/Cdl-react/issues/498) | Closed after merged implementation and hosted validation | [docs/delivery/466-rules.md](../delivery/466-rules.md) |
 | [#499](https://github.com/andrew3stedall/Cdl-react/issues/499) | In progress: approved Standard/Triple Captain zero-minute vice fallback | [docs/delivery/466-scoring.md](../delivery/466-scoring.md) |
 | [#500](https://github.com/andrew3stedall/Cdl-react/issues/500) | Closed after merged implementation and hosted validation | [docs/delivery/466-scoring.md](../delivery/466-scoring.md) |

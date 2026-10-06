@@ -9,13 +9,13 @@
 ### Validation
 
 - Merged in [PR #550](https://github.com/andrew3stedall/Cdl-react/pull/550) as 65f254b.
-- PostgreSQL release paths passed in [run 37369127085](https://github.com/andrew3stedall/Cdl-react/actions/runs/37369127085); final CI/staging checks were queued at record time.
+- PostgreSQL release paths passed in [run 37369127085](https://github.com/andrew3stedall/Cdl-react/actions/runs/37369127085). Current-tree CI and PostgreSQL checks pass in [37541864031](https://github.com/andrew3stedall/Cdl-react/actions/runs/37541864031) and [37541864055](https://github.com/andrew3stedall/Cdl-react/actions/runs/37541864055).
 
 # Changelog
 
 ## Unreleased
 
-- Closed #470, #471, #473, #478–#481, #483, #498, #500, #501 and #502 after hosted validation of the exact pre-merge tree in [CI 37540121563](https://github.com/andrew3stedall/Cdl-react/actions/runs/37540121563) and [Backend PostgreSQL 37540121528](https://github.com/andrew3stedall/Cdl-react/actions/runs/37540121528). #497 remains open because its PR #550 backend check failed in [CI 37369669312](https://github.com/andrew3stedall/Cdl-react/actions/runs/37369669312).
+- Closed #470, #471, #473, #478–#481, #483, #498, #500, #501, #502 and #497 after hosted validation of the exact current tree in [CI 37541864031](https://github.com/andrew3stedall/Cdl-react/actions/runs/37541864031) and [Backend PostgreSQL 37541864055](https://github.com/andrew3stedall/Cdl-react/actions/runs/37541864055). PR #550's earlier backend failure was the SQLite naive-versus-UTC timestamp assertion at `tests/test_fpl_data_ingestion.py:837`; current-tree normalization passes.
 
 - Explicitly deferred #535 assigned-team release/reassignment until commissioner authorization, approval, reason, session-revocation and history-preservation policy is accepted; the current UI exposes no destructive control.
 

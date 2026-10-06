@@ -19,7 +19,7 @@ This delivery hardens the app's existing manager journeys for an already drafted
 | Immutable runtime rule versions | Current-season v1 pins locked lineups and completed scoring snapshots | #523: commissioner editor/activation, templates, and references from other action families remain future scope; #494/#499/#496 remain unconfigured |
 | Loans, extensions, scheduled return/conversion | Basic loans and retryable scheduled returns delivered | #525: advanced extension/conversion policy remains open |
 | Private watchlists and notes | Private persisted flags/notes delivered | #526/#532: availability alerts need durable event/reminder policy |
-| Durable activity/read state/reminders | Planned; current alerts derived | #532: explicit reminder cadence and durable events milestone |
+| Durable activity/read state/reminders | Deferred from the current candidate; current alerts remain derived | #532: revisit at the post-launch durable-notifications milestone after the #531 release-evidence gate; no unread/reminder promise is exposed |
 | CDL ownership/loan history and expanded comparisons | Ownership periods API/UI delivered | #533: distinct loan/transfer explanations and expanded comparisons remain open |
 | Assigned-team release/reassignment | Policy blocked | #535: authorization, prior-session revocation, audit reason and history preservation |
 

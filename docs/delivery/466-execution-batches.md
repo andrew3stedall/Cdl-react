@@ -159,7 +159,7 @@ PR [#545](https://github.com/andrew3stedall/Cdl-react/pull/545) is merged as `4d
 | [#531](https://github.com/andrew3stedall/Cdl-react/issues/531) | Partial: current-contract browser, real PostgreSQL and deployed signed-in read/write evidence verified; device/recovery evidence remains | [docs/delivery/466-ops.md](466-ops.md) |
 | [#532](https://github.com/andrew3stedall/Cdl-react/issues/532) | Deferred — current alerts remain derived; durable read/dismiss/reminder lifecycle is not exposed and will be revisited after the #531 release-evidence gate | [docs/features/active/notifications-activity-and-deadline-service.md](../features/active/notifications-activity-and-deadline-service.md) |
 | [#533](https://github.com/andrew3stedall/Cdl-react/issues/533) | Open: canonical movement attribution and expanded comparison remain | [frontend/src/PlayerProfileScoutingPanels.tsx](../../frontend/src/PlayerProfileScoutingPanels.tsx) |
-| [#534](https://github.com/andrew3stedall/Cdl-react/issues/534) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/LeaguePage.tsx](../../frontend/src/LeaguePage.tsx) |
+| [#534](https://github.com/andrew3stedall/Cdl-react/issues/534) | Closed — commissioners can list pending invites and revoke an unused invite; expiry remains policy-optional | [frontend/src/LeaguePage.tsx](../../frontend/src/LeaguePage.tsx) |
 | [#535](https://github.com/andrew3stedall/Cdl-react/issues/535) | In progress: reasoned commissioner replacement preserving team/history | [docs/delivery/466-auth.md](../delivery/466-auth.md) |
 | [#536](https://github.com/andrew3stedall/Cdl-react/issues/536) | Partial: optional route split measured; physical-device cold-load proof remains | [frontend/src/App.tsx](../../frontend/src/App.tsx) |
 
@@ -183,6 +183,10 @@ PR #559 completes the Rules mobile-access gap and adds notification stale-refres
 Issues #529 and #530 are now evidence-complete. Analytics is reachable from League, Fixture Difficulty is reachable from Market, and the supported primary navigation remains Desk, Squad, Market and League. The roadmap and route inventory now distinguish historical checkpoints, supported product workflows, contextual utilities and deferred capability boundaries.
 
 Hosted evidence for this closure remains the merged-main validation: [CI 37481699093](https://github.com/andrew3stedall/Cdl-react/actions/runs/37481699093), [Backend PostgreSQL 37481699113](https://github.com/andrew3stedall/Cdl-react/actions/runs/37481699113), and [staging rollout 37481699009](https://github.com/andrew3stedall/Cdl-react/actions/runs/37481699009). #522–#525 remain open because they are partial or architecture/policy-bound; #531 remains open for its device and recovery evidence.
+
+## Commissioner invite lifecycle — 6 October 2026
+
+#534 is closed. The authenticated commissioner management surface lists pending invites and supports revoking a selected unused invite. Reissuing an invite revokes the previous link; no expiration duration or team reassignment policy is inferred.
 
 ## Durable notification boundary — 6 October 2026
 

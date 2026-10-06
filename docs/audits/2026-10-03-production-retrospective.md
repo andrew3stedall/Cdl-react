@@ -1162,3 +1162,8 @@ PRs #552 and #553 aligned Squad and Scouting on the canonical player profile sur
 ## Batch 5 completion record — 6 October 2026
 
 PR #559 closed the remaining Rules/mobile access gap, preserved SPA rule links, reconciled League knockout/head-to-head documentation, and added notification stale-refresh regression coverage. Issues #509, #511 and #512 are closed after CI #37481699093, PostgreSQL #37481699113 and staging rollout #37481699009 passed. The next sorted open capability decisions are #520 ranked free-agency preferences/awards and #521 the persistent live draft room.
+
+
+## Draw and draft boundary record — 6 October 2026
+
+#520 is closed after real PostgreSQL validation of private ranked preferences, deterministic processing, stored results and temporary rights. #521 remains open as a partial future-deadline capability: the persistent configured-season draft room exists, but starting a new draft must wait for the league/season context and setup boundary tracked in #522. No module-global prototype is counted as delivery, and no new draft state is created in the current active season.

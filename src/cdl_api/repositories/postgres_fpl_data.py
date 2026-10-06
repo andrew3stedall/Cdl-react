@@ -45,7 +45,9 @@ from cdl_api.repositories.postgres_league_fpl import (
     fpl_positions_table,
 )
 
-metadata = MetaData()\n\nclass UtcDateTime(TypeDecorator[datetime]):
+metadata = MetaData()
+
+class UtcDateTime(TypeDecorator[datetime]):
     """Keep UTC-aware datetimes consistent across PostgreSQL and SQLite tests."""
 
     impl = DateTime

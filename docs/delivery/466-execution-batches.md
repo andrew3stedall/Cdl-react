@@ -145,7 +145,7 @@ PR [#545](https://github.com/andrew3stedall/Cdl-react/pull/545) is merged as `4d
 | [#517](https://github.com/andrew3stedall/Cdl-react/issues/517) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/LeaguePage.tsx](../../frontend/src/LeaguePage.tsx) |
 | [#518](https://github.com/andrew3stedall/Cdl-react/issues/518) | Batch 1: direct profile identity is no longer blocked by history fetch | [frontend/src/PlayerProfilePage.tsx](../../frontend/src/PlayerProfilePage.tsx) |
 | [#519](https://github.com/andrew3stedall/Cdl-react/issues/519) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/navigation.test.ts](../../frontend/src/navigation.test.ts) |
-| [#520](https://github.com/andrew3stedall/Cdl-react/issues/520) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [tests/test_free_agency_draw_repository.py](../../tests/test_free_agency_draw_repository.py) |
+| [#520](https://github.com/andrew3stedall/Cdl-react/issues/520) | Closed — Batch 5: private ranked preferences, deterministic processing, stored results/rights and idempotency passed the real PostgreSQL draw integration test | [tests/test_free_agency_draw_repository.py](../../tests/test_free_agency_draw_repository.py) |
 | [#521](https://github.com/andrew3stedall/Cdl-react/issues/521) | In progress: configured-season draft delivered; independent league/season context needed | [docs/delivery/466-scoring.md](../delivery/466-scoring.md) |
 | [#522](https://github.com/andrew3stedall/Cdl-react/issues/522) | In progress: independent leagues and season context explicitly selected | [docs/architecture/league-season-context-prerequisite-adr.md](../architecture/league-season-context-prerequisite-adr.md) |
 | [#523](https://github.com/andrew3stedall/Cdl-react/issues/523) | In progress: immutable runtime versions; editing/activation and enforcement still open | [src/cdl_api/repositories/rule_versions.py](../../src/cdl_api/repositories/rule_versions.py) |
@@ -175,4 +175,9 @@ PR [#545](https://github.com/andrew3stedall/Cdl-react/pull/545) is merged as `4d
 
 ## Batch 5 — hosted-validated UI follow-up
 
-PR #559 completes the Rules mobile-access gap and adds notification stale-refresh coverage. Issues #509, #511 and #512 are closed after CI #37481699093, PostgreSQL #37481699113 and staging rollout #37481699009 passed. The next capability decisions are #520 ranked free-agency draws and #521 the persistent live draft room.
+PR #559 completes the Rules mobile-access gap and adds notification stale-refresh coverage. Issues #509, #511 and #512 are closed after CI #37481699093, PostgreSQL #37481699113 and staging rollout #37481699009 passed. The next open capability boundary is #521, whose next-season activation depends on #522 league/season context.
+
+
+## Batch 5 draw evidence — 6 October 2026
+
+#520 is closed after the real PostgreSQL integration test `test_postgres_ranked_draw_persists_private_results_and_claims_once` passed in PostgreSQL run #37481699113. The test covers private ranked preferences, deterministic awards, temporary rights, idempotent reprocessing and ownership isolation. #521 remains partial until the next-season context/setup dependency #522 is resolved.

@@ -262,6 +262,8 @@ describe('AppShell integration', () => {
     expect(mobileNavigation?.textContent).toContain(primaryNavigation?.textContent ?? '');
     expect(mobileNavigation?.textContent).not.toContain('Notifications');
     expect(mobileNavigation?.querySelectorAll('a')).toHaveLength(4);
+    expect(container.querySelector('.global-mobile-rules-link')?.textContent).toContain('Rules');
+    expect(container.querySelector('.global-mobile-rules-link')?.getAttribute('aria-current')).toBe('page');
     expect(supportNavigation?.textContent).toContain('Rules');
     expect(container.querySelector('[aria-label="Account menu for Test Manager"]')).not.toBeNull();
     expect(container.querySelector('#mobile-navigation')).toBeNull();

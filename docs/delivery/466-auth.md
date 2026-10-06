@@ -25,5 +25,5 @@ The auth session contract reports whether engineering previews are enabled; prod
 ## Remaining integration and policy
 
 - The commissioner pending-invite UI consumes `GET /api/league/management/invites` and `DELETE /api/league/management/invites/{invite_id}`; both endpoints require commissioner authorization. Invite expiry remains policy-optional and reassignment stays separate in #535.
-- #535 remains parked until policy answers: which commissioner roles may release/reassign; whether approval is required; what confirmation and immutable reason must be recorded; whether prior-user sessions are revoked immediately; and how the previous manager's team, fixture, lineup, and ownership history is preserved. No reassignment route or control was added.
+- #535 is explicitly deferred from the current release. No reassignment route or destructive control is exposed. Revisit after the active league/season context and commissioner replacement policy are accepted, covering which roles may act, approval, immutable reason, prior-user session revocation, and preservation of team, fixture, lineup and ownership history.
 - Production deployment remains off; these changes establish code behavior and local test evidence only.

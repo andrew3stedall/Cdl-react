@@ -1186,3 +1186,8 @@ Hosted evidence: [CI 37481699093](https://github.com/andrew3stedall/Cdl-react/ac
 #534 is closed after the current commissioner management UI and authenticated API were reconciled with the documented invite policy. Commissioners can list pending invites and revoke a selected unused invite; reissuing an invite revokes its prior link. Expiry remains optional until a league policy sets a duration, and reassignment is intentionally separate in #535.
 
 Hosted main validation for the documentation reconciliation passed in CI [37481699093](https://github.com/andrew3stedall/Cdl-react/actions/runs/37481699093), PostgreSQL [37481699113](https://github.com/andrew3stedall/Cdl-react/actions/runs/37481699113), and staging rollout [37481699009](https://github.com/andrew3stedall/Cdl-react/actions/runs/37481699009).
+
+
+## Assigned-team reassignment boundary — 6 October 2026
+
+#535 is explicitly deferred from the current release. The application leaves assigned ownership unchanged and exposes no destructive release/reassignment control. Revisit after the league/season context and commissioner replacement policy are accepted, covering authorization, approval, immutable reason, prior-user session revocation and preservation of team, fixture, lineup and ownership history.

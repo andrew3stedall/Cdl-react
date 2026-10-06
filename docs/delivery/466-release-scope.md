@@ -21,7 +21,7 @@ This delivery hardens the app's existing manager journeys for an already drafted
 | Private watchlists and notes | Private persisted flags/notes delivered | #526/#532: availability alerts need durable event/reminder policy |
 | Durable activity/read state/reminders | Deferred from the current candidate; current alerts remain derived | #532: revisit at the post-launch durable-notifications milestone after the #531 release-evidence gate; no unread/reminder promise is exposed |
 | CDL ownership/loan history and expanded comparisons | Ownership periods API/UI delivered | #533: distinct loan/transfer explanations and expanded comparisons remain open |
-| Assigned-team release/reassignment | Policy blocked | #535: authorization, prior-session revocation, audit reason and history preservation |
+| Assigned-team release/reassignment | Deferred from the current candidate; no destructive control exposed | #535: revisit after the league/season context and commissioner replacement policy are accepted; authorization, prior-session revocation, audit reason and history preservation remain required |
 
 The deferred capabilities remain open GitHub work. Their accepted behavior is retained in the owning feature documents; they are not discarded or marked implemented. Engineering checkpoint routes are not first-release manager navigation and their APIs are unavailable in production.
 
@@ -32,7 +32,7 @@ The deferred capabilities remain open GitHub work. Their accepted behavior is re
 | #494 | Bonus points: thresholds/criteria, award amount and whether each is cumulative | No invented league bonus award; show official result points only |
 | #499 | Captain DNP fallback: when vice-captain inherits the multiplier, including chip interaction | Preserve current scoring behavior until the league policy is approved |
 | #496 | Fifth/sixth playoff path and winner if aggregate points and scoring-lineup goals remain tied | Implement specified top/bottom brackets; ambiguous branches explicitly unconfigured, ties have no winner |
-| #535 | Who may release/reassign a team, confirmation/reason, prior-manager session revocation and immutable history | No destructive release/reassignment control |
+| #535 | Deferred current-candidate workflow; authorization, confirmation/reason, prior-manager session revocation and immutable history | Leave current assignment unchanged; expose no destructive release/reassignment control |
 | #531 / #71 | Deployed signed-in reviewer evidence and dated restore/recovery exercise if unavailable to this workspace | CI proves its actual database/browser scope; health is never substituted for recovery evidence |
 
 No permission-dependent item is silently treated as solved. Each has an open issue and a bounded unblock condition.

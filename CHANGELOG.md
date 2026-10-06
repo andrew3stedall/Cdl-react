@@ -15,6 +15,8 @@
 
 ## Unreleased
 
+- Explicitly deferred #535 assigned-team release/reassignment until commissioner authorization, approval, reason, session-revocation and history-preservation policy is accepted; the current UI exposes no destructive control.
+
 - Closed #534: commissioner management now documents and exposes pending-invite listing and revocation while keeping expiry optional and reassignment separate.
 
 - Explicitly deferred #532 durable activity/read state and deadline reminders from the current release; derived alerts remain honest and retryable, and the notification count does not claim unread persistence.

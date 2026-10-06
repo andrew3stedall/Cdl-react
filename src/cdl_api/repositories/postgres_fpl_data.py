@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Mapping
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from sqlalchemy import (
@@ -23,6 +23,7 @@ from sqlalchemy import (
     update,
 )
 from sqlalchemy.orm import Session
+from sqlalchemy.types import TypeDecorator
 
 from cdl_api.contracts.fpl_data import (
     FplCacheStatusResponse,
@@ -44,7 +45,22 @@ from cdl_api.repositories.postgres_league_fpl import (
     fpl_positions_table,
 )
 
-metadata = MetaData()
+metadata = MetaData()\n\nclass UtcDateTime(TypeDecorator[datetime]):
+    """Keep UTC-aware datetimes consistent across PostgreSQL and SQLite tests."""
+
+    impl = DateTime
+    cache_ok = True
+
+    def process_bind_param(self, value: datetime | None, dialect: object) -> datetime | None:
+        if value is None:
+            return None
+        return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+
+    def process_result_value(self, value: datetime | None, dialect: object) -> datetime | None:
+        if value is None:
+            return None
+        return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+
 
 fpl_gameweeks_table = Table(
     "fpl_gameweeks",
@@ -102,7 +118,7 @@ external_payload_cache_table = Table(
     Column("endpoint", String(512), nullable=False),
     Column("payload_json", JSON(), nullable=False),
     Column("response_sha256", String(64), nullable=False),
-    Column("fetched_at", DateTime(timezone=True), nullable=False),
+    Column("fetched_at", UtcDateTime(), nullable=False),
 )
 
 external_fetch_log_table = Table(
@@ -115,7 +131,7 @@ external_fetch_log_table = Table(
     Column("response_sha256", String(64), nullable=True),
     Column("record_count", Integer(), nullable=False),
     Column("error", String(512), nullable=True),
-    Column("fetched_at", DateTime(timezone=True), nullable=False),
+    Column("fetched_at", UtcDateTime(), nullable=False),
 )
 
 FPL_INGESTION_TABLES = (

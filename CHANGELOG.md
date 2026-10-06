@@ -9,7 +9,7 @@
 ### Validation
 
 - Merged in [PR #550](https://github.com/andrew3stedall/Cdl-react/pull/550) as 65f254b.
-- PostgreSQL release paths passed in [run 37369127085](https://github.com/andrew3stedall/Cdl-react/actions/runs/37369127085); final CI/staging checks were queued at record time.
+- PostgreSQL release paths passed in [run 37369127085](https://github.com/andrew3stedall/Cdl-react/actions/runs/37369127085). Current-tree CI and PostgreSQL checks pass in [37541864031](https://github.com/andrew3stedall/Cdl-react/actions/runs/37541864031) and [37541864055](https://github.com/andrew3stedall/Cdl-react/actions/runs/37541864055).
 
 # Changelog
 

@@ -1151,4 +1151,9 @@ This document preserves the audited baseline and its 70 findings. The [item-by-i
 
 PR [#550](https://github.com/andrew3stedall/Cdl-react/pull/550) merged the #497 fix as 65f254b. The final event-live refresh is now a distinct verified-source boundary: stale ordinary cache data cannot become official after a failed final refresh, and the provisional fixture result records final_event_live_unverified for operator visibility. The new ingestion and settlement regressions cover bootstrap finished/data_checked plus both successful final-source persistence and old-cache/failure recovery.
 
-PostgreSQL release paths passed in [run 37369127085](https://github.com/andrew3stedall/Cdl-react/actions/runs/37369127085). The final CI/staging workflow runs were queued at the time of this record, so #497 remains open until those hosted checks settle.
+PostgreSQL release paths passed in [run 37369127085](https://github.com/andrew3stedall/Cdl-react/actions/runs/37369127085). The follow-up CI and staging gates also passed; #497 is now closed.
+
+
+## Batch 4 completion record — 6 October 2026
+
+PRs #552 and #553 aligned Squad and Scouting on the canonical player profile surface while preserving context-specific action bars and the Squad accessibility contract. Corrective validation PRs #554–#557 normalized cached FPL timestamps to UTC, repaired the malformed definition introduced during the first fix, aligned the browser drawer invariant with the shared profile action bar, and restored backend formatting. Issues #503, #504, #506, #507 and #510 are closed after CI #2123, PostgreSQL #1951 and staging rollout #951 passed. The next sorted open group is #509, #511, #512, #520 and #521.

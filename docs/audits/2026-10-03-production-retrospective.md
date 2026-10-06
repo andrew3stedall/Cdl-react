@@ -1174,3 +1174,8 @@ PR #559 closed the remaining Rules/mobile access gap, preserved SPA rule links, 
 #529 and #530 are closed after the current implementation and hosted main validation were reconciled with the documented release boundary. Analytics is reached from League, Fixture Difficulty from Market, and the primary shell remains Desk, Squad, Market and League. Rules is a contextual utility surface; no fifth primary navigation item is introduced. The roadmap and route inventory now distinguish supported workflows, contextual tools, engineering previews, planned capability and open release gates.
 
 Hosted evidence: [CI 37481699093](https://github.com/andrew3stedall/Cdl-react/actions/runs/37481699093), [Backend PostgreSQL 37481699113](https://github.com/andrew3stedall/Cdl-react/actions/runs/37481699113), and [staging rollout 37481699009](https://github.com/andrew3stedall/Cdl-react/actions/runs/37481699009). This does not close #522–#525 or #531, whose remaining scope is explicitly partial, architecture/policy-bound or device/recovery-gated.
+
+
+## Durable notification boundary — 6 October 2026
+
+#532 is explicitly deferred from the current release. The existing bell remains a derived-alert surface with loading, unavailable, empty and stale/retry states; its count is presented as alerts, not unread events. No read/dismiss controls, reminder cadence or delivery channel is exposed or implied. Revisit at the post-launch durable-notifications milestone after #531’s release-evidence gate, with cadence, delivery and retention policy settled before implementation.

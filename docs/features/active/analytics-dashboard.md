@@ -6,7 +6,7 @@ Plan the modern replacement for the legacy Dashboard screen, including metric wi
 
 ## Status
 
-Implemented foundation. Persistent dashboard configuration, full metric catalogue validation, and legacy widget parity remain pending.
+Contextual optional tool. League exposes Analytics as a contextual action, while persistent dashboard configuration, full metric catalogue validation, legacy widget parity and PostgreSQL fact-backed drill-down remain follow-up scope. The dashboard returns explicit empty states when no persisted fact contract exists; it is not a fifth primary navigation destination.
 
 ## Legacy Inventory
 

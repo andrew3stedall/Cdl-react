@@ -6,15 +6,16 @@ This document is the product-level source of truth for where Castle Draft League
 
 ## Primary navigation
 
-The manager-facing primary navigation is:
+The manager-facing primary navigation has four destinations:
 
-1. **Home** — urgency-led command centre.
-2. **Squad** — season-long squad health and squad actions.
+1. **Desk** — urgency-led command centre.
+2. **Squad** — season-long squad health, team selection and squad actions.
 3. **Market** — acquisition, discovery, draws, interests, watchlist and trade activity.
-4. **Matchweek** — weekly lineup decisions and deadline execution.
-5. **League** — competition state, fixtures, table and head-to-head context.
+4. **League** — competition state, fixtures, table and head-to-head context.
 
-## Home
+Rules and Fixture Difficulty are contextual utility surfaces. Matchweek remains useful domain terminology, but it is not a fifth primary navigation item in the current shell.
+
+## Desk (Home)
 
 Home is urgency-led rather than feature-led. It ranks actions using a combined priority signal that considers deadlines, player risks, pending decisions and likely impact.
 
@@ -42,7 +43,7 @@ Squad owns:
 - starting a trade from an owned player;
 - navigating to the full player profile.
 
-Squad does **not** own weekly lineup editing. It may preview the current lineup, but Matchweek owns lineup changes.
+Squad also owns the current Team Selection workflow: managers edit the weekly lineup, captain, vice-captain and chips from the Squad surface. Matchweek remains a useful domain label for deadline execution, but the current shell does not expose a separate Matchweek primary item.
 
 Squad does **not** own general player discovery, watchlists, draw preference management or trade inboxes. Those belong in Market.
 
@@ -63,9 +64,9 @@ Market discovery defaults to contextual ranking using projection, form, fixtures
 
 Ownership/status labels should be concise and explicit: **Yours**, **Available**, **Owned by [Manager]**, **Won in Draw**, **Pending Trade**.
 
-## Matchweek
+## Team selection and deadline execution
 
-Matchweek owns weekly execution:
+The current Squad surface owns weekly execution:
 
 - starting lineup;
 - bench order;
@@ -75,7 +76,7 @@ Matchweek owns weekly execution:
 - save/submit selection;
 - deadline context.
 
-Squad may show the current lineup as a read-only preview and link into Matchweek for changes.
+“Matchweek” remains the domain term for this work, but the supported navigation keeps the workflow in Squad rather than adding another bottom-navigation destination.
 
 ## League
 

@@ -6,15 +6,17 @@ Define practical build checkpoints for the redesigned CDL application.
 
 ## Status
 
-Checkpoint 5 complete.
+Reconciled release-scope reference — 6 October 2026.
+
+The named checkpoints remain dependency-planning labels; they are not a claim that every capability listed in them is production-ready. The supported candidate is the four-destination manager shell (Desk, Squad, Market and League), with Rules and Fixture Difficulty available contextually. Next-season authoring, configurable rule administration, general corrections, advanced loan policy, durable reminders and final release gates remain explicit follow-up work.
 
 ## Principle
 
-The project does not need an early production release. These checkpoints are for managing build risk and validating connected workflows.
+Use checkpoints to order dependencies and validate connected workflows. Current delivery is staged toward production readiness; it does not wait for every future capability, and it does not turn a schema, prototype route or deterministic test contract into a product claim.
 
 ## Checkpoint A — Foundation and Draft
 
-Validate league setup, season setup, invitations, FPL player data, live draft, squad creation, and the basic squad page.
+Validate invitations, FPL player data, the configured-season draft, squad creation and the basic squad page. Self-service league/season setup and next-season draft activation remain bounded by #521/#522.
 
 ## Checkpoint B — Weekly Gameplay
 

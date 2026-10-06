@@ -1,6 +1,6 @@
 # All 70 audit findings — execution batches
 
-Updated: 5 October 2026 (Australia/Melbourne). Parent [#466](https://github.com/andrew3stedall/Cdl-react/issues/466). This index covers every issue; an item being tackled is not a claim that its acceptance is complete.
+Updated: 6 October 2026 (Australia/Melbourne). Parent [#466](https://github.com/andrew3stedall/Cdl-react/issues/466). This index covers every issue; an item being tackled is not a claim that its acceptance is complete.
 
 ## Release verification — issues #475 and #531
 
@@ -154,8 +154,8 @@ PR [#545](https://github.com/andrew3stedall/Cdl-react/pull/545) is merged as `4d
 | [#526](https://github.com/andrew3stedall/Cdl-react/issues/526) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [tests/test_private_scouting.py](../../tests/test_private_scouting.py) |
 | [#527](https://github.com/andrew3stedall/Cdl-react/issues/527) | Batch 2: residual Desk narration removed; PR #544 merged and issue closed | [frontend/src/ManagerDeskPage.test.tsx](../../frontend/src/ManagerDeskPage.test.tsx) |
 | [#528](https://github.com/andrew3stedall/Cdl-react/issues/528) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [docs/delivery/466-ui.md](../delivery/466-ui.md) |
-| [#529](https://github.com/andrew3stedall/Cdl-react/issues/529) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/App.tsx](../../frontend/src/App.tsx) |
-| [#530](https://github.com/andrew3stedall/Cdl-react/issues/530) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [docs/delivery/466-release-scope.md](../delivery/466-release-scope.md) |
+| [#529](https://github.com/andrew3stedall/Cdl-react/issues/529) | Closed — contextual Analytics/FDR access is documented and the four-item primary navigation is preserved; hosted evidence is green | [frontend/src/App.tsx](../../frontend/src/App.tsx) |
+| [#530](https://github.com/andrew3stedall/Cdl-react/issues/530) | Closed — roadmap, route inventory, feature placement and release scope now agree on the supported candidate and explicit follow-ups | [docs/delivery/466-release-scope.md](../delivery/466-release-scope.md) |
 | [#531](https://github.com/andrew3stedall/Cdl-react/issues/531) | Partial: current-contract browser, real PostgreSQL and deployed signed-in read/write evidence verified; device/recovery evidence remains | [docs/delivery/466-ops.md](466-ops.md) |
 | [#532](https://github.com/andrew3stedall/Cdl-react/issues/532) | In progress: saved in-app state and opt-in 24h/1h FPL deadline reminders | [docs/features/active/notifications-activity-and-deadline-service.md](../features/active/notifications-activity-and-deadline-service.md) |
 | [#533](https://github.com/andrew3stedall/Cdl-react/issues/533) | Open: canonical movement attribution and expanded comparison remain | [frontend/src/PlayerProfileScoutingPanels.tsx](../../frontend/src/PlayerProfileScoutingPanels.tsx) |
@@ -177,6 +177,12 @@ PR [#545](https://github.com/andrew3stedall/Cdl-react/pull/545) is merged as `4d
 
 PR #559 completes the Rules mobile-access gap and adds notification stale-refresh coverage. Issues #509, #511 and #512 are closed after CI #37481699093, PostgreSQL #37481699113 and staging rollout #37481699009 passed. The next open capability boundary is #521, whose next-season activation depends on #522 league/season context.
 
+
+## Contextual tools and release-scope reconciliation — 6 October 2026
+
+Issues #529 and #530 are now evidence-complete. Analytics is reachable from League, Fixture Difficulty is reachable from Market, and the supported primary navigation remains Desk, Squad, Market and League. The roadmap and route inventory now distinguish historical checkpoints, supported product workflows, contextual utilities and deferred capability boundaries.
+
+Hosted evidence for this closure remains the merged-main validation: [CI 37481699093](https://github.com/andrew3stedall/Cdl-react/actions/runs/37481699093), [Backend PostgreSQL 37481699113](https://github.com/andrew3stedall/Cdl-react/actions/runs/37481699113), and [staging rollout 37481699009](https://github.com/andrew3stedall/Cdl-react/actions/runs/37481699009). #522–#525 remain open because they are partial or architecture/policy-bound; #531 remains open for its device and recovery evidence.
 
 ## Batch 5 draw evidence — 6 October 2026
 

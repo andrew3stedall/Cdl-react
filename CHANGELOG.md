@@ -15,6 +15,8 @@
 
 ## Unreleased
 
+- Closed #529 and #530 after hosted main validation. Analytics is reached from League, Fixture Difficulty from Market, and the supported primary navigation is Desk, Squad, Market and League; the roadmap and route inventory now distinguish contextual, engineering-only, planned and blocked scope.
+
 - Mobile managers can now open Rules from a compact support link above the fixed four-item navigation, and Rules section links preserve SPA hash navigation when the shell router is available.
 - Batch 5 notification coverage keeps loading, unavailable, empty and stale-alert states distinct and labels the bell count as alerts until durable read state exists.
 - Draft-room activation remains guarded against overwriting the already-drafted active season; next-season creation is explicitly tied to #522 context/setup work.

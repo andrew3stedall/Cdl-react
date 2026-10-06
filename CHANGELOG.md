@@ -15,6 +15,8 @@
 
 ## Unreleased
 
+- Closed #470, #471, #473, #478–#481, #483, #498, #500, #501 and #502 after hosted validation of the exact pre-merge tree in [CI 37540121563](https://github.com/andrew3stedall/Cdl-react/actions/runs/37540121563) and [Backend PostgreSQL 37540121528](https://github.com/andrew3stedall/Cdl-react/actions/runs/37540121528). #497 remains open because its PR #550 backend check failed in [CI 37369669312](https://github.com/andrew3stedall/Cdl-react/actions/runs/37369669312).
+
 - Explicitly deferred #535 assigned-team release/reassignment until commissioner authorization, approval, reason, session-revocation and history-preservation policy is accepted; the current UI exposes no destructive control.
 
 - Closed #534: commissioner management now documents and exposes pending-invite listing and revocation while keeping expiry optional and reassignment separate.

@@ -15,7 +15,7 @@
 
 ## Unreleased
 
-- Closed #470, #471, #473, #478–#481, #483, #495, #498, #500, #501, #502 and #497 after hosted validation of the exact current tree in [CI 37542552838](https://github.com/andrew3stedall/Cdl-react/actions/runs/37542552838) and [Backend PostgreSQL 37542552742](https://github.com/andrew3stedall/Cdl-react/actions/runs/37542552742). #495's atomic approval path is covered by `tests/test_postgres_trade_approval.py`; #497's earlier SQLite timestamp mismatch was corrected by current-tree normalization.
+- Closed #470, #471, #473, #478–#483, #486, #495, #498, #500, #501, #502 and #497 after hosted validation. The current frontend browser suite also proves #482 keyboard lifecycle and #486 layout invariants in [CI 37543031050](https://github.com/andrew3stedall/Cdl-react/actions/runs/37543031050).
 
 - Explicitly deferred #535 assigned-team release/reassignment until commissioner authorization, approval, reason, session-revocation and history-preservation policy is accepted; the current UI exposes no destructive control.
 

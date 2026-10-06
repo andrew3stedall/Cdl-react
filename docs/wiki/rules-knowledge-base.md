@@ -31,7 +31,7 @@ Current rules use version 2026.05. Future editable rules should preserve stable 
 
 ## Shell and Session Behaviour
 
-Rules are prepared for protected shell integration. The frontend helper getRulesRouteRedirect uses the authentication route guard contract and redirects unauthenticated sessions to the login route with the rules route as the next destination.
+Rules are integrated into the protected shell. Desktop managers use the utility menu; mobile managers use the compact Rules support link above the fixed four-item navigation. The frontend helper getRulesRouteRedirect redirects unauthenticated sessions to the login route with the Rules route as the next destination.
 
 ## Testing
 

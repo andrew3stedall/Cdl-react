@@ -14,6 +14,10 @@ Issue #9 adds the modern analytics dashboard surface for configured widgets, glo
   - Shared gameweek, team, and player summary contracts.
   - Theme preset chart palette hooks and responsive card density.
 
+## Product boundary
+
+Analytics is opened from the League contextual action rather than primary navigation. Fixture Difficulty is opened from Market. These routes remain optional tools and do not add a fifth bottom-navigation item. PostgreSQL drill-down stays explicitly empty until a persisted fact contract exists; deterministic browser and clean-database evidence must not be presented as live staging proof.
+
 ## API
 
 ### Load dashboard configuration

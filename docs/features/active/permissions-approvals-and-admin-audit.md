@@ -6,7 +6,7 @@ Define league roles, approval routing, commissioner/vice commissioner responsibi
 
 ## Status
 
-Trade agreement/approval/execution and its audit records are being delivered in milestone #466. General commissioner corrections, global audit browsing and assigned-team reassignment are not completed by the engineering checkpoint; #524 and #535 track their remaining scope.
+Trade agreement/approval/execution and its audit records are being delivered in milestone #466. General commissioner corrections and global audit browsing remain partial in #524. Assigned-team release/reassignment is explicitly deferred in #535: the current surface leaves ownership unchanged and exposes no destructive control until the authorization, reason, session and history policy is accepted.
 
 ## Business Rules
 

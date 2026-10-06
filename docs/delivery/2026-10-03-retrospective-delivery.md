@@ -6,6 +6,12 @@ The [original retrospective](../audits/2026-10-03-production-retrospective.md) c
 
 Implemented means source and applicable automated coverage are delivered; deployment and hosted check evidence below must be assessed separately. Partial, parked and deferred rows remain open. Planned capability is not a production claim. The staging candidate supports the already drafted league and a persistent draft for a configured empty season. Creating or switching to the next season still needs the explicitly tracked context/setup redesign.
 
+## Closure checkpoint — 7 October 2026
+
+The following implemented items are closed after the exact pre-merge tree passed [CI 37540121563](https://github.com/andrew3stedall/Cdl-react/actions/runs/37540121563) and [Backend PostgreSQL 37540121528](https://github.com/andrew3stedall/Cdl-react/actions/runs/37540121528) on head ea12fffcec7da20ef1742c290cfa1129013f53d9: #470, #471, #473, #478, #479, #480, #481, #483, #498, #500, #501 and #502. Their focused implementation and documentation were already present; this checkpoint records the hosted evidence and issue-state reconciliation.
+
+#497 remains open because its merged implementation's backend check failed in [CI 37369669312](https://github.com/andrew3stedall/Cdl-react/actions/runs/37369669312). #472, #475, #482, #486, #488, #494, #496, #499, #521–#525, #531, #533 and #536 retain their documented device, rendered-browser, release, policy, architecture or partial-scope boundaries.
+
 ## Current execution
 
 Batch 4 is merged and staging-validated across the integrity and current-season slices. Issues #489–#493 and #503, #504, #506, #507 and #510 are closed. Issues #529 and #530 are now also closed after the contextual-navigation and release-scope reconciliation was validated on main. The player-profile parity work is in [PR #552](https://github.com/andrew3stedall/Cdl-react/pull/552), with the Squad accessibility follow-up in [PR #553](https://github.com/andrew3stedall/Cdl-react/pull/553). The final hosted validation is [CI #2123](https://github.com/andrew3stedall/Cdl-react/actions/runs/37479206565), [PostgreSQL #1951](https://github.com/andrew3stedall/Cdl-react/actions/runs/37479206447) and [staging rollout #951](https://github.com/andrew3stedall/Cdl-react/actions/runs/37479206508); corrective UTC-cache/browser-contract work landed through PRs #554–#557. Staging rollout, migrations, official FPL refresh, readiness, smoke and live service/auth checks passed.

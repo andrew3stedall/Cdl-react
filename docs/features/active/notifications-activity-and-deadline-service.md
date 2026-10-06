@@ -6,7 +6,7 @@ Define notifications, activity feeds, audit separation, deadline reminders, watc
 
 ## Status
 
-Derived manager alerts with loading/error/stale/retry handling are implemented. Durable per-user events, read/dismiss state and scheduled reminders remain planned (#532); engineering checkpoint 3 does not implement this persistent lifecycle.
+Current candidate boundary: derived manager alerts with loading/error/stale/retry handling are implemented. Durable per-user events, read/dismiss state and scheduled reminders are explicitly deferred from the current release; the bell count is an alert count, not an unread count, and no read/dismiss/reminder action is promised. Target: revisit as a post-launch durable-notifications milestone after the current release evidence gate (#531) and before any durable reminder promise is added. No email, push or automatic retention policy is implied.
 
 ## Business Rules
 
@@ -49,6 +49,7 @@ approval_requests
 
 - `GET /api/squad/notifications` returns manager-scoped derived alerts for proposed trades and reduced FPL availability.
 - The endpoint intentionally does not claim durable unread state or replace the future notification/activity tables described above.
+- The current UI exposes retryable derived alerts only. It does not expose mark-read, dismiss, reminder scheduling or delivery controls.
 
 ## React Requirements
 

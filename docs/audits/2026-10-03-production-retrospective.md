@@ -1167,3 +1167,10 @@ PR #559 closed the remaining Rules/mobile access gap, preserved SPA rule links, 
 ## Draw and draft boundary record — 6 October 2026
 
 #520 is closed after real PostgreSQL validation of private ranked preferences, deterministic processing, stored results and temporary rights. #521 remains open as a partial future-deadline capability: the persistent configured-season draft room exists, but starting a new draft must wait for the league/season context and setup boundary tracked in #522. No module-global prototype is counted as delivery, and no new draft state is created in the current active season.
+
+
+## Contextual tools and planning reconciliation — 6 October 2026
+
+#529 and #530 are closed after the current implementation and hosted main validation were reconciled with the documented release boundary. Analytics is reached from League, Fixture Difficulty from Market, and the primary shell remains Desk, Squad, Market and League. Rules is a contextual utility surface; no fifth primary navigation item is introduced. The roadmap and route inventory now distinguish supported workflows, contextual tools, engineering previews, planned capability and open release gates.
+
+Hosted evidence: [CI 37481699093](https://github.com/andrew3stedall/Cdl-react/actions/runs/37481699093), [Backend PostgreSQL 37481699113](https://github.com/andrew3stedall/Cdl-react/actions/runs/37481699113), and [staging rollout 37481699009](https://github.com/andrew3stedall/Cdl-react/actions/runs/37481699009). This does not close #522–#525 or #531, whose remaining scope is explicitly partial, architecture/policy-bound or device/recovery-gated.

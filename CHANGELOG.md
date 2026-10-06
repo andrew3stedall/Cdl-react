@@ -15,6 +15,8 @@
 
 ## Unreleased
 
+- Explicitly deferred #532 durable activity/read state and deadline reminders from the current release; derived alerts remain honest and retryable, and the notification count does not claim unread persistence.
+
 - Closed #529 and #530 after hosted main validation. Analytics is reached from League, Fixture Difficulty from Market, and the supported primary navigation is Desk, Squad, Market and League; the roadmap and route inventory now distinguish contextual, engineering-only, planned and blocked scope.
 
 - Mobile managers can now open Rules from a compact support link above the fixed four-item navigation, and Rules section links preserve SPA hash navigation when the shell router is available.

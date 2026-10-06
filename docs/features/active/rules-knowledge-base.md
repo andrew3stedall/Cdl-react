@@ -6,7 +6,7 @@ Plan the modern replacement for the legacy Rules page as a structured, searchabl
 
 ## Status
 
-Implemented foundation. Admin editing, complete rule version history, and enforceable service-rule parity remain pending.
+Implemented for authenticated managers through the API-backed Rules workspace. Search, category filtering, loading/error/retry states, stable links and mobile access are covered. Admin editing, complete rule version history, and enforceable service-rule parity remain pending.
 
 ## Legacy Inventory
 
@@ -16,7 +16,7 @@ Implemented foundation. Admin editing, complete rule version history, and enforc
 
 ## Current Behaviour
 
-Users read long-form league rules and navigate between rule sections using anchor links.
+Users read versioned rule sections from the API, search and filter them, retry unavailable reads, follow stable anchors from validation feedback, and open Rules from the desktop utility menu or the compact mobile support link.
 
 ## Business Rules
 

@@ -8,8 +8,8 @@ Plan the modern replacement for the legacy League screen, including Castle Draft
 
 PostgreSQL fixture/result/scoring reads, persisted league-table snapshots,
 knockout records, and head-to-head records are implemented for the primary
-league API. EPL scoring context, full parity, and complete season edge cases
-remain pending.
+league API and are discoverable through the League route views. EPL scoring
+context, full parity, and complete season edge cases remain pending.
 
 ## Legacy Inventory
 
@@ -154,4 +154,4 @@ player profile. The same interaction applies from pitch and list fixture views.
 
 ## Retrospective follow-up
 
-Fixtures, table, and commissioner management now load independently so an optional League read does not block the active view. Fixture previews retain partial publication states and a retry path. League tabs are reflected in `/league`, `/league/table`, and `/league/manage`; knockout and head-to-head presentation is being integrated separately.
+Fixtures, table, and commissioner management now load independently so an optional League read does not block the active view. Fixture previews retain partial publication states and a retry path. League tabs are reflected in `/league`, `/league/table`, and `/league/manage`; knockout brackets and head-to-head records are exposed through the League route views with explicit empty/not-ready states.

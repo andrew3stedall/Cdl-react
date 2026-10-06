@@ -13,6 +13,39 @@
   display: none;
 }
 
+.global-mobile-rules-link {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .global-mobile-rules-link {
+    align-items: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    bottom: calc(var(--cdl-mobile-navigation-clearance) + 0.55rem);
+    color: var(--cdl-foreground);
+    display: inline-flex;
+    font-size: 0.72rem;
+    font-weight: 800;
+    gap: 0.28rem;
+    min-height: 2.25rem;
+    padding: 0.35rem 0.7rem;
+    position: fixed;
+    right: 0.75rem;
+    text-decoration: none;
+    z-index: calc(var(--cdl-z-navigation) - 1);
+  }
+
+  .global-mobile-rules-link.active,
+  .global-mobile-rules-link:focus-visible,
+  .global-mobile-rules-link:hover {
+    border-color: var(--primary);
+    color: var(--theme-primary-text, var(--primary));
+    outline: none;
+  }
+}
+
 @media (max-width: 900px) {
   :root {
     /* Keep the fixed navigation and page content clearance on one contract. */

@@ -1,5 +1,5 @@
 import type { LucideIcon } from 'lucide-react';
-import { Gauge, LampDesk, Search, ShieldCheck, Users } from 'lucide-react';
+import { BookOpen, Gauge, LampDesk, Search, ShieldCheck, Users } from 'lucide-react';
 
 import {
   isPrimaryNavigationItemActive,
@@ -21,17 +21,33 @@ const navigationIcons: Record<string, LucideIcon> = {
 };
 
 export function GlobalNavigation({ currentPath, onNavigate }: GlobalNavigationProps) {
+  const rulesActive = currentPath === '/rules' || currentPath.startsWith('/rules/');
   return (
-    <nav aria-label="Global mobile navigation" className="global-mobile-navigation">
-      {primaryNavigationItems.map((item) => (
-        <GlobalNavigationLink
-          currentPath={currentPath}
-          item={item}
-          key={item.href}
-          onNavigate={onNavigate}
-        />
-      ))}
-    </nav>
+    <>
+      <nav aria-label="Global mobile navigation" className="global-mobile-navigation">
+        {primaryNavigationItems.map((item) => (
+          <GlobalNavigationLink
+            currentPath={currentPath}
+            item={item}
+            key={item.href}
+            onNavigate={onNavigate}
+          />
+        ))}
+      </nav>
+      <a
+        aria-current={rulesActive ? 'page' : undefined}
+        aria-label="Open Rules"
+        className={rulesActive ? 'global-mobile-rules-link active' : 'global-mobile-rules-link'}
+        href="/rules"
+        onClick={(event) => {
+          event.preventDefault();
+          onNavigate('/rules');
+        }}
+      >
+        <BookOpen aria-hidden="true" size={16} />
+        <span>Rules</span>
+      </a>
+    </>
   );
 }
 

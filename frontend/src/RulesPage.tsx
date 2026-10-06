@@ -35,7 +35,22 @@ export function RulesPage({ sections, categories, query = '', category = 'all', 
       <p aria-live="polite" className="rules-page__count">{filteredSections.length} rules</p>
       {filteredSections.length === 0 ? <Card>No rules match these filters.</Card> : null}
       <nav aria-label="Rules table of contents" className="rules-page__contents">
-        {filteredSections.map((section) => <a href={buildRuleHref(section.id)} key={section.id}>{section.title}</a>)}
+        {filteredSections.map((section) => {
+          const href = buildRuleHref(section.id);
+          return (
+            <a
+              href={href}
+              key={section.id}
+              onClick={(event) => {
+                if (!onNavigate) return;
+                event.preventDefault();
+                onNavigate(href);
+              }}
+            >
+              {section.title}
+            </a>
+          );
+        })}
       </nav>
       <section aria-label="Rule sections" className="rules-page__sections">
         {filteredSections.map((section) => (

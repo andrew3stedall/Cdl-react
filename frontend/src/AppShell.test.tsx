@@ -239,6 +239,42 @@ describe('AppShell integration', () => {
     root.unmount();
   });
 
+  test('keeps alerts honest and retains saved alerts when a refresh fails', async () => {
+    const notifications = [{
+      id: 'notice-1',
+      title: 'Fixture update',
+      message: 'Gameweek 12 is underway.',
+      action_href: '/league',
+      kind: 'fixture',
+    }];
+    const getNotifications = vi.fn()
+      .mockResolvedValueOnce({ notifications, proposed_trade_count: 0 })
+      .mockRejectedValueOnce(new Error('network'));
+    const squadClient = { getNotifications } as unknown as SquadClient;
+    const { container, root } = renderApp({ initialPath: '/rules', squadClient });
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('.global-notifications__button')?.click();
+    });
+    expect(container.querySelector('.global-notifications__button')?.getAttribute('aria-label')).toContain('1 alerts');
+    expect(container.querySelector('.global-notifications__popover')?.textContent).toContain('1 alerts');
+
+    document.dispatchEvent(new CustomEvent('cdl:data-invalidated', { detail: { scopes: ['alerts'] } }));
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(container.querySelector('.global-notifications__count')?.textContent).toBe('1');
+    expect(container.querySelector('.global-notifications__popover')?.textContent).toContain('Showing saved alerts');
+    expect(container.querySelector('.global-notifications__popover')?.textContent).toContain('Refresh failed');
+    root.unmount();
+  });
+
   test('renders the global feature hierarchy consistently around rules content', async () => {
     const { container } = renderApp({ initialPath: '/rules' });
 
@@ -262,6 +298,8 @@ describe('AppShell integration', () => {
     expect(mobileNavigation?.textContent).toContain(primaryNavigation?.textContent ?? '');
     expect(mobileNavigation?.textContent).not.toContain('Notifications');
     expect(mobileNavigation?.querySelectorAll('a')).toHaveLength(4);
+    expect(container.querySelector('.global-mobile-rules-link')?.textContent).toContain('Rules');
+    expect(container.querySelector('.global-mobile-rules-link')?.getAttribute('aria-current')).toBe('page');
     expect(supportNavigation?.textContent).toContain('Rules');
     expect(container.querySelector('[aria-label="Account menu for Test Manager"]')).not.toBeNull();
     expect(container.querySelector('#mobile-navigation')).toBeNull();

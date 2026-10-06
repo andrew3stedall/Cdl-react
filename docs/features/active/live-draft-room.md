@@ -6,14 +6,14 @@ Define the live sequential draft workflow, draft order modes, pick clock, presel
 
 ## Status
 
-Persistent draft API and standalone room page are implemented. The FastAPI router still needs to be mounted in the application by the integration owner.
+Persistent PostgreSQL draft API and standalone room page are implemented and the FastAPI router is mounted at `/api/live-draft`. The configured active season is already drafted, so creating a new room is guarded until league/season context and setup support #522 is delivered.
 
 ## Business Rules
 
 - Draft is live and sequential.
 - Draft order supports random repeated, snake, and manual modes.
 - Draft picks create active squad assignments immediately.
-- The draft can only be marked complete after every scheduled pick has created an assignment.
+- The draft can only be marked complete after every scheduled pick has created an assignment. A new room is rejected when the configured season already has active squad ownerships.
 - The configured draft fills all 20 roster slots. During the draft, picks must respect the seeded position limits: GKP 2–3, DEF 4–10, MID 5–10, FWD 2–4. Picks/autopick are rejected if the remaining player pool could no longer satisfy every team's position minima.
 - Commissioner can enable or disable pick clock.
 - Pick time limit is configurable.

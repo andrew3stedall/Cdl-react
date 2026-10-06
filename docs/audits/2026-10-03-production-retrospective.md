@@ -1157,3 +1157,8 @@ PostgreSQL release paths passed in [run 37369127085](https://github.com/andrew3s
 ## Batch 4 completion record — 6 October 2026
 
 PRs #552 and #553 aligned Squad and Scouting on the canonical player profile surface while preserving context-specific action bars and the Squad accessibility contract. Corrective validation PRs #554–#557 normalized cached FPL timestamps to UTC, repaired the malformed definition introduced during the first fix, aligned the browser drawer invariant with the shared profile action bar, and restored backend formatting. Issues #503, #504, #506, #507 and #510 are closed after CI #2123, PostgreSQL #1951 and staging rollout #951 passed. The next sorted open group is #509, #511, #512, #520 and #521.
+
+
+## Batch 5 completion record — 6 October 2026
+
+PR #559 closed the remaining Rules/mobile access gap, preserved SPA rule links, reconciled League knockout/head-to-head documentation, and added notification stale-refresh regression coverage. Issues #509, #511 and #512 are closed after CI #37481699093, PostgreSQL #37481699113 and staging rollout #37481699009 passed. The next sorted open capability decisions are #520 ranked free-agency preferences/awards and #521 the persistent live draft room.

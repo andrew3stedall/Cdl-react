@@ -134,10 +134,10 @@ PR [#545](https://github.com/andrew3stedall/Cdl-react/pull/545) is merged as `4d
 | [#506](https://github.com/andrew3stedall/Cdl-react/issues/506) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/MarketPage.test.tsx](../../frontend/src/MarketPage.test.tsx) |
 | [#507](https://github.com/andrew3stedall/Cdl-react/issues/507) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/data-freshness.test.ts](../../frontend/src/data-freshness.test.ts) |
 | [#508](https://github.com/andrew3stedall/Cdl-react/issues/508) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/MarketPage.test.tsx](../../frontend/src/MarketPage.test.tsx) |
-| [#509](https://github.com/andrew3stedall/Cdl-react/issues/509) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/RulesWorkspacePage.tsx](../../frontend/src/RulesWorkspacePage.tsx) |
+| [#509](https://github.com/andrew3stedall/Cdl-react/issues/509) | Closed — Batch 5: API-backed searchable Rules, mobile destination, stable links and retry states validated in PR #559; hosted CI/staging green | [frontend/src/RulesWorkspacePage.tsx](../../frontend/src/RulesWorkspacePage.tsx) |
 | [#510](https://github.com/andrew3stedall/Cdl-react/issues/510) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/LeaguePage.tsx](../../frontend/src/LeaguePage.tsx) |
-| [#511](https://github.com/andrew3stedall/Cdl-react/issues/511) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/LeagueCompetitionViews.tsx](../../frontend/src/LeagueCompetitionViews.tsx) |
-| [#512](https://github.com/andrew3stedall/Cdl-react/issues/512) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/components/ui/global-notifications.tsx](../../frontend/src/components/ui/global-notifications.tsx) |
+| [#511](https://github.com/andrew3stedall/Cdl-react/issues/511) | Closed — Batch 5: knockout and head-to-head context exposed with explicit not-ready/empty states; hosted CI/staging green | [frontend/src/LeagueCompetitionViews.tsx](../../frontend/src/LeagueCompetitionViews.tsx) |
+| [#512](https://github.com/andrew3stedall/Cdl-react/issues/512) | Closed — Batch 5: alert loading/error/empty/stale states and honest alert counts covered in PR #559; hosted CI/staging green | [frontend/src/components/ui/global-notifications.tsx](../../frontend/src/components/ui/global-notifications.tsx) |
 | [#513](https://github.com/andrew3stedall/Cdl-react/issues/513) | Batch 3: failed reads stay distinct from empty states and retry in place; PR #545 merged and post-merge staging validation green | [frontend/src/MarketPage.test.tsx](../../frontend/src/MarketPage.test.tsx) |
 | [#514](https://github.com/andrew3stedall/Cdl-react/issues/514) | Batch 3: authoritative same-gameweek corrections refresh form, including added DGW fixtures; PR #545 merged and post-merge staging validation green | [frontend/src/MarketPage.test.tsx](../../frontend/src/MarketPage.test.tsx) |
 | [#515](https://github.com/andrew3stedall/Cdl-react/issues/515) | Batch 3: committed mutations remain successful when refresh fails; Retry reloads data; PR #545 merged and post-merge staging validation green | [frontend/src/PlayerProfilePage.test.tsx](../../frontend/src/PlayerProfilePage.test.tsx) |
@@ -171,3 +171,8 @@ PR [#545](https://github.com/andrew3stedall/Cdl-react/pull/545) is merged as `4d
 - League setup targets multiple independent leagues, user context switching and season-specific team management together; disconnected create records are insufficient.
 - Alerts gain durable read/dismiss state and opt-in in-app 24h/1h FPL lineup-deadline reminders. No email/push delivery or automatic retention deletion is assumed.
 - Bonus selection was “supply existing rules”; no exact criteria or amounts were supplied, so #494 remains open.
+
+
+## Batch 5 — hosted-validated UI follow-up
+
+PR #559 completes the Rules mobile-access gap and adds notification stale-refresh coverage. Issues #509, #511 and #512 are closed after CI #37481699093, PostgreSQL #37481699113 and staging rollout #37481699009 passed. The next capability decisions are #520 ranked free-agency draws and #521 the persistent live draft room.

@@ -356,7 +356,7 @@ test('Market and League drawers cover mobile navigation, keep actions visible, a
       viewport,
       `Market ${viewport.width}px`,
     );
-    const marketFooter = marketDialog.locator('.market-page__drawer-actions');
+    const marketFooter = marketDialog.locator('.player-profile__action-bar');
     const addInterest = marketFooter.getByRole('button', { name: 'Add Fixture Available Midfielder to Interests' });
     const marketFooterBox = await bounds(addInterest);
     expectWithinViewport(marketFooterBox, viewport, 'Market drawer footer action');

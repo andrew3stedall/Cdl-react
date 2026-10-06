@@ -47,6 +47,7 @@ from cdl_api.repositories.postgres_league_fpl import (
 
 metadata = MetaData()
 
+
 class UtcDateTime(TypeDecorator[datetime]):
     """Keep UTC-aware datetimes consistent across PostgreSQL and SQLite tests."""
 
@@ -62,6 +63,7 @@ class UtcDateTime(TypeDecorator[datetime]):
         if value is None:
             return None
         return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+
 
 fpl_gameweeks_table = Table(
     "fpl_gameweeks",

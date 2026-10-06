@@ -15,6 +15,8 @@
 
 ## Unreleased
 
+- Mobile managers can now open Rules from a compact support link above the fixed four-item navigation, and Rules section links preserve SPA hash navigation when the shell router is available.
+- Batch 5 notification coverage keeps loading, unavailable, empty and stale-alert states distinct and labels the bell count as alerts until durable read state exists.
 - Batch 4 closure is now recorded for #503, #504, #506, #507 and #510. CI #2123, PostgreSQL #1951 and staging rollout #951 passed on main after PRs #552, #553 and #557; corrective UTC-cache and browser-contract work was validated through PRs #554–#556.
 - Squad and Scouting retain the canonical shared player profile surface while exposing context-specific actions, and cached FPL timestamps now normalize to UTC across database dialects.
 - Scouting player details now use the same canonical PlayerProfilePage surface as Squad, including the shared header, history charts, scroll container and fixed action-bar geometry; Scouting injects only Interest/View in Squad/Close actions. See [PR #552](https://github.com/andrew3stedall/Cdl-react/pull/552).

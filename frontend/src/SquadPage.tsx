@@ -1040,6 +1040,7 @@ export function SquadPage({
                   onCompare={() => startCompare(selectedPlayer)}
                   onStartSubstitution={startSubstitutionFromProfile}
                   onSquadChange={handleProfileSquadChange}
+                  actionBarLabel="Squad-management actions"
                   onSelectionChange={handleProfileSelectionChange}
                   onTrade={() => startTrade(selectedPlayer)}
                   playerId={selectedPlayer.id}

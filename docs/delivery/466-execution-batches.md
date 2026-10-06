@@ -1,6 +1,16 @@
 # All 70 audit findings — execution batches
 
-Updated: 6 October 2026 (Australia/Melbourne). Parent [#466](https://github.com/andrew3stedall/Cdl-react/issues/466). This index covers every issue; an item being tackled is not a claim that its acceptance is complete.
+Updated: 7 October 2026 (Australia/Melbourne). Parent [#466](https://github.com/andrew3stedall/Cdl-react/issues/466). This index covers every issue; an item being tackled is not a claim that its acceptance is complete.
+
+## Closure reconciliation — 7 October 2026
+
+The following source-complete items are now closed after the merged implementation, its focused coverage and hosted validation were reconciled: [#470](https://github.com/andrew3stedall/Cdl-react/issues/470), [#471](https://github.com/andrew3stedall/Cdl-react/issues/471), [#473](https://github.com/andrew3stedall/Cdl-react/issues/473), [#478](https://github.com/andrew3stedall/Cdl-react/issues/478), [#479](https://github.com/andrew3stedall/Cdl-react/issues/479), [#480](https://github.com/andrew3stedall/Cdl-react/issues/480), [#481](https://github.com/andrew3stedall/Cdl-react/issues/481), [#483](https://github.com/andrew3stedall/Cdl-react/issues/483), [#498](https://github.com/andrew3stedall/Cdl-react/issues/498), [#500](https://github.com/andrew3stedall/Cdl-react/issues/500), [#501](https://github.com/andrew3stedall/Cdl-react/issues/501), [#502](https://github.com/andrew3stedall/Cdl-react/issues/502). Hosted validation for the exact pre-merge tree passed in [CI 37540121563](https://github.com/andrew3stedall/Cdl-react/actions/runs/37540121563) and [Backend PostgreSQL 37540121528](https://github.com/andrew3stedall/Cdl-react/actions/runs/37540121528), both on head ea12fffcec7da20ef1742c290cfa1129013f53d9. These are repository/test-contract closures; they do not claim physical-device, rendered-browser, recovery or product-policy evidence for other open findings.
+
+- #470, #471 and #473 close the invite-return, failed-logout and invite-error handling findings.
+- #478–#481 and #483 close the theme, splash and negative-chart findings.
+- #498, #500 and #501 close formation-contract, incomplete-roster and historical-refresh findings.
+- #502 closes production isolation for checkpoint APIs and engineering routes.
+- #497 remains open: its implementation is merged, but PR #550's backend check failed in [CI 37369669312](https://github.com/andrew3stedall/Cdl-react/actions/runs/37369669312); no closure is claimed from its passing PostgreSQL-only run.
 
 ## Release verification — issues #475 and #531
 
@@ -95,20 +105,20 @@ PR [#545](https://github.com/andrew3stedall/Cdl-react/pull/545) is merged as `4d
 | [#467](https://github.com/andrew3stedall/Cdl-react/issues/467) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [tests/test_auth_api.py](../../tests/test_auth_api.py) |
 | [#468](https://github.com/andrew3stedall/Cdl-react/issues/468) | Batch 1: real PostgreSQL pre-assignment read/write denial assertion added | [tests/test_postgres_squad_api.py](../../tests/test_postgres_squad_api.py) |
 | [#469](https://github.com/andrew3stedall/Cdl-react/issues/469) | Batch 1: invite/logout/fresh provider-policy login and revocation assertion added | [tests/test_auth_api.py](../../tests/test_auth_api.py) |
-| [#470](https://github.com/andrew3stedall/Cdl-react/issues/470) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/App.tsx](../../frontend/src/App.tsx) |
-| [#471](https://github.com/andrew3stedall/Cdl-react/issues/471) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/auth.test.ts](../../frontend/src/auth.test.ts) |
+| [#470](https://github.com/andrew3stedall/Cdl-react/issues/470) | Closed after merged implementation and hosted validation | [frontend/src/App.tsx](../../frontend/src/App.tsx) |
+| [#471](https://github.com/andrew3stedall/Cdl-react/issues/471) | Closed after merged implementation and hosted validation | [frontend/src/auth.test.ts](../../frontend/src/auth.test.ts) |
 | [#472](https://github.com/andrew3stedall/Cdl-react/issues/472) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/ProfilePage.tsx](../../frontend/src/ProfilePage.tsx) |
-| [#473](https://github.com/andrew3stedall/Cdl-react/issues/473) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/LeagueInvitePage.tsx](../../frontend/src/LeagueInvitePage.tsx) |
+| [#473](https://github.com/andrew3stedall/Cdl-react/issues/473) | Closed after merged implementation and hosted validation | [frontend/src/LeagueInvitePage.tsx](../../frontend/src/LeagueInvitePage.tsx) |
 | [#474](https://github.com/andrew3stedall/Cdl-react/issues/474) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/LeaguePage.tsx](../../frontend/src/LeaguePage.tsx) |
 | [#475](https://github.com/andrew3stedall/Cdl-react/issues/475) | Partial: migration/promotion gate and deployed signed-in read/write verified; candidate-time authenticated gate remains | [docs/delivery/466-ops.md](466-ops.md) |
 | [#476](https://github.com/andrew3stedall/Cdl-react/issues/476) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [Dockerfile](../../Dockerfile) |
 | [#477](https://github.com/andrew3stedall/Cdl-react/issues/477) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/market-page.css](../../frontend/src/market-page.css) |
-| [#478](https://github.com/andrew3stedall/Cdl-react/issues/478) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/theme-presets.ts](../../frontend/src/theme-presets.ts) |
-| [#479](https://github.com/andrew3stedall/Cdl-react/issues/479) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/theme-presets.test.ts](../../frontend/src/theme-presets.test.ts) |
-| [#480](https://github.com/andrew3stedall/Cdl-react/issues/480) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/theme-presets.ts](../../frontend/src/theme-presets.ts) |
-| [#481](https://github.com/andrew3stedall/Cdl-react/issues/481) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/SessionSplash.tsx](../../frontend/src/SessionSplash.tsx) |
+| [#478](https://github.com/andrew3stedall/Cdl-react/issues/478) | Closed after merged implementation and hosted validation | [frontend/src/theme-presets.ts](../../frontend/src/theme-presets.ts) |
+| [#479](https://github.com/andrew3stedall/Cdl-react/issues/479) | Closed after merged implementation and hosted validation | [frontend/src/theme-presets.test.ts](../../frontend/src/theme-presets.test.ts) |
+| [#480](https://github.com/andrew3stedall/Cdl-react/issues/480) | Closed after merged implementation and hosted validation | [frontend/src/theme-presets.ts](../../frontend/src/theme-presets.ts) |
+| [#481](https://github.com/andrew3stedall/Cdl-react/issues/481) | Closed after merged implementation and hosted validation | [frontend/src/SessionSplash.tsx](../../frontend/src/SessionSplash.tsx) |
 | [#482](https://github.com/andrew3stedall/Cdl-react/issues/482) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/components/ui/sheet.tsx](../../frontend/src/components/ui/sheet.tsx) |
-| [#483](https://github.com/andrew3stedall/Cdl-react/issues/483) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/components/player](../../frontend/src/components/player) |
+| [#483](https://github.com/andrew3stedall/Cdl-react/issues/483) | Closed after merged implementation and hosted validation | [frontend/src/components/player](../../frontend/src/components/player) |
 | [#484](https://github.com/andrew3stedall/Cdl-react/issues/484) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/components/player](../../frontend/src/components/player) |
 | [#485](https://github.com/andrew3stedall/Cdl-react/issues/485) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/browser-tests/layout-invariants.spec.ts](../../frontend/browser-tests/layout-invariants.spec.ts) |
 | [#486](https://github.com/andrew3stedall/Cdl-react/issues/486) | Batch 1: proven unused Squad/League header selectors removed | [docs/delivery/466-ui.md](../delivery/466-ui.md) |
@@ -123,11 +133,11 @@ PR [#545](https://github.com/andrew3stedall/Cdl-react/pull/545) is merged as `4d
 | [#495](https://github.com/andrew3stedall/Cdl-react/issues/495) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [tests/test_postgres_trade_approval.py](../../tests/test_postgres_trade_approval.py) |
 | [#496](https://github.com/andrew3stedall/Cdl-react/issues/496) | In progress: approved final league-rank tie-break; middle bracket path still needed | [docs/delivery/466-scoring.md](../delivery/466-scoring.md) |
 | [#497](https://github.com/andrew3stedall/Cdl-react/issues/497) | Merged in PR #550; final-source gate and stale-cache regression documented; issue remains open until queued CI/staging checks complete | [PR #550](https://github.com/andrew3stedall/Cdl-react/pull/550); [tests/test_fpl_settlement.py](../../tests/test_fpl_settlement.py) |
-| [#498](https://github.com/andrew3stedall/Cdl-react/issues/498) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [docs/delivery/466-rules.md](../delivery/466-rules.md) |
+| [#498](https://github.com/andrew3stedall/Cdl-react/issues/498) | Closed after merged implementation and hosted validation | [docs/delivery/466-rules.md](../delivery/466-rules.md) |
 | [#499](https://github.com/andrew3stedall/Cdl-react/issues/499) | In progress: approved Standard/Triple Captain zero-minute vice fallback | [docs/delivery/466-scoring.md](../delivery/466-scoring.md) |
-| [#500](https://github.com/andrew3stedall/Cdl-react/issues/500) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [docs/delivery/466-scoring.md](../delivery/466-scoring.md) |
-| [#501](https://github.com/andrew3stedall/Cdl-react/issues/501) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [docs/delivery/466-scoring.md](../delivery/466-scoring.md) |
-| [#502](https://github.com/andrew3stedall/Cdl-react/issues/502) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/App.engineering-previews.test.tsx](../../frontend/src/App.engineering-previews.test.tsx) |
+| [#500](https://github.com/andrew3stedall/Cdl-react/issues/500) | Closed after merged implementation and hosted validation | [docs/delivery/466-scoring.md](../delivery/466-scoring.md) |
+| [#501](https://github.com/andrew3stedall/Cdl-react/issues/501) | Closed after merged implementation and hosted validation | [docs/delivery/466-scoring.md](../delivery/466-scoring.md) |
+| [#502](https://github.com/andrew3stedall/Cdl-react/issues/502) | Closed after merged implementation and hosted validation | [frontend/src/App.engineering-previews.test.tsx](../../frontend/src/App.engineering-previews.test.tsx) |
 | [#503](https://github.com/andrew3stedall/Cdl-react/issues/503) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/SquadPage.test.tsx](../../frontend/src/SquadPage.test.tsx) |
 | [#504](https://github.com/andrew3stedall/Cdl-react/issues/504) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/SquadPage.test.tsx](../../frontend/src/SquadPage.test.tsx) |
 | [#505](https://github.com/andrew3stedall/Cdl-react/issues/505) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/MarketPage.test.tsx](../../frontend/src/MarketPage.test.tsx) |

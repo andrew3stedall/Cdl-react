@@ -94,7 +94,7 @@ See the [all-70 execution batches](466-execution-batches.md) for current accepta
 | [#532](https://github.com/andrew3stedall/Cdl-react/issues/532) · P3 — EXT-01 — Track durable activity, read state and deadline reminders as separate scope | Deferred | Current alerts remain derived with explicit loading/error/stale/retry states; no unread, read/dismiss or reminder promise is exposed. | [docs/features/active/notifications-activity-and-deadline-service.md](../features/active/notifications-activity-and-deadline-service.md) | Revisit at the post-launch durable-notifications milestone after #531; settle cadence, delivery and retention policy first. |
 | [#533](https://github.com/andrew3stedall/Cdl-react/issues/533) · P3 — EXT-02 — Track CDL player ownership history and richer comparisons explicitly | Partial — history | League-scoped ownership periods have a real API and compact lazy history UI alongside existing FPL history/comparison. | [frontend/src/PlayerProfileScoutingPanels.tsx](../../frontend/src/PlayerProfileScoutingPanels.tsx) | Distinct loan/transfer explanations and expanded comparison eligibility remain open; historical naming depends on #522. |
 | [#534](https://github.com/andrew3stedall/Cdl-react/issues/534) · P3 — IMP-01 — Give commissioners an explicit pending invite and revocation lifecycle | Closed | Commissioners can list pending invites and revoke a selected unused invite; invite expiry remains policy-optional and reassignment stays separate. | [frontend/src/LeaguePage.tsx](../../frontend/src/LeaguePage.tsx) | Issue closed after hosted validation. |
-| [#535](https://github.com/andrew3stedall/Cdl-react/issues/535) · P3 — IMP-02 — Plan safe assigned-team release and manager reassignment | Parked — policy | Destructive assigned-team release/reassignment remains unavailable. | [docs/delivery/466-auth.md](../delivery/466-auth.md) | Approve who can reassign, confirmation/reason, session revocation and history preservation |
+| [#535](https://github.com/andrew3stedall/Cdl-react/issues/535) · P3 — IMP-02 — Plan safe assigned-team release and manager reassignment | Deferred | No destructive assigned-team release/reassignment control is exposed; current ownership and history remain unchanged. | [docs/delivery/466-auth.md](../delivery/466-auth.md) | Revisit after league/season context and replacement policy are accepted; settle authorization, approval, reason, session revocation and history preservation first. |
 | [#536](https://github.com/andrew3stedall/Cdl-react/issues/536) · P3 — IMP-03 — Measure mobile cold-load cost and split optional code where justified | Partial — measurement | Analytics and FDR load as optional chunks; production build still warns about the main entry size. | [frontend/src/App.tsx](../../frontend/src/App.tsx) | Measure real mobile cold-load/LCP and reduce shared entry cost against an agreed budget |
 
 ## Recommended sequence to production
@@ -129,6 +129,12 @@ PR #559 completes the Rules mobile support destination and notification stale-re
 #529 and #530 are closed. The current supported navigation is Desk, Squad, Market and League; Rules and Fixture Difficulty are contextual utilities. Analytics retains an explicit empty PostgreSQL drill-down boundary until a persisted fact contract exists. The roadmap no longer treats historical checkpoints as a production-complete claim.
 
 ## Commissioner invite lifecycle — 6 October 2026
+
+## Assigned-team reassignment boundary — 6 October 2026
+
+#535 is explicitly deferred from the current release. The current commissioner surface leaves assigned ownership unchanged and exposes no destructive reassignment control until the policy and context prerequisites are accepted.
+
+
 
 #534 is closed. The current commissioner UI and authenticated management API support pending-invite listing and revocation without inventing an expiry duration or reassignment policy.
 

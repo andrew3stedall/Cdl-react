@@ -6,7 +6,7 @@ Define the core CDL identity model: reusable leagues, seasons within leagues, pe
 
 ## Status
 
-Team-specific invitations and membership/team isolation are implemented. Self-service league/season creation, switching and history remain planned (#522). They are deferred pending an accepted dynamic active-context and `season_teams` design because application repositories still resolve the single CDL 2026/27 context through constants. See the proposal in [the dynamic league and season context ADR](../../architecture/league-season-context-prerequisite-adr.md); it is not an accepted product policy. Engineering checkpoint completion does not prove those production workflows.
+Team-specific invitations, pending-invite listing/revocation and membership/team isolation are implemented. Self-service league/season creation, switching and history remain planned (#522). They are deferred pending an accepted dynamic active-context and `season_teams` design because application repositories still resolve the single CDL 2026/27 context through constants. See the proposal in [the dynamic league and season context ADR](../../architecture/league-season-context-prerequisite-adr.md); it is not an accepted product policy. Engineering checkpoint completion does not prove those production workflows.
 
 ## Business Rules
 

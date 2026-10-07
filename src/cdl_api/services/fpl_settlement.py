@@ -415,9 +415,8 @@ class FplSettlementService:
         )
         active_version_id = FplSettlementService._active_rule_version_id(session)
         bonus_config: Mapping[str, object] = CURRENT_RULE_CONFIG
-        if (
-            active_version_id is not None
-            and inspect(session.connection()).has_table(league_season_rule_versions_table.name)
+        if active_version_id is not None and inspect(session.connection()).has_table(
+            league_season_rule_versions_table.name
         ):
             stored_config = immutable_rule_config(session, active_version_id)
             if stored_config is not None:
@@ -676,9 +675,7 @@ class FplSettlementService:
                     if finalised
                     else snapshot_payload.get("automatic_substitution_version")
                 ),
-                "finalised_at": finalised_at
-                if finalised
-                else snapshot_payload.get("finalised_at"),
+                "finalised_at": finalised_at if finalised else snapshot_payload.get("finalised_at"),
                 "synthetic": False,
                 "rules_version_id": pinned_rules_version,
                 "bonus_points": bonus_points,

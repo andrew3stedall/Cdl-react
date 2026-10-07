@@ -111,3 +111,38 @@ Real-device passkey verification belongs to the passkey workstream (#472), and
 backup/restore/rollback drills remain production-readiness evidence under
 #70/#71/#78 rather than prerequisites invented for the browser/PostgreSQL
 regression issue.
+
+
+## Validation commands and evidence — 7 October 2026
+
+Evidence is intentionally separated by execution layer:
+
+```bash
+# Component/jsdom evidence; API boundaries may be mocked.
+cd frontend
+npm run test
+
+# Current-contract Chromium interaction/layout evidence.
+cd frontend
+npm run test:browser
+
+# Real PostgreSQL 16 release-path evidence after Alembic upgrade.
+CDL_DATABASE_URL=postgresql+psycopg://cdl@localhost:5432/cdl uv run alembic upgrade head
+CDL_DATABASE_URL=postgresql+psycopg://cdl@localhost:5432/cdl \
+  uv run pytest tests/test_postgres_release_journeys.py
+
+# Manual visual/axe evidence only; the App Screenshots workflow remains workflow_dispatch.
+node scripts/capture-app-screenshots.mjs
+```
+
+The final #572 head passed CI run 37606293995 and PostgreSQL run 37606294104.
+The merged staging rollout 37606580536 then applied migrations, warmed a
+zero-traffic candidate, completed the authenticated candidate read/write/reload
+smoke, and promoted only after that smoke passed.
+
+The manual screenshot/axe harness is not treated as PostgreSQL or deployed
+integration evidence. It uses deterministic mocked API data, but now matches
+the current 20-player/five-chip contract and covers mobile portrait/landscape,
+desktop/tablet, light/dark/adaptive appearance, and commissioner management.
+It remains manually dispatched; CI syntax-checks and contract-checks the
+harness without automatically collecting screenshots.

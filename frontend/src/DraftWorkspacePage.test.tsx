@@ -36,7 +36,7 @@ describe('DraftWorkspacePage', () => {
       const url = String(input);
       const method = init?.method ?? 'GET';
       calls.push({ url, method, body: init?.body as string | undefined });
-      if (url.endsWith('/availability')) return Response.json({ can_create: true, reason: null });
+      if (url.endsWith('/availability')) return Response.json({ blocked_by_active_ownerships: false });
       if (url.endsWith('/teams')) return Response.json([{ id: 'team-a', name: 'AFC Test' }]);
       if (method === 'POST' && url.endsWith('/pick')) {
         picked = true;
@@ -70,7 +70,7 @@ describe('DraftWorkspacePage', () => {
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       if (url.endsWith('/availability')) {
-        return Response.json({ can_create: false, reason: 'active_squad_ownerships' });
+        return Response.json({ blocked_by_active_ownerships: true });
       }
       if (url.endsWith('/teams')) return Response.json([{ id: 'team-a', name: 'AFC Test' }]);
       return Response.json(null);
@@ -95,7 +95,7 @@ describe('DraftWorkspacePage', () => {
     };
     let state = { ...room([firstPick]), status: 'active' };
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
-      if (String(input).endsWith('/availability')) return Response.json({ can_create: true, reason: null });
+      if (String(input).endsWith('/availability')) return Response.json({ blocked_by_active_ownerships: false });
       if (String(input).endsWith('/teams')) return Response.json([{ id: 'team-a', name: 'AFC Test' }]);
       return Response.json(state);
     }));

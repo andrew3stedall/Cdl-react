@@ -457,7 +457,11 @@ class FplSettlementService:
                 and isinstance(snapshot_payload, Mapping)
                 and snapshot_payload.get("bonus_rules_version_id") is None
             )
-            if was_finalised and not needs_automatic_substitution_repair and not needs_bonus_backfill:
+            if (
+                was_finalised
+                and not needs_automatic_substitution_repair
+                and not needs_bonus_backfill
+            ):
                 continue
 
             if needs_bonus_backfill and not needs_automatic_substitution_repair:

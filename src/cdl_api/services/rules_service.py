@@ -144,12 +144,17 @@ class RulesService:
                 "league-table",
                 "League Table",
                 RuleCategory.LEAGUE,
-                "Head-to-head results award three points for a win and one for a draw.",
+                "Head-to-head results award three points for a win, one for a draw, plus "
+                "the configured score-multiple bonus.",
                 [
-                    "Live and provisional scores may change as FPL data updates. Official "
-                    "results use a frozen final snapshot.",
-                    "Bonus-point criteria require an approved league rule before activation; "
-                    "they are not inferred from FPL entry rules.",
+                    "A team earns one league bonus point when its score is at least double a "
+                    "positive opponent score, or two total bonus points when it is at least "
+                    "triple. The maximum bonus is two.",
+                    "No league bonus is awarded when the opponent score is zero or negative.",
+                    "Live standings project the bonus from current scores. Official standings "
+                    "use the frozen final fixture score and frozen bonus award.",
+                    "League bonus points apply to the regular-season table only and do not "
+                    "change knockout fixture scores.",
                 ],
                 ["league", "standings"],
                 ["commissioner-decisions"],

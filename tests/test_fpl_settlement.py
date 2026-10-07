@@ -1074,7 +1074,6 @@ def test_completed_fixture_stays_provisional_after_failed_final_event_refresh() 
     assert payload["settlement_skipped_reason"] == "final_event_live_unverified"
 
 
-
 def test_finalised_current_season_fixture_backfills_frozen_league_bonus() -> None:
     sessions = _session_factory()
     now = datetime.now(UTC)

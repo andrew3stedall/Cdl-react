@@ -52,9 +52,19 @@ def test_auto_rollout_pins_existing_traffic_until_verified_migration() -> None:
     diagnose = content.index("- name: Diagnose database migration failure")
     verify_staged = content.index("- name: Verify new revision before traffic promotion")
     smoke_staged = content.index("- name: Smoke staged revision before traffic promotion")
+    authenticated_smoke = content.index("python src/cdl_api/staging_candidate_smoke.py")
     promote = content.index("- name: Promote staged revision after migration")
 
-    assert capture < apply < migration < verify_staged < smoke_staged < promote < diagnose
+    assert (
+        capture
+        < apply
+        < migration
+        < verify_staged
+        < smoke_staged
+        < authenticated_smoke
+        < promote
+        < diagnose
+    )
     assert content.count('-var="runtime_traffic_revision=${RUNTIME_TRAFFIC_REVISION}"') == 2
     assert "if: steps.database-migrations.outcome == 'success'" in content
     assert "if: steps.database-migrations.outcome == 'failure'" in content
@@ -66,6 +76,10 @@ def test_auto_rollout_pins_existing_traffic_until_verified_migration() -> None:
     assert 'candidate-url \\\n            "${RUNNER_TEMP}/candidate-service.json"' in content
     assert '--to-revisions "${STAGED_REVISION}=100"' in content
     assert '--remove-tags="${CANDIDATE_TAG}"' in content
+    assert "cdl-google-allowed-emails" in content
+    assert "cdl-development-login-secret" in content
+    assert "--reviewer-emails-file" in content
+    assert "--login-secret-file" in content
     assert "if: always() && env.CANDIDATE_TAG != ''" in content
     assert 'gcloud run revisions describe "${STAGED_REVISION}"' not in content
 
@@ -90,10 +104,11 @@ def test_direct_fallback_migrates_and_smokes_before_promoting_traffic() -> None:
     )
     stage = content.index("- name: Stage image without changing application traffic")
     smoke = content.index("- name: Verify staged revision and retained traffic")
+    authenticated_smoke = content.index("python src/cdl_api/staging_candidate_smoke.py")
     promote = content.index("- name: Promote staged revision after migration smoke checks")
     verify_live = content.index("- name: Verify promoted revision health and auth boundary")
 
-    assert migration < stage < smoke < promote < verify_live
+    assert migration < stage < smoke < authenticated_smoke < promote < verify_live
     assert "--no-traffic" in content
     assert "scripts/cloud_run_staged_revision.py pin" in content
     assert "scripts/cloud_run_staged_revision.py verify" in content
@@ -102,6 +117,24 @@ def test_direct_fallback_migrates_and_smokes_before_promoting_traffic() -> None:
     assert '--update-tags="${CANDIDATE_TAG}=${CANDIDATE_REVISION}"' in content
     assert 'candidate-url \\\n            "${RUNNER_TEMP}/candidate-service.json"' in content
     assert '--remove-tags="${CANDIDATE_TAG}"' in content
+    assert "cdl-google-allowed-emails" in content
+    assert "cdl-development-login-secret" in content
+
+
+def test_candidate_smoke_secrets_are_limited_to_the_deploy_identity() -> None:
+    content = STAGING_MAIN.read_text(encoding="utf-8")
+
+    assert (
+        'resource "google_secret_manager_secret_iam_member" '
+        '"github_deploy_candidate_smoke_secret_access"'
+    ) in content
+    assert '"cdl-development-login-secret"' in content
+    assert '"cdl-google-allowed-emails"' in content
+    assert 'role      = "roles/secretmanager.secretAccessor"' in content
+    assert (
+        'member    = "serviceAccount:github-deploy@${var.project_id}.iam.gserviceaccount.com"'
+        in content
+    )
 
 
 def test_runtime_images_and_ci_install_from_checked_in_locks() -> None:
@@ -203,8 +236,9 @@ def test_manual_database_job_workflow_can_refresh_official_fpl_data() -> None:
 def test_reviewed_runtime_apply_smokes_and_promotes_the_exact_ready_revision() -> None:
     content = Path(".github/workflows/gcp-terraform-apply-staging.yml").read_text(encoding="utf-8")
     smoke = content.index("- name: Smoke staged runtime before traffic promotion")
+    authenticated_smoke = content.index("python src/cdl_api/staging_candidate_smoke.py")
     promote = content.index("- name: Promote runtime after migration and smoke checks")
-    assert smoke < promote
+    assert smoke < authenticated_smoke < promote
     assert "scripts/cloud_run_staged_revision.py pin" in content
     assert "scripts/cloud_run_staged_revision.py verify" in content
     assert '"${candidate_url}/health"' in content

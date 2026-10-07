@@ -15,6 +15,8 @@
 
 ## Unreleased
 
+- Hardened staging promotion so the no-traffic candidate must complete an authenticated reviewer read/write/reload smoke after migrations and before traffic moves. Expanded current-contract Playwright coverage for adaptive appearance, commissioner invite creation, and explicit Market empty/error states; real-device passkey and recovery drills remain owned by their dedicated workstreams.
+
 - Closed #470, #471, #473, #478–#483, #486, #495, #498, #500, #501, #502 and #497 after hosted validation. The current frontend browser suite also proves #482 keyboard lifecycle and #486 layout invariants in [CI 37543031050](https://github.com/andrew3stedall/Cdl-react/actions/runs/37543031050).
 
 - Explicitly deferred #535 assigned-team release/reassignment until commissioner authorization, approval, reason, session-revocation and history-preservation policy is accepted; the current UI exposes no destructive control.

@@ -429,6 +429,10 @@ test('commissioner PageHero and bell retain measured bounds in light and dark ap
       const commissionerRegion = page.getByRole('region', { name: 'Commissioner management' });
       await expect(commissionerRegion).toBeVisible();
       await expect(commissionerRegion.getByRole('heading', { name: 'Invite by team' })).toBeVisible();
+      await expect(commissionerRegion.getByText('Open Team', { exact: true })).toBeVisible();
+      const inviteButton = commissionerRegion.getByRole('button', { name: 'Invite', exact: true });
+      await inviteButton.click();
+      await expect(commissionerRegion.getByLabel('Open Team invite link')).toHaveValue(/\/join\/browser-invite-token$/);
       const managementHeader = await readHeaderBounds(page);
       await expectHeaderDimensions(page, managementHeader, viewport);
       expectBoundsStable(fixtureHeader.hero, managementHeader.hero, `${presetName} commissioner PageHero`);
@@ -437,4 +441,41 @@ test('commissioner PageHero and bell retain measured bounds in light and dark ap
 
     expect(themeSurfaces[0], `${viewport.width}px light and dark surfaces should differ`).not.toBe(themeSurfaces[1]);
   }
+});
+
+test('adaptive appearance follows the system preference in the browser', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'dark' });
+  const { setThemePreset } = await installLayoutFixtures(page, { apiDelayMs: 0, themePreset: 'adaptive' });
+  setThemePreset('adaptive');
+  await page.goto('/profile');
+  await expect(page.locator('html')).toHaveAttribute('data-theme-preset', 'adaptive');
+  await expect(page.locator('html')).toHaveAttribute('data-theme-mode', 'dark');
+
+  await page.emulateMedia({ colorScheme: 'light' });
+  await expect(page.locator('html')).toHaveAttribute('data-theme-mode', 'light');
+});
+
+test('Market renders distinct empty and failed-read states with recovery controls', async ({ page }) => {
+  await installLayoutFixtures(page, { apiDelayMs: 0 });
+
+  await page.route('**/api/scouting/players', async (route) => {
+    await route.fulfill({ json: { players: [] } });
+  });
+  await page.goto('/scouting');
+  await expect(page.getByText('No players found', { exact: true })).toBeVisible();
+
+  await page.unroute('**/api/scouting/players');
+  for (const pattern of [
+    '**/api/squad/summary',
+    '**/api/scouting/players',
+    '**/api/interests',
+    '**/api/trades',
+  ]) {
+    await page.route(pattern, async (route) => {
+      await route.fulfill({ status: 503, json: { detail: 'Temporary browser fixture outage.' } });
+    });
+  }
+  await page.reload();
+  await expect(page.getByRole('alert')).toContainText('Market data is temporarily unavailable.');
+  await expect(page.getByRole('button', { name: 'Retry', exact: true })).toBeVisible();
 });

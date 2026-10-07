@@ -1226,3 +1226,8 @@ database or deployed integration evidence.
 #494 remains open. The repository still has no approved league-bonus
 eligibility thresholds, award amounts or cumulative-treatment policy, and the
 issue explicitly forbids inventing those scoring rules.
+
+
+## Next-season draft target — 8 October 2026
+
+The configured-season persistent draft is implemented, and PR #574 adds an authenticated commissioner availability check that hides setup controls when active squad ownership exists; the transactional server guard remains authoritative. Next-season activation is explicitly targeted for **1 August 2027** and remains dependent on #522 league/season context. No new draft is created over existing squads. Main CI 37641822085 and Backend PostgreSQL 37641821505 passed. Staging run 37641821794 promoted revision `cdl-react-staging-api-00339-hb9` and passed migrations, candidate smoke, refresh and live auth checks; it ended nonzero only in its final success-comment step to #96. Follow-up direct rollout #37642378943 and guarded mock-draft reset #37642378954 remain queued without jobs; no reset was executed.

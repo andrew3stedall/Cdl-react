@@ -432,13 +432,14 @@ test('commissioner PageHero and bell retain measured bounds in light and dark ap
       await expect(
         commissionerRegion.getByLabel('League teams').getByText('Open Team', { exact: true }),
       ).toBeVisible();
-      const inviteButton = commissionerRegion.getByRole('button', { name: 'Invite', exact: true });
-      await inviteButton.click();
-      await expect(commissionerRegion.getByLabel('Open Team invite link')).toHaveValue(/\/join\/browser-invite-token$/);
       const managementHeader = await readHeaderBounds(page);
       await expectHeaderDimensions(page, managementHeader, viewport);
       expectBoundsStable(fixtureHeader.hero, managementHeader.hero, `${presetName} commissioner PageHero`);
       expectBoundsStable(fixtureHeader.bell, managementHeader.bell, `${presetName} commissioner notification`);
+
+      const inviteButton = commissionerRegion.getByRole('button', { name: 'Invite', exact: true });
+      await inviteButton.click();
+      await expect(commissionerRegion.getByLabel('Open Team invite link')).toHaveValue(/\/join\/browser-invite-token$/);
     }
 
     expect(themeSurfaces[0], `${viewport.width}px light and dark surfaces should differ`).not.toBe(themeSurfaces[1]);

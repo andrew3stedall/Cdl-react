@@ -153,6 +153,18 @@ resource "google_secret_manager_secret_iam_member" "migration_google_allowed_ema
   member    = "serviceAccount:${google_service_account.migration.email}"
 }
 
+resource "google_secret_manager_secret_iam_member" "github_deploy_candidate_smoke_secret_access" {
+  for_each = toset([
+    "cdl-development-login-secret",
+    "cdl-google-allowed-emails",
+  ])
+
+  project   = var.project_id
+  secret_id = module.runtime_secrets.secret_names[each.value]
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:github-deploy@${var.project_id}.iam.gserviceaccount.com"
+}
+
 resource "google_project_iam_member" "cloud_sql_client" {
   for_each = {
     runtime   = google_service_account.runtime.email

@@ -19,11 +19,7 @@ class CandidateSmokeError(RuntimeError):
 
 
 def _read_first_email(path: Path) -> str:
-    emails = [
-        item.strip()
-        for item in path.read_text(encoding="utf-8").split(",")
-        if item.strip()
-    ]
+    emails = [item.strip() for item in path.read_text(encoding="utf-8").split(",") if item.strip()]
     if not emails or "@" not in emails[0]:
         raise CandidateSmokeError("Candidate smoke reviewer allowlist is empty or invalid.")
     return emails[0]
@@ -122,10 +118,7 @@ def run_candidate_smoke(base_url: str, email: str, password: str) -> None:
             payload={"email": email, "password": password},
         )
         session_state = login.get("session")
-        if (
-            not isinstance(session_state, dict)
-            or session_state.get("is_authenticated") is not True
-        ):
+        if not isinstance(session_state, dict) or session_state.get("is_authenticated") is not True:
             raise CandidateSmokeError(
                 "Candidate staging login did not create an authenticated session."
             )

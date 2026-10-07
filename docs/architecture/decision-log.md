@@ -91,6 +91,10 @@ Status: accepted discovery decisions as of 2026-06-02.
 - Final results freeze the selected scoring snapshot.
 - Commissioner override appends corrections rather than overwriting silently.
 - League table uses 3 points for win, 1 point for draw, plus automatic bonus points.
+- Automatic league bonus: +1 when a team scores at least twice a positive opponent score; +2 total when it scores at least three times the opponent score; maximum 2.
+- No automatic league bonus is awarded when the opponent score is zero or negative.
+- Live standings project the bonus from current scores; official standings freeze the award from the final official fixture score.
+- League bonus points apply to the regular-season table only, not knockout fixture scores.
 - Live, provisional, and official tables are shown through a toggle.
 - Knockout view should be flowchart/bracket style.
 - Knockout tiebreaker is most goals by scoring lineup players only.

@@ -7,13 +7,17 @@ const outputDir = process.env.SCREENSHOT_DIR ?? 'artifacts/app-screenshots';
 
 const viewports = [
   { name: 'mobile', width: 390, height: 844, deviceScaleFactor: 2 },
+  { name: 'mobile-landscape', width: 844, height: 390, deviceScaleFactor: 2 },
   { name: 'tablet', width: 768, height: 1024, deviceScaleFactor: 1 },
   { name: 'desktop', width: 1440, height: 900, deviceScaleFactor: 1 },
 ];
 
+const themePresets = ['teal-light', 'teal-dark', 'adaptive'];
+
 const routes = [
   ['overview', '/'],
   ['league', '/league'],
+  ['league-manage', '/league/manage'],
   ['dashboard', '/dashboard'],
   ['fdr', '/fdr'],
   ['market', '/scouting'],
@@ -28,7 +32,7 @@ const screenshotSession = {
     id: 'screenshot-manager',
     email: 'manager@example.com',
     display_name: 'Screenshot Manager',
-    roles: ['manager'],
+    roles: ['manager', 'commissioner'],
   },
   expires_at: '2099-01-01T00:00:00Z',
 };
@@ -58,11 +62,18 @@ const screenshotTeamSelection = {
     { id: 'player-14', display_name: 'Sam Defender', position: 'DEF', epl_team: { id: 'epl-bha', name: 'Brighton', short_name: 'BHA' }, slot: 'bench', slot_order: 2, is_captain: false, is_vice_captain: false },
     { id: 'player-5', display_name: 'Morgan Reserve', position: 'MID', epl_team: { id: 'epl-ars', name: 'Arsenal', short_name: 'ARS' }, slot: 'bench', slot_order: 3, is_captain: false, is_vice_captain: false },
     { id: 'player-15', display_name: 'Devon Forward', position: 'FWD', epl_team: { id: 'epl-wol', name: 'Wolverhampton Wanderers', short_name: 'WOL' }, slot: 'bench', slot_order: 4, is_captain: false, is_vice_captain: false },
+    { id: 'player-16', display_name: 'Avery Midfielder', position: 'MID', epl_team: { id: 'epl-bre', name: 'Brentford', short_name: 'BRE' }, slot: 'bench', slot_order: 5, is_captain: false, is_vice_captain: false },
+    { id: 'player-17', display_name: 'Blake Forward', position: 'FWD', epl_team: { id: 'epl-ful', name: 'Fulham', short_name: 'FUL' }, slot: 'reserve', slot_order: 1, is_captain: false, is_vice_captain: false },
+    { id: 'player-18', display_name: 'Cameron Keeper', position: 'GKP', epl_team: { id: 'epl-nfo', name: 'Nottingham Forest', short_name: 'NFO' }, slot: 'reserve', slot_order: 2, is_captain: false, is_vice_captain: false },
+    { id: 'player-19', display_name: 'Drew Defender', position: 'DEF', epl_team: { id: 'epl-crystal', name: 'Crystal Palace', short_name: 'CRY' }, slot: 'reserve', slot_order: 3, is_captain: false, is_vice_captain: false },
+    { id: 'player-20', display_name: 'Emery Midfielder', position: 'MID', epl_team: { id: 'epl-sun', name: 'Sunderland', short_name: 'SUN' }, slot: 'reserve', slot_order: 4, is_captain: false, is_vice_captain: false },
   ],
   chips: [
-    { id: 'wildcard', name: 'Wildcard', status: 'available' },
-    { id: 'bench-boost', name: 'Bench Boost', status: 'used' },
     { id: 'triple-captain', name: 'Triple Captain', status: 'available' },
+    { id: 'dual-captain', name: 'Dual Captain', status: 'available' },
+    { id: 'auto-captain', name: 'Auto Captain', status: 'available' },
+    { id: 'bench-boost', name: 'Bench Boost', status: 'used' },
+    { id: 'best-xi', name: 'Best XI', status: 'available' },
   ],
   validation_messages: [],
   fixture_lock: { locked: false, fixture_id: null, fixture_type: null, lock_scope: null, locked_at: null, reason: null },
@@ -87,6 +98,11 @@ const screenshotSquadSummary = {
     { id: 'player-14', display_name: 'Sam Defender', position: 'DEF', epl_team: { name: 'Brighton', short_name: 'BHA' }, status: 'owned', points: 39, value: 4.9 },
     { id: 'player-5', display_name: 'Morgan Reserve', position: 'MID', epl_team: { name: 'Arsenal', short_name: 'ARS' }, status: 'owned', points: 41, value: 5.9 },
     { id: 'player-15', display_name: 'Devon Forward', position: 'FWD', epl_team: { name: 'Wolverhampton Wanderers', short_name: 'WOL' }, status: 'owned', points: 38, value: 6.1 },
+    { id: 'player-16', display_name: 'Avery Midfielder', position: 'MID', epl_team: { name: 'Brentford', short_name: 'BRE' }, status: 'owned', points: 44, value: 6.2 },
+    { id: 'player-17', display_name: 'Blake Forward', position: 'FWD', epl_team: { name: 'Fulham', short_name: 'FUL' }, status: 'owned', points: 42, value: 6.3 },
+    { id: 'player-18', display_name: 'Cameron Keeper', position: 'GKP', epl_team: { name: 'Nottingham Forest', short_name: 'NFO' }, status: 'owned', points: 31, value: 4.7 },
+    { id: 'player-19', display_name: 'Drew Defender', position: 'DEF', epl_team: { name: 'Crystal Palace', short_name: 'CRY' }, status: 'owned', points: 40, value: 5.1 },
+    { id: 'player-20', display_name: 'Emery Midfielder', position: 'MID', epl_team: { name: 'Sunderland', short_name: 'SUN' }, status: 'owned', points: 45, value: 6.0 },
   ],
 };
 
@@ -119,7 +135,7 @@ const fixture = {
     home_score: 72,
     away_score: 64,
     bonus_points: { 'team-castle': 3 },
-    chips_played: { 'team-castle': ['wildcard'] },
+    chips_played: { 'team-castle': ['triple-captain'] },
     outcome: 'home_win',
   },
 };
@@ -226,7 +242,7 @@ const fdrView = (view) => ({
   available_gameweeks: [gameweek],
 });
 
-async function mockApi(page, authenticated = true) {
+async function mockApi(page, authenticated = true, themePreset = 'teal-light') {
   await page.route('**/api/**', async (route) => {
     const url = new URL(route.request().url());
     const path = url.pathname;
@@ -244,7 +260,7 @@ async function mockApi(page, authenticated = true) {
     }
 
     if (path === '/api/me/preferences') {
-      return route.fulfill({ json: { theme_preset: 'teal-light', attack_direction: 'up' } });
+      return route.fulfill({ json: { theme_preset: themePreset, attack_direction: 'up' } });
     }
 
     if (path === '/api/squad/summary') {
@@ -317,6 +333,33 @@ async function mockApi(page, authenticated = true) {
 
     if (path === '/api/league/head-to-head') {
       return route.fulfill({ json: { records: [{ team: teams[0], opponent: teams[1], played: 1, wins: 1, draws: 0, losses: 0, points_for: 72, points_against: 64 }] } });
+    }
+
+    if (path === '/api/league/management') {
+      return route.fulfill({
+        json: {
+          league_name: 'Screenshot League',
+          available_team_count: 1,
+          teams: [
+            { team_id: 'team-castle', team_name: 'Castle FC', manager_name: 'Screenshot Manager', manager_email: 'manager@example.com', is_assigned: true },
+            { team_id: 'team-river', team_name: 'River Rangers', manager_name: null, manager_email: null, is_assigned: false },
+          ],
+        },
+      });
+    }
+
+    if (path === '/api/league/management/invites') {
+      return route.fulfill({
+        json: {
+          invites: [{
+            invite_id: 'screenshot-invite',
+            league_name: 'Screenshot League',
+            team_id: 'team-river',
+            team_name: 'River Rangers',
+            created_at: '2026-10-07T00:00:00Z',
+          }],
+        },
+      });
     }
 
     return route.fulfill({ status: 404, json: { error: `No screenshot mock for ${path}` } });
@@ -403,61 +446,66 @@ async function capture() {
   const browser = await chromium.launch();
 
   for (const viewport of viewports) {
-    const viewportDir = `${outputDir}/${viewport.name}`;
-    await mkdir(viewportDir, { recursive: true });
+    for (const themePreset of themePresets) {
+      const viewportDir = `${outputDir}/${viewport.name}/${themePreset}`;
+      await mkdir(viewportDir, { recursive: true });
 
-    const context = await browser.newContext({
-      viewport: { width: viewport.width, height: viewport.height },
-      deviceScaleFactor: viewport.deviceScaleFactor,
-    });
-    const page = await context.newPage();
-    await mockApi(page);
-
-    for (const [name, route] of routes) {
-      await page.goto(`${baseUrl}${route}`, { waitUntil: 'networkidle' });
-      await assertAccessibilityAndKeyboard(page, name, viewport.name);
-      await assertLayoutSafety(page, name, viewport.name);
-      await page.screenshot({ path: `${viewportDir}/${name}.png`, fullPage: true });
-    }
-
-    await context.close();
-
-    const loginContext = await browser.newContext({
-      viewport: { width: viewport.width, height: viewport.height },
-      deviceScaleFactor: viewport.deviceScaleFactor,
-    });
-    const loginPage = await loginContext.newPage();
-    await loginPage.route('https://accounts.google.com/gsi/client', async (route) => {
-      await route.fulfill({
-        contentType: 'application/javascript',
-        body: `window.google = { accounts: { id: {
-          initialize() {},
-          renderButton(parent) {
-            const button = document.createElement('button');
-            button.type = 'button';
-            button.textContent = 'Sign in with Google';
-            button.setAttribute('aria-label', 'Sign in with Google');
-            button.style.width = '100%';
-            button.style.minHeight = '44px';
-            button.style.border = '1px solid rgba(148, 163, 184, 0.35)';
-            button.style.borderRadius = '12px';
-            button.style.background = '#ffffff';
-            button.style.color = '#172033';
-            button.style.fontWeight = '700';
-            button.style.cursor = 'pointer';
-            parent.append(button);
-          },
-        } } };`,
+      const colorScheme = themePreset === 'teal-light' ? 'light' : 'dark';
+      const context = await browser.newContext({
+        viewport: { width: viewport.width, height: viewport.height },
+        deviceScaleFactor: viewport.deviceScaleFactor,
+        colorScheme,
       });
-    });
-    await mockApi(loginPage, false);
-    await loginPage.goto(`${baseUrl}/login`, { waitUntil: 'networkidle' });
-    await loginPage.getByRole('heading', { name: 'Welcome back' }).waitFor();
-    await loginPage.getByRole('button', { name: 'Sign in with Google' }).waitFor();
-    await assertAccessibilityAndKeyboard(loginPage, 'login', viewport.name);
-    await assertLayoutSafety(loginPage, 'login', viewport.name);
-    await loginPage.screenshot({ path: `${viewportDir}/login.png`, fullPage: true });
-    await loginContext.close();
+      const page = await context.newPage();
+      await mockApi(page, true, themePreset);
+
+      for (const [name, route] of routes) {
+        await page.goto(`${baseUrl}${route}`, { waitUntil: 'networkidle' });
+        await assertAccessibilityAndKeyboard(page, name, `${viewport.name}/${themePreset}`);
+        await assertLayoutSafety(page, name, `${viewport.name}/${themePreset}`);
+        await page.screenshot({ path: `${viewportDir}/${name}.png`, fullPage: true });
+      }
+
+      await context.close();
+
+      const loginContext = await browser.newContext({
+        viewport: { width: viewport.width, height: viewport.height },
+        deviceScaleFactor: viewport.deviceScaleFactor,
+        colorScheme,
+      });
+      const loginPage = await loginContext.newPage();
+      await loginPage.route('https://accounts.google.com/gsi/client', async (route) => {
+        await route.fulfill({
+          contentType: 'application/javascript',
+          body: `window.google = { accounts: { id: {
+            initialize() {},
+            renderButton(parent) {
+              const button = document.createElement('button');
+              button.type = 'button';
+              button.textContent = 'Sign in with Google';
+              button.setAttribute('aria-label', 'Sign in with Google');
+              button.style.width = '100%';
+              button.style.minHeight = '44px';
+              button.style.border = '1px solid rgba(148, 163, 184, 0.35)';
+              button.style.borderRadius = '12px';
+              button.style.background = '#ffffff';
+              button.style.color = '#172033';
+              button.style.fontWeight = '700';
+              button.style.cursor = 'pointer';
+              parent.append(button);
+            },
+          } } };`,
+        });
+      });
+      await mockApi(loginPage, false, themePreset);
+      await loginPage.goto(`${baseUrl}/login`, { waitUntil: 'networkidle' });
+      await loginPage.getByRole('heading', { name: 'Welcome back' }).waitFor();
+      await loginPage.getByRole('button', { name: 'Sign in with Google' }).waitFor();
+      await assertAccessibilityAndKeyboard(loginPage, 'login', `${viewport.name}/${themePreset}`);
+      await assertLayoutSafety(loginPage, 'login', `${viewport.name}/${themePreset}`);
+      await loginPage.screenshot({ path: `${viewportDir}/login.png`, fullPage: true });
+      await loginContext.close();
+    }
   }
 
   await browser.close();

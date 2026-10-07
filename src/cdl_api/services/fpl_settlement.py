@@ -28,7 +28,14 @@ from cdl_api.repositories.postgres_team_selection import (
     team_selection_fixture_locks_table,
     team_selection_lineup_slots_table,
 )
-from cdl_api.repositories.rule_versions import active_rule_version_id
+from cdl_api.repositories.rule_versions import (
+    CURRENT_RULE_CONFIG,
+    active_rule_version_id,
+    ensure_current_rule_version,
+    immutable_rule_config,
+    league_bonus_points,
+    league_season_rule_versions_table,
+)
 from cdl_api.services.substitution_engine import (
     LineupPlayer,
     apply_automatic_substitutions,
@@ -75,8 +82,11 @@ class FplSettlementService:
     def _active_rule_version_id(session: Session) -> str | None:
         # Keep pre-migration SQLite/unit fixtures usable; migrated production
         # databases always have the state table and a seeded active version.
-        if not inspect(session.connection()).has_table("league_season_rule_state"):
+        connection = session.connection()
+        if not inspect(connection).has_table("league_season_rule_state"):
             return None
+        if inspect(connection).has_table(league_season_rule_versions_table.name):
+            return ensure_current_rule_version(session, SEASON_ID)
         return active_rule_version_id(session, SEASON_ID)
 
     @staticmethod
@@ -388,9 +398,12 @@ class FplSettlementService:
             and row["payload_json"].get("fixture_id") is not None
         }
         snapshot_rows = {
-            str(row["payload_json"].get("fixture_id")): row["payload_json"]
+            str(row["payload_json"].get("fixture_id")): (str(row["id"]), row["payload_json"])
             for row in session.execute(
-                select(fixture_scoring_snapshots_table.c.payload_json)
+                select(
+                    fixture_scoring_snapshots_table.c.id,
+                    fixture_scoring_snapshots_table.c.payload_json,
+                )
             ).mappings()
             if isinstance(row["payload_json"], Mapping)
             and row["payload_json"].get("fixture_id") is not None
@@ -401,6 +414,14 @@ class FplSettlementService:
             ).mappings()
         )
         active_version_id = FplSettlementService._active_rule_version_id(session)
+        bonus_config: Mapping[str, object] = CURRENT_RULE_CONFIG
+        if (
+            active_version_id is not None
+            and inspect(session.connection()).has_table(league_season_rule_versions_table.name)
+        ):
+            stored_config = immutable_rule_config(session, active_version_id)
+            if stored_config is not None:
+                bonus_config = stored_config
         settled = skipped = 0
         for row in fixture_rows:
             payload = row["payload_json"]
@@ -413,7 +434,8 @@ class FplSettlementService:
                 continue
             result_row = result_rows.get(fixture_id)
             current_result = result_row[1] if result_row is not None else {}
-            snapshot_payload = snapshot_rows.get(fixture_id, {})
+            snapshot_row = snapshot_rows.get(fixture_id)
+            snapshot_payload = snapshot_row[1] if snapshot_row is not None else {}
             was_finalised = (
                 isinstance(current_result, Mapping) and current_result.get("finalised") is True
             )
@@ -429,8 +451,63 @@ class FplSettlementService:
                 and snapshot_payload.get("automatic_substitution_version")
                 != AUTOMATIC_SUBSTITUTION_VERSION
             )
-            if was_finalised and not needs_automatic_substitution_repair:
+            needs_bonus_backfill = (
+                was_finalised
+                and not synthetic_fixture
+                and isinstance(snapshot_payload, Mapping)
+                and snapshot_payload.get("bonus_rules_version_id") is None
+            )
+            if was_finalised and not needs_automatic_substitution_repair and not needs_bonus_backfill:
                 continue
+
+            if needs_bonus_backfill and not needs_automatic_substitution_repair:
+                home_team = payload.get("home_team")
+                away_team = payload.get("away_team")
+                home_score = current_result.get("home_score")
+                away_score = current_result.get("away_score")
+                if (
+                    isinstance(home_team, Mapping)
+                    and isinstance(away_team, Mapping)
+                    and isinstance(home_score, int)
+                    and isinstance(away_score, int)
+                ):
+                    home_id = str(home_team.get("id", ""))
+                    away_id = str(away_team.get("id", ""))
+                    bonus_points = {
+                        home_id: league_bonus_points(home_score, away_score, bonus_config),
+                        away_id: league_bonus_points(away_score, home_score, bonus_config),
+                    }
+                    bonus_audit = {
+                        "bonus_points": bonus_points,
+                        "bonus_rules_version_id": active_version_id,
+                        "bonus_calculated_at": now.isoformat(),
+                        "bonus_basis": {
+                            "home_score": home_score,
+                            "away_score": away_score,
+                        },
+                    }
+                    updated_result = {**dict(current_result), **bonus_audit}
+                    session.execute(
+                        update(fixture_results_table)
+                        .where(fixture_results_table.c.id == result_row[0])
+                        .values(payload_json=updated_result)
+                    )
+                    updated_snapshot = {**dict(snapshot_payload), **bonus_audit}
+                    if snapshot_row is None:
+                        session.execute(
+                            insert(fixture_scoring_snapshots_table).values(
+                                id=f"snapshot-{fixture_id}",
+                                payload_json={"fixture_id": fixture_id, **updated_snapshot},
+                            )
+                        )
+                    else:
+                        session.execute(
+                            update(fixture_scoring_snapshots_table)
+                            .where(fixture_scoring_snapshots_table.c.id == snapshot_row[0])
+                            .values(payload_json=updated_snapshot)
+                        )
+                    settled += 1
+                    continue
             live_payload = None
             source_hash = ""
             fetched_at = None
@@ -522,6 +599,10 @@ class FplSettlementService:
                 if away_score > home_score
                 else "draw"
             )
+            bonus_points = {
+                home_id: league_bonus_points(home_score, away_score, bonus_config),
+                away_id: league_bonus_points(away_score, home_score, bonus_config),
+            }
             finalised_at = (
                 current_result.get("finalised_at")
                 if was_finalised and isinstance(current_result.get("finalised_at"), str)
@@ -563,6 +644,10 @@ class FplSettlementService:
                 ),
                 "synthetic": False,
                 "rules_version_id": pinned_rules_version,
+                "bonus_points": bonus_points,
+                "bonus_rules_version_id": active_version_id,
+                "bonus_calculated_at": now.isoformat(),
+                "bonus_basis": {"home_score": home_score, "away_score": away_score},
             }
             result_payload.pop("settlement_skipped_reason", None)
             result_payload.pop("settlement_skipped_at", None)
@@ -589,9 +674,13 @@ class FplSettlementService:
                 ),
                 "finalised_at": finalised_at
                 if finalised
-                else snapshot_rows.get(fixture_id, {}).get("finalised_at"),
+                else snapshot_payload.get("finalised_at"),
                 "synthetic": False,
                 "rules_version_id": pinned_rules_version,
+                "bonus_points": bonus_points,
+                "bonus_rules_version_id": active_version_id,
+                "bonus_calculated_at": now.isoformat(),
+                "bonus_basis": {"home_score": home_score, "away_score": away_score},
             }
             result_id = f"result-{fixture_id}"
             snapshot_id = f"snapshot-{fixture_id}"

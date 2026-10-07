@@ -31,6 +31,7 @@ describe('App live draft route', () => {
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
       requested.push(url);
+      if (url.endsWith('/live-draft/availability')) return Response.json({ blocked_by_active_ownerships: false });
       if (url.endsWith('/live-draft/teams')) return Response.json([{ id: 'team-1', name: 'Harbour' }]);
       if (url.endsWith('/live-draft')) return Response.json(null);
       return Response.json({});
@@ -49,11 +50,13 @@ describe('App live draft route', () => {
     expect(container.textContent).toContain('The commissioner has not created a draft room.');
     expect(requested).toContain('/api/live-draft');
     expect(requested).toContain('/api/live-draft/teams');
+    expect(requested).toContain('/api/live-draft/availability');
   });
 
   test('passes commissioner capability so an authorized manager can create a room', async () => {
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
       const url = String(input);
+      if (url.endsWith('/live-draft/availability')) return Response.json({ blocked_by_active_ownerships: false });
       if (url.endsWith('/live-draft/teams')) return Response.json([{ id: 'team-1', name: 'Harbour' }]);
       if (url.endsWith('/live-draft')) return Response.json(null);
       return Response.json({});

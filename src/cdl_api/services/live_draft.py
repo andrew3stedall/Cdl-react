@@ -94,6 +94,21 @@ class LiveDraftService:
             )
         return [{"id": str(row["id"]), "name": str(row["name"])} for row in rows]
 
+    def creation_availability(self) -> dict[str, bool | str | None]:
+        """Expose the configured season's ownership guard to the draft setup UI."""
+        with self._session_factory() as session:
+            active_ownership = session.execute(
+                select(squad_ownerships_table.c.id)
+                .where(
+                    squad_ownerships_table.c.season_id == SEASON_ID,
+                    squad_ownerships_table.c.ended_at.is_(None),
+                )
+                .limit(1)
+            ).scalar_one_or_none()
+        if active_ownership:
+            return {"blocked_by_active_ownerships": True}
+        return {"blocked_by_active_ownerships": False}
+
     def create(
         self,
         *,

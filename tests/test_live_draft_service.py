@@ -335,6 +335,48 @@ def test_league_manager_cannot_start_room_or_pick_out_of_turn() -> None:
     engine.dispose()
 
 
+def test_draft_availability_reports_active_squad_ownership_block() -> None:
+    service, factory, engine = _service()
+    app = FastAPI()
+    app.include_router(live_draft_router)
+    app.dependency_overrides[require_authenticated_session] = lambda: SessionUser(
+        id="user-a", email="a@example.test", display_name="A", roles=["commissioner"]
+    )
+    app.dependency_overrides[get_live_draft_service] = lambda: service
+    client = TestClient(app)
+
+    available = client.get("/live-draft/availability")
+    assert available.status_code == 200
+    assert available.json() == {"blocked_by_active_ownerships": False}
+
+    with factory.begin() as session:
+        session.execute(
+            insert(squad_ownerships_table).values(
+                id="owned-player",
+                season_id=SEASON_ID,
+                draft_team_id="team-a",
+                player_id="fpl-1",
+                roster_slot_id="slot-team-a-1",
+                started_at=datetime.now(UTC),
+                ended_at=None,
+            )
+        )
+
+    blocked = client.get("/live-draft/availability")
+    assert blocked.status_code == 200
+    assert blocked.json() == {"blocked_by_active_ownerships": True}
+    with pytest.raises(LiveDraftError, match="already has active squad ownerships"):
+        service.create(
+            actor_id="user-a",
+            mode="snake",
+            rounds=20,
+            clock_enabled=False,
+            pick_seconds=None,
+            manual_team_order=None,
+        )
+    engine.dispose()
+
+
 def test_incomplete_draft_cannot_be_marked_complete() -> None:
     service, factory, engine = _service()
     service.create(

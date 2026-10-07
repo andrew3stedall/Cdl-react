@@ -67,6 +67,15 @@ def get_draft_teams(
     return service.teams()
 
 
+@router.get("/availability")
+def get_creation_availability(
+    user: SessionUser = Depends(require_authenticated_session),
+    service: LiveDraftService = Depends(get_live_draft_service),
+) -> dict[str, bool | str | None]:
+    _membership(service, user)
+    return service.creation_availability()
+
+
 @router.post("")
 def create_room(
     payload: CreateDraftRequest,

@@ -15,6 +15,8 @@
 
 ## Unreleased
 
+- Implemented #494 league bonus scoring: +1 league point for at least double a positive opponent score, +2 total for at least triple, capped at 2, with no bonus against zero/negative scores. Live standings project the bonus; official active-season results freeze or backfill it using versioned rule provenance. Knockout scores and prior seasons are unchanged.
+
 - Recorded the #521 next-season activation target as 1 August 2027; activation depends on #522, while the commissioner UI and transactional server guard protect existing active squads.
 
 - Prevented commissioners from seeing draft setup controls when the configured season already has active squad ownerships; the server continues to enforce the same transactional guard.

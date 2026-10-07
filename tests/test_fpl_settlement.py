@@ -1072,3 +1072,105 @@ def test_completed_fixture_stays_provisional_after_failed_final_event_refresh() 
         ).scalar_one()
     assert payload["finalised"] is False
     assert payload["settlement_skipped_reason"] == "final_event_live_unverified"
+
+
+def test_finalised_current_season_fixture_backfills_frozen_league_bonus() -> None:
+    sessions = _session_factory()
+    now = datetime.now(UTC)
+
+    with sessions() as session:
+        session.execute(
+            text(
+                "INSERT INTO league_season_rule_state "
+                "(season_id, active_version_id, updated_at) VALUES "
+                "(:season, :version, :updated)"
+            ),
+            {
+                "season": SEASON_ID,
+                "version": "rules-season-cdl-2026-27-v1",
+                "updated": now,
+            },
+        )
+        session.execute(
+            insert(fpl_gameweeks_table).values(
+                id="1",
+                name="Gameweek 1",
+                deadline_time=now - timedelta(hours=2),
+                is_previous=True,
+                is_current=False,
+                is_next=False,
+                finished=True,
+                data_checked=True,
+            )
+        )
+        session.execute(
+            insert(cdl_fixtures_table).values(
+                id="fixture-bonus-backfill",
+                payload_json={
+                    "id": "fixture-bonus-backfill",
+                    "gameweek": {"id": "gw-1", "name": "Gameweek 1", "number": 1},
+                    "home_team": {"id": "team-home", "name": "Home"},
+                    "away_team": {"id": "team-away", "name": "Away"},
+                    "status": "complete",
+                    "round_label": "Regular season",
+                    "synthetic": False,
+                },
+            )
+        )
+        session.execute(
+            insert(fixture_results_table).values(
+                id="result-fixture-bonus-backfill",
+                payload_json={
+                    "fixture_id": "fixture-bonus-backfill",
+                    "home_score": 120,
+                    "away_score": 60,
+                    "outcome": "home_win",
+                    "finalised": True,
+                    "finalised_at": now.isoformat(),
+                    "synthetic": False,
+                    "rules_version_id": "rules-season-cdl-2026-27-v1",
+                },
+            )
+        )
+        session.execute(
+            insert(fixture_scoring_snapshots_table).values(
+                id="snapshot-fixture-bonus-backfill",
+                payload_json={
+                    "fixture_id": "fixture-bonus-backfill",
+                    "home_score": 120,
+                    "away_score": 60,
+                    "automatic_substitution_version": 1,
+                    "synthetic": False,
+                    "rules_version_id": "rules-season-cdl-2026-27-v1",
+                },
+            )
+        )
+        session.commit()
+
+    with sessions() as session:
+        settled, skipped = FplSettlementService._settle_completed_fixtures(
+            session,
+            now,
+            {1: now - timedelta(hours=1)},
+        )
+        session.commit()
+
+    assert settled == 1
+    assert skipped == 0
+    with sessions() as session:
+        result_payload = session.execute(
+            select(fixture_results_table.c.payload_json).where(
+                fixture_results_table.c.id == "result-fixture-bonus-backfill"
+            )
+        ).scalar_one()
+        snapshot_payload = session.execute(
+            select(fixture_scoring_snapshots_table.c.payload_json).where(
+                fixture_scoring_snapshots_table.c.id == "snapshot-fixture-bonus-backfill"
+            )
+        ).scalar_one()
+
+    assert result_payload["bonus_points"] == {"team-home": 1, "team-away": 0}
+    assert snapshot_payload["bonus_points"] == {"team-home": 1, "team-away": 0}
+    assert snapshot_payload["bonus_basis"] == {"home_score": 120, "away_score": 60}
+    assert snapshot_payload["rules_version_id"] == "rules-season-cdl-2026-27-v1"
+    assert snapshot_payload["bonus_rules_version_id"] == "rules-season-cdl-2026-27-v1"

@@ -6,16 +6,18 @@ Define live/provisional/official table snapshots, table movement, colour states,
 
 ## Status
 
-Primary table reads now distinguish official finalised results from current live/provisional results through `/league/table?mode=official|live`; the default is official. Legacy snapshots are accepted only when explicitly keyed as fresh official snapshots for the latest completed gameweek. Stored bonus awards contribute to table points. Criteria for calculating automatic awards remain unresolved and must come from an approved league rule or authoritative legacy evidence.
+Primary table reads distinguish official finalised results from current live/provisional results through `/league/table?mode=official|live`; the default is official. Legacy snapshots are accepted only when explicitly keyed as fresh official snapshots for the latest completed gameweek. Issue #494 defines the automatic league bonus: at least double a positive opponent score earns +1 league point; at least triple earns +2 total, capped at 2. An opponent score of zero or less earns no bonus. Live tables project the award from current scores and official results freeze it from the final score.
 
 ## Business Rules
 
 - League table is derived from fixture results, bonus awards, and configured scoring rules.
-- Table points: 3 for win, 1 for draw, plus automatic bonus points.
+- Table points: 3 for win, 1 for draw, plus +1 when the team scores at least 2× a positive opponent score or +2 total when it scores at least 3×. Maximum bonus: 2; opponent score <= 0: no bonus.
 - Live/provisional/official tables should be available through a view toggle. The API currently exposes official and live modes; a separate provisional mode awaits a stable source-state definition.
 - Default table view depends on gameweek state.
 - Position movement should be displayed with colour.
 - Official table is based on finalised results only.
+- Bonus points apply only to the regular-season league table; they do not alter knockout fixture scores.
+- Completed fixtures in the active season are backfilled from their frozen official scores. Prior completed seasons remain unchanged.
 
 ## Target Architecture
 

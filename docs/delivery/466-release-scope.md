@@ -16,7 +16,7 @@ This delivery hardens the app's existing manager journeys for an already drafted
 | FDR and Analytics | Contextual optional tools | FDR from Market; Analytics from League; no fifth primary nav item |
 | Live draft room | Persistent configured-season room; integration validation | #521/#522: next-season drafting requires the active-context/season-team redesign |
 | Self-service league/season creation and switching | Deferred; existing APIs still resolve one hardcoded 2026/27 context | #522: accept dynamic context plus `season_teams` architecture; proposal in `docs/architecture/league-season-context-prerequisite-adr.md` |
-| Immutable runtime rule versions | Current-season v1 pins locked lineups and completed scoring snapshots | #523: commissioner editor/activation, templates, and references from other action families remain future scope; #494/#499/#496 remain unconfigured |
+| Immutable runtime rule versions | Current-season v2 adds the accepted #494 score-multiple league bonus while preserving immutable v1 scoring provenance | #523: commissioner editor/activation, templates, and references from other action families remain future scope; #499/#496 remain unconfigured |
 | Loans, extensions, scheduled return/conversion | Basic loans and retryable scheduled returns delivered | #525: advanced extension/conversion policy remains open |
 | Private watchlists and notes | Private persisted flags/notes delivered | #526/#532: availability alerts need durable event/reminder policy |
 | Durable activity/read state/reminders | Deferred from the current candidate; current alerts remain derived | #532: revisit at the post-launch durable-notifications milestone after the #531 release-evidence gate; no unread/reminder promise is exposed |
@@ -29,7 +29,7 @@ The deferred capabilities remain open GitHub work. Their accepted behavior is re
 
 | Issue | Exact decision needed | Safe behavior while parked |
 | --- | --- | --- |
-| #494 | Bonus points: thresholds/criteria, award amount and whether each is cumulative | No invented league bonus award; show official result points only |
+| #494 | Resolved 8 Oct 2026: >=2× positive opponent = +1; >=3× = +2 total; max 2; opponent <=0 = 0 | Implemented through versioned rule configuration and frozen/projected awards |
 | #499 | Captain DNP fallback: when vice-captain inherits the multiplier, including chip interaction | Preserve current scoring behavior until the league policy is approved |
 | #496 | Fifth/sixth playoff path and winner if aggregate points and scoring-lineup goals remain tied | Implement specified top/bottom brackets; ambiguous branches explicitly unconfigured, ties have no winner |
 | #535 | Deferred current-candidate workflow; authorization, confirmation/reason, prior-manager session revocation and immutable history | Leave current assignment unchanged; expose no destructive release/reassignment control |

@@ -1223,9 +1223,12 @@ are covered, and commissioner management is included. Screenshot collection
 remains manual-only by design; this audit does not treat mocked screenshots as
 database or deployed integration evidence.
 
-#494 remains open. The repository still has no approved league-bonus
-eligibility thresholds, award amounts or cumulative-treatment policy, and the
-issue explicitly forbids inventing those scoring rules.
+#494 policy was resolved on 8 October 2026. The accepted rule awards +1 league
+point when a team scores at least twice a positive opponent score and +2 total
+when it scores at least three times the opponent score, capped at 2. An opponent
+score of zero or less awards no bonus. Live standings project the award; final
+active-season results freeze or backfill it from the official fixture score with
+bonus-rule provenance. Prior seasons and knockout fixture scores are unchanged.
 
 
 ## Next-season draft target — 8 October 2026

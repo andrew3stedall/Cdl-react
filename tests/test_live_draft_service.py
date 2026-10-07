@@ -347,7 +347,7 @@ def test_draft_availability_reports_active_squad_ownership_block() -> None:
 
     available = client.get("/live-draft/availability")
     assert available.status_code == 200
-    assert available.json() == {"can_create": True, "reason": None}
+    assert available.json() == {"blocked_by_active_ownerships": False}
 
     with factory.begin() as session:
         session.execute(
@@ -364,10 +364,16 @@ def test_draft_availability_reports_active_squad_ownership_block() -> None:
 
     blocked = client.get("/live-draft/availability")
     assert blocked.status_code == 200
-    assert blocked.json() == {
-        "can_create": False,
-        "reason": "active_squad_ownerships",
-    }
+    assert blocked.json() == {"blocked_by_active_ownerships": True}
+    with pytest.raises(LiveDraftError, match="already has active squad ownerships"):
+        service.create(
+            actor_id="user-a",
+            mode="snake",
+            rounds=20,
+            clock_enabled=False,
+            pick_seconds=None,
+            manual_team_order=None,
+        )
     engine.dispose()
 
 

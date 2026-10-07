@@ -60,4 +60,7 @@ def test_current_rule_version_creates_v2_and_activates_it_without_rewriting_v1()
         scoring = config["scoring"]
         assert scoring["bonus_policy"]["double_bonus"] == 1
         assert scoring["bonus_policy"]["triple_bonus"] == 2
-        assert session.execute(select(league_season_rule_state_table.c.active_version_id)).scalar_one() == version_id
+        active = session.execute(
+            select(league_season_rule_state_table.c.active_version_id)
+        ).scalar_one()
+        assert active == version_id

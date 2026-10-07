@@ -14,7 +14,7 @@ class RulesService:
     def __init__(self) -> None:
         self._version = RuleVersion(
             version="2026.10",
-            effective_date=date(2026, 10, 3),
+            effective_date=date(2026, 10, 8),
             source="docs/architecture/decision-log.md",
         )
         self._sections = [

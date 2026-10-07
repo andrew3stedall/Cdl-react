@@ -8,12 +8,10 @@ behavior without leaving a manager's team changed.
 from __future__ import annotations
 
 import argparse
-import json
-from http.cookiejar import CookieJar
 from pathlib import Path
-from urllib.error import HTTPError, URLError
 from urllib.parse import urljoin
-from urllib.request import HTTPCookieProcessor, OpenerDirector, Request, build_opener
+
+import requests
 
 
 class CandidateSmokeError(RuntimeError):
@@ -39,30 +37,28 @@ def _read_password(path: Path) -> str:
 
 
 def _request_json(
-    opener: OpenerDirector,
+    session: requests.Session,
     base_url: str,
     path: str,
     *,
     method: str = "GET",
     payload: dict[str, object] | None = None,
 ) -> dict[str, object]:
-    body = json.dumps(payload).encode("utf-8") if payload is not None else None
-    request = Request(
-        urljoin(base_url.rstrip("/") + "/", path.lstrip("/")),
-        data=body,
-        method=method,
-        headers={"Accept": "application/json", "Content-Type": "application/json"},
-    )
+    url = urljoin(base_url.rstrip("/") + "/", path.lstrip("/"))
     try:
-        with opener.open(request, timeout=30) as response:  # noqa: S310
-            if response.status != 200:
-                raise CandidateSmokeError(f"{method} {path} returned HTTP {response.status}.")
-            decoded = json.loads(response.read().decode("utf-8"))
-    except HTTPError as exc:
-        raise CandidateSmokeError(f"{method} {path} returned HTTP {exc.code}.") from None
-    except URLError as exc:
+        response = session.request(
+            method,
+            url,
+            json=payload,
+            headers={"Accept": "application/json"},
+            timeout=30,
+        )
+    except requests.RequestException as exc:
         raise CandidateSmokeError(f"{method} {path} could not reach the candidate.") from exc
 
+    if response.status_code != 200:
+        raise CandidateSmokeError(f"{method} {path} returned HTTP {response.status_code}.")
+    decoded = response.json()
     if not isinstance(decoded, dict):
         raise CandidateSmokeError(f"{method} {path} returned a non-object response.")
     return decoded
@@ -72,9 +68,13 @@ def lineup_write_payload(snapshot: dict[str, object]) -> dict[str, object]:
     lineup = snapshot.get("lineup")
     chips = snapshot.get("chips")
     if not isinstance(lineup, list) or len(lineup) != 20:
-        raise CandidateSmokeError("Candidate team selection must contain the current 20-player squad.")
+        raise CandidateSmokeError(
+            "Candidate team selection must contain the current 20-player squad."
+        )
     if not isinstance(chips, list) or len(chips) != 5:
-        raise CandidateSmokeError("Candidate team selection must contain the current five-chip contract.")
+        raise CandidateSmokeError(
+            "Candidate team selection must contain the current five-chip contract."
+        )
 
     players: list[dict[str, object]] = []
     for item in lineup:
@@ -111,22 +111,27 @@ def _lineup_state(snapshot: dict[str, object]) -> tuple[tuple[object, ...], ...]
 
 
 def run_candidate_smoke(base_url: str, email: str, password: str) -> None:
-    opener = build_opener(HTTPCookieProcessor(CookieJar()))
+    session = requests.Session()
     logged_in = False
     try:
         login = _request_json(
-            opener,
+            session,
             base_url,
             "/api/auth/login",
             method="POST",
             payload={"email": email, "password": password},
         )
-        session = login.get("session")
-        if not isinstance(session, dict) or session.get("is_authenticated") is not True:
-            raise CandidateSmokeError("Candidate staging login did not create an authenticated session.")
+        session_state = login.get("session")
+        if (
+            not isinstance(session_state, dict)
+            or session_state.get("is_authenticated") is not True
+        ):
+            raise CandidateSmokeError(
+                "Candidate staging login did not create an authenticated session."
+            )
         logged_in = True
 
-        before = _request_json(opener, base_url, "/api/team-selection")
+        before = _request_json(session, base_url, "/api/team-selection")
         manager_team = before.get("manager_team")
         if not isinstance(manager_team, dict) or not manager_team.get("id"):
             raise CandidateSmokeError("Candidate staging reviewer has no assigned manager team.")
@@ -134,7 +139,7 @@ def run_candidate_smoke(base_url: str, email: str, password: str) -> None:
 
         payload = lineup_write_payload(before)
         saved = _request_json(
-            opener,
+            session,
             base_url,
             "/api/team-selection/lineup",
             method="PUT",
@@ -143,7 +148,7 @@ def run_candidate_smoke(base_url: str, email: str, password: str) -> None:
         if _lineup_state(saved) != before_state:
             raise CandidateSmokeError("Candidate no-op lineup write changed the saved lineup.")
 
-        reloaded = _request_json(opener, base_url, "/api/team-selection")
+        reloaded = _request_json(session, base_url, "/api/team-selection")
         reloaded_team = reloaded.get("manager_team")
         if not isinstance(reloaded_team, dict) or reloaded_team.get("id") != manager_team["id"]:
             raise CandidateSmokeError("Candidate reload changed the authenticated manager team.")
@@ -151,7 +156,8 @@ def run_candidate_smoke(base_url: str, email: str, password: str) -> None:
             raise CandidateSmokeError("Candidate lineup changed after authenticated write/reload.")
     finally:
         if logged_in:
-            _request_json(opener, base_url, "/api/auth/logout", method="POST", payload={})
+            _request_json(session, base_url, "/api/auth/logout", method="POST", payload={})
+        session.close()
 
 
 def main() -> None:

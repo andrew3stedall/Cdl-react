@@ -24,8 +24,7 @@ interface DraftRoom {
 }
 
 interface DraftAvailability {
-  can_create: boolean;
-  reason: string | null;
+  blocked_by_active_ownerships: boolean;
 }
 
 interface DraftWorkspacePageProps {
@@ -69,7 +68,7 @@ export function DraftWorkspacePage({ preset, teamId = null, canCommission = fals
   const refresh = useCallback(async () => {
     const [state, availability] = await Promise.all([
       request<DraftRoom | null>(apiBase, ''),
-      request<DraftAvailability>(apiBase, '/availability'),
+      request<DraftAvailability>(apiBase, '/availability').catch(() => null),
     ]);
     setRoom(state);
     setDraftAvailability(availability);
@@ -83,7 +82,7 @@ export function DraftWorkspacePage({ preset, teamId = null, canCommission = fals
         const [state, teamRows, availability] = await Promise.all([
           request<DraftRoom | null>(apiBase, ''),
           request<DraftTeam[]>(apiBase, '/teams'),
-          request<DraftAvailability>(apiBase, '/availability'),
+          request<DraftAvailability>(apiBase, '/availability').catch(() => null),
         ]);
         if (!alive) return;
         setRoom(state);
@@ -161,9 +160,9 @@ export function DraftWorkspacePage({ preset, teamId = null, canCommission = fals
       />
 
       {error && <p className="draft-workspace__error" role="alert">{error}</p>}
-      {!room && commissionerAllowed && draftAvailability?.can_create === false && (
+      {!room && commissionerAllowed && draftAvailability?.blocked_by_active_ownerships === true && (
         <p className="draft-workspace__availability" role="status">
-          {draftAvailability.reason === 'active_squad_ownerships'
+          {draftAvailability.blocked_by_active_ownerships
             ? 'This season already has active squad ownerships. Starting another draft is disabled to protect them. A new draft can start after a different league season is set up.'
             : 'A new draft cannot be started for this season.'}
         </p>
@@ -171,7 +170,7 @@ export function DraftWorkspacePage({ preset, teamId = null, canCommission = fals
       {!room && commissionerAllowed && draftAvailability === null && (
         <p className="draft-workspace__availability" role="status">Draft availability is being checked. Use Refresh to check again if this message remains.</p>
       )}
-      {!room && commissionerAllowed && draftAvailability?.can_create === true && (
+      {!room && commissionerAllowed && draftAvailability?.blocked_by_active_ownerships === false && (
         <section className="draft-workspace__setup" aria-labelledby="draft-setup-title">
           <h2 id="draft-setup-title">Set up the draft</h2>
           <div className="draft-workspace__controls">

@@ -429,7 +429,9 @@ test('commissioner PageHero and bell retain measured bounds in light and dark ap
       const commissionerRegion = page.getByRole('region', { name: 'Commissioner management' });
       await expect(commissionerRegion).toBeVisible();
       await expect(commissionerRegion.getByRole('heading', { name: 'Invite by team' })).toBeVisible();
-      await expect(commissionerRegion.getByText('Open Team', { exact: true })).toBeVisible();
+      await expect(
+        commissionerRegion.getByLabel('League teams').getByText('Open Team', { exact: true }),
+      ).toBeVisible();
       const inviteButton = commissionerRegion.getByRole('button', { name: 'Invite', exact: true });
       await inviteButton.click();
       await expect(commissionerRegion.getByLabel('Open Team invite link')).toHaveValue(/\/join\/browser-invite-token$/);
@@ -476,6 +478,6 @@ test('Market renders distinct empty and failed-read states with recovery control
     });
   }
   await page.reload();
-  await expect(page.getByRole('alert')).toContainText('Market data is temporarily unavailable.');
+  await expect(page.locator('.market-page__error')).toContainText('Market data is temporarily unavailable.');
   await expect(page.getByRole('button', { name: 'Retry', exact: true })).toBeVisible();
 });

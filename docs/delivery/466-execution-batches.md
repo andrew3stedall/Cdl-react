@@ -181,7 +181,7 @@ PR [#545](https://github.com/andrew3stedall/Cdl-react/pull/545) is merged as `4d
 - Commissioner replacement requires a reason and confirmation, removes the old manager’s league access and invites the new manager while preserving team/squad/history.
 - League setup targets multiple independent leagues, user context switching and season-specific team management together; disconnected create records are insufficient.
 - Alerts gain durable read/dismiss state and opt-in in-app 24h/1h FPL lineup-deadline reminders. No email/push delivery or automatic retention deletion is assumed.
-- Bonus selection was “supply existing rules”; no exact criteria or amounts were supplied, so #494 remains open.
+- #494 was resolved on 8 October 2026: >=2× a positive opponent score earns +1 league point, >=3× earns +2 total, maximum 2, and opponent <=0 earns no bonus.
 
 
 ## Batch 5 — hosted-validated UI follow-up

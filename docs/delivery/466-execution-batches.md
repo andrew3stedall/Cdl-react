@@ -1,6 +1,6 @@
 # All 70 audit findings — execution batches
 
-Updated: 7 October 2026 (Australia/Melbourne). Parent [#466](https://github.com/andrew3stedall/Cdl-react/issues/466). This index covers every issue; an item being tackled is not a claim that its acceptance is complete.
+Updated: 8 October 2026 (Australia/Melbourne). Parent [#466](https://github.com/andrew3stedall/Cdl-react/issues/466). This index covers every issue; an item being tackled is not a claim that its acceptance is complete.
 
 ## Closure reconciliation — 7 October 2026
 
@@ -157,7 +157,7 @@ PR [#545](https://github.com/andrew3stedall/Cdl-react/pull/545) is merged as `4d
 | [#518](https://github.com/andrew3stedall/Cdl-react/issues/518) | Batch 1: direct profile identity is no longer blocked by history fetch | [frontend/src/PlayerProfilePage.tsx](../../frontend/src/PlayerProfilePage.tsx) |
 | [#519](https://github.com/andrew3stedall/Cdl-react/issues/519) | Implemented in merged delivery; checking the exact acceptance and documentation before closure | [frontend/src/navigation.test.ts](../../frontend/src/navigation.test.ts) |
 | [#520](https://github.com/andrew3stedall/Cdl-react/issues/520) | Closed — Batch 5: private ranked preferences, deterministic processing, stored results/rights and idempotency passed the real PostgreSQL draw integration test | [tests/test_free_agency_draw_repository.py](../../tests/test_free_agency_draw_repository.py) |
-| [#521](https://github.com/andrew3stedall/Cdl-react/issues/521) | In progress: configured-season draft delivered; active-squad guard is now explicit in the commissioner UI; next-season target date remains unconfirmed | [docs/delivery/466-scoring.md](../delivery/466-scoring.md) |
+| [#521](https://github.com/andrew3stedall/Cdl-react/issues/521) | Explicitly deferred to 1 August 2027; configured-season draft is delivered and active-squad creation remains guarded; next-season activation depends on #522 | [docs/features/active/live-draft-room.md](../features/active/live-draft-room.md) |
 | [#522](https://github.com/andrew3stedall/Cdl-react/issues/522) | In progress: independent leagues and season context explicitly selected | [docs/architecture/league-season-context-prerequisite-adr.md](../architecture/league-season-context-prerequisite-adr.md) |
 | [#523](https://github.com/andrew3stedall/Cdl-react/issues/523) | In progress: immutable runtime versions; editing/activation and enforcement still open | [src/cdl_api/repositories/rule_versions.py](../../src/cdl_api/repositories/rule_versions.py) |
 | [#524](https://github.com/andrew3stedall/Cdl-react/issues/524) | Open: general correction authority and affected records need definition | [docs/features/active/permissions-approvals-and-admin-audit.md](../features/active/permissions-approvals-and-admin-audit.md) |
@@ -212,3 +212,8 @@ Hosted evidence for this closure remains the merged-main validation: [CI 3748169
 ## Batch 5 draw evidence — 6 October 2026
 
 #520 is closed after the real PostgreSQL integration test `test_postgres_ranked_draw_persists_private_results_and_claims_once` passed in PostgreSQL run #37481699113. The test covers private ranked preferences, deterministic awards, temporary rights, idempotent reprocessing and ownership isolation. #521 remains partial until the next-season context/setup dependency #522 is resolved.
+
+
+## Current audit checkpoint — 8 October 2026
+
+The 70-child audit is at **59/70 closed and 11 open**; coordinator #466 is outside the 70. #521 is closed as an explicit deferral with a target of **1 August 2027**. The configured-season persistent draft and active-squad UI/API guard are delivered; next-season activation remains dependent on #522 league/season context. Main CI 37641822085 and Backend PostgreSQL 37641821505 passed after PR #574. Staging run 37641821794 promoted revision `cdl-react-staging-api-00339-hb9` and passed the application checks, but failed while posting its final success comment to #96. Follow-up direct rollout #37642378943 and mock-draft reset #37642378954 are still queued with no jobs; no reset ran.

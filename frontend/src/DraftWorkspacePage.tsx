@@ -23,6 +23,11 @@ interface DraftRoom {
   my_queue: string[]; events: Array<{ id: string; type: string; team_id: string | null; details?: Record<string, unknown> }>;
 }
 
+interface DraftAvailability {
+  can_create: boolean;
+  reason: string | null;
+}
+
 interface DraftWorkspacePageProps {
   preset: ThemePreset;
   teamId?: string | null;
@@ -46,6 +51,7 @@ async function request<T>(base: string, path: string, init?: RequestInit): Promi
 
 export function DraftWorkspacePage({ preset, teamId = null, canCommission = false, onNavigate, apiBase = '/api' }: DraftWorkspacePageProps) {
   const [room, setRoom] = useState<DraftRoom | null>(null);
+  const [draftAvailability, setDraftAvailability] = useState<DraftAvailability | null>(null);
   const [teams, setTeams] = useState<DraftTeam[]>([]);
   const [manualOrder, setManualOrder] = useState<string[]>([]);
   const [mode, setMode] = useState<DraftMode>('random_repeat');
@@ -61,8 +67,12 @@ export function DraftWorkspacePage({ preset, teamId = null, canCommission = fals
   const [, setClockTick] = useState(0);
 
   const refresh = useCallback(async () => {
-    const state = await request<DraftRoom | null>(apiBase, '');
+    const [state, availability] = await Promise.all([
+      request<DraftRoom | null>(apiBase, ''),
+      request<DraftAvailability>(apiBase, '/availability'),
+    ]);
     setRoom(state);
+    setDraftAvailability(availability);
     setQueue(state?.my_queue ?? []);
   }, [apiBase]);
 
@@ -70,13 +80,15 @@ export function DraftWorkspacePage({ preset, teamId = null, canCommission = fals
     let alive = true;
     const load = async () => {
       try {
-        const [state, teamRows] = await Promise.all([
+        const [state, teamRows, availability] = await Promise.all([
           request<DraftRoom | null>(apiBase, ''),
           request<DraftTeam[]>(apiBase, '/teams'),
+          request<DraftAvailability>(apiBase, '/availability'),
         ]);
         if (!alive) return;
         setRoom(state);
         setTeams(teamRows);
+        setDraftAvailability(availability);
         setManualOrder(teamRows.map((team) => team.id));
         setQueue(state?.my_queue ?? []);
         setError(null);
@@ -149,7 +161,17 @@ export function DraftWorkspacePage({ preset, teamId = null, canCommission = fals
       />
 
       {error && <p className="draft-workspace__error" role="alert">{error}</p>}
-      {!room && commissionerAllowed && (
+      {!room && commissionerAllowed && draftAvailability?.can_create === false && (
+        <p className="draft-workspace__availability" role="status">
+          {draftAvailability.reason === 'active_squad_ownerships'
+            ? 'This season already has active squad ownerships. Starting another draft is disabled to protect them. A new draft can start after a different league season is set up.'
+            : 'A new draft cannot be started for this season.'}
+        </p>
+      )}
+      {!room && commissionerAllowed && draftAvailability === null && (
+        <p className="draft-workspace__availability" role="status">Draft availability is being checked. Use Refresh to check again if this message remains.</p>
+      )}
+      {!room && commissionerAllowed && draftAvailability?.can_create === true && (
         <section className="draft-workspace__setup" aria-labelledby="draft-setup-title">
           <h2 id="draft-setup-title">Set up the draft</h2>
           <div className="draft-workspace__controls">

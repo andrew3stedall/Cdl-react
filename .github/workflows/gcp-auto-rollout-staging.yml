@@ -369,6 +369,12 @@ jobs:
               "google_secret_manager_secret_iam_member.migration_google_allowed_emails_access": {
                   ("create",),
               },
+              'google_secret_manager_secret_iam_member.github_deploy_candidate_smoke_secret_access["cdl-development-login-secret"]': {
+                  ("create",),
+              },
+              'google_secret_manager_secret_iam_member.github_deploy_candidate_smoke_secret_access["cdl-google-allowed-emails"]': {
+                  ("create",),
+              },
           }
           unexpected = []
           for resource in plan.get("resource_changes", []):
@@ -585,6 +591,22 @@ jobs:
           status_code="$(curl --silent --show-error --output /dev/null \
             --write-out '%{http_code}' "${candidate_url}/api/fpl/status")"
           test "${status_code}" = "401"
+
+          gcloud secrets versions access latest \
+            --project "${PROJECT_ID}" \
+            --secret cdl-google-allowed-emails \
+            > "${RUNNER_TEMP}/candidate-reviewer-emails.txt"
+          gcloud secrets versions access latest \
+            --project "${PROJECT_ID}" \
+            --secret cdl-development-login-secret \
+            > "${RUNNER_TEMP}/candidate-login-secret.txt"
+          chmod 600 \
+            "${RUNNER_TEMP}/candidate-reviewer-emails.txt" \
+            "${RUNNER_TEMP}/candidate-login-secret.txt"
+          python src/cdl_api/staging_candidate_smoke.py \
+            --base-url "${candidate_url}" \
+            --reviewer-emails-file "${RUNNER_TEMP}/candidate-reviewer-emails.txt" \
+            --login-secret-file "${RUNNER_TEMP}/candidate-login-secret.txt"
 
       - name: Promote staged revision after migration
         if: steps.database-migrations.outcome == 'success'

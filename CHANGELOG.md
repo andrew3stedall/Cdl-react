@@ -15,6 +15,8 @@
 
 ## Unreleased
 
+- Recorded the #521 next-season activation target as 1 August 2027; activation depends on #522, while the commissioner UI and transactional server guard protect existing active squads.
+
 - Prevented commissioners from seeing draft setup controls when the configured season already has active squad ownerships; the server continues to enforce the same transactional guard.
 - Hardened staging promotion so the no-traffic candidate must complete an authenticated reviewer read/write/reload smoke after migrations and before traffic moves. Expanded current-contract Playwright coverage for adaptive appearance, commissioner invite creation, and explicit Market empty/error states; real-device passkey and recovery drills remain owned by their dedicated workstreams.
 - Reconciled the manual axe/screenshot harness with the current 20-player/five-chip contract, added mobile-landscape and light/dark/adaptive coverage, and kept screenshot collection manual-only.

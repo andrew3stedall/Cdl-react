@@ -14,12 +14,13 @@ from sqlalchemy import (
     Table,
     insert,
     select,
+    update,
 )
 from sqlalchemy.orm import Session
 
 metadata = MetaData()
 
-CURRENT_RULE_CONFIG: dict[str, object] = {
+INITIAL_RULE_CONFIG: dict[str, object] = {
     "schema_version": 1,
     "squad": {
         "size": 20,
@@ -57,6 +58,25 @@ CURRENT_RULE_CONFIG: dict[str, object] = {
         "bonus_policy": "unconfigured_pending_494",
         "captain_absence_policy": "unconfigured_pending_499",
         "playoff_tie_policy": "unconfigured_pending_496",
+    },
+}
+
+CURRENT_RULE_CONFIG: dict[str, object] = {
+    **INITIAL_RULE_CONFIG,
+    "schema_version": 2,
+    "scoring": {
+        **INITIAL_RULE_CONFIG["scoring"],
+        "bonus_policy": {
+            "type": "score_multiple",
+            "double_threshold": 2,
+            "double_bonus": 1,
+            "triple_threshold": 3,
+            "triple_bonus": 2,
+            "max_bonus": 2,
+            "opponent_score_must_be_positive": True,
+            "applies_to": "regular_season_league_table",
+            "live_projection": True,
+        },
     },
 }
 
@@ -114,7 +134,7 @@ def ensure_initial_rule_version(session: Session, season_id: str) -> str:
                 id=version_id,
                 season_id=season_id,
                 version=1,
-                config_json=CURRENT_RULE_CONFIG,
+                config_json=INITIAL_RULE_CONFIG,
                 source_decision_version="decision-log-2026-06-02",
                 created_at=now,
             )
@@ -133,3 +153,69 @@ def ensure_initial_rule_version(session: Session, season_id: str) -> str:
             )
         )
     return version_id
+
+
+
+def ensure_current_rule_version(session: Session, season_id: str) -> str:
+    """Ensure the accepted current rule snapshot exists and is active."""
+    ensure_initial_rule_version(session, season_id)
+    active_id = active_rule_version_id(session, season_id)
+    active_version = None
+    if active_id is not None:
+        active_version = session.execute(
+            select(league_season_rule_versions_table.c.version).where(
+                league_season_rule_versions_table.c.id == active_id
+            )
+        ).scalar_one_or_none()
+    if isinstance(active_version, int) and active_version >= 2:
+        return active_id
+
+    version_id = f"rules-{season_id}-v2"
+    existing = session.execute(
+        select(league_season_rule_versions_table.c.id).where(
+            league_season_rule_versions_table.c.id == version_id
+        )
+    ).scalar_one_or_none()
+    now = datetime.now(UTC)
+    if existing is None:
+        session.execute(
+            insert(league_season_rule_versions_table).values(
+                id=version_id,
+                season_id=season_id,
+                version=2,
+                config_json=CURRENT_RULE_CONFIG,
+                source_decision_version="issue-494-2026-10-08",
+                created_at=now,
+            )
+        )
+    session.execute(
+        update(league_season_rule_state_table)
+        .where(league_season_rule_state_table.c.season_id == season_id)
+        .values(active_version_id=version_id, updated_at=now)
+    )
+    return version_id
+
+
+def league_bonus_points(
+    team_score: int,
+    opponent_score: int,
+    config: Mapping[str, object] | None,
+) -> int:
+    """Return the configured CDL league-table bonus for one team."""
+    if opponent_score <= 0:
+        return 0
+    scoring = config.get("scoring") if isinstance(config, Mapping) else None
+    policy = scoring.get("bonus_policy") if isinstance(scoring, Mapping) else None
+    if not isinstance(policy, Mapping) or policy.get("type") != "score_multiple":
+        return 0
+
+    triple_threshold = int(policy.get("triple_threshold", 3))
+    triple_bonus = int(policy.get("triple_bonus", 2))
+    double_threshold = int(policy.get("double_threshold", 2))
+    double_bonus = int(policy.get("double_bonus", 1))
+    max_bonus = int(policy.get("max_bonus", 2))
+    if team_score >= triple_threshold * opponent_score:
+        return min(triple_bonus, max_bonus)
+    if team_score >= double_threshold * opponent_score:
+        return min(double_bonus, max_bonus)
+    return 0

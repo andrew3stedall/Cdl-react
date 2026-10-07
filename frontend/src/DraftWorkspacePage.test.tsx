@@ -36,6 +36,7 @@ describe('DraftWorkspacePage', () => {
       const url = String(input);
       const method = init?.method ?? 'GET';
       calls.push({ url, method, body: init?.body as string | undefined });
+      if (url.endsWith('/availability')) return Response.json({ can_create: true, reason: null });
       if (url.endsWith('/teams')) return Response.json([{ id: 'team-a', name: 'AFC Test' }]);
       if (method === 'POST' && url.endsWith('/pick')) {
         picked = true;
@@ -65,6 +66,27 @@ describe('DraftWorkspacePage', () => {
     expect(container.textContent).toContain('Striker One');
   });
 
+  test('guards draft setup when the configured season already has squad ownerships', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith('/availability')) {
+        return Response.json({ can_create: false, reason: 'active_squad_ownerships' });
+      }
+      if (url.endsWith('/teams')) return Response.json([{ id: 'team-a', name: 'AFC Test' }]);
+      return Response.json(null);
+    }));
+    container = document.createElement('div');
+    document.body.append(container);
+    root = createRoot(container);
+    await act(async () => {
+      root?.render(<DraftWorkspacePage preset={preset} teamId="team-a" canCommission />);
+      await new Promise((resolve) => window.setTimeout(resolve, 0));
+    });
+
+    expect(container.textContent).toContain('Starting another draft is disabled to protect them.');
+    expect([...container.querySelectorAll('button')].some((button) => button.textContent?.includes('Create draft room'))).toBe(false);
+  });
+
   test('requires the full pick count before completion and hides corrections after completion', async () => {
     const firstPick = {
       pick_number: 1, round_number: 1, team_id: 'team-a', team_name: 'AFC Test',
@@ -73,6 +95,7 @@ describe('DraftWorkspacePage', () => {
     };
     let state = { ...room([firstPick]), status: 'active' };
     vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input).endsWith('/availability')) return Response.json({ can_create: true, reason: null });
       if (String(input).endsWith('/teams')) return Response.json([{ id: 'team-a', name: 'AFC Test' }]);
       return Response.json(state);
     }));

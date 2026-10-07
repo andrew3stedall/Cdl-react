@@ -13,11 +13,17 @@ Use this checklist after staging exists and a staging URL is available.
 
 Release automation keeps the currently serving revision at 100% while it runs
 the checked-in Alembic migrations and verifies their recorded head. It tests
-candidate `/health` and the unauthenticated API boundary before promotion. The
-authenticated two-manager invite/lineup/chip journey runs against PostgreSQL in
-CI; it does not mutate a staging manager's team as part of the deployment
-smoke. See [the database migration runbook](gcp-staging-database-migrations.md)
-for the exact ordering and failure behavior.
+candidate `/health` and the unauthenticated API boundary before promotion.
+The no-traffic candidate must also pass an authenticated reviewer smoke: the
+workflow logs in with one existing seeded reviewer, reads the current 20-player
+and five-chip team-selection contract, writes the exact same lineup back,
+reloads it, verifies the manager/team and lineup are unchanged, and logs out.
+The reviewer allowlist and staging login secret are read at runtime from Secret
+Manager through narrowly scoped access granted to the deployment identity; they
+are not written to artifacts. The authenticated two-manager invite/lineup/chip
+journey remains a separate real-PostgreSQL CI gate. See
+[the database migration runbook](gcp-staging-database-migrations.md) for the
+exact ordering and failure behavior.
 
 The current-contract Playwright smoke uses a deterministic 20-player/five-chip
 fixture and checks mobile/desktop interactions and layout invariants. It does

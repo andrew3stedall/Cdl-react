@@ -106,8 +106,8 @@ class LiveDraftService:
                 .limit(1)
             ).scalar_one_or_none()
         if active_ownership:
-            return {"can_create": False, "reason": "active_squad_ownerships"}
-        return {"can_create": True, "reason": None}
+            return {"blocked_by_active_ownerships": True}
+        return {"blocked_by_active_ownerships": False}
 
     def create(
         self,

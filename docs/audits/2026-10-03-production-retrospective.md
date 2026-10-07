@@ -1191,3 +1191,38 @@ Hosted main validation for the documentation reconciliation passed in CI [374816
 ## Assigned-team reassignment boundary — 6 October 2026
 
 #535 is explicitly deferred from the current release. The application leaves assigned ownership unchanged and exposes no destructive release/reassignment control. Revisit after the league/season context and commissioner replacement policy are accepted, covering authorization, approval, immutable reason, prior-user session revocation and preservation of team, fixture, lineup and ownership history.
+
+
+## P1 release-evidence completion — 7 October 2026
+
+PR [#572](https://github.com/andrew3stedall/Cdl-react/pull/572) closed the
+implementation gaps behind OPS-01/#475 and V4/#531. Final PR validation passed
+in [CI 37606293995](https://github.com/andrew3stedall/Cdl-react/actions/runs/37606293995)
+and [PostgreSQL 37606294104](https://github.com/andrew3stedall/Cdl-react/actions/runs/37606294104).
+
+The merged main commit `9ab107402d2a6c08bf873a996fa0b00f76ad40f5`
+then completed staging rollout
+[37606580536](https://github.com/andrew3stedall/Cdl-react/actions/runs/37606580536).
+The release sequence preserved the existing healthy revision, applied and
+verified migrations, warmed a zero-percent candidate, verified the new
+revision, and ran the authenticated candidate smoke before promotion. The
+rollout log records `Authenticated candidate read/write/reload smoke passed.`
+before the promotion step completed.
+
+V4 browser evidence now uses the current 20-player/five-chip contract and
+covers the four primary routes, loading transitions, player drawers, palette
+sheets, commissioner invite creation, light/dark/adaptive appearance, mobile
+portrait/landscape geometry and explicit Market empty/error states. The real
+PostgreSQL release journey remains separate from mocked/jsdom evidence and
+exercises two-manager auth/invite/lineup/chip/save/reload behavior.
+
+The manual axe/screenshot harness was also reconciled with the current
+contract: Wildcard was removed, all five current CDL chips are present, the
+fixture contains 20 players, mobile landscape and light/dark/adaptive variants
+are covered, and commissioner management is included. Screenshot collection
+remains manual-only by design; this audit does not treat mocked screenshots as
+database or deployed integration evidence.
+
+#494 remains open. The repository still has no approved league-bonus
+eligibility thresholds, award amounts or cumulative-treatment policy, and the
+issue explicitly forbids inventing those scoring rules.

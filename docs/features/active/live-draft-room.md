@@ -6,7 +6,7 @@ Define the live sequential draft workflow, draft order modes, pick clock, presel
 
 ## Status
 
-Persistent PostgreSQL draft API and standalone room page are implemented and the FastAPI router is mounted at `/api/live-draft`. The configured active season is already drafted. An authenticated availability read now hides commissioner setup controls and explains the active-squad block before a create attempt; the transactional create guard remains authoritative. Starting a room for the next season still depends on league/season context and setup support in #522.
+Persistent PostgreSQL draft API and standalone room page are implemented and the FastAPI router is mounted at `/api/live-draft`. The configured active season is already drafted. An authenticated availability read now hides commissioner setup controls and explains the active-squad block before a create attempt; the transactional create guard remains authoritative. Starting a room for the next season is targeted for 1 August 2027 and depends on league/season context and setup support in #522; until that work is delivered, the active-season ownership guard remains in place.
 
 ## Business Rules
 

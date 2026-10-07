@@ -32,3 +32,8 @@ setup
 - Start draft.
 - Manage approvals and corrections.
 - Finalise or review competition issues as needed.
+
+
+## Next-season draft setup
+
+The configured active season already has squad ownership, so commissioners cannot start another draft for it. The UI hides setup and the transactional API rejects a create attempt. Next-season activation is targeted for **1 August 2027** under [#521](https://github.com/andrew3stedall/Cdl-react/issues/521), and depends on league/season context setup in [#522](https://github.com/andrew3stedall/Cdl-react/issues/522).

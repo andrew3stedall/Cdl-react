@@ -120,7 +120,7 @@ def immutable_rule_config(session: Session, version_id: str) -> Mapping[str, obj
 
 
 def ensure_initial_rule_version(session: Session, season_id: str) -> str:
-    """Create current accepted defaults once, without changing an active version."""
+    """Create the original v1 snapshot once, without changing an active version."""
     version_id = f"rules-{season_id}-v1"
     existing = session.execute(
         select(league_season_rule_versions_table.c.id).where(
@@ -153,7 +153,6 @@ def ensure_initial_rule_version(session: Session, season_id: str) -> str:
             )
         )
     return version_id
-
 
 
 def ensure_current_rule_version(session: Session, season_id: str) -> str:

@@ -11,10 +11,9 @@ import argparse
 import json
 from http.cookiejar import CookieJar
 from pathlib import Path
-from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.parse import urljoin
-from urllib.request import HTTPCookieProcessor, Request, build_opener
+from urllib.request import HTTPCookieProcessor, OpenerDirector, Request, build_opener
 
 
 class CandidateSmokeError(RuntimeError):
@@ -22,7 +21,11 @@ class CandidateSmokeError(RuntimeError):
 
 
 def _read_first_email(path: Path) -> str:
-    emails = [item.strip() for item in path.read_text(encoding="utf-8").split(",") if item.strip()]
+    emails = [
+        item.strip()
+        for item in path.read_text(encoding="utf-8").split(",")
+        if item.strip()
+    ]
     if not emails or "@" not in emails[0]:
         raise CandidateSmokeError("Candidate smoke reviewer allowlist is empty or invalid.")
     return emails[0]
@@ -36,13 +39,13 @@ def _read_password(path: Path) -> str:
 
 
 def _request_json(
-    opener: Any,
+    opener: OpenerDirector,
     base_url: str,
     path: str,
     *,
     method: str = "GET",
-    payload: dict[str, Any] | None = None,
-) -> dict[str, Any]:
+    payload: dict[str, object] | None = None,
+) -> dict[str, object]:
     body = json.dumps(payload).encode("utf-8") if payload is not None else None
     request = Request(
         urljoin(base_url.rstrip("/") + "/", path.lstrip("/")),
@@ -51,7 +54,7 @@ def _request_json(
         headers={"Accept": "application/json", "Content-Type": "application/json"},
     )
     try:
-        with opener.open(request, timeout=30) as response:
+        with opener.open(request, timeout=30) as response:  # noqa: S310
             if response.status != 200:
                 raise CandidateSmokeError(f"{method} {path} returned HTTP {response.status}.")
             decoded = json.loads(response.read().decode("utf-8"))
@@ -65,7 +68,7 @@ def _request_json(
     return decoded
 
 
-def lineup_write_payload(snapshot: dict[str, Any]) -> dict[str, Any]:
+def lineup_write_payload(snapshot: dict[str, object]) -> dict[str, object]:
     lineup = snapshot.get("lineup")
     chips = snapshot.get("chips")
     if not isinstance(lineup, list) or len(lineup) != 20:
@@ -73,7 +76,7 @@ def lineup_write_payload(snapshot: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(chips, list) or len(chips) != 5:
         raise CandidateSmokeError("Candidate team selection must contain the current five-chip contract.")
 
-    players: list[dict[str, Any]] = []
+    players: list[dict[str, object]] = []
     for item in lineup:
         if not isinstance(item, dict) or not item.get("id"):
             raise CandidateSmokeError("Candidate lineup contains an invalid player row.")
@@ -89,7 +92,7 @@ def lineup_write_payload(snapshot: dict[str, Any]) -> dict[str, Any]:
     return {"players": players}
 
 
-def _lineup_state(snapshot: dict[str, Any]) -> tuple[tuple[Any, ...], ...]:
+def _lineup_state(snapshot: dict[str, object]) -> tuple[tuple[object, ...], ...]:
     lineup = snapshot.get("lineup")
     if not isinstance(lineup, list):
         raise CandidateSmokeError("Candidate team-selection response has no lineup.")

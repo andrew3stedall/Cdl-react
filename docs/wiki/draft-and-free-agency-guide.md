@@ -12,6 +12,8 @@ Supported order modes:
 
 The commissioner can enable a pick clock. Managers can maintain a preselection queue. If a manager times out, the system can auto-pick from their queue or use the configured fallback strategy.
 
+A new room is only available when its selected season has no active squad ownership. The configured active season is already drafted, so the commissioner UI and transactional API guard block another room. Next-season activation is targeted for **1 August 2027** and depends on the league/season context work tracked in [#522](https://github.com/andrew3stedall/Cdl-react/issues/522); see [#521](https://github.com/andrew3stedall/Cdl-react/issues/521).
+
 ## Free agency draws
 
 Free agency draws happen in configured gameweeks. Managers submit private ranked preferences before the draw closes.

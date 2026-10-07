@@ -182,6 +182,29 @@ export async function installLayoutFixtures(
         team_id: 'team-open', team_name: 'Open Team', manager_name: null, manager_email: null, is_assigned: false,
       }] });
     }
+    if (path === '/api/league/management/invites') {
+      if (route.request().method() === 'POST') {
+        return await getResponse({
+          league_name: 'Browser Fixture League',
+          team_id: 'team-open',
+          team_name: 'Open Team',
+          token: 'browser-invite-token',
+          available_team_count: 1,
+        });
+      }
+      return await getResponse({
+        invites: [{
+          invite_id: 'browser-pending-invite',
+          league_name: 'Browser Fixture League',
+          team_id: 'team-open',
+          team_name: 'Open Team',
+          created_at: '2026-10-07T00:00:00Z',
+        }],
+      });
+    }
+    if (path === '/api/league/management/invites/browser-pending-invite' && route.request().method() === 'DELETE') {
+      return await route.fulfill({ status: 204, body: '' });
+    }
     if (path.startsWith('/api/fpl/players/')) return await getResponse({ history: [], fixtures: [] });
     return await getResponse({});
   });

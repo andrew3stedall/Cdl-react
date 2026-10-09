@@ -1,5 +1,7 @@
 # Production retrospective follow-up
 
+The [9 October 2026 issue-consolidation register](../../backlog/2026-10-09-issue-consolidation.md) separates the currently actionable correctness/release gates from future enhancements explicitly closed as deferred. A closed child issue is **not** by itself proof of implementation.
+
 ## Status
 
 Audit and backlog complete; the original implementation and corrective rollouts are merged and deployed to staging. All 70 findings are now being reconciled and completed in [execution batches](../../delivery/466-execution-batches.md). Parent milestone tracker: [#466](https://github.com/andrew3stedall/Cdl-react/issues/466).

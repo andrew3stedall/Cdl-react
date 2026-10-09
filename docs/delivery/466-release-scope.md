@@ -2,6 +2,8 @@
 
 This delivery hardens the app's existing manager journeys for an already drafted league. It does not convert engineering checkpoints into a claim of completed production services. Production deployment remains separate from this staging delivery, including the documented database restore and live reviewer gates.
 
+The 9 October 2026 [issue-consolidation register](../backlog/2026-10-09-issue-consolidation.md) supersedes the **open-ticket status** of optional future features below. Closing an optional issue as `not planned` does not mean the feature was delivered; its scope, trigger and dependencies remain in that register. #496/#499 and operational release gates remain open.
+
 ## Current candidate
 
 | Capability | Staging candidate | Follow-up / gate |
@@ -23,7 +25,7 @@ This delivery hardens the app's existing manager journeys for an already drafted
 | CDL ownership/loan history and expanded comparisons | Ownership periods API/UI delivered | #533: distinct loan/transfer explanations and expanded comparisons remain open |
 | Assigned-team release/reassignment | Deferred from the current candidate; no destructive control exposed | #535: revisit after the league/season context and commissioner replacement policy are accepted; authorization, prior-session revocation, audit reason and history preservation remain required |
 
-The deferred capabilities remain open GitHub work. Their accepted behavior is retained in the owning feature documents; they are not discarded or marked implemented. Engineering checkpoint routes are not first-release manager navigation and their APIs are unavailable in production.
+The deferred capabilities are indexed in the issue-consolidation register even when their individual GitHub issue is closed as `not planned`. Their accepted behavior is retained in owning feature documents; they are neither discarded nor marked implemented. Engineering checkpoint routes are not first-release manager navigation and their APIs are unavailable in production.
 
 ## Decisions parked without blocking independent fixes
 
@@ -35,4 +37,4 @@ The deferred capabilities remain open GitHub work. Their accepted behavior is re
 | #535 | Deferred current-candidate workflow; authorization, confirmation/reason, prior-manager session revocation and immutable history | Leave current assignment unchanged; expose no destructive release/reassignment control |
 | #531 / #71 | Deployed signed-in reviewer evidence and dated restore/recovery exercise if unavailable to this workspace | CI proves its actual database/browser scope; health is never substituted for recovery evidence |
 
-No permission-dependent item is silently treated as solved. Each has an open issue and a bounded unblock condition.
+No permission-dependent item is silently treated as solved. Active release/scoring gaps retain open issues; deferred gaps have a bounded reactivation condition in the 9 October consolidation register.

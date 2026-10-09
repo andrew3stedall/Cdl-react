@@ -15,6 +15,8 @@
 
 ## Unreleased
 
+- Added a browser regression for #488: the custom theme palette apply action stays visible above mobile navigation after orientation and viewport-height changes. Physical installed-PWA safe-area and keyboard checks remain open.
+
 - Implemented #494 league bonus scoring: +1 league point for at least double a positive opponent score, +2 total for at least triple, capped at 2, with no bonus against zero/negative scores. Live standings project the bonus; official active-season results freeze or backfill it using versioned rule provenance. Knockout scores and prior seasons are unchanged.
 
 - Recorded the #521 next-season activation target as 1 August 2027; activation depends on #522, while the commissioner UI and transactional server guard protect existing active squads.

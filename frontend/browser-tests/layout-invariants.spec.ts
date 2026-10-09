@@ -237,6 +237,19 @@ test('custom theme chooser remains in the viewport in portrait and landscape and
     await appearanceGroup.getByRole('button', { name: 'Dark appearance' }).click();
     await expect(appearanceGroup.getByRole('button', { name: 'Dark appearance' })).toHaveAttribute('aria-pressed', 'true');
 
+    const compactViewport = { width: viewport.width, height: Math.max(320, viewport.height - 140) };
+    await setViewport(page, compactViewport.width, compactViewport.height);
+    const applyPalette = sheet.getByRole('button', { name: 'Apply dark palette' });
+    await applyPalette.scrollIntoViewIfNeeded();
+    await expect(applyPalette).toBeVisible();
+    const applyBounds = await bounds(applyPalette);
+    expectWithinViewport(applyBounds, compactViewport, 'Theme palette apply action after viewport height change');
+    const mobileNavigationBounds = await bounds(page.locator('.global-mobile-navigation'));
+    expect(
+      applyBounds.y + applyBounds.height,
+      'Theme palette apply action must remain above the fixed mobile navigation',
+    ).toBeLessThanOrEqual(mobileNavigationBounds.y + 1);
+
     await sheet.locator('button:visible').last().focus();
     await page.keyboard.press('Tab');
     await expect(sheet.locator('.profile-fdr-sheet__close')).toBeFocused();

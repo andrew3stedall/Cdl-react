@@ -15,6 +15,8 @@
 
 ## Unreleased
 
+- Added a build-time gzip budget for the frontend's initial static route graph (235 kB), excluding lazy route chunks. This guards asset growth; physical handset cold-load evidence remains open for #536.
+
 - Added a browser regression for #488: the custom theme palette apply action stays visible above mobile navigation after orientation and viewport-height changes. Physical installed-PWA safe-area and keyboard checks remain open.
 
 - Implemented #494 league bonus scoring: +1 league point for at least double a positive opponent score, +2 total for at least triple, capped at 2, with no bonus against zero/negative scores. Live standings project the bonus; official active-season results freeze or backfill it using versioned rule provenance. Knockout scores and prior seasons are unchanged.

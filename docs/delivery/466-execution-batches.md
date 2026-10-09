@@ -214,6 +214,10 @@ Hosted evidence for this closure remains the merged-main validation: [CI 3748169
 #520 is closed after the real PostgreSQL integration test `test_postgres_ranked_draw_persists_private_results_and_claims_once` passed in PostgreSQL run #37481699113. The test covers private ranked preferences, deterministic awards, temporary rights, idempotent reprocessing and ownership isolation. #521 remains partial until the next-season context/setup dependency #522 is resolved.
 
 
+## Initial frontend transfer budget — 9 October 2026
+
+Issue #536 now has a repeatable build guard: CI measures compressed HTML plus the entry's static JS/CSS graph and fails above 235 kB gzip. The budget allows 21% headroom over the earlier 193.73 kB estimate; lazy route chunks are excluded. Physical cold-cache timing on a representative handset/network remains open.
+
 ## Mobile viewport verification — 9 October 2026
 
 The existing mobile shell reserves safe-area insets and uses dynamic viewport sizing. Browser regression coverage now keeps the custom theme palette's **Apply** action reachable after portrait/landscape changes and a shortened viewport height, and checks it stays above fixed mobile navigation. This exercises browser resize behavior in CI; it does not emulate iOS/Android safe-area sensors, an installed PWA, or a physical keyboard. #488 remains open for those device checks.

@@ -27,7 +27,7 @@ function addEntry(key) {
   const item = manifest[key];
   if (!item) throw new Error(`Vite manifest is missing imported entry: ${key}`);
 
-  if (item.file && /\\.(?:js|css)$/.test(item.file)) initialAssets.add(item.file);
+  if (item.file && /\.(?:js|css)$/.test(item.file)) initialAssets.add(item.file);
   for (const asset of item.css ?? []) initialAssets.add(asset);
   for (const importedKey of item.imports ?? []) addEntry(importedKey);
 }

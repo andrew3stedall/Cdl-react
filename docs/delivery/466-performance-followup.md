@@ -22,6 +22,12 @@ The change makes Profile, Result Colours, Rules, invite acceptance, and gated en
 
 These are repeatable build asset measurements, not a representative handset cold-load or interaction benchmark. No physical phone/network run or deployed Lighthouse run was available in this workspace. Gzip values estimate transferred compressed asset size; they do not establish parse time, LCP, responsiveness, cache behavior on a phone, or user-perceived improvement. Acceptance for real-device performance measurement remains open for a representative phone and network.
 
+## #536 — Repeatable initial-route transfer guard
+
+The frontend build now emits Vite's manifest and the build command follows only the entry's static import graph, plus its CSS, to calculate a repeatable gzip estimate for the HTML and initially required JS/CSS. Lazy route chunks are excluded. The build fails above **235 kB gzip**.
+
+The threshold leaves about 21% headroom over the previously measured 193.73 kB HTML/entry/CSS estimate. The checker reports the current exact graph size on every CI build, making future growth visible without adding a package dependency. This is an asset-transfer budget; it does not substitute for parse/interaction timing on a real handset or a cold-cache network run.
+
 ## #533 — Supported and deferred player history
 
 The player-profile feature document now separates shipped capability from the broader plan. The existing profile disclosure reads league-scoped `squad_ownerships` periods and displays season/team, start date, end date/current status. The API contract does not return an event type or source reference, and the ownership table is also written by different acquisition and loan paths. Therefore it cannot accurately label a period as a draft, transfer, trade, draw, free-agent acquisition, or loan. A canonical event projection and correction semantics remain deferred; no event labels or business rules were inferred.

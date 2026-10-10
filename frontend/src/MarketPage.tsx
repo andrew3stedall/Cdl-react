@@ -972,7 +972,7 @@ function FreeAgencyDrawPanel({ availablePlayers, canManageDraws, draw, drawActio
 
 function PlayerDrawer({ drawerRef, interest, managerTeam, onAddInterest, onClose, onNavigate, onProposeTrade, onRemoveInterest, pendingAction, player }: { drawerRef: MutableRefObject<HTMLElement | null>; interest: InterestView | null; managerTeam: SquadApiTeam; onAddInterest: () => void; onClose: () => void; onNavigate: (href: string) => void; onProposeTrade: (player: MarketPlayer) => void; onRemoveInterest: (interest: InterestView) => Promise<void>; pendingAction: string | null; player: MarketPlayer }) {
   useModalLifecycle(drawerRef, true, onClose);
-  const status = interest ? 'interested' : effectiveStatus(player, new Set(), managerTeam);
+  const status = effectiveStatus(player, interest ? new Set([player.id]) : new Set(), managerTeam);
   const actionDisabled = pendingAction !== null;
 
   return (
@@ -1168,8 +1168,10 @@ function mapTrade(trade: ApiTrade): TradeView {
 }
 
 function effectiveStatus(player: MarketPlayer, interestedPlayerIds: Set<string>, managerTeam: SquadApiTeam): MarketPlayer['status'] {
-  if (interestedPlayerIds.has(player.id) && player.status !== 'owned') return 'interested';
-  if (player.status === 'owned' && ownershipToneFor(player, managerTeam) === 'tertiary') return 'owned_by_other';
+  const ownershipTone = ownershipToneFor(player, managerTeam);
+  if (ownershipTone === 'tertiary') return 'owned_by_other';
+  if (ownershipTone === 'primary' || player.status === 'owned') return 'owned';
+  if (interestedPlayerIds.has(player.id)) return 'interested';
   return player.status;
 }
 

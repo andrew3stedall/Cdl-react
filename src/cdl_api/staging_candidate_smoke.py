@@ -1,8 +1,8 @@
 """Authenticated no-traffic staging candidate smoke.
 
-The release workflow uses an existing seeded staging reviewer and writes the exact
-lineup it just read. This exercises authenticated PostgreSQL read/write/reload
-behavior without leaving a manager's team changed.
+The release workflow uses an existing staging reviewer. It writes the exact lineup
+it just read when the gameweek is editable; for a locked gameweek it verifies the
+authenticated read/reload path without attempting a prohibited mutation.
 """
 
 from __future__ import annotations
@@ -58,6 +58,11 @@ def _request_json(
     if not isinstance(decoded, dict):
         raise CandidateSmokeError(f"{method} {path} returned a non-object response.")
     return decoded
+
+
+def fixture_is_locked(snapshot: dict[str, object]) -> bool:
+    fixture_lock = snapshot.get("fixture_lock")
+    return isinstance(fixture_lock, dict) and fixture_lock.get("locked") is True
 
 
 def lineup_write_payload(snapshot: dict[str, object]) -> dict[str, object]:
@@ -130,23 +135,24 @@ def run_candidate_smoke(base_url: str, email: str, password: str) -> None:
             raise CandidateSmokeError("Candidate staging reviewer has no assigned manager team.")
         before_state = _lineup_state(before)
 
-        payload = lineup_write_payload(before)
-        saved = _request_json(
-            session,
-            base_url,
-            "/api/team-selection/lineup",
-            method="PUT",
-            payload=payload,
-        )
-        if _lineup_state(saved) != before_state:
-            raise CandidateSmokeError("Candidate no-op lineup write changed the saved lineup.")
+        if not fixture_is_locked(before):
+            payload = lineup_write_payload(before)
+            saved = _request_json(
+                session,
+                base_url,
+                "/api/team-selection/lineup",
+                method="PUT",
+                payload=payload,
+            )
+            if _lineup_state(saved) != before_state:
+                raise CandidateSmokeError("Candidate no-op lineup write changed the saved lineup.")
 
         reloaded = _request_json(session, base_url, "/api/team-selection")
         reloaded_team = reloaded.get("manager_team")
         if not isinstance(reloaded_team, dict) or reloaded_team.get("id") != manager_team["id"]:
             raise CandidateSmokeError("Candidate reload changed the authenticated manager team.")
         if _lineup_state(reloaded) != before_state:
-            raise CandidateSmokeError("Candidate lineup changed after authenticated write/reload.")
+            raise CandidateSmokeError("Candidate lineup changed after authenticated read/reload.")
     finally:
         if logged_in:
             _request_json(session, base_url, "/api/auth/logout", method="POST", payload={})

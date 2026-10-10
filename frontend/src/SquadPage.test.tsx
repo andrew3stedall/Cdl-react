@@ -91,10 +91,12 @@ class StagedChipResponseClient extends FullTeamSelectionClient {
 
 class DeferredTradeSquadClient extends HttpSquadClient {
   createTradeCalls = 0;
+  lastTradePayload: { teamId: string; offeredPlayerIds: string[]; requestedPlayerIds: string[] } | null = null;
   private resolveTrade: ((trade: SquadApiTrade) => void) | null = null;
 
-  override createTrade(): Promise<SquadApiTrade> {
+  override createTrade(teamId: string, offeredPlayerIds: string[], requestedPlayerIds: string[]): Promise<SquadApiTrade> {
     this.createTradeCalls += 1;
+    this.lastTradePayload = { teamId, offeredPlayerIds, requestedPlayerIds };
     return new Promise<SquadApiTrade>((resolve) => {
       this.resolveTrade = resolve;
     });
@@ -914,6 +916,18 @@ describe('SquadPage', () => {
       await Promise.resolve();
     });
 
+    const offerSearch = container.querySelector('input[aria-label="Search your players to offer"]') as HTMLInputElement;
+    await act(async () => {
+      setInputValue(offerSearch, 'Pickford');
+      await Promise.resolve();
+    });
+    const pickford = Array.from(container.querySelectorAll<HTMLButtonElement>('.squad-page__search-results button'))
+      .find((button) => button.textContent?.includes('Pickford'));
+    await act(async () => {
+      pickford?.click();
+      await Promise.resolve();
+    });
+
     const teamSelect = container.querySelector('.squad-page__drawer select') as HTMLSelectElement;
     const selectSetter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')?.set;
     await act(async () => {
@@ -921,7 +935,7 @@ describe('SquadPage', () => {
       teamSelect.dispatchEvent(new Event('change', { bubbles: true }));
       await Promise.resolve();
     });
-    const search = container.querySelector('input[aria-label="Search trade targets"]') as HTMLInputElement;
+    const search = container.querySelector('input[aria-label="Search their players"]') as HTMLInputElement;
     await act(async () => {
       setInputValue(search, 'Palmer');
       await Promise.resolve();
@@ -941,6 +955,7 @@ describe('SquadPage', () => {
     });
 
     expect(squadClient.createTradeCalls).toBe(1);
+    expect(squadClient.lastTradePayload).toEqual({ teamId: 'team-2', offeredPlayerIds: ['fpl-411', 'fpl-235'], requestedPlayerIds: ['fpl-192'] });
     expect(buttonByText(container, 'Sending…').disabled).toBe(true);
 
     await act(async () => {
@@ -948,7 +963,7 @@ describe('SquadPage', () => {
       await Promise.resolve();
       await Promise.resolve();
     });
-    expect(container.textContent).toContain('Trade proposal for Haaland sent to Castle FC.');
+    expect(container.textContent).toContain('Trade proposal (Haaland + Pickford for Palmer) sent to Castle FC.');
     act(() => root.unmount());
   });
 });

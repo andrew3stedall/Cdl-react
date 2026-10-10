@@ -46,7 +46,8 @@ const otherOwnedPlayer = {
   ...player,
   id: 'player-5',
   display_name: 'Other Owned Midfielder',
-  status: 'owned',
+  // The scouting feed can report availability while the draft team still owns the player.
+  status: 'available',
   draft_team: { id: 'team-bayer-neverlusen', name: 'Bayer Nerverlusen', short_name: 'BAY' },
 };
 

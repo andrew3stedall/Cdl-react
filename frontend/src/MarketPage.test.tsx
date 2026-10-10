@@ -158,10 +158,12 @@ describe('MarketPage', () => {
       (container.querySelector('button[aria-label="Propose trade for Other Owned Midfielder"]') as HTMLButtonElement).click();
       await Promise.resolve();
     });
-    const offerSelect = container.querySelector('select[aria-label="Player to offer"]') as HTMLSelectElement;
     expect(container.querySelector('[role="dialog"]')?.getAttribute('aria-label')).toBe('Trade proposal for Other Owned Midfielder');
-    expect(Array.from(offerSelect.options).map((option) => option.textContent)).toContain('Owned Defender');
+    expect(container.querySelector('[aria-label="Your request"]')?.textContent).toContain('Other Owned Midfielder');
+    expect(container.querySelector('[aria-label="Your request"]')?.textContent).toContain('View charts');
 
+    const offerSelect = container.querySelector('select[aria-label="Add a player to offer"]') as HTMLSelectElement;
+    expect(Array.from(offerSelect.options).map((option) => option.textContent)).toContain('Owned Defender');
     await act(async () => {
       Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')?.set?.call(offerSelect, 'player-4');
       offerSelect.dispatchEvent(new Event('change', { bubbles: true }));

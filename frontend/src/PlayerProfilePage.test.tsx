@@ -269,13 +269,14 @@ describe('PlayerProfilePage', () => {
     const container = document.createElement('div');
     document.body.appendChild(container);
     const root = createRoot(container);
+    const selectionClient = new MemoryTeamSelectionClient();
     const renderProfile = (initialPlayer: SquadApiPlayer) => (
       <ThemePresetProvider initialPresetName="teal-dark" preferenceClient={preferenceClient}>
         <PlayerProfilePage
           initialPlayer={initialPlayer}
           playerId={player.id}
           squadClient={client}
-          teamSelectionClient={new MemoryTeamSelectionClient()}
+          teamSelectionClient={selectionClient}
         />
       </ThemePresetProvider>
     );

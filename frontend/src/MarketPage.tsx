@@ -164,6 +164,9 @@ export function MarketPage({ currentPath, onNavigate, preset, session }: MarketP
   const [sortKey, setSortKey] = useState<SortKey>('points');
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<MarketPlayer | null>(null);
+  const [selectedTradeTarget, setSelectedTradeTarget] = useState<MarketPlayer | null>(null);
+  const [ownedPlayers, setOwnedPlayers] = useState<MarketPlayer[]>([]);
+  const [tradeSubmissionPending, setTradeSubmissionPending] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState('');
@@ -282,6 +285,9 @@ export function MarketPage({ currentPath, onNavigate, preset, session }: MarketP
 
       if (summary) {
         setManagerTeam(summary.manager_team);
+        setOwnedPlayers(summary.players
+          .filter((player) => player.status === 'owned' && player.draft_team?.id === summary.manager_team.id)
+          .map(mapPlayer));
       }
       if (scouting) setPlayers(scouting.players.map(mapPlayer));
       if (interestPayload) setInterests(interestPayload.map(mapInterest));
@@ -447,6 +453,34 @@ export function MarketPage({ currentPath, onNavigate, preset, session }: MarketP
       setNotice(actionError instanceof Error ? actionError.message : 'Unable to add this player to Interests.');
     } finally {
       setPendingAction(null);
+    }
+  }
+
+  function beginTradeProposal(player: MarketPlayer) {
+    if (player.status !== 'owned_by_other' || !player.draftTeamId) return;
+    setSelectedPlayer(null);
+    setSelectedTradeTarget(player);
+  }
+
+  async function submitTradeProposal(target: MarketPlayer, offeredPlayerId: string) {
+    if (!target.draftTeamId || tradeSubmissionPending) return;
+    setTradeSubmissionPending(true);
+    try {
+      await fetchJson('/api/trades', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          offered_to_team_id: target.draftTeamId,
+          offered_player_ids: [offeredPlayerId],
+          requested_player_ids: [target.id],
+        }),
+      });
+      setSelectedTradeTarget(null);
+      setNotice(`Trade proposal for ${target.displayName} sent to ${target.ownerName ?? 'the selected manager'}.`);
+      setRefreshKey((key) => key + 1);
+      invalidateData(['trade'], 'market');
+    } finally {
+      setTradeSubmissionPending(false);
     }
   }
 
@@ -637,6 +671,17 @@ export function MarketPage({ currentPath, onNavigate, preset, session }: MarketP
           player={selectedPlayer}
           managerTeam={managerTeam}
           drawerRef={drawerRef}
+          onProposeTrade={beginTradeProposal}
+        />
+      ) : null}
+      {selectedTradeTarget ? (
+        <TradeProposalDrawer
+          drawerRef={drawerRef}
+          onClose={() => setSelectedTradeTarget(null)}
+          onSubmit={(offeredPlayerId) => submitTradeProposal(selectedTradeTarget, offeredPlayerId)}
+          ownedPlayers={ownedPlayers}
+          pending={tradeSubmissionPending}
+          target={selectedTradeTarget}
         />
       ) : null}
     </main>
@@ -929,7 +974,7 @@ function FreeAgencyDrawPanel({ availablePlayers, canManageDraws, draw, drawActio
   );
 }
 
-function PlayerDrawer({ drawerRef, interest, managerTeam, onAddInterest, onClose, onNavigate, onRemoveInterest, pendingAction, player }: { drawerRef: MutableRefObject<HTMLElement | null>; interest: InterestView | null; managerTeam: SquadApiTeam; onAddInterest: () => void; onClose: () => void; onNavigate: (href: string) => void; onRemoveInterest: (interest: InterestView) => Promise<void>; pendingAction: string | null; player: MarketPlayer }) {
+function PlayerDrawer({ drawerRef, interest, managerTeam, onAddInterest, onClose, onNavigate, onProposeTrade, onRemoveInterest, pendingAction, player }: { drawerRef: MutableRefObject<HTMLElement | null>; interest: InterestView | null; managerTeam: SquadApiTeam; onAddInterest: () => void; onClose: () => void; onNavigate: (href: string) => void; onProposeTrade: (player: MarketPlayer) => void; onRemoveInterest: (interest: InterestView) => Promise<void>; pendingAction: string | null; player: MarketPlayer }) {
   useModalLifecycle(drawerRef, true, onClose);
   const status = interest ? 'interested' : effectiveStatus(player, new Set(), managerTeam);
   const actionDisabled = pendingAction !== null;
@@ -945,6 +990,11 @@ function PlayerDrawer({ drawerRef, interest, managerTeam, onAddInterest, onClose
                 <button className="player-profile__action" onClick={() => { onClose(); onNavigate('/squad'); }} type="button">
                   <Users aria-hidden="true" size={17} />
                   <span>View in Squad</span>
+                </button>
+              ) : status === 'owned_by_other' ? (
+                <button aria-label={`Propose trade for ${player.displayName}`} className="player-profile__action" onClick={() => onProposeTrade(player)} type="button">
+                  <ArrowRightLeft aria-hidden="true" size={17} />
+                  <span>Propose trade</span>
                 </button>
               ) : status === 'interested' && interest ? (
                 <button aria-label={`Remove ${player.displayName} from Interests`} className="player-profile__action" disabled={pendingAction === interest.id} onClick={() => void onRemoveInterest(interest)} type="button">
@@ -968,6 +1018,55 @@ function PlayerDrawer({ drawerRef, interest, managerTeam, onAddInterest, onClose
           presentation="drawer"
           showActions={false}
         />
+      </aside>
+    </div>
+  );
+}
+
+function TradeProposalDrawer({ drawerRef, onClose, onSubmit, ownedPlayers, pending, target }: {
+  drawerRef: MutableRefObject<HTMLElement | null>;
+  onClose: () => void;
+  onSubmit: (offeredPlayerId: string) => Promise<void>;
+  ownedPlayers: MarketPlayer[];
+  pending: boolean;
+  target: MarketPlayer;
+}) {
+  useModalLifecycle(drawerRef, true, onClose);
+  const [offeredPlayerId, setOfferedPlayerId] = useState('');
+  const [error, setError] = useState('');
+
+  async function submit() {
+    if (!offeredPlayerId || pending) return;
+    setError('');
+    try {
+      await onSubmit(offeredPlayerId);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Unable to send the trade proposal.');
+    }
+  }
+
+  return (
+    <div className="market-page__drawer-layer">
+      <button aria-label="Close trade proposal" className="market-page__drawer-backdrop" disabled={pending} onClick={onClose} type="button" />
+      <aside aria-label={`Trade proposal for ${target.displayName}`} aria-modal="true" className="market-page__drawer" ref={drawerRef} role="dialog" tabIndex={-1}>
+        <div className="market-page__trade-proposal">
+          <h2>Propose trade</h2>
+          <p>Request {target.displayName} from {target.ownerName ?? 'another manager'}.</p>
+          {ownedPlayers.length > 0 ? (
+            <label>
+              <span>Player to offer</span>
+              <select aria-label="Player to offer" disabled={pending} onChange={(event) => setOfferedPlayerId(event.currentTarget.value)} value={offeredPlayerId}>
+                <option value="">Choose one of your players</option>
+                {ownedPlayers.map((player) => <option key={player.id} value={player.id}>{player.displayName}</option>)}
+              </select>
+            </label>
+          ) : <p role="status">Your squad has no eligible players to offer.</p>}
+          {error ? <p role="alert">{error}</p> : null}
+          <div className="market-page__trade-proposal-actions">
+            <Button disabled={!offeredPlayerId || pending} onClick={() => void submit()} type="button">{pending ? 'Sending…' : 'Send proposal'}</Button>
+            <Button disabled={pending} onClick={onClose} type="button" variant="secondary">Cancel</Button>
+          </div>
+        </div>
       </aside>
     </div>
   );

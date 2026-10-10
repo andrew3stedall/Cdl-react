@@ -15,7 +15,7 @@
 
 ## Unreleased
 
-- Corrected Scouting actions for other managers’ players: open a one-for-one trade proposal with the requested player preselected and choose an owned player to offer. Added regression coverage and a frontend consistency review at `docs/audits/2026-10-10-frontend-consistency-review.md`.
+- Added a multi-player trade planner in Squad. Managers can add or remove players on either side, compare selected players on points, form, xG, and xA, then submit the complete offer. Added regression coverage for a multi-player proposal.
 
 
 - Added a build-time gzip budget for the frontend's initial static route graph (235 kB), excluding lazy route chunks. This guards asset growth; physical handset cold-load evidence remains open for #536.

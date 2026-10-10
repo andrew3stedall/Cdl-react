@@ -815,6 +815,17 @@
 }
 
 .market-page__drawer:focus { outline: none; }
+
+.market-page__trade-proposal { display: grid; gap: 0.9rem; }
+.market-page__trade-proposal h2 { font-size: 1.15rem; margin: 0; }
+.market-page__trade-proposal > p { color: var(--market-muted); font-size: 0.85rem; line-height: 1.4; margin: 0; }
+.market-page__trade-proposal label { display: grid; gap: 0.4rem; }
+.market-page__trade-proposal label > span { font-size: 0.8rem; font-weight: 600; }
+.market-page__trade-proposal select { background: var(--background); border: 1px solid var(--border); border-radius: var(--radius); color: var(--foreground); min-height: 2.75rem; padding: 0 0.65rem; width: 100%; }
+.market-page__trade-proposal [role="alert"],
+.market-page__trade-proposal [role="status"] { font-size: 0.82rem; margin: 0; }
+.market-page__trade-proposal-actions { display: flex; flex-wrap: wrap; gap: 0.55rem; }
+
 .market-page__sheet-handle { display: none; }
 
 .market-page__drawer-header {

@@ -1,4 +1,4 @@
-import { type CSSProperties, type ReactNode, useEffect, useMemo, useState } from 'react';
+import { type CSSProperties, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
   CircleX,
@@ -52,13 +52,10 @@ import {
 } from './team-selection-api';
 import { useOptionalThemePreset } from './theme-preset-provider';
 import { invalidateData, subscribeDataFreshness } from './data-freshness';
-import { OwnershipHistoryPanel, PrivateScoutingPanel } from './PlayerProfileScoutingPanels';
-import { HttpPlayerProfileDataClient, type PlayerProfileDataClient } from './player-profile-data-api';
 import './player-profile.css';
 
 const defaultSquadClient = new HttpSquadClient();
 const defaultTeamSelectionClient = new HttpTeamSelectionClient();
-const defaultPlayerProfileDataClient = new HttpPlayerProfileDataClient();
 
 interface PlayerProfilePageProps {
   initialPlayer?: SquadApiPlayer;
@@ -77,7 +74,6 @@ interface PlayerProfilePageProps {
   showActions?: boolean;
   squadClient?: PlayerProfileSquadClient;
   teamSelectionClient?: TeamSelectionClient;
-  playerProfileDataClient?: PlayerProfileDataClient;
 }
 
 type ProfileSquadStatus = TeamSelectionPlayer['slot'] | null;
@@ -118,8 +114,8 @@ export function PlayerProfilePage({
   showActions = true,
   squadClient = defaultSquadClient,
   teamSelectionClient = defaultTeamSelectionClient,
-  playerProfileDataClient = defaultPlayerProfileDataClient,
 }: PlayerProfilePageProps) {
+  const initialPlayerRef = useRef(initialPlayer);
   const themePreset = useOptionalThemePreset();
   const fdrDisplayMode = themePreset?.fdrDisplayMode ?? 'font';
   const [player, setPlayer] = useState<SquadApiPlayer | null>(initialPlayer ?? null);
@@ -147,15 +143,20 @@ export function PlayerProfilePage({
   }), []);
 
   useEffect(() => {
+    initialPlayerRef.current = initialPlayer;
+  }, [initialPlayer]);
+
+  useEffect(() => {
     let mounted = true;
-    setLoading((current) => current && initialPlayer == null);
+    setLoading((current) => current && initialPlayerRef.current == null);
     setHistoryLoading(true);
     setLoadError(null);
     setHistoryError(null);
     setSelectionError(null);
     setNotice(null);
-    const playerPromise = initialPlayer && refreshKey === 0
-      ? Promise.resolve(initialPlayer)
+    const seedPlayer = initialPlayerRef.current;
+    const playerPromise = seedPlayer && refreshKey === 0
+      ? Promise.resolve(seedPlayer)
       : squadClient.getPlayer
         ? squadClient.getPlayer(playerId)
         : Promise.reject(new Error('Player could not be loaded.'));
@@ -199,7 +200,7 @@ export function PlayerProfilePage({
     return () => {
       mounted = false;
     };
-  }, [initialPlayer, playerId, refreshKey, squadClient, teamSelectionClient]);
+  }, [playerId, refreshKey, squadClient, teamSelectionClient]);
 
   const selectedLineupPlayer = selection?.players.find((candidate) => candidate.id === playerId) ?? null;
   const squadStatus: ProfileSquadStatus = selectedLineupPlayer?.slot ?? null;
@@ -474,8 +475,6 @@ export function PlayerProfilePage({
         </ChartCard>;
       }) : <ChartCard title="Opponent form" className="player-profile__chart-card--full"><ChartEmpty message="No cached defensive history is available for the next opponent." /></ChartCard>}
 
-      <PrivateScoutingPanel client={playerProfileDataClient} key={player.id} playerId={player.id} />
-      <OwnershipHistoryPanel client={playerProfileDataClient} key={player.id} playerId={player.id} />
 
       {notice ? <p className="player-profile__notice" role="status">{notice}</p> : null}
       {presentation === 'drawer' ? <div aria-hidden="true" className="player-profile__scroll-end-spacer" /> : null}

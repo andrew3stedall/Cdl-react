@@ -1054,7 +1054,7 @@ function TradeProposalDrawer({ drawerRef, onClose, onSubmit, otherPlayers, owned
       <aside aria-label={`Trade proposal for ${target.displayName}`} aria-modal="true" className="market-page__drawer" ref={drawerRef} role="dialog" tabIndex={-1}>
         <div className="market-page__trade-proposal">
           <h2>Plan a trade</h2>
-          <p>Request players from {target.ownerName ?? 'another manager'}. The selected Market player is already in your request.</p>
+          <p>Trade with {target.ownerName ?? 'another manager'}.</p>
           <section aria-label="Your offer" className="market-page__trade-side">
             <h3>Your offer · {selectedOfferPlayers.length}</h3>
             {selectedOfferPlayers.map((player) => <TradePlannerPlayer key={player.id} onRemove={() => setOfferedPlayerIds((ids) => ids.filter((id) => id !== player.id))} onView={() => setProfilePlayerId(player.id)} player={player} pending={pending} side="offer" />)}

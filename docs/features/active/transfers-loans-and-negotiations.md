@@ -6,11 +6,12 @@ Define in-app trade/loan negotiation, offer counters, party agreement, commissio
 
 ## Status
 
-Checkpoint 3 complete. Client trade creation is single-flight while a proposal request is pending; the send control remains disabled until the request resolves, while failed submissions can be retried.
+Checkpoint 3 complete. Client trade creation is single-flight while a proposal request is pending; the send control remains disabled until the request resolves, while failed submissions can be retried. The Squad trade planner supports multiple owned players on either side of an offer and compares selected players on points, form, xG, and xA before submission.
 
 ## Business Rules
 
 - Negotiations happen in app through structured offers and counters.
+- The Squad trade planner lets a manager select one or more players to offer and request, review both sides together, and compare each selected player's points, form, xG, and xA before sending the proposal.
 - Both parties must agree before approval.
 - Commissioner approval is required before actioning a transfer or loan.
 - Commissioner-involved transfers require vice commissioner approval.

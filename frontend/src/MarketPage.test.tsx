@@ -74,7 +74,7 @@ beforeEach(() => {
       return new Response(JSON.stringify({ message: 'Temporary market read failure.' }), { status: 503 });
     }
     if (path === '/api/squad/summary') {
-      return new Response(JSON.stringify({ manager_team: { id: 'team-exeter-gently', name: 'Exeter Gently' }, gameweek: { name: 'Gameweek 1' }, players: [player] }), { status: 200 });
+      return new Response(JSON.stringify({ manager_team: { id: 'team-exeter-gently', name: 'Exeter Gently' }, gameweek: { name: 'Gameweek 1' }, players: [ownedPlayer] }), { status: 200 });
     }
     if (path === '/api/scouting/players') return new Response(JSON.stringify({ players: marketPlayers }), { status: 200 });
     if (path === '/api/interests' && init?.method === 'POST') {
@@ -90,6 +90,11 @@ beforeEach(() => {
       const trade = marketTrades.find((item) => item.id === path.split('/').at(-1));
       if (trade) trade.status = (JSON.parse(String(init.body)) as { status: string }).status;
       return new Response(JSON.stringify(trade ?? {}), { status: 200 });
+    }
+    if (path === '/api/trades' && init?.method === 'POST') {
+      const payload = JSON.parse(String(init.body)) as { offered_to_team_id: string; offered_player_ids: string[]; requested_player_ids: string[] };
+      marketTrades.push({ id: 'trade-created', status: 'proposed', ...payload });
+      return new Response(JSON.stringify({ id: 'trade-created', status: 'proposed', ...payload }), { status: 200 });
     }
     if (path === '/api/trades') return new Response(JSON.stringify({ trades: marketTrades }), { status: 200 });
     if (path.startsWith('/api/fpl/players/')) return new Response(JSON.stringify({ history: marketHistory, fixtures: [] }), { status: 200 });
@@ -139,6 +144,43 @@ async function renderPage(currentPath = '/scouting', session?: SessionState) {
 }
 
 describe('MarketPage', () => {
+  test('offers a trade for another manager’s player instead of registering interest', async () => {
+    marketPlayers = [otherOwnedPlayer];
+    const { container, root } = await renderPage();
+    const row = container.querySelector('tr[aria-label="View Other Owned Midfielder details"]') as HTMLTableRowElement;
+
+    await act(async () => { row.click(); await Promise.resolve(); });
+    expect(container.textContent).toContain('Propose trade');
+    expect(container.textContent).not.toContain('Add to Interests');
+
+    await act(async () => {
+      (container.querySelector('button[aria-label="Propose trade for Other Owned Midfielder"]') as HTMLButtonElement).click();
+      await Promise.resolve();
+    });
+    const offerSelect = container.querySelector('select[aria-label="Player to offer"]') as HTMLSelectElement;
+    expect(container.querySelector('[role="dialog"]')?.getAttribute('aria-label')).toBe('Trade proposal for Other Owned Midfielder');
+    expect(Array.from(offerSelect.options).map((option) => option.textContent)).toContain('Owned Defender');
+
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')?.set?.call(offerSelect, 'player-4');
+      offerSelect.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    await act(async () => {
+      Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Send proposal')?.click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(marketTrades).toContainEqual(expect.objectContaining({
+      status: 'proposed',
+      offered_to_team_id: 'team-bayer-neverlusen',
+      offered_player_ids: ['player-4'],
+      requested_player_ids: ['player-5'],
+    }));
+    expect(interestActive).toBe(false);
+    act(() => root.unmount());
+  });
+
   test('keeps discovery focused on the player list', async () => {
     const { container } = await renderPage();
 

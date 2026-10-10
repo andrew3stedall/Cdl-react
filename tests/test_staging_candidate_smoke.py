@@ -1,13 +1,22 @@
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
-from cdl_api.staging_candidate_smoke import CandidateSmokeError, lineup_write_payload
+from cdl_api import staging_candidate_smoke
+from cdl_api.staging_candidate_smoke import (
+    CandidateSmokeError,
+    fixture_is_locked,
+    lineup_write_payload,
+)
 
 
-def _snapshot(*, player_count: int = 20, chip_count: int = 5) -> dict[str, object]:
+def _snapshot(
+    *, player_count: int = 20, chip_count: int = 5, locked: bool = False
+) -> dict[str, object]:
     return {
         "manager_team": {"id": "team-smoke", "name": "Smoke FC"},
+        "fixture_lock": {"locked": locked, "reason": "FPL deadline passed." if locked else None},
         "lineup": [
             {
                 "id": f"player-{index}",
@@ -47,12 +56,49 @@ def test_lineup_write_payload_preserves_current_contract_without_state_change() 
     ],
 )
 def test_lineup_write_payload_fails_closed_for_stale_release_contracts(
-    player_count: int,
-    chip_count: int,
-    message: str,
+    player_count: int, chip_count: int, message: str
 ) -> None:
     with pytest.raises(CandidateSmokeError, match=message):
         lineup_write_payload(_snapshot(player_count=player_count, chip_count=chip_count))
+
+
+def test_fixture_lock_controls_candidate_smoke_mutation() -> None:
+    assert fixture_is_locked(_snapshot(locked=True))
+    assert not fixture_is_locked(_snapshot())
+
+
+def test_locked_gameweek_smoke_reloads_without_attempting_mutation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    before = _snapshot(locked=True)
+    calls: list[tuple[str, str]] = []
+
+    class FakeSession:
+        def request(self, method: str, url: str, **_kwargs: object) -> SimpleNamespace:
+            calls.append((method, url))
+            if url.endswith("/api/auth/login"):
+                payload = {"session": {"is_authenticated": True}}
+            elif url.endswith("/api/team-selection"):
+                payload = before
+            else:
+                payload = {}
+            return SimpleNamespace(status_code=200, json=lambda: payload)
+
+        def close(self) -> None:
+            pass
+
+    monkeypatch.setattr(staging_candidate_smoke.requests, "Session", FakeSession)
+
+    staging_candidate_smoke.run_candidate_smoke("https://candidate.test", "reviewer@test", "secret")
+
+    paths = [url.removeprefix("https://candidate.test") for _, url in calls]
+    assert paths == [
+        "/api/auth/login",
+        "/api/team-selection",
+        "/api/team-selection",
+        "/api/auth/logout",
+    ]
+    assert not any(method == "PUT" for method, _ in calls)
 
 
 def test_candidate_smoke_module_never_needs_committed_credentials() -> None:

@@ -2,12 +2,19 @@ from pathlib import Path
 
 import pytest
 
-from cdl_api.staging_candidate_smoke import CandidateSmokeError, lineup_write_payload
+from cdl_api.staging_candidate_smoke import (
+    CandidateSmokeError,
+    fixture_is_locked,
+    lineup_write_payload,
+)
 
 
-def _snapshot(*, player_count: int = 20, chip_count: int = 5) -> dict[str, object]:
+def _snapshot(
+    *, player_count: int = 20, chip_count: int = 5, locked: bool = False
+) -> dict[str, object]:
     return {
         "manager_team": {"id": "team-smoke", "name": "Smoke FC"},
+        "fixture_lock": {"locked": locked, "reason": "FPL deadline passed." if locked else None},
         "lineup": [
             {
                 "id": f"player-{index}",
@@ -47,12 +54,15 @@ def test_lineup_write_payload_preserves_current_contract_without_state_change() 
     ],
 )
 def test_lineup_write_payload_fails_closed_for_stale_release_contracts(
-    player_count: int,
-    chip_count: int,
-    message: str,
+    player_count: int, chip_count: int, message: str
 ) -> None:
     with pytest.raises(CandidateSmokeError, match=message):
         lineup_write_payload(_snapshot(player_count=player_count, chip_count=chip_count))
+
+
+def test_fixture_lock_controls_candidate_smoke_mutation() -> None:
+    assert fixture_is_locked(_snapshot(locked=True))
+    assert not fixture_is_locked(_snapshot())
 
 
 def test_candidate_smoke_module_never_needs_committed_credentials() -> None:

@@ -342,7 +342,9 @@ export function SquadPage({
   const [compareQuery, setCompareQuery] = useState('');
   const [tradeSource, setTradeSource] = useState<PlayerView | null>(null);
   const [tradeTeamId, setTradeTeamId] = useState('');
-  const [tradeTarget, setTradeTarget] = useState<PlayerView | null>(null);
+  const [tradeOfferPlayers, setTradeOfferPlayers] = useState<PlayerView[]>([]);
+  const [tradeOfferQuery, setTradeOfferQuery] = useState('');
+  const [tradeRequestedPlayers, setTradeRequestedPlayers] = useState<PlayerView[]>([]);
   const [tradeQuery, setTradeQuery] = useState('');
   const [stagedRemovalIds, setStagedRemovalIds] = useState<Set<string>>(() => new Set());
   const [stagedAdditionIds, setStagedAdditionIds] = useState<Set<string>>(() => new Set());
@@ -531,8 +533,13 @@ export function SquadPage({
     .filter((player) => matchesQuery(player, compareQuery))
     .slice(0, 8);
   const tradeTeams = uniqueTradeTeams(scoutingPool, managerTeam.id);
+  const tradeOfferCandidates = squadPlayers
+    .filter((player) => !tradeOfferPlayers.some((selected) => selected.id === player.id))
+    .filter((player) => matchesQuery(player, tradeOfferQuery))
+    .slice(0, 8);
   const tradeCandidates = scoutingPool
     .filter((player) => player.draftTeam?.id === tradeTeamId)
+    .filter((player) => !tradeRequestedPlayers.some((selected) => selected.id === player.id))
     .filter((player) => matchesQuery(player, tradeQuery))
     .slice(0, 8);
   const substitutionOptions = useMemo(() => {
@@ -578,6 +585,7 @@ export function SquadPage({
     setDrawerMode(null);
     setSelectedPlayer(null);
     setCompareQuery('');
+    setTradeOfferQuery('');
     setTradeQuery('');
   }
 
@@ -713,10 +721,22 @@ export function SquadPage({
 
   function startTrade(player: PlayerView) {
     setTradeSource(player);
+    setTradeOfferPlayers([player]);
+    setTradeOfferQuery('');
     setTradeTeamId('');
-    setTradeTarget(null);
+    setTradeRequestedPlayers([]);
     setTradeQuery('');
     setDrawerMode('trade');
+  }
+
+  function addTradeOfferPlayer(player: PlayerView) {
+    setTradeOfferPlayers((current) => current.some((selected) => selected.id === player.id) ? current : [...current, player]);
+    setTradeOfferQuery('');
+  }
+
+  function addTradeRequestedPlayer(player: PlayerView) {
+    setTradeRequestedPlayers((current) => current.some((selected) => selected.id === player.id) ? current : [...current, player]);
+    setTradeQuery('');
   }
 
   function stageAddition(player: PlayerView) {
@@ -795,14 +815,21 @@ export function SquadPage({
   }
 
   async function submitTrade() {
-    if (!tradeSource || !tradeTarget || !tradeTeamId || tradeSubmittingRef.current) return;
+    if (!tradeSource || tradeOfferPlayers.length === 0 || tradeRequestedPlayers.length === 0 || !tradeTeamId || tradeSubmittingRef.current) return;
     tradeSubmittingRef.current = true;
     setTradeSubmitting(true);
     try {
-      const trade = await squadClient.createTrade(tradeTeamId, [tradeSource.id], [tradeTarget.id]);
+      const trade = await squadClient.createTrade(
+        tradeTeamId,
+        tradeOfferPlayers.map((player) => player.id),
+        tradeRequestedPlayers.map((player) => player.id),
+      );
       if (trade.status === 'proposed') setProposedTradeCount((current) => current + 1);
+      const managerName = tradeTeams.find((team) => team.id === tradeTeamId)?.name ?? 'the selected manager';
+      const offerNames = tradeOfferPlayers.map((player) => player.displayName).join(' + ');
+      const requestNames = tradeRequestedPlayers.map((player) => player.displayName).join(' + ');
       closeDrawer();
-      setStatus(`Trade proposal for ${tradeSource.displayName} sent to ${tradeTarget.draftTeam?.name ?? 'the selected manager'}.`);
+      setStatus(`Trade proposal (${offerNames} for ${requestNames}) sent to ${managerName}.`);
       invalidateData(['trade'], 'squad');
     } catch (error) {
       setStatus(apiErrorMessage(error, 'Unable to submit the trade proposal.'));
@@ -1090,17 +1117,23 @@ export function SquadPage({
                 candidates={tradeCandidates}
                 error={scoutingError}
                 loading={scoutingLoading}
+                offerCandidates={tradeOfferCandidates}
+                offerPlayers={tradeOfferPlayers}
+                offerQuery={tradeOfferQuery}
                 onClose={closeDrawer}
+                onOfferAdd={addTradeOfferPlayer}
+                onOfferQueryChange={setTradeOfferQuery}
+                onOfferRemove={(playerId) => setTradeOfferPlayers((current) => current.filter((player) => player.id !== playerId))}
                 onQueryChange={setTradeQuery}
-                onTargetChange={setTradeTarget}
+                onRequestAdd={addTradeRequestedPlayer}
+                onRequestRemove={(playerId) => setTradeRequestedPlayers((current) => current.filter((player) => player.id !== playerId))}
                 onTeamChange={(teamId) => {
                   setTradeTeamId(teamId);
-                  setTradeTarget(null);
+                  setTradeRequestedPlayers([]);
                   setTradeQuery('');
                 }}
                 query={tradeQuery}
-                source={tradeSource}
-                target={tradeTarget}
+                requestedPlayers={tradeRequestedPlayers}
                 teams={tradeTeams}
                 teamId={tradeTeamId}
                 onSubmit={() => void submitTrade()}
@@ -1573,7 +1606,7 @@ function CompareDrawer({
           <article className="squad-page__compare-card" key={player.id}>
             <div className="squad-page__compare-order">{index + 1}</div>
             <PlayerIdentity player={player} />
-            <div className="squad-page__compare-metrics"><Metric label="Points" value={formatInteger(player.points)} /><Metric label="Form" value={formatMetric(player.form)} /><Metric placeholder={player.xg === null} label="xG" value={formatMetric(player.xg)} /><Metric placeholder={player.xa === null} label="xA" value={formatMetric(player.xa)} /></div>
+            <PlayerComparisonMetrics player={player} />
             {index > 0 ? <button className="squad-page__text-button" onClick={() => onRemove(player.id)} type="button">Remove</button> : null}
           </article>
         ))}
@@ -1594,15 +1627,21 @@ function TradeDrawer({
   candidates,
   error,
   loading,
+  offerCandidates,
+  offerPlayers,
+  offerQuery,
   onClose,
+  onOfferAdd,
+  onOfferQueryChange,
+  onOfferRemove,
   onQueryChange,
+  onRequestAdd,
+  onRequestRemove,
   onSubmit,
   onRetry,
-  onTargetChange,
   onTeamChange,
   query,
-  source,
-  target,
+  requestedPlayers,
   teams,
   teamId,
   submitting,
@@ -1610,15 +1649,21 @@ function TradeDrawer({
   candidates: PlayerView[];
   error: string | null;
   loading: boolean;
+  offerCandidates: PlayerView[];
+  offerPlayers: PlayerView[];
+  offerQuery: string;
   onClose: () => void;
+  onOfferAdd: (player: PlayerView) => void;
+  onOfferQueryChange: (query: string) => void;
+  onOfferRemove: (playerId: string) => void;
   onQueryChange: (query: string) => void;
+  onRequestAdd: (player: PlayerView) => void;
+  onRequestRemove: (playerId: string) => void;
   onSubmit: () => void;
   onRetry: () => void;
-  onTargetChange: (player: PlayerView) => void;
   onTeamChange: (teamId: string) => void;
   query: string;
-  source: PlayerView;
-  target: PlayerView | null;
+  requestedPlayers: PlayerView[];
   teams: TeamRef[];
   teamId: string;
   submitting: boolean;
@@ -1626,21 +1671,47 @@ function TradeDrawer({
   return (
     <>
       <span aria-hidden="true" className="squad-page__sheet-handle" />
-      <DrawerHeader onClose={onClose} title="Start a trade" />
+      <DrawerHeader onClose={onClose} title="Plan a trade" />
       {loading ? <p className="squad-page__empty-copy">Loading trade players…</p> : null}
       {error ? <p className="squad-page__error-copy">Trade players unavailable: {error} <Button onClick={onRetry} type="button" variant="secondary">Retry</Button></p> : null}
-      <section className="squad-page__drawer-section"><h3>You would offer</h3><PlayerIdentity large player={source} /></section>
-      <label className="squad-page__field"><span>Other manager</span><select onChange={(event) => onTeamChange(event.target.value)} value={teamId}><option value="">Choose a team</option>{teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}</select></label>
-      {teamId ? (
-        <section className="squad-page__search-add">
-          <label><Search size={16} /><span className="sr-only">Search trade targets</span><input aria-label="Search trade targets" onChange={(event) => onQueryChange(event.target.value)} placeholder="Search their players" value={query} /></label>
-          {query.trim() ? <div className="squad-page__search-results">{candidates.map((player) => <button key={player.id} onClick={() => onTargetChange(player)} type="button"><PlayerIdentity player={player} /><span>Select</span></button>)}</div> : null}
-        </section>
-      ) : null}
-      {target ? <section className="squad-page__drawer-section"><h3>Target</h3><PlayerIdentity large player={target} /><div className="squad-page__trade-guidance"><div><strong>FPL evidence</strong><span className="squad-page__api-chip">Official data</span></div><p>{source.displayName}: {formatInteger(source.points)} pts · {formatMetric(source.form)} form. {target.displayName}: {formatInteger(target.points)} pts · {formatMetric(target.form)} form.</p></div></section> : null}
-      <Button disabled={!target || submitting} onClick={onSubmit} type="button">{submitting ? 'Sending…' : 'Send trade proposal'}</Button>
+      <section className="squad-page__drawer-section">
+        <h3>Your offer · {offerPlayers.length}</h3>
+        <div className="squad-page__compare-grid">
+          {offerPlayers.map((player) => (
+            <article className="squad-page__compare-card" key={player.id}>
+              <PlayerIdentity large player={player} />
+              <PlayerComparisonMetrics player={player} />
+              <button className="squad-page__text-button" aria-label={`Remove ${player.displayName} from your offer`} disabled={submitting} onClick={() => onOfferRemove(player.id)} type="button">Remove</button>
+            </article>
+          ))}
+        </div>
+        <div className="squad-page__search-add">
+          <label><Search size={16} /><span className="sr-only">Search your players to offer</span><input aria-label="Search your players to offer" disabled={submitting} onChange={(event) => onOfferQueryChange(event.target.value)} placeholder="Add another player" value={offerQuery} /></label>
+          {offerQuery.trim() ? <div className="squad-page__search-results">{offerCandidates.map((player) => <button key={player.id} disabled={submitting} onClick={() => onOfferAdd(player)} type="button"><PlayerIdentity player={player} /><span>Add</span></button>)}</div> : null}
+        </div>
+      </section>
+      <label className="squad-page__field"><span>Other manager</span><select disabled={submitting} onChange={(event) => onTeamChange(event.target.value)} value={teamId}><option value="">Choose a team</option>{teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}</select></label>
+      <section className="squad-page__drawer-section">
+        <h3>You request · {requestedPlayers.length}</h3>
+        {requestedPlayers.length ? <div className="squad-page__compare-grid">{requestedPlayers.map((player) => (
+          <article className="squad-page__compare-card" key={player.id}>
+            <PlayerIdentity large player={player} />
+            <PlayerComparisonMetrics player={player} />
+            <button className="squad-page__text-button" aria-label={`Remove ${player.displayName} from your request`} disabled={submitting} onClick={() => onRequestRemove(player.id)} type="button">Remove</button>
+          </article>
+        ))}</div> : <p className="squad-page__empty-copy">Select players from the other manager’s squad.</p>}
+        {teamId ? <div className="squad-page__search-add">
+          <label><Search size={16} /><span className="sr-only">Search their players</span><input aria-label="Search their players" disabled={submitting} onChange={(event) => onQueryChange(event.target.value)} placeholder="Add a player to request" value={query} /></label>
+          {query.trim() ? <div className="squad-page__search-results">{candidates.map((player) => <button key={player.id} disabled={submitting} onClick={() => onRequestAdd(player)} type="button"><PlayerIdentity player={player} /><span>Add</span></button>)}</div> : null}
+        </div> : null}
+      </section>
+      <Button disabled={offerPlayers.length === 0 || requestedPlayers.length === 0 || submitting} onClick={onSubmit} type="button">{submitting ? 'Sending…' : 'Send trade proposal'}</Button>
     </>
   );
+}
+
+function PlayerComparisonMetrics({ player }: { player: PlayerView }) {
+  return <div className="squad-page__compare-metrics"><Metric label="Points" value={formatInteger(player.points)} /><Metric label="Form" value={formatMetric(player.form)} /><Metric placeholder={player.xg === null} label="xG" value={formatMetric(player.xg)} /><Metric placeholder={player.xa === null} label="xA" value={formatMetric(player.xa)} /></div>;
 }
 
 function PlayerIdentity({ circle = false, large = false, player, showForm = false, showMeta = true }: { circle?: boolean; large?: boolean; player: PlayerView; showForm?: boolean; showMeta?: boolean }) {

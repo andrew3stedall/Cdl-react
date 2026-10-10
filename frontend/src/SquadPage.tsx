@@ -1668,6 +1668,7 @@ function TradeDrawer({
   teamId: string;
   submitting: boolean;
 }) {
+  const [profilePlayerId, setProfilePlayerId] = useState<string | null>(null);
   return (
     <>
       <span aria-hidden="true" className="squad-page__sheet-handle" />
@@ -1681,6 +1682,7 @@ function TradeDrawer({
             <article className="squad-page__compare-card" key={player.id}>
               <PlayerIdentity large player={player} />
               <PlayerComparisonMetrics player={player} />
+              <Button onClick={() => setProfilePlayerId(player.id)} type="button" variant="secondary">View charts</Button>
               <button className="squad-page__text-button" aria-label={`Remove ${player.displayName} from your offer`} disabled={submitting} onClick={() => onOfferRemove(player.id)} type="button">Remove</button>
             </article>
           ))}
@@ -1697,6 +1699,7 @@ function TradeDrawer({
           <article className="squad-page__compare-card" key={player.id}>
             <PlayerIdentity large player={player} />
             <PlayerComparisonMetrics player={player} />
+            <Button onClick={() => setProfilePlayerId(player.id)} type="button" variant="secondary">View charts</Button>
             <button className="squad-page__text-button" aria-label={`Remove ${player.displayName} from your request`} disabled={submitting} onClick={() => onRequestRemove(player.id)} type="button">Remove</button>
           </article>
         ))}</div> : <p className="squad-page__empty-copy">Select players from the other manager’s squad.</p>}
@@ -1705,6 +1708,7 @@ function TradeDrawer({
           {query.trim() ? <div className="squad-page__search-results">{candidates.map((player) => <button key={player.id} disabled={submitting} onClick={() => onRequestAdd(player)} type="button"><PlayerIdentity player={player} /><span>Add</span></button>)}</div> : null}
         </div> : null}
       </section>
+      {profilePlayerId ? <PlayerProfilePage key={profilePlayerId} onClose={() => setProfilePlayerId(null)} playerId={profilePlayerId} presentation="drawer" showActions={false} /> : null}
       <Button disabled={offerPlayers.length === 0 || requestedPlayers.length === 0 || submitting} onClick={onSubmit} type="button">{submitting ? 'Sending…' : 'Send trade proposal'}</Button>
     </>
   );

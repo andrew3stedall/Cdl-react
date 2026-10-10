@@ -955,7 +955,7 @@ describe('SquadPage', () => {
     });
 
     expect(squadClient.createTradeCalls).toBe(1);
-    expect(squadClient.lastTradePayload).toEqual({ teamId: 'team-2', offeredPlayerIds: ['fpl-411', 'fpl-235'], requestedPlayerIds: ['fpl-192'] });
+    expect(squadClient.lastTradePayload).toEqual({ teamId: 'team-2', offeredPlayerIds: ['fpl-411', 'fpl-235'], requestedPlayerIds: ['fpl-154'] });
     expect(buttonByText(container, 'Sending…').disabled).toBe(true);
 
     await act(async () => {

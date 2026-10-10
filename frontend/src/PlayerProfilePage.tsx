@@ -116,7 +116,6 @@ export function PlayerProfilePage({
   teamSelectionClient = defaultTeamSelectionClient,
 }: PlayerProfilePageProps) {
   const initialPlayerRef = useRef(initialPlayer);
-  initialPlayerRef.current = initialPlayer;
   const themePreset = useOptionalThemePreset();
   const fdrDisplayMode = themePreset?.fdrDisplayMode ?? 'font';
   const [player, setPlayer] = useState<SquadApiPlayer | null>(initialPlayer ?? null);
@@ -142,6 +141,10 @@ export function PlayerProfilePage({
   useEffect(() => subscribeDataFreshness('player-profile', ['squad', 'lineup', 'global'], () => {
     setRefreshKey((current) => current + 1);
   }), []);
+
+  useEffect(() => {
+    initialPlayerRef.current = initialPlayer;
+  }, [initialPlayer]);
 
   useEffect(() => {
     let mounted = true;

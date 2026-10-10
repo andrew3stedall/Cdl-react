@@ -67,12 +67,14 @@ def test_fixture_lock_controls_candidate_smoke_mutation() -> None:
     assert not fixture_is_locked(_snapshot())
 
 
-def test_locked_gameweek_smoke_reloads_without_attempting_mutation(monkeypatch) -> None:
+def test_locked_gameweek_smoke_reloads_without_attempting_mutation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     before = _snapshot(locked=True)
     calls: list[tuple[str, str]] = []
 
     class FakeSession:
-        def request(self, method, url, **_kwargs):
+        def request(self, method: str, url: str, **_kwargs: object) -> SimpleNamespace:
             calls.append((method, url))
             if url.endswith("/api/auth/login"):
                 payload = {"session": {"is_authenticated": True}}
@@ -82,7 +84,7 @@ def test_locked_gameweek_smoke_reloads_without_attempting_mutation(monkeypatch) 
                 payload = {}
             return SimpleNamespace(status_code=200, json=lambda: payload)
 
-        def close(self):
+        def close(self) -> None:
             pass
 
     monkeypatch.setattr(staging_candidate_smoke.requests, "Session", FakeSession)

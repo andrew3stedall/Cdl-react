@@ -168,6 +168,7 @@ export function MarketPage({ currentPath, onNavigate, preset, session }: MarketP
   const [selectedTradeTarget, setSelectedTradeTarget] = useState<MarketPlayer | null>(null);
   const [ownedPlayers, setOwnedPlayers] = useState<MarketPlayer[]>([]);
   const [tradeSubmissionPending, setTradeSubmissionPending] = useState(false);
+  const tradeSubmissionRef = useRef(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState('');
@@ -464,7 +465,8 @@ export function MarketPage({ currentPath, onNavigate, preset, session }: MarketP
   }
 
   async function submitTradeProposal(target: MarketPlayer, offeredPlayerId: string) {
-    if (!target.draftTeamId || tradeSubmissionPending) return;
+    if (!target.draftTeamId || tradeSubmissionRef.current) return;
+    tradeSubmissionRef.current = true;
     setTradeSubmissionPending(true);
     try {
       await marketSquadClient.createTrade(target.draftTeamId, [offeredPlayerId], [target.id]);
@@ -473,6 +475,7 @@ export function MarketPage({ currentPath, onNavigate, preset, session }: MarketP
       setRefreshKey((key) => key + 1);
       invalidateData(['trade'], 'market');
     } finally {
+      tradeSubmissionRef.current = false;
       setTradeSubmissionPending(false);
     }
   }

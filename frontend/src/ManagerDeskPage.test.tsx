@@ -234,8 +234,11 @@ describe('ManagerDeskPage', () => {
     expect(container.querySelector('.cdl-page-hero__context')).toBeNull();
     expect(container.querySelector('button[aria-label="Desk"]')?.getAttribute('aria-pressed')).toBe('true');
     expect(container.querySelector('.cdl-page-hero .manager-account-menu')).not.toBeNull();
-    expect(container.textContent).toContain('Review your starting XI');
-    expect(container.textContent).toContain('Check squad availability');
+    expect(container.textContent).toContain('Review lineup');
+    expect(container.textContent).toContain('Open squad');
+    expect(container.textContent).not.toContain('Your captaincy needs checking.');
+    expect(container.textContent).not.toContain('Check squad availability.');
+    expect(container.textContent).not.toContain('Your next draw is approaching.');
     expect(container.textContent).toContain('Review fixture difficulty');
     expect(container.textContent).toContain('River Rangers');
     expect(container.textContent).not.toContain('Quick actions');

@@ -169,7 +169,7 @@ describe('MarketPage', () => {
       offerSelect.dispatchEvent(new Event('change', { bubbles: true }));
     });
     await act(async () => {
-      Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Send proposal')?.click();
+      Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Send trade proposal')?.click();
       await Promise.resolve();
       await Promise.resolve();
     });

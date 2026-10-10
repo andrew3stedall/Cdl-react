@@ -451,8 +451,8 @@ describe('ManagerDeskPage', () => {
       await Promise.resolve();
     });
 
-    expect(container.textContent).toContain('Locked in');
-    expect(container.textContent).toContain('View your team');
+    expect(container.textContent).toContain('Lineup locked');
+    expect(container.textContent).toContain('View lineup');
     expect(container.textContent).not.toContain('The deadline has passed. Review the submitted lineup and gameweek context.');
     expect(container.textContent).not.toContain('Choose a captain');
   });

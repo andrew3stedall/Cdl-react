@@ -1008,3 +1008,12 @@
 .market-page__drawer--profile .player-profile__action-bar {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
+
+.market-page__trade-proposal { padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
+.market-page__trade-side { border-top: 1px solid var(--border); display: grid; gap: .65rem; padding-top: .8rem; }
+.market-page__trade-side h3 { font-size: .84rem; margin: 0; }
+.market-page__trade-player { align-items: center; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); display: flex; flex-wrap: wrap; gap: .65rem; justify-content: space-between; padding: .7rem; }
+.market-page__trade-player > div:first-child { display: grid; gap: .2rem; min-width: 0; }
+.market-page__trade-player > div:first-child span { color: var(--market-muted); font-size: .75rem; }
+.market-page__trade-player-actions { align-items: center; display: flex; flex-wrap: wrap; gap: .35rem; }
+.market-page__trade-empty { color: var(--market-muted); font-size: .8rem; margin: 0; }

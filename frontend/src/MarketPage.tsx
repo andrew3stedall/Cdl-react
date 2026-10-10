@@ -464,12 +464,12 @@ export function MarketPage({ currentPath, onNavigate, preset, session }: MarketP
     setSelectedTradeTarget(player);
   }
 
-  async function submitTradeProposal(target: MarketPlayer, offeredPlayerId: string) {
+  async function submitTradeProposal(target: MarketPlayer, offeredPlayerIds: string[], requestedPlayerIds: string[]) {
     if (!target.draftTeamId || tradeSubmissionRef.current) return;
     tradeSubmissionRef.current = true;
     setTradeSubmissionPending(true);
     try {
-      await marketSquadClient.createTrade(target.draftTeamId, [offeredPlayerId], [target.id]);
+      await marketSquadClient.createTrade(target.draftTeamId, offeredPlayerIds, requestedPlayerIds);
       setSelectedTradeTarget(null);
       setNotice(`Trade proposal for ${target.displayName} sent to ${target.ownerName ?? 'the selected manager'}.`);
       setRefreshKey((key) => key + 1);
@@ -674,8 +674,9 @@ export function MarketPage({ currentPath, onNavigate, preset, session }: MarketP
         <TradeProposalDrawer
           drawerRef={drawerRef}
           onClose={() => setSelectedTradeTarget(null)}
-          onSubmit={(offeredPlayerId) => submitTradeProposal(selectedTradeTarget, offeredPlayerId)}
+          onSubmit={(offeredPlayerIds, requestedPlayerIds) => submitTradeProposal(selectedTradeTarget, offeredPlayerIds, requestedPlayerIds)}
           ownedPlayers={ownedPlayers}
+          otherPlayers={players.filter((player) => player.draftTeamId === selectedTradeTarget.draftTeamId)}
           pending={tradeSubmissionPending}
           target={selectedTradeTarget}
         />
@@ -1019,23 +1020,29 @@ function PlayerDrawer({ drawerRef, interest, managerTeam, onAddInterest, onClose
   );
 }
 
-function TradeProposalDrawer({ drawerRef, onClose, onSubmit, ownedPlayers, pending, target }: {
+function TradeProposalDrawer({ drawerRef, onClose, onSubmit, otherPlayers, ownedPlayers, pending, target }: {
   drawerRef: MutableRefObject<HTMLElement | null>;
   onClose: () => void;
-  onSubmit: (offeredPlayerId: string) => Promise<void>;
+  onSubmit: (offeredPlayerIds: string[], requestedPlayerIds: string[]) => Promise<void>;
+  otherPlayers: MarketPlayer[];
   ownedPlayers: MarketPlayer[];
   pending: boolean;
   target: MarketPlayer;
 }) {
   useModalLifecycle(drawerRef, true, onClose);
-  const [offeredPlayerId, setOfferedPlayerId] = useState('');
+  const [offeredPlayerIds, setOfferedPlayerIds] = useState<string[]>([]);
+  const [requestedPlayerIds, setRequestedPlayerIds] = useState<string[]>([target.id]);
+  const [profilePlayerId, setProfilePlayerId] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const selectedOfferPlayers = offeredPlayerIds.map((id) => ownedPlayers.find((player) => player.id === id)).filter((player): player is MarketPlayer => player !== undefined);
+  const selectedRequestPlayers = requestedPlayerIds.map((id) => otherPlayers.find((player) => player.id === id)).filter((player): player is MarketPlayer => player !== undefined);
+  const profilePlayer = [...ownedPlayers, ...otherPlayers].find((player) => player.id === profilePlayerId) ?? null;
 
   async function submit() {
-    if (!offeredPlayerId || pending) return;
+    if (offeredPlayerIds.length === 0 || requestedPlayerIds.length === 0 || pending) return;
     setError('');
     try {
-      await onSubmit(offeredPlayerId);
+      await onSubmit(offeredPlayerIds, requestedPlayerIds);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Unable to send the trade proposal.');
     }
@@ -1046,25 +1053,63 @@ function TradeProposalDrawer({ drawerRef, onClose, onSubmit, ownedPlayers, pendi
       <button aria-label="Close trade proposal" className="market-page__drawer-backdrop" disabled={pending} onClick={onClose} type="button" />
       <aside aria-label={`Trade proposal for ${target.displayName}`} aria-modal="true" className="market-page__drawer" ref={drawerRef} role="dialog" tabIndex={-1}>
         <div className="market-page__trade-proposal">
-          <h2>Propose trade</h2>
-          <p>Request {target.displayName} from {target.ownerName ?? 'another manager'}.</p>
-          {ownedPlayers.length > 0 ? (
-            <label>
-              <span>Player to offer</span>
-              <select aria-label="Player to offer" disabled={pending} onChange={(event) => setOfferedPlayerId(event.currentTarget.value)} value={offeredPlayerId}>
-                <option value="">Choose one of your players</option>
-                {ownedPlayers.map((player) => <option key={player.id} value={player.id}>{player.displayName}</option>)}
-              </select>
-            </label>
-          ) : <p role="status">Your squad has no eligible players to offer.</p>}
+          <h2>Plan a trade</h2>
+          <p>Trade with {target.ownerName ?? 'another manager'}.</p>
+          <section aria-label="Your offer" className="market-page__trade-side">
+            <h3>Your offer · {selectedOfferPlayers.length}</h3>
+            {selectedOfferPlayers.map((player) => <TradePlannerPlayer key={player.id} onRemove={() => setOfferedPlayerIds((ids) => ids.filter((id) => id !== player.id))} onView={() => setProfilePlayerId(player.id)} player={player} pending={pending} side="offer" />)}
+            {ownedPlayers.length === 0 ? <p role="status">Your squad has no eligible players to offer.</p> : (
+              <label><span>Add a player to offer</span><select aria-label="Add a player to offer" disabled={pending} onChange={(event) => {
+                const id = event.currentTarget.value;
+                if (id) setOfferedPlayerIds((ids) => ids.includes(id) ? ids : [...ids, id]);
+                event.currentTarget.value = '';
+              }} value=""><option value="">Choose from your squad</option>{ownedPlayers.filter((player) => !offeredPlayerIds.includes(player.id)).map((player) => <option key={player.id} value={player.id}>{player.displayName}</option>)}</select></label>
+            )}
+          </section>
+          <section aria-label="Your request" className="market-page__trade-side">
+            <h3>You request · {selectedRequestPlayers.length}</h3>
+            {selectedRequestPlayers.map((player) => <TradePlannerPlayer key={player.id} onRemove={() => setRequestedPlayerIds((ids) => ids.filter((id) => id !== player.id))} onView={() => setProfilePlayerId(player.id)} player={player} pending={pending} side="request" />)}
+            {otherPlayers.filter((player) => !requestedPlayerIds.includes(player.id)).length > 0 ? (
+              <label><span>Add another player to request</span><select aria-label="Add another player to request" disabled={pending} onChange={(event) => {
+                const id = event.currentTarget.value;
+                if (id) setRequestedPlayerIds((ids) => ids.includes(id) ? ids : [...ids, id]);
+                event.currentTarget.value = '';
+              }} value=""><option value="">Choose from {target.ownerName ?? 'their squad'}</option>{otherPlayers.filter((player) => !requestedPlayerIds.includes(player.id)).map((player) => <option key={player.id} value={player.id}>{player.displayName}</option>)}</select></label>
+            ) : <p className="market-page__trade-empty">No other players are available to request from this squad.</p>}
+          </section>
           {error ? <p role="alert">{error}</p> : null}
           <div className="market-page__trade-proposal-actions">
-            <Button disabled={!offeredPlayerId || pending} onClick={() => void submit()} type="button">{pending ? 'Sending…' : 'Send proposal'}</Button>
+            <Button disabled={offeredPlayerIds.length === 0 || requestedPlayerIds.length === 0 || pending} onClick={() => void submit()} type="button">{pending ? 'Sending…' : 'Send trade proposal'}</Button>
             <Button disabled={pending} onClick={onClose} type="button" variant="secondary">Cancel</Button>
           </div>
         </div>
       </aside>
+      {profilePlayer ? <PlayerProfilePage
+        key={profilePlayer.id}
+        onClose={() => setProfilePlayerId(null)}
+        playerId={profilePlayer.id}
+        presentation="drawer"
+        showActions={false}
+      /> : null}
     </div>
+  );
+}
+
+function TradePlannerPlayer({ onRemove, onView, player, pending, side }: {
+  onRemove: () => void;
+  onView: () => void;
+  player: MarketPlayer;
+  pending: boolean;
+  side: 'offer' | 'request';
+}) {
+  return (
+    <article className="market-page__trade-player">
+      <div><strong>{player.displayName}</strong><span>{player.position} · {player.club} · {formatInteger(player.points)} pts · form {formatMetric(player.form)} · xG {formatMetric(player.xg)} · xA {formatMetric(player.xa)}</span></div>
+      <div className="market-page__trade-player-actions">
+        <Button onClick={onView} type="button" variant="secondary">View charts</Button>
+        <Button aria-label={`Remove ${player.displayName} from your ${side}`} disabled={pending} onClick={onRemove} type="button" variant="ghost">Remove</Button>
+      </div>
+    </article>
   );
 }
 

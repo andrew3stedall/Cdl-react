@@ -100,3 +100,8 @@ The existing `accepted` trade status remains the two-party agreement state for c
 - `GET /api/loans` and `GET /api/loans/{loan_id}/events` are scoped to the signed-in manager's team. Proposal, party decision, approval, start, and return are persisted in PostgreSQL.
 
 Loan extension and permanent conversion remain unimplemented. The active rules contain no extension limit, extension approval workflow, conversion price or valuation date, or conversion rights/lineup semantics. Those terms must be specified before either operation can safely mutate ownership.
+
+
+## Market trade planning
+
+Starting a trade from a Market player opens the same multi-player plan flow with that player preselected under “You request” and their manager fixed as the counterparty. Managers can add multiple players on either side, inspect the full player profile charts from each selected asset, and submit the selected player ID arrays in one proposal.

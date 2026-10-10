@@ -1681,28 +1681,28 @@ function TradeDrawer({
             <article className="squad-page__compare-card" key={player.id}>
               <PlayerIdentity large player={player} />
               <PlayerComparisonMetrics player={player} />
-              <button className="squad-page__text-button" onClick={() => onOfferRemove(player.id)} type="button">Remove</button>
+              <button className="squad-page__text-button" aria-label={`Remove ${player.displayName} from your offer`} disabled={submitting} onClick={() => onOfferRemove(player.id)} type="button">Remove</button>
             </article>
           ))}
         </div>
         <div className="squad-page__search-add">
-          <label><Search size={16} /><span className="sr-only">Search your players to offer</span><input aria-label="Search your players to offer" onChange={(event) => onOfferQueryChange(event.target.value)} placeholder="Add another player" value={offerQuery} /></label>
-          {offerQuery.trim() ? <div className="squad-page__search-results">{offerCandidates.map((player) => <button key={player.id} onClick={() => onOfferAdd(player)} type="button"><PlayerIdentity player={player} /><span>Add</span></button>)}</div> : null}
+          <label><Search size={16} /><span className="sr-only">Search your players to offer</span><input aria-label="Search your players to offer" disabled={submitting} onChange={(event) => onOfferQueryChange(event.target.value)} placeholder="Add another player" value={offerQuery} /></label>
+          {offerQuery.trim() ? <div className="squad-page__search-results">{offerCandidates.map((player) => <button key={player.id} disabled={submitting} onClick={() => onOfferAdd(player)} type="button"><PlayerIdentity player={player} /><span>Add</span></button>)}</div> : null}
         </div>
       </section>
-      <label className="squad-page__field"><span>Other manager</span><select onChange={(event) => onTeamChange(event.target.value)} value={teamId}><option value="">Choose a team</option>{teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}</select></label>
+      <label className="squad-page__field"><span>Other manager</span><select disabled={submitting} onChange={(event) => onTeamChange(event.target.value)} value={teamId}><option value="">Choose a team</option>{teams.map((team) => <option key={team.id} value={team.id}>{team.name}</option>)}</select></label>
       <section className="squad-page__drawer-section">
-        <h3>Their offer · {requestedPlayers.length}</h3>
+        <h3>You request · {requestedPlayers.length}</h3>
         {requestedPlayers.length ? <div className="squad-page__compare-grid">{requestedPlayers.map((player) => (
           <article className="squad-page__compare-card" key={player.id}>
             <PlayerIdentity large player={player} />
             <PlayerComparisonMetrics player={player} />
-            <button className="squad-page__text-button" onClick={() => onRequestRemove(player.id)} type="button">Remove</button>
+            <button className="squad-page__text-button" aria-label={`Remove ${player.displayName} from your request`} disabled={submitting} onClick={() => onRequestRemove(player.id)} type="button">Remove</button>
           </article>
         ))}</div> : <p className="squad-page__empty-copy">Select players from the other manager’s squad.</p>}
         {teamId ? <div className="squad-page__search-add">
-          <label><Search size={16} /><span className="sr-only">Search their players</span><input aria-label="Search their players" onChange={(event) => onQueryChange(event.target.value)} placeholder="Add a player to request" value={query} /></label>
-          {query.trim() ? <div className="squad-page__search-results">{candidates.map((player) => <button key={player.id} onClick={() => onRequestAdd(player)} type="button"><PlayerIdentity player={player} /><span>Add</span></button>)}</div> : null}
+          <label><Search size={16} /><span className="sr-only">Search their players</span><input aria-label="Search their players" disabled={submitting} onChange={(event) => onQueryChange(event.target.value)} placeholder="Add a player to request" value={query} /></label>
+          {query.trim() ? <div className="squad-page__search-results">{candidates.map((player) => <button key={player.id} disabled={submitting} onClick={() => onRequestAdd(player)} type="button"><PlayerIdentity player={player} /><span>Add</span></button>)}</div> : null}
         </div> : null}
       </section>
       <Button disabled={offerPlayers.length === 0 || requestedPlayers.length === 0 || submitting} onClick={onSubmit} type="button">{submitting ? 'Sending…' : 'Send trade proposal'}</Button>

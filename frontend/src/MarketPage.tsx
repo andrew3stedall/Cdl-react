@@ -22,7 +22,7 @@ import { useModalLifecycle } from './components/ui/sheet';
 import type { SessionState, ThemePreset } from './contracts';
 import { managerNicknameForTeam } from './manager-nicknames';
 import { invalidateData, subscribeDataFreshness } from './data-freshness';
-import type { SquadApiFormGameweek, SquadApiPlayer, SquadApiTeam } from './squad-api';
+import { HttpSquadClient, type SquadApiFormGameweek, type SquadApiPlayer, type SquadApiTeam } from './squad-api';
 import { toPlayerCardFormHistory } from './player-form';
 import './market-page.css';
 
@@ -34,6 +34,7 @@ interface MarketPageProps {
 }
 
 const LoansPanel = lazy(() => import('./LoansPanel').then((module) => ({ default: module.LoansPanel })));
+const marketSquadClient = new HttpSquadClient();
 
 type MarketMode = 'discover' | 'interests' | 'trades' | 'draws' | 'loans';
 type PositionFilter = 'all' | 'GKP' | 'DEF' | 'MID' | 'FWD';
@@ -466,15 +467,7 @@ export function MarketPage({ currentPath, onNavigate, preset, session }: MarketP
     if (!target.draftTeamId || tradeSubmissionPending) return;
     setTradeSubmissionPending(true);
     try {
-      await fetchJson('/api/trades', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          offered_to_team_id: target.draftTeamId,
-          offered_player_ids: [offeredPlayerId],
-          requested_player_ids: [target.id],
-        }),
-      });
+      await marketSquadClient.createTrade(target.draftTeamId, [offeredPlayerId], [target.id]);
       setSelectedTradeTarget(null);
       setNotice(`Trade proposal for ${target.displayName} sent to ${target.ownerName ?? 'the selected manager'}.`);
       setRefreshKey((key) => key + 1);

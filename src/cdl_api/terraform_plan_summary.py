@@ -161,18 +161,51 @@ def _paths_overlap(left: str, right: str) -> bool:
     )
 
 
-def _is_known_cloud_run_rollout_drift(item: dict[str, JsonValue]) -> bool:
-    """Identify the known image and recovery-mount differences from staging rollouts."""
+def _traffic_routes(item: dict[str, JsonValue]) -> list[dict[str, JsonValue]]:
+    after = _as_object(item.get("after"))
+    routes = _as_list(after.get("traffic"))
+    return [
+        {"revision": _as_object(route).get("revision"), "percent": _as_object(route).get("percent")}
+        for route in routes
+    ]
+
+
+def _is_known_cloud_run_rollout_drift(
+    item: dict[str, JsonValue], managed: dict[str, JsonValue]
+) -> bool:
+    """Identify rollout drift only when the planned traffic pin matches live traffic."""
     changed_paths = item.get("changed_paths")
+    if (
+        item.get("type") not in KNOWN_CLOUD_RUN_ROLLOUT_DRIFT_TYPES
+        or not isinstance(changed_paths, list)
+        or not changed_paths
+    ):
+        return False
+
+    traffic_paths = {"traffic[0].revision", "traffic_statuses[0].revision"}
+    has_traffic_drift = any(path in traffic_paths for path in changed_paths)
+    known_paths = (
+        KNOWN_CLOUD_RUN_PROVIDER_METADATA_DRIFT_PATHS
+        | traffic_paths
+    )
+    known_nontraffic_path = lambda path: (
+        path in KNOWN_CLOUD_RUN_PROVIDER_METADATA_DRIFT_PATHS
+        or any(path.endswith(suffix) for suffix in KNOWN_CLOUD_RUN_ROLLOUT_DRIFT_PATH_SUFFIXES)
+    )
+    if not all(path in known_paths or known_nontraffic_path(path) for path in changed_paths):
+        return False
+
+    if not has_traffic_drift:
+        return True
+
+    live_routes = _traffic_routes(item)
+    planned_routes = _traffic_routes(managed)
     return (
-        item.get("type") in KNOWN_CLOUD_RUN_ROLLOUT_DRIFT_TYPES
-        and isinstance(changed_paths, list)
-        and bool(changed_paths)
-        and all(
-            path in KNOWN_CLOUD_RUN_PROVIDER_METADATA_DRIFT_PATHS
-            or any(path.endswith(suffix) for suffix in KNOWN_CLOUD_RUN_ROLLOUT_DRIFT_PATH_SUFFIXES)
-            for path in changed_paths
-        )
+        len(live_routes) == 1
+        and live_routes == planned_routes
+        and isinstance(live_routes[0].get("revision"), str)
+        and bool(live_routes[0]["revision"])
+        and live_routes[0].get("percent") == 100
     )
 
 
@@ -204,6 +237,7 @@ def _parse_changes(
                 "member": _as_string(after.get("member"), ""),
                 "role": _as_string(after.get("role"), ""),
                 "changed_paths": sorted(_changed_paths(before_value, after_value)),
+                "after": after_value,
             }
         )
     return parsed
@@ -244,7 +278,7 @@ def _classify_drift(
             refresh_only.append(item)
             continue
 
-        if _is_known_cloud_run_rollout_drift(item) and managed.get("changed_paths"):
+        if _is_known_cloud_run_rollout_drift(item, managed) and managed.get("changed_paths"):
             refresh_only.append(item)
             continue
 

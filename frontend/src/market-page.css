@@ -1055,8 +1055,8 @@
 .market-page__selected-carousel .market-page__selected-carousel-slide { flex: 0 0 var(--market-trade-slide-width); min-width: 0; padding: .1rem .2rem; }
 .market-page__selected-player-card { background: var(--card); border: 1px solid var(--destructive); border-radius: var(--radius); display: grid; gap: .4rem; min-height: 100%; min-width: 0; overflow: hidden; padding: .55rem; position: relative; }
 .market-page__selected-player-card--in { border-color: var(--primary); }
-.market-page__selected-player-header { justify-self: start; padding-inline-end: 2rem; }
-.market-page__selected-player-header .player-card__form { justify-content: flex-start; }
+.market-page__selected-player-header { justify-self: center; padding-inline-end: 0; }
+.market-page__selected-player-header .player-card__form { justify-content: center; }
 .market-page__selected-player-card .player-profile__comparison-chart { min-width: 0; overflow: hidden; }
 .market-page__selected-player-card .player-profile__comparison-chart .player-profile__substitution-shared-chart .player-profile__combined-chart-columns { grid-template-columns: repeat(5, minmax(0, 1fr)); min-width: 0; }
 .market-page__selected-player-card .player-profile__substitution-shared-chart { padding: .5rem; }

@@ -229,6 +229,12 @@ describe('MarketPage', () => {
 
     const tradeCarousel = container.querySelector('[aria-label="Trade player cards"]');
     expect(tradeCarousel?.querySelectorAll('.market-page__selected-carousel-slide')).toHaveLength(4);
+    expect(Array.from(tradeCarousel?.querySelectorAll('.market-page__selected-player-header .player-card__name') ?? []).map((name) => name.textContent)).toEqual([
+      'Owned Defender',
+      'O. Midfielder',
+      'Owned Forward',
+      'Owned Goalkeeper',
+    ]);
     expect(tradeCarousel?.querySelector('[aria-label="Next trade players"]')).not.toBeNull();
     expect(tradeCarousel?.querySelectorAll('.market-page__selected-player-card')).toHaveLength(4);
     expect(tradeCarousel?.querySelectorAll('.market-page__selected-player-card .player-card--token')).toHaveLength(4);

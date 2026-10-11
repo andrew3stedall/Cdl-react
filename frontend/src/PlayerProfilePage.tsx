@@ -1194,7 +1194,7 @@ export function mapHistoryFixture(row: SquadApiHistoryResponse['history'][number
     isHome: row.was_home,
     fdr: row.difficulty ?? null,
     fantasyPoints: row.minutes > 0 ? row.total_points : null,
-    minutesPlayed: row.minutes > 0 ? row.minutes : null,
+    minutesPlayed: row.minutes,
     stats: {
       goals: row.goals_scored,
       assists: row.assists,

@@ -1052,10 +1052,10 @@ function TradeProposalDrawer({ drawerRef, onClose, onSubmit, otherPlayers, owned
   }, []);
   const selectedOfferPlayers = offeredPlayerIds.map((id) => ownedPlayers.find((player) => player.id === id)).filter((player): player is MarketPlayer => player !== undefined);
   const selectedRequestPlayers = requestedPlayerIds.map((id) => otherPlayers.find((player) => player.id === id)).filter((player): player is MarketPlayer => player !== undefined);
-  const selectedAssets = [
-    ...selectedOfferPlayers.map((player) => ({ player, direction: 'out' as const, label: proposalType === 'loan' ? 'Player to loan' : 'You offer' })),
-    ...(proposalType === 'trade' ? selectedRequestPlayers.map((player) => ({ player, direction: 'in' as const, label: 'You request' })) : []),
-  ];
+  const selectedAssets = alternateTradeAssets<{ player: MarketPlayer; direction: 'in' | 'out'; label: string }>(
+    selectedOfferPlayers.map((player) => ({ player, direction: 'out' as const, label: proposalType === 'loan' ? 'Player to loan' : 'You offer' })),
+    proposalType === 'trade' ? selectedRequestPlayers.map((player) => ({ player, direction: 'in' as const, label: 'You request' })) : [],
+  );
   const tradeSquads = [
     createTradeFixtureSquad(ownedPlayers, true, 'Your squad', ownedPlayers[0]?.draftTeamId ?? 'trade-user-squad', ownedPlayers[0]?.draftTeamName ?? 'Your squad'),
     createTradeFixtureSquad(otherPlayers, false, `${target.ownerName ?? 'Their'} squad`, target.draftTeamId ?? 'trade-opponent-squad', target.draftTeamName ?? target.ownerName ?? 'Their squad'),
@@ -1166,6 +1166,15 @@ function TradeSelectedCarousel({ assets, onRemove }: {
       ) : <div className="market-page__selected-carousel-empty">Select players above to build your proposal.</div>}
     </section>
   );
+}
+
+function alternateTradeAssets<T>(outgoing: T[], incoming: T[]): T[] {
+  const alternating: T[] = [];
+  for (let index = 0; index < Math.max(outgoing.length, incoming.length); index += 1) {
+    if (outgoing[index] !== undefined) alternating.push(outgoing[index]);
+    if (incoming[index] !== undefined) alternating.push(incoming[index]);
+  }
+  return alternating;
 }
 
 function CarouselDots({ assets }: { assets: Array<{ player: MarketPlayer; direction: 'in' | 'out'; label: string }> }) {

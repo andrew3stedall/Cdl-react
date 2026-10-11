@@ -226,6 +226,11 @@ describe('MarketPage', () => {
     expect(offerCarousel?.querySelector('[aria-label="Next you offer players"]')).not.toBeNull();
     expect(container.querySelector('.market-page__selected-strip[aria-label="You request"] .market-page__selected-player-card-details')?.textContent).toContain('Other Owned Midfielder');
     expect(container.querySelector('[data-testid="trade-player-comparison"]')).not.toBeNull();
+    await act(async () => {
+      (offerCarousel?.querySelector('button[aria-label="Remove Owned Forward from You offer"]') as HTMLButtonElement).click();
+      await Promise.resolve();
+    });
+    expect(container.querySelectorAll('.market-page__selected-strip[aria-label="You offer"] .market-page__selected-carousel-slide')).toHaveLength(2);
 
     act(() => root.unmount());
   });

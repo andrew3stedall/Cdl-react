@@ -1156,7 +1156,7 @@ function SelectedPlayerCarousel({ direction, label, onToggle, players, selectedI
             {players.map((player, index) => (
               <CarouselItem aria-label={`${player.displayName}, ${index + 1} of ${players.length}`} className="market-page__selected-carousel-slide" key={`${label}:${player.id}`}>
                 <article className="market-page__selected-player-card" data-testid="trade-selected-player-card">
-                  <PlayerCard ariaLabel={`Player card for ${player.displayName}`} className="market-page__selected-player-header" formPosition="below" layout="token" player={toTradeRosterPlayer(player, 'home')} size="xs" />
+                  <PlayerCard ariaLabel={`Player card for ${player.displayName}`} className="market-page__selected-player-header" formPosition="below" layout="token" player={toTradeRosterPlayer(player, 'home')} size="sm" />
                   <PlayerFormMinutesGroupComparison players={[toProfilePlayer(player)]} squadClient={marketSquadClient} />
                   <button aria-label={`Remove ${player.displayName} from ${label}`} className="market-page__selected-player-card-remove" onClick={() => onToggle(player)} type="button">×</button>
                 </article>

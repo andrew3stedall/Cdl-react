@@ -158,7 +158,7 @@ def authorize(
     )
     scope_list = "".join(
         "<li><label><input type='checkbox' name='grant_scope' "
-        f"value='{escape(item)}' checked> {escape(item)}</label></li>"
+        f"value='{escape(item)}'{ ' checked' if item == 'cdl:read' else ''}> {escape(item)}</label></li>"
         for item in scopes
     )
     callback_host = escape(urlsplit(redirect_uri).hostname or "unknown host")

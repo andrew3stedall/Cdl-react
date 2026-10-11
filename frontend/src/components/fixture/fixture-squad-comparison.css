@@ -204,6 +204,10 @@
   background: color-mix(in srgb, var(--primary) 7%, transparent);
 }
 
+.fixture-squad-list__player-row--button.is-selected td {
+  background: color-mix(in srgb, var(--primary) 15%, var(--card));
+}
+
 .fixture-squad-list__player-row--button:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: -2px;
@@ -488,6 +492,11 @@
   border-radius: 999px;
   outline: 2px solid var(--ring);
   outline-offset: 2px;
+}
+
+.fixture-squad-pitch__player.is-selected .fixture-squad-player-button {
+  border-radius: 999px;
+  box-shadow: 0 0 0 2px var(--primary), 0 0 0 4px color-mix(in srgb, var(--primary) 24%, transparent);
 }
 
 .fixture-squad-player-card--substituted-in::after,

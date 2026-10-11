@@ -636,7 +636,6 @@ export function SubstitutionReviewDrawer({
     createReviewPlayerGroup('source', sourcePlayer, histories.source, sourceFixtures),
     createReviewPlayerGroup('target', targetPlayer, histories.target, targetFixtures),
   ] satisfies ReviewPlayerGroup[];
-  const formFixtures = reviewGroups.flatMap((group) => chartFixtureSlots(group.fixtures, REVIEW_FIXTURE_COUNT));
   const opponentFixtures = reviewGroups.flatMap((group) => chartFixtureSlots(group.opponent.fixtures, REVIEW_FIXTURE_COUNT));
 
   return (
@@ -650,18 +649,12 @@ export function SubstitutionReviewDrawer({
 
       <div className="player-profile__content">
         <section aria-label="Substitution players" className="player-profile__card player-profile__comparison-card">
-          <ChartCard compact className="player-profile__substitution-shared-chart" title="Form & minutes">
-            <ReviewChartGroupHeaders
-              groups={reviewGroups.map((group) => ({
-                ariaLabel: `Fixtures for ${group.player.display_name}`,
-                content: <PlayerCard ariaLabel={`Player card for ${group.player.display_name}`} className="player-profile__player-card" formPosition="hidden" layout="token" player={toPlayerCardPlayer(group.player, group.nextFixtures)} size="xs" />,
-                id: group.id,
-                slotCount: REVIEW_FIXTURE_COUNT,
-              }))}
-              label="Substitution players"
-            />
-            {loading ? <ChartEmpty message="Loading the latest five fixtures…" /> : <CombinedFormMinutesChart fixtureCount={REVIEW_CHART_SLOT_COUNT} fixtures={formFixtures} fdrDisplayMode={fdrDisplayMode} groupBreakAfter={REVIEW_FIXTURE_COUNT} onFixtureClick={(fixture, index) => setChartDetail({ kind: 'form', fixture: fixture as ProfileFixture, playerName: reviewGroups[index < REVIEW_FIXTURE_COUNT ? 0 : 1]?.player.display_name })} windowLabel="latest five per player" />}
-          </ChartCard>
+          <ReviewFormMinutesChart
+            fdrDisplayMode={fdrDisplayMode}
+            groups={reviewGroups}
+            loading={loading}
+            onFixtureClick={(fixture, index) => setChartDetail({ kind: 'form', fixture, playerName: reviewGroups[index < REVIEW_FIXTURE_COUNT ? 0 : 1]?.player.display_name })}
+          />
           <ChartCard className="player-profile__substitution-shared-chart" title="Points against">
             <ReviewChartGroupHeaders
               groups={reviewGroups.map((group) => ({
@@ -699,6 +692,88 @@ export function SubstitutionReviewDrawer({
       ) : null}
     </main>
   );
+}
+
+/** The form/minutes comparison used in substitution review, without substitution actions or opponent chart. */
+export function PlayerFormMinutesComparison({
+  firstPlayer,
+  secondPlayer,
+  squadClient = defaultSquadClient,
+}: {
+  firstPlayer: SquadApiPlayer;
+  secondPlayer: SquadApiPlayer;
+  squadClient?: PlayerProfileSquadClient;
+}) {
+  const themePreset = useOptionalThemePreset();
+  const fdrDisplayMode = themePreset?.fdrDisplayMode ?? 'font';
+  const [histories, setHistories] = useState<{ first: SquadApiHistoryResponse | null; second: SquadApiHistoryResponse | null }>({ first: null, second: null });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [chartDetail, setChartDetail] = useState<Extract<ChartDetailSelection, { kind: 'form' }> | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    setLoading(true);
+    setError(null);
+    void Promise.allSettled([
+      squadClient.getPlayerHistory(firstPlayer.id),
+      squadClient.getPlayerHistory(secondPlayer.id),
+    ]).then(([firstResult, secondResult]) => {
+      if (!mounted) return;
+      const firstHistory = firstResult.status === 'fulfilled' ? firstResult.value : null;
+      const secondHistory = secondResult.status === 'fulfilled' ? secondResult.value : null;
+      setHistories({ first: firstHistory, second: secondHistory });
+      if (!firstHistory || !secondHistory) setError('One or both player histories are unavailable.');
+      setLoading(false);
+    });
+    return () => { mounted = false; };
+  }, [firstPlayer.id, secondPlayer.id, squadClient]);
+
+  const groups = [firstPlayer, secondPlayer].map((player, index) => {
+    const history = index === 0 ? histories.first : histories.second;
+    const fixtures = (history?.history ?? []).map((row) => mapHistoryFixture(row, player.position)).slice(-REVIEW_FIXTURE_COUNT);
+    return { fixtures, id: index === 0 ? 'first' : 'second', player };
+  });
+  return <div className="player-profile__comparison-chart">
+    <ReviewFormMinutesChart
+      fdrDisplayMode={fdrDisplayMode}
+      groups={groups}
+      loading={loading}
+      onFixtureClick={(fixture, index) => setChartDetail({ kind: 'form', fixture, playerName: groups[index < REVIEW_FIXTURE_COUNT ? 0 : 1]?.player.display_name })}
+      playersLabel="Trade comparison players"
+    />
+    {!loading && error ? <p className="player-profile__inline-error" role="status">{error}</p> : null}
+      {chartDetail ? <PlayerChartDetailDialog
+      kind="form"
+      onClose={() => setChartDetail(null)}
+      sections={formDetailSections(chartDetail.fixture)}
+      subtitle={`${chartDetail.playerName ?? 'Player'} · ${formatOpponentLabel(chartDetail.fixture.opponentShortName, chartDetail.fixture.isHome)}`}
+      summary={formDetailSummary(chartDetail.fixture)}
+      title={`GW${chartDetail.fixture.gameweek} · ${formatOpponentLabel(chartDetail.fixture.opponentShortName, chartDetail.fixture.isHome)}`}
+    /> : null}
+  </div>;
+}
+
+function ReviewFormMinutesChart({ fdrDisplayMode, groups, loading, onFixtureClick, playersLabel = 'Substitution players' }: {
+  fdrDisplayMode: 'font' | 'fill';
+  groups: Array<{ fixtures: ProfileFixture[]; id: string; nextFixtures?: ProfileNextFixture[]; player: SquadApiPlayer }>;
+  loading: boolean;
+  onFixtureClick: (fixture: ProfileFixture, index: number) => void;
+  playersLabel?: string;
+}) {
+  const fixtures = groups.flatMap((group) => chartFixtureSlots(group.fixtures, REVIEW_FIXTURE_COUNT));
+  return <ChartCard compact className="player-profile__substitution-shared-chart" title="Form & minutes">
+    <ReviewChartGroupHeaders
+      groups={groups.map((group) => ({
+        ariaLabel: `Fixtures for ${group.player.display_name}`,
+        content: <PlayerCard ariaLabel={`Player card for ${group.player.display_name}`} className="player-profile__player-card" formPosition="hidden" layout="token" player={toPlayerCardPlayer(group.player, group.nextFixtures)} size="xs" />,
+        id: group.id,
+        slotCount: REVIEW_FIXTURE_COUNT,
+      }))}
+      label={playersLabel}
+    />
+    {loading ? <ChartEmpty message="Loading the latest five fixtures…" /> : <CombinedFormMinutesChart fixtureCount={REVIEW_CHART_SLOT_COUNT} fixtures={fixtures} fdrDisplayMode={fdrDisplayMode} groupBreakAfter={REVIEW_FIXTURE_COUNT} onFixtureClick={(fixture, index) => onFixtureClick(fixture as ProfileFixture, index)} windowLabel="latest five per player" />}
+  </ChartCard>;
 }
 
 const REVIEW_FIXTURE_COUNT = 5;

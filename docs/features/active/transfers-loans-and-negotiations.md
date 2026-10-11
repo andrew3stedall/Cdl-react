@@ -6,12 +6,12 @@ Define in-app trade/loan negotiation, offer counters, party agreement, commissio
 
 ## Status
 
-Checkpoint 3 complete. Client trade creation is single-flight while a proposal request is pending; the send control remains disabled until the request resolves, while failed submissions can be retried. The Squad trade planner supports multiple owned players on either side of an offer and compares selected players on points, form, xG, and xA before submission.
+Checkpoint 3 complete. Client trade creation is single-flight while a proposal request is pending; the send control remains disabled until the request resolves, while failed submissions can be retried. Both trade planners support multiple players on either side of an offer and compare selected players on points, form, xG, and xA. The Market planner adds searchable roster results and the substitution-review Form & minutes chart for its selected offer/request pair.
 
 ## Business Rules
 
 - Negotiations happen in app through structured offers and counters.
-- The Squad trade planner lets a manager select one or more players to offer and request, review both sides together, and compare each selected player's points, form, xG, and xA before sending the proposal.
+- The trade planners let a manager select one or more players to offer and request, review both sides together, and compare selected players on points, form, xG, and xA before sending the proposal.
 - Both parties must agree before approval.
 - Commissioner approval is required before actioning a transfer or loan.
 - Commissioner-involved transfers require vice commissioner approval.
@@ -104,4 +104,4 @@ Loan extension and permanent conversion remain unimplemented. The active rules c
 
 ## Market trade planning
 
-Starting a trade from a Market player opens the same multi-player plan flow with that player preselected under “You request” and their manager fixed as the counterparty. Managers can add multiple players on either side, inspect the full player profile charts from each selected asset, and submit the selected player ID arrays in one proposal.
+Starting a trade from a Market player opens the same multi-player plan flow with that player preselected under “You request” and their manager fixed as the counterparty. Managers add players from searchable roster results, choose one selected player on each side to compare, and review their latest five fixtures in the same Form & minutes chart used by substitution review. The planner omits the profile's separate Points against chart and submits the selected player ID arrays in one proposal.

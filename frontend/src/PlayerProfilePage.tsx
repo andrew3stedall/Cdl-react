@@ -805,6 +805,7 @@ export function PlayerFormMinutesGroupComparison({ players, squadClient = defaul
         setChartDetail({ fixture, playerName: groups[playerIndex]?.player.display_name ?? 'Player' });
       }}
       playersLabel="Trade players"
+      showGroupHeaders={players.length > 1}
     />
     {failedIds.length > 0 && !loading ? <p className="player-profile__inline-error" role="status">Some player histories are unavailable.</p> : null}
     {chartDetail ? <PlayerChartDetailDialog
@@ -818,16 +819,17 @@ export function PlayerFormMinutesGroupComparison({ players, squadClient = defaul
   </div>;
 }
 
-function ReviewFormMinutesChart({ fdrDisplayMode, groups, loading, onFixtureClick, playersLabel = 'Substitution players' }: {
+function ReviewFormMinutesChart({ fdrDisplayMode, groups, loading, onFixtureClick, playersLabel = 'Substitution players', showGroupHeaders = true }: {
   fdrDisplayMode: 'font' | 'fill';
   groups: Array<{ fixtures: ProfileFixture[]; id: string; nextFixtures?: ProfileNextFixture[]; player: SquadApiPlayer }>;
   loading: boolean;
   onFixtureClick: (fixture: ProfileFixture, index: number) => void;
   playersLabel?: string;
+  showGroupHeaders?: boolean;
 }) {
   const fixtures = groups.flatMap((group) => chartFixtureSlots(group.fixtures, REVIEW_FIXTURE_COUNT));
   return <ChartCard compact className="player-profile__substitution-shared-chart" title="Form & minutes">
-    <ReviewChartGroupHeaders
+    {showGroupHeaders ? <ReviewChartGroupHeaders
       groups={groups.map((group) => ({
         ariaLabel: `Fixtures for ${group.player.display_name}`,
         content: <PlayerCard ariaLabel={`Player card for ${group.player.display_name}`} className="player-profile__player-card" formPosition="hidden" layout="token" player={toPlayerCardPlayer(group.player, group.nextFixtures)} size="xs" />,
@@ -835,7 +837,7 @@ function ReviewFormMinutesChart({ fdrDisplayMode, groups, loading, onFixtureClic
         slotCount: REVIEW_FIXTURE_COUNT,
       }))}
       label={playersLabel}
-    />
+    /> : null}
     {loading ? <ChartEmpty message="Loading the latest five fixtures…" /> : <CombinedFormMinutesChart fixtureCount={REVIEW_FIXTURE_COUNT * groups.length} fixtures={fixtures} fdrDisplayMode={fdrDisplayMode} groupBreakAfter={groups.slice(1).map((_, index) => (index + 1) * REVIEW_FIXTURE_COUNT)} onFixtureClick={(fixture, index) => onFixtureClick(fixture as ProfileFixture, index)} windowLabel="latest five per player" />}
   </ChartCard>;
 }

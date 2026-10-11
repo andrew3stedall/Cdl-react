@@ -68,6 +68,23 @@ def test_response_schemas_publish_concrete_contract_fields() -> None:
     assert all("x-cdl-response-contract" not in str(tool.response_schema) for tool in TOOL_REGISTRY)
 
 
+def test_action_tools_expose_conditional_requirements_and_route_response_shapes() -> None:
+    invite = get_tool("manage_league_invite")
+    assert invite.input_schema["allOf"][0] == {
+        "if": {"properties": {"action": {"const": "create"}}},
+        "then": {"required": ["team_id"]},
+    }
+    assert invite.input_schema["allOf"][1] == {
+        "if": {"properties": {"action": {"const": "revoke"}}},
+        "then": {"required": ["invite_id"]},
+    }
+    assert "revoked" in str(invite.response_schema)
+    assert get_tool("submit_free_agency_preferences").response_contract == (
+        "list[FreeAgencyPreference]"
+    )
+    assert "league_id" not in get_tool("list_trade_proposals").input_schema["properties"]
+
+
 def test_each_registry_target_is_an_existing_service_or_repository() -> None:
     owners = {
         cls.__name__

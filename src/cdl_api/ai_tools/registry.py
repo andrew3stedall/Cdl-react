@@ -88,6 +88,20 @@ _CONTRACT_MODELS = _contract_models()
 
 
 def _model_schema(model_name: str) -> dict[str, Any]:
+    if model_name == "LeagueInviteRevocationResponse":
+        return {
+            "type": "object",
+            "properties": {"revoked": {"type": "boolean"}},
+            "required": ["revoked"],
+            "additionalProperties": False,
+        }
+    if model_name == "LiveDraftCreatedResponse":
+        return {
+            "type": "object",
+            "properties": {"id": {"type": "string"}, "status": {"type": "string"}},
+            "required": ["id", "status"],
+            "additionalProperties": False,
+        }
     if model_name == "LiveDraftQueueResponse":
         return {
             "type": "object",
@@ -160,6 +174,7 @@ def _tool(
     required: tuple[str, ...] = (),
     paginated: bool = False,
     response_contract: str = "CdlToolResult",
+    conditional_required: tuple[tuple[dict[str, Any], tuple[str, ...]], ...] = (),
 ) -> ToolDefinition:
     schema_properties = dict(properties or {})
     required_fields = list(required)
@@ -176,7 +191,19 @@ def _tool(
         name=name,
         title=title,
         description=description,
-        input_schema=_object(schema_properties, required=tuple(required_fields)),
+        input_schema={
+            **_object(schema_properties, required=tuple(required_fields)),
+            **(
+                {
+                    "allOf": [
+                        {"if": {"properties": condition}, "then": {"required": list(fields)}}
+                        for condition, fields in conditional_required
+                    ]
+                }
+                if conditional_required
+                else {}
+            ),
+        },
         response_contract=response_contract,
         response_schema=_response_schema(response_contract),
         version="1.0.0",
@@ -580,7 +607,7 @@ _TOOLS = (
         ToolRole.MANAGER,
         "FreeAgencyDrawService",
         required=("draw_id", "player_ids"),
-        response_contract="FreeAgencyResultsResponse",
+        response_contract="list[FreeAgencyPreference]",
     ),
     _tool(
         "manage_free_agency_draw",
@@ -598,6 +625,12 @@ _TOOLS = (
         ToolRole.COMMISSIONER,
         "FreeAgencyDrawService",
         required=("action",),
+        conditional_required=(
+            ({"action": {"const": "create"}}, ("gameweek", "closes_at")),
+            ({"action": {"const": "open"}}, ("draw_id",)),
+            ({"action": {"const": "lock"}}, ("draw_id",)),
+            ({"action": {"const": "process"}}, ("draw_id",)),
+        ),
         response_contract="FreeAgencyDrawResponse",
     ),
     _tool(
@@ -615,7 +648,11 @@ _TOOLS = (
         ToolRole.COMMISSIONER,
         "PostgreSQLLeagueMembershipRepository | InMemoryLeagueMembershipRepository",
         required=("action",),
-        response_contract="LeagueInviteResponse",
+        conditional_required=(
+            ({"action": {"const": "create"}}, ("team_id",)),
+            ({"action": {"const": "revoke"}}, ("invite_id",)),
+        ),
+        response_contract="LeagueInviteResponse | LeagueInviteRevocationResponse",
     ),
     _tool(
         "get_live_draft_room",
@@ -717,7 +754,8 @@ _TOOLS = (
         ToolRole.COMMISSIONER,
         "LiveDraftService",
         required=("action",),
-        response_contract="LiveDraftRoomResponse",
+        conditional_required=(({"action": {"const": "create"}}, ("mode",)),),
+        response_contract="LiveDraftCreatedResponse | LiveDraftRoomResponse",
     ),
     _tool(
         "manage_colour_palette",
@@ -735,7 +773,7 @@ _TOOLS = (
                 "minItems": 4,
                 "maxItems": 5,
             },
-            "fdr_mode": {"type": "string", "enum": ["anchors", "all"]},
+            "mode": {"type": "string", "enum": ["anchors", "all"]},
             "min": {"type": "string", "pattern": "^#[0-9A-Fa-f]{6}$"},
             "second": {"type": "string", "pattern": "^#[0-9A-Fa-f]{6}$"},
             "mid": {"type": "string", "pattern": "^#[0-9A-Fa-f]{6}$"},
@@ -747,6 +785,17 @@ _TOOLS = (
         ToolRole.AUTHENTICATED,
         "FdrCustomPaletteService | PlayerColourPaletteService",
         required=("action", "palette_type"),
+        conditional_required=(
+            ({"action": {"const": "delete"}}, ("palette_id",)),
+            (
+                {"action": {"const": "create"}, "palette_type": {"const": "fdr"}},
+                ("name", "mode", "min", "second", "mid", "fourth", "max"),
+            ),
+            (
+                {"action": {"const": "create"}, "palette_type": {"const": "player"}},
+                ("name", "family", "colours"),
+            ),
+        ),
         response_contract="FdrCustomPalette | PlayerColourPalette | null",
     ),
     _tool(
@@ -792,7 +841,7 @@ _TOOLS = (
         "list_pending_approvals",
         "List pending trade and loan approvals",
         "Return pending approvals that the authenticated user is eligible to review.",
-        {"league_id": {"type": "string", "minLength": 1}},
+        None,
         _READ,
         ToolRisk.READ,
         ToolRole.ELIGIBLE_APPROVER,
@@ -828,7 +877,7 @@ _TOOLS = (
         "list_trade_proposals",
         "List my trade proposals",
         "Return trade proposals visible to the authenticated manager.",
-        {"league_id": {"type": "string", "minLength": 1}},
+        None,
         _READ,
         ToolRisk.READ,
         ToolRole.MANAGER,

@@ -39,7 +39,7 @@ def test_staging_runtime_is_postgres_ready_but_disabled_by_default() -> None:
     assert "repository_mode               = var.runtime_repository_mode" in main
     assert "CDL_DATABASE_URL" in main
     assert "CDL_DEVELOPMENT_LOGIN_SECRET" in main
-    assert 'CDL_OAUTH_SIGNING_SECRET = {' in main
+    assert "CDL_OAUTH_SIGNING_SECRET = {" in main
     assert 'module.runtime_secrets.secret_names["cdl-mcp-oauth-signing-secret"]' in main
     assert re.search(
         r'CDL_OAUTH_ISSUER_URL\s*=\s*"https://cdl-react-staging-api-tkhbn7jfsa-ts.a.run.app"',

@@ -1,6 +1,6 @@
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
-import { beforeEach, describe, expect, test } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { FixtureSquadComparison, sortFixtureListPlayers } from './FixtureSquadComparison';
 import type { FixtureSquad, FixtureSquadPlayer } from '../../league-api';
@@ -102,6 +102,22 @@ beforeEach(() => {
 });
 
 describe('FixtureSquadComparison', () => {
+  test('supports selectable highlighted players in the shared fixture views', async () => {
+    const onPlayerClick = vi.fn();
+    const container = document.createElement('div');
+    document.body.append(container);
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(<FixtureSquadComparison attackDirection="down" gameweekStatus="future" onPlayerClick={onPlayerClick} playerInteraction="select" selectedPlayerIds={new Set(['alpha-mid'])} showViewToggle={false} squads={squads()} view="list" />);
+    });
+    const row = container.querySelector<HTMLTableRowElement>('[data-player-id="alpha-mid"]');
+    expect(row?.getAttribute('aria-pressed')).toBe('true');
+    expect(row?.classList.contains('is-selected')).toBe(true);
+    await act(async () => row?.click());
+    expect(onPlayerClick).toHaveBeenCalledWith(expect.objectContaining({ id: 'alpha-mid' }));
+    await act(async () => root.unmount());
+  });
+
   test('starts in pitch view and uses the Squad-style pitch/list toggle', async () => {
     const { container, root } = await renderComparison();
 

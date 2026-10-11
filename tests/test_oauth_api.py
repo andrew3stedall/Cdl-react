@@ -66,6 +66,8 @@ def test_discovery_registration_consent_and_revoke_flow() -> None:
     assert consent.status_code == 200
     assert "Test Assistant" in consent.text
     assert "not verified" in consent.text
+    assert "value='cdl:read' checked" in consent.text
+    assert "value='cdl:write' checked" not in consent.text
     csrf = client.cookies.get("cdl_oauth_consent")
     decision = client.post(
         "/oauth/authorize/decision",

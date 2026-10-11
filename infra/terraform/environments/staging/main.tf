@@ -213,6 +213,11 @@ module "cloud_run_api" {
     CDL_DATABASE_POOL_TIMEOUT_SECONDS = "10"
     CDL_DATABASE_POOL_RECYCLE_SECONDS = "300"
     CDL_COMMISSIONER_EMAILS           = "andrew3stedall@gmail.com"
+    CDL_OAUTH_ISSUER_URL              = "https://cdl-react-staging-api-tkhbn7jfsa-ts.a.run.app"
+    CDL_MCP_OAUTH_ENABLED             = "true"
+    CDL_MCP_REMOTE_ENABLED            = "true"
+    CDL_MCP_BROWSER_ENABLED           = "true"
+    CDL_MCP_EXECUTION_ENABLED         = "true"
   }
   secret_environment_variables = merge({
     CDL_DATABASE_URL = {
@@ -220,6 +225,9 @@ module "cloud_run_api" {
     }
     CDL_DEVELOPMENT_LOGIN_SECRET = {
       secret = module.runtime_secrets.secret_names["cdl-development-login-secret"]
+    }
+    CDL_OAUTH_SIGNING_SECRET = {
+      secret = module.runtime_secrets.secret_names["cdl-mcp-oauth-signing-secret"]
     }
     }, var.enable_google_sign_in ? {
     CDL_GOOGLE_ALLOWED_EMAILS = {

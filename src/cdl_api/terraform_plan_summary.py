@@ -179,10 +179,8 @@ def _is_known_cloud_run_rollout_drift(
 
     traffic_paths = {"traffic[0].revision", "traffic_statuses[0].revision"}
     has_traffic_drift = any(path in traffic_paths for path in changed_paths)
-    known_paths = (
-        KNOWN_CLOUD_RUN_PROVIDER_METADATA_DRIFT_PATHS
-        | traffic_paths
-    )
+    known_paths = KNOWN_CLOUD_RUN_PROVIDER_METADATA_DRIFT_PATHS | traffic_paths
+
     def known_nontraffic_path(path: str) -> bool:
         return (
             path in KNOWN_CLOUD_RUN_PROVIDER_METADATA_DRIFT_PATHS

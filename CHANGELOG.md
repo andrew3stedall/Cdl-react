@@ -2,7 +2,6 @@
 
 - Keep each selected trade or loan player with their own form-and-minutes chart in the offer/request carousel, with positive and negative navigation indicators.
 - Combine offered and requested players into one horizontal chart-card carousel and reuse the League fixture pitch/list components for trade player selection.
-- Combine offered and requested players into one horizontal chart-card carousel and reuse the League fixture pitch/list components for trade player selection.
 
 ## 2026-10-06 - Gate final settlement on verified event-live data
 
@@ -20,6 +19,15 @@
 # Changelog
 
 ## Unreleased
+- Keep multi-player trade carousels scrollable while showing two selected players at once.
+
+- Display selected trade and loan players as fixture-styled carousel cards, with two cards visible per side and controls for additional players.
+
+- Added feature-flagged remote MCP Streamable HTTP and same-origin browser WebMCP transport adapters for #592. Both advertise the shared task registry, schemas, output contracts, risk hints, structured errors and signed user/tool-bound pagination cursors; remote calls require CDL OAuth bearer scopes and browser calls use the authenticated CDL session. Tool execution remains fail-closed until the #593 authorization gateway is installed.
+
+- Implemented the MCP OAuth authorization server for #591: RFC 8414 discovery, public-client registration, authenticated per-scope consent with PKCE S256, short-lived audience-bound access tokens, rotating refresh tokens with replay revocation, persistent PostgreSQL client/code/connection records, and per-connection revocation. OAuth remains feature-flagged off by default.
+
+- Added the initial typed WebMCP/remote MCP tool catalogue, permission and risk metadata, bounded pagination schemas, capability inventory, and registry contract tests for #590. Tools dispatch only through existing business services; OAuth and execution gates are delivered in dependent issues.
 
 - Added a multi-player trade planner in Squad. Managers can add or remove players on either side, compare selected players on points, form, xG, and xA, then submit the complete offer. Added regression coverage for a multi-player proposal.
 
@@ -713,3 +721,15 @@
 - Added backend integration tests for preference API round trip.
 - Added backend service tests for preference defaults, persistence, and unsupported preset fallback.
 - Feature document remains under `docs/features/active/` until CI validation passes.
+## 2026-10-11 - Add AI execution grants and approvals
+
+### Added
+
+- Added manually activated 60-minute execution grants, exact-action approval proposals, a CSRF-protected CDL approval page, grant revocation, per-user AI activity and 90-day routine audit retention.
+- Added current league-role checks and a shared execution gateway for remote MCP and browser WebMCP calls, controlled by `MCP_EXECUTION_ENABLED`.
+- Documented the execution gateway, state binding, retention and rollout policy.
+
+### Validation
+
+- Added execution policy tests for grants, exact-action/idempotency binding, state changes, ownership and audit redaction/retention.
+- Consequential execution remains fail-closed for any action without an installed existing-service adapter.

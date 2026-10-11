@@ -42,7 +42,7 @@ def test_staging_runtime_is_postgres_ready_but_disabled_by_default() -> None:
     assert 'CDL_OAUTH_SIGNING_SECRET = {' in main
     assert 'module.runtime_secrets.secret_names["cdl-mcp-oauth-signing-secret"]' in main
     assert re.search(
-        r'CDL_OAUTH_ISSUER_URL\\s*=\\s*"https://cdl-react-staging-api-tkhbn7jfsa-ts.a.run.app"',
+        r'CDL_OAUTH_ISSUER_URL\s*=\s*"https://cdl-react-staging-api-tkhbn7jfsa-ts.a.run.app"',
         main,
     )
     for flag in (
@@ -51,7 +51,7 @@ def test_staging_runtime_is_postgres_ready_but_disabled_by_default() -> None:
         "CDL_MCP_BROWSER_ENABLED",
         "CDL_MCP_EXECUTION_ENABLED",
     ):
-        assert re.search(rf'{flag}\\s*=\\s*"true"', main)
+        assert re.search(rf'{flag}\s*=\s*"true"', main)
     assert "CDL_GOOGLE_ALLOWED_EMAILS" in main
     assert "CDL_GOOGLE_CLIENT_ID" in main
     assert "var.enable_google_sign_in ?" in main

@@ -32,6 +32,7 @@ locals {
     "cdl-development-login-secret",
     "cdl-google-allowed-emails",
     "cdl-google-client-id",
+    "cdl-mcp-oauth-signing-secret",
     "cdl-session-cookie-secret",
   ])
 
@@ -40,6 +41,7 @@ locals {
     "cdl-development-login-secret",
     "cdl-google-allowed-emails",
     "cdl-google-client-id",
+    "cdl-mcp-oauth-signing-secret",
   ])
 }
 

@@ -39,6 +39,9 @@ class Settings(BaseSettings):
     frontend_dist_dir: Path | None = None
     fpl_api_base_url: str = "https://fantasy.premierleague.com/api"
     fpl_api_timeout_seconds: float = Field(default=20.0, gt=0, le=60)
+    mcp_oauth_enabled: bool = False
+    oauth_issuer_url: str = "http://localhost:8000"
+    oauth_signing_secret: str = ""
 
     model_config = SettingsConfigDict(env_prefix="CDL_", env_file=".env")
 
@@ -87,14 +90,20 @@ class Settings(BaseSettings):
         return self.environment != "production"
 
     def validate_protected_environment(self) -> None:
-        if self.environment != "production":
-            return
-        if self.development_login_secret == DEFAULT_DEVELOPMENT_LOGIN_SECRET:
-            raise RuntimeError("Production requires a non-default login secret.")
-        if not self.session_cookie_secure:
-            raise RuntimeError("Production requires secure session cookies.")
-        if self.repository_mode != "postgres" or not self.database_url.strip():
-            raise RuntimeError("Production requires PostgreSQL persistence.")
+        if self.environment == "production":
+            if self.development_login_secret == DEFAULT_DEVELOPMENT_LOGIN_SECRET:
+                raise RuntimeError("Production requires a non-default login secret.")
+            if not self.session_cookie_secure:
+                raise RuntimeError("Production requires secure session cookies.")
+            if self.repository_mode != "postgres" or not self.database_url.strip():
+                raise RuntimeError("Production requires PostgreSQL persistence.")
+        if self.mcp_oauth_enabled and (
+            not self.oauth_issuer_url.startswith("https://")
+            or len(self.oauth_signing_secret.encode("utf-8")) < 32
+        ):
+            raise RuntimeError(
+                "Enabled MCP OAuth requires an HTTPS issuer and a 32-byte signing secret."
+            )
 
     @property
     def commissioner_email_set(self) -> set[str]:

@@ -15,6 +15,8 @@
 
 ## Unreleased
 
+- Implemented the MCP OAuth authorization server for #591: RFC 8414 discovery, public-client registration, authenticated per-scope consent with PKCE S256, short-lived audience-bound access tokens, rotating refresh tokens with replay revocation, persistent PostgreSQL client/code/connection records, and per-connection revocation. OAuth remains feature-flagged off by default.
+
 - Added the initial typed WebMCP/remote MCP tool catalogue, permission and risk metadata, bounded pagination schemas, capability inventory, and registry contract tests for #590. Tools dispatch only through existing business services; OAuth and execution gates are delivered in dependent issues.
 
 - Added a multi-player trade planner in Squad. Managers can add or remove players on either side, compare selected players on points, form, xG, and xA, then submit the complete offer. Added regression coverage for a multi-player proposal.

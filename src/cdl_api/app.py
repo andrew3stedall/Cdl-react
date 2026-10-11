@@ -16,6 +16,7 @@ from cdl_api.routers.modernisation_competition_experience import router as compe
 from cdl_api.routers.modernisation_history import router as history_router
 from cdl_api.routers.modernisation_squad_movement import router as movement_router
 from cdl_api.routers.modernisation_weekly import router as modernisation_weekly_router
+from cdl_api.routers.oauth import router as oauth_router
 from cdl_api.routers.preferences import router as preferences_router
 from cdl_api.routers.private_scouting import router as private_scouting_router
 from cdl_api.routers.rules import router as rules_router
@@ -57,6 +58,7 @@ def create_app() -> FastAPI:
             )
         )
     app.include_router(auth_router, prefix=settings.api_prefix)
+    app.include_router(oauth_router, prefix="")
     app.include_router(dashboard_router, prefix=settings.api_prefix)
     app.include_router(fdr_router, prefix=settings.api_prefix)
     app.include_router(fpl_data_router, prefix=settings.api_prefix)

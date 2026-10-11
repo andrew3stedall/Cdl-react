@@ -15,6 +15,8 @@
 
 ## Unreleased
 
+- Added the initial typed WebMCP/remote MCP tool catalogue, permission and risk metadata, bounded pagination schemas, capability inventory, and registry contract tests for #590. Tools dispatch only through existing business services; OAuth and execution gates are delivered in dependent issues.
+
 - Added a multi-player trade planner in Squad. Managers can add or remove players on either side, compare selected players on points, form, xG, and xA, then submit the complete offer. Added regression coverage for a multi-player proposal.
 
 

@@ -6,6 +6,7 @@
 
 - Keep each selected trade or loan player with their own form-and-minutes chart in the offer/request carousel, with positive and negative navigation indicators.
 - Combine offered and requested players into one horizontal chart-card carousel and reuse the League fixture pitch/list components for trade player selection.
+- Keep all five fixtures visible inside each trade card, scale the carousel from two cards on mobile to four on wide screens, and cap player profile chart bars on desktop.
 
 ## 2026-10-06 - Gate final settlement on verified event-live data
 

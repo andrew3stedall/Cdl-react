@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 
 import { Button } from './components/ui/button';
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from './components/ui/carousel';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, useCarousel } from './components/ui/carousel';
 import { PlayerCard, type PlayerCardFixtureTone, type PlayerCardPlayer } from './components/player/PlayerCard';
 import { PageHero, PageHeroControls, PageHeroViewToggle } from './components/ui/page-hero';
 import { PlayerFormMinutesGroupComparison, PlayerProfilePage } from './PlayerProfilePage';
@@ -1050,7 +1050,6 @@ function TradeProposalDrawer({ drawerRef, onClose, onSubmit, otherPlayers, owned
   }, []);
   const selectedOfferPlayers = offeredPlayerIds.map((id) => ownedPlayers.find((player) => player.id === id)).filter((player): player is MarketPlayer => player !== undefined);
   const selectedRequestPlayers = requestedPlayerIds.map((id) => otherPlayers.find((player) => player.id === id)).filter((player): player is MarketPlayer => player !== undefined);
-  const chartPlayers = [...selectedOfferPlayers, ...selectedRequestPlayers].map(toProfilePlayer);
 
   function togglePlayer(side: 'offer' | 'request', player: MarketPlayer) {
     if (side === 'offer' && proposalType === 'loan') {
@@ -1109,10 +1108,9 @@ function TradeProposalDrawer({ drawerRef, onClose, onSubmit, otherPlayers, owned
             </div> : null}
           </section>
           <section aria-label="Selected trade players" className="market-page__selected-assets">
-            <SelectedPlayerCarousel label={proposalType === 'loan' ? 'Player to loan' : 'You offer'} onToggle={(player) => togglePlayer('offer', player)} players={selectedOfferPlayers} selectedIds={offeredPlayerIds} />
-            {proposalType === 'trade' ? <SelectedPlayerCarousel label="You request" onToggle={(player) => togglePlayer('request', player)} players={selectedRequestPlayers} selectedIds={requestedPlayerIds} /> : null}
+            <SelectedPlayerCarousel direction="out" label={proposalType === 'loan' ? 'Player to loan' : 'You offer'} onToggle={(player) => togglePlayer('offer', player)} players={selectedOfferPlayers} selectedIds={offeredPlayerIds} />
+            {proposalType === 'trade' ? <SelectedPlayerCarousel direction="in" label="You request" onToggle={(player) => togglePlayer('request', player)} players={selectedRequestPlayers} selectedIds={requestedPlayerIds} /> : null}
           </section>
-          {proposalType === 'trade' && chartPlayers.length > 0 ? <PlayerFormMinutesGroupComparison players={chartPlayers} squadClient={marketSquadClient} /> : null}
           {proposalType === 'loan' ? <label className="market-page__loan-duration">Duration (gameweeks)<input min={4} onChange={(event) => setLoanDuration(Math.max(4, Number(event.currentTarget.value) || 4))} type="number" value={loanDuration} /></label> : null}
           {error ? <p role="alert">{error}</p> : null}
           {loanNotice ? <p role="status">{loanNotice}</p> : null}
@@ -1135,14 +1133,15 @@ function TradeRoster({ label, onToggle, players, selectedIds, view }: {
 }) {
   const ordered = [...players].sort((left, right) => ['GKP', 'DEF', 'MID', 'FWD'].indexOf(left.position) - ['GKP', 'DEF', 'MID', 'FWD'].indexOf(right.position) || left.displayName.localeCompare(right.displayName));
   const positions = ['FWD', 'MID', 'DEF', 'GKP'];
-  const renderPlayer = (player: MarketPlayer) => <button aria-pressed={selectedIds.has(player.id)} className={`market-page__roster-player ${view === 'pitch' ? 'squad-page__pitch-player' : ''} position-${player.position.toLowerCase()} ${selectedIds.has(player.id) ? 'is-selected' : ''}`} key={player.id} onClick={() => onToggle(player)} type="button"><PlayerCard formPosition={view === 'list' ? 'beside' : 'below'} layout={view === 'list' ? 'list' : 'pitch'} player={toTradeRosterPlayer(player)} showPositionMarker={false} size="sm" /><span aria-hidden="true" className="market-page__roster-check">{selectedIds.has(player.id) ? '✓' : '+'}</span></button>;
+  const renderPlayer = (player: MarketPlayer) => <button aria-pressed={selectedIds.has(player.id)} className={`market-page__roster-player ${view === 'pitch' ? 'squad-page__pitch-player' : ''} position-${player.position.toLowerCase()} ${selectedIds.has(player.id) ? 'is-selected' : ''}`} key={player.id} onClick={() => onToggle(player)} type="button"><PlayerCard formPosition={view === 'list' ? 'beside' : 'below'} layout={view === 'list' ? 'list' : 'pitch'} player={toTradeRosterPlayer(player, view === 'pitch' ? 'home' : 'opponent')} showPositionMarker={false} size="sm" /><span aria-hidden="true" className="market-page__roster-check">{selectedIds.has(player.id) ? '✓' : '+'}</span></button>;
   return <section aria-label={label} className={`market-page__trade-roster market-page__trade-roster--${view}`}><h3>{label}</h3>{ordered.length ? view === 'list' ? <div className="market-page__trade-roster-players">{ordered.map(renderPlayer)}</div> : <div className="market-page__trade-pitch">{positions.map((position) => {
     const group = ordered.filter((player) => player.position === position);
     return group.length ? <div aria-label={position} className={`market-page__trade-pitch-row position-${position.toLowerCase()}`} key={position}>{group.map(renderPlayer)}</div> : null;
   })}</div> : <p>No players available.</p>}</section>;
 }
 
-function SelectedPlayerCarousel({ label, onToggle, players, selectedIds }: {
+function SelectedPlayerCarousel({ direction, label, onToggle, players, selectedIds }: {
+  direction: 'in' | 'out';
   label: string;
   onToggle: (player: MarketPlayer) => void;
   players: MarketPlayer[];
@@ -1152,23 +1151,43 @@ function SelectedPlayerCarousel({ label, onToggle, players, selectedIds }: {
     <section aria-label={label} className="market-page__selected-strip">
       <div className="market-page__selected-strip-header"><h3>{label}</h3><small>{selectedIds.length}</small></div>
       {players.length ? (
-        <Carousel aria-label={`${label} player cards`} className="market-page__selected-carousel" opts={{ align: 'start', containScroll: 'trimSnaps' }}>
+        <Carousel aria-label={`${label} player cards`} className={`market-page__selected-carousel market-page__selected-carousel--${direction}`} opts={{ align: 'start', containScroll: 'trimSnaps' }}>
           <CarouselContent className="market-page__selected-carousel-track">
             {players.map((player, index) => (
               <CarouselItem aria-label={`${player.displayName}, ${index + 1} of ${players.length}`} className="market-page__selected-carousel-slide" key={`${label}:${player.id}`}>
-                <article className="market-page__selected-player-card">
-                  <PlayerCard formPosition="hidden" layout="token" player={toTradeRosterPlayer(player)} size="xs" />
-                  <div className="market-page__selected-player-card-details"><strong>{player.displayName}</strong><small>{player.position} · {player.club}</small></div>
+                <article className="market-page__selected-player-card" data-testid="trade-selected-player-card">
+                  <PlayerCard ariaLabel={`Player card for ${player.displayName}`} className="market-page__selected-player-header" formPosition="below" layout="token" player={toTradeRosterPlayer(player, 'home')} size="xs" />
+                  <PlayerFormMinutesGroupComparison players={[toProfilePlayer(player)]} squadClient={marketSquadClient} />
                   <button aria-label={`Remove ${player.displayName} from ${label}`} className="market-page__selected-player-card-remove" onClick={() => onToggle(player)} type="button">×</button>
                 </article>
               </CarouselItem>
             ))}
           </CarouselContent>
+          <CarouselDots count={players.length} label={label} />
           {players.length > 2 ? <><CarouselPrevious aria-label={`Previous ${label.toLowerCase()} players`} /><CarouselNext aria-label={`Next ${label.toLowerCase()} players`} /></> : null}
         </Carousel>
       ) : <div className="market-page__selected-carousel-empty">None selected</div>}
     </section>
   );
+}
+
+function CarouselDots({ count, label }: { count: number; label: string }) {
+  const { api } = useCarousel();
+  const [activeIndex, setActiveIndex] = useState(0);
+  useEffect(() => {
+    if (!api) return undefined;
+    const updateIndex = () => setActiveIndex(api.selectedScrollSnap());
+    updateIndex();
+    api.on('select', updateIndex);
+    api.on('reInit', updateIndex);
+    return () => {
+      api.off('select', updateIndex);
+      api.off('reInit', updateIndex);
+    };
+  }, [api]);
+  return <div aria-label={`${label} player navigation`} className="market-page__carousel-dots" role="group">
+    {Array.from({ length: count }, (_, index) => <button aria-label={`Show ${label} player ${index + 1}`} aria-pressed={activeIndex === index} className="market-page__carousel-dot" key={index} onClick={() => api?.scrollTo(index)} type="button" />)}
+  </div>;
 }
 
 function EmptyActivity({ action, icon, onAction, title }: { action: string; icon: ReactNode; onAction: () => void; title: string }) {
@@ -1190,18 +1209,21 @@ function toPlayerCardPlayer(player: MarketPlayer, ownershipTone: PlayerCardFixtu
   };
 }
 
-function toTradeRosterPlayer(player: MarketPlayer): PlayerCardPlayer {
+function toTradeRosterPlayer(player: MarketPlayer, fixtureDisplay: 'opponent' | 'home' = 'opponent'): PlayerCardPlayer {
   const upcomingFixtures = player.nextFixtures?.length
     ? player.nextFixtures
     : player.nextFixture ? [player.nextFixture] : [];
-  return {
-    displayName: player.displayName,
-    fixtures: upcomingFixtures.map((fixture) => ({
+  const cardFixtures = fixtureDisplay === 'home'
+    ? [{ difficulty: upcomingFixtures.find((fixture) => fixture.is_home)?.difficulty, label: player.club, title: upcomingFixtures.some((fixture) => fixture.is_home) ? 'Home fixture difficulty' : 'Home fixture difficulty unavailable', tone: 'secondary' as const }]
+    : upcomingFixtures.map((fixture) => ({
       difficulty: fixture.difficulty,
       label: fixture.opponent.short_name ?? fixture.opponent.name,
       title: `GW${fixture.gameweek?.number ?? '—'} · ${fixture.is_home ? 'Home' : 'Away'}`,
-      tone: 'secondary',
-    })),
+      tone: 'secondary' as const,
+    }));
+  return {
+    displayName: player.displayName,
+    fixtures: cardFixtures,
     form: player.form,
     formHistory: toPlayerCardFormHistory(player.formHistory),
     position: player.position,

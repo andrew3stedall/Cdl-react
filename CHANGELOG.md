@@ -1,3 +1,7 @@
+## Unreleased
+
+- Keep each selected trade or loan player with their own form-and-minutes chart in the offer/request carousel, with positive and negative navigation indicators.
+
 ## 2026-10-06 - Gate final settlement on verified event-live data
 
 ### Fixed

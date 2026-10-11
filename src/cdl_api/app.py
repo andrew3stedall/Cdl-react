@@ -58,7 +58,7 @@ def create_app() -> FastAPI:
             )
         )
     app.include_router(auth_router, prefix=settings.api_prefix)
-    app.include_router(oauth_router)
+    app.include_router(oauth_router, prefix="")
     app.include_router(dashboard_router, prefix=settings.api_prefix)
     app.include_router(fdr_router, prefix=settings.api_prefix)
     app.include_router(fpl_data_router, prefix=settings.api_prefix)

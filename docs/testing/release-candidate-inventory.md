@@ -85,3 +85,5 @@ Repository-safe testing is complete when focused evidence covers authentication,
 3. Isolate captaincy-specific mutation and validation coverage only if it remains release-critical after product review.
 4. Decide whether Preferences should enter primary navigation; add a browser journey only after that product decision.
 5. Real historical-export validation when source files become available.
+
+| OAuth authorization and connection endpoints | `oauth_router` | Feature-flagged MCP OAuth transport endpoints; user consent, connection and token lifecycle are covered by dedicated OAuth tests and architecture documentation. |

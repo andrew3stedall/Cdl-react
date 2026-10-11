@@ -37,6 +37,7 @@ def test_inventory_covers_every_mounted_product_router() -> None:
         "live_draft_router",
         "team_selection_router",
         "workspace_router",
+        "oauth_router",
     }
     assert mounted_routers == documented_boundaries
     for router in documented_boundaries:

@@ -80,6 +80,7 @@ def test_discovery_registration_consent_and_revoke_flow() -> None:
     query = parse_qs(urlsplit(decision.headers["location"]).query)
     assert query["state"] == ["state-value"]
     assert query["iss"] == ["https://cdl.example"]
+    assert query["iss"] == ["https://cdl.example"]
 
     tokens = client.post(
         "/oauth/token",

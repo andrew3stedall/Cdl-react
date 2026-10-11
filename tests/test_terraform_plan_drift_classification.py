@@ -371,6 +371,7 @@ def test_cloud_run_traffic_revision_drift_passes_only_when_plan_pins_live_revisi
                 {
                     "traffic": [{"revision": "cdl-api-00359", "percent": 100}],
                     "traffic_statuses": [{"revision": "cdl-api-00359"}],
+                    "template": [{"containers": [{"image": "old"}]}],
                 },
                 {
                     "traffic": live_traffic,
@@ -385,6 +386,7 @@ def test_cloud_run_traffic_revision_drift_passes_only_when_plan_pins_live_revisi
                 {
                     "traffic": [{"revision": "cdl-api-00359", "percent": 100}],
                     "traffic_statuses": [{"revision": "cdl-api-00359"}],
+                    "template": [{"containers": [{"image": "old"}]}],
                 },
                 {
                     "traffic": live_traffic,
@@ -420,6 +422,7 @@ def test_cloud_run_traffic_drift_blocks_when_planned_revision_differs_from_live(
                 {
                     "traffic": [{"revision": "cdl-api-00359", "percent": 100}],
                     "traffic_statuses": [{"revision": "cdl-api-00359"}],
+                    "template": [{"containers": [{"image": "old"}]}],
                 },
                 {
                     "traffic": [{"revision": "cdl-api-00359", "percent": 100}],
@@ -434,6 +437,7 @@ def test_cloud_run_traffic_drift_blocks_when_planned_revision_differs_from_live(
                 {
                     "traffic": [{"revision": "cdl-api-00359", "percent": 100}],
                     "traffic_statuses": [{"revision": "cdl-api-00359"}],
+                    "template": [{"containers": [{"image": "old"}]}],
                 },
                 {
                     "traffic": [{"revision": "cdl-api-00360", "percent": 100}],

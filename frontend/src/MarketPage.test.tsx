@@ -42,6 +42,20 @@ const ownedPlayer = {
   draft_team: { id: 'team-exeter-gently', name: 'Exeter Gently', short_name: 'EXE' },
 };
 
+const ownedForward = {
+  ...ownedPlayer,
+  id: 'player-6',
+  display_name: 'Owned Forward',
+  position: 'FWD',
+};
+
+const ownedGoalkeeper = {
+  ...ownedPlayer,
+  id: 'player-7',
+  display_name: 'Owned Goalkeeper',
+  position: 'GKP',
+};
+
 const otherOwnedPlayer = {
   ...player,
   id: 'player-5',
@@ -75,7 +89,7 @@ beforeEach(() => {
       return new Response(JSON.stringify({ message: 'Temporary market read failure.' }), { status: 503 });
     }
     if (path === '/api/squad/summary') {
-      return new Response(JSON.stringify({ manager_team: { id: 'team-exeter-gently', name: 'Exeter Gently' }, gameweek: { name: 'Gameweek 1' }, players: [ownedPlayer] }), { status: 200 });
+      return new Response(JSON.stringify({ manager_team: { id: 'team-exeter-gently', name: 'Exeter Gently' }, gameweek: { name: 'Gameweek 1' }, players: [ownedPlayer, ownedForward, ownedGoalkeeper] }), { status: 200 });
     }
     if (path === '/api/scouting/players') return new Response(JSON.stringify({ players: marketPlayers }), { status: 200 });
     if (path === '/api/interests' && init?.method === 'POST') {
@@ -167,7 +181,7 @@ describe('MarketPage', () => {
     expect(container.querySelector('.market-page__accordion-trigger')?.getAttribute('aria-expanded')).toBe('true');
 
     await act(async () => {
-      (container.querySelector('.market-page__trade-roster[aria-label="Your players"] button') as HTMLButtonElement).click();
+      (Array.from(container.querySelectorAll('.market-page__trade-roster[aria-label="Your players"] button')).find((button) => button.textContent?.includes('Owned Defender')) as HTMLButtonElement).click();
       await Promise.resolve();
       await Promise.resolve();
     });
@@ -190,6 +204,35 @@ describe('MarketPage', () => {
     expect(interestActive).toBe(false);
     act(() => root.unmount());
     expect(document.body.style.overflow).toBe('');
+  });
+
+  test('shows selected trade players in a multi-card carousel above the comparison chart', async () => {
+    marketPlayers = [otherOwnedPlayer];
+    const { container, root } = await renderPage();
+    const row = container.querySelector('tr[aria-label="View Other Owned Midfielder details"]') as HTMLTableRowElement;
+
+    await act(async () => { row.click(); await Promise.resolve(); });
+    await act(async () => {
+      (container.querySelector('button[aria-label="Propose trade for Other Owned Midfielder"]') as HTMLButtonElement).click();
+      await Promise.resolve();
+    });
+    for (const name of ['Owned Defender', 'Owned Forward', 'Owned Goalkeeper']) {
+      const playerButton = Array.from(container.querySelectorAll('.market-page__trade-roster[aria-label="Your players"] button')).find((button) => button.textContent?.includes(name)) as HTMLButtonElement;
+      await act(async () => { playerButton.click(); await Promise.resolve(); });
+    }
+
+    const offerCarousel = container.querySelector('.market-page__selected-strip[aria-label="You offer"] [aria-roledescription="carousel"]');
+    expect(offerCarousel?.querySelectorAll('.market-page__selected-carousel-slide')).toHaveLength(3);
+    expect(offerCarousel?.querySelector('[aria-label="Next you offer players"]')).not.toBeNull();
+    expect(container.querySelector('.market-page__selected-strip[aria-label="You request"] .market-page__selected-player-card-details')?.textContent).toContain('Other Owned Midfielder');
+    expect(container.querySelector('[data-testid="trade-player-comparison"]')).not.toBeNull();
+    await act(async () => {
+      (offerCarousel?.querySelector('button[aria-label="Remove Owned Forward from You offer"]') as HTMLButtonElement).click();
+      await Promise.resolve();
+    });
+    expect(container.querySelectorAll('.market-page__selected-strip[aria-label="You offer"] .market-page__selected-carousel-slide')).toHaveLength(2);
+
+    act(() => root.unmount());
   });
 
   test('keeps discovery focused on the player list', async () => {

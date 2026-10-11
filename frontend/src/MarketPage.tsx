@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 
 import { Button } from './components/ui/button';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from './components/ui/carousel';
 import { PlayerCard, type PlayerCardFixtureTone, type PlayerCardPlayer } from './components/player/PlayerCard';
 import { PageHero, PageHeroControls, PageHeroViewToggle } from './components/ui/page-hero';
 import { PlayerFormMinutesGroupComparison, PlayerProfilePage } from './PlayerProfilePage';
@@ -1108,8 +1109,8 @@ function TradeProposalDrawer({ drawerRef, onClose, onSubmit, otherPlayers, owned
             </div> : null}
           </section>
           <section aria-label="Selected trade players" className="market-page__selected-assets">
-            <SelectedPlayerStrip label={proposalType === 'loan' ? 'Player to loan' : 'You offer'} players={selectedOfferPlayers} selectedIds={offeredPlayerIds} onToggle={(player) => togglePlayer('offer', player)} />
-            {proposalType === 'trade' ? <SelectedPlayerStrip label="You request" players={selectedRequestPlayers} selectedIds={requestedPlayerIds} onToggle={(player) => togglePlayer('request', player)} /> : null}
+            <SelectedPlayerCarousel label={proposalType === 'loan' ? 'Player to loan' : 'You offer'} onToggle={(player) => togglePlayer('offer', player)} players={selectedOfferPlayers} selectedIds={offeredPlayerIds} />
+            {proposalType === 'trade' ? <SelectedPlayerCarousel label="You request" onToggle={(player) => togglePlayer('request', player)} players={selectedRequestPlayers} selectedIds={requestedPlayerIds} /> : null}
           </section>
           {proposalType === 'trade' && chartPlayers.length > 0 ? <PlayerFormMinutesGroupComparison players={chartPlayers} squadClient={marketSquadClient} /> : null}
           {proposalType === 'loan' ? <label className="market-page__loan-duration">Duration (gameweeks)<input min={4} onChange={(event) => setLoanDuration(Math.max(4, Number(event.currentTarget.value) || 4))} type="number" value={loanDuration} /></label> : null}
@@ -1141,13 +1142,33 @@ function TradeRoster({ label, onToggle, players, selectedIds, view }: {
   })}</div> : <p>No players available.</p>}</section>;
 }
 
-function SelectedPlayerStrip({ label, onToggle, players, selectedIds }: {
+function SelectedPlayerCarousel({ label, onToggle, players, selectedIds }: {
   label: string;
   onToggle: (player: MarketPlayer) => void;
   players: MarketPlayer[];
   selectedIds: string[];
 }) {
-  return <section aria-label={label} className="market-page__selected-strip"><h3>{label}</h3><div>{players.length ? players.map((player) => <button aria-label={`Remove ${player.displayName} from ${label}`} key={`${label}:${player.id}`} onClick={() => onToggle(player)} type="button"><PlayerCard formPosition="hidden" layout="token" player={toTradeRosterPlayer(player)} size="xs" /><span>{player.displayName} ×</span></button>) : <span className="market-page__trade-empty">None selected</span>}</div><small>{selectedIds.length}</small></section>;
+  return (
+    <section aria-label={label} className="market-page__selected-strip">
+      <div className="market-page__selected-strip-header"><h3>{label}</h3><small>{selectedIds.length}</small></div>
+      {players.length ? (
+        <Carousel aria-label={`${label} player cards`} className="market-page__selected-carousel" opts={{ align: 'start', containScroll: 'trimSnaps', loop: players.length > 2 }}>
+          <CarouselContent className="market-page__selected-carousel-track">
+            {players.map((player, index) => (
+              <CarouselItem aria-label={`${player.displayName}, ${index + 1} of ${players.length}`} className="market-page__selected-carousel-slide" key={`${label}:${player.id}`}>
+                <article className="market-page__selected-player-card">
+                  <PlayerCard formPosition="hidden" layout="token" player={toTradeRosterPlayer(player)} size="xs" />
+                  <div className="market-page__selected-player-card-details"><strong>{player.displayName}</strong><small>{player.position} · {player.club}</small></div>
+                  <button aria-label={`Remove ${player.displayName} from ${label}`} className="market-page__selected-player-card-remove" onClick={() => onToggle(player)} type="button">×</button>
+                </article>
+              </CarouselItem>
+            ))}
+          </CarouselContent>
+          {players.length > 2 ? <><CarouselPrevious aria-label={`Previous ${label.toLowerCase()} players`} /><CarouselNext aria-label={`Next ${label.toLowerCase()} players`} /></> : null}
+        </Carousel>
+      ) : <div className="market-page__selected-carousel-empty">None selected</div>}
+    </section>
+  );
 }
 
 function EmptyActivity({ action, icon, onAction, title }: { action: string; icon: ReactNode; onAction: () => void; title: string }) {

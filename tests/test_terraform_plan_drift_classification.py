@@ -356,3 +356,88 @@ def test_unknown_change_shape_fails_closed_when_same_resource_is_managed() -> No
     )
 
     assert exit_code == 5
+
+
+def test_cloud_run_traffic_revision_drift_passes_only_when_plan_pins_live_revision() -> None:
+    address = "module.cloud_run_api[0].google_cloud_run_v2_service.this"
+    live_traffic = [{"revision": "cdl-api-00360", "percent": 100}]
+    plan = {
+        "format_version": "1.2",
+        "terraform_version": "1.15.8",
+        "resource_changes": [
+            _change(
+                address,
+                "google_cloud_run_v2_service",
+                {"traffic": [{"revision": "cdl-api-00359", "percent": 100}]},
+                {
+                    "traffic": live_traffic,
+                    "template": [{"containers": [{"image": "new"}]}],
+                },
+            )
+        ],
+        "resource_drift": [
+            _change(
+                address,
+                "google_cloud_run_v2_service",
+                {"traffic": [{"revision": "cdl-api-00359", "percent": 100}]},
+                {
+                    "traffic": live_traffic,
+                    "traffic_statuses": [{"revision": "cdl-api-00360"}],
+                    "template": [{"containers": [{"image": "old"}]}],
+                },
+            )
+        ],
+    }
+
+    summary, exit_code = summarize_plan(
+        plan,
+        plan_sha256="abc",
+        plan_exit_code=2,
+        source_sha="deadbeef",
+        run_url="",
+    )
+
+    assert exit_code == 0
+    assert "Safety gate: **PASS**" in summary
+    assert "Actionable managed reconciliation" not in summary
+
+
+def test_cloud_run_traffic_drift_blocks_when_planned_revision_differs_from_live() -> None:
+    address = "module.cloud_run_api[0].google_cloud_run_v2_service.this"
+    plan = {
+        "format_version": "1.2",
+        "terraform_version": "1.15.8",
+        "resource_changes": [
+            _change(
+                address,
+                "google_cloud_run_v2_service",
+                {"traffic": [{"revision": "cdl-api-00359", "percent": 100}]},
+                {
+                    "traffic": [{"revision": "cdl-api-00359", "percent": 100}],
+                    "template": [{"containers": [{"image": "new"}]}],
+                },
+            )
+        ],
+        "resource_drift": [
+            _change(
+                address,
+                "google_cloud_run_v2_service",
+                {"traffic": [{"revision": "cdl-api-00359", "percent": 100}]},
+                {
+                    "traffic": [{"revision": "cdl-api-00360", "percent": 100}],
+                    "traffic_statuses": [{"revision": "cdl-api-00360"}],
+                    "template": [{"containers": [{"image": "old"}]}],
+                },
+            )
+        ],
+    }
+
+    _, exit_code = summarize_plan(
+        plan,
+        plan_sha256="abc",
+        plan_exit_code=2,
+        source_sha="deadbeef",
+        run_url="",
+    )
+
+    assert exit_code == 5

@@ -124,7 +124,7 @@ class OAuthService:
         ):
             raise OAuthError(
                 "invalid_scope",
-                "Request cdl:read and/or cdl:write; offline_access is optional.",
+                "Requested scope must include cdl:read and/or cdl:write; offline_access is optional.",
             )
         if not state or len(state) > 512:
             raise OAuthError("invalid_request", "A transaction-specific state value is required.")

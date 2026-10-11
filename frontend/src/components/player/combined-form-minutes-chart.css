@@ -154,6 +154,8 @@
   position: relative;
   opacity: 0.85;
   width: 100%;
+  max-width: 4.5rem;
+  margin-inline: auto;
   z-index: 3;
 }
 

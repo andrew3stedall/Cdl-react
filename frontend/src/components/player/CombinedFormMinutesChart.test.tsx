@@ -45,4 +45,17 @@ describe('CombinedFormMinutesChart', () => {
     expect(pointsBar?.getAttribute('aria-label')).toContain('-2 points');
     expect(container.querySelector('.player-profile__combined-negative button')?.getAttribute('aria-label')).toContain('90 minutes');
   });
+
+  test('renders five fixture slots for the compact player-card chart window', () => {
+    container = document.createElement('div');
+    document.body.append(container);
+    root = createRoot(container);
+    act(() => root.render(
+      <CombinedFormMinutesChart fixtures={[]} fdrDisplayMode="font" fixtureCount={5} windowLabel="latest five per player" />,
+    ));
+
+    const chart = container.querySelector<HTMLElement>('[data-chart-kind="combined-form-minutes"]');
+    expect(chart?.dataset.fixtureCount).toBe('5');
+    expect(container.querySelectorAll('.player-profile__combined-chart-column')).toHaveLength(5);
+  });
 });

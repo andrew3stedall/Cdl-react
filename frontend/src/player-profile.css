@@ -376,6 +376,7 @@
 
 .player-profile__bar-track {
   align-items: flex-end;
+  justify-content: center;
   background: var(--profile-chart-track);
   border-radius: 0.25rem 0.25rem 0.12rem 0.12rem;
   display: flex;
@@ -421,6 +422,7 @@
 
 .player-profile__bar {
   height: var(--bar-height);
+  max-width: 4.5rem;
 }
 
 .player-profile__opponent-label {

@@ -63,7 +63,8 @@ def test_discovery_registration_consent_and_revoke_flow() -> None:
     }
     consent = client.get("/oauth/authorize", params=auth_params)
     assert consent.status_code == 200
-    assert "Test Assistant requests access" in consent.text
+    assert "Test Assistant" in consent.text
+    assert "not verified" in consent.text
     csrf = client.cookies.get("cdl_oauth_consent")
     decision = client.post(
         "/oauth/authorize/decision",
@@ -78,6 +79,7 @@ def test_discovery_registration_consent_and_revoke_flow() -> None:
     assert decision.status_code == 302
     query = parse_qs(urlsplit(decision.headers["location"]).query)
     assert query["state"] == ["state-value"]
+    assert query["iss"] == ["https://cdl.example"]
 
     tokens = client.post(
         "/oauth/token",

@@ -49,9 +49,17 @@ describe('AIConnectionsPage', () => {
     const client = clientMock();
     const { container, root } = await render(client);
 
-    expect(container.textContent).toContain('Remote MCP');
-    expect(container.textContent).toContain(`${window.location.origin}/mcp`);
+    expect(container.textContent).toContain('Choose your assistant');
     expect(container.textContent).toContain('ChatGPT');
+
+    const chatgptChoice = Array.from(container.querySelectorAll('button'))
+      .find((button) => button.textContent?.trim() === 'ChatGPT');
+    await act(async () => chatgptChoice?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    const continueButton = Array.from(container.querySelectorAll('button'))
+      .find((button) => button.textContent?.trim() === 'Continue');
+    await act(async () => continueButton?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(container.textContent).toContain(`${window.location.origin}/mcp`);
+    expect(container.textContent).toContain('Add CDL as a remote MCP server');
     expect(container.textContent).toContain('cdl:read, cdl:write');
     expect(container.textContent).toContain('Browser WebMCP');
     expect(container.textContent).toContain('squad.get summary');
@@ -91,6 +99,31 @@ describe('AIConnectionsPage', () => {
 
     await act(async () => root.unmount());
     container.remove();
+  });
+
+  test('guides ChatGPT setup with plan limits and resumes saved progress', async () => {
+    window.sessionStorage.removeItem('cdl:ai-connection-setup');
+    const client = clientMock();
+    const first = await render(client);
+    const chatgpt = Array.from(first.container.querySelectorAll('button'))
+      .find((button) => button.textContent?.trim() === 'ChatGPT');
+    expect(chatgpt).toBeDefined();
+
+    await act(async () => chatgpt?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(first.container.textContent).toContain('Custom MCP apps are set up from ChatGPT on the web');
+    expect(first.container.textContent).toContain('ChatGPT Pro supports read-only MCP connections.');
+    expect(first.container.textContent).toContain('ChatGPT Plus is not currently listed');
+    expect(window.sessionStorage.getItem('cdl:ai-connection-setup')).toContain('"provider":"chatgpt"');
+
+    await act(async () => first.root.unmount());
+    first.container.remove();
+
+    const resumed = await render(client);
+    expect(resumed.container.textContent).toContain('ChatGPT setup');
+    expect(resumed.container.textContent).toContain('Step 1 of 3');
+    await act(async () => resumed.root.unmount());
+    resumed.container.remove();
+    window.sessionStorage.removeItem('cdl:ai-connection-setup');
   });
 
   test('reports unavailable connection APIs accessibly', async () => {

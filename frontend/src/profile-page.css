@@ -1591,6 +1591,79 @@
   padding: 0.55rem 0.65rem;
 }
 
+.ai-provider-choices,
+.ai-onboarding-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.ai-provider-choice {
+  flex: 1 1 8rem;
+  min-height: 2.8rem;
+}
+
+.ai-onboarding-progress {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.ai-onboarding-progress span,
+.ai-onboarding-instructions {
+  color: var(--muted-foreground);
+}
+
+.ai-connection-setup progress {
+  accent-color: var(--primary);
+  height: 0.45rem;
+  width: 100%;
+}
+
+.ai-onboarding-instructions {
+  display: grid;
+  gap: 0.55rem;
+  line-height: 1.55;
+}
+
+.ai-onboarding-instructions h3,
+.ai-onboarding-instructions p,
+.ai-onboarding-instructions ol,
+.ai-onboarding-instructions ul {
+  margin: 0;
+}
+
+.ai-onboarding-instructions h3 {
+  color: var(--foreground);
+  font-size: 1rem;
+}
+
+.ai-onboarding-instructions ol,
+.ai-onboarding-instructions ul {
+  padding-left: 1.3rem;
+}
+
+.ai-onboarding-instructions li + li {
+  margin-top: 0.35rem;
+}
+
+.ai-onboarding-instructions a {
+  color: var(--theme-primary-text, var(--primary));
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.ai-onboarding-actions {
+  justify-content: space-between;
+  margin-top: 0.25rem;
+}
+
+@media (max-width: 32rem) {
+  .ai-onboarding-actions > button {
+    flex: 1 1 8rem;
+  }
+}
+
 .ai-connection-list,
 .ai-activity-list {
   display: grid;

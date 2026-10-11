@@ -25,6 +25,25 @@ interface ConnectionView {
   grant: AIGrantStatus | null;
 }
 
+type AIProvider = 'chatgpt' | 'claude';
+interface AISetupProgress { provider: AIProvider; step: 1 | 2 | 3 }
+const AI_SETUP_STORAGE_KEY = 'cdl:ai-connection-setup';
+
+function readAISetupProgress(): AISetupProgress | null {
+  try {
+    const saved = window.sessionStorage.getItem(AI_SETUP_STORAGE_KEY);
+    if (!saved) return null;
+    const value = JSON.parse(saved) as Partial<AISetupProgress>;
+    if ((value.provider === 'chatgpt' || value.provider === 'claude')
+      && (value.step === 1 || value.step === 2 || value.step === 3)) {
+      return { provider: value.provider, step: value.step };
+    }
+  } catch {
+    // Storage can be unavailable in private browsing; setup still works in memory.
+  }
+  return null;
+}
+
 const BROWSER_CLIENT_NAME = 'Browser WebMCP';
 
 function formatDate(value: string | null): string {
@@ -47,6 +66,7 @@ export function AIConnectionsPage({ onNavigate, session, client = httpAIConnecti
   const [confirmRevoke, setConfirmRevoke] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [setup, setSetup] = useState<AISetupProgress | null>(() => readAISetupProgress());
   const browserConnectionId = session.user?.id ? `browser:${session.user.id}` : null;
   const mcpUrl = useMemo(() => `${window.location.origin}/mcp`, []);
 
@@ -80,6 +100,14 @@ export function AIConnectionsPage({ onNavigate, session, client = httpAIConnecti
   }, [browserConnectionId, client]);
 
   useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    try {
+      if (setup) window.sessionStorage.setItem(AI_SETUP_STORAGE_KEY, JSON.stringify(setup));
+      else window.sessionStorage.removeItem(AI_SETUP_STORAGE_KEY);
+    } catch {
+      // Keep progress in memory when browser storage is unavailable.
+    }
+  }, [setup]);
 
   const copyUrl = async () => {
     try {
@@ -142,18 +170,85 @@ export function AIConnectionsPage({ onNavigate, session, client = httpAIConnecti
 
       <section aria-labelledby="mcp-setup-title" className="profile-settings-group">
         <h2 id="mcp-setup-title">Connect an assistant</h2>
-        <Card className="profile-settings-card ai-connection-setup">
-          <div className="ai-connection-setup__heading"><Bot aria-hidden="true" size={20} /><strong>Remote MCP</strong></div>
-          <p>Use this URL in a compatible ChatGPT or Claude MCP connector. Sign in to CDL and review the requested read or write permissions during setup.</p>
-          <div className="ai-mcp-url">
-            <code aria-label="CDL MCP server URL">{mcpUrl}</code>
-            <Button aria-label="Copy MCP URL" onClick={() => void copyUrl()} type="button" variant="secondary">
-              {copied ? <Check aria-hidden="true" size={16} /> : <Copy aria-hidden="true" size={16} />}
-              {copied ? 'Copied' : 'Copy URL'}
-            </Button>
-          </div>
-          <p className="ai-connection-setup__note">The connection starts from the assistant. CDL does not receive or store your assistant account credentials.</p>
-        </Card>
+        {!setup ? (
+          <Card className="profile-settings-card ai-connection-setup">
+            <div className="ai-connection-setup__heading"><Bot aria-hidden="true" size={20} /><strong>Choose your assistant</strong></div>
+            <p>Connect from the assistant using CDL’s remote MCP server. Start with read access; you can review requested permissions before approving them.</p>
+            <div className="ai-provider-choices">
+              <Button className="ai-provider-choice" onClick={() => setSetup({ provider: 'chatgpt', step: 1 })} type="button" variant="secondary">ChatGPT</Button>
+              <Button className="ai-provider-choice" onClick={() => setSetup({ provider: 'claude', step: 1 })} type="button" variant="secondary">Claude</Button>
+            </div>
+            <p className="ai-connection-setup__note">No automatic installation is available for every account. This guide shows the manual setup when needed.</p>
+          </Card>
+        ) : (
+          <Card className="profile-settings-card ai-connection-setup" aria-label={`${setup.provider === 'chatgpt' ? 'ChatGPT' : 'Claude'} connection setup`}>
+            <div className="ai-onboarding-progress">
+              <strong>{setup.provider === 'chatgpt' ? 'ChatGPT' : 'Claude'} setup</strong>
+              <span>Step {setup.step} of 3</span>
+            </div>
+            <progress aria-label="Connection setup progress" max={3} value={setup.step} />
+            {setup.provider === 'chatgpt' && setup.step === 1 ? (
+              <div className="ai-onboarding-instructions">
+                <h3>Check ChatGPT access</h3>
+                <p>Custom MCP apps are set up from ChatGPT on the web, not from the mobile app.</p>
+                <ul>
+                  <li>ChatGPT Pro supports read-only MCP connections.</li>
+                  <li>Full MCP, including write actions, is currently for Business, Enterprise, and Edu workspaces.</li>
+                  <li>ChatGPT Plus is not currently listed as supporting custom MCP apps.</li>
+                </ul>
+                <p>If your account does not show Apps or Developer mode, you cannot add this staging connector from that account yet.</p>
+              </div>
+            ) : null}
+            {setup.provider === 'claude' && setup.step === 1 ? (
+              <div className="ai-onboarding-instructions">
+                <h3>Open Claude Connectors</h3>
+                <p>Use Claude on the web or desktop. Custom remote MCP connectors are available on supported Claude plans; check the current <a href="https://support.claude.com/en/articles/11176164-use-connectors-to-extend-claude-s-capabilities" rel="noreferrer" target="_blank">Claude connector guide</a> if the Custom option is missing.</p>
+                <p>If you are on your phone, continue the setup from a desktop browser. You can copy the server URL in the next step.</p>
+              </div>
+            ) : null}
+            {setup.step === 2 ? (
+              <div className="ai-onboarding-instructions">
+                <h3>Add CDL as a remote MCP server</h3>
+                {setup.provider === 'chatgpt' ? (
+                  <ol>
+                    <li>In ChatGPT web, open <strong>Settings → Apps → Create</strong>. If prompted, enable Developer mode.</li>
+                    <li>Name the app “Castle Draft League” and paste the CDL server URL below.</li>
+                    <li>Choose OAuth, scan the tools, and begin with read-only actions where the account allows action controls.</li>
+                  </ol>
+                ) : (
+                  <ol>
+                    <li>In Claude, open <strong>Customize → Connectors → Add → Custom → Web</strong>.</li>
+                    <li>Name the connector “Castle Draft League” and paste the CDL server URL below.</li>
+                    <li>Continue with OAuth and review the connection details.</li>
+                  </ol>
+                )}
+                <div className="ai-mcp-url">
+                  <code aria-label="CDL MCP server URL">{mcpUrl}</code>
+                  <Button aria-label="Copy MCP URL" onClick={() => void copyUrl()} type="button" variant="secondary">
+                    {copied ? <Check aria-hidden="true" size={16} /> : <Copy aria-hidden="true" size={16} />}
+                    {copied ? 'Copied' : 'Copy URL'}
+                  </Button>
+                </div>
+                <p className="ai-connection-setup__note">The URL is staging-only. Do not paste a CDL password or signing secret into the assistant.</p>
+              </div>
+            ) : null}
+            {setup.step === 3 ? (
+              <div className="ai-onboarding-instructions">
+                <h3>Sign in and verify the connection</h3>
+                <ol>
+                  <li>When the assistant opens CDL, sign in to your CDL account in the browser.</li>
+                  <li>Review the OAuth consent screen. Grant only the permissions you want this connection to have.</li>
+                  <li>Return here and refresh Connected assistants. Confirm the assistant appears with the expected permissions.</li>
+                </ol>
+                <p>Start with a read-only request, such as “Show my CDL team summary.” Consequential actions still require a separate 60-minute activation and approval.</p>
+              </div>
+            ) : null}
+            <div className="ai-onboarding-actions">
+              <Button onClick={() => setup.step === 1 ? setSetup(null) : setSetup({ ...setup, step: (setup.step - 1) as 1 | 2 | 3 })} type="button" variant="ghost">{setup.step === 1 ? 'Choose another assistant' : 'Back'}</Button>
+              {setup.step < 3 ? <Button onClick={() => setSetup({ ...setup, step: (setup.step + 1) as 1 | 2 | 3 })} type="button">Continue</Button> : <Button onClick={() => { setSetup(null); void load(); }} type="button">Finish and check connection</Button>}
+            </div>
+          </Card>
+        )}
       </section>
 
       <section aria-labelledby="connected-assistants-title" className="profile-settings-group">

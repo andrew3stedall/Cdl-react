@@ -30,6 +30,12 @@ The registry owns tool names, JSON schemas, risk classifications, permission req
 5. Build Profile AI Connections and approval interface.
 6. Add unit, integration, security and real-client compatibility tests; feature-flag staging deployment and verification.
 
+## Connection onboarding
+
+Profile → AI connections provides a resumable, mobile-first manual setup guide for ChatGPT and Claude. It displays the staging remote MCP URL, explains the OAuth consent step, and recommends starting with read access. The guide does not claim automatic installation where a provider does not offer it.
+
+ChatGPT setup is documented for ChatGPT web only. The guide explains the current account boundaries: Pro can connect with read/fetch access; full MCP is currently available to Business, Enterprise, and Edu; Plus is not currently listed as supporting custom MCP apps. Claude setup uses its current Custom → Web connector flow and links to Claude's connector guide. Both flows advise users to continue from a desktop browser when they start on mobile. Setup progress is stored only in the browser session and contains no credentials.
+
 ## Release acceptance
 - Every implemented user-facing capability has an appropriately permissioned, validated tool, or an explicit documented exception.
 - ChatGPT and Claude remote connection flows verified on supported client tiers; WebMCP verified in supported browser agents.

@@ -159,21 +159,20 @@ describe('MarketPage', () => {
       await Promise.resolve();
     });
     expect(container.querySelector('[role="dialog"]')?.getAttribute('aria-label')).toBe('Trade proposal for Other Owned Midfielder');
-    expect(container.querySelector('[aria-label="Your request"]')?.textContent).toContain('Other Owned Midfielder');
+    expect(container.querySelector('.market-page__drawer--planner')).not.toBeNull();
+    expect(document.body.style.overflow).toBe('hidden');
+    expect(container.querySelector('[aria-label="You request"]')?.textContent).toContain('Other Owned Midfielder');
     expect(container.querySelector('[role="dialog"] select')).toBeNull();
-    expect(container.querySelector('[aria-label="Search your squad to offer"]')).not.toBeNull();
+    expect(container.querySelector('input[placeholder="Search players"]')).toBeNull();
+    expect(container.querySelector('.market-page__accordion-trigger')?.getAttribute('aria-expanded')).toBe('true');
 
     await act(async () => {
-      const offerSearch = container.querySelector('input[aria-label="Search your squad to offer"]') as HTMLInputElement;
-      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set?.call(offerSearch, 'Owned');
-      offerSearch.dispatchEvent(new Event('input', { bubbles: true }));
-    });
-    await act(async () => {
-      (container.querySelector('.market-page__trade-picker-results button') as HTMLButtonElement).click();
+      (container.querySelector('.market-page__trade-roster[aria-label="Your players"] button') as HTMLButtonElement).click();
       await Promise.resolve();
       await Promise.resolve();
     });
     expect(container.textContent).toContain('Form & minutes');
+    expect(container.querySelector('[data-testid="trade-player-comparison"]')).not.toBeNull();
     expect(container.textContent).not.toContain('Points against');
     expect(container.textContent).not.toContain('Private scouting');
     await act(async () => {
@@ -190,6 +189,7 @@ describe('MarketPage', () => {
     }));
     expect(interestActive).toBe(false);
     act(() => root.unmount());
+    expect(document.body.style.overflow).toBe('');
   });
 
   test('keeps discovery focused on the player list', async () => {

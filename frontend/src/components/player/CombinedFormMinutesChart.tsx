@@ -35,7 +35,7 @@ export function CombinedFormMinutesChart({
   fixtures: ReadonlyArray<CombinedFormMinutesFixture | null>;
   fdrDisplayMode: 'font' | 'fill';
   fixtureCount?: number;
-  groupBreakAfter?: number;
+  groupBreakAfter?: number | ReadonlyArray<number>;
   onFixtureClick?: (fixture: CombinedFormMinutesFixture, index: number) => void;
   windowLabel?: string;
 }) {
@@ -58,7 +58,7 @@ export function CombinedFormMinutesChart({
       data-y-axis-min={`-${minutesMax}`}
       data-y-axis-tick-step="5"
       role="group"
-      style={{ '--combined-chart-column-count': slotCount } as CSSProperties}
+      style={{ '--combined-chart-column-count': slotCount, '--combined-chart-min-width': `${slotCount * 3}rem` } as CSSProperties}
     >
       <div className="player-profile__combined-chart-layout">
         <div aria-hidden="true" className="player-profile__combined-chart-y-axis">
@@ -162,9 +162,11 @@ function CombinedChartColumn({
   );
 }
 
-function chartGroupColumnStyle(index: number, groupBreakAfter?: number): CSSProperties | undefined {
+function chartGroupColumnStyle(index: number, groupBreakAfter?: number | ReadonlyArray<number>): CSSProperties | undefined {
   if (groupBreakAfter === undefined) return undefined;
-  return { gridColumn: String(index >= groupBreakAfter ? index + 2 : index + 1) };
+  const breaks = typeof groupBreakAfter === 'number' ? [groupBreakAfter] : groupBreakAfter;
+  const shift = breaks.filter((breakAt) => index >= breakAt).length;
+  return { gridColumn: String(index + shift + 1) };
 }
 
 function chartBarHeight(value: number | null, maxValue: number): number {

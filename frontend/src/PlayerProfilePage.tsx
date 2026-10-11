@@ -754,6 +754,70 @@ export function PlayerFormMinutesComparison({
   </div>;
 }
 
+/** Form and minutes chart for every selected trade asset. */
+export function PlayerFormMinutesGroupComparison({ players, squadClient = defaultSquadClient }: {
+  players: SquadApiPlayer[];
+  squadClient?: PlayerProfileSquadClient;
+}) {
+  const themePreset = useOptionalThemePreset();
+  const fdrDisplayMode = themePreset?.fdrDisplayMode ?? 'font';
+  const [histories, setHistories] = useState<Record<string, SquadApiHistoryResponse | null>>({});
+  const [loading, setLoading] = useState(false);
+  const [failedIds, setFailedIds] = useState<string[]>([]);
+  const [chartDetail, setChartDetail] = useState<{ fixture: ProfileFixture; playerName: string } | null>(null);
+  const playerKey = players.map((player) => player.id).join('|');
+
+  useEffect(() => {
+    let mounted = true;
+    if (players.length === 0) {
+      setHistories({});
+      setFailedIds([]);
+      setLoading(false);
+      return () => { mounted = false; };
+    }
+    setLoading(true);
+    setFailedIds([]);
+    void Promise.all(players.map(async (player) => {
+      try { return [player.id, await squadClient.getPlayerHistory(player.id)] as const; }
+      catch { return [player.id, null] as const; }
+    })).then((results) => {
+      if (!mounted) return;
+      setHistories(Object.fromEntries(results));
+      setFailedIds(results.filter(([, history]) => history === null).map(([id]) => id));
+      setLoading(false);
+    });
+    return () => { mounted = false; };
+  }, [playerKey, squadClient]);
+
+  const groups = players.map((player) => ({
+    fixtures: (histories[player.id]?.history ?? []).map((row) => mapHistoryFixture(row, player.position)).slice(-REVIEW_FIXTURE_COUNT),
+    id: player.id,
+    player,
+  }));
+  const groupColumns = groups.map(() => 'repeat(5, minmax(0, 1fr))').join(' var(--player-chart-group-gap) ');
+  return <div className="player-profile__comparison-chart" data-testid="trade-player-comparison" style={{ '--trade-group-columns': groupColumns } as CSSProperties}>
+    <ReviewFormMinutesChart
+      fdrDisplayMode={fdrDisplayMode}
+      groups={groups}
+      loading={loading}
+      onFixtureClick={(fixture, index) => {
+        const playerIndex = Math.min(groups.length - 1, Math.floor(index / REVIEW_FIXTURE_COUNT));
+        setChartDetail({ fixture, playerName: groups[playerIndex]?.player.display_name ?? 'Player' });
+      }}
+      playersLabel="Trade players"
+    />
+    {failedIds.length > 0 && !loading ? <p className="player-profile__inline-error" role="status">Some player histories are unavailable.</p> : null}
+    {chartDetail ? <PlayerChartDetailDialog
+      kind="form"
+      onClose={() => setChartDetail(null)}
+      sections={formDetailSections(chartDetail.fixture)}
+      subtitle={`${chartDetail.playerName} · ${formatOpponentLabel(chartDetail.fixture.opponentShortName, chartDetail.fixture.isHome)}`}
+      summary={formDetailSummary(chartDetail.fixture)}
+      title={`GW${chartDetail.fixture.gameweek} · ${formatOpponentLabel(chartDetail.fixture.opponentShortName, chartDetail.fixture.isHome)}`}
+    /> : null}
+  </div>;
+}
+
 function ReviewFormMinutesChart({ fdrDisplayMode, groups, loading, onFixtureClick, playersLabel = 'Substitution players' }: {
   fdrDisplayMode: 'font' | 'fill';
   groups: Array<{ fixtures: ProfileFixture[]; id: string; nextFixtures?: ProfileNextFixture[]; player: SquadApiPlayer }>;
@@ -772,7 +836,7 @@ function ReviewFormMinutesChart({ fdrDisplayMode, groups, loading, onFixtureClic
       }))}
       label={playersLabel}
     />
-    {loading ? <ChartEmpty message="Loading the latest five fixtures…" /> : <CombinedFormMinutesChart fixtureCount={REVIEW_CHART_SLOT_COUNT} fixtures={fixtures} fdrDisplayMode={fdrDisplayMode} groupBreakAfter={REVIEW_FIXTURE_COUNT} onFixtureClick={(fixture, index) => onFixtureClick(fixture as ProfileFixture, index)} windowLabel="latest five per player" />}
+    {loading ? <ChartEmpty message="Loading the latest five fixtures…" /> : <CombinedFormMinutesChart fixtureCount={REVIEW_FIXTURE_COUNT * groups.length} fixtures={fixtures} fdrDisplayMode={fdrDisplayMode} groupBreakAfter={groups.slice(1).map((_, index) => (index + 1) * REVIEW_FIXTURE_COUNT)} onFixtureClick={(fixture, index) => onFixtureClick(fixture as ProfileFixture, index)} windowLabel="latest five per player" />}
   </ChartCard>;
 }
 

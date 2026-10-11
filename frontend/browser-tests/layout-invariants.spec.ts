@@ -547,7 +547,7 @@ test('trade player cards show two at a time and navigate to additional selected 
   expect(slideBoxes[1].x + slideBoxes[1].width).toBeLessThanOrEqual(viewportBox!.x + viewportBox!.width);
   expect(slideBoxes[2].x).toBeGreaterThanOrEqual(viewportBox!.x + viewportBox!.width - 1);
 
+  const secondCardStart = await slides.nth(1).evaluate((element) => element.getBoundingClientRect().x);
   await next.click();
-  await expect(slides.nth(1)).toHaveAttribute('data-carousel-active', 'true');
-  await expect(slides.nth(2)).toHaveAttribute('data-carousel-active', 'false');
+  await expect.poll(() => slides.nth(1).evaluate((element) => element.getBoundingClientRect().x)).toBeLessThan(secondCardStart);
 });

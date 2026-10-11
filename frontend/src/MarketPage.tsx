@@ -1121,7 +1121,7 @@ function TradeProposalDrawer({ drawerRef, onClose, onSubmit, otherPlayers, owned
                 selectedPlayerIds={new Set(proposalType === 'trade' ? [...offeredPlayerIds, ...requestedPlayerIds] : offeredPlayerIds)}
                 showViewToggle squads={tradeSquads} view={view}
               />
-            </div> : null} null}
+            </div> : null}
           </section>
           <TradeSelectedCarousel assets={selectedAssets} onRemove={(direction, player) => togglePlayer(direction === 'out' ? 'offer' : 'request', player)} />
           {proposalType === 'loan' ? <label className="market-page__loan-duration">Duration (gameweeks)<input min={4} onChange={(event) => setLoanDuration(Math.max(4, Number(event.currentTarget.value) || 4))} type="number" value={loanDuration} /></label> : null}

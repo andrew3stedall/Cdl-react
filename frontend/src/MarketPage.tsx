@@ -17,7 +17,7 @@ import {
 import { Button } from './components/ui/button';
 import { PlayerCard, type PlayerCardFixtureTone, type PlayerCardPlayer } from './components/player/PlayerCard';
 import { PageHero, PageHeroControls, PageHeroViewToggle } from './components/ui/page-hero';
-import { PlayerProfilePage } from './PlayerProfilePage';
+import { PlayerFormMinutesComparison, PlayerProfilePage } from './PlayerProfilePage';
 import { useModalLifecycle } from './components/ui/sheet';
 import type { SessionState, ThemePreset } from './contracts';
 import { managerNicknameForTeam } from './manager-nicknames';
@@ -1032,11 +1032,17 @@ function TradeProposalDrawer({ drawerRef, onClose, onSubmit, otherPlayers, owned
   useModalLifecycle(drawerRef, true, onClose);
   const [offeredPlayerIds, setOfferedPlayerIds] = useState<string[]>([]);
   const [requestedPlayerIds, setRequestedPlayerIds] = useState<string[]>([target.id]);
-  const [profilePlayerId, setProfilePlayerId] = useState<string | null>(null);
+  const [offerQuery, setOfferQuery] = useState('');
+  const [requestQuery, setRequestQuery] = useState('');
+  const [comparisonOfferId, setComparisonOfferId] = useState<string | null>(null);
+  const [comparisonRequestId, setComparisonRequestId] = useState<string | null>(target.id);
   const [error, setError] = useState('');
   const selectedOfferPlayers = offeredPlayerIds.map((id) => ownedPlayers.find((player) => player.id === id)).filter((player): player is MarketPlayer => player !== undefined);
   const selectedRequestPlayers = requestedPlayerIds.map((id) => otherPlayers.find((player) => player.id === id)).filter((player): player is MarketPlayer => player !== undefined);
-  const profilePlayer = [...ownedPlayers, ...otherPlayers].find((player) => player.id === profilePlayerId) ?? null;
+  const comparisonOffer = selectedOfferPlayers.find((player) => player.id === comparisonOfferId) ?? selectedOfferPlayers[0] ?? null;
+  const comparisonRequest = selectedRequestPlayers.find((player) => player.id === comparisonRequestId) ?? selectedRequestPlayers[0] ?? null;
+  const availableOfferPlayers = ownedPlayers.filter((player) => !offeredPlayerIds.includes(player.id) && matchesTradePlayer(player, offerQuery));
+  const availableRequestPlayers = otherPlayers.filter((player) => !requestedPlayerIds.includes(player.id) && matchesTradePlayer(player, requestQuery));
 
   async function submit() {
     if (offeredPlayerIds.length === 0 || requestedPlayerIds.length === 0 || pending) return;
@@ -1054,29 +1060,34 @@ function TradeProposalDrawer({ drawerRef, onClose, onSubmit, otherPlayers, owned
       <aside aria-label={`Trade proposal for ${target.displayName}`} aria-modal="true" className="market-page__drawer" ref={drawerRef} role="dialog" tabIndex={-1}>
         <div className="market-page__trade-proposal">
           <h2>Plan a trade</h2>
-          <p>Trade with {target.ownerName ?? 'another manager'}.</p>
+          <p>Trade with {target.ownerName ?? 'another manager'}</p>
           <section aria-label="Your offer" className="market-page__trade-side">
             <h3>Your offer · {selectedOfferPlayers.length}</h3>
-            {selectedOfferPlayers.map((player) => <TradePlannerPlayer key={player.id} onRemove={() => setOfferedPlayerIds((ids) => ids.filter((id) => id !== player.id))} onView={() => setProfilePlayerId(player.id)} player={player} pending={pending} side="offer" />)}
-            {ownedPlayers.length === 0 ? <p role="status">Your squad has no eligible players to offer.</p> : (
-              <label><span>Add a player to offer</span><select aria-label="Add a player to offer" disabled={pending} onChange={(event) => {
-                const id = event.currentTarget.value;
-                if (id) setOfferedPlayerIds((ids) => ids.includes(id) ? ids : [...ids, id]);
-                event.currentTarget.value = '';
-              }} value=""><option value="">Choose from your squad</option>{ownedPlayers.filter((player) => !offeredPlayerIds.includes(player.id)).map((player) => <option key={player.id} value={player.id}>{player.displayName}</option>)}</select></label>
-            )}
+            {selectedOfferPlayers.map((player) => <TradePlannerPlayer key={player.id} onCompare={() => setComparisonOfferId(player.id)} onRemove={() => setOfferedPlayerIds((ids) => ids.filter((id) => id !== player.id))} player={player} pending={pending} side="offer" selectedForComparison={comparisonOffer?.id === player.id} />)}
+            {ownedPlayers.length === 0 ? <p role="status">No players available to offer.</p> : <TradePlayerPicker
+              ariaLabel="Search your squad to offer"
+              disabled={pending}
+              emptyMessage={offerQuery.trim() ? 'No matching players.' : 'All eligible players are selected.'}
+              onAdd={(player) => { setOfferedPlayerIds((ids) => ids.includes(player.id) ? ids : [...ids, player.id]); setComparisonOfferId(player.id); setOfferQuery(''); }}
+              onQueryChange={setOfferQuery}
+              players={availableOfferPlayers}
+              query={offerQuery}
+            />}
           </section>
           <section aria-label="Your request" className="market-page__trade-side">
             <h3>You request · {selectedRequestPlayers.length}</h3>
-            {selectedRequestPlayers.map((player) => <TradePlannerPlayer key={player.id} onRemove={() => setRequestedPlayerIds((ids) => ids.filter((id) => id !== player.id))} onView={() => setProfilePlayerId(player.id)} player={player} pending={pending} side="request" />)}
-            {otherPlayers.filter((player) => !requestedPlayerIds.includes(player.id)).length > 0 ? (
-              <label><span>Add another player to request</span><select aria-label="Add another player to request" disabled={pending} onChange={(event) => {
-                const id = event.currentTarget.value;
-                if (id) setRequestedPlayerIds((ids) => ids.includes(id) ? ids : [...ids, id]);
-                event.currentTarget.value = '';
-              }} value=""><option value="">Choose from {target.ownerName ?? 'their squad'}</option>{otherPlayers.filter((player) => !requestedPlayerIds.includes(player.id)).map((player) => <option key={player.id} value={player.id}>{player.displayName}</option>)}</select></label>
-            ) : <p className="market-page__trade-empty">No other players are available to request from this squad.</p>}
+            {selectedRequestPlayers.map((player) => <TradePlannerPlayer key={player.id} onCompare={() => setComparisonRequestId(player.id)} onRemove={() => setRequestedPlayerIds((ids) => ids.filter((id) => id !== player.id))} player={player} pending={pending} side="request" selectedForComparison={comparisonRequest?.id === player.id} />)}
+            {otherPlayers.length > selectedRequestPlayers.length ? <TradePlayerPicker
+              ariaLabel={`Search ${target.ownerName ?? 'their squad'} to request`}
+              disabled={pending}
+              emptyMessage="No matching players."
+              onAdd={(player) => { setRequestedPlayerIds((ids) => ids.includes(player.id) ? ids : [...ids, player.id]); setComparisonRequestId(player.id); setRequestQuery(''); }}
+              onQueryChange={setRequestQuery}
+              players={availableRequestPlayers}
+              query={requestQuery}
+            /> : <p className="market-page__trade-empty">No other players available.</p>}
           </section>
+          {comparisonOffer && comparisonRequest ? <PlayerFormMinutesComparison key={`${comparisonOffer.id}:${comparisonRequest.id}`} firstPlayer={toProfilePlayer(comparisonOffer)} secondPlayer={toProfilePlayer(comparisonRequest)} squadClient={marketSquadClient} /> : <p className="market-page__trade-empty">Add a player to your offer to compare form and minutes.</p>}
           {error ? <p role="alert">{error}</p> : null}
           <div className="market-page__trade-proposal-actions">
             <Button disabled={offeredPlayerIds.length === 0 || requestedPlayerIds.length === 0 || pending} onClick={() => void submit()} type="button">{pending ? 'Sending…' : 'Send trade proposal'}</Button>
@@ -1084,29 +1095,45 @@ function TradeProposalDrawer({ drawerRef, onClose, onSubmit, otherPlayers, owned
           </div>
         </div>
       </aside>
-      {profilePlayer ? <PlayerProfilePage
-        key={profilePlayer.id}
-        onClose={() => setProfilePlayerId(null)}
-        playerId={profilePlayer.id}
-        presentation="drawer"
-        showActions={false}
-      /> : null}
     </div>
   );
 }
 
-function TradePlannerPlayer({ onRemove, onView, player, pending, side }: {
+function TradePlayerPicker({ ariaLabel, disabled, emptyMessage, onAdd, onQueryChange, players, query }: {
+  ariaLabel: string;
+  disabled: boolean;
+  emptyMessage: string;
+  onAdd: (player: MarketPlayer) => void;
+  onQueryChange: (query: string) => void;
+  players: MarketPlayer[];
+  query: string;
+}) {
+  return <div className="market-page__trade-picker">
+    <label><Search aria-hidden="true" size={16} /><span className="sr-only">{ariaLabel}</span><input aria-label={ariaLabel} disabled={disabled} onChange={(event) => onQueryChange(event.currentTarget.value)} placeholder="Search players" value={query} /></label>
+    <div aria-label={`${ariaLabel} results`} className="market-page__trade-picker-results" role="group">
+      {players.length ? players.map((player) => <button disabled={disabled} key={player.id} onClick={() => onAdd(player)} type="button"><span><strong>{player.displayName}</strong><small>{player.position} · {player.club}</small></span><span aria-hidden="true" className="market-page__trade-add">+</span></button>) : <p>{emptyMessage}</p>}
+    </div>
+  </div>;
+}
+
+function matchesTradePlayer(player: MarketPlayer, query: string): boolean {
+  const normalizedQuery = query.trim().toLocaleLowerCase();
+  return !normalizedQuery || `${player.displayName} ${player.position} ${player.club}`.toLocaleLowerCase().includes(normalizedQuery);
+}
+
+function TradePlannerPlayer({ onCompare, onRemove, player, pending, selectedForComparison, side }: {
+  onCompare: () => void;
   onRemove: () => void;
-  onView: () => void;
   player: MarketPlayer;
   pending: boolean;
+  selectedForComparison: boolean;
   side: 'offer' | 'request';
 }) {
   return (
-    <article className="market-page__trade-player">
+    <article aria-current={selectedForComparison ? 'true' : undefined} className="market-page__trade-player">
       <div><strong>{player.displayName}</strong><span>{player.position} · {player.club} · {formatInteger(player.points)} pts · form {formatMetric(player.form)} · xG {formatMetric(player.xg)} · xA {formatMetric(player.xa)}</span></div>
       <div className="market-page__trade-player-actions">
-        <Button onClick={onView} type="button" variant="secondary">View charts</Button>
+        <Button aria-pressed={selectedForComparison} onClick={onCompare} type="button" variant="secondary">Compare</Button>
         <Button aria-label={`Remove ${player.displayName} from your ${side}`} disabled={pending} onClick={onRemove} type="button" variant="ghost">Remove</Button>
       </div>
     </article>

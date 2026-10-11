@@ -1044,9 +1044,7 @@
 .market-page__accordion-trigger { align-items: center; background: var(--card); border: 0; color: var(--foreground); display: flex; font: inherit; font-weight: 700; justify-content: space-between; padding: .85rem 1rem; width: 100%; }
 .market-page__trade-selection-content { display: grid; gap: .75rem; padding: .8rem; }
 .market-page__selected-strip { min-width: 0; }
-.market-page__selected-strip-header { align-items: center; display: flex; justify-content: space-between; }
 .market-page__selected-strip h3 { font-size: .95rem; margin: 0 0 .5rem; }
-.market-page__selected-counts { align-items: center; display: flex; flex-wrap: wrap; gap: .45rem; }
 .market-page__direction-label { border-radius: 999px; display: inline-block; font-size: .68rem; font-weight: 750; line-height: 1.35; padding: .18rem .5rem; white-space: nowrap; }
 .market-page__direction-label--out { background: color-mix(in srgb, var(--destructive) 15%, var(--card)); color: var(--destructive); }
 .market-page__direction-label--in { background: color-mix(in srgb, var(--primary) 17%, var(--card)); color: var(--primary); }

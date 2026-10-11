@@ -1141,11 +1141,9 @@ function TradeSelectedCarousel({ assets, onRemove }: {
   assets: Array<{ player: MarketPlayer; direction: 'in' | 'out'; label: string }>;
   onRemove: (direction: 'in' | 'out', player: MarketPlayer) => void;
 }) {
-  const outgoingCount = assets.filter((asset) => asset.direction === 'out').length;
-  const incomingCount = assets.length - outgoingCount;
   return (
     <section aria-label="Selected trade players" className="market-page__selected-strip">
-      <div className="market-page__selected-strip-header"><h3>Trade players</h3><div className="market-page__selected-counts"><span className="market-page__direction-label market-page__direction-label--out">{assets.find((asset) => asset.direction === 'out')?.label ?? 'You offer'} · {outgoingCount}</span>{incomingCount ? <span className="market-page__direction-label market-page__direction-label--in">You request · {incomingCount}</span> : null}</div></div>
+      <h3>Trade players</h3>
       {assets.length ? (
         <Carousel aria-label="Trade player cards" className="market-page__selected-carousel" opts={{ align: 'start', containScroll: 'trimSnaps' }}>
           <CarouselContent className="market-page__selected-carousel-track">

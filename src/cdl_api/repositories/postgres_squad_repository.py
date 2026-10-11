@@ -822,7 +822,11 @@ class PostgreSQLSquadRepository(InMemorySquadRepository):
         with self._session_factory() as session:
             result = session.execute(
                 update(squad_interests_table)
-                .where(squad_interests_table.c.id == interest_id)
+                .where(
+                    squad_interests_table.c.id == interest_id,
+                    squad_interests_table.c.manager_id == self._manager_id,
+                    squad_interests_table.c.status == "active",
+                )
                 .values(status="deleted", updated_at=datetime.now(UTC))
             )
             session.commit()

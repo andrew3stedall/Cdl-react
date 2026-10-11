@@ -1517,6 +1517,252 @@
   font-weight: 750;
 }
 
+.ai-connections-page {
+  max-width: 48rem;
+}
+
+.ai-connections-page .profile-settings-group {
+  min-width: 0;
+}
+
+.ai-connections-page .profile-settings-group > h2,
+.ai-section-heading h2 {
+  margin: 0 0.8rem;
+}
+
+.ai-section-heading {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.ai-connection-setup,
+.ai-connection-card,
+.ai-approval-note,
+.ai-activity-card,
+.ai-empty-state {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--card-foreground);
+  padding: 1rem;
+}
+
+.ai-connection-setup {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.ai-connection-setup p,
+.ai-approval-note p,
+.ai-activity-card p {
+  color: var(--muted-foreground);
+  font-size: 0.84rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.ai-connection-setup__heading {
+  align-items: center;
+  display: flex;
+  gap: 0.55rem;
+}
+
+.ai-connection-setup__note {
+  font-size: 0.76rem !important;
+}
+
+.ai-mcp-url {
+  align-items: stretch;
+  display: flex;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.ai-mcp-url code {
+  align-content: center;
+  background: color-mix(in srgb, var(--muted) 48%, var(--card));
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) * 0.7);
+  flex: 1 1 auto;
+  font-size: 0.78rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  padding: 0.55rem 0.65rem;
+}
+
+.ai-connection-list,
+.ai-activity-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.ai-connection-card {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.ai-connection-card__top {
+  align-items: center;
+  display: flex;
+  gap: 0.7rem;
+  min-width: 0;
+}
+
+.ai-connection-card__icon {
+  align-items: center;
+  background: color-mix(in srgb, var(--primary) 12%, var(--card));
+  border-radius: 50%;
+  color: var(--theme-primary-text, var(--primary));
+  display: inline-flex;
+  flex: 0 0 2.4rem;
+  height: 2.4rem;
+  justify-content: center;
+}
+
+.ai-connection-card__identity {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ai-connection-card h3,
+.ai-connection-card p {
+  margin: 0;
+}
+
+.ai-connection-card h3 {
+  font-size: 0.94rem;
+}
+
+.ai-connection-card__identity p,
+.ai-activity-card time {
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+  margin-top: 0.18rem;
+}
+
+.ai-status-pill {
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 750;
+  padding: 0.28rem 0.55rem;
+  text-transform: capitalize;
+}
+
+.ai-status-pill--active {
+  background: color-mix(in srgb, #16a34a 17%, var(--card));
+  color: var(--foreground);
+}
+
+.ai-status-pill--muted {
+  background: color-mix(in srgb, var(--muted) 60%, var(--card));
+  color: var(--muted-foreground);
+}
+
+.ai-connection-details {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+}
+
+.ai-connection-details > div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.ai-connection-details dt {
+  color: var(--muted-foreground);
+  font-size: 0.72rem;
+}
+
+.ai-connection-details dd {
+  font-size: 0.79rem;
+  font-weight: 650;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.ai-connection-card__actions,
+.ai-connection-confirm {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.ai-connection-confirm {
+  border-top: 1px solid var(--border);
+  padding-top: 0.7rem;
+}
+
+.ai-connection-confirm span,
+.ai-grant-note,
+.ai-page-status {
+  color: var(--muted-foreground);
+  font-size: 0.8rem;
+}
+
+.ai-page-status {
+  margin: 0 0.8rem;
+}
+
+.ai-page-status--error {
+  color: var(--destructive, #b91c1c);
+}
+
+.ai-approval-note {
+  align-items: flex-start;
+  display: flex;
+  gap: 0.65rem;
+}
+
+.ai-approval-note svg {
+  flex: 0 0 auto;
+  margin-top: 0.1rem;
+}
+
+.ai-activity-card {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.ai-activity-card > div {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: space-between;
+}
+
+.ai-activity-card strong {
+  font-size: 0.84rem;
+  overflow-wrap: anywhere;
+}
+
+.ai-activity-card time {
+  font-size: 0.72rem;
+}
+
+@media (max-width: 520px) {
+  .ai-mcp-url {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .ai-mcp-url .ui-button {
+    justify-content: center;
+    min-height: 2.75rem;
+    width: 100%;
+  }
+
+  .ai-connection-card__actions > .ui-button,
+  .ai-connection-confirm > .ui-button {
+    flex: 1 1 100%;
+    justify-content: center;
+    min-height: 2.75rem;
+  }
+}
+
 .profile-settings-row__chevron {
   color: var(--muted-foreground);
   flex: 0 0 auto;

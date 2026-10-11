@@ -9,6 +9,7 @@ from typing import Any
 from urllib.parse import urlsplit
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response
+from fastapi.encoders import jsonable_encoder
 from fastapi.responses import JSONResponse
 
 from cdl_api.ai_tools.registry import TOOL_REGISTRY, ToolDefinition, ToolRisk
@@ -16,7 +17,7 @@ from cdl_api.contracts.session import SessionUser
 from cdl_api.database import build_session_factory
 from cdl_api.routers.auth import require_authenticated_session
 from cdl_api.routers.oauth import get_oauth_service
-from cdl_api.services.ai_tools import ToolExecutor, get_tool_executor
+from cdl_api.services.ai_tools import ToolExecutor, build_tool_executor
 from cdl_api.services.mcp_sessions import (
     InMemoryMCPSessionStore,
     PostgreSQLMCPSessionStore,
@@ -28,6 +29,10 @@ from cdl_api.settings import Settings, get_settings
 router = APIRouter(tags=["mcp"])
 PROTOCOL_VERSION = "2025-11-25"
 _TOOLS = {tool.name: tool for tool in TOOL_REGISTRY}
+
+
+def get_tool_executor(settings: Settings = Depends(get_settings)) -> ToolExecutor:
+    return build_tool_executor(settings)
 
 
 def _tool_payload(tool: ToolDefinition) -> dict[str, Any]:
@@ -195,24 +200,57 @@ def _call_tool(
     signing_key: str,
 ) -> dict[str, Any]:
     if not isinstance(arguments, dict):
+        error = {"code": "validation_error", "message": "arguments must be an object."}
         return {
             "isError": True,
-            "content": [{"type": "text", "text": "arguments must be an object."}],
+            "content": [{"type": "text", "text": json.dumps({"error": error})}],
+            "structuredContent": {"error": error},
         }
     errors = _validate_schema(arguments, tool.input_schema)
     if errors:
-        return {"isError": True, "content": [{"type": "text", "text": "; ".join(errors)}]}
+        error = {"code": "validation_error", "message": "; ".join(errors)}
+        return {
+            "isError": True,
+            "content": [{"type": "text", "text": json.dumps({"error": error})}],
+            "structuredContent": {"error": error},
+        }
     inputs = dict(arguments)
     limit = inputs.pop("limit", 25)
     cursor = inputs.pop("cursor", None)
     try:
-        data = executor.execute(tool, inputs, user_id=user_id, connection_id=connection_id)
+        data = jsonable_encoder(
+            executor.execute(tool, inputs, user_id=user_id, connection_id=connection_id)
+        )
         page = {"next_cursor": None, "has_more": False}
-        if tool.paginated and isinstance(data, list):
+        if tool.paginated:
             offset = _cursor_decode(cursor, tool.name, user_id, signing_key)
-            total = len(data)
-            data = data[offset : offset + limit]
-            next_offset = offset + len(data)
+            if isinstance(data, list):
+                total = len(data)
+                data = data[offset : offset + limit]
+            elif isinstance(data, dict):
+                collection_keys = {
+                    "get_league_fixtures": ("fixtures",),
+                    "search_players": ("players",),
+                    "search_rules": ("sections",),
+                    "list_trade_proposals": ("trades",),
+                    "list_my_loans": ("loans",),
+                    "list_pending_approvals": ("trades", "loans"),
+                }.get(tool.name, ())
+                lengths = [
+                    len(data[key]) for key in collection_keys if isinstance(data.get(key), list)
+                ]
+                total = max(lengths, default=0)
+                data = {
+                    **data,
+                    **{
+                        key: value[offset : offset + limit]
+                        for key in collection_keys
+                        if isinstance((value := data.get(key)), list)
+                    },
+                }
+            else:
+                total = 0
+            next_offset = offset + limit
             has_more = next_offset < total
             page = {
                 "next_cursor": _cursor_encode(next_offset, tool.name, user_id, signing_key)
@@ -226,8 +264,29 @@ def _call_tool(
             "structuredContent": result,
             "isError": False,
         }
-    except (ValueError, NotImplementedError) as exc:
-        return {"isError": True, "content": [{"type": "text", "text": str(exc)}]}
+    except Exception as exc:
+        code = (
+            "permission_denied"
+            if isinstance(exc, PermissionError)
+            else "validation_error"
+            if isinstance(exc, ValueError)
+            else "not_found"
+            if isinstance(exc, LookupError)
+            else "tool_unavailable"
+            if isinstance(exc, NotImplementedError)
+            else "service_error"
+        )
+        message = (
+            str(exc)
+            if code != "service_error"
+            else "The CDL service could not complete this action."
+        )
+        error = {"code": code, "message": message}
+        return {
+            "isError": True,
+            "content": [{"type": "text", "text": json.dumps({"error": error})}],
+            "structuredContent": {"error": error},
+        }
 
 
 @router.get("/.well-known/oauth-protected-resource")

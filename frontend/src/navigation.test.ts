@@ -114,6 +114,7 @@ describe('navigation configuration', () => {
       '/profile/player-positions',
       '/profile/player-metrics',
       '/profile/result-colours',
+      '/profile/ai-connections',
     ]) {
       expect(isSupportedRoute(path), path).toBe(true);
     }

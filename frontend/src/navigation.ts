@@ -103,6 +103,7 @@ export function isSupportedRoute(path: string): boolean {
     '/profile/player-positions', '/account/player-positions',
     '/profile/player-metrics', '/account/player-metrics',
     '/profile/result-colours', '/account/result-colours',
+    '/profile/ai-connections', '/account/ai-connections',
   ].includes(path)) return true;
   if (path === '/rules' || path === '/fdr' || path === '/analytics' || path === '/dashboard/analytics') return true;
   if (/^\/players\/[^/]+$/.test(path) || /^\/join\/[^/]+$/.test(path)) return true;

@@ -6,11 +6,11 @@ import hashlib
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from cdl_api.ai_tools.registry import ToolDefinition
+from cdl_api.ai_tools.registry import ToolDefinition, get_tool
 from cdl_api.contracts.session import SessionUser
 from cdl_api.repositories.oauth import InMemoryOAuthRepository
 from cdl_api.routers.auth import require_authenticated_session
-from cdl_api.routers.mcp import get_tool_executor, router
+from cdl_api.routers.mcp import _call_tool, get_tool_executor, router
 from cdl_api.routers.oauth import get_oauth_service
 from cdl_api.services.oauth import OAuthService
 from cdl_api.settings import Settings, get_settings
@@ -31,6 +31,61 @@ class FakeToolExecutor:
             "user_id": user_id,
             "connection_id": connection_id,
         }
+
+
+def test_paginated_envelopes_slice_only_their_item_collections() -> None:
+    tool = get_tool("search_players")
+    assert tool is not None
+
+    class PlayerExecutor:
+        def execute(self, *_args: object, **_kwargs: object) -> object:
+            return {"filters": {}, "players": [{"id": str(i)} for i in range(5)]}
+
+    first = _call_tool(
+        tool,
+        {"limit": 2},
+        user_id="user-1",
+        connection_id="connection-1",
+        executor=PlayerExecutor(),
+        signing_key="k" * 32,
+    )["structuredContent"]
+    assert first["data"]["players"] == [{"id": "0"}, {"id": "1"}]
+    assert first["page"]["has_more"] is True
+
+    second = _call_tool(
+        tool,
+        {"limit": 2, "cursor": first["page"]["next_cursor"]},
+        user_id="user-1",
+        connection_id="connection-1",
+        executor=PlayerExecutor(),
+        signing_key="k" * 32,
+    )["structuredContent"]
+    assert second["data"]["players"] == [{"id": "2"}, {"id": "3"}]
+    assert second["data"]["filters"] == {}
+
+
+def test_paginated_pending_approvals_keep_trade_and_loan_pages_aligned() -> None:
+    tool = get_tool("list_pending_approvals")
+    assert tool is not None
+
+    class ApprovalExecutor:
+        def execute(self, *_args: object, **_kwargs: object) -> object:
+            return {
+                "trades": [{"id": f"trade-{i}"} for i in range(4)],
+                "loans": [{"id": f"loan-{i}"} for i in range(3)],
+            }
+
+    result = _call_tool(
+        tool,
+        {"limit": 2},
+        user_id="user-1",
+        connection_id="connection-1",
+        executor=ApprovalExecutor(),
+        signing_key="k" * 32,
+    )["structuredContent"]
+    assert result["data"]["trades"] == [{"id": "trade-0"}, {"id": "trade-1"}]
+    assert result["data"]["loans"] == [{"id": "loan-0"}, {"id": "loan-1"}]
+    assert result["page"]["has_more"] is True
 
 
 def test_remote_mcp_initializes_lists_scoped_tools_and_calls_shared_executor() -> None:

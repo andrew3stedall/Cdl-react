@@ -1070,6 +1070,8 @@
 .market-page__selected-player-card-details { display: grid; gap: .25rem; min-width: 0; }
 .market-page__selected-player-card-details strong { font-size: .78rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .market-page__selected-player-card-details small { color: var(--market-muted); font-size: .68rem; }
+.market-page__selected-player-card-remove { align-items: center; background: var(--secondary); border: 1px solid var(--border); border-radius: .45rem; color: var(--foreground); cursor: pointer; display: inline-flex; flex: 0 0 1.8rem; height: 1.8rem; justify-content: center; margin-inline-start: auto; padding: 0; }
+.market-page__selected-player-card-remove:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 .market-page__selected-carousel-empty { align-items: center; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); color: var(--market-muted); display: flex; min-height: 4.25rem; padding: .65rem; }
 .market-page__selected-carousel .ui-carousel__button { background: color-mix(in srgb, var(--card) 92%, transparent); }
 .market-page__drawer--planner .player-profile__comparison-chart { min-width: 0; overflow-x: auto; }

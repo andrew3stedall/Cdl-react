@@ -496,7 +496,7 @@ test('Market renders distinct empty and failed-read states with recovery control
   await expect(page.getByRole('button', { name: 'Retry', exact: true })).toBeVisible();
 });
 
-test('trade player cards show two at a time and navigate to additional selected players', async ({ page }) => {
+test('trade player cards fit five fixtures and show more cards as the viewport widens', async ({ page }) => {
   await installLayoutFixtures(page, { apiDelayMs: 0 });
   const opponentTeam = { id: 'team-river', name: 'River Rangers', short_name: 'RIV' };
   await page.route('**/api/squad/summary', async (route) => {
@@ -545,6 +545,10 @@ test('trade player cards show two at a time and navigate to additional selected 
   await expect(tradeCarousel.locator('.market-page__carousel-dot--out')).toHaveCount(3);
   await expect(tradeCarousel.locator('.market-page__carousel-dot--in')).toHaveCount(1);
   await expect(tradeCarousel.locator('.market-page__selected-player-card .player-card--token')).toHaveCount(4);
+  const firstChart = tradeCarousel.locator('.market-page__selected-player-card [data-chart-kind="combined-form-minutes"]').first();
+  await expect(firstChart).toHaveAttribute('data-fixture-count', '5');
+  await expect(firstChart.locator('.player-profile__combined-chart-column')).toHaveCount(5);
+  expect(await firstChart.evaluate((element) => element.scrollWidth)).toBeLessThanOrEqual(await firstChart.evaluate((element) => element.clientWidth) + 1);
   const next = tradeCarousel.getByRole('button', { name: 'Next trade players' });
   await expect(next).toBeEnabled();
   const [viewportBox, slideBoxes] = await Promise.all([
@@ -557,7 +561,9 @@ test('trade player cards show two at a time and navigate to additional selected 
   expect(viewportBox).not.toBeNull();
   expect(slideBoxes[0].x + slideBoxes[0].width).toBeLessThanOrEqual(viewportBox!.x + viewportBox!.width);
   expect(slideBoxes[1].x + slideBoxes[1].width).toBeLessThanOrEqual(viewportBox!.x + viewportBox!.width);
-  expect(slideBoxes[2].x).toBeGreaterThanOrEqual(viewportBox!.x + viewportBox!.width - 1);
+  const visibleSlideCount = slideBoxes.filter((box) => box.x < viewportBox!.x + viewportBox!.width - 1 && box.x + box.width > viewportBox!.x + 1).length;
+  expect(visibleSlideCount).toBeGreaterThanOrEqual(2);
+  if (page.viewportSize()!.width > 1100) expect(visibleSlideCount).toBeGreaterThanOrEqual(3);
 
   const secondCardStart = await slides.nth(1).evaluate((element) => element.getBoundingClientRect().x);
   await next.click();

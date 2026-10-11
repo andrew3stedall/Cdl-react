@@ -175,7 +175,7 @@ describe('MarketPage', () => {
     expect(container.querySelector('[role="dialog"]')?.getAttribute('aria-label')).toBe('Trade proposal for Other Owned Midfielder');
     expect(container.querySelector('.market-page__drawer--planner')).not.toBeNull();
     expect(document.body.style.overflow).toBe('hidden');
-    expect(container.querySelector('[aria-label="You request"]')?.textContent).toContain('Other Owned Midfielder');
+    expect(container.querySelector('[aria-label="You request"] .player-card')?.getAttribute('aria-label')).toBe('Player card for Other Owned Midfielder');
     expect(container.querySelector('[role="dialog"] select')).toBeNull();
     expect(container.querySelector('input[placeholder="Search players"]')).toBeNull();
     expect(container.querySelector('.market-page__accordion-trigger')?.getAttribute('aria-expanded')).toBe('true');
@@ -206,7 +206,7 @@ describe('MarketPage', () => {
     expect(document.body.style.overflow).toBe('');
   });
 
-  test('shows selected trade players in a multi-card carousel above the comparison chart', async () => {
+  test('keeps each selected player and their own chart together in the carousel', async () => {
     marketPlayers = [otherOwnedPlayer];
     const { container, root } = await renderPage();
     const row = container.querySelector('tr[aria-label="View Other Owned Midfielder details"]') as HTMLTableRowElement;
@@ -224,8 +224,16 @@ describe('MarketPage', () => {
     const offerCarousel = container.querySelector('.market-page__selected-strip[aria-label="You offer"] [aria-roledescription="carousel"]');
     expect(offerCarousel?.querySelectorAll('.market-page__selected-carousel-slide')).toHaveLength(3);
     expect(offerCarousel?.querySelector('[aria-label="Next you offer players"]')).not.toBeNull();
-    expect(container.querySelector('.market-page__selected-strip[aria-label="You request"] .market-page__selected-player-card-details')?.textContent).toContain('Other Owned Midfielder');
-    expect(container.querySelector('[data-testid="trade-player-comparison"]')).not.toBeNull();
+    expect(offerCarousel?.querySelectorAll('.market-page__selected-player-card')).toHaveLength(3);
+    expect(offerCarousel?.querySelectorAll('.market-page__selected-player-card .player-card--token')).toHaveLength(3);
+    expect(offerCarousel?.querySelectorAll('.market-page__selected-player-card [data-testid="trade-player-comparison"]')).toHaveLength(3);
+    expect(offerCarousel?.querySelectorAll('.market-page__carousel-dot')).toHaveLength(3);
+    expect(offerCarousel?.classList.contains('market-page__selected-carousel--out')).toBe(true);
+    const request = container.querySelector('.market-page__selected-strip[aria-label="You request"]');
+    expect(request?.querySelector('.player-card--token')).not.toBeNull();
+    expect(request?.querySelector('[data-testid="trade-player-comparison"]')).not.toBeNull();
+    expect(request?.querySelector('.market-page__carousel-dot')).not.toBeNull();
+    expect(request?.querySelector('.market-page__selected-carousel--in')).not.toBeNull();
     await act(async () => {
       (offerCarousel?.querySelector('button[aria-label="Remove Owned Forward from You offer"]') as HTMLButtonElement).click();
       await Promise.resolve();

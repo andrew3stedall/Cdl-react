@@ -19,6 +19,8 @@ import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious
 import { PlayerCard, type PlayerCardFixtureTone, type PlayerCardPlayer } from './components/player/PlayerCard';
 import { PageHero, PageHeroControls, PageHeroViewToggle } from './components/ui/page-hero';
 import { PlayerFormMinutesGroupComparison, PlayerProfilePage } from './PlayerProfilePage';
+import { FixtureSquadComparison, type FixtureSquadView } from './components/fixture/FixtureSquadComparison';
+import type { FixturePlayerFixture, FixtureSquad, FixtureSquadPlayer } from './league-api';
 import { useModalLifecycle } from './components/ui/sheet';
 import type { SessionState, ThemePreset } from './contracts';
 import { managerNicknameForTeam } from './manager-nicknames';
@@ -1050,6 +1052,14 @@ function TradeProposalDrawer({ drawerRef, onClose, onSubmit, otherPlayers, owned
   }, []);
   const selectedOfferPlayers = offeredPlayerIds.map((id) => ownedPlayers.find((player) => player.id === id)).filter((player): player is MarketPlayer => player !== undefined);
   const selectedRequestPlayers = requestedPlayerIds.map((id) => otherPlayers.find((player) => player.id === id)).filter((player): player is MarketPlayer => player !== undefined);
+  const selectedAssets = [
+    ...selectedOfferPlayers.map((player) => ({ player, direction: 'out' as const, label: proposalType === 'loan' ? 'Player to loan' : 'You offer' })),
+    ...(proposalType === 'trade' ? selectedRequestPlayers.map((player) => ({ player, direction: 'in' as const, label: 'You request' })) : []),
+  ];
+  const tradeSquads = [
+    createTradeFixtureSquad(ownedPlayers, true, 'Your squad', ownedPlayers[0]?.draftTeamId ?? 'trade-user-squad', ownedPlayers[0]?.draftTeamName ?? 'Your squad'),
+    createTradeFixtureSquad(otherPlayers, false, `${target.ownerName ?? 'Their'} squad`, target.draftTeamId ?? 'trade-opponent-squad', target.draftTeamName ?? target.ownerName ?? 'Their squad'),
+  ];
 
   function togglePlayer(side: 'offer' | 'request', player: MarketPlayer) {
     if (side === 'offer' && proposalType === 'loan') {
@@ -1097,20 +1107,23 @@ function TradeProposalDrawer({ drawerRef, onClose, onSubmit, otherPlayers, owned
           <section className="market-page__trade-selection">
             <button aria-controls="trade-player-selection" aria-expanded={selectionOpen} className="market-page__accordion-trigger" onClick={() => setSelectionOpen((open) => { window.sessionStorage.setItem('cdl:trade-selection-open', String(!open)); return !open; })} type="button"><span>Players</span><span>{selectionOpen ? '−' : '+'}</span></button>
             {selectionOpen ? <div id="trade-player-selection" className="market-page__trade-selection-content">
-              <div aria-label="Player view" className="market-page__view-toggle" role="group">
-                <Button aria-pressed={view === 'pitch'} onClick={() => { setView('pitch'); window.localStorage.setItem('cdl:squad-view', 'pitch'); }} type="button" variant={view === 'pitch' ? 'primary' : 'secondary'}>Pitch</Button>
-                <Button aria-pressed={view === 'list'} onClick={() => { setView('list'); window.localStorage.setItem('cdl:squad-view', 'list'); }} type="button" variant={view === 'list' ? 'primary' : 'secondary'}>List</Button>
-              </div>
-              <div className="market-page__trade-rosters">
-                <TradeRoster label="Your players" players={ownedPlayers} selectedIds={new Set(offeredPlayerIds)} view={view} onToggle={(player) => togglePlayer('offer', player)} />
-                {proposalType === 'trade' ? <TradeRoster label={`${target.ownerName ?? 'Their'} players`} players={otherPlayers} selectedIds={new Set(requestedPlayerIds)} view={view} onToggle={(player) => togglePlayer('request', player)} /> : null}
-              </div>
-            </div> : null}
+              <FixtureSquadComparison
+                attackDirection="down" gameweekStatus="future"
+                onPlayerClick={(fixturePlayer) => {
+                  const player = [...ownedPlayers, ...otherPlayers].find((candidate) => candidate.id === fixturePlayer.id);
+                  if (!player) return;
+                  const isOwned = ownedPlayers.some((candidate) => candidate.id === player.id);
+                  if (!isOwned && proposalType === 'loan') return;
+                  togglePlayer(isOwned ? 'offer' : 'request', player);
+                }}
+                onViewChange={(nextView) => { setView(nextView); window.localStorage.setItem('cdl:squad-view', nextView); }}
+                playerInteraction="select" pitchFixtureDisplay="home-club"
+                selectedPlayerIds={new Set(proposalType === 'trade' ? [...offeredPlayerIds, ...requestedPlayerIds] : offeredPlayerIds)}
+                showViewToggle squads={tradeSquads} view={view}
+              />
+            </div> : null} null}
           </section>
-          <section aria-label="Selected trade players" className="market-page__selected-assets">
-            <SelectedPlayerCarousel direction="out" label={proposalType === 'loan' ? 'Player to loan' : 'You offer'} onToggle={(player) => togglePlayer('offer', player)} players={selectedOfferPlayers} selectedIds={offeredPlayerIds} />
-            {proposalType === 'trade' ? <SelectedPlayerCarousel direction="in" label="You request" onToggle={(player) => togglePlayer('request', player)} players={selectedRequestPlayers} selectedIds={requestedPlayerIds} /> : null}
-          </section>
+          <TradeSelectedCarousel assets={selectedAssets} onRemove={(direction, player) => togglePlayer(direction === 'out' ? 'offer' : 'request', player)} />
           {proposalType === 'loan' ? <label className="market-page__loan-duration">Duration (gameweeks)<input min={4} onChange={(event) => setLoanDuration(Math.max(4, Number(event.currentTarget.value) || 4))} type="number" value={loanDuration} /></label> : null}
           {error ? <p role="alert">{error}</p> : null}
           {loanNotice ? <p role="status">{loanNotice}</p> : null}
@@ -1124,54 +1137,38 @@ function TradeProposalDrawer({ drawerRef, onClose, onSubmit, otherPlayers, owned
   );
 }
 
-function TradeRoster({ label, onToggle, players, selectedIds, view }: {
-  label: string;
-  onToggle: (player: MarketPlayer) => void;
-  players: MarketPlayer[];
-  selectedIds: ReadonlySet<string>;
-  view: 'pitch' | 'list';
+function TradeSelectedCarousel({ assets, onRemove }: {
+  assets: Array<{ player: MarketPlayer; direction: 'in' | 'out'; label: string }>;
+  onRemove: (direction: 'in' | 'out', player: MarketPlayer) => void;
 }) {
-  const ordered = [...players].sort((left, right) => ['GKP', 'DEF', 'MID', 'FWD'].indexOf(left.position) - ['GKP', 'DEF', 'MID', 'FWD'].indexOf(right.position) || left.displayName.localeCompare(right.displayName));
-  const positions = ['FWD', 'MID', 'DEF', 'GKP'];
-  const renderPlayer = (player: MarketPlayer) => <button aria-pressed={selectedIds.has(player.id)} className={`market-page__roster-player ${view === 'pitch' ? 'squad-page__pitch-player' : ''} position-${player.position.toLowerCase()} ${selectedIds.has(player.id) ? 'is-selected' : ''}`} key={player.id} onClick={() => onToggle(player)} type="button"><PlayerCard formPosition={view === 'list' ? 'beside' : 'below'} layout={view === 'list' ? 'list' : 'pitch'} player={toTradeRosterPlayer(player, view === 'pitch' ? 'home' : 'opponent')} showPositionMarker={false} size="sm" /><span aria-hidden="true" className="market-page__roster-check">{selectedIds.has(player.id) ? '✓' : '+'}</span></button>;
-  return <section aria-label={label} className={`market-page__trade-roster market-page__trade-roster--${view}`}><h3>{label}</h3>{ordered.length ? view === 'list' ? <div className="market-page__trade-roster-players">{ordered.map(renderPlayer)}</div> : <div className="market-page__trade-pitch">{positions.map((position) => {
-    const group = ordered.filter((player) => player.position === position);
-    return group.length ? <div aria-label={position} className={`market-page__trade-pitch-row position-${position.toLowerCase()}`} key={position}>{group.map(renderPlayer)}</div> : null;
-  })}</div> : <p>No players available.</p>}</section>;
-}
-
-function SelectedPlayerCarousel({ direction, label, onToggle, players, selectedIds }: {
-  direction: 'in' | 'out';
-  label: string;
-  onToggle: (player: MarketPlayer) => void;
-  players: MarketPlayer[];
-  selectedIds: string[];
-}) {
+  const outgoingCount = assets.filter((asset) => asset.direction === 'out').length;
+  const incomingCount = assets.length - outgoingCount;
   return (
-    <section aria-label={label} className="market-page__selected-strip">
-      <div className="market-page__selected-strip-header"><h3>{label}</h3><small>{selectedIds.length}</small></div>
-      {players.length ? (
-        <Carousel aria-label={`${label} player cards`} className={`market-page__selected-carousel market-page__selected-carousel--${direction}`} opts={{ align: 'start', containScroll: 'trimSnaps' }}>
+    <section aria-label="Selected trade players" className="market-page__selected-strip">
+      <div className="market-page__selected-strip-header"><h3>Trade players</h3><div className="market-page__selected-counts"><span className="market-page__direction-label market-page__direction-label--out">You offer · {outgoingCount}</span>{incomingCount ? <span className="market-page__direction-label market-page__direction-label--in">You request · {incomingCount}</span> : null}</div></div>
+      {assets.length ? (
+        <Carousel aria-label="Trade player cards" className="market-page__selected-carousel" opts={{ align: 'start', containScroll: 'trimSnaps' }}>
           <CarouselContent className="market-page__selected-carousel-track">
-            {players.map((player, index) => (
-              <CarouselItem aria-label={`${player.displayName}, ${index + 1} of ${players.length}`} className="market-page__selected-carousel-slide" key={`${label}:${player.id}`}>
-                <article className="market-page__selected-player-card" data-testid="trade-selected-player-card">
+            {assets.map(({ direction, label, player }, index) => (
+              <CarouselItem aria-label={`${player.displayName}, ${index + 1} of ${assets.length}`} className="market-page__selected-carousel-slide" key={`${direction}:${player.id}`}>
+                <article className={`market-page__selected-player-card market-page__selected-player-card--${direction}`} data-testid="trade-selected-player-card">
+                  <span className={`market-page__direction-label market-page__direction-label--${direction}`}>{label}</span>
                   <PlayerCard ariaLabel={`Player card for ${player.displayName}`} className="market-page__selected-player-header" formPosition="below" layout="token" player={toTradeRosterPlayer(player, 'home')} size="sm" />
                   <PlayerFormMinutesGroupComparison players={[toProfilePlayer(player)]} squadClient={marketSquadClient} />
-                  <button aria-label={`Remove ${player.displayName} from ${label}`} className="market-page__selected-player-card-remove" onClick={() => onToggle(player)} type="button">×</button>
+                  <button aria-label={`Remove ${player.displayName} from ${label}`} className="market-page__selected-player-card-remove" onClick={() => onRemove(direction, player)} type="button">×</button>
                 </article>
               </CarouselItem>
             ))}
           </CarouselContent>
-          <CarouselDots count={players.length} label={label} />
-          {players.length > 2 ? <><CarouselPrevious aria-label={`Previous ${label.toLowerCase()} players`} /><CarouselNext aria-label={`Next ${label.toLowerCase()} players`} /></> : null}
+          <CarouselDots assets={assets} />
+          {assets.length > 2 ? <><CarouselPrevious aria-label="Previous trade players" /><CarouselNext aria-label="Next trade players" /></> : null}
         </Carousel>
-      ) : <div className="market-page__selected-carousel-empty">None selected</div>}
+      ) : <div className="market-page__selected-carousel-empty">Select players above to build your proposal.</div>}
     </section>
   );
 }
 
-function CarouselDots({ count, label }: { count: number; label: string }) {
+function CarouselDots({ assets }: { assets: Array<{ player: MarketPlayer; direction: 'in' | 'out'; label: string }> }) {
   const { api } = useCarousel();
   const [activeIndex, setActiveIndex] = useState(0);
   useEffect(() => {
@@ -1180,13 +1177,10 @@ function CarouselDots({ count, label }: { count: number; label: string }) {
     updateIndex();
     api.on('select', updateIndex);
     api.on('reInit', updateIndex);
-    return () => {
-      api.off('select', updateIndex);
-      api.off('reInit', updateIndex);
-    };
+    return () => { api.off('select', updateIndex); api.off('reInit', updateIndex); };
   }, [api]);
-  return <div aria-label={`${label} player navigation`} className="market-page__carousel-dots" role="group">
-    {Array.from({ length: count }, (_, index) => <button aria-label={`Show ${label} player ${index + 1}`} aria-pressed={activeIndex === index} className="market-page__carousel-dot" key={index} onClick={() => api?.scrollTo(index)} type="button" />)}
+  return <div aria-label="Trade player navigation" className="market-page__carousel-dots" role="group">
+    {assets.map(({ direction, player }, index) => <button aria-label={`Show ${player.displayName}`} aria-pressed={activeIndex === index} className={`market-page__carousel-dot market-page__carousel-dot--${direction}`} key={player.id} onClick={() => api?.scrollTo(index)} type="button" />)}
   </div>;
 }
 
@@ -1206,6 +1200,39 @@ function toPlayerCardPlayer(player: MarketPlayer, ownershipTone: PlayerCardFixtu
     formHistory: toPlayerCardFormHistory(player.formHistory),
     position: player.position,
     team: player.club,
+  };
+}
+
+function createTradeFixtureSquad(players: MarketPlayer[], isUserTeam: boolean, teamName: string, teamId: string, managerName: string): FixtureSquad {
+  const positionOrder = ['GKP', 'DEF', 'MID', 'FWD'];
+  const available = players.map(toTradeFixturePlayer).sort((left, right) => positionOrder.indexOf(left.position) - positionOrder.indexOf(right.position) || left.displayName.localeCompare(right.displayName));
+  const starters: FixtureSquadPlayer[] = [];
+  const startingFormation: Record<string, number> = { GKP: 1, DEF: 4, MID: 4, FWD: 2 };
+  for (const position of positionOrder) starters.push(...available.filter((player) => player.position === position).slice(0, startingFormation[position]));
+  if (starters.length < Math.min(11, available.length)) {
+    const startingIds = new Set(starters.map((player) => player.id));
+    starters.push(...available.filter((player) => !startingIds.has(player.id)).slice(0, 11 - starters.length));
+  }
+  const startingIds = new Set(starters.map((player) => player.id));
+  const remainder = available.filter((player) => !startingIds.has(player.id));
+  const bench = remainder.slice(0, 5).map((player) => ({ ...player, slot: 'bench' as const }));
+  const reserves = remainder.slice(5).map((player) => ({ ...player, slot: 'reserve' as const }));
+  const lineup = starters.map((player) => ({ ...player, slot: 'starter' as const }));
+  return { team: { id: teamId, name: teamName, shortName: teamName, managerName }, isUserTeam, players: [...lineup, ...bench, ...reserves], starters: lineup, bench, reserves };
+}
+
+function toTradeFixturePlayer(player: MarketPlayer): FixtureSquadPlayer {
+  const fixtures: FixturePlayerFixture[] = (player.nextFixtures?.length ? player.nextFixtures : player.nextFixture ? [player.nextFixture] : []).map((fixture) => ({
+    fixtureId: fixture.fixture_id, gameweek: fixture.gameweek?.number ?? null,
+    opponent: { id: fixture.opponent.id, name: fixture.opponent.name, shortName: fixture.opponent.short_name ?? fixture.opponent.name },
+    difficulty: fixture.difficulty ?? undefined, isHome: fixture.is_home, kickoffAt: fixture.kickoff_at,
+  }));
+  const nextFixture = fixtures[0];
+  return {
+    id: player.id, displayName: player.displayName, position: player.position === 'GK' ? 'GKP' : player.position,
+    club: { id: player.club, name: player.club, shortName: player.club }, nextOpponent: nextFixture?.opponent,
+    nextFixtureIsHome: nextFixture?.isHome, nextFixtureDifficulty: nextFixture?.difficulty,
+    fixtureFixtures: fixtures, points: player.points ?? 0, form: player.form ?? 0, formHistory: player.formHistory, slot: 'starter',
   };
 }
 

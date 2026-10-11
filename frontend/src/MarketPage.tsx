@@ -1134,7 +1134,7 @@ function TradeRoster({ label, onToggle, players, selectedIds, view }: {
 }) {
   const ordered = [...players].sort((left, right) => ['GKP', 'DEF', 'MID', 'FWD'].indexOf(left.position) - ['GKP', 'DEF', 'MID', 'FWD'].indexOf(right.position) || left.displayName.localeCompare(right.displayName));
   const positions = ['FWD', 'MID', 'DEF', 'GKP'];
-  const renderPlayer = (player: MarketPlayer) => <button aria-pressed={selectedIds.has(player.id)} className={`market-page__roster-player position-${player.position.toLowerCase()} ${selectedIds.has(player.id) ? 'is-selected' : ''}`} key={player.id} onClick={() => onToggle(player)} type="button"><PlayerCard formPosition={view === 'list' ? 'beside' : 'below'} layout={view === 'list' ? 'list' : 'pitch'} player={toPlayerCardPlayer(player, 'secondary')} showPositionMarker={false} size="sm" /><span aria-hidden="true" className="market-page__roster-check">{selectedIds.has(player.id) ? '✓' : '+'}</span></button>;
+  const renderPlayer = (player: MarketPlayer) => <button aria-pressed={selectedIds.has(player.id)} className={`market-page__roster-player ${view === 'pitch' ? 'squad-page__pitch-player' : ''} position-${player.position.toLowerCase()} ${selectedIds.has(player.id) ? 'is-selected' : ''}`} key={player.id} onClick={() => onToggle(player)} type="button"><PlayerCard formPosition={view === 'list' ? 'beside' : 'below'} layout={view === 'list' ? 'list' : 'pitch'} player={toTradeRosterPlayer(player)} showPositionMarker={false} size="sm" /><span aria-hidden="true" className="market-page__roster-check">{selectedIds.has(player.id) ? '✓' : '+'}</span></button>;
   return <section aria-label={label} className={`market-page__trade-roster market-page__trade-roster--${view}`}><h3>{label}</h3>{ordered.length ? view === 'list' ? <div className="market-page__trade-roster-players">{ordered.map(renderPlayer)}</div> : <div className="market-page__trade-pitch">{positions.map((position) => {
     const group = ordered.filter((player) => player.position === position);
     return group.length ? <div aria-label={position} className={`market-page__trade-pitch-row position-${position.toLowerCase()}`} key={position}>{group.map(renderPlayer)}</div> : null;
@@ -1147,7 +1147,7 @@ function SelectedPlayerStrip({ label, onToggle, players, selectedIds }: {
   players: MarketPlayer[];
   selectedIds: string[];
 }) {
-  return <section aria-label={label} className="market-page__selected-strip"><h3>{label}</h3><div>{players.length ? players.map((player) => <button aria-label={`Remove ${player.displayName} from ${label}`} key={`${label}:${player.id}`} onClick={() => onToggle(player)} type="button"><PlayerCard formPosition="hidden" layout="token" player={toPlayerCardPlayer(player, 'secondary')} size="xs" /><span>{player.displayName} ×</span></button>) : <span className="market-page__trade-empty">None selected</span>}</div><small>{selectedIds.length}</small></section>;
+  return <section aria-label={label} className="market-page__selected-strip"><h3>{label}</h3><div>{players.length ? players.map((player) => <button aria-label={`Remove ${player.displayName} from ${label}`} key={`${label}:${player.id}`} onClick={() => onToggle(player)} type="button"><PlayerCard formPosition="hidden" layout="token" player={toTradeRosterPlayer(player)} size="xs" /><span>{player.displayName} ×</span></button>) : <span className="market-page__trade-empty">None selected</span>}</div><small>{selectedIds.length}</small></section>;
 }
 
 function EmptyActivity({ action, icon, onAction, title }: { action: string; icon: ReactNode; onAction: () => void; title: string }) {
@@ -1162,6 +1162,25 @@ function toPlayerCardPlayer(player: MarketPlayer, ownershipTone: PlayerCardFixtu
   return {
     displayName: player.displayName,
     fixtures: [{ label: ownerLabel(player), title: player.ownerName ? `Owned by ${player.ownerName}` : 'Free player', tone: ownershipTone }],
+    form: player.form,
+    formHistory: toPlayerCardFormHistory(player.formHistory),
+    position: player.position,
+    team: player.club,
+  };
+}
+
+function toTradeRosterPlayer(player: MarketPlayer): PlayerCardPlayer {
+  const upcomingFixtures = player.nextFixtures?.length
+    ? player.nextFixtures
+    : player.nextFixture ? [player.nextFixture] : [];
+  return {
+    displayName: player.displayName,
+    fixtures: upcomingFixtures.map((fixture) => ({
+      difficulty: fixture.difficulty,
+      label: fixture.opponent.short_name ?? fixture.opponent.name,
+      title: `GW${fixture.gameweek?.number ?? '—'} · ${fixture.is_home ? 'Home' : 'Away'}`,
+      tone: 'secondary',
+    })),
     form: player.form,
     formHistory: toPlayerCardFormHistory(player.formHistory),
     position: player.position,

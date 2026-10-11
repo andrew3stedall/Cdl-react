@@ -1034,7 +1034,7 @@
 /* Full-screen trade and loan planner */
 .market-page__drawer-layer:has(.market-page__drawer--planner) { background: var(--background); }
 .market-page__drawer--planner { border: 0; height: 100dvh; inset: 0; max-width: none; overflow-x: hidden; overflow-y: auto; padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left)); position: fixed; width: 100vw; }
-.market-page__drawer--planner .market-page__trade-proposal { margin: 0 auto; max-width: 82rem; min-height: 100%; width: 100%; }
+.market-page__drawer--planner > .market-page__trade-proposal { flex: 0 0 auto; margin: 0 auto; max-width: 82rem; min-height: 100%; width: 100%; }
 .market-page__planner-header { align-items: center; display: flex; justify-content: space-between; }
 .market-page__planner-header h2 { font-size: 1.25rem; }
 .market-page__planner-header span { color: var(--market-muted); font-size: .85rem; }
@@ -1049,7 +1049,7 @@
 .market-page__trade-roster-players { display: grid; gap: .45rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .market-page__trade-pitch { background: color-mix(in srgb, var(--market-position-mid) 10%, var(--card)); border: 1px solid color-mix(in srgb, var(--market-position-mid) 34%, var(--border)); border-radius: var(--radius); display: grid; gap: .6rem; padding: .65rem .25rem; }
 .market-page__trade-pitch-row { align-items: center; display: flex; flex-wrap: wrap; gap: .35rem; justify-content: space-evenly; min-height: 5.5rem; }
-.market-page__trade-pitch-row .market-page__roster-player { background: transparent; border: 0; flex: 0 0 4.2rem; padding: .2rem; }
+.market-page__trade-pitch-row .market-page__roster-player { background: transparent; border: 0; flex: 0 0 4.2rem; height: 4.2rem; padding: .2rem; width: 4.2rem; }
 .market-page__trade-pitch-row .market-page__roster-player.is-selected { background: color-mix(in srgb, var(--primary) 14%, transparent); border: 1px solid var(--primary); }
 .market-page__trade-pitch-row .market-page__roster-check { right: 0; top: 0; }
 .market-page__roster-player { align-items: center; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); color: var(--foreground); display: flex; justify-content: center; min-width: 0; padding: .45rem; position: relative; }

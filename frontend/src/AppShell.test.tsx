@@ -554,7 +554,7 @@ describe('AppShell integration', () => {
     expect(container.querySelector('.profile-page')?.textContent).not.toContain('Role');
     expect(container.textContent).not.toContain('Shake to open');
     expect(container.textContent).not.toContain('Tilt maze');
-    expect(container.querySelectorAll('.profile-settings-group')).toHaveLength(5);
+    expect(container.querySelectorAll('.profile-settings-group')).toHaveLength(6);
     expect(container.querySelector('[aria-label="Open theme mode settings"]')).not.toBeNull();
     expect(container.querySelector('[aria-label="Open theme colour settings"]')).not.toBeNull();
     expect(container.querySelector('[aria-label="Open FDR colour scale settings"]')).not.toBeNull();

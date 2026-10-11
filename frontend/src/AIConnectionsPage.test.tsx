@@ -64,8 +64,10 @@ describe('AIConnectionsPage', () => {
   test('manually activates a 60-minute grant and confirms assistant revocation', async () => {
     const client = clientMock();
     const { container, root } = await render(client);
-    const buttons = Array.from(container.querySelectorAll('button'));
-    const activate = buttons.find((button) => button.textContent?.includes('Activate 60-minute window'));
+    const assistantCard = Array.from(container.querySelectorAll('.ai-connection-card'))
+      .find((card) => card.querySelector('h3')?.textContent === 'ChatGPT');
+    const activate = Array.from(assistantCard?.querySelectorAll('button') ?? [])
+      .find((button) => button.textContent?.includes('Activate 60-minute window'));
     expect(activate).toBeDefined();
 
     await act(async () => {

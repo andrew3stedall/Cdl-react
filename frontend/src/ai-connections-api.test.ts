@@ -6,9 +6,9 @@ describe('AI connections API routes', () => {
   afterEach(() => vi.restoreAllMocks());
 
   test('uses the public-root OAuth connection route and API-prefixed execution routes', async () => {
-    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify([]), { status: 200, headers: { 'Content-Type': 'application/json' } }),
-    );
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockImplementation(async () => (
+      new Response(JSON.stringify([]), { status: 200, headers: { 'Content-Type': 'application/json' } })
+    ));
 
     await httpAIConnectionsClient.listConnections();
     await httpAIConnectionsClient.getGrant('connection-1');

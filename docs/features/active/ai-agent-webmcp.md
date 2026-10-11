@@ -32,7 +32,7 @@ The registry owns tool names, JSON schemas, risk classifications, permission req
 
 ## Connection onboarding
 
-Profile → AI connections provides a resumable, mobile-first manual setup guide for ChatGPT and Claude. It displays the staging remote MCP URL, explains the OAuth consent step, and recommends starting with read access. The guide does not claim automatic installation where a provider does not offer it.
+Profile → AI connections provides a resumable, mobile-first manual setup guide for ChatGPT and Claude. It displays the staging remote MCP URL, explains the OAuth consent step, and recommends starting with read access. The guide does not claim automatic installation where a provider does not offer it. It lets users choose read-only (the default) or read/write guidance, saves only this choice and the current step in session storage, and explains the matching CDL OAuth consent action.
 
 ChatGPT setup is documented for ChatGPT web only. The guide explains the current account boundaries: Pro can connect with read/fetch access; full MCP is currently available to Business, Enterprise, and Edu; Plus is not currently listed as supporting custom MCP apps. Claude setup uses its current Custom → Web connector flow and links to Claude's connector guide. Both flows advise users to continue from a desktop browser when they start on mobile. Setup progress is stored only in the browser session and contains no credentials.
 

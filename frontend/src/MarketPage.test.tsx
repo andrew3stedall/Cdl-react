@@ -228,6 +228,8 @@ describe('MarketPage', () => {
     await act(async () => { (container.querySelector('button[aria-label="View as pitch"]') as HTMLButtonElement).click(); });
 
     const tradeCarousel = container.querySelector('[aria-label="Trade player cards"]');
+    expect(container.querySelector('.market-page__selected-counts')).toBeNull();
+    expect(container.querySelector('[aria-label="Selected trade players"] h3')?.textContent).toBe('Trade players');
     expect(tradeCarousel?.querySelectorAll('.market-page__selected-carousel-slide')).toHaveLength(4);
     expect(Array.from(tradeCarousel?.querySelectorAll('.market-page__selected-player-header .player-card__name') ?? []).map((name) => name.textContent)).toEqual([
       'Owned Defender',

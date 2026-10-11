@@ -495,3 +495,45 @@ test('Market renders distinct empty and failed-read states with recovery control
   await expect(page.locator('.market-page__error')).toContainText('Market data is temporarily unavailable.');
   await expect(page.getByRole('button', { name: 'Retry', exact: true })).toBeVisible();
 });
+
+test('trade player cards show two at a time and navigate to additional selected players', async ({ page }) => {
+  await installLayoutFixtures(page, { apiDelayMs: 0 });
+  const opponentTeam = { id: 'team-river', name: 'River Rangers', short_name: 'RIV' };
+  const tradeTarget = {
+    id: 'trade-target', display_name: 'Trade Fixture Target', position: 'DEF', status: 'owned',
+    draft_team: opponentTeam, epl_team: { id: 'club-opponent', name: 'Opponent Club', short_name: 'OPP' },
+    points: 60, form: 6, value: 6, expected_goals: 0.2, expected_assists: 0.1,
+  };
+  await page.route('**/api/scouting/players', async (route) => {
+    await route.fulfill({ json: { players: [tradeTarget] } });
+  });
+  await page.goto('/scouting');
+  await page.getByRole('button', { name: 'View Trade Fixture Target details' }).click();
+  await page.getByRole('button', { name: 'Propose trade for Trade Fixture Target' }).click();
+
+  for (const name of ['Fixture Player 1', 'Fixture Player 2', 'Fixture Player 6']) {
+    await page.getByRole('button', { name: new RegExp(`Shirt for ${name}`) }).click();
+  }
+
+  const offer = page.getByRole('region', { name: 'You offer' });
+  const viewport = offer.locator('.ui-carousel__viewport');
+  const slides = offer.locator('.market-page__selected-carousel-slide');
+  await expect(slides).toHaveCount(3);
+  const next = offer.getByRole('button', { name: 'Next you offer players' });
+  await expect(next).toBeEnabled();
+  const [viewportBox, slideBoxes] = await Promise.all([
+    viewport.boundingBox(),
+    slides.evaluateAll((elements) => elements.map((element) => {
+      const rect = element.getBoundingClientRect();
+      return { x: rect.x, width: rect.width };
+    })),
+  ]);
+  expect(viewportBox).not.toBeNull();
+  expect(slideBoxes[0].x + slideBoxes[0].width).toBeLessThanOrEqual(viewportBox!.x + viewportBox!.width);
+  expect(slideBoxes[1].x + slideBoxes[1].width).toBeLessThanOrEqual(viewportBox!.x + viewportBox!.width);
+  expect(slideBoxes[2].x).toBeGreaterThanOrEqual(viewportBox!.x + viewportBox!.width - 1);
+
+  await next.click();
+  await expect(slides.nth(1)).toHaveAttribute('data-carousel-active', 'true');
+  await expect(slides.nth(2)).toHaveAttribute('data-carousel-active', 'false');
+});

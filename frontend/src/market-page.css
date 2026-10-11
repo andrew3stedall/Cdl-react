@@ -1065,17 +1065,25 @@
 .market-page__selected-carousel { --market-trade-slide-width: 50%; min-width: 0; }
 .market-page__selected-carousel-track { align-items: stretch; }
 .market-page__selected-carousel-slide { flex: 0 0 var(--market-trade-slide-width); min-width: 0; padding: .1rem .2rem; }
-.market-page__selected-player-card { align-items: center; background: var(--card); border: 1px solid var(--primary); border-radius: var(--radius); display: flex; gap: .55rem; min-height: 4.25rem; min-width: 0; overflow: hidden; padding: .55rem; }
-.market-page__selected-player-card .player-card--token { flex: 0 0 auto; }
-.market-page__selected-player-card-details { display: grid; gap: .25rem; min-width: 0; }
-.market-page__selected-player-card-details strong { font-size: .78rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.market-page__selected-player-card-details small { color: var(--market-muted); font-size: .68rem; }
-.market-page__selected-player-card-remove { align-items: center; background: var(--secondary); border: 1px solid var(--border); border-radius: .45rem; color: var(--foreground); cursor: pointer; display: inline-flex; flex: 0 0 1.8rem; height: 1.8rem; justify-content: center; margin-inline-start: auto; padding: 0; }
+.market-page__selected-player-card { background: var(--card); border: 1px solid var(--primary); border-radius: var(--radius); display: grid; gap: .4rem; min-height: 100%; min-width: 0; overflow: hidden; padding: .55rem; position: relative; }
+.market-page__selected-carousel--in .market-page__selected-player-card { border-color: var(--destructive); }
+.market-page__selected-player-header { justify-self: start; padding-inline-end: 2rem; }
+.market-page__selected-player-header .player-card__form { justify-content: flex-start; }
+.market-page__selected-player-card .player-profile__comparison-chart { min-width: 0; overflow-x: auto; }
+.market-page__selected-player-card .player-profile__substitution-shared-chart { padding: .5rem; }
+.market-page__selected-player-card .player-profile__card-heading h2 { font-size: .8rem; }
+.market-page__selected-player-card-remove { align-items: center; background: var(--secondary); border: 1px solid var(--border); border-radius: .45rem; color: var(--foreground); cursor: pointer; display: inline-flex; height: 1.8rem; justify-content: center; padding: 0; position: absolute; right: .5rem; top: .5rem; width: 1.8rem; }
 .market-page__selected-player-card-remove:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.market-page__selected-carousel--in .market-page__selected-player-card-remove:focus-visible { outline-color: var(--destructive); }
 .market-page__selected-carousel-empty { align-items: center; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); color: var(--market-muted); display: flex; min-height: 4.25rem; padding: .65rem; }
 .market-page__selected-carousel .ui-carousel__button { background: color-mix(in srgb, var(--card) 92%, transparent); }
-.market-page__drawer--planner .player-profile__comparison-chart { min-width: 0; overflow-x: auto; }
-.market-page__drawer--planner .player-profile__combined-chart { min-width: max(100%, var(--combined-chart-min-width, 30rem)); }
+.market-page__carousel-dots { align-items: center; display: flex; gap: .4rem; justify-content: center; padding: .5rem 0; }
+.market-page__carousel-dot { background: transparent; border: 2px solid var(--primary); border-radius: 50%; cursor: pointer; height: .65rem; padding: 0; width: .65rem; }
+.market-page__selected-carousel--in .market-page__carousel-dot { border-color: var(--destructive); }
+.market-page__carousel-dot[aria-pressed="true"] { background: var(--primary); }
+.market-page__selected-carousel--in .market-page__carousel-dot[aria-pressed="true"] { background: var(--destructive); }
+.market-page__carousel-dot:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
+.market-page__drawer--planner .market-page__selected-player-card .player-profile__combined-chart { min-width: max(100%, var(--combined-chart-min-width, 30rem)); }
 .market-page__loan-duration { max-width: 20rem; }
 .market-page__loan-duration input { background: var(--background); border: 1px solid var(--border); border-radius: var(--radius); color: var(--foreground); min-height: 2.5rem; padding: .45rem .6rem; }
 .market-page__drawer--planner .market-page__trade-proposal-actions { background: color-mix(in srgb, var(--background) 94%, transparent); bottom: 0; padding: .75rem 0 max(.75rem, env(safe-area-inset-bottom)); position: sticky; z-index: 2; }

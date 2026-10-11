@@ -495,3 +495,59 @@ test('Market renders distinct empty and failed-read states with recovery control
   await expect(page.locator('.market-page__error')).toContainText('Market data is temporarily unavailable.');
   await expect(page.getByRole('button', { name: 'Retry', exact: true })).toBeVisible();
 });
+
+test('trade player cards show two at a time and navigate to additional selected players', async ({ page }) => {
+  await installLayoutFixtures(page, { apiDelayMs: 0 });
+  const opponentTeam = { id: 'team-river', name: 'River Rangers', short_name: 'RIV' };
+  await page.route('**/api/squad/summary', async (route) => {
+    await route.fulfill({ json: {
+      manager_team: { id: 'team-browser-fixture', name: 'Browser Fixture FC', short_name: 'BFC' },
+      gameweek: { id: 'gw-browser-fixture', name: 'Matchweek 1', number: 1, deadline_at: '2099-01-01T00:00:00Z' },
+      players: Array.from({ length: 3 }, (_, index) => ({
+        id: `owned-player-${index + 1}`, display_name: `Owned Fixture Player ${index + 1}`,
+        position: ['GKP', 'DEF', 'MID'][index], status: 'owned', draft_team: { id: 'team-browser-fixture', name: 'Browser Fixture FC', short_name: 'BFC' },
+        epl_team: { id: `club-owned-${index}`, name: `Owned Club ${index}`, short_name: `OC${index}` },
+        points: 50, form: 5, value: 5, expected_goals: 0.2, expected_assists: 0.1,
+        availability_status: 'a', availability_news: '', chance_of_playing_next_round: 100,
+        next_fixture: { fixture_id: 'fixture-browser-1', gameweek: { id: 'gw-browser-fixture', name: 'Matchweek 1', number: 1 }, opponent: { id: 'club-next', name: 'Next Club', short_name: 'NXT' }, difficulty: 3, is_home: true },
+      })),
+    } });
+  });
+  const tradeTarget = {
+    id: 'trade-target', display_name: 'Trade Fixture Target', position: 'DEF', status: 'owned',
+    draft_team: opponentTeam, epl_team: { id: 'club-opponent', name: 'Opponent Club', short_name: 'OPP' },
+    points: 60, form: 6, value: 6, expected_goals: 0.2, expected_assists: 0.1,
+  };
+  await page.route('**/api/scouting/players', async (route) => {
+    await route.fulfill({ json: { players: [tradeTarget] } });
+  });
+  await page.goto('/scouting');
+  await page.getByRole('button', { name: 'View Trade Fixture Target details' }).click();
+  await page.getByRole('button', { name: 'Propose trade for Trade Fixture Target' }).click();
+
+  for (const name of ['Owned Fixture Player 1', 'Owned Fixture Player 2', 'Owned Fixture Player 3']) {
+    await page.getByRole('button', { name: new RegExp(`Shirt for ${name}`) }).click();
+  }
+
+  const offer = page.getByRole('region', { name: 'You offer' });
+  const viewport = offer.locator('.ui-carousel__viewport');
+  const slides = offer.locator('.market-page__selected-carousel-slide');
+  await expect(slides).toHaveCount(3);
+  const next = offer.getByRole('button', { name: 'Next you offer players' });
+  await expect(next).toBeEnabled();
+  const [viewportBox, slideBoxes] = await Promise.all([
+    viewport.boundingBox(),
+    slides.evaluateAll((elements) => elements.map((element) => {
+      const rect = element.getBoundingClientRect();
+      return { x: rect.x, width: rect.width };
+    })),
+  ]);
+  expect(viewportBox).not.toBeNull();
+  expect(slideBoxes[0].x + slideBoxes[0].width).toBeLessThanOrEqual(viewportBox!.x + viewportBox!.width);
+  expect(slideBoxes[1].x + slideBoxes[1].width).toBeLessThanOrEqual(viewportBox!.x + viewportBox!.width);
+  expect(slideBoxes[2].x).toBeGreaterThanOrEqual(viewportBox!.x + viewportBox!.width - 1);
+
+  const secondCardStart = await slides.nth(1).evaluate((element) => element.getBoundingClientRect().x);
+  await next.click();
+  await expect.poll(() => slides.nth(1).evaluate((element) => element.getBoundingClientRect().x)).toBeLessThan(secondCardStart);
+});

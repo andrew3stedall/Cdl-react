@@ -14,6 +14,7 @@
 # Changelog
 
 ## Unreleased
+- Keep multi-player trade carousels scrollable while showing two selected players at once.
 
 - Display selected trade and loan players as fixture-styled carousel cards, with two cards visible per side and controls for additional players.
 

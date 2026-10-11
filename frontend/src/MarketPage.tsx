@@ -1152,7 +1152,7 @@ function SelectedPlayerCarousel({ label, onToggle, players, selectedIds }: {
     <section aria-label={label} className="market-page__selected-strip">
       <div className="market-page__selected-strip-header"><h3>{label}</h3><small>{selectedIds.length}</small></div>
       {players.length ? (
-        <Carousel aria-label={`${label} player cards`} className="market-page__selected-carousel" opts={{ align: 'start', containScroll: 'trimSnaps', loop: players.length > 2 }}>
+        <Carousel aria-label={`${label} player cards`} className="market-page__selected-carousel" opts={{ align: 'start', containScroll: 'trimSnaps' }}>
           <CarouselContent className="market-page__selected-carousel-track">
             {players.map((player, index) => (
               <CarouselItem aria-label={`${player.displayName}, ${index + 1} of ${players.length}`} className="market-page__selected-carousel-slide" key={`${label}:${player.id}`}>

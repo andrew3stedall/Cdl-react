@@ -1062,7 +1062,7 @@
 .market-page__selected-strip { min-width: 0; }
 .market-page__selected-strip-header { align-items: center; display: flex; justify-content: space-between; }
 .market-page__selected-strip-header small { color: var(--market-muted); }
-.market-page__selected-carousel { --market-trade-slide-width: 49%; min-width: 0; }
+.market-page__selected-carousel { --market-trade-slide-width: 50%; min-width: 0; }
 .market-page__selected-carousel-track { align-items: stretch; }
 .market-page__selected-carousel-slide { flex: 0 0 var(--market-trade-slide-width); min-width: 0; padding: .1rem .2rem; }
 .market-page__selected-player-card { align-items: center; background: var(--card); border: 1px solid var(--primary); border-radius: var(--radius); display: flex; gap: .55rem; min-height: 4.25rem; min-width: 0; overflow: hidden; padding: .55rem; }

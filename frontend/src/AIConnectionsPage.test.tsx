@@ -113,6 +113,13 @@ describe('AIConnectionsPage', () => {
     expect(first.container.textContent).toContain('Custom MCP apps are set up from ChatGPT on the web');
     expect(first.container.textContent).toContain('ChatGPT Pro supports read-only MCP connections.');
     expect(first.container.textContent).toContain('ChatGPT Plus is not currently listed');
+    const readOnly = first.container.querySelector<HTMLInputElement>('input[name="ai-onboarding-access"][value="read-only"]');
+    expect(readOnly?.checked).toBe(true);
+    const readWrite = first.container.querySelector<HTMLInputElement>('input[name="ai-onboarding-access"][value="read-write"]');
+    await act(async () => {
+      readWrite?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    expect(window.sessionStorage.getItem('cdl:ai-connection-setup')).toContain('"access":"read-write"');
     expect(window.sessionStorage.getItem('cdl:ai-connection-setup')).toContain('"provider":"chatgpt"');
 
     await act(async () => first.root.unmount());
@@ -121,6 +128,7 @@ describe('AIConnectionsPage', () => {
     const resumed = await render(client);
     expect(resumed.container.textContent).toContain('ChatGPT setup');
     expect(resumed.container.textContent).toContain('Step 1 of 3');
+    expect(resumed.container.querySelector<HTMLInputElement>('input[name="ai-onboarding-access"][value="read-write"]')?.checked).toBe(true);
     await act(async () => resumed.root.unmount());
     resumed.container.remove();
     window.sessionStorage.removeItem('cdl:ai-connection-setup');

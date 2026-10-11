@@ -533,6 +533,10 @@ test('trade player cards show two at a time and navigate to additional selected 
   const viewport = offer.locator('.ui-carousel__viewport');
   const slides = offer.locator('.market-page__selected-carousel-slide');
   await expect(slides).toHaveCount(3);
+  await expect(offer.locator('.market-page__selected-player-card')).toHaveCount(3);
+  await expect(offer.locator('.market-page__selected-player-card [data-testid="trade-player-comparison"]')).toHaveCount(3);
+  await expect(offer.locator('.market-page__carousel-dot')).toHaveCount(3);
+  await expect(offer.locator('.market-page__selected-player-card .player-card--token')).toHaveCount(3);
   const next = offer.getByRole('button', { name: 'Next you offer players' });
   await expect(next).toBeEnabled();
   const [viewportBox, slideBoxes] = await Promise.all([

@@ -1050,14 +1050,15 @@
 .market-page__direction-label { border-radius: 999px; display: inline-block; font-size: .68rem; font-weight: 750; line-height: 1.35; padding: .18rem .5rem; white-space: nowrap; }
 .market-page__direction-label--out { background: color-mix(in srgb, var(--destructive) 15%, var(--card)); color: var(--destructive); }
 .market-page__direction-label--in { background: color-mix(in srgb, var(--primary) 17%, var(--card)); color: var(--primary); }
-.market-page__selected-carousel { --market-trade-slide-width: 50%; min-width: 0; }
+.market-page__selected-carousel { --market-trade-slide-width: 25%; min-width: 0; }
 .market-page__selected-carousel-track { align-items: stretch; }
-.market-page__selected-carousel-slide { flex: 0 0 var(--market-trade-slide-width); min-width: 0; padding: .1rem .2rem; }
+.market-page__selected-carousel .market-page__selected-carousel-slide { flex: 0 0 var(--market-trade-slide-width); min-width: 0; padding: .1rem .2rem; }
 .market-page__selected-player-card { background: var(--card); border: 1px solid var(--destructive); border-radius: var(--radius); display: grid; gap: .4rem; min-height: 100%; min-width: 0; overflow: hidden; padding: .55rem; position: relative; }
 .market-page__selected-player-card--in { border-color: var(--primary); }
 .market-page__selected-player-header { justify-self: start; padding-inline-end: 2rem; }
 .market-page__selected-player-header .player-card__form { justify-content: flex-start; }
-.market-page__selected-player-card .player-profile__comparison-chart { min-width: 0; overflow-x: auto; }
+.market-page__selected-player-card .player-profile__comparison-chart { min-width: 0; overflow: hidden; }
+.market-page__selected-player-card .player-profile__comparison-chart .player-profile__substitution-shared-chart .player-profile__combined-chart-columns { grid-template-columns: repeat(5, minmax(0, 1fr)); min-width: 0; }
 .market-page__selected-player-card .player-profile__substitution-shared-chart { padding: .5rem; }
 .market-page__selected-player-card .player-profile__card-heading h2 { font-size: .8rem; }
 .market-page__selected-player-card-remove { align-items: center; background: var(--secondary); border: 1px solid var(--border); border-radius: .45rem; color: var(--foreground); cursor: pointer; display: inline-flex; height: 1.8rem; justify-content: center; padding: 0; position: absolute; right: .5rem; top: .5rem; width: 1.8rem; }
@@ -1071,10 +1072,13 @@
 .market-page__carousel-dot--in { border-color: var(--primary); color: var(--primary); }
 .market-page__carousel-dot[aria-pressed="true"] { background: currentColor; }
 .market-page__carousel-dot:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
-.market-page__drawer--planner .market-page__selected-player-card .player-profile__combined-chart { min-width: max(100%, var(--combined-chart-min-width, 30rem)); }
 .market-page__loan-duration { max-width: 20rem; }
 .market-page__loan-duration input { background: var(--background); border: 1px solid var(--border); border-radius: var(--radius); color: var(--foreground); min-height: 2.5rem; padding: .45rem .6rem; }
 .market-page__drawer--planner .market-page__trade-proposal-actions { background: color-mix(in srgb, var(--background) 94%, transparent); bottom: 0; padding: .75rem 0 max(.75rem, env(safe-area-inset-bottom)); position: sticky; z-index: 2; }
+
+@media (min-width: 701px) and (max-width: 1100px) {
+  .market-page__selected-carousel { --market-trade-slide-width: 33.3333%; }
+}
 
 @media (max-width: 700px) {
   .market-page__selected-carousel { --market-trade-slide-width: 50%; }

@@ -40,6 +40,8 @@ class Settings(BaseSettings):
     fpl_api_base_url: str = "https://fantasy.premierleague.com/api"
     fpl_api_timeout_seconds: float = Field(default=20.0, gt=0, le=60)
     mcp_oauth_enabled: bool = False
+    mcp_remote_enabled: bool = False
+    mcp_browser_enabled: bool = False
     oauth_issuer_url: str = "http://localhost:8000"
     oauth_signing_secret: str = ""
 

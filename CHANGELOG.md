@@ -15,6 +15,8 @@
 
 ## Unreleased
 
+- Added feature-flagged remote MCP Streamable HTTP and same-origin browser WebMCP transport adapters for #592. Both advertise the shared task registry, schemas, output contracts, risk hints, structured errors and signed user/tool-bound pagination cursors; remote calls require CDL OAuth bearer scopes and browser calls use the authenticated CDL session. Tool execution remains fail-closed until the #593 authorization gateway is installed.
+
 - Implemented the MCP OAuth authorization server for #591: RFC 8414 discovery, public-client registration, authenticated per-scope consent with PKCE S256, short-lived audience-bound access tokens, rotating refresh tokens with replay revocation, persistent PostgreSQL client/code/connection records, and per-connection revocation. OAuth remains feature-flagged off by default.
 
 - Added the initial typed WebMCP/remote MCP tool catalogue, permission and risk metadata, bounded pagination schemas, capability inventory, and registry contract tests for #590. Tools dispatch only through existing business services; OAuth and execution gates are delivered in dependent issues.

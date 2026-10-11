@@ -182,12 +182,8 @@ def _is_known_cloud_run_rollout_drift(
     known_paths = KNOWN_CLOUD_RUN_PROVIDER_METADATA_DRIFT_PATHS | traffic_paths
 
     def known_nontraffic_path(path: str) -> bool:
-        return (
-            path in KNOWN_CLOUD_RUN_PROVIDER_METADATA_DRIFT_PATHS
-            or any(
-                path.endswith(suffix)
-                for suffix in KNOWN_CLOUD_RUN_ROLLOUT_DRIFT_PATH_SUFFIXES
-            )
+        return path in KNOWN_CLOUD_RUN_PROVIDER_METADATA_DRIFT_PATHS or any(
+            path.endswith(suffix) for suffix in KNOWN_CLOUD_RUN_ROLLOUT_DRIFT_PATH_SUFFIXES
         )
 
     if not all(path in known_paths or known_nontraffic_path(path) for path in changed_paths):

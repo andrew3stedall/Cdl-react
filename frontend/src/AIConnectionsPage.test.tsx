@@ -49,9 +49,17 @@ describe('AIConnectionsPage', () => {
     const client = clientMock();
     const { container, root } = await render(client);
 
-    expect(container.textContent).toContain('Remote MCP');
-    expect(container.textContent).toContain(`${window.location.origin}/mcp`);
+    expect(container.textContent).toContain('Choose your assistant');
     expect(container.textContent).toContain('ChatGPT');
+
+    const chatgptChoice = Array.from(container.querySelectorAll('button'))
+      .find((button) => button.textContent?.trim() === 'ChatGPT');
+    await act(async () => chatgptChoice?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    const continueButton = Array.from(container.querySelectorAll('button'))
+      .find((button) => button.textContent?.trim() === 'Continue');
+    await act(async () => continueButton?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+    expect(container.textContent).toContain(`${window.location.origin}/mcp`);
+    expect(container.textContent).toContain('Add CDL as a remote MCP server');
     expect(container.textContent).toContain('cdl:read, cdl:write');
     expect(container.textContent).toContain('Browser WebMCP');
     expect(container.textContent).toContain('squad.get summary');

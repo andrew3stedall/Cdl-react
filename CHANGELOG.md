@@ -1,5 +1,8 @@
 ## Unreleased
 
+- Added a resumable mobile-first AI connection wizard under Profile → AI connections for #602–#604. It guides ChatGPT and Claude users through provider-specific remote MCP setup, makes the current ChatGPT web and plan limits explicit, keeps read access the recommended starting point, and supports desktop handoff without storing credentials.
+
+
 - Keep each selected trade or loan player with their own form-and-minutes chart in the offer/request carousel, with positive and negative navigation indicators.
 - Combine offered and requested players into one horizontal chart-card carousel and reuse the League fixture pitch/list components for trade player selection.
 

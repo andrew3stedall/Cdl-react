@@ -34,6 +34,7 @@ def test_discovery_registration_consent_and_revoke_flow() -> None:
     assert discovery.status_code == 200
     assert discovery.json()["code_challenge_methods_supported"] == ["S256"]
     assert discovery.json()["issuer"] == "https://cdl.example"
+    assert "offline_access" in discovery.json()["scopes_supported"]
 
     registration = client.post(
         "/oauth/register",
@@ -56,7 +57,7 @@ def test_discovery_registration_consent_and_revoke_flow() -> None:
         "client_id": client_id,
         "redirect_uri": "https://assistant.example/callback",
         "response_type": "code",
-        "scope": "cdl:read cdl:write",
+        "scope": "cdl:read offline_access",
         "state": "state-value",
         "code_challenge": challenge,
         "code_challenge_method": "S256",
@@ -72,7 +73,7 @@ def test_discovery_registration_consent_and_revoke_flow() -> None:
             **auth_params,
             "csrf_token": csrf,
             "decision": "allow",
-            "grant_scope": ["cdl:read", "cdl:write"],
+            "grant_scope": ["cdl:read"],
         },
         follow_redirects=False,
     )
@@ -94,6 +95,8 @@ def test_discovery_registration_consent_and_revoke_flow() -> None:
     )
     assert tokens.status_code == 200
     assert tokens.json()["token_type"] == "Bearer"  # noqa: S105
+    assert tokens.json()["scope"] == "cdl:read"
+    assert tokens.json()["refresh_token"]
     connection_id = service.validate_access_token(tokens.json()["access_token"])["connection_id"]
 
     connections = client.get("/oauth/connections")

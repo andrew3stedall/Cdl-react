@@ -1037,7 +1037,7 @@ function TradeProposalDrawer({ drawerRef, onClose, onSubmit, otherPlayers, owned
   useModalLifecycle(drawerRef, true, onClose);
   const [offeredPlayerIds, setOfferedPlayerIds] = useState<string[]>([]);
   const [requestedPlayerIds, setRequestedPlayerIds] = useState<string[]>([target.id]);
-  const [view, setView] = useState<'pitch' | 'list'>(() => window.localStorage.getItem('cdl:squad-view') === 'list' ? 'list' : 'pitch');
+  const [view, setView] = useState<FixtureSquadView>(() => window.localStorage.getItem('cdl:squad-view') === 'list' ? 'list' : 'pitch');
   const [selectionOpen, setSelectionOpen] = useState(() => window.sessionStorage.getItem('cdl:trade-selection-open') !== 'false');
   const [proposalType, setProposalType] = useState<'trade' | 'loan'>('trade');
   const [loanDuration, setLoanDuration] = useState(4);

@@ -31,6 +31,7 @@ import { HttpSquadClient, type SquadClient } from './squad-api';
 import type { TeamSelectionClient } from './team-selection-api';
 import { ThemePresetProvider, useThemePreset } from './theme-preset-provider';
 import { getStoredThemePreset } from './theme-cookie';
+import { registerCdlWebMcp } from './webmcp';
 
 const loginPreferenceClient = new LocalStoragePreferenceClient();
 const defaultAppSquadClient = new HttpSquadClient();
@@ -93,6 +94,11 @@ export function App({
   const [logoutError, setLogoutError] = useState<string | null>(null);
   const [logoutPending, setLogoutPending] = useState(false);
   const appSquadClient = squadClient ?? defaultAppSquadClient;
+
+  useEffect(() => {
+    if (!activeSession?.isAuthenticated) return undefined;
+    return registerCdlWebMcp();
+  }, [activeSession?.isAuthenticated]);
 
   useEffect(() => {
     let cancelled = false;

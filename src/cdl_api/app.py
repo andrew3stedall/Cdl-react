@@ -11,6 +11,7 @@ from cdl_api.routers.free_agency_draws import router as free_agency_draws_router
 from cdl_api.routers.league import router as league_router
 from cdl_api.routers.live_draft import router as live_draft_router
 from cdl_api.routers.loans import router as loans_router
+from cdl_api.routers.mcp import router as mcp_router
 from cdl_api.routers.modernisation import router as modernisation_router
 from cdl_api.routers.modernisation_competition_experience import router as competition_router
 from cdl_api.routers.modernisation_history import router as history_router
@@ -59,6 +60,7 @@ def create_app() -> FastAPI:
         )
     app.include_router(auth_router, prefix=settings.api_prefix)
     app.include_router(oauth_router, prefix="")
+    app.include_router(mcp_router, prefix="")
     app.include_router(dashboard_router, prefix=settings.api_prefix)
     app.include_router(fdr_router, prefix=settings.api_prefix)
     app.include_router(fpl_data_router, prefix=settings.api_prefix)

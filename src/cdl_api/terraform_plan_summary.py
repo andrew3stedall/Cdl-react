@@ -162,12 +162,7 @@ def _paths_overlap(left: str, right: str) -> bool:
 
 
 def _traffic_routes(item: dict[str, JsonValue]) -> list[dict[str, JsonValue]]:
-    after = _as_object(item.get("after"))
-    routes = _as_list(after.get("traffic"))
-    return [
-        {"revision": _as_object(route).get("revision"), "percent": _as_object(route).get("percent")}
-        for route in routes
-    ]
+    return [_as_object(route) for route in _as_list(item.get("traffic"))]
 
 
 def _is_known_cloud_run_rollout_drift(
@@ -237,7 +232,13 @@ def _parse_changes(
                 "member": _as_string(after.get("member"), ""),
                 "role": _as_string(after.get("role"), ""),
                 "changed_paths": sorted(_changed_paths(before_value, after_value)),
-                "after": after_value,
+                "traffic": [
+                    {
+                        "revision": _as_object(route).get("revision"),
+                        "percent": _as_object(route).get("percent"),
+                    }
+                    for route in _as_list(after.get("traffic"))
+                ],
             }
         )
     return parsed

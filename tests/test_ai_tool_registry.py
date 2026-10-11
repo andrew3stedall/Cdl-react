@@ -178,3 +178,15 @@ def test_public_tool_arguments_match_existing_service_contracts() -> None:
     assert set(get_tool("update_my_watchlist").input_schema["properties"]) == set(
         set(ScoutingNoteUpdate.model_fields) | {"player_id"}
     )
+
+
+def test_consequential_response_schema_includes_approval_decisions() -> None:
+    tool = get_tool("save_my_lineup")
+    assert tool is not None
+
+    data_schema = tool.response_schema["properties"]["data"]
+    decision_schema = next(
+        schema for schema in data_schema["oneOf"] if "status" in schema.get("properties", {})
+    )
+    assert "approval_required" in decision_schema["properties"]["status"]["enum"]
+    assert "approval_url" in decision_schema["properties"]

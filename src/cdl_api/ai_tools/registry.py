@@ -156,6 +156,34 @@ _PAGINATION = {
     "limit": {"type": "integer", "minimum": 1, "maximum": 100, "default": 25},
     "cursor": {"type": "string", "minLength": 1, "maxLength": 512},
 }
+_EXECUTION_DECISION_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "status": {
+            "type": "string",
+            "enum": [
+                "execution_grant_required",
+                "approval_required",
+                "state_changed",
+                "idempotency_conflict",
+                "approval_expired",
+                "rejected",
+                "stale",
+                "expired",
+                "completed",
+                "in_progress",
+                "execution_grant_expired",
+                "execution_failed",
+            ],
+        },
+        "proposal_id": {"type": "string"},
+        "approval_url": {"type": "string", "format": "uri"},
+        "message": {"type": "string"},
+        "result": {},
+    },
+    "required": ["status"],
+    "additionalProperties": True,
+}
 _READ = frozenset({ToolScope.READ})
 _WRITE = frozenset({ToolScope.WRITE})
 _BOTH = frozenset({ToolScope.READ, ToolScope.WRITE})
@@ -187,6 +215,10 @@ def _tool(
             required_fields.append("idempotency_key")
     if paginated:
         schema_properties.update(_PAGINATION)
+    response_schema = _response_schema(response_contract)
+    if risk is ToolRisk.CONSEQUENTIAL:
+        data_schema = response_schema["properties"]["data"]
+        response_schema["properties"]["data"] = {"oneOf": [data_schema, _EXECUTION_DECISION_SCHEMA]}
     return ToolDefinition(
         name=name,
         title=title,
@@ -205,7 +237,7 @@ def _tool(
             ),
         },
         response_contract=response_contract,
-        response_schema=_response_schema(response_contract),
+        response_schema=response_schema,
         version="1.0.0",
         scopes=scopes,
         risk=risk,
@@ -696,6 +728,10 @@ _TOOLS = (
         ToolRole.MANAGER,
         "SquadManagementService",
         required=("action",),
+        conditional_required=(
+            ({"action": {"const": "create"}}, ("player_id",)),
+            ({"action": {"const": "remove"}}, ("interest_id",)),
+        ),
         response_contract="InterestResponse | InterestDeleteResponse",
     ),
     _tool(
@@ -847,7 +883,7 @@ _TOOLS = (
         ToolRole.ELIGIBLE_APPROVER,
         "SquadManagementService | LoanService",
         paginated=True,
-        response_contract="TradesResponse | LoanAgreementsResponse",
+        response_contract="PendingApprovalsResponse",
     ),
     _tool(
         "get_loan_events",

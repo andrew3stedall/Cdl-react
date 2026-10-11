@@ -42,6 +42,7 @@ class Settings(BaseSettings):
     mcp_oauth_enabled: bool = False
     mcp_remote_enabled: bool = False
     mcp_browser_enabled: bool = False
+    mcp_execution_enabled: bool = False
     oauth_issuer_url: str = "http://localhost:8000"
     oauth_signing_secret: str = ""
 

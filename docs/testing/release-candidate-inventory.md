@@ -87,4 +87,5 @@ Repository-safe testing is complete when focused evidence covers authentication,
 5. Real historical-export validation when source files become available.
 
 | OAuth authorization and connection endpoints | `oauth_router` | Feature-flagged MCP OAuth transport endpoints; user consent, connection and token lifecycle are covered by dedicated OAuth tests and architecture documentation. |
-| MCP and browser WebMCP transports | `mcp_router` | Feature-flagged JSON-RPC Streamable HTTP and same-origin browser adapters share the registry. Session lifecycle, scope filtering, Origin validation, pagination and transport errors have dedicated contract coverage. Execution remains fail-closed pending issue #593. |
+| MCP and browser WebMCP transports | `mcp_router` | Feature-flagged JSON-RPC Streamable HTTP and same-origin browser adapters share the registry and execution gateway. Session lifecycle, scope filtering, Origin validation, structured pagination and transport errors have contract coverage. |
+| AI execution controls | `ai_execution_router` | Feature-flagged 60-minute user grants, exact-action CDL approvals, per-connection revocation, current-role checks, and redacted activity are documented in `docs/architecture/mcp-execution-gateway.md` and covered by focused tests. |

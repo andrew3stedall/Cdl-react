@@ -512,7 +512,12 @@ class LiveDraftService:
             }
 
     def room(
-        self, user_id: str, team_id: str | None, role: str = "manager"
+        self,
+        user_id: str,
+        team_id: str | None,
+        role: str = "manager",
+        *,
+        advance_expired_pick: bool = True,
     ) -> dict[str, object] | None:
         expired_pick: tuple[str, str, int] | None = None
         with self._session_factory() as session:
@@ -530,7 +535,7 @@ class LiveDraftService:
                     str(current["team_order"][current["pick_index"]]),
                     int(current["pick_index"]),
                 )
-        if expired_pick:
+        if expired_pick and advance_expired_pick:
             draft_id, current_team, pick_index = expired_pick
             try:
                 self.make_pick(

@@ -4,6 +4,7 @@ import {
   ArrowDown,
   ArrowUp,
   BarChart3,
+  Bot,
   Check,
   ChevronRight,
   Circle,
@@ -427,6 +428,16 @@ export function ProfilePage({ currentPath, onNavigate, session }: ProfilePagePro
               {passkeyMessage ? <span aria-live="polite" className="profile-settings-row__status" role="status">{passkeyMessage}</span> : null}
             </div>
           ) : null}
+        </ProfileSettingsGroup>
+
+        <ProfileSettingsGroup title="AI assistant access">
+          <ProfileSettingsRow
+            ariaLabel="Open AI connection settings"
+            icon={<Bot aria-hidden="true" size={20} />}
+            label="AI connections"
+            onSelect={() => onNavigate('/profile/ai-connections')}
+            value="Assistants and activity"
+          />
         </ProfileSettingsGroup>
 
         <ProfileSettingsGroup title="Appearance">

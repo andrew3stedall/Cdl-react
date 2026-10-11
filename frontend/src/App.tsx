@@ -52,6 +52,7 @@ const LeagueInvitePage = lazy(() => import('./LeagueInvitePage').then((module) =
 const ModernisationCheckpointPage = lazy(() => import('./ModernisationCheckpointPage').then((module) => ({ default: module.ModernisationCheckpointPage })));
 const ProfilePage = lazy(() => import('./ProfilePage').then((module) => ({ default: module.ProfilePage })));
 const ResultColourProfilePage = lazy(() => import('./ResultColourProfilePage').then((module) => ({ default: module.ResultColourProfilePage })));
+const AIConnectionsPage = lazy(() => import('./AIConnectionsPage').then((module) => ({ default: module.AIConnectionsPage })));
 const RulesWorkspacePage = lazy(() => import('./RulesWorkspacePage').then((module) => ({ default: module.RulesWorkspacePage })));
 
 interface AppProps {
@@ -518,6 +519,10 @@ function AppRouteContent({
 
     if (path === '/account/result-colours' || path === '/profile/result-colours') {
       routeContent = <Suspense fallback={<LazyRouteLoading label="Loading colour settings" />}><ResultColourProfilePage onNavigate={onNavigate} /></Suspense>;
+    }
+
+    if (path === '/profile/ai-connections' || path === '/account/ai-connections') {
+      routeContent = <Suspense fallback={<LazyRouteLoading label="Loading AI connections" />}><AIConnectionsPage onNavigate={onNavigate} session={activeSession} /></Suspense>;
     }
 
     if (path.startsWith('/rules')) {

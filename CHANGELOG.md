@@ -713,3 +713,15 @@
 - Added backend integration tests for preference API round trip.
 - Added backend service tests for preference defaults, persistence, and unsupported preset fallback.
 - Feature document remains under `docs/features/active/` until CI validation passes.
+## 2026-10-11 - Add AI execution grants and approvals
+
+### Added
+
+- Added manually activated 60-minute execution grants, exact-action approval proposals, a CSRF-protected CDL approval page, grant revocation, per-user AI activity and 90-day routine audit retention.
+- Added current league-role checks and a shared execution gateway for remote MCP and browser WebMCP calls, controlled by `MCP_EXECUTION_ENABLED`.
+- Documented the execution gateway, state binding, retention and rollout policy.
+
+### Validation
+
+- Added execution policy tests for grants, exact-action/idempotency binding, state changes, ownership and audit redaction/retention.
+- Consequential execution remains fail-closed for any action without an installed existing-service adapter.

@@ -12,7 +12,8 @@ import jwt
 
 from cdl_api.repositories.oauth import token_hash
 
-ALLOWED_SCOPES = frozenset({"cdl:read", "cdl:write"})
+APPLICATION_SCOPES = frozenset({"cdl:read", "cdl:write"})
+ALLOWED_SCOPES = APPLICATION_SCOPES | {"offline_access"}
 ACCESS_TOKEN_SECONDS = 900
 AUTHORIZATION_CODE_SECONDS = 300
 REFRESH_TOKEN_DAYS = 30
@@ -115,15 +116,23 @@ class OAuthService:
             raise OAuthError(
                 "unsupported_response_type", "Only the authorization code flow is supported."
             )
-        scopes = sorted(set(scope.split()))
-        if not scopes or not set(scopes).issubset(ALLOWED_SCOPES):
+        requested_scopes = sorted(set(scope.split()))
+        if (
+            not requested_scopes
+            or not set(requested_scopes).issubset(ALLOWED_SCOPES)
+            or not set(requested_scopes).intersection(APPLICATION_SCOPES)
+        ):
             raise OAuthError(
-                "invalid_scope", "Requested scopes must include cdl:read and/or cdl:write."
+                "invalid_scope",
+                "Request cdl:read and/or cdl:write; offline_access is optional.",
             )
         if not state or len(state) > 512:
             raise OAuthError("invalid_request", "A transaction-specific state value is required.")
         if code_challenge_method != "S256" or not _CHALLENGE_PATTERN.fullmatch(code_challenge):
             raise OAuthError("invalid_request", "PKCE S256 is required.")
+        # offline_access requests a refresh token; it is not an application data
+        # permission and must not appear in the CDL connection's granted scopes.
+        scopes = [scope for scope in requested_scopes if scope in APPLICATION_SCOPES]
         return client, scopes
 
     def issue_code(

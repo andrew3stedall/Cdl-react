@@ -2,7 +2,7 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, describe, expect, test } from 'vitest';
 
-import { earnedDefensiveContributionPoints, PlayerProfilePage, SubstitutionReviewDrawer } from './PlayerProfilePage';
+import { earnedDefensiveContributionPoints, mapHistoryFixture, PlayerProfilePage, SubstitutionReviewDrawer } from './PlayerProfilePage';
 import type {
   SquadApiHistoryResponse,
   SquadApiPlayer,
@@ -229,6 +229,32 @@ afterEach(() => {
 });
 
 describe('PlayerProfilePage', () => {
+  test('preserves zero minutes for a played fixture row while leaving points unavailable', () => {
+    const fixture = mapHistoryFixture({
+      gameweek: 1,
+      fixture_id: 101,
+      opponent_team_id: 2,
+      total_points: 0,
+      minutes: 0,
+      goals_scored: 0,
+      assists: 0,
+      clean_sheets: 0,
+      saves: 0,
+      yellow_cards: 0,
+      red_cards: 0,
+      bonus: 0,
+      bps: 0,
+      expected_goals: 0,
+      expected_assists: 0,
+      value: 100,
+      was_home: true,
+      opponent_short_name: 'ARS',
+    });
+
+    expect(fixture.fantasyPoints).toBeNull();
+    expect(fixture.minutesPlayed).toBe(0);
+  });
+
   test('shows a loaded player and drawer controls while FPL history is still loading', async () => {
     let resolveHistory!: (response: SquadApiHistoryResponse) => void;
     const historyRequest = new Promise<SquadApiHistoryResponse>((resolve) => { resolveHistory = resolve; });

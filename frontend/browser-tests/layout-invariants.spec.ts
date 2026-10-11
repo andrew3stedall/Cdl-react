@@ -521,6 +521,15 @@ test('trade player cards fit five fixtures and show more cards as the viewport w
   await page.route('**/api/scouting/players', async (route) => {
     await route.fulfill({ json: { players: [tradeTarget] } });
   });
+  await page.route('**/api/fpl/players/owned-player-1/history', async (route) => {
+    await route.fulfill({ json: { history: Array.from({ length: 5 }, (_, index) => ({
+      gameweek: index + 1, fixture_id: index + 1, opponent_team_id: 200 + index,
+      total_points: 0, minutes: 0, goals_scored: 0, assists: 0, clean_sheets: 0,
+      saves: 0, yellow_cards: 0, red_cards: 0, bonus: 0, bps: 0,
+      expected_goals: 0, expected_assists: 0, value: 50, was_home: index % 2 === 0,
+      opponent_short_name: `OP${index}`,
+    })), fixtures: [] } });
+  });
   await page.goto('/scouting');
   await page.getByRole('button', { name: 'View Trade Fixture Target details' }).click();
   await page.getByRole('button', { name: 'Propose trade for Trade Fixture Target' }).click();
@@ -545,9 +554,23 @@ test('trade player cards fit five fixtures and show more cards as the viewport w
   await expect(tradeCarousel.locator('.market-page__carousel-dot--out')).toHaveCount(4);
   await expect(tradeCarousel.locator('.market-page__carousel-dot--in')).toHaveCount(1);
   await expect(tradeCarousel.locator('.market-page__selected-player-card .player-card--token')).toHaveCount(5);
+  await expect(tradeCarousel.locator('.market-page__selected-player-header').evaluateAll((elements) => elements.map((element) => element.getAttribute('aria-label')))).resolves.toEqual([
+    'Player card for Owned Fixture Player 1',
+    'Player card for Trade Fixture Target',
+    'Player card for Owned Fixture Player 2',
+    'Player card for Owned Fixture Player 3',
+    'Player card for Owned Fixture Player 4',
+  ]);
+  const firstCard = tradeCarousel.locator('.market-page__selected-player-card').first();
+  const firstPlayerHeader = firstCard.locator('.market-page__selected-player-header');
+  const [cardBox, headerBox] = await Promise.all([firstCard.boundingBox(), firstPlayerHeader.boundingBox()]);
+  expect(cardBox).not.toBeNull();
+  expect(headerBox).not.toBeNull();
+  expect(Math.abs((headerBox!.x + headerBox!.width / 2) - (cardBox!.x + cardBox!.width / 2))).toBeLessThanOrEqual(3);
   const firstChart = tradeCarousel.locator('.market-page__selected-player-card [data-chart-kind="combined-form-minutes"]').first();
   await expect(firstChart).toHaveAttribute('data-fixture-count', '5');
   await expect(firstChart.locator('.player-profile__combined-chart-column')).toHaveCount(5);
+  await expect(firstChart.locator('.player-profile__combined-negative .player-profile__chart-value')).toHaveText(['0', '0', '0', '0', '0']);
   expect(await firstChart.evaluate((element) => element.scrollWidth)).toBeLessThanOrEqual(await firstChart.evaluate((element) => element.clientWidth) + 1);
   const next = tradeCarousel.getByRole('button', { name: 'Next trade players' });
   await expect(next).toBeEnabled();

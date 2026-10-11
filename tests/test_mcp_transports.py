@@ -174,6 +174,16 @@ def test_mcp_rejects_bad_origin_and_accept_and_advertises_actual_resource() -> N
     client = TestClient(app)
     metadata = client.get("/.well-known/oauth-protected-resource")
     assert metadata.json()["resource"] == "https://cdl.example/mcp"
+    valid_origin = client.post(
+        "/mcp",
+        headers={
+            "Accept": "application/json, text/event-stream",
+            "Content-Type": "application/json",
+            "Origin": "http://testserver",
+        },
+        json={"jsonrpc": "2.0", "id": 1, "method": "initialize"},
+    )
+    assert valid_origin.status_code == 401
     bad_accept = client.post(
         "/mcp",
         headers={"Accept": "application/json", "Content-Type": "application/json"},

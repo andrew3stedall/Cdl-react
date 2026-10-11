@@ -26,7 +26,8 @@ interface ConnectionView {
 }
 
 type AIProvider = 'chatgpt' | 'claude';
-interface AISetupProgress { provider: AIProvider; step: 1 | 2 | 3 }
+type AIAccessMode = 'read-only' | 'read-write';
+interface AISetupProgress { provider: AIProvider; step: 1 | 2 | 3; access: AIAccessMode }
 const AI_SETUP_STORAGE_KEY = 'cdl:ai-connection-setup';
 
 function readAISetupProgress(): AISetupProgress | null {
@@ -36,7 +37,11 @@ function readAISetupProgress(): AISetupProgress | null {
     const value = JSON.parse(saved) as Partial<AISetupProgress>;
     if ((value.provider === 'chatgpt' || value.provider === 'claude')
       && (value.step === 1 || value.step === 2 || value.step === 3)) {
-      return { provider: value.provider, step: value.step };
+      return {
+        provider: value.provider,
+        step: value.step,
+        access: value.access === 'read-write' ? 'read-write' : 'read-only',
+      };
     }
   } catch {
     // Storage can be unavailable in private browsing; setup still works in memory.
@@ -175,8 +180,8 @@ export function AIConnectionsPage({ onNavigate, session, client = httpAIConnecti
             <div className="ai-connection-setup__heading"><Bot aria-hidden="true" size={20} /><strong>Choose your assistant</strong></div>
             <p>Connect from the assistant using CDL’s remote MCP server. Start with read access; you can review requested permissions before approving them.</p>
             <div className="ai-provider-choices">
-              <Button className="ai-provider-choice" onClick={() => setSetup({ provider: 'chatgpt', step: 1 })} type="button" variant="secondary">ChatGPT</Button>
-              <Button className="ai-provider-choice" onClick={() => setSetup({ provider: 'claude', step: 1 })} type="button" variant="secondary">Claude</Button>
+              <Button className="ai-provider-choice" onClick={() => setSetup({ provider: 'chatgpt', step: 1, access: 'read-only' })} type="button" variant="secondary">ChatGPT</Button>
+              <Button className="ai-provider-choice" onClick={() => setSetup({ provider: 'claude', step: 1, access: 'read-only' })} type="button" variant="secondary">Claude</Button>
             </div>
             <p className="ai-connection-setup__note">No automatic installation is available for every account. This guide shows the manual setup when needed.</p>
           </Card>
@@ -187,6 +192,17 @@ export function AIConnectionsPage({ onNavigate, session, client = httpAIConnecti
               <span>Step {setup.step} of 3</span>
             </div>
             <progress aria-label="Connection setup progress" max={3} value={setup.step} />
+            <fieldset className="ai-permission-choice">
+              <legend>Permission level</legend>
+              <label>
+                <input checked={setup.access === 'read-only'} name="ai-onboarding-access" onChange={() => setSetup({ ...setup, access: 'read-only' })} type="radio" value="read-only" />
+                Read-only (recommended)
+              </label>
+              <label>
+                <input checked={setup.access === 'read-write'} name="ai-onboarding-access" onChange={() => setSetup({ ...setup, access: 'read-write' })} type="radio" value="read-write" />
+                Read and write
+              </label>
+            </fieldset>
             {setup.provider === 'chatgpt' && setup.step === 1 ? (
               <div className="ai-onboarding-instructions">
                 <h3>Check ChatGPT access</h3>
@@ -229,6 +245,7 @@ export function AIConnectionsPage({ onNavigate, session, client = httpAIConnecti
                     {copied ? 'Copied' : 'Copy URL'}
                   </Button>
                 </div>
+                <p>{setup.access === 'read-only' ? 'CDL consent preselects read access. Leave cdl:write unchecked for this connection.' : 'At CDL consent, explicitly select cdl:write as well as cdl:read. Consequential actions still need a 60-minute activation and action approval.'}</p>
                 <p className="ai-connection-setup__note">The URL is staging-only. Do not paste a CDL password or signing secret into the assistant.</p>
               </div>
             ) : null}

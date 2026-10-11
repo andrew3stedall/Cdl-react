@@ -1030,3 +1030,50 @@
 .market-page__trade-add { color: var(--primary); font-size: 1.15rem; font-weight: 700; }
 .market-page__trade-player[aria-current="true"] { border-color: var(--primary); }
 .player-profile__comparison-chart { min-width: 0; }
+
+/* Full-screen trade and loan planner */
+.market-page__drawer-layer:has(.market-page__drawer--planner) { background: var(--background); }
+.market-page__drawer--planner { border: 0; height: 100dvh; inset: 0; max-width: none; overflow-x: hidden; overflow-y: auto; padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left)); position: fixed; width: 100vw; }
+.market-page__drawer--planner .market-page__trade-proposal { margin: 0 auto; max-width: 82rem; min-height: 100%; width: 100%; }
+.market-page__planner-header { align-items: center; display: flex; justify-content: space-between; }
+.market-page__planner-header h2 { font-size: 1.25rem; }
+.market-page__planner-header span { color: var(--market-muted); font-size: .85rem; }
+.market-page__proposal-type, .market-page__view-toggle { display: flex; gap: .5rem; }
+.market-page__proposal-type > *, .market-page__view-toggle > * { flex: 1; }
+.market-page__trade-selection { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.market-page__accordion-trigger { align-items: center; background: var(--card); border: 0; color: var(--foreground); display: flex; font: inherit; font-weight: 700; justify-content: space-between; padding: .85rem 1rem; width: 100%; }
+.market-page__trade-selection-content { display: grid; gap: .75rem; padding: .8rem; }
+.market-page__trade-rosters { display: grid; gap: 1rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.market-page__trade-roster { min-width: 0; }
+.market-page__trade-roster h3, .market-page__selected-strip h3 { font-size: .85rem; margin: 0 0 .5rem; }
+.market-page__trade-roster-players { display: grid; gap: .45rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.market-page__trade-pitch { background: color-mix(in srgb, var(--market-position-mid) 10%, var(--card)); border: 1px solid color-mix(in srgb, var(--market-position-mid) 34%, var(--border)); border-radius: var(--radius); display: grid; gap: .6rem; padding: .65rem .25rem; }
+.market-page__trade-pitch-row { align-items: center; display: flex; flex-wrap: wrap; gap: .35rem; justify-content: space-evenly; min-height: 5.5rem; }
+.market-page__trade-pitch-row .market-page__roster-player { background: transparent; border: 0; flex: 0 0 4.2rem; padding: .2rem; }
+.market-page__trade-pitch-row .market-page__roster-player.is-selected { background: color-mix(in srgb, var(--primary) 14%, transparent); border: 1px solid var(--primary); }
+.market-page__trade-pitch-row .market-page__roster-check { right: 0; top: 0; }
+.market-page__roster-player { align-items: center; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); color: var(--foreground); display: flex; justify-content: center; min-width: 0; padding: .45rem; position: relative; }
+.market-page__roster-player.is-selected { border-color: var(--primary); box-shadow: inset 0 0 0 1px var(--primary); }
+.market-page__roster-player:focus-visible, .market-page__selected-strip button:focus-visible, .market-page__accordion-trigger:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.market-page__roster-check { background: var(--primary); border-radius: 50%; color: var(--primary-foreground); font-size: .75rem; height: 1.25rem; line-height: 1.25rem; position: absolute; right: .25rem; top: .25rem; width: 1.25rem; }
+.market-page__trade-roster--list .market-page__trade-roster-players { grid-template-columns: 1fr; }
+.market-page__trade-roster--list .market-page__roster-player { justify-content: flex-start; }
+.market-page__selected-assets { display: grid; gap: 1rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.market-page__selected-strip { min-width: 0; }
+.market-page__selected-strip > div { align-items: center; display: flex; gap: .45rem; min-height: 3.25rem; overflow-x: auto; padding: .2rem; }
+.market-page__selected-strip button { align-items: center; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); color: var(--foreground); display: flex; flex: 0 0 auto; gap: .35rem; padding: .25rem .45rem; }
+.market-page__selected-strip button > span { font-size: .72rem; white-space: nowrap; }
+.market-page__selected-strip > small { color: var(--market-muted); }
+.market-page__drawer--planner .player-profile__comparison-chart { min-width: 0; overflow-x: auto; }
+.market-page__drawer--planner .player-profile__combined-chart { min-width: max(100%, var(--combined-chart-min-width, 30rem)); }
+.market-page__loan-duration { max-width: 20rem; }
+.market-page__loan-duration input { background: var(--background); border: 1px solid var(--border); border-radius: var(--radius); color: var(--foreground); min-height: 2.5rem; padding: .45rem .6rem; }
+.market-page__drawer--planner .market-page__trade-proposal-actions { background: color-mix(in srgb, var(--background) 94%, transparent); bottom: 0; padding: .75rem 0 max(.75rem, env(safe-area-inset-bottom)); position: sticky; z-index: 2; }
+
+@media (max-width: 700px) {
+  .market-page__trade-rosters { grid-template-columns: 1fr; }
+  .market-page__trade-roster-players { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .market-page__trade-roster--list .market-page__trade-roster-players { grid-template-columns: 1fr; }
+  .market-page__selected-assets { grid-template-columns: 1fr; }
+  .market-page__drawer--planner { padding: max(.75rem, env(safe-area-inset-top)) max(.65rem, env(safe-area-inset-right)) max(.65rem, env(safe-area-inset-bottom)) max(.65rem, env(safe-area-inset-left)); }
+}

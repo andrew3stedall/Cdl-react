@@ -765,6 +765,13 @@
   grid-template-columns: repeat(5, minmax(0, 1fr)) var(--player-chart-group-gap) repeat(5, minmax(0, 1fr));
 }
 
+.player-profile__comparison-chart .player-profile__substitution-shared-chart .player-profile__chart-columns,
+.player-profile__comparison-chart .player-profile__substitution-shared-chart .player-profile__combined-chart-columns,
+.player-profile__comparison-chart .player-profile__substitution-shared-chart .player-profile__chart-group-columns {
+  grid-template-columns: var(--trade-group-columns);
+  min-width: max-content;
+}
+
 .player-profile__comparison-card {
   background: transparent;
   border: 0;

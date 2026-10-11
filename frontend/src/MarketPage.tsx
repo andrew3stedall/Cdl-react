@@ -1109,8 +1109,8 @@ function TradeProposalDrawer({ drawerRef, onClose, onSubmit, otherPlayers, owned
             </div> : null}
           </section>
           <section aria-label="Selected trade players" className="market-page__selected-assets">
-            <SelectedPlayerCarousel label={proposalType === 'loan' ? 'Player to loan' : 'You offer'} players={selectedOfferPlayers} selectedIds={offeredPlayerIds} />
-            {proposalType === 'trade' ? <SelectedPlayerCarousel label="You request" players={selectedRequestPlayers} selectedIds={requestedPlayerIds} /> : null}
+            <SelectedPlayerCarousel label={proposalType === 'loan' ? 'Player to loan' : 'You offer'} onToggle={(player) => togglePlayer('offer', player)} players={selectedOfferPlayers} selectedIds={offeredPlayerIds} />
+            {proposalType === 'trade' ? <SelectedPlayerCarousel label="You request" onToggle={(player) => togglePlayer('request', player)} players={selectedRequestPlayers} selectedIds={requestedPlayerIds} /> : null}
           </section>
           {proposalType === 'trade' && chartPlayers.length > 0 ? <PlayerFormMinutesGroupComparison players={chartPlayers} squadClient={marketSquadClient} /> : null}
           {proposalType === 'loan' ? <label className="market-page__loan-duration">Duration (gameweeks)<input min={4} onChange={(event) => setLoanDuration(Math.max(4, Number(event.currentTarget.value) || 4))} type="number" value={loanDuration} /></label> : null}
@@ -1142,8 +1142,9 @@ function TradeRoster({ label, onToggle, players, selectedIds, view }: {
   })}</div> : <p>No players available.</p>}</section>;
 }
 
-function SelectedPlayerCarousel({ label, players, selectedIds }: {
+function SelectedPlayerCarousel({ label, onToggle, players, selectedIds }: {
   label: string;
+  onToggle: (player: MarketPlayer) => void;
   players: MarketPlayer[];
   selectedIds: string[];
 }) {
@@ -1158,6 +1159,7 @@ function SelectedPlayerCarousel({ label, players, selectedIds }: {
                 <article className="market-page__selected-player-card">
                   <PlayerCard formPosition="hidden" layout="token" player={toTradeRosterPlayer(player)} size="xs" />
                   <div className="market-page__selected-player-card-details"><strong>{player.displayName}</strong><small>{player.position} · {player.club}</small></div>
+                  <button aria-label={`Remove ${player.displayName} from ${label}`} className="market-page__selected-player-card-remove" onClick={() => onToggle(player)} type="button">×</button>
                 </article>
               </CarouselItem>
             ))}

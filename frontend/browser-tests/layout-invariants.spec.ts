@@ -499,6 +499,20 @@ test('Market renders distinct empty and failed-read states with recovery control
 test('trade player cards show two at a time and navigate to additional selected players', async ({ page }) => {
   await installLayoutFixtures(page, { apiDelayMs: 0 });
   const opponentTeam = { id: 'team-river', name: 'River Rangers', short_name: 'RIV' };
+  await page.route('**/api/squad/summary', async (route) => {
+    await route.fulfill({ json: {
+      manager_team: { id: 'team-browser-fixture', name: 'Browser Fixture FC', short_name: 'BFC' },
+      gameweek: { id: 'gw-browser-fixture', name: 'Matchweek 1', number: 1, deadline_at: '2099-01-01T00:00:00Z' },
+      players: Array.from({ length: 3 }, (_, index) => ({
+        id: `owned-player-${index + 1}`, display_name: `Owned Fixture Player ${index + 1}`,
+        position: ['GKP', 'DEF', 'MID'][index], status: 'owned', draft_team: { id: 'team-browser-fixture', name: 'Browser Fixture FC', short_name: 'BFC' },
+        epl_team: { id: `club-owned-${index}`, name: `Owned Club ${index}`, short_name: `OC${index}` },
+        points: 50, form: 5, value: 5, expected_goals: 0.2, expected_assists: 0.1,
+        availability_status: 'a', availability_news: '', chance_of_playing_next_round: 100,
+        next_fixture: { fixture_id: 'fixture-browser-1', gameweek: { id: 'gw-browser-fixture', name: 'Matchweek 1', number: 1 }, opponent: { id: 'club-next', name: 'Next Club', short_name: 'NXT' }, difficulty: 3, is_home: true },
+      })),
+    } });
+  });
   const tradeTarget = {
     id: 'trade-target', display_name: 'Trade Fixture Target', position: 'DEF', status: 'owned',
     draft_team: opponentTeam, epl_team: { id: 'club-opponent', name: 'Opponent Club', short_name: 'OPP' },
@@ -511,7 +525,7 @@ test('trade player cards show two at a time and navigate to additional selected 
   await page.getByRole('button', { name: 'View Trade Fixture Target details' }).click();
   await page.getByRole('button', { name: 'Propose trade for Trade Fixture Target' }).click();
 
-  for (const name of ['Fixture Player 1', 'Fixture Player 2', 'Fixture Player 6']) {
+  for (const name of ['Owned Fixture Player 1', 'Owned Fixture Player 2', 'Owned Fixture Player 3']) {
     await page.getByRole('button', { name: new RegExp(`Shirt for ${name}`) }).click();
   }
 

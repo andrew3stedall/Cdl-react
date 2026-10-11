@@ -148,7 +148,10 @@ def test_remote_mcp_requires_a_valid_bearer_and_reports_structured_validation_er
     app.dependency_overrides[get_oauth_service] = lambda: oauth
     app.dependency_overrides[get_tool_executor] = FakeToolExecutor
     client = TestClient(app)
-    headers = {"Accept": "application/json", "Content-Type": "application/json"}
+    headers = {
+        "Accept": "application/json, text/event-stream",
+        "Content-Type": "application/json",
+    }
     request = {"jsonrpc": "2.0", "id": 1, "method": "tools/list"}
 
     denied = client.post("/mcp", headers=headers, json=request)

@@ -503,9 +503,9 @@ test('trade player cards fit five fixtures and show more cards as the viewport w
     await route.fulfill({ json: {
       manager_team: { id: 'team-browser-fixture', name: 'Browser Fixture FC', short_name: 'BFC' },
       gameweek: { id: 'gw-browser-fixture', name: 'Matchweek 1', number: 1, deadline_at: '2099-01-01T00:00:00Z' },
-      players: Array.from({ length: 3 }, (_, index) => ({
+      players: Array.from({ length: 4 }, (_, index) => ({
         id: `owned-player-${index + 1}`, display_name: `Owned Fixture Player ${index + 1}`,
-        position: ['GKP', 'DEF', 'MID'][index], status: 'owned', draft_team: { id: 'team-browser-fixture', name: 'Browser Fixture FC', short_name: 'BFC' },
+        position: ['GKP', 'DEF', 'MID', 'FWD'][index], status: 'owned', draft_team: { id: 'team-browser-fixture', name: 'Browser Fixture FC', short_name: 'BFC' },
         epl_team: { id: `club-owned-${index}`, name: `Owned Club ${index}`, short_name: `OC${index}` },
         points: 50, form: 5, value: 5, expected_goals: 0.2, expected_assists: 0.1,
         availability_status: 'a', availability_news: '', chance_of_playing_next_round: 100,
@@ -525,7 +525,7 @@ test('trade player cards fit five fixtures and show more cards as the viewport w
   await page.getByRole('button', { name: 'View Trade Fixture Target details' }).click();
   await page.getByRole('button', { name: 'Propose trade for Trade Fixture Target' }).click();
 
-  for (const name of ['Owned Fixture Player 1', 'Owned Fixture Player 2', 'Owned Fixture Player 3']) {
+  for (const name of ['Owned Fixture Player 1', 'Owned Fixture Player 2', 'Owned Fixture Player 3', 'Owned Fixture Player 4']) {
     await page.getByRole('button', { name: `Select ${name}` }).click();
   }
 
@@ -538,13 +538,13 @@ test('trade player cards fit five fixtures and show more cards as the viewport w
   const tradeCarousel = page.getByRole('region', { name: 'Selected trade players' }).getByRole('region', { name: 'Trade player cards' });
   const viewport = tradeCarousel.locator('.ui-carousel__viewport');
   const slides = tradeCarousel.locator('.market-page__selected-carousel-slide');
-  await expect(slides).toHaveCount(4);
-  await expect(tradeCarousel.locator('.market-page__selected-player-card')).toHaveCount(4);
-  await expect(tradeCarousel.locator('.market-page__selected-player-card [data-testid="trade-player-comparison"]')).toHaveCount(4);
-  await expect(tradeCarousel.locator('.market-page__carousel-dot')).toHaveCount(4);
-  await expect(tradeCarousel.locator('.market-page__carousel-dot--out')).toHaveCount(3);
+  await expect(slides).toHaveCount(5);
+  await expect(tradeCarousel.locator('.market-page__selected-player-card')).toHaveCount(5);
+  await expect(tradeCarousel.locator('.market-page__selected-player-card [data-testid="trade-player-comparison"]')).toHaveCount(5);
+  await expect(tradeCarousel.locator('.market-page__carousel-dot')).toHaveCount(5);
+  await expect(tradeCarousel.locator('.market-page__carousel-dot--out')).toHaveCount(4);
   await expect(tradeCarousel.locator('.market-page__carousel-dot--in')).toHaveCount(1);
-  await expect(tradeCarousel.locator('.market-page__selected-player-card .player-card--token')).toHaveCount(4);
+  await expect(tradeCarousel.locator('.market-page__selected-player-card .player-card--token')).toHaveCount(5);
   const firstChart = tradeCarousel.locator('.market-page__selected-player-card [data-chart-kind="combined-form-minutes"]').first();
   await expect(firstChart).toHaveAttribute('data-fixture-count', '5');
   await expect(firstChart.locator('.player-profile__combined-chart-column')).toHaveCount(5);

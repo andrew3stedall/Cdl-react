@@ -526,18 +526,26 @@ test('trade player cards show two at a time and navigate to additional selected 
   await page.getByRole('button', { name: 'Propose trade for Trade Fixture Target' }).click();
 
   for (const name of ['Owned Fixture Player 1', 'Owned Fixture Player 2', 'Owned Fixture Player 3']) {
-    await page.getByRole('button', { name: new RegExp(`Shirt for ${name}`) }).click();
+    await page.getByRole('button', { name: `Select ${name}` }).click();
   }
 
-  const offer = page.getByRole('region', { name: 'You offer' });
-  const viewport = offer.locator('.ui-carousel__viewport');
-  const slides = offer.locator('.market-page__selected-carousel-slide');
-  await expect(slides).toHaveCount(3);
-  await expect(offer.locator('.market-page__selected-player-card')).toHaveCount(3);
-  await expect(offer.locator('.market-page__selected-player-card [data-testid="trade-player-comparison"]')).toHaveCount(3);
-  await expect(offer.locator('.market-page__carousel-dot')).toHaveCount(3);
-  await expect(offer.locator('.market-page__selected-player-card .player-card--token')).toHaveCount(3);
-  const next = offer.getByRole('button', { name: 'Next you offer players' });
+  await page.getByRole('button', { name: 'View as list' }).click();
+  await expect(page.locator('.fixture-squad-list__team')).toHaveCount(2);
+  await expect(page.locator('[data-player-id="owned-player-1"]')).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'View as pitch' }).click();
+  await expect(page.locator('.fixture-squad-pitch__field')).toBeVisible();
+
+  const tradeCarousel = page.getByRole('region', { name: 'Selected trade players' }).getByRole('region', { name: 'Trade player cards' });
+  const viewport = tradeCarousel.locator('.ui-carousel__viewport');
+  const slides = tradeCarousel.locator('.market-page__selected-carousel-slide');
+  await expect(slides).toHaveCount(4);
+  await expect(tradeCarousel.locator('.market-page__selected-player-card')).toHaveCount(4);
+  await expect(tradeCarousel.locator('.market-page__selected-player-card [data-testid="trade-player-comparison"]')).toHaveCount(4);
+  await expect(tradeCarousel.locator('.market-page__carousel-dot')).toHaveCount(4);
+  await expect(tradeCarousel.locator('.market-page__carousel-dot--out')).toHaveCount(3);
+  await expect(tradeCarousel.locator('.market-page__carousel-dot--in')).toHaveCount(1);
+  await expect(tradeCarousel.locator('.market-page__selected-player-card .player-card--token')).toHaveCount(4);
+  const next = tradeCarousel.getByRole('button', { name: 'Next trade players' });
   await expect(next).toBeEnabled();
   const [viewportBox, slideBoxes] = await Promise.all([
     viewport.boundingBox(),

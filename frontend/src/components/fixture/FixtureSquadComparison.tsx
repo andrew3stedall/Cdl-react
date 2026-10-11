@@ -15,6 +15,8 @@ export interface FixtureSquadComparisonProps {
   now?: number;
   onPlayerClick?: (player: FixtureSquadPlayer) => void;
   playerInteraction?: FixturePlayerInteraction;
+  selectedPlayerIds?: ReadonlySet<string>;
+  pitchFixtureDisplay?: FixturePitchFixtureDisplay;
   squads: FixtureSquad[];
   view?: FixtureSquadView;
   onViewChange?: (view: FixtureSquadView) => void;
@@ -22,8 +24,9 @@ export interface FixtureSquadComparisonProps {
 }
 
 export type FixtureGameweekStatus = 'past' | 'current' | 'future';
-export type FixturePlayerInteraction = 'points' | 'profile';
+export type FixturePlayerInteraction = 'points' | 'profile' | 'select';
 export type FixtureSquadView = 'pitch' | 'list';
+export type FixturePitchFixtureDisplay = 'next-opponent' | 'home-club';
 
 export interface FixturePitchViewProps {
   attackDirection: AttackDirection;
@@ -33,6 +36,8 @@ export interface FixturePitchViewProps {
   now?: number;
   onPlayerClick?: (player: FixtureSquadPlayer) => void;
   playerInteraction?: FixturePlayerInteraction;
+  selectedPlayerIds?: ReadonlySet<string>;
+  pitchFixtureDisplay?: FixturePitchFixtureDisplay;
   topSquad: FixtureSquad;
   topStarters: FixtureSquad['starters'];
 }
@@ -53,7 +58,7 @@ export function getStoredFixtureReviewView(): FixtureSquadView {
  * bench, and reserve views so the same fixture presentation can be embedded
  * outside League.
  */
-export function FixtureSquadComparison({ attackDirection, gameweekStatus, now: nowOverride, onPlayerClick, onViewChange, playerInteraction = 'points', showViewToggle = true, squads, view: controlledView }: FixtureSquadComparisonProps) {
+export function FixtureSquadComparison({ attackDirection, gameweekStatus, now: nowOverride, onPlayerClick, onViewChange, playerInteraction = 'points', selectedPlayerIds, pitchFixtureDisplay, showViewToggle = true, squads, view: controlledView }: FixtureSquadComparisonProps) {
   const [clockNow, setClockNow] = useState(() => Date.now());
   const [storedView, setStoredView] = useState<FixtureSquadView>(getStoredFixtureReviewView);
   const view = controlledView ?? storedView;
@@ -102,20 +107,22 @@ export function FixtureSquadComparison({ attackDirection, gameweekStatus, now: n
             now={now}
             onPlayerClick={onPlayerClick}
             playerInteraction={playerInteraction}
+            selectedPlayerIds={selectedPlayerIds}
+            pitchFixtureDisplay={pitchFixtureDisplay}
             topSquad={topSquad}
             topStarters={topStarters}
           />
           <div className="fixture-squad-rosters">
             <FixtureRosterGroup label="Substitutes">
               <div className="fixture-squad-rosters__columns">
-                <FixtureRosterColumn gameweekStatus={gameweekStatus} label="Substitutes" now={now} onPlayerClick={onPlayerClick} playerInteraction={playerInteraction} players={sortFixtureBench(topSquad.bench)} squad={topSquad} />
-                <FixtureRosterColumn gameweekStatus={gameweekStatus} label="Substitutes" now={now} onPlayerClick={onPlayerClick} playerInteraction={playerInteraction} players={sortFixtureBench(bottomSquad.bench)} squad={bottomSquad} />
+                <FixtureRosterColumn gameweekStatus={gameweekStatus} label="Substitutes" now={now} onPlayerClick={onPlayerClick} playerInteraction={playerInteraction} selectedPlayerIds={selectedPlayerIds} pitchFixtureDisplay={pitchFixtureDisplay} players={sortFixtureBench(topSquad.bench)} squad={topSquad} />
+                <FixtureRosterColumn gameweekStatus={gameweekStatus} label="Substitutes" now={now} onPlayerClick={onPlayerClick} playerInteraction={playerInteraction} selectedPlayerIds={selectedPlayerIds} pitchFixtureDisplay={pitchFixtureDisplay} players={sortFixtureBench(bottomSquad.bench)} squad={bottomSquad} />
               </div>
             </FixtureRosterGroup>
             <FixtureRosterGroup label="Reserves">
               <div className="fixture-squad-rosters__columns">
-                <FixtureRosterColumn gameweekStatus={gameweekStatus} label="Reserves" now={now} onPlayerClick={onPlayerClick} playerInteraction={playerInteraction} players={topSquad.reserves} squad={topSquad} />
-                <FixtureRosterColumn gameweekStatus={gameweekStatus} label="Reserves" now={now} onPlayerClick={onPlayerClick} playerInteraction={playerInteraction} players={bottomSquad.reserves} squad={bottomSquad} />
+                <FixtureRosterColumn gameweekStatus={gameweekStatus} label="Reserves" now={now} onPlayerClick={onPlayerClick} playerInteraction={playerInteraction} selectedPlayerIds={selectedPlayerIds} pitchFixtureDisplay={pitchFixtureDisplay} players={topSquad.reserves} squad={topSquad} />
+                <FixtureRosterColumn gameweekStatus={gameweekStatus} label="Reserves" now={now} onPlayerClick={onPlayerClick} playerInteraction={playerInteraction} selectedPlayerIds={selectedPlayerIds} pitchFixtureDisplay={pitchFixtureDisplay} players={bottomSquad.reserves} squad={bottomSquad} />
               </div>
             </FixtureRosterGroup>
           </div>
@@ -126,6 +133,7 @@ export function FixtureSquadComparison({ attackDirection, gameweekStatus, now: n
           now={now}
           onPlayerClick={onPlayerClick}
           playerInteraction={playerInteraction}
+            selectedPlayerIds={selectedPlayerIds}
           squads={[topSquad, bottomSquad]}
         />
       )}
@@ -161,12 +169,14 @@ export function FixtureListView({
   now,
   onPlayerClick,
   playerInteraction = 'points',
+  selectedPlayerIds,
   squads,
 }: {
   gameweekStatus: FixtureGameweekStatus;
   now?: number;
   onPlayerClick?: (player: FixtureSquadPlayer) => void;
   playerInteraction?: FixturePlayerInteraction;
+  selectedPlayerIds?: ReadonlySet<string>;
   squads: FixtureSquad[];
 }) {
   return (
@@ -178,6 +188,7 @@ export function FixtureListView({
           now={now}
           onPlayerClick={onPlayerClick}
           playerInteraction={playerInteraction}
+          selectedPlayerIds={selectedPlayerIds}
           squad={squad}
         />
       ))}
@@ -190,12 +201,14 @@ function FixtureListTeam({
   now,
   onPlayerClick,
   playerInteraction,
+  selectedPlayerIds,
   squad,
 }: {
   gameweekStatus: FixtureGameweekStatus;
   now?: number;
   onPlayerClick?: (player: FixtureSquadPlayer) => void;
   playerInteraction: FixturePlayerInteraction;
+  selectedPlayerIds?: ReadonlySet<string>;
   squad: FixtureSquad;
 }) {
   const groups = [
@@ -229,6 +242,7 @@ function FixtureListTeam({
                     onPlayerClick={onPlayerClick}
                     player={player}
                     playerInteraction={playerInteraction}
+                    selected={selectedPlayerIds?.has(player.id) ?? false}
                     startsNewPosition={group.key === 'starters'
                       && index > 0
                       && fixturePosition(group.players[index - 1]?.position ?? '') !== fixturePosition(player.position)}
@@ -249,6 +263,7 @@ function FixtureListPlayer({
   onPlayerClick,
   player,
   playerInteraction,
+  selected,
   startsNewPosition,
 }: {
   gameweekStatus: FixtureGameweekStatus;
@@ -256,6 +271,7 @@ function FixtureListPlayer({
   onPlayerClick?: (player: FixtureSquadPlayer) => void;
   player: FixtureSquadPlayer;
   playerInteraction: FixturePlayerInteraction;
+  selected: boolean;
   startsNewPosition: boolean;
 }) {
   const pointsPlaceholder = fixturePointsPlaceholder(gameweekStatus, player, now);
@@ -268,7 +284,7 @@ function FixtureListPlayer({
     : player.isSubstitutedOut
       ? ' · replaced by automatic substitute'
       : '';
-  const rowClassName = `fixture-squad-list__player-row${startsNewPosition ? ' is-position-start' : ''}${substitutionStateClass} position-${fixturePosition(player.position).toLowerCase()}`;
+  const rowClassName = `fixture-squad-list__player-row${startsNewPosition ? ' is-position-start' : ''}${substitutionStateClass}${selected ? ' is-selected' : ''} position-${fixturePosition(player.position).toLowerCase()}`;
   const card = (
     <PlayerCard
       ariaLabel={`${player.displayName}${substitutionStateLabel}`}
@@ -306,7 +322,8 @@ function FixtureListPlayer({
 
   return (
     <tr
-      aria-label={`View ${player.displayName} ${playerInteraction === 'points' ? 'points breakdown' : 'player profile'}${substitutionStateLabel}`}
+      aria-label={`${playerInteraction === 'select' ? 'Select' : 'View'} ${player.displayName} ${playerInteraction === 'points' ? 'points breakdown' : playerInteraction === 'profile' ? 'player profile' : ''}${substitutionStateLabel}`.trim()}
+      aria-pressed={playerInteraction === 'select' ? selected : undefined}
       className={`${rowClassName} fixture-squad-list__player-row--button`}
       data-player-id={player.id}
       onClick={() => onPlayerClick(player)}
@@ -349,6 +366,8 @@ export function FixturePitchView({
   now,
   onPlayerClick,
   playerInteraction = 'points',
+  selectedPlayerIds,
+  pitchFixtureDisplay = 'next-opponent',
   topSquad,
   topStarters,
 }: FixturePitchViewProps) {
@@ -367,8 +386,8 @@ export function FixturePitchView({
       >
         <div aria-hidden="true" className="fixture-squad-pitch__markings"><span /><span /><span /><span /></div>
         <div className="fixture-squad-pitch__halves">
-          <FixtureLineupPanel gameweekStatus={gameweekStatus} now={now} onPlayerClick={onPlayerClick} playerInteraction={playerInteraction} players={topStarters} side="top" squad={topSquad} />
-          <FixtureLineupPanel gameweekStatus={gameweekStatus} now={now} onPlayerClick={onPlayerClick} playerInteraction={playerInteraction} players={bottomStarters} side="bottom" squad={bottomSquad} />
+          <FixtureLineupPanel gameweekStatus={gameweekStatus} now={now} onPlayerClick={onPlayerClick} playerInteraction={playerInteraction} selectedPlayerIds={selectedPlayerIds} pitchFixtureDisplay={pitchFixtureDisplay} players={topStarters} side="top" squad={topSquad} />
+          <FixtureLineupPanel gameweekStatus={gameweekStatus} now={now} onPlayerClick={onPlayerClick} playerInteraction={playerInteraction} selectedPlayerIds={selectedPlayerIds} pitchFixtureDisplay={pitchFixtureDisplay} players={bottomStarters} side="bottom" squad={bottomSquad} />
         </div>
       </div>
     </article>
@@ -380,6 +399,8 @@ export function FixtureLineupPanel({
   now,
   onPlayerClick,
   playerInteraction = 'points',
+  selectedPlayerIds,
+  pitchFixtureDisplay = 'next-opponent',
   players,
   side,
   squad,
@@ -388,6 +409,8 @@ export function FixtureLineupPanel({
   now?: number;
   onPlayerClick?: (player: FixtureSquadPlayer) => void;
   playerInteraction?: FixturePlayerInteraction;
+  selectedPlayerIds?: ReadonlySet<string>;
+  pitchFixtureDisplay?: FixturePitchFixtureDisplay;
   players: FixtureSquad['starters'];
   side: 'top' | 'bottom';
   squad: FixtureSquad;
@@ -407,7 +430,7 @@ export function FixtureLineupPanel({
         {positions.map((position) => (
           <div className={`fixture-squad-pitch__row position-${position.toLowerCase()}`} data-position={position} key={position}>
             {players.filter((player) => fixturePosition(player.position) === position).map((player) => (
-              <FixturePitchPlayer gameweekStatus={gameweekStatus} key={player.id} now={now} onPlayerClick={onPlayerClick} player={player} playerInteraction={playerInteraction} />
+              <FixturePitchPlayer gameweekStatus={gameweekStatus} key={player.id} now={now} onPlayerClick={onPlayerClick} pitchFixtureDisplay={pitchFixtureDisplay} player={player} playerInteraction={playerInteraction} selected={selectedPlayerIds?.has(player.id) ?? false} />
             ))}
           </div>
         ))}
@@ -422,6 +445,8 @@ export function FixtureRosterColumn({
   now,
   onPlayerClick,
   playerInteraction = 'points',
+  selectedPlayerIds,
+  pitchFixtureDisplay = 'next-opponent',
   players,
   squad,
 }: {
@@ -430,10 +455,12 @@ export function FixtureRosterColumn({
   now?: number;
   onPlayerClick?: (player: FixtureSquadPlayer) => void;
   playerInteraction?: FixturePlayerInteraction;
+  selectedPlayerIds?: ReadonlySet<string>;
+  pitchFixtureDisplay?: FixturePitchFixtureDisplay;
   players: FixtureSquadPlayer[];
   squad: FixtureSquad;
 }) {
-  const rowCount = label === 'Substitutes' ? 5 : 4;
+  const rowCount = Math.max(label === 'Substitutes' ? 5 : 4, players.length);
 
   return (
     <section aria-label={`${fixtureTeamDisplayName(squad.team)} ${label.toLowerCase()}`} className="fixture-squad-roster">
@@ -445,7 +472,7 @@ export function FixtureRosterColumn({
             <li className={player ? '' : 'is-empty'} key={player?.id ?? `${squad.team.id}-${label}-${index}`}>
               <span className="fixture-squad-roster__number">{fixtureRosterSlotLabel(label, index)}</span>
               {player
-                ? <FixtureRosterPlayer gameweekStatus={gameweekStatus} now={now} onPlayerClick={onPlayerClick} player={player} playerInteraction={playerInteraction} />
+                ? <FixtureRosterPlayer gameweekStatus={gameweekStatus} now={now} onPlayerClick={onPlayerClick} pitchFixtureDisplay={pitchFixtureDisplay} player={player} playerInteraction={playerInteraction} selected={selectedPlayerIds?.has(player.id) ?? false} />
                 : <span className="fixture-squad-roster__empty">Empty slot</span>}
             </li>
           );
@@ -477,12 +504,12 @@ export function sortFixtureBench(players: FixtureSquadPlayer[]): FixtureSquadPla
     .map(({ player }) => player);
 }
 
-function FixturePitchPlayer({ gameweekStatus, now, onPlayerClick, player, playerInteraction }: { gameweekStatus: FixtureGameweekStatus; now?: number; onPlayerClick?: (player: FixtureSquadPlayer) => void; player: FixtureSquadPlayer; playerInteraction: FixturePlayerInteraction }) {
+function FixturePitchPlayer({ gameweekStatus, now, onPlayerClick, pitchFixtureDisplay = 'next-opponent', player, playerInteraction, selected }: { gameweekStatus: FixtureGameweekStatus; now?: number; onPlayerClick?: (player: FixtureSquadPlayer) => void; pitchFixtureDisplay?: FixturePitchFixtureDisplay; player: FixtureSquadPlayer; playerInteraction: FixturePlayerInteraction; selected: boolean }) {
   const shirtTeam = player.club?.shortName ?? player.club?.name ?? 'unknown';
   const pointsPlaceholder = fixturePointsPlaceholder(gameweekStatus, player, now);
   const showPoints = shouldShowFixturePoints(gameweekStatus, player, now) && pointsPlaceholder === null;
   const showForm = gameweekStatus === 'future';
-  const token = <FixturePlayerToken player={player} pointsPlaceholder={pointsPlaceholder} shirtTeam={shirtTeam} showForm={showForm} showPoints={showPoints} size="md" />;
+  const token = <FixturePlayerToken pitchFixtureDisplay={pitchFixtureDisplay} player={player} pointsPlaceholder={pointsPlaceholder} shirtTeam={shirtTeam} showForm={showForm} showPoints={showPoints} size="md" />;
   const pointsTitle = pointsPlaceholder === '…'
     ? 'points pending'
     : pointsPlaceholder === '-'
@@ -491,17 +518,18 @@ function FixturePitchPlayer({ gameweekStatus, now, onPlayerClick, player, player
 
   return (
     <div
-      className={`squad-page__pitch-player fixture-squad-pitch__player position-${fixturePosition(player.position).toLowerCase()} form-band-${formBand(player.form)}`}
+      className={`squad-page__pitch-player fixture-squad-pitch__player position-${fixturePosition(player.position).toLowerCase()} form-band-${formBand(player.form)}${selected ? ' is-selected' : ''}`}
       data-player-id={player.id}
       data-points-visible={showPoints ? 'true' : 'false'}
       title={`${player.displayName} · ${pointsTitle}`}
     >
-      {onPlayerClick ? <button aria-label={`View ${player.displayName} ${playerInteraction === 'points' ? 'points breakdown' : 'player profile'}`} className="fixture-squad-player-button" onClick={() => onPlayerClick(player)} type="button">{token}</button> : token}
+      {onPlayerClick ? <button aria-label={`${playerInteraction === 'select' ? (selected ? 'Deselect' : 'Select') : 'View'} ${player.displayName}${playerInteraction === 'points' ? ' points breakdown' : playerInteraction === 'profile' ? ' player profile' : ''}`} aria-pressed={playerInteraction === 'select' ? selected : undefined} className="fixture-squad-player-button" onClick={() => onPlayerClick(player)} type="button">{token}</button> : token}
     </div>
   );
 }
 
 function FixturePlayerToken({
+  pitchFixtureDisplay = 'next-opponent',
   player,
   pointsPlaceholder,
   shirtTeam,
@@ -509,6 +537,7 @@ function FixturePlayerToken({
   showPoints,
   size,
 }: {
+  pitchFixtureDisplay?: FixturePitchFixtureDisplay;
   player: FixtureSquadPlayer;
   pointsPlaceholder: string | null;
   shirtTeam: string;
@@ -533,7 +562,7 @@ function FixturePlayerToken({
       data-fixture-metric={indicatorType}
       formPosition={showForm || showPoints || pointsPlaceholder !== null ? 'below' : 'hidden'}
       layout="pitch"
-      player={toFixtureCardPlayer(player, shirtTeam, indicatorValue)}
+      player={toFixtureCardPlayer(player, shirtTeam, indicatorValue, pitchFixtureDisplay)}
       points={showPoints ? player.points : null}
       pointsMultiplier={showPoints ? player.pointsMultiplier : null}
       pointsPlaceholder={pointsPlaceholder}
@@ -544,28 +573,28 @@ function FixturePlayerToken({
   );
 }
 
-function FixtureRosterPlayer({ gameweekStatus, now, onPlayerClick, player, playerInteraction }: { gameweekStatus: FixtureGameweekStatus; now?: number; onPlayerClick?: (player: FixtureSquadPlayer) => void; player: FixtureSquadPlayer; playerInteraction: FixturePlayerInteraction }) {
+function FixtureRosterPlayer({ gameweekStatus, now, onPlayerClick, pitchFixtureDisplay = 'next-opponent', player, playerInteraction, selected }: { gameweekStatus: FixtureGameweekStatus; now?: number; onPlayerClick?: (player: FixtureSquadPlayer) => void; pitchFixtureDisplay?: FixturePitchFixtureDisplay; player: FixtureSquadPlayer; playerInteraction: FixturePlayerInteraction; selected: boolean }) {
   const pointsPlaceholder = fixturePointsPlaceholder(gameweekStatus, player, now);
   const showPoints = shouldShowFixturePoints(gameweekStatus, player, now) && pointsPlaceholder === null;
   const showForm = gameweekStatus === 'future';
-  const token = <FixturePlayerToken player={player} pointsPlaceholder={pointsPlaceholder} shirtTeam={player.club?.shortName ?? player.club?.name ?? 'unknown'} showForm={showForm} showPoints={showPoints} size="sm" />;
+  const token = <FixturePlayerToken pitchFixtureDisplay={pitchFixtureDisplay} player={player} pointsPlaceholder={pointsPlaceholder} shirtTeam={player.club?.shortName ?? player.club?.name ?? 'unknown'} showForm={showForm} showPoints={showPoints} size="sm" />;
   const pointsTitle = pointsPlaceholder === '…'
     ? 'points pending'
     : pointsPlaceholder === '-'
       ? 'did not play'
       : `${player.points} pts`;
   return (
-    <div className={`squad-page__pitch-player fixture-squad-pitch__player compact position-${fixturePosition(player.position).toLowerCase()} form-band-${formBand(player.form)}`} data-player-id={player.id} data-points-visible={showPoints ? 'true' : 'false'} title={`${player.displayName} · ${pointsTitle}`}>
-      {onPlayerClick ? <button aria-label={`View ${player.displayName} ${playerInteraction === 'points' ? 'points breakdown' : 'player profile'}`} className="fixture-squad-player-button" onClick={() => onPlayerClick(player)} type="button">{token}</button> : token}
+    <div className={`squad-page__pitch-player fixture-squad-pitch__player compact position-${fixturePosition(player.position).toLowerCase()} form-band-${formBand(player.form)}${selected ? ' is-selected' : ''}`} data-player-id={player.id} data-points-visible={showPoints ? 'true' : 'false'} title={`${player.displayName} · ${pointsTitle}`}>
+      {onPlayerClick ? <button aria-label={`${playerInteraction === 'select' ? (selected ? 'Deselect' : 'Select') : 'View'} ${player.displayName}${playerInteraction === 'points' ? ' points breakdown' : playerInteraction === 'profile' ? ' player profile' : ''}`} aria-pressed={playerInteraction === 'select' ? selected : undefined} className="fixture-squad-player-button" onClick={() => onPlayerClick(player)} type="button">{token}</button> : token}
     </div>
   );
 }
 
-function toFixtureCardPlayer(player: FixtureSquadPlayer, shirtTeam?: string, indicatorValue: number | null | undefined = player.form): PlayerCardPlayer {
+function toFixtureCardPlayer(player: FixtureSquadPlayer, shirtTeam?: string, indicatorValue: number | null | undefined = player.form, pitchFixtureDisplay: FixturePitchFixtureDisplay = 'next-opponent'): PlayerCardPlayer {
   return {
     captain: player.isCaptain,
     displayName: player.displayName,
-    fixtures: fixtureCardFixtures(player),
+    fixtures: fixtureCardFixtures(player, pitchFixtureDisplay),
     form: indicatorValue,
     formHistory: toPlayerCardFormHistory(player.formHistory),
     position: fixturePosition(player.position),
@@ -602,7 +631,11 @@ function fixturePointsPlaceholderLabel(placeholder: string): string {
   return placeholder === '-' ? 'Did not play' : 'Fantasy points pending';
 }
 
-function fixtureCardFixtures(player: FixtureSquadPlayer): NonNullable<PlayerCardPlayer['fixtures']> {
+function fixtureCardFixtures(player: FixtureSquadPlayer, display: FixturePitchFixtureDisplay = 'next-opponent'): NonNullable<PlayerCardPlayer['fixtures']> {
+  if (display === 'home-club') {
+    const homeFixture = (player.fixtureFixtures ?? legacyFixtureFallback(player)).find((fixture) => fixture.isHome);
+    return homeFixture ? [{ difficulty: homeFixture.difficulty, label: player.club?.shortName ?? player.club?.name ?? 'HOME', title: fixtureDifficultyTitle(homeFixture.difficulty) }] : [];
+  }
   const fixtureFixtures = player.fixtureFixtures ?? legacyFixtureFallback(player);
   return fixtureFixtures.map((fixture) => ({
     difficulty: fixture.difficulty,

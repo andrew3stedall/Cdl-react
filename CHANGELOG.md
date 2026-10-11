@@ -1,6 +1,7 @@
 ## Unreleased
 
 - Keep each selected trade or loan player with their own form-and-minutes chart in the offer/request carousel, with positive and negative navigation indicators.
+- Combine offered and requested players into one horizontal chart-card carousel and reuse the League fixture pitch/list components for trade player selection.
 
 ## 2026-10-06 - Gate final settlement on verified event-live data
 

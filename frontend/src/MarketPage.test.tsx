@@ -175,13 +175,15 @@ describe('MarketPage', () => {
     expect(container.querySelector('[role="dialog"]')?.getAttribute('aria-label')).toBe('Trade proposal for Other Owned Midfielder');
     expect(container.querySelector('.market-page__drawer--planner')).not.toBeNull();
     expect(document.body.style.overflow).toBe('hidden');
-    expect(container.querySelector('[aria-label="You request"] .player-card')?.getAttribute('aria-label')).toBe('Player card for Other Owned Midfielder');
+    expect(container.querySelector('[aria-label="Selected trade players"] .market-page__selected-player-card--in .player-card')?.getAttribute('aria-label')).toBe('Player card for Other Owned Midfielder');
     expect(container.querySelector('[role="dialog"] select')).toBeNull();
     expect(container.querySelector('input[placeholder="Search players"]')).toBeNull();
     expect(container.querySelector('.market-page__accordion-trigger')?.getAttribute('aria-expanded')).toBe('true');
+    expect(container.querySelector('.fixture-squad-pitch__field')).not.toBeNull();
+    expect(container.querySelector('[data-player-id="player-5"] .player-card__opponents')?.textContent).toBe('ARS');
 
     await act(async () => {
-      (Array.from(container.querySelectorAll('.market-page__trade-roster[aria-label="Your players"] button')).find((button) => button.textContent?.includes('Owned Defender')) as HTMLButtonElement).click();
+      (container.querySelector('button[aria-label="Select Owned Defender"]') as HTMLButtonElement).click();
       await Promise.resolve();
       await Promise.resolve();
     });
@@ -217,28 +219,28 @@ describe('MarketPage', () => {
       await Promise.resolve();
     });
     for (const name of ['Owned Defender', 'Owned Forward', 'Owned Goalkeeper']) {
-      const playerButton = Array.from(container.querySelectorAll('.market-page__trade-roster[aria-label="Your players"] button')).find((button) => button.textContent?.includes(name)) as HTMLButtonElement;
+      const playerButton = container.querySelector(`button[aria-label="Select ${name}"]`) as HTMLButtonElement;
       await act(async () => { playerButton.click(); await Promise.resolve(); });
     }
+    await act(async () => { (container.querySelector('button[aria-label="View as list"]') as HTMLButtonElement).click(); });
+    expect(container.querySelectorAll('.fixture-squad-list__team')).toHaveLength(2);
+    expect(container.querySelector('[data-player-id="player-4"]')?.getAttribute('aria-pressed')).toBe('true');
+    await act(async () => { (container.querySelector('button[aria-label="View as pitch"]') as HTMLButtonElement).click(); });
 
-    const offerCarousel = container.querySelector('.market-page__selected-strip[aria-label="You offer"] [aria-roledescription="carousel"]');
-    expect(offerCarousel?.querySelectorAll('.market-page__selected-carousel-slide')).toHaveLength(3);
-    expect(offerCarousel?.querySelector('[aria-label="Next you offer players"]')).not.toBeNull();
-    expect(offerCarousel?.querySelectorAll('.market-page__selected-player-card')).toHaveLength(3);
-    expect(offerCarousel?.querySelectorAll('.market-page__selected-player-card .player-card--token')).toHaveLength(3);
-    expect(offerCarousel?.querySelectorAll('.market-page__selected-player-card [data-testid="trade-player-comparison"]')).toHaveLength(3);
-    expect(offerCarousel?.querySelectorAll('.market-page__carousel-dot')).toHaveLength(3);
-    expect(offerCarousel?.classList.contains('market-page__selected-carousel--out')).toBe(true);
-    const request = container.querySelector('.market-page__selected-strip[aria-label="You request"]');
-    expect(request?.querySelector('.player-card--token')).not.toBeNull();
-    expect(request?.querySelector('[data-testid="trade-player-comparison"]')).not.toBeNull();
-    expect(request?.querySelector('.market-page__carousel-dot')).not.toBeNull();
-    expect(request?.querySelector('.market-page__selected-carousel--in')).not.toBeNull();
+    const tradeCarousel = container.querySelector('[aria-label="Trade player cards"]');
+    expect(tradeCarousel?.querySelectorAll('.market-page__selected-carousel-slide')).toHaveLength(4);
+    expect(tradeCarousel?.querySelector('[aria-label="Next trade players"]')).not.toBeNull();
+    expect(tradeCarousel?.querySelectorAll('.market-page__selected-player-card')).toHaveLength(4);
+    expect(tradeCarousel?.querySelectorAll('.market-page__selected-player-card .player-card--token')).toHaveLength(4);
+    expect(tradeCarousel?.querySelectorAll('.market-page__selected-player-card [data-testid="trade-player-comparison"]')).toHaveLength(4);
+    expect(tradeCarousel?.querySelectorAll('.market-page__carousel-dot')).toHaveLength(4);
+    expect(tradeCarousel?.querySelectorAll('.market-page__carousel-dot--out')).toHaveLength(3);
+    expect(tradeCarousel?.querySelectorAll('.market-page__carousel-dot--in')).toHaveLength(1);
     await act(async () => {
-      (offerCarousel?.querySelector('button[aria-label="Remove Owned Forward from You offer"]') as HTMLButtonElement).click();
+      (tradeCarousel?.querySelector('button[aria-label="Remove Owned Forward from You offer"]') as HTMLButtonElement).click();
       await Promise.resolve();
     });
-    expect(container.querySelectorAll('.market-page__selected-strip[aria-label="You offer"] .market-page__selected-carousel-slide')).toHaveLength(2);
+    expect(container.querySelectorAll('[aria-label="Trade player cards"] .market-page__selected-carousel-slide')).toHaveLength(3);
 
     act(() => root.unmount());
   });

@@ -201,6 +201,7 @@ export function MarketPage({ currentPath, onNavigate, preset, session }: MarketP
   const [drawManagementNotice, setDrawManagementNotice] = useState('');
   const [drawManagementError, setDrawManagementError] = useState(false);
   const drawerRef = useRef<HTMLElement | null>(null);
+  const hasLoadedMarketRef = useRef(false);
   const canReviewTrades = Boolean(session?.user?.roles.some((role) => ['commissioner', 'vice_commissioner', 'admin'].includes(role)));
   const canManageDraws = Boolean(session?.user?.roles.some((role) => role === 'commissioner' || role === 'admin'));
 
@@ -273,7 +274,7 @@ export function MarketPage({ currentPath, onNavigate, preset, session }: MarketP
     let active = true;
 
     async function loadMarket() {
-      setLoading(true);
+      if (!hasLoadedMarketRef.current) setLoading(true);
       setError(null);
       const results = await Promise.allSettled([
         fetchJson<ApiSummary>('/api/squad/summary'),
@@ -299,6 +300,7 @@ export function MarketPage({ currentPath, onNavigate, preset, session }: MarketP
       if (scouting) setPlayers(scouting.players.map(mapPlayer));
       if (interestPayload) setInterests(interestPayload.map(mapInterest));
       if (tradePayload) setTrades((tradePayload.trades ?? []).map(mapTrade));
+      if (errors.length < 4) hasLoadedMarketRef.current = true;
       setLoading(false);
       setFailedSections(new Set(errors));
       if (errors.length === 4) {

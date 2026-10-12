@@ -76,6 +76,7 @@ interface LeaguePageProps {
 
 export function LeaguePage({ attackDirection = 'up', currentPath = window.location.pathname, leagueClient = defaultLeagueClient, onNavigate, session, squadClient = defaultSquadClient, teamSelectionClient = defaultTeamSelectionClient }: LeaguePageProps) {
   const [snapshot, setSnapshot] = useState<LeagueSnapshot | null>(null);
+  const loadedSnapshotViewRef = useRef<LeagueSnapshotView | null>(null);
   const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
   const [reloadKey, setReloadKey] = useState(0);
   const [view, setView] = useState<LeagueView>(() => leagueViewFromPath(currentPath));
@@ -109,17 +110,20 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
       return () => { isActive = false; };
     }
 
+    const snapshotView: LeagueSnapshotView = view === 'table' || view === 'knockout' || view === 'head-to-head' ? view : 'fixtures';
+    const hasCachedView = loadedSnapshotViewRef.current === snapshotView;
+    if (!hasCachedView) setStatus('loading');
+
     async function loadLeagueData() {
-      setStatus('loading');
       try {
-        const snapshotView: LeagueSnapshotView = view === 'table' || view === 'knockout' || view === 'head-to-head' ? view : 'fixtures';
         const leagueSnapshot = await leagueClient.getLeagueSnapshot(snapshotView);
         if (isActive) {
           setSnapshot(leagueSnapshot);
+          loadedSnapshotViewRef.current = snapshotView;
           setStatus('loaded');
         }
       } catch {
-        if (isActive) setStatus('error');
+        if (isActive && !hasCachedView) setStatus('error');
       }
     }
 

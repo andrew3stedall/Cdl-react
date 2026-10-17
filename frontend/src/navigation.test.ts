@@ -104,6 +104,7 @@ describe('navigation configuration', () => {
     for (const path of [
       '/league/knockout',
       '/league/draft',
+      '/league/teams',
       '/scouting/loans',
       '/league/head-to-head',
       '/scouting/draws',

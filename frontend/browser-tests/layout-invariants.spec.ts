@@ -609,6 +609,7 @@ test('league Teams showcase selects each real crest and fits a mobile viewport',
   await page.goto('/league/table');
   await expect(page.getByRole('heading', { name: 'League table' })).toBeVisible();
   await page.getByRole('button', { name: 'Teams', exact: true }).click();
+  await expect(page).toHaveURL(/\/league\/teams$/);
 
   await expect(page.locator('.league-team-showcase__team')).toHaveCount(8);
   await expect(page.locator('.league-team-showcase__animation canvas')).toBeVisible();

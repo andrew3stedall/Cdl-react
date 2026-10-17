@@ -121,9 +121,10 @@ const marketPlayer = {
 
 export async function installLayoutFixtures(
   page: Page,
-  { apiDelayMs = 0, holdDataUntilReleased = false, roles = ['manager'], themePreset = 'teal-dark' }: {
+  { apiDelayMs = 0, holdDataUntilReleased = false, leagueTeams, roles = ['manager'], themePreset = 'teal-dark' }: {
     apiDelayMs?: number;
     holdDataUntilReleased?: boolean;
+    leagueTeams?: Array<[string, string]>;
     roles?: string[];
     themePreset?: ThemePresetName;
   } = {},
@@ -174,7 +175,17 @@ export async function installLayoutFixtures(
     if (path === '/api/league/fixtures/current') return await getResponse(leagueFixtureData.current);
     if (path === '/api/league/fixtures/next') return await getResponse(leagueFixtureData.next);
     if (path === '/api/league/fixtures') return await getResponse(leagueFixtureData.all);
-    if (path === '/api/league/table') return await getResponse(leagueFixtureData.table);
+    if (path === '/api/league/table') return await getResponse(leagueTeams
+      ? {
+          source: 'browser-fixture',
+          rows: leagueTeams.map(([id, name], index) => ({
+            position: index + 1,
+            team: { id, name, short_name: name.slice(0, 3).toUpperCase() },
+            played: 1, wins: 1, draws: 0, losses: 0, points_for: 68,
+            points_against: 44, points_difference: 24, league_points: 3,
+          })),
+        }
+      : leagueFixtureData.table);
     if (path === '/api/league/knockout') return await getResponse(leagueFixtureData.knockout);
     if (path === '/api/league/head-to-head') return await getResponse(leagueFixtureData.headToHead);
     if (path === '/api/league/management') {

@@ -604,18 +604,7 @@ test('league Teams showcase selects each real crest and fits a mobile viewport',
     ['team-koden-all-stars', 'Koden All Stars'],
     ['team-exeter-gently', 'Exeter Gently'],
   ];
-  await installLayoutFixtures(page);
-  await page.route('**/api/league/table', (route) => route.fulfill({
-    json: {
-      source: 'browser-fixture',
-      rows: teams.map(([id, name], index) => ({
-        position: index + 1,
-        team: { id, name, short_name: name.slice(0, 3).toUpperCase() },
-        played: 1, wins: 1, draws: 0, losses: 0, points_for: 68,
-        points_against: 44, points_difference: 24, league_points: 3,
-      })),
-    },
-  }));
+  await installLayoutFixtures(page, { leagueTeams: teams });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/league/table');
   await page.getByRole('button', { name: 'Teams', exact: true }).click();

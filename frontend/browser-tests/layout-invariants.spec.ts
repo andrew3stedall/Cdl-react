@@ -607,6 +607,7 @@ test('league Teams showcase selects each real crest and fits a mobile viewport',
   await installLayoutFixtures(page, { leagueTeams: teams });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/league/table');
+  await expect(page.getByRole('heading', { name: 'League table' })).toBeVisible();
   await page.getByRole('button', { name: 'Teams', exact: true }).click();
 
   await expect(page.locator('.league-team-showcase__team')).toHaveCount(8);

@@ -594,6 +594,8 @@ test('trade player cards fit five fixtures and show more cards as the viewport w
 });
 
 test('league Teams showcase selects each real crest and fits a mobile viewport', async ({ page }) => {
+  const pageErrors: string[] = [];
+  page.on('pageerror', (error) => pageErrors.push(error.message));
   const teams = [
     ['team-stan-still-sells-tik', 'Stan Still Sells Tik'],
     ['team-wilde-boars', 'Wilde Boars'],
@@ -610,6 +612,7 @@ test('league Teams showcase selects each real crest and fits a mobile viewport',
   await expect(page.getByRole('heading', { name: 'League table' })).toBeVisible();
   await page.getByRole('button', { name: 'Teams', exact: true }).click();
   await expect(page).toHaveURL(/\/league\/teams$/);
+  console.log('Teams route render diagnostic', await page.locator('main').innerText(), pageErrors);
 
   await expect(page.locator('.league-team-showcase__team')).toHaveCount(8);
   await expect(page.locator('.league-team-showcase__animation canvas')).toBeVisible();

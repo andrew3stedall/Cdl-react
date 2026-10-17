@@ -21,6 +21,7 @@ import { managerNicknameForTeam } from './manager-nicknames';
 import { invalidateData, subscribeDataFreshness } from './data-freshness';
 import { PlayerChartDetailDialog } from './components/player/PlayerChartDetailDialog';
 import { TeamCrest } from './components/team/TeamCrest';
+import { LeagueTeamShowcase } from './components/team/LeagueTeamShowcase';
 import { PageHero, PageHeroControls, PageHeroViewToggle } from './components/ui/page-hero';
 import { useModalLifecycle } from './components/ui/sheet';
 import type { AttackDirection } from './contracts';
@@ -61,7 +62,7 @@ const defaultLeagueClient = new HttpLeagueClient();
 const defaultSquadClient = new HttpSquadClient();
 const defaultTeamSelectionClient = new HttpTeamSelectionClient();
 
-type LeagueView = 'fixtures' | 'table' | 'manage' | 'knockout' | 'head-to-head';
+type LeagueView = 'fixtures' | 'table' | 'teams' | 'manage' | 'knockout' | 'head-to-head';
 type GameweekState = 'not-started' | 'underway' | 'finished';
 
 interface LeaguePageProps {
@@ -110,7 +111,7 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
       return () => { isActive = false; };
     }
 
-    const snapshotView: LeagueSnapshotView = view === 'table' || view === 'knockout' || view === 'head-to-head' ? view : 'fixtures';
+    const snapshotView: LeagueSnapshotView = view === 'table' || view === 'teams' || view === 'knockout' || view === 'head-to-head' ? (view === 'teams' ? 'table' : view) : 'fixtures';
     const hasCachedView = loadedSnapshotViewRef.current === snapshotView;
     if (!hasCachedView) setStatus('loading');
 
@@ -235,7 +236,7 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
                   ? [{ ariaLabel: 'View commissioner management', value: 'manage', label: 'Manage', icon: <LeagueManagementIcon size={18} /> }]
                   : []),
               ]}
-              value={view === 'knockout' || view === 'head-to-head' ? 'table' : view}
+              value={view === 'knockout' || view === 'head-to-head' || view === 'teams' ? 'table' : view}
             />
           </PageHeroControls>
         )}
@@ -249,8 +250,9 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
         <Button onClick={() => onNavigate('/league/draft')} type="button" variant="secondary">Live draft</Button>
       </nav>
 
-      {view === 'table' || view === 'knockout' || view === 'head-to-head' ? <nav aria-label="League competitions" className="league-competition-tabs">{([
+      {view === 'table' || view === 'teams' || view === 'knockout' || view === 'head-to-head' ? <nav aria-label="League competitions" className="league-competition-tabs">{([
         ['table', 'Table'],
+        ['teams', 'Teams'],
         ['knockout', 'Knockouts'],
         ['head-to-head', 'Head-to-head'],
       ] as Array<[LeagueView, string]>).map(([destination, label]) => <Button aria-current={view === destination ? 'page' : undefined} key={destination} onClick={() => { setView(destination); onNavigate(destination === 'table' ? '/league/table' : `/league/${destination}`); }} type="button" variant={view === destination ? 'secondary' : 'ghost'}>{label}</Button>)}</nav> : null}
@@ -450,6 +452,7 @@ function LeagueContent({
   view: LeagueView;
 }) {
   if (view === 'table') return <TableView onReload={onReload} snapshot={snapshot} />;
+  if (view === 'teams') return <LeagueTeamShowcase rows={snapshot.table.rows} />;
   if (view === 'knockout') return snapshot.failedReads?.includes('knockout') ? <LeagueDataError label="Knockout fixtures" onReload={onReload} /> : <KnockoutView knockout={snapshot.knockout} onOpenFixture={onOpenFixture} />;
   if (view === 'head-to-head') return snapshot.failedReads?.includes('head-to-head') ? <LeagueDataError label="Head-to-head records" onReload={onReload} /> : <HeadToHeadView records={snapshot.headToHead.records} />;
   return <><LeagueReadWarning failedReads={snapshot.failedReads ?? []} onReload={onReload} /><FixturesView leagueClient={leagueClient} managerTeamId={managerTeamId} onOpenFixture={onOpenFixture} snapshot={snapshot} /></>;
@@ -1572,6 +1575,7 @@ function LeagueLoadingState() {
 
 function leagueViewFromPath(pathname: string): LeagueView {
   if (pathname === '/league/table') return 'table';
+  if (pathname === '/league/teams') return 'teams';
   if (pathname === '/league/manage') return 'manage';
   if (pathname === '/league/knockout') return 'knockout';
   if (pathname === '/league/head-to-head') return 'head-to-head';

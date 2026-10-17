@@ -24,6 +24,7 @@
 # Changelog
 
 ## Unreleased
+- Added a League → Teams showcase with individual WebGL crest scenes for all league teams. The animation uses one low-power canvas, respects reduced-motion settings, and falls back to the existing SVG crest when WebGL is unavailable.
 - Keep multi-player trade carousels scrollable while showing two selected players at once.
 
 - Display selected trade and loan players as fixture-styled carousel cards, with two cards visible per side and controls for additional players.

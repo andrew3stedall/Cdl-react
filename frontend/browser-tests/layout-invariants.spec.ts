@@ -592,3 +592,41 @@ test('trade player cards fit five fixtures and show more cards as the viewport w
   await next.click();
   await expect.poll(() => slides.nth(1).evaluate((element) => element.getBoundingClientRect().x)).toBeLessThan(secondCardStart);
 });
+
+test('league Teams showcase selects each real crest and fits a mobile viewport', async ({ page }) => {
+  const teams = [
+    ['team-stan-still-sells-tik', 'Stan Still Sells Tik'],
+    ['team-wilde-boars', 'Wilde Boars'],
+    ['team-bayer-neverlusen', 'Bayer Neverlusen'],
+    ['team-class-of-84', 'Class of 84'],
+    ['team-sporting-lesbians', 'Sporting Lesbians'],
+    ['team-dicks-dribbling-xi', 'Dicks Dribbling XI'],
+    ['team-koden-all-stars', 'Koden All Stars'],
+    ['team-exeter-gently', 'Exeter Gently'],
+  ];
+  await installLayoutFixtures(page);
+  await page.route('**/api/league/table', (route) => route.fulfill({
+    json: {
+      source: 'browser-fixture',
+      rows: teams.map(([id, name], index) => ({
+        position: index + 1,
+        team: { id, name, short_name: name.slice(0, 3).toUpperCase() },
+        played: 1, wins: 1, draws: 0, losses: 0, points_for: 68,
+        points_against: 44, points_difference: 24, league_points: 3,
+      })),
+    },
+  }));
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/league/table');
+  await page.getByRole('button', { name: 'Teams', exact: true }).click();
+
+  await expect(page.locator('.league-team-showcase__team')).toHaveCount(8);
+  await expect(page.locator('.league-team-showcase__animation canvas')).toBeVisible();
+  for (const [, name] of teams) {
+    const teamButton = page.locator('.league-team-showcase__team').filter({ hasText: name });
+    await teamButton.click();
+    await expect(page.locator('.league-team-showcase__stage h2')).toHaveText(name);
+    await expect(teamButton).toHaveAttribute('aria-pressed', 'true');
+  }
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+});

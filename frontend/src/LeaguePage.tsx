@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 21631)
+Total output lines: 1675
+
 import { type CSSProperties, type ReactNode, type RefObject, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   CalendarDays,
@@ -21,6 +24,7 @@ import { managerNicknameForTeam } from './manager-nicknames';
 import { invalidateData, subscribeDataFreshness } from './data-freshness';
 import { PlayerChartDetailDialog } from './components/player/PlayerChartDetailDialog';
 import { TeamCrest } from './components/team/TeamCrest';
+import { LeagueTeamShowcase } from './components/team/LeagueTeamShowcase';
 import { PageHero, PageHeroControls, PageHeroViewToggle } from './components/ui/page-hero';
 import { useModalLifecycle } from './components/ui/sheet';
 import type { AttackDirection } from './contracts';
@@ -61,7 +65,7 @@ const defaultLeagueClient = new HttpLeagueClient();
 const defaultSquadClient = new HttpSquadClient();
 const defaultTeamSelectionClient = new HttpTeamSelectionClient();
 
-type LeagueView = 'fixtures' | 'table' | 'manage' | 'knockout' | 'head-to-head';
+type LeagueView = 'fixtures' | 'table' | 'teams' | 'manage' | 'knockout' | 'head-to-head';
 type GameweekState = 'not-started' | 'underway' | 'finished';
 
 interface LeaguePageProps {
@@ -110,7 +114,7 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
       return () => { isActive = false; };
     }
 
-    const snapshotView: LeagueSnapshotView = view === 'table' || view === 'knockout' || view === 'head-to-head' ? view : 'fixtures';
+    const snapshotView: LeagueSnapshotView = view === 'table' || view === 'teams' || view === 'knockout' || view === 'head-to-head' ? (view === 'teams' ? 'table' : view) : 'fixtures';
     const hasCachedView = loadedSnapshotViewRef.current === snapshotView;
     if (!hasCachedView) setStatus('loading');
 
@@ -235,7 +239,7 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
                   ? [{ ariaLabel: 'View commissioner management', value: 'manage', label: 'Manage', icon: <LeagueManagementIcon size={18} /> }]
                   : []),
               ]}
-              value={view === 'knockout' || view === 'head-to-head' ? 'table' : view}
+              value={view === 'knockout' || view === 'head-to-head' || view === 'teams' ? 'table' : view}
             />
           </PageHeroControls>
         )}
@@ -249,8 +253,9 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
         <Button onClick={() => onNavigate('/league/draft')} type="button" variant="secondary">Live draft</Button>
       </nav>
 
-      {view === 'table' || view === 'knockout' || view === 'head-to-head' ? <nav aria-label="League competitions" className="league-competition-tabs">{([
+      {view === 'table' || view === 'teams' || view === 'knockout' || view === 'head-to-head' ? <nav aria-label="League competitions" className="league-competition-tabs">{([
         ['table', 'Table'],
+        ['teams', 'Teams'],
         ['knockout', 'Knockouts'],
         ['head-to-head', 'Head-to-head'],
       ] as Array<[LeagueView, string]>).map(([destination, label]) => <Button aria-current={view === destination ? 'page' : undefined} key={destination} onClick={() => { setView(destination); onNavigate(destination === 'table' ? '/league/table' : `/league/${destination}`); }} type="button" variant={view === destination ? 'secondary' : 'ghost'}>{label}</Button>)}</nav> : null}
@@ -450,6 +455,7 @@ function LeagueContent({
   view: LeagueView;
 }) {
   if (view === 'table') return <TableView onReload={onReload} snapshot={snapshot} />;
+  if (view === 'teams') return <LeagueTeamShowcase rows={snapshot.table.rows} />;
   if (view === 'knockout') return snapshot.failedReads?.includes('knockout') ? <LeagueDataError label="Knockout fixtures" onReload={onReload} /> : <KnockoutView knockout={snapshot.knockout} onOpenFixture={onOpenFixture} />;
   if (view === 'head-to-head') return snapshot.failedReads?.includes('head-to-head') ? <LeagueDataError label="Head-to-head records" onReload={onReload} /> : <HeadToHeadView records={snapshot.headToHead.records} />;
   return <><LeagueReadWarning failedReads={snapshot.failedReads ?? []} onReload={onReload} /><FixturesView leagueClient={leagueClient} managerTeamId={managerTeamId} onOpenFixture={onOpenFixture} snapshot={snapshot} /></>;
@@ -836,138 +842,7 @@ function RoundCarousel({ allFixtures, leagueClient, managerTeamId, onOpenFixture
 
   useEffect(() => {
     if (!roundApi) return;
-    const selectedRound = rounds[roundApi.selectedScrollSnap()];
-    if (selectedRound?.key !== rounds[initialRoundIndex]?.key) {
-      roundApi.scrollTo(initialRoundIndex, true);
-    }
-  }, [initialRoundIndex, roundApi, rounds]);
-
-  useEffect(() => {
-    const maximumIndex = Math.max(...rounds.map((round) => round.gameweeks.length), 1) - 1;
-    setSelectedGameweekIndex((index) => Math.min(index, maximumIndex));
-  }, [rounds]);
-
-  useEffect(() => {
-    setSelectedGameweekIndex(initialGameweekIndex);
-  }, [initialGameweekIndex]);
-
-  return (
-    <section aria-label="Fixture rounds" aria-roledescription="carousel" className="league-round-carousel" role="region">
-      <div aria-label="Fixture round slides" className="league-round-carousel__viewport" ref={roundViewportRef}>
-        <div className="league-round-carousel__track">
-          {rounds.map((round, roundIndex) => {
-            const isSelected = roundIndex === selectedRoundIndex;
-            const gameweekIndex = gameweekIndexForRound(round, selectedGameweekIndex);
-            return (
-              <div
-                aria-current={isSelected ? 'true' : undefined}
-                aria-hidden={!isSelected}
-                aria-label={`${round.label} fixtures`}
-                aria-roledescription="slide"
-                className={`league-round-carousel__slide${isSelected ? ' is-selected' : ''}`}
-                data-round-index={roundIndex}
-                key={round.key}
-                onClick={(event) => {
-                  const target = event.target as HTMLElement;
-                  if (target.closest('button, a, input, select, textarea')) return;
-                  handleRoundNavigation(roundIndex);
-                }}
-                role="group"
-              >
-                <div className="league-round-slide__content">
-                  <div aria-label={`${round.label} fixtures`} className="league-fixture-round" id={`league-round-panel-${round.key}`}>
-                    <header className="league-fixture-round__header">
-                      <div className="league-fixture-round__title">
-                        {round.isCurrent ? <span aria-label="Active round" className="league-round-active-led" role="img" title="Active round" /> : null}
-                        <h2>{round.label}</h2>
-                      </div>
-                    </header>
-                    <GameweekCarousel
-                    groups={round.gameweeks}
-                    expectedGameweeks={round.expectedGameweeks}
-                    allFixtures={allFixtures}
-                    isActive={isSelected}
-                    leagueClient={leagueClient}
-                    managerTeamId={managerTeamId}
-                    onIndexChange={(index) => {
-                        if (isSelected) setSelectedGameweekIndex(index);
-                      }}
-                      onOpenFixture={onOpenFixture}
-                      roundLabel={round.label}
-                      selectedGameweekIndex={gameweekIndex}
-                    />
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-      <nav aria-label="Round navigation" className="league-round-carousel__dots">
-        {rounds.map((round, roundIndex) => {
-          const isSelected = roundIndex === selectedRoundIndex;
-          return (
-            <button
-              aria-current={isSelected ? 'true' : undefined}
-              aria-label={`Go to ${round.label}`}
-              className={`league-round-carousel__dot${isSelected ? ' is-selected' : ''}`}
-              data-round-index={roundIndex}
-              key={round.key}
-              onClick={() => handleRoundNavigation(roundIndex)}
-              type="button"
-            />
-          );
-        })}
-      </nav>
-    </section>
-  );
-}
-
-interface CarouselSelection {
-  gameweekIndex: number;
-  roundIndex: number;
-}
-
-function defaultCarouselSelection(rounds: FixtureRoundGroup[]): CarouselSelection {
-  const groups = rounds.flatMap((round, roundIndex) => round.gameweeks.map((gameweek, gameweekIndex) => ({ gameweek, gameweekIndex, roundIndex })));
-  const active = groups
-    .filter(({ gameweek }) => gameweek.isCurrent && gameweek.state === 'underway')
-    .sort((left, right) => right.gameweek.gameweek.number - left.gameweek.gameweek.number)[0];
-  const completed = groups
-    .filter(({ gameweek }) => gameweek.state === 'finished')
-    .sort((left, right) => right.gameweek.gameweek.number - left.gameweek.gameweek.number)[0];
-  const fallback = groups
-    .filter(({ gameweek }) => gameweek.isCurrent || gameweek.state === 'not-started')
-    .sort((left, right) => left.gameweek.gameweek.number - right.gameweek.gameweek.number)[0]
-    ?? groups[0];
-  const selected = active ?? completed ?? fallback;
-  return selected
-    ? { gameweekIndex: selected.gameweekIndex, roundIndex: selected.roundIndex }
-    : { gameweekIndex: 0, roundIndex: 0 };
-}
-
-function GameweekCarousel({ allFixtures, expectedGameweeks, groups, isActive, leagueClient, managerTeamId, onIndexChange, onOpenFixture, roundLabel, selectedGameweekIndex }: { allFixtures: LeagueFixture[]; expectedGameweeks: number; groups: GameweekGroup[]; isActive: boolean; leagueClient: LeagueClient; managerTeamId: string | null; onIndexChange: (index: number) => void; onOpenFixture: (fixture: LeagueFixture) => void; roundLabel: string; selectedGameweekIndex: number }) {
-  const initialIndex = gameweekIndexForRound({ gameweeks: groups }, selectedGameweekIndex);
-  // Embla reads startIndex only when it is created. Keeping that initial value
-  // stable is important: updating it after every select causes a re-init that
-  // can leave the visual transform and selected snap out of sync.
-  const initialEmblaIndex = useRef(initialIndex).current;
-  const gameweekOptions = useMemo(() => ({
-    align: 'center' as const,
-    axis: 'y' as const,
-    containScroll: false as const,
-    duration: 68,
-    loop: false,
-    startIndex: initialEmblaIndex,
-  }), [initialEmblaIndex]);
-  const [gameweekViewportRef, gameweekApi] = useEmblaCarousel(gameweekOptions);
-  const [selectedIndex, setSelectedIndex] = useState(initialIndex);
-  const fixtureRows = Math.max(...groups.map((group) => group.fixtures.length), 1);
-  const baseGameweekCardHeight = Math.max(11, 3.4 + fixtureRows * 4.95);
-  // The fixture board contains one featured fixture plus the remaining
-  // gameweek rows. Reserve the full mobile card slot up front so the
-  // measurement observer does not resize the carousel after first paint.
-  const gameweekCardHeight = Math.max(29, Math.round(baseGameweekCardHeight * GAMEWEEK_HEIGHT_SCALE * 100) / 100);
+    const selectedRound = …1631 tokens truncated…eekCardHeight = Math.max(29, Math.round(baseGameweekCardHeight * GAMEWEEK_HEIGHT_SCALE * 100) / 100);
   const [measuredCardHeight, setMeasuredCardHeight] = useState<number | null>(null);
   const gameweekCarouselRef = useRef<HTMLElement | null>(null);
   const carouselStyle = {
@@ -1572,6 +1447,7 @@ function LeagueLoadingState() {
 
 function leagueViewFromPath(pathname: string): LeagueView {
   if (pathname === '/league/table') return 'table';
+  if (pathname === '/league/teams') return 'teams';
   if (pathname === '/league/manage') return 'manage';
   if (pathname === '/league/knockout') return 'knockout';
   if (pathname === '/league/head-to-head') return 'head-to-head';

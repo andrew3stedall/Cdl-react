@@ -48,6 +48,14 @@ scoring breakdown for the selected gameweek, including the existing fantasy
 points and scoring-return detail. Only future gameweeks open the read-only full
 player profile. The same interaction applies from pitch and list fixture views.
 
+The League table workspace also contains a Teams view. It presents every
+league team crest in a selectable gallery; the selected crest is rendered in a
+single WebGL canvas with a team-specific accent, animated orbital rings, and
+light particles. The original SVG remains visible when WebGL is unavailable,
+and reduced-motion preferences pause the animation. The view reads the teams
+from the existing league table response and adds no API or persistence
+requirements.
+
 ## Business Rules
 
 - Current fixtures appear first, followed by upcoming gameweeks.

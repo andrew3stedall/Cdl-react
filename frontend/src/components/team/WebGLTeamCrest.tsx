@@ -3,12 +3,14 @@ import { teamCrestAsset, type TeamCrestTeam } from './TeamCrest';
 
 export function WebGLTeamCrest({ team, accent, className = '' }: { team: TeamCrestTeam; accent: string; className?: string }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [ready, setReady] = useState(false);
+  const [readyKey, setReadyKey] = useState<string | null>(null);
   const asset = teamCrestAsset(team);
   const src = asset ? `/team-crests/${asset}-${asset === 'sporting-lesbians' ? 'mesh' : 'light'}.svg` : undefined;
+  const sceneKey = `${src}|${accent}`;
+  const ready = readyKey === sceneKey;
 
   useEffect(() => {
-    setReady(false);
+    setReadyKey(null);
     const canvas = canvasRef.current;
     if (!canvas || !src || !('WebGL2RenderingContext' in window)) return;
     const controller = new AbortController();
@@ -19,10 +21,10 @@ export function WebGLTeamCrest({ team, accent, className = '' }: { team: TeamCre
       return createCrestScene(canvas, src, accent, controller.signal);
     }).then((cleanup) => {
       if (controller.signal.aborted) cleanup?.();
-      else if (cleanup) { dispose = cleanup; setReady(true); }
-    }).catch(() => { if (!controller.signal.aborted) setReady(false); });
+      else if (cleanup) { dispose = cleanup; setReadyKey(sceneKey); }
+    }).catch(() => { if (!controller.signal.aborted) setReadyKey(null); });
     return () => { controller.abort(); dispose?.(); };
-  }, [accent, src]);
+  }, [accent, src, sceneKey]);
 
   return <div aria-hidden="true" className={`webgl-team-crest ${className}`} data-ready={ready}>
     {src ? <img alt="" className="webgl-team-crest__fallback" src={src} /> : null}

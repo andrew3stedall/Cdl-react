@@ -624,5 +624,12 @@ test('league Teams showcase selects each real crest and fits a mobile viewport',
     expect(Number(vertices)).toBeGreaterThan(100);
     await expect(animation.locator('img')).toHaveCSS('opacity', '0');
   }
+  const canvas = page.locator('.league-team-showcase__animation canvas');
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  const still = await canvas.screenshot();
+  await page.waitForTimeout(180);
+  expect((await canvas.screenshot()).equals(still)).toBe(true);
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  await expect.poll(async () => !(await canvas.screenshot()).equals(still)).toBe(true);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
 });

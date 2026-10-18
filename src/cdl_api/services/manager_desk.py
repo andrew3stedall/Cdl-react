@@ -89,13 +89,16 @@ class ManagerDeskService:
         return fixtures[-5:]
 
     def _recent_fixtures(self) -> list[LeagueFixture]:
-        """Return all scored fixtures in the five most recent gameweeks."""
+        """Return scored fixtures for the active week and five prior gameweeks."""
         fixtures = [
             fixture
             for fixture in self._league_repository.list_fixtures()
             if fixture.status in {FixtureStatus.STARTED, FixtureStatus.COMPLETE}
         ]
-        gameweeks = sorted({fixture.gameweek.number for fixture in fixtures})[-5:]
+        # The active gameweek is rendered separately on the Desk. Keep it in
+        # this payload for other consumers, plus five prior gameweeks for the
+        # matchup history displayed underneath the active score.
+        gameweeks = sorted({fixture.gameweek.number for fixture in fixtures})[-6:]
         return [fixture for fixture in fixtures if fixture.gameweek.number in gameweeks]
 
     @staticmethod

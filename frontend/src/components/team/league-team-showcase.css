@@ -177,9 +177,12 @@
 .webgl-team-crest__canvas { opacity: 1; z-index: 0; }
 .webgl-team-crest__fallback {
   filter: drop-shadow(0 0 1.8rem color-mix(in srgb, var(--team-accent, #20d6c1) 45%, transparent));
+  opacity: 1;
   padding: 27%;
+  transition: opacity 180ms ease;
   z-index: 1;
 }
+.webgl-team-crest[data-ready='true'] .webgl-team-crest__fallback { opacity: 0; pointer-events: none; }
 
 @media (max-width: 760px) {
   .league-team-showcase__stage {

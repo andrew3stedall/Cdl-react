@@ -2,6 +2,11 @@
 
 - Keep five previous gameweek scores visible on the Manager's Desk during a live gameweek by including the active gameweek plus five prior gameweeks in the form fixture payload.
 
+- Added public, unauthenticated, read-only companion API endpoints for CDL
+  teams, draft picks, processed draw results, squad ownership movements,
+  executed trades, and locked weekly selections. Scoped wildcard CORS supports
+  browser clients without exposing other API routes cross-origin.
+
 - Replace the Teams view's rotating image planes with solid meshes extruded from each badge's SVG contours, preserving cutouts and disconnected details, with bevels, coloured sidewalls, lighting, and full rotation. Add a vector companion for the raster-backed Sporting Lesbians asset and regressions for real mesh depth and open holes.
 
 - Added a resumable mobile-first AI connection wizard under Profile → AI connections for #602–#604. It guides ChatGPT and Claude users through provider-specific remote MCP setup, makes the current ChatGPT web and plan limits explicit, keeps read access the recommended starting point, and supports desktop handoff without storing credentials.

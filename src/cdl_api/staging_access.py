@@ -33,6 +33,10 @@ def staging_access_required(settings: Settings, path: str) -> bool:
         return False
     if path.startswith(f"{settings.api_prefix}/league/invites/"):
         return False
+    if path == f"{settings.api_prefix}/companion" or path.startswith(
+        f"{settings.api_prefix}/companion/"
+    ):
+        return False
     if path in _PUBLIC_AUTH_PATHS:
         return False
     return path.startswith(f"{settings.api_prefix}/") or path in {

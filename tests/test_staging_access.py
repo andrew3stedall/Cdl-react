@@ -8,7 +8,7 @@ from starlette.responses import PlainTextResponse
 
 from cdl_api.app import create_app
 from cdl_api.settings import Settings
-from cdl_api.staging_access import build_staging_access_middleware
+from cdl_api.staging_access import build_staging_access_middleware, staging_access_required
 
 
 @pytest.fixture
@@ -29,6 +29,14 @@ def test_staging_allows_health_frontend_and_auth_bootstrap_routes(
     assert staging_client.get("/api/auth/passkeys/config").status_code == 200
     assert staging_client.post("/api/auth/logout").status_code == 200
     assert staging_client.get("/").status_code == 404
+
+
+def test_staging_companion_api_is_public_but_other_api_paths_remain_protected() -> None:
+    settings = Settings(environment="staging")
+
+    assert staging_access_required(settings, "/api/companion/teams") is False
+    assert staging_access_required(settings, "/api/companionx/teams") is True
+    assert staging_access_required(settings, "/api/league") is True
 
 
 @pytest.mark.parametrize(

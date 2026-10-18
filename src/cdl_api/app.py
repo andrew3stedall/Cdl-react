@@ -2,9 +2,11 @@
 
 from fastapi import FastAPI
 
+from cdl_api.companion_cors import CompanionCorsMiddleware
 from cdl_api.repositories.factory import build_repositories
 from cdl_api.routers.ai_execution import router as ai_execution_router
 from cdl_api.routers.auth import router as auth_router
+from cdl_api.routers.companion import router as companion_router
 from cdl_api.routers.dashboard import router as dashboard_router
 from cdl_api.routers.fdr import router as fdr_router
 from cdl_api.routers.fpl_data import router as fpl_data_router
@@ -34,6 +36,7 @@ from cdl_api.static_frontend import mount_static_frontend
 def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(title=settings.app_name)
+    app.add_middleware(CompanionCorsMiddleware, api_prefix=settings.api_prefix)
     if settings.is_protected_environment:
         settings.validate_protected_environment()
         if settings.environment == "staging":
@@ -60,6 +63,7 @@ def create_app() -> FastAPI:
             )
         )
     app.include_router(auth_router, prefix=settings.api_prefix)
+    app.include_router(companion_router, prefix=settings.api_prefix)
     app.include_router(ai_execution_router, prefix=settings.api_prefix)
     app.include_router(oauth_router, prefix="")
     app.include_router(mcp_router, prefix="")

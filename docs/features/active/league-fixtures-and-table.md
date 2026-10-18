@@ -50,9 +50,13 @@ player profile. The same interaction applies from pitch and list fixture views.
 
 The League table workspace also contains a Teams view. It presents every
 league team crest in a selectable gallery; the selected crest is rendered in a
-single WebGL canvas with a team-specific accent, animated orbital rings, and
-light particles. The original SVG remains visible when WebGL is unavailable,
-and reduced-motion preferences pause the animation. The view reads the teams
+single WebGL canvas. SVG contours become extruded solid geometry with open
+cutouts, front/back faces, subtle bevels, and team-coloured sidewalls. Studio
+lighting reveals the thickness as the badge rotates; no image is mapped onto
+a rectangular plane. Sporting Lesbians uses a traced vector companion because
+its original SVG embeds raster linework. The engine loads only on this view.
+The SVG remains visible when WebGL is unavailable, and reduced-motion
+preferences pause rotation. The view reads the teams
 from the existing league table response and adds no API or persistence
 requirements.
 

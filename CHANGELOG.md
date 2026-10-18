@@ -1,5 +1,7 @@
 ## Unreleased
 
+- Replace the Teams view's rotating image planes with solid meshes extruded from each badge's SVG contours, preserving cutouts and disconnected details, with bevels, coloured sidewalls, lighting, and full rotation. Add a vector companion for the raster-backed Sporting Lesbians asset and regressions for real mesh depth and open holes.
+
 - Added a resumable mobile-first AI connection wizard under Profile → AI connections for #602–#604. It guides ChatGPT and Claude users through provider-specific remote MCP setup, makes the current ChatGPT web and plan limits explicit, keeps read access the recommended starting point, and supports desktop handoff without storing credentials.
 - Added an explicit read-only/read-write choice to the onboarding, defaulted to read-only, and made the CDL OAuth consent screen preselect only `cdl:read`.
 

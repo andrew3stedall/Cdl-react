@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 12086)
-Total output lines: 745
-
 ## Unreleased
 
 - Keep five previous gameweek scores visible on the Manager's Desk during a live gameweek by including the active gameweek plus five prior gameweeks in the form fixture payload.
@@ -239,7 +236,178 @@ Total output lines: 745
 
 ### Changed
 
-- Replaced the Squad page's six-request …2086 tokens truncated…ase or role creator, replication role, row-security bypass role, or
+- Replaced the Squad page's six-request initial load with a combined Squad
+  workspace read plus the independent team-selection read.
+- Deferred scouting-player and available-rights requests until their UI
+  surfaces are opened.
+- Reused the PostgreSQL player snapshot during a request so summary and
+  attention reads do not repeat the full player/fixture query.
+- Added a structured proposed-trade count to the notifications response so
+  the Squad page no longer fetches the full trade list just to render its
+  attention banner.
+
+### Validation
+
+- Added API and browser regression coverage for the workspace contract,
+  request reduction, and lazy secondary data loading.
+
+## 2026-08-13 - Make the app installable on Android
+
+- Added an Android-installable web app manifest with standalone display mode,
+  theme metadata, relative paths for root and GitHub Pages deployments, and
+  maskable app icons.
+- Added a production-only service worker that caches the app shell while
+  deliberately bypassing API routes so league data is not served from a stale
+  cache.
+- Added mobile viewport and dynamic-height handling for standalone app windows.
+
+## 2026-08-10 - Refresh the League competition workspace
+
+- Reworked the League route into an overview-first competition workspace with
+  focused Fixtures, Table, Knockout, and Head-to-head views.
+- Added responsive fixture cards, status filtering, started-fixture detail
+  drawers, table-source messaging, and explicit loading/error/empty states.
+- Kept legacy migration operations outside the manager-facing League surface;
+  ambiguous history remains governed by archive-only migration rules.
+
+## 2026-08-10 - Refresh Market discovery workspace
+
+### Added
+
+- Added the modern Market page at `/scouting` with focused Discovery, Interests and Trades views.
+- Added contextual Market navigation for Interests and Trades while retaining Fixture Difficulty as a Market-context tool.
+- Added official-data player evidence, availability and next-fixture context with responsive player rows and detail drawer actions.
+
+### Changed
+
+- Replaced the legacy combined scouting/squad presentation with an acquisition-focused Market workflow.
+- Removed the page-local mobile navigation so the global shell remains the single navigation source.
+- Updated screenshot and browser journey contracts to exercise Market discovery and Interest persistence.
+
+### Deliberate gaps
+
+- Watchlist bookmarks, ranked Interest reordering, advanced threshold filters and full Trade Builder actions remain separate follow-up work.
+
+## 2026-08-09 - Correct player availability flags
+
+### Fixed
+
+- Interpreted the official FPL `a` status as available rather than as an issue on Managers Desk and Squad.
+- Removed positive availability markers from fit players; only reduced chances, injuries, suspensions and other actionable statuses are marked.
+- Centralised availability interpretation so the dashboard count, list filter, pitch markers and player drawer use the same contract.
+
+### Changed
+
+- Added restrained warning/critical availability markers with percentage and status details available on hover and in the player drawer.
+
+### Validation
+
+- Added regression coverage for raw FPL available statuses, 100%/unknown chances, reduced chances, doubtful players and severe statuses.
+
+## 2026-08-09 - Complete Squad API wiring and official FPL shirt assets
+
+### Added
+
+- Added next-opponent, home/away, kickoff and FDR enrichment from the persisted official FPL fixture cache.
+- Added canonical Squad changes and notifications endpoints, including atomic temporary-right add/remove submission.
+- Added a typed Squad API client for summary, scouting, trades, changes, notifications and cached FPL player history.
+- Added the official current FPL shirt artwork mapping for all 20 2026/27 clubs, with the existing local SVGs retained as fallbacks.
+- Extended browser interaction fixtures to cover squad changes, notifications and player-history API calls.
+
+### Changed
+
+- Wired the canonical Squad profile drawer to official FPL history and upcoming fixtures.
+- Wired Trade submission to `POST /api/trades` and validated the selected manager/team on the backend.
+- Replaced silent API fallbacks and visible endpoint placeholders with explicit states and source-backed values.
+- Added real availability and next-fixture filters to List view.
+
+### Validation
+
+- Added coverage for the official FPL asset URL used by the Squad surface and kept lineup/substitution regression coverage green.
+
+## 2026-08-04 - Serve the staged snake draft through application APIs
+
+### Fixed
+
+- Replaced the Squad Management page's hard-coded player list with the PostgreSQL-backed squad
+  summary and scouting API responses.
+- Made PostgreSQL team selection read Exeter Gently's 20 active ownerships for the staged
+  2026/27 season instead of the five-player in-memory demo roster.
+- Scoped league and dashboard reads to the eight teams in the staged CDL season, hiding unrelated
+  legacy synthetic fixtures, scores and dashboard points while no current results exist.
+- Removed request-time repository seeding so ordinary API and session requests are read-only and
+  cannot recreate demo data or open avoidable Cloud SQL connections.
+
+### Validation
+
+- Added regression coverage for the 20-player staged team-selection roster, active-team dashboard
+  filters, empty pre-season standings and removal of the obsolete sample trade action.
+
+## 2026-08-02 - Add allowlisted Google sign-in for staging
+
+### Added
+
+- Added an official Google Identity Services sign-in path that verifies Google ID tokens on the
+  API and permits only the configured exact email allowlist.
+- Reused the existing PostgreSQL user and session tables so Cloud Run instances share the same
+  secure application session without storing Google access or refresh tokens.
+- Added Terraform-managed Secret Manager containers for the OAuth client ID and email allowlist.
+- Added a reviewed, plan-manifest-bound enable switch so Cloud Run does not reference those
+  secrets until their first versions exist.
+
+### Security
+
+- Bound Google credentials to the exact configured OAuth client audience, required a
+  Google-verified email, and required a same-origin custom request header.
+- Kept the shared staging password only as a temporary fallback and left production identity,
+  IAM and real-data access out of scope.
+
+## 2026-08-02 - Add phone-browser staging access boundary
+
+### Added
+
+- Added a staging-only global session boundary for all non-authentication API routes and API
+  schema routes while keeping the React login bootstrap and health check reachable.
+- Added an explicit `application-login` runtime access model to the reviewed Terraform plan
+  and apply workflows, including exact manifest, approval phrase, IAM, and live-policy checks.
+
+### Security
+
+- Limited the public-plan exception to `allUsers` with `roles/run.invoker` on the single
+  Terraform-managed staging Cloud Run service; all other public IAM remains fail-closed.
+- Switched the shared staging password check to constant-time comparison and documented that
+  this synthetic-data review control is not a production identity system.
+- Made staging startup fail closed when the known development login secret has not been
+  replaced by the configured Secret Manager value.
+
+### Validation
+
+- Added API boundary, exact public-IAM exception, plan-manifest, and workflow contract tests.
+
+## 2026-08-02 - Fix staging database job image verification
+
+### Fixed
+
+- Read the configured container image from the Cloud Run v1 job structure
+  returned by `gcloud run jobs describe` instead of an empty v2-style path.
+- Restricted execution to immutable digests from the expected staging project
+  and `cdl-react-backend/cdl-react-app` repository.
+
+### Validation
+
+- Added regression coverage for the correct nested image field, expected
+  repository boundary and rejection of the previous incorrect field path.
+- Recorded migration workflow run `30738978829` as the fail-closed evidence;
+  the migration was not executed and the staging database was unchanged.
+
+## 2026-08-02 - Fix Cloud SQL credential role rotation
+
+### Fixed
+
+- Stopped requesting explicit restricted PostgreSQL attribute changes that the
+  Cloud SQL managed administrator is not permitted to perform.
+- Retained fail-closed catalog verification that `cdl_app` is not a superuser,
+  database or role creator, replication role, row-security bypass role, or
   member of `cloudsqlsuperuser` before writing a Secret Manager version.
 
 ### Validation

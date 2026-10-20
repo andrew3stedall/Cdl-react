@@ -227,6 +227,18 @@ Planned/production infrastructure context:
 - Keep route handlers thin; services own orchestration and validation; repositories own persistence.
 - Document API contracts before implementation.
 
+## Frontend Server-State and Cache Rules
+
+- Route all authenticated server data through the shared TanStack Query cache described in [the client query cache ADR](docs/architecture/client-query-cache-adr.md).
+- Use the existing frontend API clients and transport helper (`fetchWithQuery`) for API reads and writes. Do not call `fetch` directly from page/components or add page-specific in-memory, localStorage, or IndexedDB caches.
+- The current integration is transport-level: API clients continue to expose the app's existing data-loading interface while the shared transport owns TanStack Query reuse and persistence. Do not introduce another QueryClient or a parallel query layer.
+- Successful authenticated JSON GET responses are cached per manager in memory and IndexedDB. The cache may serve data immediately after reload, so preserve the existing route, active-page, visibility, reconnect, and manual refresh invalidation paths.
+- Successful non-GET requests invalidate cached API data. For mutations outside that transport path, explicitly invalidate through the shared cache or dispatch the established `cdl:data-invalidated` event when the server data changes.
+- Never cache auth/session, passkey, live-draft, WebMCP, or asset requests. Use the existing bypass rules (including `cache: 'no-store'` where applicable) for data that must always reach the server.
+- Keep private data manager-scoped and clear it on confirmed sign-out. Do not weaken user isolation or bypass behavior to improve speed.
+- If a response contract changes incompatibly with persisted browser data, increment the client cache version and add a regression test. Cache data is presentation support only; the server remains authoritative.
+- Add or update tests for cache reuse and invalidation, plus any applicable restoration, identity isolation, and bypass behavior. Follow the ADR validation baseline when modifying the cache layer itself.
+
 ## UI / UX Standards
 
 - Use the modern CDL React design direction rather than recreating the legacy UI exactly.

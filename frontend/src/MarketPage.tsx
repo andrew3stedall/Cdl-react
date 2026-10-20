@@ -170,8 +170,7 @@ export function MarketPage({ currentPath, onNavigate, preset, session }: MarketP
   const [positionFilter, setPositionFilter] = useState<PositionFilter>('all');
   const [fixtureFilter, setFixtureFilter] = useState<FixtureFilter>('all');
   const [sortKey, setSortKey] = useState<SortKey>('points');
-  const [filtersOpen, setFiltersOpen] = useµ¨¥zºè¯
-â¶)à²Ö§uªÝ¢ëiºÐk¢G§¦*^µ¨¥State(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<MarketPlayer | null>(null);
   const [selectedTradeTarget, setSelectedTradeTarget] = useState<MarketPlayer | null>(null);
   const [ownedPlayers, setOwnedPlayers] = useState<MarketPlayer[]>([]);
@@ -291,8 +290,7 @@ export function MarketPage({ currentPath, onNavigate, preset, session }: MarketP
       const errors: string[] = [];
       const summary = getFulfilled(summaryResult, 'squad context', errors);
       const scouting = getFulfilled(scoutingResult, 'player pool', errors);
-      const interestPayload = getFulfilledzºè¯
-â¶)à²Ö§uªÝ¢ëiºÐk¢G§¦*^µ¨¥Â¸­yêë¢°k¢G§¦*^(interestsResult, 'Interests', errors);
+      const interestPayload = getFulfilled(interestsResult, 'Interests', errors);
       const tradePayload = getFulfilled(tradesResult, 'trade activity', errors);
 
       if (summary) {
@@ -567,8 +565,7 @@ export function MarketPage({ currentPath, onNavigate, preset, session }: MarketP
       <PageHero
         actions={(
           <PageHeroControls>
-            <Button aria-label="Open fixture difficulty" onClick={() => onNavigate('/fdr')} type="button" variant="secondary"><Chartµ¨¥zºè¯
-â¶)à²Ö§uªÝ¢ëiºÐk¢G§¦*^NoAxesCombined aria-hidden="true" size={16} />FDR</Button>
+            <Button aria-label="Open fixture difficulty" onClick={() => onNavigate('/fdr')} type="button" variant="secondary"><ChartNoAxesCombined aria-hidden="true" size={16} />FDR</Button>
             <PageHeroViewToggle
               ariaLabel="Market workspace sections"
               onChange={(nextMode) => selectMode(nextMode as MarketMode)}
@@ -671,8 +668,7 @@ export function MarketPage({ currentPath, onNavigate, preset, session }: MarketP
 
       {selectedPlayer ? (
         <PlayerDrawer
-          interest={interests.find((item) => itµ¨¥zºè¯
-â¶)à²Ö§uªÝ¢ëiºÐk¢G§¦*^em.player.id === selectedPlayer.id) ?? null}
+          interest={interests.find((item) => item.player.id === selectedPlayer.id) ?? null}
           onAddInterest={() => void registerInterest(selectedPlayer)}
           onClose={() => setSelectedPlayer(null)}
           onNavigate={onNavigate}
@@ -870,8 +866,7 @@ function TradesPanel({ approvalFailed, approvalLoading, approvalNotice, approval
         const sender = trade.offeredById === managerTeam.id;
         const pending = pendingTradeAction === trade.id;
         const terminal = ['rejected', 'cancelled', 'executed'].includes(trade.status);
-        return <article className="market-page__trade-row" key={trade.id}><span className="market-page__trade-icon"><ArrowRightLeft aria-hidden="true" size={18} /></span><div><strong>{trade.assetNames.length > 0 ? trade.assetNames.join(' â†” ') : 'Player trade proposal'}</strong><span>{trade.offeredBy ?? 'Another manager'} â†’ {trade.offeredTo ?? 'Your team'}</span><StatusBadge status={trade.status} />{trade.status === 'accepted' && trade.approvalStatus !== 'approved' ? <span>Awaiting commissioner approval</span> : null}{!terminal && trade.status === 'proposed' && recipient ? <div className="market-page__trade-actions"><Button disabled={pending} onClick={() => void onUpdateTrade(trade, 'accepted')} type="button">{pendµ¨¥zºè¯
-â¶)à²Ö§uªÝ¢ëiºÐk¢G§¦*^ing ? 'Savingâ€¦' : 'Accept'}</Button><Button disabled={pending} onClick={() => void onUpdateTrade(trade, 'rejected')} type="button" variant="secondary">Reject</Button></div> : null}{!terminal && trade.status === 'proposed' && sender ? <Button disabled={pending} onClick={() => void onUpdateTrade(trade, 'cancelled')} type="button" variant="secondary">{pending ? 'Cancellingâ€¦' : 'Cancel proposal'}</Button> : null}</div></article>;
+        return <article className="market-page__trade-row" key={trade.id}><span className="market-page__trade-icon"><ArrowRightLeft aria-hidden="true" size={18} /></span><div><strong>{trade.assetNames.length > 0 ? trade.assetNames.join(' â†” ') : 'Player trade proposal'}</strong><span>{trade.offeredBy ?? 'Another manager'} â†’ {trade.offeredTo ?? 'Your team'}</span><StatusBadge status={trade.status} />{trade.status === 'accepted' && trade.approvalStatus !== 'approved' ? <span>Awaiting commissioner approval</span> : null}{!terminal && trade.status === 'proposed' && recipient ? <div className="market-page__trade-actions"><Button disabled={pending} onClick={() => void onUpdateTrade(trade, 'accepted')} type="button">{pending ? 'Savingâ€¦' : 'Accept'}</Button><Button disabled={pending} onClick={() => void onUpdateTrade(trade, 'rejected')} type="button" variant="secondary">Reject</Button></div> : null}{!terminal && trade.status === 'proposed' && sender ? <Button disabled={pending} onClick={() => void onUpdateTrade(trade, 'cancelled')} type="button" variant="secondary">{pending ? 'Cancellingâ€¦' : 'Cancel proposal'}</Button> : null}</div></article>;
       })}</div> : null}
     </section>
     {canReviewTrades ? <section aria-label="Trade approvals" className="market-page__activity-panel">
@@ -939,8 +934,7 @@ function FreeAgencyDrawPanel({ availablePlayers, canManageDraws, draw, drawActio
         {draws.length > 1 ? <label><span>Draw</span><select aria-label="Select free agency draw" onChange={(event) => onSelectDraw(event.target.value)} value={draw?.id ?? ''}>{draws.map((item) => <option key={item.id} value={item.id}>GW {item.gameweek} Â· {formatDrawStatus(item.status)}</option>)}</select></label> : null}
       </header>
       {draw ? <p className="market-page__draw-meta"><StatusBadge status={draw.status} /><span>Closes {formatDrawDate(draw.closes_at)}</span>{draw.opens_at ? <span>Opens {formatDrawDate(draw.opens_at)}</span> : null}</p> : null}
-      {drawLoadStatus === 'loading' ? <p role="sµ¨¥zºè¯
-â¶)à²Ö§uªÝ¢ëiºÐk¢G§¦*^tatus">Refreshing drawsâ€¦</p> : null}
+      {drawLoadStatus === 'loading' ? <p role="status">Refreshing drawsâ€¦</p> : null}
       {drawLoadStatus === 'error' ? <p role="alert">{drawError} <Button onClick={onRefresh} type="button" variant="secondary">Retry</Button></p> : null}
       {canManageDraws ? <section aria-label="Commissioner draw controls" className="market-page__draw-admin">
         <h3>Commissioner controls</h3>
@@ -987,8 +981,7 @@ function FreeAgencyDrawPanel({ availablePlayers, canManageDraws, draw, drawActio
   );
 }
 
-function PlayerDrawer({ drawerReµ¨¥zºè¯
-â¶)à²Ö§uªÝ¢ëiºÐk¢G§¦*^f, interest, managerTeam, onAddInterest, onClose, onNavigate, onProposeTrade, onRemoveInterest, pendingAction, player }: { drawerRef: MutableRefObject<HTMLElement | null>; interest: InterestView | null; managerTeam: SquadApiTeam; onAddInterest: () => void; onClose: () => void; onNavigate: (href: string) => void; onProposeTrade: (player: MarketPlayer) => void; onRemoveInterest: (interest: InterestView) => Promise<void>; pendingAction: string | null; player: MarketPlayer }) {
+function PlayerDrawer({ drawerRef, interest, managerTeam, onAddInterest, onClose, onNavigate, onProposeTrade, onRemoveInterest, pendingAction, player }: { drawerRef: MutableRefObject<HTMLElement | null>; interest: InterestView | null; managerTeam: SquadApiTeam; onAddInterest: () => void; onClose: () => void; onNavigate: (href: string) => void; onProposeTrade: (player: MarketPlayer) => void; onRemoveInterest: (interest: InterestView) => Promise<void>; pendingAction: string | null; player: MarketPlayer }) {
   useModalLifecycle(drawerRef, true, onClose);
   const status = effectiveStatus(player, interest ? new Set([player.id]) : new Set(), managerTeam);
   const actionDisabled = pendingAction !== null;
@@ -1037,8 +1030,7 @@ function PlayerDrawer({ drawerReµ¨¥zºè¯
   );
 }
 
-function TradeProposalDrawer({ drawerRef, onClose, onSubmit, othµ¨¥zºè¯
-â¶)à²Ö§uªÝ¢ëiºÐk¢G§¦*^erPlayers, ownedPlayers, pending, target }: {
+function TradeProposalDrawer({ drawerRef, onClose, onSubmit, otherPlayers, ownedPlayers, pending, target }: {
   drawerRef: MutableRefObject<HTMLElement | null>;
   onClose: () => void;
   onSubmit: (offeredPlayerIds: string[], requestedPlayerIds: string[]) => Promise<void>;

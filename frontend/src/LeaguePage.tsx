@@ -1,5 +1,4 @@
-µ¨¥zºè¯
-â¶)à²Ö§uªÝ¢ëiºÐk¢G§¦*^import { type CSSProperties, type ReactNode, type RefObject, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { type CSSProperties, type ReactNode, type RefObject, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   CalendarDays,
   ChartNoAxesCombined,
@@ -141,8 +140,7 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
     let isActive = true;
     void teamSelectionClient.getTeamSelection()
       .then((selection) => {
-        if (isActive) setManagerTeamIdµ¨¥zºè¯
-â¶)à²Ö§uªÝ¢ëiºÐk¢G§¦*^(selection.managerTeam.id);
+        if (isActive) setManagerTeamId(selection.managerTeam.id);
       })
       .catch(() => {
         if (isActive) setManagerTeamId(null);
@@ -385,8 +383,7 @@ function fixturePlayerHistoryFixture(history: SquadApiHistoryResponse, gameweek:
     opponentShortName: `${rows.length} fixtures`,
     isHome: false,
     fdr: null,
-    fantasyPoints: hasPlayed ? rows.reduce((total, row) => total + row.total_points, 0) : nullµ¨¥zºè¯
-â¶)à²Ö§uªÝ¢ëiºÐk¢G§¦*^,
+    fantasyPoints: hasPlayed ? rows.reduce((total, row) => total + row.total_points, 0) : null,
     minutesPlayed: hasPlayed ? minutes : null,
     stats: fixtures.reduce((total, current) => ({
       goals: total.goals + current.stats.goals,
@@ -518,7 +515,7 @@ function CommissionerManagementView({ leagueClient }: { leagueClient: LeagueClie
     void leagueClient.getLeagueManagement()
       .then((result) => {
         if (active) {
-          setManagement({ ...result, teams: reµ¨¥Â¸­yêë¢°k¢G§¦*^sult.teams ?? [] });
+          setManagement({ ...result, teams: result.teams ?? [] });
           setStatus('ready');
         }
       })
@@ -637,8 +634,7 @@ function CommissionerManagementView({ leagueClient }: { leagueClient: LeagueClie
                   {teamInviteStatus === 'error' ? <p className="league-management-card__status" role="alert">The invite link could not be generated.</p> : null}
                   {teamInviteUrl ? (
                     <div className="league-management-card__link-row">
-                      <input aria-label={`${team.teamName} invite link`} readOnly value={teamInvµ¨¥zºè¯
-â¶)à²Ö§uªÝ¢ëiºÐk¢G§¦*^iteUrl} />
+                      <input aria-label={`${team.teamName} invite link`} readOnly value={teamInviteUrl} />
                       <Button onClick={() => void copyInvite(team.teamId)} type="button" variant="secondary">{teamCopyStatus === 'copied' ? 'Copied' : 'Copy link'}</Button>
                     </div>
                   ) : null}
@@ -736,7 +732,7 @@ function groupFixturesByRound(snapshot: LeagueSnapshot): FixtureRoundGroup[] {
           isCurrent: hasCurrentMarker,
           isNext: hasNextMarker,
           state: getGameweekState(resolvedFixtures, gameweek, hasCurrentMarker),
-        } satisfies Gameweeµ¨¥Â¸­yêë¢°k¢G§¦*^kGroup;
+        } satisfies GameweekGroup;
     }).sort((left, right) => left.gameweek.number - right.gameweek.number || left.gameweek.name.localeCompare(right.gameweek.name));
     return {
       gameweeks: mappedGameweeks,
@@ -883,8 +879,7 @@ function RoundCarousel({ allFixtures, leagueClient, managerTeamId, onOpenFixture
                 role="group"
               >
                 <div className="league-round-slide__content">
-                  <div aria-label={`${rµ¨¥zºè¯
-â¶)à²Ö§uªÝ¢ëiºÐk¢G§¦*^ound.label} fixtures`} className="league-fixture-round" id={`league-round-panel-${round.key}`}>
+                  <div aria-label={`${round.label} fixtures`} className="league-fixture-round" id={`league-round-panel-${round.key}`}>
                     <header className="league-fixture-round__header">
                       <div className="league-fixture-round__title">
                         {round.isCurrent ? <span aria-label="Active round" className="league-round-active-led" role="img" title="Active round" /> : null}
@@ -1142,8 +1137,7 @@ function gameweekIndexForRound(round: Pick<FixtureRoundGroup, 'gameweeks'> | und
 
 const ROUND_TWEEN_FACTOR_BASE = 0.14;
 const ROUND_OPACITY_TWEEN_FACTOR_BASE = 0.45;
-const ROUNDµ¨¥zºè¯
-â¶)à²Ö§uªÝ¢ëiºÐk¢G§¦*^_MIN_SCALE = 0.8;
+const ROUND_MIN_SCALE = 0.8;
 const ROUND_MIN_OPACITY = 0.34;
 
 function numberWithinRange(number: number, min: number, max: number): number {
@@ -1341,7 +1335,7 @@ function FormComparison({ allFixtures, awayTeam, homeTeam, targetGameweek }: { a
 }
 
 function FormStrip({ allFixtures, targetGameweek, team }: { allFixtures: LeagueFixture[]; targetGameweek: number; team: LeagueTeam }) {
-  return <span aria-label={`${fixtureParticipantName(team)} recent form`} className="leagµ¨¥Â¸­yêë¢°k¢G§¦*^ue-form-strip">{formGameweekNumbers(allFixtures, targetGameweek).map((gameweek, index) => <FormPointBlock entry={gameweek === null ? null : formEntryForTeam(team.id, gameweek, allFixtures)} key={`${gameweek ?? 'empty'}-${index}`} />)}</span>;
+  return <span aria-label={`${fixtureParticipantName(team)} recent form`} className="league-form-strip">{formGameweekNumbers(allFixtures, targetGameweek).map((gameweek, index) => <FormPointBlock entry={gameweek === null ? null : formEntryForTeam(team.id, gameweek, allFixtures)} key={`${gameweek ?? 'empty'}-${index}`} />)}</span>;
 }
 
 function FormRowSummary({ allFixtures, awayTeam, homeTeam, targetGameweek }: { allFixtures: LeagueFixture[]; awayTeam: LeagueTeam; homeTeam: LeagueTeam; targetGameweek: number }) {
@@ -1524,7 +1518,7 @@ function FixtureDetailDrawer({ attackDirection, detail, detailStatus, detailRead
           {detailStatus === 'error' ? <p className="league-inline-error" role="alert">Fixture data is temporarily unavailable. <Button onClick={onRetry} type="button" variant="secondary">Retry</Button></p> : null}
           {detailReadError && detailStatus === 'loaded' ? <p className="league-inline-error" role="alert">Score detail is unavailable. <Button onClick={onRetry} type="button" variant="secondary">Retry</Button></p> : null}
           {squadReadError && detailStatus === 'loaded' ? <p className="league-inline-error" role="alert">Lineups are unavailable. <Button onClick={onRetry} type="button" variant="secondary">Retry</Button></p> : null}
-          {detailStatus === 'loaded' && hasComparisonSquads ? <FixtureSquadComparison attackDirection={attackDirection} gameweekStatus={gameweekStatus} onPlayerClick={onPlayerClick} onViewChange={setView} playerInteraction={gameweekStatus === 'future' ? 'profile' : 'points'} showViewToggle={false} squads={squads} view={viewµ¨¥Â¸­yêë¢°k¢G§¦*^} /> : null}
+          {detailStatus === 'loaded' && hasComparisonSquads ? <FixtureSquadComparison attackDirection={attackDirection} gameweekStatus={gameweekStatus} onPlayerClick={onPlayerClick} onViewChange={setView} playerInteraction={gameweekStatus === 'future' ? 'profile' : 'points'} showViewToggle={false} squads={squads} view={view} /> : null}
           {detailStatus === 'loaded' && isPreview && !hasComparisonSquads && !squadReadError ? <div className="league-drawer__context"><strong>{squads.length === 1 ? 'One lineup is available' : 'Lineups unavailable'}</strong><span>{squads.length === 1 ? 'The other managerâ€™s lineup has not been published yet.' : 'Lineups will appear when managers publish them.'}</span></div> : null}
           {detailStatus === 'loaded' && !isPreview && !hasComparisonSquads ? <div className="league-drawer__context"><strong>Players and points are unavailable</strong><span>The fixture result is available, but its locked gameweek lineup has not been published yet.</span></div> : null}
           {detailStatus === 'loaded' && !isPreview && detail ? <FixtureScoringSummary detail={detail} fixture={fixture} gameweekState={gameweekState} /> : null}

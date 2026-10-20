@@ -102,9 +102,7 @@
   Cloud Run revision while the matching immutable migration image runs and
   verifies Alembic heads; traffic is promoted only after staged checks. Docker
   and CI now install from checked-in npm/uv locks, and PostgreSQL/Playwright
-  releaseµ¨¥zºè¯
-â¶)à²Ö§uªÝ¢ëiºÐk¢G§¦*^µ¨¥zºè¯
-â¶)à²Ö§uªÝ¢ëiºÐk¢G§¦*^ journey coverage was added without enabling automatic screenshots.
+  release journey coverage was added without enabling automatic screenshots.
 
 - Added the 3 October 2026 whole-app production retrospective and 70 scoped
   follow-up issues under milestone tracker #466, with evidence, priorities,
@@ -205,8 +203,7 @@
   player wrapper around each reusable `PlayerCard`.
 - Reused the fixture pitch, substitute, and reserve structure for completed
   gameweeks, showing gameweek points with the Squad form-dot treatment and
-  revealing current-gameweek points only after each player'sµ¨¥zºè¯
-â¶)à²Ö§uªÝ¢ëiºÐk¢G§¦*^ fixture kickoff.
+  revealing current-gameweek points only after each player's fixture kickoff.
 - Changed League player taps so current and previous gameweeks open that
   gameweek's scoring breakdown, while future gameweeks keep the read-only
   player profile.
@@ -569,7 +566,7 @@
 ### Added
 
 - Added the issue #60 production persistence architecture decision record.
-- Confirmed Cloud SQL for PostgreSQL, Alembic-managed migrationsµ¨¥Â¸­yêë¢°k¢G§¦*^, local/CI PostgreSQL, and a settings-driven repository factory as the first production persistence path.
+- Confirmed Cloud SQL for PostgreSQL, Alembic-managed migrations, local/CI PostgreSQL, and a settings-driven repository factory as the first production persistence path.
 - Documented deferred database alternatives and the dependency handoff to #61 and #62.
 - Updated the production database/GCP wiki with the ADR path and the #78 GCP bootstrap gate.
 

@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 24590)
-Total output lines: 2195
-
 import { type MouseEvent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowDownUp,
@@ -979,7 +976,394 @@ export function SquadPage({
             filtersOpen={filtersOpen}
             onFiltersOpenChange={setFiltersOpen}
             onPositionChange={setPositionFilter}
-            onQue…4590 tokens truncated…ned ? <span className="squad-page__bench-order">{benchOrder === 0 ? 'GK' : benchOrder}</span> : null}
+            onQueryChange={setQuery}
+            onSelect={openPlayer}
+            onSubstitutionTarget={chooseSubstitutionTargetView}
+            onSortChange={setSortKey}
+            players={listPlayers}
+            positionCounts={positionCounts}
+            positionFilter={positionFilter}
+            query={query}
+            sortKey={sortKey}
+            availabilityFilter={availabilityFilter}
+            fixtureFilter={fixtureFilter}
+            onAvailabilityFilterChange={setAvailabilityFilter}
+            onFixtureFilterChange={setFixtureFilter}
+            substitutionCandidateIds={substitutionCandidateIds}
+            substitutionMode={Boolean(substitutionSource)}
+            substitutionSourceId={substitutionSource?.id ?? null}
+            substitutionTargetId={substitutionTargetId}
+          />
+        )}
+      </section>
+
+      <aside aria-label="Squad changes" className={`squad-page__changes-panel ${changesPanelOpen ? 'is-open' : ''}`}>
+        <button className="squad-page__changes-toggle" onClick={toggleChangesPanel} type="button">
+          <span className="squad-page__changes-icon"><ArrowRightLeft size={19} /></span>
+          <span><strong>Squad Changes</strong><small>{stagedChangeCount > 0 ? `${stagedChangeCount} pending changes` : 'No pending changes'}</small></span>
+          <ChevronDown aria-hidden="true" className={changesPanelOpen ? 'is-open' : ''} size={20} />
+        </button>
+
+        {changesPanelOpen ? (
+          <div className="squad-page__changes-body">
+            {changesLoading ? <p className="squad-page__empty-copy">Loading available players…</p> : null}
+            {changesError ? <p className="squad-page__error-copy">Available players unavailable: {changesError}</p> : null}
+            <section className="squad-page__change-section">
+              <div className="squad-page__change-heading"><h3>Available to Add</h3><span>{drawWins.length}</span></div>
+              {drawWins.length === 0 ? (
+                <p className="squad-page__empty-copy">No active temporary player rights.</p>
+              ) : null}
+              <div className="squad-page__change-list">
+                {drawWins.map((player) => {
+                  const staged = stagedAdditionIds.has(player.id);
+                  return (
+                    <div className={`squad-page__change-player ${staged ? 'added' : ''}`} key={player.id}>
+                      <PlayerIdentity player={player} />
+                      <span className="squad-page__change-badge added">{staged ? 'Added' : 'Right active'}</span>
+                      <Button onClick={() => (staged ? restoreAddition(player) : stageAddition(player))} type="button" variant="secondary">
+                        {staged ? 'Undo' : 'Add to Squad'}
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+
+            <section className="squad-page__change-section">
+              <div className="squad-page__change-heading"><h3>Pending Removal</h3><span>{pendingRemovalPlayers.length}</span></div>
+              {pendingRemovalPlayers.length === 0 ? <p className="squad-page__empty-copy">No players are staged for removal.</p> : null}
+              <div className="squad-page__change-list">
+                {pendingRemovalPlayers.map((player) => (
+                  <div className="squad-page__change-player removed" key={player.id}>
+                    <PlayerIdentity player={player} />
+                    <span className="squad-page__change-badge removed">Removed</span>
+                    <Button onClick={() => restorePlayer(player)} type="button" variant="secondary">Restore to Squad</Button>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+              <Button disabled={stagedChangeCount === 0 || lineupLocked} onClick={() => setConfirmationOpen(true)} type="button">
+                Submit Squad Changes
+              </Button>
+          </div>
+        ) : null}
+      </aside>
+
+      {drawerMode ? (
+        <DrawerLayer onClose={drawerMode === 'substitution' ? cancelSubstitutionReview : closeDrawer}>
+            {drawerMode === 'profile' && selectedPlayer ? (
+              <aside
+                aria-labelledby="player-profile-title"
+                aria-modal="true"
+                className="squad-page__drawer squad-page__drawer--profile"
+                ref={drawerRef}
+                role="dialog"
+                tabIndex={-1}
+              >
+                <PlayerProfilePage
+                  initialPlayer={profilePlayer(selectedPlayer)}
+                  initialSelection={teamSelection ?? undefined}
+                  onClose={closeDrawer}
+                  onCompare={() => startCompare(selectedPlayer)}
+                  onStartSubstitution={startSubstitutionFromProfile}
+                  onSquadChange={handleProfileSquadChange}
+                  actionBarLabel="Squad-management actions"
+                  onSelectionChange={handleProfileSelectionChange}
+                  onTrade={() => startTrade(selectedPlayer)}
+                  playerId={selectedPlayer.id}
+                  presentation="drawer"
+                  squadClient={squadClient}
+                  teamSelectionClient={teamSelectionClient}
+                />
+              </aside>
+            ) : null}
+            {drawerMode === 'substitution' && substitutionSourceView && selectedSubstitutionOption ? (
+              <aside
+                aria-labelledby="substitution-review-title"
+                aria-modal="true"
+                className="squad-page__drawer squad-page__drawer--profile squad-page__drawer--substitution"
+                ref={drawerRef}
+                role="dialog"
+                tabIndex={-1}
+              >
+                <SubstitutionReviewDrawer
+                  onCancel={cancelSubstitutionReview}
+                  onConfirm={confirmSubstitution}
+                  sourceLabel={substitutionSource ? lineupAreaLabel(substitutionSource) : undefined}
+                  sourcePlayer={profilePlayer(substitutionSourceView)}
+                  squadClient={squadClient}
+                  targetLabel={lineupAreaLabel(selectedSubstitutionOption.target)}
+                  targetPlayer={profilePlayer(selectedSubstitutionOption.targetView)}
+                />
+              </aside>
+            ) : null}
+            {drawerMode !== 'profile' && drawerMode !== 'substitution' ? <aside className="squad-page__drawer" ref={drawerRef} tabIndex={-1}>
+            {drawerMode === 'compare' ? (
+              <CompareDrawer
+                candidates={comparisonCandidates}
+                error={scoutingError}
+                loading={scoutingLoading}
+                onRetry={() => setScoutingRetry((current) => current + 1)}
+                onAdd={addComparisonPlayer}
+                onClose={closeDrawer}
+                onQueryChange={setCompareQuery}
+                onRemove={removeComparisonPlayer}
+                players={comparePlayers}
+                query={compareQuery}
+              />
+            ) : null}
+            {drawerMode === 'trade' && tradeSource ? (
+              <TradeDrawer
+                candidates={tradeCandidates}
+                error={scoutingError}
+                loading={scoutingLoading}
+                offerCandidates={tradeOfferCandidates}
+                offerPlayers={tradeOfferPlayers}
+                offerQuery={tradeOfferQuery}
+                onClose={closeDrawer}
+                onOfferAdd={addTradeOfferPlayer}
+                onOfferQueryChange={setTradeOfferQuery}
+                onOfferRemove={(playerId) => setTradeOfferPlayers((current) => current.filter((player) => player.id !== playerId))}
+                onQueryChange={setTradeQuery}
+                onRequestAdd={addTradeRequestedPlayer}
+                onRequestRemove={(playerId) => setTradeRequestedPlayers((current) => current.filter((player) => player.id !== playerId))}
+                onTeamChange={(teamId) => {
+                  setTradeTeamId(teamId);
+                  setTradeRequestedPlayers([]);
+                  setTradeQuery('');
+                }}
+                query={tradeQuery}
+                requestedPlayers={tradeRequestedPlayers}
+                teams={tradeTeams}
+                teamId={tradeTeamId}
+                onSubmit={() => void submitTrade()}
+                submitting={tradeSubmitting}
+                onRetry={() => setScoutingRetry((current) => current + 1)}
+              />
+            ) : null}
+            </aside> : null}
+        </DrawerLayer>
+      ) : null}
+
+      {confirmationOpen ? (
+        <div className="squad-page__modal-layer">
+          <button aria-label="Close squad change review" className="squad-page__backdrop" onClick={() => setConfirmationOpen(false)} type="button" />
+          <section aria-labelledby="squad-change-review-title" aria-modal="true" className="squad-page__confirmation" role="dialog">
+            <span aria-hidden="true" className="squad-page__sheet-handle" />
+            <header>
+              <span className="squad-page__brand-mark"><Shield size={22} /></span>
+              <div><p className="eyebrow">Review changes</p><h2 id="squad-change-review-title">Confirm Squad Changes</h2></div>
+              <button aria-label="Close squad change review" className="squad-page__icon-button" onClick={() => setConfirmationOpen(false)} type="button"><X size={18} /></button>
+            </header>
+            <div className="squad-page__review-counts">
+              <span className="removed"><CircleMinus size={20} /><strong>{pendingRemovalPlayers.length}</strong><small>Removed</small></span>
+              <ArrowRightLeft aria-hidden="true" size={20} />
+              <span className="added"><CirclePlus size={20} /><strong>{stagedAdditionPlayers.length}</strong><small>Added</small></span>
+            </div>
+            <ChangeReview label="Added" players={stagedAdditionPlayers} />
+            <ChangeReview label="Removed" players={pendingRemovalPlayers} />
+            {validationMessages.length > 0 ? (
+              <div className="squad-page__validation" role="alert">
+                <strong>Changes cannot be submitted yet.</strong>
+                {validationMessages.map((message) => <p key={message}>{message}</p>)}
+              </div>
+            ) : null}
+            <footer>
+              <Button onClick={() => setConfirmationOpen(false)} type="button" variant="secondary">Back</Button>
+              <Button disabled={validationMessages.length > 0 || changesSaving || lineupLocked} onClick={() => void confirmChanges()} type="button">
+                {changesSaving ? 'Saving…' : 'Confirm Changes'}
+              </Button>
+            </footer>
+          </section>
+        </div>
+      ) : null}
+
+    </main>
+  );
+}
+
+function SquadLoadingState({ view }: { view: SquadView }) {
+  if (view === 'pitch') {
+    return (
+      <section aria-label="Loading squad pitch" className="squad-page__pitch-shell squad-page__pitch-shell--loading" role="status">
+        <div aria-hidden="true" className="squad-page__pitch squad-page__pitch--loading">
+          <span className="squad-page__loading-line squad-page__loading-line--formation" />
+          <div className="squad-page__loading-pitch-rows">
+            <span /><span /><span /><span />
+          </div>
+        </div>
+        <div aria-hidden="true" className="squad-page__loading-surface squad-page__loading-surface--bench" />
+        <div aria-hidden="true" className="squad-page__loading-surface squad-page__loading-surface--reserves" />
+      </section>
+    );
+  }
+
+  return (
+    <div aria-label="Loading squad list" className="squad-page__list squad-page__list--loading" role="status">
+      <div aria-hidden="true" className="squad-page__list-controls">
+        <span className="squad-page__loading-control squad-page__loading-control--search" />
+        <span className="squad-page__loading-control squad-page__loading-control--icon" />
+        <span className="squad-page__loading-control squad-page__loading-control--icon" />
+      </div>
+      <div aria-hidden="true" className="squad-page__position-tabs squad-page__position-tabs--loading">
+        {positionOptions.map((option) => <span key={option.value}>{option.shortLabel}<i /></span>)}
+      </div>
+      <div aria-hidden="true" className="squad-page__loading-list-space">
+        <span /><span /><span />
+      </div>
+    </div>
+  );
+}
+
+function SquadPitch({
+  attackDirection,
+  onSelect,
+  onSubstitutionTarget,
+  players,
+  substitutionCandidateIds,
+  substitutionMode,
+  substitutionSourceId,
+  substitutionTargetId,
+}: {
+  attackDirection: AttackDirection;
+  onSelect: (player: PlayerView) => void;
+  onSubstitutionTarget: (player: PlayerView) => void;
+  players: PlayerView[];
+  substitutionCandidateIds: ReadonlySet<string>;
+  substitutionMode: boolean;
+  substitutionSourceId: string | null;
+  substitutionTargetId: string | null;
+}) {
+  const starters = players.filter((player) => player.slot === 'starter').sort(sortBySlot);
+  const bench = players.filter((player) => player.slot === 'bench').sort(sortBySlot);
+  const reserves = players.filter((player) => player.slot === 'reserve').sort(sortBySlot);
+  const orientedPositionOrder = attackDirection === 'down'
+    ? [...pitchPositionOrder].reverse()
+    : pitchPositionOrder;
+  const rows = orientedPositionOrder
+    .map((position) => ({ position, players: starters.filter((player) => player.position === position) }))
+    .filter((row) => row.players.length > 0);
+  const formation = ['DEF', 'MID', 'FWD']
+    .map((position) => starters.filter((player) => player.position === position).length)
+    .join('-');
+
+  return (
+    <section aria-label="Squad pitch" className="squad-page__pitch-shell" data-attack-direction={attackDirection}>
+      <div className={`squad-page__pitch attack-${attackDirection}`} data-attack-direction={attackDirection}>
+        <div
+          aria-hidden="true"
+          className="squad-page__pitch-field"
+          data-visible-pitch-slice={attackDirection === 'up' ? 'bottom' : 'top'}
+        >
+          <div className="squad-page__pitch-markings"><span /><span /><span /><span /></div>
+        </div>
+        <div className="squad-page__formation">{formation}</div>
+        <div className="squad-page__pitch-lineup">
+          {rows.map((row) => (
+            <div className={`squad-page__pitch-row position-${row.position.toLowerCase()}`} key={row.position}>
+              {row.players.map((player) => (
+                <PitchCard
+                  key={player.id}
+                  onSelect={onSelect}
+                  onSubstitutionTarget={onSubstitutionTarget}
+                  player={player}
+                  substitutionCandidateIds={substitutionCandidateIds}
+                  substitutionMode={substitutionMode}
+                  substitutionSourceId={substitutionSourceId}
+                  substitutionTargetId={substitutionTargetId}
+                />
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+      <section aria-label="Bench" className="squad-page__bench">
+        <header><h3>Bench</h3><span>1 GK + 4 ordered substitutes</span></header>
+        <div>{bench.map((player) => (
+          <PitchCard
+            benchOrder={player.slotOrder}
+            compact
+            key={player.id}
+            onSelect={onSelect}
+            onSubstitutionTarget={onSubstitutionTarget}
+            player={player}
+            substitutionCandidateIds={substitutionCandidateIds}
+            substitutionMode={substitutionMode}
+            substitutionSourceId={substitutionSourceId}
+            substitutionTargetId={substitutionTargetId}
+          />
+        ))}</div>
+      </section>
+      <section aria-label="Reserves" className="squad-page__reserves">
+        <header><h3>Reserves</h3><span>{reserves.length} players</span></header>
+        <div>{reserves.map((player) => (
+          <PitchCard
+            compact
+            key={player.id}
+            onSelect={onSelect}
+            onSubstitutionTarget={onSubstitutionTarget}
+            player={player}
+            substitutionCandidateIds={substitutionCandidateIds}
+            substitutionMode={substitutionMode}
+            substitutionSourceId={substitutionSourceId}
+            substitutionTargetId={substitutionTargetId}
+          />
+        ))}</div>
+      </section>
+    </section>
+  );
+}
+
+function PitchCard({
+  benchOrder,
+  compact = false,
+  onSelect,
+  onSubstitutionTarget,
+  player,
+  substitutionCandidateIds,
+  substitutionMode,
+  substitutionSourceId,
+  substitutionTargetId,
+}: {
+  benchOrder?: number;
+  compact?: boolean;
+  onSelect: (player: PlayerView) => void;
+  onSubstitutionTarget: (player: PlayerView) => void;
+  player: PlayerView;
+  substitutionCandidateIds: ReadonlySet<string>;
+  substitutionMode: boolean;
+  substitutionSourceId: string | null;
+  substitutionTargetId: string | null;
+}) {
+  const isSource = substitutionSourceId === player.id;
+  const isCandidate = substitutionCandidateIds.has(player.id);
+  const isTarget = substitutionTargetId === player.id;
+  const handleClick = () => {
+    if (substitutionMode) {
+      if (isCandidate) onSubstitutionTarget(player);
+      return;
+    }
+    onSelect(player);
+  };
+  const label = substitutionMode
+    ? isCandidate
+      ? `Substitute with ${player.displayName}`
+      : isSource
+        ? `Substitution source ${player.displayName}`
+        : `${player.displayName} is not a legal substitution candidate`
+    : `View ${player.displayName} details`;
+  return (
+    <button
+      aria-label={label}
+      aria-pressed={substitutionMode && isCandidate ? isTarget : undefined}
+      className={`squad-page__pitch-player position-${player.position.toLowerCase()} form-band-${formBand(player.form)} ${compact ? 'compact' : ''} ${substitutionMode ? 'is-substitution-mode' : ''} ${isSource ? 'is-substitution-source' : ''} ${isCandidate ? 'is-substitution-candidate' : ''} ${isTarget ? 'is-substitution-target' : ''} ${substitutionMode && !isCandidate ? 'is-substitution-unavailable' : ''}`}
+      disabled={substitutionMode && !isCandidate}
+      onClick={handleClick}
+      type="button"
+    >
+      <PlayerCard formPosition="below" layout="pitch" player={toPlayerCardPlayer(player)} showPositionMarker={false} size={compact ? 'sm' : 'md'} />
+      {compact && benchOrder !== undefined ? <span className="squad-page__bench-order">{benchOrder === 0 ? 'GK' : benchOrder}</span> : null}
     </button>
   );
 }

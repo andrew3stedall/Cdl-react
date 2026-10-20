@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 20559)
-Total output lines: 1454
-
 import { fetchWithQuery as fetch } from './query-cache';
 import { type MutableRefObject, type ReactNode, lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -857,7 +854,24 @@ function InterestsPanel({ failed, interests, loading, managerTeam, onBrowse, onO
       {loading ? <p role="status">Loading Interests…</p> : null}
       {!loading && failed ? <p role="alert">Interests unavailable. <Button onClick={onRetry} type="button" variant="secondary">Retry</Button></p> : null}
       {!loading && !failed && interests.length === 0 ? <EmptyActivity icon={<Bookmark aria-hidden="true" size={23} />} onAction={onBrowse} action="Find a player" title="No Interests" /> : null}
-      {!loading && !failed && interests.length > 0 ? <div className="market-page__activity-list">{interests.map((interest) => <article className="market-page__activity-row" key={interest.id}><button aria-label={`View ${interest.player.displayName} details`} className="market-page__player-identity" onClick={() => onOpenPlayer(interest.player)} type="button"><PlayerCard formPosition="beside" layout="list" player={toPlayerCardPlayer(interest.player, ownershipToneFor(interest.player, managerTeam))} showPositionMarker={false} size="xs" />…559 tokens truncated…=== trade.id;
+      {!loading && !failed && interests.length > 0 ? <div className="market-page__activity-list">{interests.map((interest) => <article className="market-page__activity-row" key={interest.id}><button aria-label={`View ${interest.player.displayName} details`} className="market-page__player-identity" onClick={() => onOpenPlayer(interest.player)} type="button"><PlayerCard formPosition="beside" layout="list" player={toPlayerCardPlayer(interest.player, ownershipToneFor(interest.player, managerTeam))} showPositionMarker={false} size="xs" /></button><Button aria-label={`Remove ${interest.player.displayName} from Interests`} disabled={pendingAction === interest.id} onClick={() => void onRemove(interest)} type="button" variant="ghost">{pendingAction === interest.id ? 'Removing…' : 'Remove'}</Button></article>)}</div> : null}
+    </section>
+  );
+}
+
+function TradesPanel({ approvalFailed, approvalLoading, approvalNotice, approvalTrades, approverRoles, canReviewTrades, failed, loading, managerTeam, onApprovalRetry, onBrowse, onDecideApproval, onRetry, onUpdateTrade, pendingTradeAction, trades }: { approvalFailed: boolean; approvalLoading: boolean; approvalNotice: string; approvalTrades: TradeView[]; approverRoles: string[]; canReviewTrades: boolean; failed: boolean; loading: boolean; managerTeam: SquadApiTeam; onApprovalRetry: () => void; onBrowse: () => void; onDecideApproval: (trade: TradeView, decision: 'approved' | 'rejected') => Promise<void>; onRetry: () => void; onUpdateTrade: (trade: TradeView, status: 'accepted' | 'rejected' | 'cancelled') => Promise<void>; pendingTradeAction: string | null; trades: TradeView[] }) {
+  const eligibleApprovals = approvalTrades.filter((trade) => approverRoles.includes('admin')
+    || (trade.requiredApproverRole === 'vice_commissioner' ? approverRoles.includes('vice_commissioner') : approverRoles.includes('commissioner')));
+  return <div className="market-page__trade-workspace">
+    <section aria-label="Trade activity" className="market-page__activity-panel">
+      <h2>Trade activity</h2>
+      {loading ? <p role="status">Loading trade activity…</p> : null}
+      {!loading && failed ? <p role="alert">Trade activity unavailable. <Button onClick={onRetry} type="button" variant="secondary">Retry</Button></p> : null}
+      {!loading && !failed && trades.length === 0 ? <EmptyActivity icon={<ArrowRightLeft aria-hidden="true" size={23} />} onAction={onBrowse} action="Browse players" title="No trade proposals" /> : null}
+      {!loading && !failed && trades.length > 0 ? <div className="market-page__activity-list">{trades.map((trade) => {
+        const recipient = trade.offeredToId === managerTeam.id;
+        const sender = trade.offeredById === managerTeam.id;
+        const pending = pendingTradeAction === trade.id;
         const terminal = ['rejected', 'cancelled', 'executed'].includes(trade.status);
         return <article className="market-page__trade-row" key={trade.id}><span className="market-page__trade-icon"><ArrowRightLeft aria-hidden="true" size={18} /></span><div><strong>{trade.assetNames.length > 0 ? trade.assetNames.join(' ↔ ') : 'Player trade proposal'}</strong><span>{trade.offeredBy ?? 'Another manager'} → {trade.offeredTo ?? 'Your team'}</span><StatusBadge status={trade.status} />{trade.status === 'accepted' && trade.approvalStatus !== 'approved' ? <span>Awaiting commissioner approval</span> : null}{!terminal && trade.status === 'proposed' && recipient ? <div className="market-page__trade-actions"><Button disabled={pending} onClick={() => void onUpdateTrade(trade, 'accepted')} type="button">{pending ? 'Saving…' : 'Accept'}</Button><Button disabled={pending} onClick={() => void onUpdateTrade(trade, 'rejected')} type="button" variant="secondary">Reject</Button></div> : null}{!terminal && trade.status === 'proposed' && sender ? <Button disabled={pending} onClick={() => void onUpdateTrade(trade, 'cancelled')} type="button" variant="secondary">{pending ? 'Cancelling…' : 'Cancel proposal'}</Button> : null}</div></article>;
       })}</div> : null}

@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 12157)
-Total output lines: 747
-
 ## Unreleased
 
 - Route authenticated JSON API reads through a per-manager TanStack Query cache persisted in IndexedDB. Cached pages can render immediately after a reload; successful writes and existing route/data refresh events invalidate cached responses, and sign-out clears the manager's cache.
@@ -105,7 +102,9 @@ Total output lines: 747
   Cloud Run revision while the matching immutable migration image runs and
   verifies Alembic heads; traffic is promoted only after staged checks. Docker
   and CI now install from checked-in npm/uv locks, and PostgreSQL/Playwright
-  release journey coverage was added without enabling automatic screenshots.
+  releaseµ¨¥zºè¯
+â¶)à²Ö§uªÝ¢ëiºÐk¢G§¦*^µ¨¥zºè¯
+â¶)à²Ö§uªÝ¢ëiºÐk¢G§¦*^ journey coverage was added without enabling automatic screenshots.
 
 - Added the 3 October 2026 whole-app production retrospective and 70 scoped
   follow-up issues under milestone tracker #466, with evidence, priorities,
@@ -206,7 +205,8 @@ Total output lines: 747
   player wrapper around each reusable `PlayerCard`.
 - Reused the fixture pitch, substitute, and reserve structure for completed
   gameweeks, showing gameweek points with the Squad form-dot treatment and
-  revealing current-gameweek points only after each player's fixture kickoff.
+  revealing current-gameweek points only after each player'sµ¨¥zºè¯
+â¶)à²Ö§uªÝ¢ëiºÐk¢G§¦*^ fixture kickoff.
 - Changed League player taps so current and previous gameweeks open that
   gameweek's scoring breakdown, while future gameweeks keep the read-only
   player profile.
@@ -316,7 +316,19 @@ Total output lines: 747
 - Added next-opponent, home/away, kickoff and FDR enrichment from the persisted official FPL fixture cache.
 - Added canonical Squad changes and notifications endpoints, including atomic temporary-right add/remove submission.
 - Added a typed Squad API client for summary, scouting, trades, changes, notifications and cached FPL player history.
-- Added the official currenâ€¦157 tokens truncatedâ€¦erage for the official FPL asset URL used by the Squad surface and kept lineup/substitution regression coverage green.
+- Added the official current FPL shirt artwork mapping for all 20 2026/27 clubs, with the existing local SVGs retained as fallbacks.
+- Extended browser interaction fixtures to cover squad changes, notifications and player-history API calls.
+
+### Changed
+
+- Wired the canonical Squad profile drawer to official FPL history and upcoming fixtures.
+- Wired Trade submission to `POST /api/trades` and validated the selected manager/team on the backend.
+- Replaced silent API fallbacks and visible endpoint placeholders with explicit states and source-backed values.
+- Added real availability and next-fixture filters to List view.
+
+### Validation
+
+- Added coverage for the official FPL asset URL used by the Squad surface and kept lineup/substitution regression coverage green.
 
 ## 2026-08-04 - Serve the staged snake draft through application APIs
 
@@ -557,7 +569,7 @@ Total output lines: 747
 ### Added
 
 - Added the issue #60 production persistence architecture decision record.
-- Confirmed Cloud SQL for PostgreSQL, Alembic-managed migrations, local/CI PostgreSQL, and a settings-driven repository factory as the first production persistence path.
+- Confirmed Cloud SQL for PostgreSQL, Alembic-managed migrationsµ¨¥Â¸­yêë¢°k¢G§¦*^, local/CI PostgreSQL, and a settings-driven repository factory as the first production persistence path.
 - Documented deferred database alternatives and the dependency handoff to #61 and #62.
 - Updated the production database/GCP wiki with the ADR path and the #78 GCP bootstrap gate.
 

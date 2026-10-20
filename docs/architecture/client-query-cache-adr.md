@@ -26,6 +26,16 @@ CDL React's page components use injected API clients and imperative data loading
 - API response shape changes that cannot be read alongside an old browser cache require incrementing the client cache version.
 - Browser storage can be cleared by the user or browser; the app must always continue to load from the API on a cache miss.
 
+## Requirements for future frontend features
+
+- Read and use the shared API clients and transport cache for every authenticated API feature. Keep view components on the established data-loading interface; the current app uses transport-level QueryClient integration rather than one QueryClient per page.
+- Do not create alternate frontend caches or call the network directly from components. A new transport path must preserve manager-scoped keys, success-only caching, mutation invalidation, logout clearing, and IndexedDB failure fallback.
+- Ensure each server-side mutation refreshes all affected views through the existing successful-write invalidation or `cdl:data-invalidated` mechanism.
+- Preserve the explicit bypasses for authentication/session, passkeys, live draft, WebMCP, and static assets. Requests that need fresh uncached data must opt out using the established bypass.
+- Keep route re-entry, active-route refresh, visibility recovery, reconnect, and manual refresh behavior aligned with invalidation. Because cache entries otherwise remain fresh indefinitely, do not remove or weaken these freshness triggers without an ADR update and tests.
+- Increment the client cache version when a response contract changes incompatibly with data already persisted in browsers.
+- Add focused regression coverage for the new or affected query behavior. Cache-layer changes also require the validation listed below.
+
 ## Validation
 
 - Unit tests cover repeated-read reuse, IndexedDB restoration, stale-while-revalidate behavior, manager isolation, authentication bypass, mutation invalidation, and cache deletion on sign-out.

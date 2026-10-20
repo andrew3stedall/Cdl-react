@@ -9,6 +9,16 @@ description: Use when implementing one scoped CDL React issue inside an approved
 
 Implement one scoped issue without drifting into unrelated work.
 
+## Frontend server data
+
+Before implementing a frontend feature that reads or changes server data, read `docs/architecture/client-query-cache-adr.md` and follow the shared TanStack Query integration in `AGENTS.md`.
+
+- Reuse the existing API clients and shared `fetchWithQuery` transport; do not fetch API data directly in view components.
+- Do not create a feature-local QueryClient or duplicate persistence/cache logic.
+- Confirm that successful writes invalidate affected cached data. The shared transport invalidates API queries for successful non-GET requests; mutations using another path must use the established invalidation mechanism.
+- Preserve per-manager cache separation, logout clearing, refresh triggers, and all documented endpoint bypasses.
+- Test invalidation and any identity, restoration, or bypass behavior touched by the feature.
+
 ## Workflow
 
 1. Read the issue, feature doc, ADRs, and relevant code.

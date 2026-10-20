@@ -1,5 +1,7 @@
 ## Unreleased
 
+- Added contributor and agent requirements for all frontend server data to use the shared TanStack Query transport cache, preserve invalidation and freshness behavior, and retain manager isolation and endpoint bypasses.
+
 - Route authenticated JSON API reads through a per-manager TanStack Query cache persisted in IndexedDB. Cached pages can render immediately after a reload; successful writes and existing route/data refresh events invalidate cached responses, and sign-out clears the manager's cache.
 
 - Build staging images as a single-platform immutable manifest so Cloud Run's candidate digest matches the image reviewed by the rollout gate.

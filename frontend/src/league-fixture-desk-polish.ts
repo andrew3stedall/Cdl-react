@@ -1,3 +1,4 @@
+import { fetchWithQuery as fetch } from './query-cache';
 import { managerNicknameForTeam } from './manager-nicknames';
 
 type ApiTeam = {

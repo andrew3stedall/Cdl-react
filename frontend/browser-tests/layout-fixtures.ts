@@ -121,15 +121,17 @@ const marketPlayer = {
 
 export async function installLayoutFixtures(
   page: Page,
-  { apiDelayMs = 0, holdDataUntilReleased = false, leagueTeams, roles = ['manager'], themePreset = 'teal-dark' }: {
+  { apiDelayMs = 0, holdDataUntilReleased = false, leagueTeams, managerId = 'layout-manager', roles = ['manager'], themePreset = 'teal-dark' }: {
     apiDelayMs?: number;
     holdDataUntilReleased?: boolean;
     leagueTeams?: Array<[string, string]>;
+    managerId?: string;
     roles?: string[];
     themePreset?: ThemePresetName;
   } = {},
 ) {
   let releasePendingResponses!: () => void;
+  let configuredManagerId = managerId;
   let configuredThemePreset = themePreset;
   const pendingResponses = new Promise<void>((resolve) => { releasePendingResponses = resolve; });
   await page.route('**/api/**', async (route) => {
@@ -144,7 +146,7 @@ export async function installLayoutFixtures(
       await getResponse({
         is_authenticated: true,
         user: {
-          id: 'layout-manager',
+          id: configuredManagerId,
           email: 'layout@example.test',
           display_name: 'Layout Fixture',
           roles,
@@ -222,5 +224,6 @@ export async function installLayoutFixtures(
   return {
     releasePendingResponses,
     setThemePreset: (preset: ThemePresetName) => { configuredThemePreset = preset; },
+    setManagerId: (id: string) => { configuredManagerId = id; },
   };
 }

@@ -1,3 +1,5 @@
+import { invalidateData } from './data-freshness';
+
 type JsonSchema = Record<string, unknown>;
 
 interface WebMcpTool {
@@ -67,6 +69,7 @@ export function registerCdlWebMcp(): () => void {
               if (!response.ok || result.isError) {
                 throw new Error(result.detail ?? result.content?.[0]?.text ?? 'The CDL tool failed.');
               }
+              if (!tool.annotations?.readOnlyHint) invalidateData(['global']);
               return result.structuredContent ?? result;
             },
           },

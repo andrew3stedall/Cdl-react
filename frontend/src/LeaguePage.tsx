@@ -19,6 +19,7 @@ import { LeagueManagementIcon } from './components/league/LeagueManagementIcon';
 import { HeadToHeadView, KnockoutView } from './LeagueCompetitionViews';
 import { managerNicknameForTeam } from './manager-nicknames';
 import { invalidateData, subscribeDataFreshness } from './data-freshness';
+import { invalidateQueryCache } from './query-cache';
 import { PlayerChartDetailDialog } from './components/player/PlayerChartDetailDialog';
 import { TeamCrest } from './components/team/TeamCrest';
 import { LeagueTeamShowcase } from './components/team/LeagueTeamShowcase';
@@ -265,7 +266,7 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
             <strong>League data is unavailable</strong>
             <p>Try the request again. No standings or results have been inferred locally.</p>
           </div>
-          <Button onClick={() => setReloadKey((key) => key + 1)} type="button" variant="secondary">
+          <Button onClick={() => { invalidateQueryCache(); setReloadKey((key) => key + 1); }} type="button" variant="secondary">
             <RefreshCw aria-hidden="true" size={16} />
             Try again
           </Button>
@@ -278,7 +279,7 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
           leagueClient={leagueClient}
           managerTeamId={managerTeamId}
           onOpenFixture={openFixture}
-          onReload={() => setReloadKey((key) => key + 1)}
+          onReload={() => { invalidateQueryCache(); setReloadKey((key) => key + 1); }}
           snapshot={snapshot}
           view={view}
         />
@@ -648,10 +649,10 @@ function CommissionerManagementView({ leagueClient }: { leagueClient: LeagueClie
       {pendingInviteStatus !== 'unavailable' ? <Card className="league-management-card">
         <div className="league-management-card__heading">
           <div><p className="eyebrow">Team access</p><h2>Pending invites</h2></div>
-          <Button disabled={pendingInviteStatus === 'loading'} onClick={() => setPendingInviteRefresh((current) => current + 1)} type="button" variant="secondary">{pendingInviteStatus === 'loading' ? 'Loading…' : 'Refresh'}</Button>
+          <Button disabled={pendingInviteStatus === 'loading'} onClick={() => { invalidateQueryCache(); setPendingInviteRefresh((current) => current + 1); }} type="button" variant="secondary">{pendingInviteStatus === 'loading' ? 'Loading…' : 'Refresh'}</Button>
         </div>
         {pendingInviteStatus === 'loading' ? <p className="league-management-card__status" role="status">Loading pending invites…</p> : null}
-        {pendingInviteStatus === 'error' ? <p className="league-management-card__status" role="alert">Pending invites are unavailable. <Button onClick={() => setPendingInviteRefresh((current) => current + 1)} type="button" variant="secondary">Retry</Button></p> : null}
+        {pendingInviteStatus === 'error' ? <p className="league-management-card__status" role="alert">Pending invites are unavailable. <Button onClick={() => { invalidateQueryCache(); setPendingInviteRefresh((current) => current + 1); }} type="button" variant="secondary">Retry</Button></p> : null}
         {pendingInviteStatus === 'ready' && pendingInvites.length === 0 ? <p className="league-management-card__empty">No pending invites.</p> : null}
         {pendingInviteStatus === 'ready' && pendingInvites.length > 0 ? <div aria-label="Pending league invites" className="league-management-list">{pendingInvites.map((invite) => <div className="league-management-row" key={invite.inviteId}><div className="league-management-row__identity"><strong>{invite.teamName}</strong><span>{invite.leagueName} · Created {formatInviteDate(invite.createdAt)}</span></div><Button disabled={pendingInviteAction === invite.inviteId} onClick={() => void revokeInvite(invite)} type="button" variant="secondary">{pendingInviteAction === invite.inviteId ? 'Revoking…' : 'Revoke invite'}</Button></div>)}</div> : null}
         {pendingInviteNotice ? <p className="league-management-card__status" role="status">{pendingInviteNotice}</p> : null}

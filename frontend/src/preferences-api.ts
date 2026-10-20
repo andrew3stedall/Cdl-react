@@ -1,3 +1,4 @@
+import { fetchWithQuery as fetch } from './query-cache';
 import type { AttackDirection, UserPreferences } from './contracts';
 import {
   defaultFdrCustomAnchors,

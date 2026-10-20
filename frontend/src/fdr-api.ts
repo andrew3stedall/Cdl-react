@@ -1,3 +1,4 @@
+import { fetchWithQuery as fetch } from './query-cache';
 export type FixtureDifficultyView = 'attack' | 'defence';
 export type FixtureDifficultyBand = 'very_easy' | 'easy' | 'medium' | 'hard' | 'very_hard';
 

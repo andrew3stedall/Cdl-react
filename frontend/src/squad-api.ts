@@ -1,3 +1,4 @@
+import { fetchWithQuery as fetch } from './query-cache';
 import type { ApiErrorResponse } from './contracts';
 
 export interface SquadApiTeam {

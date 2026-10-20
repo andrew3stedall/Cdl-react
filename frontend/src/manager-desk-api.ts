@@ -1,3 +1,4 @@
+import { fetchWithQuery as fetch } from './query-cache';
 import type { ApiErrorResponse, GameweekSummary, TeamSummary } from './contracts';
 import type { LeagueFixture, LeagueTableResponse } from './league-api';
 import type { SquadApiPlayer, SquadWorkspace } from './squad-api';

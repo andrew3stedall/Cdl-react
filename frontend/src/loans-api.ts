@@ -1,3 +1,4 @@
+import { fetchWithQuery as fetch } from './query-cache';
 export type LoanStatus = 'proposed' | 'agreed' | 'active' | 'returned' | 'rejected' | 'cancelled';
 export type LoanApprovalStatus = 'not_submitted' | 'pending' | 'approved' | 'rejected';
 

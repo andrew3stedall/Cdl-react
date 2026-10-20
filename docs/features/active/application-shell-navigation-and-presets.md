@@ -104,6 +104,8 @@ The application provides responsive shared navigation, manual reload, route-awar
 
 ## Retrospective follow-up
 
+Authenticated JSON API reads now share a per-manager TanStack Query cache. The cache persists in IndexedDB so previously loaded page data can render immediately after a reload; successful writes and route/data freshness events invalidate the cached responses. Authentication, passkey challenges, live draft traffic, and WebMCP requests bypass this cache.
+
 Known supported routes now have explicit recognition, League view tabs are addressable, Market and League expose contextual FDR/Analytics links, and notification counts are labelled as alerts until durable read state exists. Shared route and visibility freshness remains in progress.
 
 The obsolete Squad and League hero selectors and their mobile overrides have been removed after confirming no component references remain. Shared layout checks measure PageHero and notification geometry across primary routes and supported mobile widths.

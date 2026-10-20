@@ -1,3 +1,4 @@
+import { fetchWithQuery as fetch } from './query-cache';
 import { type MutableRefObject, type ReactNode, lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowRight,
@@ -25,6 +26,7 @@ import { useModalLifecycle } from './components/ui/sheet';
 import type { SessionState, ThemePreset } from './contracts';
 import { managerNicknameForTeam } from './manager-nicknames';
 import { invalidateData, subscribeDataFreshness } from './data-freshness';
+import { invalidateQueryCache } from './query-cache';
 import { HttpSquadClient, type SquadApiFormGameweek, type SquadApiPlayer, type SquadApiTeam } from './squad-api';
 import { HttpLoansClient } from './loans-api';
 import { toPlayerCardFormHistory } from './player-form';
@@ -652,6 +654,7 @@ export function MarketPage({ currentPath, onNavigate, preset, session }: MarketP
           onManageDraw={manageFreeAgencyDraw}
           onMovePreference={moveDrawPreference}
           onRefresh={() => {
+            invalidateQueryCache();
             setDrawRefreshKey((key) => key + 1);
             setDrawDetailsRefreshKey((key) => key + 1);
           }}

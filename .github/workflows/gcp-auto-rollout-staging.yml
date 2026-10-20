@@ -252,8 +252,13 @@ jobs:
             --format='value(image_summary.digest)' >/dev/null 2>&1; then
             echo "Immutable image already exists; reusing ${image_uri}."
           else
-            docker build --pull --tag "${image_uri}" .
-            docker push "${image_uri}"
+            docker buildx build \
+              --platform linux/amd64 \
+              --provenance=false \
+              --pull \
+              --tag "${image_uri}" \
+              --push \
+              .
           fi
           digest="$(
             gcloud artifacts docker images describe "${image_uri}" \

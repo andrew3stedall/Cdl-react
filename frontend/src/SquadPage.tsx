@@ -1,6 +1,5 @@
 import { type MouseEvent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ArrowDown,
   ArrowDownUp,
   ArrowRightLeft,
   CalendarClock,
@@ -24,6 +23,8 @@ import {
 } from 'lucide-react';
 
 import { Button } from './components/ui/button';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './components/ui/table';
+import { SortableTableHead } from './components/ui/sortable-table';
 import { ChipIcon } from './components/chips/ChipIcon';
 import { PageHero, PageHeroControls, PageHeroViewToggle } from './components/ui/page-hero';
 import { FormDots, PlayerCard, type PlayerCardPlayer, formBand } from './components/player/PlayerCard';
@@ -1455,6 +1456,15 @@ function SquadList({
   substitutionTargetId: string | null;
 }) {
   const groups = lineupGroups(players);
+  const [listSortColumn, setListSortColumn] = useState<string | null>(null);
+  const [listSortDirection, setListSortDirection] = useState<'asc' | 'desc'>('asc');
+  const sortList = (column: string) => {
+    if (listSortColumn === column) setListSortDirection((current) => current === 'asc' ? 'desc' : 'asc');
+    else {
+      setListSortColumn(column);
+      setListSortDirection('asc');
+    }
+  };
   function selectPlayer(player: PlayerView) {
     if (substitutionMode) {
       if (substitutionCandidateIds.has(player.id)) onSubstitutionTarget(player);
@@ -1503,19 +1513,24 @@ function SquadList({
               <span>{group.players.length}</span>
             </header>
             <div aria-label={`${group.label} players table`} className="squad-page__table-scroll" role="region" tabIndex={0}>
-              <table className="squad-page__list-table">
+              <Table className="squad-page__list-table">
                 <colgroup>
                   <col className="player" />
                   <col className="points" />
                   <col className="expected" />
                   <col className="availability" />
                 </colgroup>
-                <thead><tr><th>Player</th><th className="sorted">Pts <ArrowDown size={11} /></th><th>xG / xA</th><th><span className="sr-only">Availability</span><CircleCheck aria-hidden="true" size={13} /></th></tr></thead>
-                <tbody>
-                  {group.players.map((player, index) => {
+                <TableHeader><TableRow>
+                  <TableHead><SortableTableHead column="player" direction={listSortDirection} onSort={sortList} sortColumn={listSortColumn}>Player</SortableTableHead></TableHead>
+                  <TableHead><SortableTableHead column="points" direction={listSortDirection} onSort={sortList} sortColumn={listSortColumn}>Pts</SortableTableHead></TableHead>
+                  <TableHead><SortableTableHead column="expected" direction={listSortDirection} onSort={sortList} sortColumn={listSortColumn}>xG / xA</SortableTableHead></TableHead>
+                  <TableHead><SortableTableHead column="availability" direction={listSortDirection} onSort={sortList} sortColumn={listSortColumn}><span className="sr-only">Availability</span><CircleCheck aria-hidden="true" size={13} /></SortableTableHead></TableHead>
+                </TableRow></TableHeader>
+                <TableBody>
+                  {[...group.players].sort((left, right) => compareSquadListValues(left, right, listSortColumn, listSortDirection)).map((player, index, sortedPlayers) => {
                     const startsNewPosition = group.slot === 'starter'
                       && index > 0
-                      && group.players[index - 1]?.position !== player.position;
+                      && sortedPlayers[index - 1]?.position !== player.position;
                     const rowIsInteractive = !substitutionMode || substitutionCandidateIds.has(player.id);
                     const rowLabel = substitutionMode
                       ? rowIsInteractive
@@ -1523,7 +1538,7 @@ function SquadList({
                         : `${player.displayName} is not a legal substitution candidate`
                       : `View ${player.displayName} details`;
                     return (
-                    <tr
+                    <TableRow
                       aria-label={rowLabel}
                       aria-pressed={substitutionMode && rowIsInteractive ? substitutionTargetId === player.id : undefined}
                       className={`squad-page__player-row position-${player.position.toLowerCase()} ${startsNewPosition ? 'is-position-start' : ''} ${substitutionMode ? 'is-substitution-mode' : ''} ${substitutionSourceId === player.id ? 'is-substitution-source' : ''} ${substitutionCandidateIds.has(player.id) ? 'is-substitution-candidate' : ''} ${substitutionTargetId === player.id ? 'is-substitution-target' : ''} ${substitutionMode && !substitutionCandidateIds.has(player.id) ? 'is-substitution-unavailable' : ''}`}
@@ -1538,19 +1553,19 @@ function SquadList({
                       role={rowIsInteractive ? 'button' : undefined}
                       tabIndex={rowIsInteractive ? 0 : undefined}
                     >
-                      <td>
+                      <TableCell>
                         <div className="squad-page__player-row-identity">
                           <PlayerIdentity circle player={player} />
                         </div>
-                      </td>
-                      <td><strong>{formatInteger(player.points)}</strong></td>
-                      <td><span className="squad-page__expected"><span>{formatMetric(player.xg)}</span><span>{formatMetric(player.xa)}</span></span></td>
-                      <td><AvailabilityFlag inline player={player} /></td>
-                    </tr>
+                      </TableCell>
+                      <TableCell><strong>{formatInteger(player.points)}</strong></TableCell>
+                      <TableCell><span className="squad-page__expected"><span>{formatMetric(player.xg)}</span><span>{formatMetric(player.xa)}</span></span></TableCell>
+                      <TableCell><AvailabilityFlag inline player={player} /></TableCell>
+                    </TableRow>
                     );
                   })}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           </section>
         ))}
@@ -1795,6 +1810,25 @@ function compareSortMetric(left: PlayerView, right: PlayerView, key: SortKey): n
   if (leftValue === null) return 1;
   if (rightValue === null) return -1;
   return rightValue - leftValue || left.displayName.localeCompare(right.displayName);
+}
+
+function compareSquadListValues(left: PlayerView, right: PlayerView, column: string | null, direction: 'asc' | 'desc'): number {
+  if (!column) return 0;
+  const comparison = column === 'player'
+    ? left.displayName.localeCompare(right.displayName, undefined, { sensitivity: 'base' })
+    : column === 'points'
+      ? compareNullableNumbers(left.points, right.points)
+      : column === 'expected'
+        ? compareNullableNumbers(left.xg, right.xg) || compareNullableNumbers(left.xa, right.xa)
+        : compareNullableNumbers(left.chanceOfPlaying, right.chanceOfPlaying);
+  return (comparison || left.displayName.localeCompare(right.displayName, undefined, { sensitivity: 'base' })) * (direction === 'asc' ? 1 : -1);
+}
+
+function compareNullableNumbers(left: number | null | undefined, right: number | null | undefined): number {
+  if (left == null && right == null) return 0;
+  if (left == null) return 1;
+  if (right == null) return -1;
+  return left - right;
 }
 
 function compareListPlayers(left: PlayerView, right: PlayerView, key: SortKey): number {

@@ -25,6 +25,8 @@ import { TeamCrest } from './components/team/TeamCrest';
 import { LeagueTeamShowcase } from './components/team/LeagueTeamShowcase';
 import { PageHero, PageHeroControls, PageHeroViewToggle } from './components/ui/page-hero';
 import { useModalLifecycle } from './components/ui/sheet';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow as UiTableRow } from './components/ui/table';
+import { SortableTableHead, useSortedRows } from './components/ui/sortable-table';
 import type { AttackDirection } from './contracts';
 import type { SessionState } from './contracts';
 import {
@@ -1447,6 +1449,16 @@ function fixtureActionLabel(fixture: LeagueFixture): string {
 }
 
 function TableView({ onReload, snapshot }: { onReload: () => void; snapshot: LeagueSnapshot }) {
+  const { direction, onSort, sortColumn, sortedRows } = useSortedRows(snapshot.table.rows, (row, column) => {
+    if (column === 'position') return row.position;
+    if (column === 'team') return row.team.name;
+    if (column === 'played') return row.played;
+    if (column === 'record') return `${row.wins}-${row.draws}-${row.losses}`;
+    if (column === 'for') return row.pointsFor;
+    if (column === 'against') return row.pointsAgainst;
+    if (column === 'difference') return row.pointsDifference;
+    return row.leaguePoints;
+  });
   if (snapshot.failedReads?.includes('table')) {
     return <Card className="league-state-card league-state-card--error" role="alert"><CircleAlert aria-hidden="true" size={18} /><div><strong>Standings are unavailable</strong><p>Fixture and commissioner data can still load independently.</p></div><Button onClick={onReload} type="button" variant="secondary"><RefreshCw aria-hidden="true" size={16} />Retry table</Button></Card>;
   }
@@ -1458,14 +1470,14 @@ function TableView({ onReload, snapshot }: { onReload: () => void; snapshot: Lea
           <div className="league-panel__actions"><span className="league-source-badge"><Table2 aria-hidden="true" size={14} /> {tableSourceLabel(snapshot.table.source)}</span><Button onClick={onReload} type="button" variant="secondary"><RefreshCw aria-hidden="true" size={15} /> Refresh</Button></div>
         </div>
         <div aria-label="League standings table" className="league-table-scroll" role="region" tabIndex={0}>
-          <table className="league-table">
-            <thead>
-              <tr><th scope="col">Pos</th><th scope="col">Team</th><th scope="col">P</th><th scope="col">W-D-L</th><th scope="col">For</th><th scope="col">Against</th><th scope="col">Diff</th><th scope="col">Pts</th></tr>
-            </thead>
-            <tbody>
-              {snapshot.table.rows.map((row) => <TableRow key={row.team.id} row={row} />)}
-            </tbody>
-          </table>
+          <Table className="league-table">
+            <TableHeader>
+              <UiTableRow><TableHead><SortableTableHead column="position" direction={direction} onSort={onSort} sortColumn={sortColumn}>Pos</SortableTableHead></TableHead><TableHead><SortableTableHead column="team" direction={direction} onSort={onSort} sortColumn={sortColumn}>Team</SortableTableHead></TableHead><TableHead><SortableTableHead column="played" direction={direction} onSort={onSort} sortColumn={sortColumn}>P</SortableTableHead></TableHead><TableHead><SortableTableHead column="record" direction={direction} onSort={onSort} sortColumn={sortColumn}>W-D-L</SortableTableHead></TableHead><TableHead><SortableTableHead column="for" direction={direction} onSort={onSort} sortColumn={sortColumn}>For</SortableTableHead></TableHead><TableHead><SortableTableHead column="against" direction={direction} onSort={onSort} sortColumn={sortColumn}>Against</SortableTableHead></TableHead><TableHead><SortableTableHead column="difference" direction={direction} onSort={onSort} sortColumn={sortColumn}>Diff</SortableTableHead></TableHead><TableHead><SortableTableHead column="points" direction={direction} onSort={onSort} sortColumn={sortColumn}>Pts</SortableTableHead></TableHead></UiTableRow>
+            </TableHeader>
+            <TableBody>
+              {sortedRows.map((row) => <TableRow key={row.team.id} row={row} />)}
+            </TableBody>
+          </Table>
         </div>
         {!snapshot.table.rows.length ? <EmptyState message="The league table is empty until results are available." /> : null}
       </Card>
@@ -1474,7 +1486,7 @@ function TableView({ onReload, snapshot }: { onReload: () => void; snapshot: Lea
 }
 
 function TableRow({ row }: { row: LeagueTableRow }) {
-  return <tr><th scope="row"><span className={`league-rank league-rank--${row.position <= 3 ? row.position : 'other'}`}>{row.position}</span></th><th scope="row" className="league-table__team">{row.team.name}</th><td>{row.played}</td><td>{row.wins}-{row.draws}-{row.losses}</td><td>{row.pointsFor}</td><td>{row.pointsAgainst}</td><td>{row.pointsDifference > 0 ? '+' : ''}{row.pointsDifference}</td><td><strong>{row.leaguePoints}</strong></td></tr>;
+  return <UiTableRow><TableHead scope="row"><span className={`league-rank league-rank--${row.position <= 3 ? row.position : 'other'}`}>{row.position}</span></TableHead><TableHead scope="row" className="league-table__team">{row.team.name}</TableHead><TableCell>{row.played}</TableCell><TableCell>{row.wins}-{row.draws}-{row.losses}</TableCell><TableCell>{row.pointsFor}</TableCell><TableCell>{row.pointsAgainst}</TableCell><TableCell>{row.pointsDifference > 0 ? '+' : ''}{row.pointsDifference}</TableCell><TableCell><strong>{row.leaguePoints}</strong></TableCell></UiTableRow>;
 }
 
 function FixtureDetailDrawer({ attackDirection, detail, detailStatus, detailReadError, drawerRef, fixture, gameweekState, gameweekStatus, isOpen, onClose, onPlayerClick, onRetry, squadReadError, squads }: { attackDirection: AttackDirection; detail: FixtureDetailResponse | null; detailStatus: 'idle' | 'loading' | 'loaded' | 'error'; detailReadError: boolean; drawerRef: RefObject<HTMLElement | null>; fixture: LeagueFixture; gameweekState: GameweekState; gameweekStatus: FixtureGameweekStatus; isOpen: boolean; onClose: () => void; onPlayerClick: (player: FixtureSquadPlayer) => void; onRetry: () => void; squadReadError: boolean; squads: FixtureSquad[] }) {

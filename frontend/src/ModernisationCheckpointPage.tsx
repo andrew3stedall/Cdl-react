@@ -1,5 +1,7 @@
 import { Card } from './components/ui/card';
 import { GlobalPageHeader } from './components/ui/global-notifications';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './components/ui/table';
+import { SortableTableHead, useSortedRows } from './components/ui/sortable-table';
 
 interface CheckpointFeature {
   issue: number;
@@ -197,6 +199,7 @@ interface ModernisationCheckpointPageProps {
 
 export function ModernisationCheckpointPage({ checkpoint = 1, onNavigate }: ModernisationCheckpointPageProps) {
   const content = checkpointContent[checkpoint] ?? checkpointContent[1];
+  const { direction, onSort, sortColumn, sortedRows } = useSortedRows(content.features, (feature, column) => column === 'issue' ? feature.issue : column === 'feature' ? feature.title : feature.api);
 
   return (
     <main aria-labelledby="modernisation-checkpoint-title" className="feature-screen">
@@ -223,23 +226,15 @@ export function ModernisationCheckpointPage({ checkpoint = 1, onNavigate }: Mode
 
       <section aria-label="Checkpoint feature contracts">
         <h2>Implemented feature contracts</h2>
-        <div
-          role="table"
-          className="squad-data-table"
-          aria-label={`Checkpoint ${content.checkpoint} features`}
-        >
-          <div role="row" className="squad-table-row squad-table-head">
-            <span role="columnheader">Issue</span>
-            <span role="columnheader">Feature</span>
-            <span role="columnheader">API</span>
-          </div>
-          {content.features.map((feature) => (
-            <div role="row" className="squad-table-row" key={feature.issue}>
-              <span role="cell">#{feature.issue}</span>
-              <span role="cell">{feature.title}</span>
-              <span role="cell"><code>{feature.api}</code></span>
-            </div>
-          ))}
+        <div className="squad-data-table">
+          <Table aria-label={`Checkpoint ${content.checkpoint} features`}>
+            <TableHeader><TableRow>
+              <TableHead><SortableTableHead column="issue" direction={direction} onSort={onSort} sortColumn={sortColumn}>Issue</SortableTableHead></TableHead>
+              <TableHead><SortableTableHead column="feature" direction={direction} onSort={onSort} sortColumn={sortColumn}>Feature</SortableTableHead></TableHead>
+              <TableHead><SortableTableHead column="api" direction={direction} onSort={onSort} sortColumn={sortColumn}>API</SortableTableHead></TableHead>
+            </TableRow></TableHeader>
+            <TableBody>{sortedRows.map((feature) => <TableRow key={feature.issue}><TableCell>#{feature.issue}</TableCell><TableCell>{feature.title}</TableCell><TableCell><code>{feature.api}</code></TableCell></TableRow>)}</TableBody>
+          </Table>
         </div>
       </section>
     </main>

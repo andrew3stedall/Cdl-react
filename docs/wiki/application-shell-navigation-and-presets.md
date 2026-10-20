@@ -58,6 +58,10 @@ Theme modes remain configured in `frontend/src/theme-presets.ts`:
 
 Theme colour palettes are configured in `frontend/src/theme-colours.ts`. The Theme colours page uses the same selection pattern as FDR: predefined four-accent templates are shown first, followed by a custom palette accordion using the shared colour selector and HSV editor. Light and dark palettes are stored independently. Templates retain their authored pairs, custom edits can target either mode, and old single-palette preferences derive a nearby companion using the same four accent hues.
 
+## Tables and sortable lists
+
+Use the shared shadcn-style table primitives in `frontend/src/components/ui/table.tsx` for tabular data instead of raw HTML tables or `role="table"` div grids. Make every data column sortable with `SortableTableHead` and `useSortedRows` from `sortable-table.tsx`; for grouped player tables, keep sorting within each existing group. Keep loading skeletons non-interactive. Sortable headers are keyboard accessible and expose the current direction in their accessible label.
+
 Dark Teal is the default appearance. Theme mode controls the interface surfaces and chooses the corresponding accent variant. The selected accent fill is preserved exactly; `--theme-{accent}-text` provides an accessible text colour against the active background/card surfaces, while `--theme-{accent}-foreground` remains the foreground for text over a filled accent.
 
 Modal sheets use the shared lifecycle in `frontend/src/components/ui/sheet.tsx`: focus moves into the dialog, Tab stays within it, Escape requests close, background siblings are inert, and closing restores focus to the opener. Custom drawers can use the exported `useModalLifecycle` hook.

@@ -3,6 +3,8 @@ import { useEffect, useState } from 'react';
 import { Card } from './components/ui/card';
 import { PageHero } from './components/ui/page-hero';
 import { Select } from './components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './components/ui/table';
+import { SortableTableHead, useSortedRows } from './components/ui/sortable-table';
 import type {
   FdrClient,
   FdrCombinedResponse,
@@ -134,6 +136,12 @@ function RatingLegend({ scales }: { scales: FdrScaleStep[] }) {
 
 function FdrTable({ title, response }: { title: string; response: FdrViewResponse }) {
   const gameweeks = response.availableGameweeks;
+  const { direction, onSort, sortColumn, sortedRows } = useSortedRows(response.rows, (row, column) => {
+    if (column === 'team') return row.team.shortName ?? row.team.name;
+    if (column === 'average') return row.averageRating;
+    const gameweek = Number(column.replace('gameweek-', ''));
+    return row.fixtures.find((fixture) => fixture.gameweek.number === gameweek)?.rating;
+  });
 
   return (
     <Card className="fdr-table-card">
@@ -142,32 +150,32 @@ function FdrTable({ title, response }: { title: string; response: FdrViewRespons
         <h2>{title}</h2>
       </header>
       <div aria-label={`${title} table`} className="fdr-table-scroll" role="region" tabIndex={0}>
-        <table className="fdr-table">
-          <thead>
-            <tr>
-              <th className="fdr-team-column">Team</th>
+        <Table className="fdr-table">
+          <TableHeader>
+            <TableRow>
+              <TableHead className="fdr-team-column"><SortableTableHead column="team" direction={direction} onSort={onSort} sortColumn={sortColumn}>Team</SortableTableHead></TableHead>
               {gameweeks.map((gameweek) => (
-                <th key={gameweek.id}>GW{gameweek.number}</th>
+                <TableHead key={gameweek.id}><SortableTableHead column={`gameweek-${gameweek.number}`} direction={direction} onSort={onSort} sortColumn={sortColumn}>GW{gameweek.number}</SortableTableHead></TableHead>
               ))}
-              <th>Avg</th>
-            </tr>
-          </thead>
-          <tbody>
-            {response.rows.map((row) => (
-              <tr key={row.team.id}>
-                <th className="fdr-team-column" scope="row">
+              <TableHead><SortableTableHead column="average" direction={direction} onSort={onSort} sortColumn={sortColumn}>Avg</SortableTableHead></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {sortedRows.map((row) => (
+              <TableRow key={row.team.id}>
+                <TableHead className="fdr-team-column" scope="row">
                   {row.team.shortName ?? row.team.name}
-                </th>
+                </TableHead>
                 {gameweeks.map((gameweek) => (
-                  <td key={gameweek.id}>
+                  <TableCell key={gameweek.id}>
                     <FixtureCell fixture={findFixture(row.fixtures, gameweek.number)} />
-                  </td>
+                  </TableCell>
                 ))}
-                <td>{row.averageRating}</td>
-              </tr>
+                <TableCell>{row.averageRating}</TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     </Card>
   );

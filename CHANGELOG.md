@@ -2,6 +2,8 @@
 
 - Route authenticated JSON API reads through a per-manager TanStack Query cache persisted in IndexedDB. Cached pages can render immediately after a reload; successful writes and existing route/data refresh events invalidate cached responses, and sign-out clears the manager's cache.
 
+- Build staging images as a single-platform immutable manifest so Cloud Run's candidate digest matches the image reviewed by the rollout gate.
+
 - Keep five previous gameweek scores visible on the Manager's Desk during a live gameweek by including the active gameweek plus five prior gameweeks in the form fixture payload.
 
 - Replace the Teams view's rotating image planes with solid meshes extruded from each badge's SVG contours, preserving cutouts and disconnected details, with bevels, coloured sidewalls, lighting, and full rotation. Add a vector companion for the raster-backed Sporting Lesbians asset and regressions for real mesh depth and open holes.

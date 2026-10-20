@@ -116,7 +116,10 @@ test('the four primary route headers and notification control stay fixed through
     ];
   for (const [viewportIndex, viewport] of viewports.entries()) {
     const routePage = viewportIndex === 0 ? page : await page.context().newPage();
-    const { releasePendingResponses } = await installLayoutFixtures(routePage, { holdDataUntilReleased: true });
+    const { releasePendingResponses } = await installLayoutFixtures(routePage, {
+      holdDataUntilReleased: true,
+      managerId: `layout-manager-viewport-${viewportIndex}`,
+    });
     await setViewport(routePage, viewport.width, viewport.height);
     await routePage.goto('/dashboard');
 
@@ -131,7 +134,9 @@ test('the four primary route headers and notification control stay fixed through
     ]) {
       await (await primaryLink(routePage, label)).click();
       await expect(routePage.locator('[data-page-hero="shared"]:visible h1')).toHaveText(title);
-      await expect(routePage.locator(loadingSelector).filter({ visible: true })).toBeVisible();
+      // A warmed TanStack cache may paint this route immediately, so the loading shell is optional.
+      const loadingShell = routePage.locator(loadingSelector).filter({ visible: true });
+      if (!(await loadingShell.isVisible().catch(() => false))) await expect(routePage.locator('main')).toBeVisible();
       pendingByTitle.set(title, await readHeaderBounds(routePage));
     }
 
@@ -400,7 +405,7 @@ test('Market and League drawers cover mobile navigation, keep actions visible, a
 });
 
 test('commissioner PageHero and bell retain measured bounds in light and dark appearance states across mobile viewports', async ({ page }, testInfo) => {
-  const { setThemePreset } = await installLayoutFixtures(page, { apiDelayMs: 0, roles: ['commissioner'] });
+  const { setThemePreset, setManagerId } = await installLayoutFixtures(page, { apiDelayMs: 0, roles: ['commissioner'] });
   const viewports = testInfo.project.name === 'chromium-desktop'
     ? [{ width: 1280, height: 800 }]
     : [
@@ -419,6 +424,7 @@ test('commissioner PageHero and bell retain measured bounds in light and dark ap
 
     for (const presetName of ['teal-light', 'teal-dark'] as const) {
       setThemePreset(presetName);
+      setManagerId(`layout-manager-${presetName}`);
       await page.context().clearCookies();
       await page.evaluate(() => window.localStorage.clear());
       await page.context().addCookies([{

@@ -1,3 +1,4 @@
+import { fetchWithQuery as fetch } from './query-cache';
 import type { RuleCategory, RuleSection, RulesIndexResponse } from './contracts';
 import { canAccessProtectedRoute } from './auth';
 import type { SessionState } from './contracts';

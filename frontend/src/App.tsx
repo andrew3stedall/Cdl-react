@@ -32,6 +32,7 @@ import type { TeamSelectionClient } from './team-selection-api';
 import { ThemePresetProvider, useThemePreset } from './theme-preset-provider';
 import { getStoredThemePreset } from './theme-cookie';
 import { registerCdlWebMcp } from './webmcp';
+import { clearQueryCache, setQueryCacheUser } from './query-cache';
 
 const loginPreferenceClient = new LocalStoragePreferenceClient();
 const defaultAppSquadClient = new HttpSquadClient();
@@ -95,6 +96,10 @@ export function App({
   const [logoutError, setLogoutError] = useState<string | null>(null);
   const [logoutPending, setLogoutPending] = useState(false);
   const appSquadClient = squadClient ?? defaultAppSquadClient;
+
+  useLayoutEffect(() => {
+    void setQueryCacheUser(activeSession?.isAuthenticated ? activeSession.user?.id ?? null : null);
+  }, [activeSession?.isAuthenticated, activeSession?.user?.id]);
 
   useEffect(() => {
     if (!activeSession?.isAuthenticated) return undefined;
@@ -310,6 +315,7 @@ export function App({
     setLogoutError(null);
     setLogoutPending(true);
     if (session !== undefined) {
+      await clearQueryCache();
       setActiveSession(getUnauthenticatedSession());
       setBrowserPath('/login', true);
       setLogoutPending(false);
@@ -317,6 +323,7 @@ export function App({
     }
     try {
       const response = await sessionClient.logout();
+      await clearQueryCache();
       setActiveSession(response.session);
       setSessionCheckError(null);
       setBrowserPath('/login', true);

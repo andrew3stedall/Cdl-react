@@ -40,8 +40,13 @@ export function subscribeDataFreshness(
   skipInitialActivation = true,
 ): () => void {
   let initialActivation = skipInitialActivation;
+  const refreshAndInvalidate = () => {
+    if (activeRoute !== routeKey) return;
+    invalidateData(scopes, routeKey);
+    onRefresh();
+  };
   const refreshIfActive = () => {
-    if (activeRoute === routeKey) onRefresh();
+    refreshAndInvalidate();
   };
   const onRoute = (event: Event) => {
     const nextRoute = (event as CustomEvent<PageRouteKey>).detail;
@@ -51,7 +56,7 @@ export function subscribeDataFreshness(
       initialActivation = false;
       return;
     }
-    onRefresh();
+    refreshAndInvalidate();
   };
   const onResume = () => {
     if (document.visibilityState === 'visible') refreshIfActive();
@@ -63,13 +68,18 @@ export function subscribeDataFreshness(
     const detail = (event as CustomEvent<InvalidationDetail>).detail;
     if (detail?.sourceRoute !== routeKey && detail?.scopes.some((scope) => scopes.includes(scope)) && activeRoute === routeKey) onRefresh();
   };
+  const onQueryCacheUpdated = () => {
+    if (activeRoute === routeKey) onRefresh();
+  };
   document.addEventListener('cdl:route-activated', onRoute);
   document.addEventListener('cdl:data-invalidated', onInvalidation);
+  document.addEventListener('cdl:query-cache-updated', onQueryCacheUpdated);
   document.addEventListener('visibilitychange', onResume);
   window.addEventListener('online', onResume);
   return () => {
     document.removeEventListener('cdl:route-activated', onRoute);
     document.removeEventListener('cdl:data-invalidated', onInvalidation);
+    document.removeEventListener('cdl:query-cache-updated', onQueryCacheUpdated);
     document.removeEventListener('visibilitychange', onResume);
     window.removeEventListener('online', onResume);
     window.clearInterval(refreshTimer);
@@ -81,26 +91,37 @@ export function subscribeScopedDataFreshness(
   onRefresh: () => void,
 ): () => void {
   let initialActivation = true;
+  const refreshAndInvalidate = () => {
+    if (!activeRoute) return;
+    invalidateData(scopes, activeRoute);
+    onRefresh();
+  };
   const onRoute = (event: Event) => {
     activeRoute = (event as CustomEvent<PageRouteKey>).detail;
-    if (!initialActivation && scopes.some((scope) => affectedRoutes[scope].includes(activeRoute as PageRouteKey))) onRefresh();
+    if (!initialActivation && scopes.some((scope) => affectedRoutes[scope].includes(activeRoute as PageRouteKey))) refreshAndInvalidate();
     initialActivation = false;
   };
   const onResume = () => {
     const currentRoute = activeRoute;
-    if (document.visibilityState === 'visible' && currentRoute && scopes.some((scope) => affectedRoutes[scope].includes(currentRoute))) onRefresh();
+    if (document.visibilityState === 'visible' && currentRoute && scopes.some((scope) => affectedRoutes[scope].includes(currentRoute))) refreshAndInvalidate();
   };
   const onInvalidation = (event: Event) => {
     const detail = (event as CustomEvent<InvalidationDetail>).detail;
-    if (detail?.scopes.some((scope) => scopes.includes(scope))) onRefresh();
+    if (detail?.sourceRoute !== activeRoute && detail?.scopes.some((scope) => scopes.includes(scope))) onRefresh();
+  };
+  const onQueryCacheUpdated = () => {
+    const currentRoute = activeRoute;
+    if (currentRoute && scopes.some((scope) => affectedRoutes[scope].includes(currentRoute))) onRefresh();
   };
   document.addEventListener('cdl:route-activated', onRoute);
   document.addEventListener('cdl:data-invalidated', onInvalidation);
+  document.addEventListener('cdl:query-cache-updated', onQueryCacheUpdated);
   document.addEventListener('visibilitychange', onResume);
   window.addEventListener('online', onResume);
   return () => {
     document.removeEventListener('cdl:route-activated', onRoute);
     document.removeEventListener('cdl:data-invalidated', onInvalidation);
+    document.removeEventListener('cdl:query-cache-updated', onQueryCacheUpdated);
     document.removeEventListener('visibilitychange', onResume);
     window.removeEventListener('online', onResume);
   };

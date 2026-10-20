@@ -26,6 +26,7 @@ import { HttpLeagueClient } from './league-api';
 import { ManagerAccountSection } from './ManagerAccountSection';
 import { managerNicknameForTeam } from './manager-nicknames';
 import { subscribeDataFreshness } from './data-freshness';
+import { invalidateQueryCache } from './query-cache';
 import {
   defaultManagerDeskClient,
   type ManagerDeskClient,
@@ -149,7 +150,7 @@ export function ManagerDeskPage({
         <div className="manager-desk__data-note" role="status">
           <CircleAlert aria-hidden="true" size={17} />
           <span>Some desk data is unavailable. Actions shown below may be incomplete.</span>
-          <Button onClick={() => setReloadRequest((request) => request + 1)} type="button" variant="ghost">
+          <Button onClick={() => { invalidateQueryCache(); setReloadRequest((request) => request + 1); }} type="button" variant="ghost">
             Retry
           </Button>
         </div>

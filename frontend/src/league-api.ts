@@ -1,3 +1,4 @@
+import { fetchWithQuery as fetch } from './query-cache';
 import type { SquadApiFormGameweek } from './squad-api';
 
 export interface LeagueTeam {

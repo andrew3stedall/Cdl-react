@@ -1,3 +1,4 @@
+import { fetchWithQuery as fetch } from './query-cache';
 export interface AIConnection {
   id: string;
   client_id: string;

@@ -1,3 +1,4 @@
+import { fetchWithQuery as fetch } from './query-cache';
 export type DashboardChartType = 'bar' | 'line' | 'table' | 'kpi';
 export type DashboardFilterScope = 'global' | 'widget';
 

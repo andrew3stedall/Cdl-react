@@ -1,3 +1,4 @@
+import { fetchWithQuery as fetch } from './query-cache';
 export interface PrivateScoutingRecord {
   player_id: string;
   watchlisted: boolean;

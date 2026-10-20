@@ -4,6 +4,7 @@ import { ArrowDown, ArrowUp, Clock3, RotateCw, ShieldCheck, Users } from 'lucide
 import { Button } from './components/ui/button';
 import { PageHero } from './components/ui/page-hero';
 import type { ThemePreset } from './contracts';
+import { invalidateData } from './data-freshness';
 import './draft-workspace-page.css';
 
 type DraftMode = 'random_repeat' | 'snake' | 'manual';
@@ -45,6 +46,7 @@ async function request<T>(base: string, path: string, init?: RequestInit): Promi
     const body = await response.json().catch(() => null) as { detail?: string } | null;
     throw new Error(body?.detail ?? `Draft request failed (${response.status}).`);
   }
+  if ((init?.method ?? 'GET').toUpperCase() !== 'GET') invalidateData(['global']);
   return response.json() as Promise<T>;
 }
 

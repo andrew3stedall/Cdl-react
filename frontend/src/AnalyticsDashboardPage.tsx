@@ -4,6 +4,8 @@ import { Button } from './components/ui/button';
 import { Card } from './components/ui/card';
 import { PageHero } from './components/ui/page-hero';
 import { Select } from './components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './components/ui/table';
+import { SortableTableHead, useSortedRows } from './components/ui/sortable-table';
 import type {
   DashboardClient,
   DashboardConfig,
@@ -248,25 +250,28 @@ function DataTable({
   columns: WidgetQueryResponse['columns'];
   rows: WidgetQueryResponse['rows'];
 }) {
+  const { direction, onSort, sortColumn, sortedRows } = useSortedRows(rows, (row, column) => row.cells[column]);
   return (
-    <table>
-      <thead>
-        <tr>
+    <Table>
+      <TableHeader>
+        <TableRow>
           {columns.map((column) => (
-            <th key={column.id}>{column.label}</th>
+            <TableHead className={`dashboard-table__head dashboard-table__head--${column.align}`} key={column.id}>
+              <SortableTableHead column={column.id} direction={direction} onSort={onSort} sortColumn={sortColumn}>{column.label}</SortableTableHead>
+            </TableHead>
           ))}
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((row, rowIndex) => (
-          <tr key={rowIndex}>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {sortedRows.map((row, rowIndex) => (
+          <TableRow key={rowIndex}>
             {columns.map((column) => (
-              <td key={column.id}>{row.cells[column.id]}</td>
+              <TableCell className={`dashboard-table__cell dashboard-table__cell--${column.align}`} key={column.id}>{row.cells[column.id]}</TableCell>
             ))}
-          </tr>
+          </TableRow>
         ))}
-      </tbody>
-    </table>
+      </TableBody>
+    </Table>
   );
 }
 

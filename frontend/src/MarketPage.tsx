@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 20559)
+Total output lines: 1454
+
 import { fetchWithQuery as fetch } from './query-cache';
 import { type MutableRefObject, type ReactNode, lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -16,6 +19,8 @@ import {
 } from 'lucide-react';
 
 import { Button } from './components/ui/button';
+import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from './components/ui/table';
+import { SortableTableHead, useSortedRows } from './components/ui/sortable-table';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, useCarousel } from './components/ui/carousel';
 import { PlayerCard, type PlayerCardFixtureTone, type PlayerCardPlayer } from './components/player/PlayerCard';
 import { PageHero, PageHeroControls, PageHeroViewToggle } from './components/ui/page-hero';
@@ -731,6 +736,11 @@ function DiscoveryPanel({
   sortKey: SortKey;
 }) {
   const hasFilters = Boolean(query.trim()) || positionFilter !== 'all' || fixtureFilter !== 'all';
+  const { direction, onSort, sortColumn, sortedRows } = useSortedRows(filteredPlayers, (player, column) => {
+    if (column === 'player') return player.displayName;
+    if (column === 'points') return player.points;
+    return (player.xg ?? -1) * 1_000_000 + (player.xa ?? -1);
+  });
   return (
     <div className="market-page__discovery">
       <div className="market-page__toolbar">
@@ -763,17 +773,17 @@ function DiscoveryPanel({
       {!loading && !failed && filteredPlayers.length === 0 ? <div className="market-page__empty"><Search aria-hidden="true" size={22} /><strong>No players found</strong>{hasFilters ? <Button onClick={onClearFilters} type="button" variant="secondary">Clear filters</Button> : null}</div> : null}
       {!loading && !failed && filteredPlayers.length > 0 ? (
         <div className="market-page__table-wrap">
-          <table aria-label="Market player results" className="market-page__player-table">
-            <caption className="sr-only">Market player results</caption>
-            <thead>
-              <tr>
-                <th scope="col">Player</th>
-                <th scope="col">Pts</th>
-                <th scope="col">xG / xA</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredPlayers.map((player) => (
+          <Table aria-label="Market player results" className="market-page__player-table">
+            <TableCaption className="sr-only">Market player results</TableCaption>
+            <TableHeader>
+              <TableRow>
+                <TableHead><SortableTableHead column="player" direction={direction} onSort={onSort} sortColumn={sortColumn}>Player</SortableTableHead></TableHead>
+                <TableHead><SortableTableHead column="points" direction={direction} onSort={onSort} sortColumn={sortColumn}>Pts</SortableTableHead></TableHead>
+                <TableHead><SortableTableHead column="expected" direction={direction} onSort={onSort} sortColumn={sortColumn}>xG / xA</SortableTableHead></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sortedRows.map((player) => (
                 <MarketPlayerRow
                   key={player.id}
                   managerTeam={managerTeam}
@@ -781,8 +791,8 @@ function DiscoveryPanel({
                   player={player}
                 />
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       ) : null}
     </div>
@@ -792,24 +802,24 @@ function DiscoveryPanel({
 function MarketLoadingTable() {
   return (
     <div aria-label="Loading market players" className="market-page__table-wrap market-page__table-wrap--loading" role="status">
-      <table aria-hidden="true" className="market-page__player-table">
-        <thead>
-          <tr>
-            <th scope="col">Player</th>
-            <th scope="col">Pts</th>
-            <th scope="col">xG / xA</th>
-          </tr>
-        </thead>
-        <tbody>
+      <Table aria-hidden="true" className="market-page__player-table">
+        <TableHeader>
+          <TableRow>
+            <TableHead scope="col">Player</TableHead>
+            <TableHead scope="col">Pts</TableHead>
+            <TableHead scope="col">xG / xA</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
           {Array.from({ length: 7 }, (_, index) => (
-            <tr className="market-page__loading-row" key={index}>
-              <td><span className="market-page__loading-block market-page__loading-block--player" /></td>
-              <td><span className="market-page__loading-block market-page__loading-block--number" /></td>
-              <td><span className="market-page__loading-block" /></td>
-            </tr>
+            <TableRow className="market-page__loading-row" key={index}>
+              <TableCell><span className="market-page__loading-block market-page__loading-block--player" /></TableCell>
+              <TableCell><span className="market-page__loading-block market-page__loading-block--number" /></TableCell>
+              <TableCell><span className="market-page__loading-block" /></TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }
@@ -817,7 +827,7 @@ function MarketLoadingTable() {
 function MarketPlayerRow({ managerTeam, onOpen, player }: { managerTeam: SquadApiTeam; onOpen: (player: MarketPlayer) => void; player: MarketPlayer }) {
   const rowLabel = `View ${player.displayName} details`;
   return (
-    <tr
+    <TableRow
       aria-label={rowLabel}
       className="market-page__player-row"
       onClick={() => onOpen(player)}
@@ -830,14 +840,14 @@ function MarketPlayerRow({ managerTeam, onOpen, player }: { managerTeam: SquadAp
       role="button"
       tabIndex={0}
     >
-      <td className="market-page__player-cell">
+      <TableCell className="market-page__player-cell">
         <div className="market-page__player-identity">
           <PlayerCard className="market-page__list-player-card" formPosition="beside" layout="list" player={toPlayerCardPlayer(player, ownershipToneFor(player, managerTeam))} showPositionMarker={false} size="sm" />
         </div>
-      </td>
-      <td><strong className="market-page__list-points">{formatInteger(player.points)}</strong></td>
-      <td><span className="market-page__expected"><span>{formatMetric(player.xg)}</span><span>{formatMetric(player.xa)}</span></span></td>
-    </tr>
+      </TableCell>
+      <TableCell><strong className="market-page__list-points">{formatInteger(player.points)}</strong></TableCell>
+      <TableCell><span className="market-page__expected"><span>{formatMetric(player.xg)}</span><span>{formatMetric(player.xa)}</span></span></TableCell>
+    </TableRow>
   );
 }
 
@@ -847,24 +857,7 @@ function InterestsPanel({ failed, interests, loading, managerTeam, onBrowse, onO
       {loading ? <p role="status">Loading Interests…</p> : null}
       {!loading && failed ? <p role="alert">Interests unavailable. <Button onClick={onRetry} type="button" variant="secondary">Retry</Button></p> : null}
       {!loading && !failed && interests.length === 0 ? <EmptyActivity icon={<Bookmark aria-hidden="true" size={23} />} onAction={onBrowse} action="Find a player" title="No Interests" /> : null}
-      {!loading && !failed && interests.length > 0 ? <div className="market-page__activity-list">{interests.map((interest) => <article className="market-page__activity-row" key={interest.id}><button aria-label={`View ${interest.player.displayName} details`} className="market-page__player-identity" onClick={() => onOpenPlayer(interest.player)} type="button"><PlayerCard formPosition="beside" layout="list" player={toPlayerCardPlayer(interest.player, ownershipToneFor(interest.player, managerTeam))} showPositionMarker={false} size="xs" /></button><Button aria-label={`Remove ${interest.player.displayName} from Interests`} disabled={pendingAction === interest.id} onClick={() => void onRemove(interest)} type="button" variant="ghost">{pendingAction === interest.id ? 'Removing…' : 'Remove'}</Button></article>)}</div> : null}
-    </section>
-  );
-}
-
-function TradesPanel({ approvalFailed, approvalLoading, approvalNotice, approvalTrades, approverRoles, canReviewTrades, failed, loading, managerTeam, onApprovalRetry, onBrowse, onDecideApproval, onRetry, onUpdateTrade, pendingTradeAction, trades }: { approvalFailed: boolean; approvalLoading: boolean; approvalNotice: string; approvalTrades: TradeView[]; approverRoles: string[]; canReviewTrades: boolean; failed: boolean; loading: boolean; managerTeam: SquadApiTeam; onApprovalRetry: () => void; onBrowse: () => void; onDecideApproval: (trade: TradeView, decision: 'approved' | 'rejected') => Promise<void>; onRetry: () => void; onUpdateTrade: (trade: TradeView, status: 'accepted' | 'rejected' | 'cancelled') => Promise<void>; pendingTradeAction: string | null; trades: TradeView[] }) {
-  const eligibleApprovals = approvalTrades.filter((trade) => approverRoles.includes('admin')
-    || (trade.requiredApproverRole === 'vice_commissioner' ? approverRoles.includes('vice_commissioner') : approverRoles.includes('commissioner')));
-  return <div className="market-page__trade-workspace">
-    <section aria-label="Trade activity" className="market-page__activity-panel">
-      <h2>Trade activity</h2>
-      {loading ? <p role="status">Loading trade activity…</p> : null}
-      {!loading && failed ? <p role="alert">Trade activity unavailable. <Button onClick={onRetry} type="button" variant="secondary">Retry</Button></p> : null}
-      {!loading && !failed && trades.length === 0 ? <EmptyActivity icon={<ArrowRightLeft aria-hidden="true" size={23} />} onAction={onBrowse} action="Browse players" title="No trade proposals" /> : null}
-      {!loading && !failed && trades.length > 0 ? <div className="market-page__activity-list">{trades.map((trade) => {
-        const recipient = trade.offeredToId === managerTeam.id;
-        const sender = trade.offeredById === managerTeam.id;
-        const pending = pendingTradeAction === trade.id;
+      {!loading && !failed && interests.length > 0 ? <div className="market-page__activity-list">{interests.map((interest) => <article className="market-page__activity-row" key={interest.id}><button aria-label={`View ${interest.player.displayName} details`} className="market-page__player-identity" onClick={() => onOpenPlayer(interest.player)} type="button"><PlayerCard formPosition="beside" layout="list" player={toPlayerCardPlayer(interest.player, ownershipToneFor(interest.player, managerTeam))} showPositionMarker={false} size="xs" />…559 tokens truncated…=== trade.id;
         const terminal = ['rejected', 'cancelled', 'executed'].includes(trade.status);
         return <article className="market-page__trade-row" key={trade.id}><span className="market-page__trade-icon"><ArrowRightLeft aria-hidden="true" size={18} /></span><div><strong>{trade.assetNames.length > 0 ? trade.assetNames.join(' ↔ ') : 'Player trade proposal'}</strong><span>{trade.offeredBy ?? 'Another manager'} → {trade.offeredTo ?? 'Your team'}</span><StatusBadge status={trade.status} />{trade.status === 'accepted' && trade.approvalStatus !== 'approved' ? <span>Awaiting commissioner approval</span> : null}{!terminal && trade.status === 'proposed' && recipient ? <div className="market-page__trade-actions"><Button disabled={pending} onClick={() => void onUpdateTrade(trade, 'accepted')} type="button">{pending ? 'Saving…' : 'Accept'}</Button><Button disabled={pending} onClick={() => void onUpdateTrade(trade, 'rejected')} type="button" variant="secondary">Reject</Button></div> : null}{!terminal && trade.status === 'proposed' && sender ? <Button disabled={pending} onClick={() => void onUpdateTrade(trade, 'cancelled')} type="button" variant="secondary">{pending ? 'Cancelling…' : 'Cancel proposal'}</Button> : null}</div></article>;
       })}</div> : null}

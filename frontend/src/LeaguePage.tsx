@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 22135)
+Total output lines: 1688
+
 import { type CSSProperties, type ReactNode, type RefObject, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   CalendarDays,
@@ -25,6 +28,8 @@ import { TeamCrest } from './components/team/TeamCrest';
 import { LeagueTeamShowcase } from './components/team/LeagueTeamShowcase';
 import { PageHero, PageHeroControls, PageHeroViewToggle } from './components/ui/page-hero';
 import { useModalLifecycle } from './components/ui/sheet';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow as UiTableRow } from './components/ui/table';
+import { SortableTableHead, useSortedRows } from './components/ui/sortable-table';
 import type { AttackDirection } from './contracts';
 import type { SessionState } from './contracts';
 import {
@@ -827,187 +832,7 @@ function RoundCarousel({ allFixtures, leagueClient, managerTeamId, onOpenFixture
   useScaleOpacityTween(roundApi, '.league-round-slide__content');
 
   useEffect(() => {
-    if (!roundApi) return undefined;
-
-    handleRoundSelect(roundApi);
-    roundApi.on('select', handleRoundSelect);
-    roundApi.on('reInit', handleRoundSelect);
-    return () => {
-      roundApi.off('select', handleRoundSelect);
-      roundApi.off('reInit', handleRoundSelect);
-    };
-  }, [handleRoundSelect, roundApi]);
-
-  useEffect(() => {
-    if (!roundApi) return;
-    const selectedRound = rounds[roundApi.selectedScrollSnap()];
-    if (selectedRound?.key !== rounds[initialRoundIndex]?.key) {
-      roundApi.scrollTo(initialRoundIndex, true);
-    }
-  }, [initialRoundIndex, roundApi, rounds]);
-
-  useEffect(() => {
-    const maximumIndex = Math.max(...rounds.map((round) => round.gameweeks.length), 1) - 1;
-    setSelectedGameweekIndex((index) => Math.min(index, maximumIndex));
-  }, [rounds]);
-
-  useEffect(() => {
-    setSelectedGameweekIndex(initialGameweekIndex);
-  }, [initialGameweekIndex]);
-
-  return (
-    <section aria-label="Fixture rounds" aria-roledescription="carousel" className="league-round-carousel" role="region">
-      <div aria-label="Fixture round slides" className="league-round-carousel__viewport" ref={roundViewportRef}>
-        <div className="league-round-carousel__track">
-          {rounds.map((round, roundIndex) => {
-            const isSelected = roundIndex === selectedRoundIndex;
-            const gameweekIndex = gameweekIndexForRound(round, selectedGameweekIndex);
-            return (
-              <div
-                aria-current={isSelected ? 'true' : undefined}
-                aria-hidden={!isSelected}
-                aria-label={`${round.label} fixtures`}
-                aria-roledescription="slide"
-                className={`league-round-carousel__slide${isSelected ? ' is-selected' : ''}`}
-                data-round-index={roundIndex}
-                key={round.key}
-                onClick={(event) => {
-                  const target = event.target as HTMLElement;
-                  if (target.closest('button, a, input, select, textarea')) return;
-                  handleRoundNavigation(roundIndex);
-                }}
-                role="group"
-              >
-                <div className="league-round-slide__content">
-                  <div aria-label={`${round.label} fixtures`} className="league-fixture-round" id={`league-round-panel-${round.key}`}>
-                    <header className="league-fixture-round__header">
-                      <div className="league-fixture-round__title">
-                        {round.isCurrent ? <span aria-label="Active round" className="league-round-active-led" role="img" title="Active round" /> : null}
-                        <h2>{round.label}</h2>
-                      </div>
-                    </header>
-                    <GameweekCarousel
-                    groups={round.gameweeks}
-                    expectedGameweeks={round.expectedGameweeks}
-                    allFixtures={allFixtures}
-                    isActive={isSelected}
-                    leagueClient={leagueClient}
-                    managerTeamId={managerTeamId}
-                    onIndexChange={(index) => {
-                        if (isSelected) setSelectedGameweekIndex(index);
-                      }}
-                      onOpenFixture={onOpenFixture}
-                      roundLabel={round.label}
-                      selectedGameweekIndex={gameweekIndex}
-                    />
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-      <nav aria-label="Round navigation" className="league-round-carousel__dots">
-        {rounds.map((round, roundIndex) => {
-          const isSelected = roundIndex === selectedRoundIndex;
-          return (
-            <button
-              aria-current={isSelected ? 'true' : undefined}
-              aria-label={`Go to ${round.label}`}
-              className={`league-round-carousel__dot${isSelected ? ' is-selected' : ''}`}
-              data-round-index={roundIndex}
-              key={round.key}
-              onClick={() => handleRoundNavigation(roundIndex)}
-              type="button"
-            />
-          );
-        })}
-      </nav>
-    </section>
-  );
-}
-
-interface CarouselSelection {
-  gameweekIndex: number;
-  roundIndex: number;
-}
-
-function defaultCarouselSelection(rounds: FixtureRoundGroup[]): CarouselSelection {
-  const groups = rounds.flatMap((round, roundIndex) => round.gameweeks.map((gameweek, gameweekIndex) => ({ gameweek, gameweekIndex, roundIndex })));
-  const active = groups
-    .filter(({ gameweek }) => gameweek.isCurrent && gameweek.state === 'underway')
-    .sort((left, right) => right.gameweek.gameweek.number - left.gameweek.gameweek.number)[0];
-  const completed = groups
-    .filter(({ gameweek }) => gameweek.state === 'finished')
-    .sort((left, right) => right.gameweek.gameweek.number - left.gameweek.gameweek.number)[0];
-  const fallback = groups
-    .filter(({ gameweek }) => gameweek.isCurrent || gameweek.state === 'not-started')
-    .sort((left, right) => left.gameweek.gameweek.number - right.gameweek.gameweek.number)[0]
-    ?? groups[0];
-  const selected = active ?? completed ?? fallback;
-  return selected
-    ? { gameweekIndex: selected.gameweekIndex, roundIndex: selected.roundIndex }
-    : { gameweekIndex: 0, roundIndex: 0 };
-}
-
-function GameweekCarousel({ allFixtures, expectedGameweeks, groups, isActive, leagueClient, managerTeamId, onIndexChange, onOpenFixture, roundLabel, selectedGameweekIndex }: { allFixtures: LeagueFixture[]; expectedGameweeks: number; groups: GameweekGroup[]; isActive: boolean; leagueClient: LeagueClient; managerTeamId: string | null; onIndexChange: (index: number) => void; onOpenFixture: (fixture: LeagueFixture) => void; roundLabel: string; selectedGameweekIndex: number }) {
-  const initialIndex = gameweekIndexForRound({ gameweeks: groups }, selectedGameweekIndex);
-  // Embla reads startIndex only when it is created. Keeping that initial value
-  // stable is important: updating it after every select causes a re-init that
-  // can leave the visual transform and selected snap out of sync.
-  const initialEmblaIndex = useRef(initialIndex).current;
-  const gameweekOptions = useMemo(() => ({
-    align: 'center' as const,
-    axis: 'y' as const,
-    containScroll: false as const,
-    duration: 68,
-    loop: false,
-    startIndex: initialEmblaIndex,
-  }), [initialEmblaIndex]);
-  const [gameweekViewportRef, gameweekApi] = useEmblaCarousel(gameweekOptions);
-  const [selectedIndex, setSelectedIndex] = useState(initialIndex);
-  const fixtureRows = Math.max(...groups.map((group) => group.fixtures.length), 1);
-  const baseGameweekCardHeight = Math.max(11, 3.4 + fixtureRows * 4.95);
-  // The fixture board contains one featured fixture plus the remaining
-  // gameweek rows. Reserve the full mobile card slot up front so the
-  // measurement observer does not resize the carousel after first paint.
-  const gameweekCardHeight = Math.max(29, Math.round(baseGameweekCardHeight * GAMEWEEK_HEIGHT_SCALE * 100) / 100);
-  const [measuredCardHeight, setMeasuredCardHeight] = useState<number | null>(null);
-  const gameweekCarouselRef = useRef<HTMLElement | null>(null);
-  const carouselStyle = {
-    '--league-gameweek-carousel-height': measuredCardHeight ? `${measuredCardHeight}px` : `${gameweekCardHeight}rem`,
-  } as CSSProperties;
-  const indicatorCount = Math.max(expectedGameweeks, groups.length, 1);
-  const selectedGroup = groups[selectedIndex];
-  const selectedIndicatorIndex = selectedGroup ? gameweekIndicatorIndex(selectedGroup) : selectedIndex;
-
-  const handleGameweekSelect = useCallback((api: EmblaCarouselType) => {
-    const index = api.selectedScrollSnap();
-    setSelectedIndex(index);
-    if (isActive) onIndexChange(index);
-  }, [isActive, onIndexChange]);
-
-  useScaleOpacityTween(gameweekApi, '.league-gameweek-slide__content');
-
-  useEffect(() => {
-    if (!gameweekApi) return undefined;
-
-    setSelectedIndex(gameweekApi.selectedScrollSnap());
-    gameweekApi.on('select', handleGameweekSelect);
-    gameweekApi.on('reInit', handleGameweekSelect);
-    return () => {
-      gameweekApi.off('select', handleGameweekSelect);
-      gameweekApi.off('reInit', handleGameweekSelect);
-    };
-  }, [gameweekApi, handleGameweekSelect]);
-
-  useEffect(() => {
-    if (!gameweekApi) return;
-    const nextIndex = gameweekIndexForRound({ gameweeks: groups }, selectedGameweekIndex);
-    setSelectedIndex(nextIndex);
-    if (gameweekApi.selectedScrollSnap() !== nextIndex) {
-      // This is only for synchronizing a round change or reloaded fixture
-      // data. User swipes and dot taps retain Embla's eased animation.
+    if (!roundApi) return un…2135 tokens truncated… // data. User swipes and dot taps retain Embla's eased animation.
       gameweekApi.scrollTo(nextIndex, true);
     }
   }, [gameweekApi, groups.length, selectedGameweekIndex]);
@@ -1447,6 +1272,16 @@ function fixtureActionLabel(fixture: LeagueFixture): string {
 }
 
 function TableView({ onReload, snapshot }: { onReload: () => void; snapshot: LeagueSnapshot }) {
+  const { direction, onSort, sortColumn, sortedRows } = useSortedRows(snapshot.table.rows, (row, column) => {
+    if (column === 'position') return row.position;
+    if (column === 'team') return row.team.name;
+    if (column === 'played') return row.played;
+    if (column === 'record') return `${row.wins}-${row.draws}-${row.losses}`;
+    if (column === 'for') return row.pointsFor;
+    if (column === 'against') return row.pointsAgainst;
+    if (column === 'difference') return row.pointsDifference;
+    return row.leaguePoints;
+  });
   if (snapshot.failedReads?.includes('table')) {
     return <Card className="league-state-card league-state-card--error" role="alert"><CircleAlert aria-hidden="true" size={18} /><div><strong>Standings are unavailable</strong><p>Fixture and commissioner data can still load independently.</p></div><Button onClick={onReload} type="button" variant="secondary"><RefreshCw aria-hidden="true" size={16} />Retry table</Button></Card>;
   }
@@ -1458,14 +1293,14 @@ function TableView({ onReload, snapshot }: { onReload: () => void; snapshot: Lea
           <div className="league-panel__actions"><span className="league-source-badge"><Table2 aria-hidden="true" size={14} /> {tableSourceLabel(snapshot.table.source)}</span><Button onClick={onReload} type="button" variant="secondary"><RefreshCw aria-hidden="true" size={15} /> Refresh</Button></div>
         </div>
         <div aria-label="League standings table" className="league-table-scroll" role="region" tabIndex={0}>
-          <table className="league-table">
-            <thead>
-              <tr><th scope="col">Pos</th><th scope="col">Team</th><th scope="col">P</th><th scope="col">W-D-L</th><th scope="col">For</th><th scope="col">Against</th><th scope="col">Diff</th><th scope="col">Pts</th></tr>
-            </thead>
-            <tbody>
-              {snapshot.table.rows.map((row) => <TableRow key={row.team.id} row={row} />)}
-            </tbody>
-          </table>
+          <Table className="league-table">
+            <TableHeader>
+              <UiTableRow><TableHead><SortableTableHead column="position" direction={direction} onSort={onSort} sortColumn={sortColumn}>Pos</SortableTableHead></TableHead><TableHead><SortableTableHead column="team" direction={direction} onSort={onSort} sortColumn={sortColumn}>Team</SortableTableHead></TableHead><TableHead><SortableTableHead column="played" direction={direction} onSort={onSort} sortColumn={sortColumn}>P</SortableTableHead></TableHead><TableHead><SortableTableHead column="record" direction={direction} onSort={onSort} sortColumn={sortColumn}>W-D-L</SortableTableHead></TableHead><TableHead><SortableTableHead column="for" direction={direction} onSort={onSort} sortColumn={sortColumn}>For</SortableTableHead></TableHead><TableHead><SortableTableHead column="against" direction={direction} onSort={onSort} sortColumn={sortColumn}>Against</SortableTableHead></TableHead><TableHead><SortableTableHead column="difference" direction={direction} onSort={onSort} sortColumn={sortColumn}>Diff</SortableTableHead></TableHead><TableHead><SortableTableHead column="points" direction={direction} onSort={onSort} sortColumn={sortColumn}>Pts</SortableTableHead></TableHead></UiTableRow>
+            </TableHeader>
+            <TableBody>
+              {sortedRows.map((row) => <TableRow key={row.team.id} row={row} />)}
+            </TableBody>
+          </Table>
         </div>
         {!snapshot.table.rows.length ? <EmptyState message="The league table is empty until results are available." /> : null}
       </Card>
@@ -1474,7 +1309,7 @@ function TableView({ onReload, snapshot }: { onReload: () => void; snapshot: Lea
 }
 
 function TableRow({ row }: { row: LeagueTableRow }) {
-  return <tr><th scope="row"><span className={`league-rank league-rank--${row.position <= 3 ? row.position : 'other'}`}>{row.position}</span></th><th scope="row" className="league-table__team">{row.team.name}</th><td>{row.played}</td><td>{row.wins}-{row.draws}-{row.losses}</td><td>{row.pointsFor}</td><td>{row.pointsAgainst}</td><td>{row.pointsDifference > 0 ? '+' : ''}{row.pointsDifference}</td><td><strong>{row.leaguePoints}</strong></td></tr>;
+  return <UiTableRow><TableHead scope="row"><span className={`league-rank league-rank--${row.position <= 3 ? row.position : 'other'}`}>{row.position}</span></TableHead><TableHead scope="row" className="league-table__team">{row.team.name}</TableHead><TableCell>{row.played}</TableCell><TableCell>{row.wins}-{row.draws}-{row.losses}</TableCell><TableCell>{row.pointsFor}</TableCell><TableCell>{row.pointsAgainst}</TableCell><TableCell>{row.pointsDifference > 0 ? '+' : ''}{row.pointsDifference}</TableCell><TableCell><strong>{row.leaguePoints}</strong></TableCell></UiTableRow>;
 }
 
 function FixtureDetailDrawer({ attackDirection, detail, detailStatus, detailReadError, drawerRef, fixture, gameweekState, gameweekStatus, isOpen, onClose, onPlayerClick, onRetry, squadReadError, squads }: { attackDirection: AttackDirection; detail: FixtureDetailResponse | null; detailStatus: 'idle' | 'loading' | 'loaded' | 'error'; detailReadError: boolean; drawerRef: RefObject<HTMLElement | null>; fixture: LeagueFixture; gameweekState: GameweekState; gameweekStatus: FixtureGameweekStatus; isOpen: boolean; onClose: () => void; onPlayerClick: (player: FixtureSquadPlayer) => void; onRetry: () => void; squadReadError: boolean; squads: FixtureSquad[] }) {

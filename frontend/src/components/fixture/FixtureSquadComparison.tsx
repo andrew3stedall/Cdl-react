@@ -1,7 +1,9 @@
 import { type ReactNode, useEffect, useState } from 'react';
-import { ArrowDown, List } from 'lucide-react';
+import { List } from 'lucide-react';
 
 import { PlayerCard, type PlayerCardPlayer, formBand } from '../player/PlayerCard';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
+import { SortableTableHead } from '../ui/sortable-table';
 import type { AttackDirection } from '../../contracts';
 import { fixtureDifficultyTitle } from '../../SquadPage';
 import type { FixturePlayerFixture, FixtureSquad, FixtureSquadPlayer } from '../../league-api';
@@ -211,6 +213,15 @@ function FixtureListTeam({
   selectedPlayerIds?: ReadonlySet<string>;
   squad: FixtureSquad;
 }) {
+  const [sortColumn, setSortColumn] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const sortList = (column: string) => {
+    if (sortColumn === column) setSortDirection((current) => current === 'asc' ? 'desc' : 'asc');
+    else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
   const groups = [
     { key: 'starters', label: 'Starting XI', players: sortFixtureListPlayers(squad.starters) },
     { key: 'bench', label: 'Substitutes', players: sortFixtureBench(squad.bench) },
@@ -230,11 +241,14 @@ function FixtureListTeam({
             <span>{group.players.length}</span>
           </header>
           <div aria-label={`${group.label} players table`} className="fixture-squad-list__table-scroll" role="region" tabIndex={0}>
-            <table className="fixture-squad-list__table">
+            <Table className="fixture-squad-list__table">
               <colgroup><col className="player" /><col className="points" /></colgroup>
-              <thead><tr><th>Player</th><th className="sorted">Pts <ArrowDown aria-hidden="true" size={11} /></th></tr></thead>
-              <tbody>
-                {group.players.map((player, index) => (
+              <TableHeader><TableRow>
+                <TableHead><SortableTableHead column="player" direction={sortDirection} onSort={sortList} sortColumn={sortColumn}>Player</SortableTableHead></TableHead>
+                <TableHead><SortableTableHead column="points" direction={sortDirection} onSort={sortList} sortColumn={sortColumn}>Pts</SortableTableHead></TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {[...group.players].sort((left, right) => compareFixtureListPlayers(left, right, sortColumn, sortDirection)).map((player, index, sortedPlayers) => (
                   <FixtureListPlayer
                     gameweekStatus={gameweekStatus}
                     key={player.id}
@@ -245,11 +259,11 @@ function FixtureListTeam({
                     selected={selectedPlayerIds?.has(player.id) ?? false}
                     startsNewPosition={group.key === 'starters'
                       && index > 0
-                      && fixturePosition(group.players[index - 1]?.position ?? '') !== fixturePosition(player.position)}
+                      && fixturePosition(sortedPlayers[index - 1]?.position ?? '') !== fixturePosition(player.position)}
                   />
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           </div>
         </section>
       ))}
@@ -299,29 +313,29 @@ function FixtureListPlayer({
   );
   const rowContent = (
     <>
-      <td>
+      <TableCell>
         <div className="fixture-squad-list__player-row-identity">
           {card}
           {player.isSubstitutedIn ? <span className="fixture-squad-list__substitution fixture-squad-list__substitution--in">IN</span> : null}
           {player.isSubstitutedOut ? <span className="fixture-squad-list__substitution fixture-squad-list__substitution--out">OUT</span> : null}
         </div>
-      </td>
-      <td>
+      </TableCell>
+      <TableCell>
         <span className="fixture-squad-list__metric" data-fixture-list-metric={metric}>
           <strong aria-label={pointsPlaceholder === null ? (showPoints ? `${pointsDisplay} fantasy points` : 'Fixture points unavailable') : fixturePointsPlaceholderLabel(pointsDisplay)}>{pointsDisplay}</strong>
         </span>
-      </td>
+      </TableCell>
     </>
   );
 
   if (!onPlayerClick) {
     return (
-      <tr className={rowClassName} data-player-id={player.id}>{rowContent}</tr>
+      <TableRow className={rowClassName} data-player-id={player.id}>{rowContent}</TableRow>
     );
   }
 
   return (
-    <tr
+    <TableRow
       aria-label={`${playerInteraction === 'select' ? 'Select' : 'View'} ${player.displayName} ${playerInteraction === 'points' ? 'points breakdown' : playerInteraction === 'profile' ? 'player profile' : ''}${substitutionStateLabel}`.trim()}
       aria-pressed={playerInteraction === 'select' ? selected : undefined}
       className={`${rowClassName} fixture-squad-list__player-row--button`}
@@ -337,7 +351,7 @@ function FixtureListPlayer({
       tabIndex={0}
     >
       {rowContent}
-    </tr>
+    </TableRow>
   );
 }
 
@@ -352,6 +366,14 @@ export function sortFixtureListPlayers(players: FixtureSquadPlayer[]): FixtureSq
       return leftRank === rightRank ? left.index - right.index : leftRank - rightRank;
     })
     .map(({ player }) => player);
+}
+
+function compareFixtureListPlayers(left: FixtureSquadPlayer, right: FixtureSquadPlayer, column: string | null, direction: 'asc' | 'desc'): number {
+  if (!column) return 0;
+  const comparison = column === 'player'
+    ? left.displayName.localeCompare(right.displayName, undefined, { sensitivity: 'base' })
+    : left.points - right.points;
+  return (comparison || left.displayName.localeCompare(right.displayName, undefined, { sensitivity: 'base' })) * (direction === 'asc' ? 1 : -1);
 }
 
 /**

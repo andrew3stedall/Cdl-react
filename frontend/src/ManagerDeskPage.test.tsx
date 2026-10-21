@@ -379,6 +379,53 @@ describe('ManagerDeskPage', () => {
     expect(scores?.[1].classList).toContain('manager-desk__form-score--w');
   });
 
+  test('shows the latest five completed gameweeks before the next fixture', async () => {
+    const homeTeam = { id: 'team-featured-home', name: 'Home Team', shortName: 'HOM' };
+    const awayTeam = { id: 'team-featured-away', name: 'Away Team', shortName: 'AWY' };
+    const previousFixtures = Array.from({ length: 7 }, (_, index) => ({
+      ...scoredFixture(index + 1, 20 + index, 10 + index, 'home_win'),
+      homeTeam,
+      awayTeam,
+    }));
+    const nextFixture: LeagueFixture = {
+      ...scoredFixture(8, 0, 0, 'pending'),
+      id: 'fixture-featured-next',
+      gameweek: { id: 'gw-8', name: 'Gameweek 8', number: 8 },
+      homeTeam,
+      awayTeam,
+      status: 'pending',
+      isCurrent: false,
+      isNext: true,
+      score: { homeScore: null, awayScore: null, bonusPoints: {}, chipsPlayed: {}, outcome: 'pending' },
+    };
+    const snapshot: ManagerDeskSnapshot = {
+      context: 'pre_deadline',
+      gameweek: nextFixture.gameweek,
+      selection: { ...selection, managerTeam: homeTeam, gameweek: nextFixture.gameweek },
+      squad: { summary: { ...squad, manager_team: homeTeam }, notifications: { notifications: [], proposed_trade_count: 0 } },
+      currentFixture: null,
+      nextFixture,
+      currentFixtures: [],
+      nextFixtures: [nextFixture],
+      recentFixtures: previousFixtures,
+      formFixtures: previousFixtures,
+      leagueTable: { source: 'test', rows: [] },
+      availablePlayers: [],
+      drawDeadlineAt: null,
+      interestCount: 0,
+    };
+    const { container } = renderPage(() => undefined, new MemorySquadClient(), () => undefined, new MemoryManagerDeskClient(snapshot));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    const labels = [...container.querySelectorAll<HTMLElement>(
+      '.manager-desk__fixture-matchup--featured .manager-desk__fixture-comparison-label',
+    )].map((label) => label.textContent).filter(Boolean);
+    expect(labels).toEqual(['GW3', 'GW4', 'GW5', 'GW6', 'GW7']);
+  });
+
   test('keeps account actions behind the compact header profile menu', async () => {
     const destinations: string[] = [];
     let signOutCount = 0;

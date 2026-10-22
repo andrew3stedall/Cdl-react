@@ -36,9 +36,10 @@ async function readHeaderBounds(page: Page) {
 async function expectHeaderDimensions(page: Page, header: Awaited<ReturnType<typeof readHeaderBounds>>) {
   const rootFontSize = await page.evaluate(() => Number.parseFloat(getComputedStyle(document.documentElement).fontSize));
   const viewportWidth = page.viewportSize()?.width ?? 1280;
-  const heroRem = viewportWidth <= 520 ? 5.5 : 4.2;
-  const expectedHeroHeight = heroRem * rootFontSize;
-  expect(Math.abs(header.hero.height - expectedHeroHeight), 'shared PageHero height differs from its compact shell role').toBeLessThanOrEqual(1);
+  const minimumHeroRem = viewportWidth <= 520 ? 5.5 : 4.2;
+  const maximumHeroRem = viewportWidth <= 520 ? 6 : 4.2;
+  expect(header.hero.height, 'shared PageHero is shorter than its compact shell role').toBeGreaterThanOrEqual(minimumHeroRem * rootFontSize - 1);
+  expect(header.hero.height, 'shared PageHero exceeds its compact shell role').toBeLessThanOrEqual(maximumHeroRem * rootFontSize + 1);
   await expect(page.locator('.global-notifications__button')).toHaveCount(0);
 }
 

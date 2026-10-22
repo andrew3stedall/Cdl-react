@@ -63,42 +63,30 @@
 
 
 @media (max-width: 520px) {
-  /* Reserve one shared two-row role so route-specific controls wrapping does
-     not move the title or notification control as users navigate. The 8.5rem
-     role scales with large text; controls can wrap within the reserved bottom row. */
+  /* Keep route controls alongside the page title to avoid losing vertical
+     space to a second header row. */
   .cdl-page-hero {
-    align-items: flex-start;
-    block-size: 8.5rem;
-    min-height: 8.5rem;
+    align-items: center;
+    block-size: 3.8rem;
+    min-height: 3.8rem;
     position: relative;
   }
 
   .cdl-page-hero__brand-lockup {
-    max-width: calc(100% - 2.5rem);
+    max-width: calc(100% - 5.5rem);
   }
 
   .cdl-page-hero__actions {
-    align-items: flex-end;
+    align-items: center;
     display: flex;
-    flex-direction: column;
-    inset: 0;
-    justify-content: space-between;
     margin: 0;
-    max-width: none;
-    pointer-events: none;
-    position: absolute;
+    max-width: 5rem;
   }
 
   .cdl-page-hero__controls {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     justify-content: flex-end;
     max-width: 100%;
-    pointer-events: auto;
-  }
-
-  .cdl-page-hero__actions > .global-notifications {
-    order: -1;
-    pointer-events: auto;
   }
 
   .cdl-page-hero__view-toggle {
@@ -107,39 +95,25 @@
 }
 
 @media (max-width: 360px) {
-  /* Tighten brand/control widths on the narrowest phones while retaining
-     the shared 8.5rem two-row role from the 520px rule. */
+  /* Tighten brand/control widths on the narrowest phones. */
   .cdl-page-hero {
-    block-size: 8.5rem;
+    block-size: 3.8rem;
     gap: 0.25rem;
-    min-height: 8.5rem;
+    min-height: 3.8rem;
     position: relative;
   }
 
   .cdl-page-hero__brand-lockup {
     gap: 0.5rem;
-    max-width: calc(100% - 3rem);
+    max-width: calc(100% - 5rem);
   }
 
   .cdl-page-hero__actions {
-    align-items: flex-end;
-    display: flex;
-    flex-direction: column;
-    inset: 0;
-    justify-content: space-between;
-    margin: 0;
-    max-width: none;
-    pointer-events: none;
-    position: absolute;
+    max-width: 4.5rem;
   }
 
   .cdl-page-hero__controls {
-    pointer-events: auto;
-  }
-
-  .cdl-page-hero__actions > .global-notifications {
-    order: -1;
-    pointer-events: auto;
+    max-width: 100%;
   }
 
   .cdl-page-hero__brand-mark {
@@ -147,7 +121,6 @@
     width: 2rem;
   }
 
-  .cdl-page-hero__actions,
   .cdl-page-hero__controls {
     gap: 0.125rem;
   }

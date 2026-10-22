@@ -63,57 +63,51 @@
 
 
 @media (max-width: 520px) {
-  /* Keep route controls alongside the page title to avoid losing vertical
-     space to a second header row. */
+  /* Keep page controls beside the title while allowing the header to grow
+     only when large text needs an extra row. */
   .cdl-page-hero {
     align-items: center;
-    block-size: 4.2rem;
+    block-size: auto;
     min-height: 4.2rem;
-    position: relative;
   }
 
   .cdl-page-hero__brand-lockup {
+    flex: 0 1 auto;
     max-width: calc(100% - 5.5rem);
+    min-width: 0;
   }
 
   .cdl-page-hero__actions {
     align-items: center;
     display: flex;
+    flex: 0 1 auto;
     margin: 0;
     max-width: 5rem;
+    min-width: 0;
   }
 
   .cdl-page-hero__controls {
-    flex-wrap: nowrap;
+    flex: 0 1 auto;
+    flex-wrap: wrap;
     justify-content: flex-end;
     max-width: 100%;
+    min-width: 0;
   }
 
   .cdl-page-hero__view-toggle {
     max-width: 100%;
+    min-width: 0;
   }
 }
 
 @media (max-width: 360px) {
-  /* Tighten brand/control widths on the narrowest phones. */
-  .cdl-page-hero {
-    block-size: 4.2rem;
-    gap: 0.25rem;
-    min-height: 4.2rem;
-    position: relative;
-  }
-
   .cdl-page-hero__brand-lockup {
     gap: 0.5rem;
     max-width: calc(100% - 5rem);
   }
 
   .cdl-page-hero__actions {
-    max-width: 4.5rem;
-  }
-
-  .cdl-page-hero__controls {
-    max-width: 100%;
+    max-width: 5rem;
   }
 
   .cdl-page-hero__brand-mark {

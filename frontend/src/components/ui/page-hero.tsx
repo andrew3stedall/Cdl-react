@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import { Shield } from 'lucide-react';
 
-import { GlobalNotifications } from './global-notifications';
 
 export interface PageHeroViewOption {
   ariaLabel?: string;
@@ -20,7 +19,7 @@ interface PageHeroProps {
   titleId: string;
 }
 
-export function PageHero({ actions, actionsLabel, context, onNavigate, title, titleId }: PageHeroProps) {
+export function PageHero({ actions, actionsLabel, context, title, titleId }: PageHeroProps) {
   return (
     <header className="cdl-page-hero" data-page-hero="shared">
       <div className="cdl-page-hero__brand-lockup">
@@ -33,7 +32,6 @@ export function PageHero({ actions, actionsLabel, context, onNavigate, title, ti
       </div>
       <div aria-label={actionsLabel} className="cdl-page-hero__actions">
         {actions}
-        {onNavigate ? <GlobalNotifications onNavigate={onNavigate} /> : null}
       </div>
     </header>
   );

@@ -98,37 +98,3 @@
     min-width: 0;
   }
 }
-
-
-@media (max-width: 360px) {
-  .cdl-page-hero__brand-lockup {
-    gap: 0.5rem;
-    max-width: calc(100% - 9.5rem);
-  }
-
-  .cdl-page-hero__actions {
-    max-width: 9.5rem;
-  }
-
-  .cdl-page-hero__brand-mark {
-    height: 2.35rem;
-    width: 2rem;
-  }
-
-  .cdl-page-hero h1 {
-    font-size: 1.35rem;
-  }
-
-  .cdl-page-hero__controls {
-    gap: 0.125rem;
-  }
-
-  .cdl-page-hero__brand-name {
-    display: none;
-  }
-
-  .cdl-page-hero__view-toggle button {
-    min-width: 1.8rem;
-    width: 1.8rem;
-  }
-}

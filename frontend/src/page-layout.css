@@ -67,7 +67,7 @@
      This gives all routes the same header height and leaves room for large text. */
   .cdl-page-hero {
     align-items: stretch;
-    block-size: 5.5rem;
+    block-size: auto;
     flex-direction: column;
     gap: 0.35rem;
     justify-content: center;

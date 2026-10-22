@@ -29,24 +29,18 @@ function activeHero(page: Page) {
   return page.locator('[data-page-hero="shared"]:visible');
 }
 
-function activeBell(page: Page) {
-  return page.locator('.global-notifications__button:visible');
-}
-
 async function readHeaderBounds(page: Page) {
-  return { hero: await bounds(activeHero(page)), bell: await bounds(activeBell(page)) };
+  return { hero: await bounds(activeHero(page)) };
 }
 
-async function expectHeaderDimensions(page: Page, header: Awaited<ReturnType<typeof readHeaderBounds>>, viewport: { width: number; height: number }) {
+async function expectHeaderDimensions(page: Page, header: Awaited<ReturnType<typeof readHeaderBounds>>) {
   const rootFontSize = await page.evaluate(() => Number.parseFloat(getComputedStyle(document.documentElement).fontSize));
-  const heroRem = viewport.width <= 520 ? 8.5 : viewport.width <= 900 ? 3.8 : 4.2;
-  const expectedHeroHeight = heroRem * rootFontSize;
-  const expectedBellSize = 2.5 * rootFontSize;
-  expect(Math.abs(header.hero.height - expectedHeroHeight), 'shared PageHero height differs from its shell role').toBeLessThanOrEqual(1);
-  expect(Math.abs(header.bell.width - expectedBellSize), 'notification control width differs from its 2.5rem target').toBeLessThanOrEqual(1);
-  expect(Math.abs(header.bell.height - expectedBellSize), 'notification control height differs from its 2.5rem target').toBeLessThanOrEqual(1);
-  const bellInlineEndDelta = header.bell.x + header.bell.width - (header.hero.x + header.hero.width);
-  expect(Math.abs(bellInlineEndDelta), `notification control end differs from the PageHero end by ${bellInlineEndDelta}px (bell ${JSON.stringify(header.bell)}, hero ${JSON.stringify(header.hero)})`).toBeLessThanOrEqual(1);
+  const viewportWidth = page.viewportSize()?.width ?? 1280;
+  const minimumHeroRem = viewportWidth <= 520 ? 5.5 : 4.2;
+  const maximumHeroRem = viewportWidth <= 520 ? 5.7 : 4.5;
+  expect(header.hero.height, 'shared PageHero is shorter than its compact shell role').toBeGreaterThanOrEqual(minimumHeroRem * rootFontSize - 1);
+  expect(header.hero.height, 'shared PageHero exceeds its compact shell role').toBeLessThanOrEqual(maximumHeroRem * rootFontSize + 1);
+  await expect(page.locator('.global-notifications__button')).toHaveCount(0);
 }
 
 async function primaryLink(page: Page, label: string) {
@@ -104,7 +98,7 @@ async function expectModalKeyboardLifecycle(page: Page, dialog: Locator, opener:
   await expect(opener, `${label} returns focus to its opener after Escape`).toBeFocused();
 }
 
-test('the four primary route headers and notification control stay fixed through real loading, route changes, and browser back', async ({ page }, testInfo) => {
+test('the four primary route headers stay fixed through real loading, route changes, and browser back', async ({ page }, testInfo) => {
   const viewports = testInfo.project.name === 'chromium-desktop'
     ? [{ width: 1280, height: 800 }]
     : [
@@ -171,28 +165,25 @@ test('the four primary route headers and notification control stay fixed through
       }
 
       const routeHeader = await readHeaderBounds(routePage);
-      await expectHeaderDimensions(routePage, routeHeader, viewport);
+      await expectHeaderDimensions(routePage, routeHeader);
       const pending = pendingByTitle.get(label);
       expect(pending).toBeDefined();
       expectBoundsStable(pending!.hero, routeHeader.hero, `${label} PageHero loading→loaded`);
-      expectBoundsStable(pending!.bell, routeHeader.bell, `${label} notification loading→loaded`);
       if (!firstLoadedHeader) {
         firstLoadedHeader = routeHeader;
         firstLoadedTitle = title;
       } else {
         expectBoundsStable(firstLoadedHeader.hero, routeHeader.hero, `${firstLoadedTitle}→${title} PageHero`);
-        expectBoundsStable(firstLoadedHeader.bell, routeHeader.bell, `${firstLoadedTitle}→${title} notification`);
       }
     }
 
     await routePage.goBack();
     await expect(routePage.locator('[data-page-hero="shared"]:visible h1')).toHaveText('Market');
     const afterBack = await readHeaderBounds(routePage);
-    await expectHeaderDimensions(routePage, afterBack, viewport);
+    await expectHeaderDimensions(routePage, afterBack);
     const marketPending = pendingByTitle.get('Market');
     expect(marketPending).toBeDefined();
     expectBoundsStable(marketPending!.hero, afterBack.hero, 'Market PageHero loading→browser back');
-    expectBoundsStable(marketPending!.bell, afterBack.bell, 'Market notification loading→browser back');
 
     if (routePage !== page) await routePage.close();
   }
@@ -209,7 +200,6 @@ test('custom theme chooser remains in the viewport in portrait and landscape and
   await page.getByRole('button', { name: 'Profile', exact: true }).click();
   await expect(page.locator('[data-page-hero="shared"]:visible h1')).toHaveText('Profile');
   expectBoundsStable(profileHeader.hero, await bounds(activeHero(page)), 'Profile→Theme colours→Profile PageHero');
-  expectBoundsStable(profileHeader.bell, await bounds(activeBell(page)), 'Profile→Theme colours→Profile notification');
   await page.getByRole('button', { name: 'Open theme colour settings' }).click();
   await expect(page.locator('main[aria-labelledby="account-settings-title"] h1')).toHaveText('Theme colours');
 
@@ -291,12 +281,7 @@ test('primary headers and essential player values remain legible at 200% text sc
       await expect(page.locator('[data-page-hero="shared"]:visible h1')).toHaveText(title);
     }
 
-    const header = await readHeaderBounds(page);
-    const expectedBellSize = 2.5 * scaledRootFontSize;
-    expect(Math.abs(header.bell.width - expectedBellSize), `${title} notification width at 200% text scale`).toBeLessThanOrEqual(1);
-    expect(Math.abs(header.bell.height - expectedBellSize), `${title} notification height at 200% text scale`).toBeLessThanOrEqual(1);
-    const bellInlineEndDelta = header.bell.x + header.bell.width - (header.hero.x + header.hero.width);
-    expect(Math.abs(bellInlineEndDelta), `${title} notification aligns to PageHero at 200% text scale`).toBeLessThanOrEqual(1);
+
     const hero = activeHero(page);
     const heroBox = await bounds(hero);
     const brand = hero.locator('.cdl-page-hero__brand-lockup');
@@ -404,7 +389,7 @@ test('Market and League drawers cover mobile navigation, keep actions visible, a
   }
 });
 
-test('commissioner PageHero and bell retain measured bounds in light and dark appearance states across mobile viewports', async ({ page }, testInfo) => {
+test('commissioner PageHero retains compact bounds and hides notifications in light and dark states', async ({ page }, testInfo) => {
   const { setThemePreset, setManagerId } = await installLayoutFixtures(page, { apiDelayMs: 0, roles: ['commissioner'] });
   const viewports = testInfo.project.name === 'chromium-desktop'
     ? [{ width: 1280, height: 800 }]
@@ -441,7 +426,7 @@ test('commissioner PageHero and bell retain measured bounds in light and dark ap
       await expect(page.locator('.league-fixtures-view')).toBeVisible();
 
       const fixtureHeader = await readHeaderBounds(page);
-      await expectHeaderDimensions(page, fixtureHeader, viewport);
+      await expectHeaderDimensions(page, fixtureHeader);
       themeSurfaces.push(await page.locator('.app-shell').evaluate((shell) => getComputedStyle(shell).backgroundColor));
 
       await page.getByRole('button', { name: 'View commissioner management' }).click();
@@ -452,9 +437,8 @@ test('commissioner PageHero and bell retain measured bounds in light and dark ap
         commissionerRegion.getByLabel('League teams').getByText('Open Team', { exact: true }),
       ).toBeVisible();
       const managementHeader = await readHeaderBounds(page);
-      await expectHeaderDimensions(page, managementHeader, viewport);
+      await expectHeaderDimensions(page, managementHeader);
       expectBoundsStable(fixtureHeader.hero, managementHeader.hero, `${presetName} commissioner PageHero`);
-      expectBoundsStable(fixtureHeader.bell, managementHeader.bell, `${presetName} commissioner notification`);
 
       const inviteButton = commissionerRegion.getByRole('button', { name: 'Invite', exact: true });
       await inviteButton.click();

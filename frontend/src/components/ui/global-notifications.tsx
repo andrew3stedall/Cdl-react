@@ -146,7 +146,6 @@ export function GlobalNotifications({ onNavigate }: { onNavigate: (href: string)
 export function GlobalPageHeader({
   children,
   className,
-  onNavigate,
 }: {
   children: ReactNode;
   className?: string;
@@ -155,7 +154,6 @@ export function GlobalPageHeader({
   return (
     <header className={`global-page-header${className ? ` ${className}` : ''}`}>
       <div className="global-page-header__copy">{children}</div>
-      {onNavigate ? <GlobalNotifications onNavigate={onNavigate} /> : null}
     </header>
   );
 }

@@ -17,7 +17,6 @@ import {
   type PlayerChartDetailSection,
   type PlayerChartDetailSummaryItem,
 } from './components/player/PlayerChartDetailDialog';
-import { GlobalNotifications } from './components/ui/global-notifications';
 import { earnedDefensiveContributionPoints, PlayerStatIcons, type PlayerStatSummary } from './components/player/PlayerStatIcons';
 import {
   chartFixtureSlots,
@@ -424,7 +423,6 @@ export function PlayerProfilePage({
           size="md"
         />
         <div className="player-profile__header-actions">
-          {presentation !== 'drawer' && onNavigate ? <GlobalNotifications onNavigate={onNavigate} /> : null}
           {showActions ? (
             <div className="player-profile__overflow-wrap">
               <button

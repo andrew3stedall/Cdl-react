@@ -55,105 +55,64 @@
   }
 
   .cdl-page-hero {
-    block-size: 3.8rem;
-    min-height: 3.8rem;
+    block-size: 4.2rem;
+    min-height: 4.2rem;
     padding: 0;
   }
 }
 
 
 @media (max-width: 520px) {
-  /* Reserve one shared two-row role so route-specific controls wrapping does
-     not move the title or notification control as users navigate. The 8.5rem
-     role scales with large text; controls can wrap within the reserved bottom row. */
+  /* Keep title and controls in two compact, stable rows on phones. The header
+     can grow when text is enlarged, while loading and loaded routes share a
+     consistent baseline height. */
   .cdl-page-hero {
-    align-items: flex-start;
-    block-size: 8.5rem;
-    min-height: 8.5rem;
-    position: relative;
+    align-items: stretch;
+    block-size: 5.5rem;
+    flex-direction: column;
+    gap: 0.35rem;
+    justify-content: flex-start;
+    min-height: 5.5rem;
   }
 
   .cdl-page-hero__brand-lockup {
-    max-width: calc(100% - 2.5rem);
+    flex: 0 1 auto;
+    min-width: 0;
   }
 
   .cdl-page-hero__actions {
-    align-items: flex-end;
-    display: flex;
-    flex-direction: column;
-    inset: 0;
-    justify-content: space-between;
+    flex: 0 1 auto;
+    justify-content: flex-end;
     margin: 0;
-    max-width: none;
-    pointer-events: none;
-    position: absolute;
+    max-width: 100%;
+    min-width: 0;
   }
 
   .cdl-page-hero__controls {
-    flex-wrap: wrap;
+    flex: 0 1 auto;
+    flex-wrap: nowrap;
+    gap: 0.125rem;
     justify-content: flex-end;
     max-width: 100%;
-    pointer-events: auto;
+    min-width: 0;
   }
 
-  .cdl-page-hero__actions > .global-notifications {
-    order: -1;
-    pointer-events: auto;
+  .cdl-page-hero__controls > button[aria-label] {
+    font-size: 0;
+    min-width: 2.2rem;
+    padding: 0;
+    width: 2.2rem;
   }
 
   .cdl-page-hero__view-toggle {
+    grid-auto-columns: minmax(1.8rem, 1fr);
     max-width: 100%;
-  }
-}
-
-@media (max-width: 360px) {
-  /* Tighten brand/control widths on the narrowest phones while retaining
-     the shared 8.5rem two-row role from the 520px rule. */
-  .cdl-page-hero {
-    block-size: 8.5rem;
-    gap: 0.25rem;
-    min-height: 8.5rem;
-    position: relative;
-  }
-
-  .cdl-page-hero__brand-lockup {
-    gap: 0.5rem;
-    max-width: calc(100% - 3rem);
-  }
-
-  .cdl-page-hero__actions {
-    align-items: flex-end;
-    display: flex;
-    flex-direction: column;
-    inset: 0;
-    justify-content: space-between;
-    margin: 0;
-    max-width: none;
-    pointer-events: none;
-    position: absolute;
-  }
-
-  .cdl-page-hero__controls {
-    pointer-events: auto;
-  }
-
-  .cdl-page-hero__actions > .global-notifications {
-    order: -1;
-    pointer-events: auto;
-  }
-
-  .cdl-page-hero__brand-mark {
-    height: 2.35rem;
-    width: 2rem;
-  }
-
-  .cdl-page-hero__actions,
-  .cdl-page-hero__controls {
-    gap: 0.125rem;
+    min-width: 0;
   }
 
   .cdl-page-hero__view-toggle button {
     min-width: 1.8rem;
+    padding: 0;
     width: 1.8rem;
   }
 }

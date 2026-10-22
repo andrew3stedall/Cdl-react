@@ -195,7 +195,7 @@ async function waitForRouteReady(assertReady: () => void): Promise<void> {
 }
 
 describe('AppShell integration', () => {
-  test('keeps one notification centre consistent across routes', async () => {
+  test('hides notification controls from shared page headers', async () => {
     const notifications = [{
       id: 'notice-1',
       title: 'Fixture update',
@@ -212,66 +212,18 @@ describe('AppShell integration', () => {
       await Promise.resolve();
       await Promise.resolve();
     });
-    await waitForRouteReady(() => {
-      expect(container.querySelector('#rules-title')).not.toBeNull();
-      expect(container.querySelector('.global-notifications__count')?.textContent).toBe('1');
-    });
+    await waitForRouteReady(() => expect(container.querySelector('#rules-title')).not.toBeNull());
 
-    expect(squadClient.getNotifications).toHaveBeenCalledTimes(1);
-    expect(container.querySelector('.global-notifications__count')?.textContent).toBe('1');
-    expect(container.querySelector('.cdl-page-hero .global-notifications__button')).not.toBeNull();
-    expect(container.querySelector('nav[aria-label="Global mobile navigation"] .global-notifications')).toBeNull();
+    expect(container.querySelector('.global-notifications')).toBeNull();
     expect(container.querySelectorAll('nav[aria-label="Global mobile navigation"] a')).toHaveLength(4);
 
-    await act(async () => {
-      container.querySelector<HTMLButtonElement>('.global-notifications__button')?.click();
-    });
-
-    expect(container.querySelector('.global-notifications__popover')?.textContent).toContain('Fixture update');
     const leagueLink = container.querySelector<HTMLAnchorElement>('nav[aria-label="Global mobile navigation"] a[href="/league"]');
     await act(async () => {
       leagueLink?.click();
       await Promise.resolve();
     });
-    expect(container.querySelector('.cdl-page-hero .global-notifications__button')).not.toBeNull();
-    expect(container.querySelector('.global-notifications__popover')?.textContent).toContain('Fixture update');
+    expect(container.querySelector('.global-notifications')).toBeNull();
 
-    root.unmount();
-  });
-
-  test('keeps alerts honest and retains saved alerts when a refresh fails', async () => {
-    const notifications = [{
-      id: 'notice-1',
-      title: 'Fixture update',
-      message: 'Gameweek 12 is underway.',
-      action_href: '/league',
-      kind: 'fixture',
-    }];
-    const getNotifications = vi.fn()
-      .mockResolvedValueOnce({ notifications, proposed_trade_count: 0 })
-      .mockRejectedValueOnce(new Error('network'));
-    const squadClient = { getNotifications } as unknown as SquadClient;
-    const { container, root } = renderApp({ initialPath: '/rules', squadClient });
-
-    await act(async () => {
-      await Promise.resolve();
-      await Promise.resolve();
-    });
-    await act(async () => {
-      container.querySelector<HTMLButtonElement>('.global-notifications__button')?.click();
-    });
-    expect(container.querySelector('.global-notifications__button')?.getAttribute('aria-label')).toContain('1 alerts');
-    expect(container.querySelector('.global-notifications__popover')?.textContent).toContain('1 alerts');
-
-    document.dispatchEvent(new CustomEvent('cdl:data-invalidated', { detail: { scopes: ['alerts'] } }));
-    await act(async () => {
-      await Promise.resolve();
-      await Promise.resolve();
-    });
-
-    expect(container.querySelector('.global-notifications__count')?.textContent).toBe('1');
-    expect(container.querySelector('.global-notifications__popover')?.textContent).toContain('Showing saved alerts');
-    expect(container.querySelector('.global-notifications__popover')?.textContent).toContain('Refresh failed');
     root.unmount();
   });
 

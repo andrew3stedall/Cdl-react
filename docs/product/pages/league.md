@@ -22,8 +22,9 @@ League events can create urgency on Home when they require a manager decision or
 ## Navigation
 
 League is a single contextual page. Its page header contains the Castle Draft
-League logo, a Fixtures/Table toggle, and notifications. Competition views do
-not add a second navigation strip above the page.
+League logo and a Fixtures/Table toggle. The notification control is currently
+hidden across page headers. Competition views do not add a second navigation
+strip above the page.
 
 ## Current interaction model
 

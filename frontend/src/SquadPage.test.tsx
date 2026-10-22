@@ -487,15 +487,16 @@ describe('SquadPage', () => {
   test('opens as a season squad workspace and remembers pitch/list choice', async () => {
     const { container } = await renderPage();
 
-    expect(container.textContent).toContain('Exeter Gently');
     expect(container.querySelectorAll('.squad-page__availability-flag')).toHaveLength(0);
     expect(container.textContent).toContain('Next deadline');
     expect(container.querySelector('[aria-label="Matchweek controls"]')).not.toBeNull();
-    expect(Array.from(container.querySelector('.squad-page__matchweek-controls')?.children ?? [])
-      .filter((child) => !child.classList.contains('sr-only'))).toHaveLength(3);
-    expect(container.querySelector('.squad-page__matchweek-controls [role="status"]')?.classList.contains('sr-only')).toBe(false);
+    expect(container.querySelector('[aria-label="Next gameweek deadline"]')).not.toBeNull();
     expect(container.querySelector('.squad-page__deadline')).not.toBeNull();
     expect(container.querySelector('.squad-page__chips')).not.toBeNull();
+    expect(container.querySelector('[aria-label="Next gameweek deadline"]')?.compareDocumentPosition(
+      container.querySelector('[aria-label="Chip controls"]') as Node,
+    )).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    expect(container.textContent).not.toContain('ready for review');
     expect(Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Save lineup'))).toBeUndefined();
     expect(container.querySelector('.squad-page__matchweek-status')).toBeNull();
     expect(container.textContent).not.toContain('Total Points');
@@ -511,15 +512,7 @@ describe('SquadPage', () => {
       'Bench Boost, available',
       'Best XI, available',
     ]);
-    expect(Array.from(container.querySelectorAll('.squad-page__chip-label')).map((label) => label.textContent)).toEqual([
-      'Triple Captain',
-      'Dual Captain',
-      'Auto Captain',
-      'Bench Boost',
-      'Best XI',
-    ]);
-    expect(container.querySelector('.squad-page__chip-toggle[data-chip-id="triple-captain"] .squad-page__chip-label')).not.toBeNull();
-    expect(container.querySelector('.squad-page__chip-toggle[data-chip-id="dual-captain"] .squad-page__chip-label')).not.toBeNull();
+    expect(container.querySelectorAll('.squad-page__chip-label')).toHaveLength(0);
     expect(container.querySelector('svg.chip-icon--triple-captain')).not.toBeNull();
     expect(container.querySelector('svg.chip-icon--dual-captain')).not.toBeNull();
     const pitchRows = Array.from(container.querySelectorAll('.squad-page__pitch-row'));
@@ -547,6 +540,11 @@ describe('SquadPage', () => {
     });
 
     expect(container.querySelector('[aria-label="Starting XI players table"]')).not.toBeNull();
+    expect(container.querySelector('.squad-page__list-controls')).toBeNull();
+    expect(container.querySelector('.squad-page__position-tabs')).toBeNull();
+    expect(container.querySelector('input[aria-label="Search squad players"]')).toBeNull();
+    expect(container.querySelector('button[aria-label="Advanced squad filters"]')).toBeNull();
+    expect(container.querySelector('.squad-page__list-table thead button')).toBeNull();
     expect(window.localStorage.getItem('cdl:squad-view')).toBe('list');
     const startingTable = container.querySelector('[aria-label="Starting XI players table"]');
     expect(startingTable?.querySelector('.player-card__form-dots')).not.toBeNull();
@@ -561,14 +559,7 @@ describe('SquadPage', () => {
     expect(container.querySelector('[aria-label="Bench players table"] tbody tr.is-position-start')).toBeNull();
     expect(container.querySelector('[aria-label="Reserves players table"] tbody tr.is-position-start')).toBeNull();
 
-    await act(async () => {
-      buttonByText(container, 'FWD').click();
-      await Promise.resolve();
-    });
-
-    const table = container.querySelector('[aria-label="Starting XI players table"]');
-    expect(table?.textContent).toContain('Haaland');
-    expect(table?.textContent).not.toContain('Pickford');
+    expect(container.querySelector('.squad-page__list')?.textContent).toContain('Pickford');
   });
 
   test('reverses the pitch rows when the manager attacks downwards', async () => {

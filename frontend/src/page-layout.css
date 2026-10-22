@@ -63,19 +63,18 @@
 
 
 @media (max-width: 520px) {
-  /* Keep the title and controls in two compact, predictable rows on phones.
-     This gives all routes the same header height and leaves room for large text. */
+  /* Keep the brand and page controls in one compact row whenever they fit.
+     Flex wrapping leaves room for enlarged text without clipping. */
   .cdl-page-hero {
-    align-items: stretch;
+    align-items: center;
     block-size: auto;
-    flex-direction: column;
-    gap: 0.35rem;
-    justify-content: center;
-    min-height: 5.5rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    min-height: 4.2rem;
   }
 
   .cdl-page-hero__brand-lockup {
-    flex: 0 1 auto;
+    flex: 1 1 8rem;
     min-width: 0;
   }
 
@@ -83,13 +82,13 @@
     flex: 0 1 auto;
     justify-content: flex-end;
     margin: 0;
+    max-width: 100%;
     min-width: 0;
   }
 
   .cdl-page-hero__controls {
-    flex: 0 1 auto;
     flex-wrap: nowrap;
-    justify-content: flex-end;
+    gap: 0.125rem;
     max-width: 100%;
     min-width: 0;
   }
@@ -104,5 +103,27 @@
     min-width: 1.8rem;
     padding: 0;
     width: 1.8rem;
+  }
+}
+
+@media (max-width: 360px) {
+  /* Reserve the same compact two-row header for the narrowest phones. */
+  .cdl-page-hero {
+    align-items: stretch;
+    block-size: 5.5rem;
+    flex-direction: column;
+    flex-wrap: nowrap;
+    gap: 0.35rem;
+    justify-content: center;
+    min-height: 5.5rem;
+  }
+
+  .cdl-page-hero__brand-lockup {
+    flex: 0 1 auto;
+  }
+
+  .cdl-page-hero__actions {
+    flex: 0 1 auto;
+    justify-content: flex-end;
   }
 }

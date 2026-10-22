@@ -73,7 +73,7 @@
 
   .cdl-page-hero__brand-lockup {
     flex: 0 1 auto;
-    max-width: calc(100% - 5.5rem);
+    max-width: calc(100% - 9.5rem);
     min-width: 0;
   }
 
@@ -82,7 +82,7 @@
     display: flex;
     flex: 0 1 auto;
     margin: 0;
-    max-width: 5rem;
+    max-width: 9.5rem;
     min-width: 0;
   }
 
@@ -103,16 +103,20 @@
 @media (max-width: 360px) {
   .cdl-page-hero__brand-lockup {
     gap: 0.5rem;
-    max-width: calc(100% - 5rem);
+    max-width: calc(100% - 9.5rem);
   }
 
   .cdl-page-hero__actions {
-    max-width: 5rem;
+    max-width: 9.5rem;
   }
 
   .cdl-page-hero__brand-mark {
     height: 2.35rem;
     width: 2rem;
+  }
+
+  .cdl-page-hero h1 {
+    font-size: 1.35rem;
   }
 
   .cdl-page-hero__controls {

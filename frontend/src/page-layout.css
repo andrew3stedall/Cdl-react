@@ -68,10 +68,10 @@
      consistent baseline height. */
   .cdl-page-hero {
     align-items: stretch;
-    block-size: auto;
+    block-size: 5.5rem;
     flex-direction: column;
     gap: 0.35rem;
-    justify-content: center;
+    justify-content: flex-start;
     min-height: 5.5rem;
   }
 

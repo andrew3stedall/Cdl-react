@@ -33,7 +33,7 @@ async function readHeaderBounds(page: Page) {
   return { hero: await bounds(activeHero(page)) };
 }
 
-async function expectHeaderDimensions(page: Page, header: Awaited<ReturnType<typeof readHeaderBounds>>, viewport: { width: number; height: number }) {
+async function expectHeaderDimensions(page: Page, header: Awaited<ReturnType<typeof readHeaderBounds>>) {
   const rootFontSize = await page.evaluate(() => Number.parseFloat(getComputedStyle(document.documentElement).fontSize));
   const heroRem = 4.2;
   const expectedHeroHeight = heroRem * rootFontSize;
@@ -163,7 +163,7 @@ test('the four primary route headers stay fixed through real loading, route chan
       }
 
       const routeHeader = await readHeaderBounds(routePage);
-      await expectHeaderDimensions(routePage, routeHeader, viewport);
+      await expectHeaderDimensions(routePage, routeHeader);
       const pending = pendingByTitle.get(label);
       expect(pending).toBeDefined();
       expectBoundsStable(pending!.hero, routeHeader.hero, `${label} PageHero loading→loaded`);
@@ -178,7 +178,7 @@ test('the four primary route headers stay fixed through real loading, route chan
     await routePage.goBack();
     await expect(routePage.locator('[data-page-hero="shared"]:visible h1')).toHaveText('Market');
     const afterBack = await readHeaderBounds(routePage);
-    await expectHeaderDimensions(routePage, afterBack, viewport);
+    await expectHeaderDimensions(routePage, afterBack);
     const marketPending = pendingByTitle.get('Market');
     expect(marketPending).toBeDefined();
     expectBoundsStable(marketPending!.hero, afterBack.hero, 'Market PageHero loading→browser back');
@@ -424,7 +424,7 @@ test('commissioner PageHero retains compact bounds and hides notifications in li
       await expect(page.locator('.league-fixtures-view')).toBeVisible();
 
       const fixtureHeader = await readHeaderBounds(page);
-      await expectHeaderDimensions(page, fixtureHeader, viewport);
+      await expectHeaderDimensions(page, fixtureHeader);
       themeSurfaces.push(await page.locator('.app-shell').evaluate((shell) => getComputedStyle(shell).backgroundColor));
 
       await page.getByRole('button', { name: 'View commissioner management' }).click();
@@ -435,7 +435,7 @@ test('commissioner PageHero retains compact bounds and hides notifications in li
         commissionerRegion.getByLabel('League teams').getByText('Open Team', { exact: true }),
       ).toBeVisible();
       const managementHeader = await readHeaderBounds(page);
-      await expectHeaderDimensions(page, managementHeader, viewport);
+      await expectHeaderDimensions(page, managementHeader);
       expectBoundsStable(fixtureHeader.hero, managementHeader.hero, `${presetName} commissioner PageHero`);
 
       const inviteButton = commissionerRegion.getByRole('button', { name: 'Invite', exact: true });

@@ -88,13 +88,21 @@
 
   .cdl-page-hero__controls {
     flex: 0 1 auto;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     justify-content: flex-end;
+    max-width: 100%;
     min-width: 0;
   }
 
   .cdl-page-hero__view-toggle {
+    grid-auto-columns: minmax(1.8rem, 1fr);
     max-width: 100%;
     min-width: 0;
+  }
+
+  .cdl-page-hero__view-toggle button {
+    min-width: 1.8rem;
+    padding: 0;
+    width: 1.8rem;
   }
 }

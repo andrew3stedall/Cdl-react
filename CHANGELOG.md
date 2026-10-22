@@ -1,6 +1,6 @@
 ## Unreleased
 
-- Hid the notification control in page headers and reduced the mobile header from a two-row layout to a compact single row, keeping page controls beside the title.
+- Hid the notification control in page headers and reduced the mobile header from 8.5rem to a compact 5.5rem minimum, placing page controls directly beneath the title.
 
 - Show the latest five completed gameweeks in the Manager's Desk fixture comparison, including the most recently completed week before an upcoming fixture.
 

@@ -1,6 +1,5 @@
 import { type MouseEvent, type ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ArrowDownUp,
   ArrowRightLeft,
   CalendarClock,
   ChevronDown,
@@ -9,14 +8,12 @@ import {
   CircleX,
   CircleMinus,
   CirclePlus,
-  Filter,
   List,
   LockKeyhole,
   Repeat2,
   Save,
   Search,
   Shield,
-  SlidersHorizontal,
   Trophy,
   WandSparkles,
   X,
@@ -24,12 +21,11 @@ import {
 
 import { Button } from './components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './components/ui/table';
-import { SortableTableHead } from './components/ui/sortable-table';
 import { ChipIcon } from './components/chips/ChipIcon';
 import { PageHero, PageHeroControls, PageHeroViewToggle } from './components/ui/page-hero';
 import { FormDots, PlayerCard, type PlayerCardPlayer, formBand } from './components/player/PlayerCard';
 import type { AttackDirection, ThemePreset } from './contracts';
-import { availabilityChance, getAvailabilityIssue, hasAvailabilityIssue } from './player-availability';
+import { availabilityChance, getAvailabilityIssue } from './player-availability';
 import {
   HttpSquadClient,
   SquadApiError,
@@ -63,10 +59,8 @@ interface SquadPageProps {
 }
 
 type SquadView = 'pitch' | 'list';
-type PositionFilter = 'all' | 'GKP' | 'DEF' | 'MID' | 'FWD';
 type DrawerMode = 'compare' | 'trade' | 'profile' | 'substitution' | null;
 type PlayerStatus = 'owned' | 'available' | 'interested' | 'trade_target';
-type SortKey = 'points' | 'form' | 'xg' | 'xa';
 type BenchSlotOrder = 0 | 1 | 2 | 3 | 4;
 
 export interface SubstitutionOption {
@@ -150,13 +144,6 @@ interface PlayerApiResponse {
 }
 
 const pitchPositionOrder = ['FWD', 'MID', 'DEF', 'GKP'];
-const positionOptions: Array<{ shortLabel: string; value: PositionFilter }> = [
-  { shortLabel: 'All', value: 'all' },
-  { shortLabel: 'GKP', value: 'GKP' },
-  { shortLabel: 'DEF', value: 'DEF' },
-  { shortLabel: 'MID', value: 'MID' },
-  { shortLabel: 'FWD', value: 'FWD' },
-];
 const defaultTeamSelectionClient = new HttpTeamSelectionClient();
 const defaultSquadClient = new HttpSquadClient();
 const STARTER_LIMITS: Record<string, readonly [number, number]> = {
@@ -317,10 +304,6 @@ export function SquadPage({
   teamSelectionClient = defaultTeamSelectionClient,
 }: SquadPageProps) {
   const [squadView, setSquadView] = useState<SquadView>(getStoredView);
-  const [positionFilter, setPositionFilter] = useState<PositionFilter>('all');
-  const [query, setQuery] = useState('');
-  const [sortKey, setSortKey] = useState<SortKey>('points');
-  const [filtersOpen, setFiltersOpen] = useState(false);
   const [squadPlayers, setSquadPlayers] = useState<PlayerView[]>([]);
   const [scoutingPool, setScoutingPool] = useState<PlayerView[]>([]);
   const [proposedTradeCount, setProposedTradeCount] = useState(0);
@@ -362,8 +345,6 @@ export function SquadPage({
   const [changesSaving, setChangesSaving] = useState(false);
   const [tradeSubmitting, setTradeSubmitting] = useState(false);
   const tradeSubmittingRef = useRef(false);
-  const [availabilityFilter, setAvailabilityFilter] = useState<'all' | 'risk'>('all');
-  const [fixtureFilter, setFixtureFilter] = useState<'all' | 'easy'>('all');
   const drawerRef = useRef<HTMLElement | null>(null);
   const hasDraftRef = useRef(false);
   const hasLoadedRef = useRef(false);
@@ -422,11 +403,7 @@ export function SquadPage({
         if (!hasLineup) setSquadView('list');
         setLoading(false);
         hasLoadedRef.current = true;
-        setStatus(
-          hasLineup
-            ? `${summary?.manager_team.name ?? normalizedLineup?.managerTeam.name ?? 'Your'} squad ready for review.`
-            : `${summary?.manager_team.name ?? normalizedLineup?.managerTeam.name ?? 'Your'} squad loaded.`,
-        );
+        setStatus('');
         const failures = [workspaceResult, lineupResult]
           .filter((result): result is PromiseRejectedResult => result.status === 'rejected');
         if (failures.length > 0) {
@@ -512,21 +489,6 @@ export function SquadPage({
     [squadPlayers, stagedRemovalIds],
   );
   const stagedAdditionPlayers = drawWins.filter((player) => stagedAdditionIds.has(player.id));
-  const listPlayers = useMemo(() => {
-    const filtered = visibleSquadPlayers
-      .filter((player) => positionFilter === 'all' || player.position === positionFilter)
-      .filter((player) => matchesQuery(player, query))
-      .filter((player) => availabilityFilter === 'all' || isAvailabilityRisk(player))
-      .filter((player) => fixtureFilter === 'all' || player.nextFixtures.some((fixture) => (fixture.difficulty ?? 6) <= 3));
-    return [...filtered].sort((left, right) => compareListPlayers(left, right, sortKey));
-  }, [availabilityFilter, fixtureFilter, positionFilter, query, sortKey, visibleSquadPlayers]);
-  const positionCounts = useMemo(() => ({
-    all: visibleSquadPlayers.length,
-    GKP: visibleSquadPlayers.filter((player) => player.position === 'GKP').length,
-    DEF: visibleSquadPlayers.filter((player) => player.position === 'DEF').length,
-    MID: visibleSquadPlayers.filter((player) => player.position === 'MID').length,
-    FWD: visibleSquadPlayers.filter((player) => player.position === 'FWD').length,
-  }), [visibleSquadPlayers]);
   const stagedChangeCount = pendingRemovalPlayers.length + stagedAdditionPlayers.length;
   const validationMessages = buildSquadChangeValidation(stagedAdditionPlayers, pendingRemovalPlayers);
   const comparisonCandidates = scoutingPool
@@ -903,7 +865,7 @@ export function SquadPage({
         titleId="squad-title"
       />
 
-      <section aria-label="Matchweek controls" className="squad-page__matchweek-controls">
+      <section aria-label="Next gameweek deadline" className="squad-page__deadline-section">
         <div className="squad-page__deadline">
           <span className="squad-page__deadline-icon"><CalendarClock aria-hidden="true" size={19} /></span>
           <div>
@@ -912,6 +874,9 @@ export function SquadPage({
             <small>{deadlineAt ? formatCountdown(deadlineAt, clockNow) : 'Awaiting gameweek schedule'}</small>
           </div>
         </div>
+      </section>
+
+      <section aria-label="Matchweek controls" className="squad-page__matchweek-controls">
         <div aria-label="Chip controls" className="squad-page__chips">
           {(teamSelection?.chips ?? REQUIRED_CHIPS).map((chip) => (
             <ChipToggle chip={chip} disabled={lineupLocked} key={chip.id} onToggle={() => void toggleChip(chip)} />
@@ -929,10 +894,12 @@ export function SquadPage({
             </Button>
           </div>
         ) : null}
-        <p className="squad-page__status" role="status" aria-live="polite">
-          {lineupLocked ? `Lineup locked. ${teamSelection?.fixtureLock.reason ?? 'The gameweek deadline has passed.'}` : <StatusMessage onNavigate={onNavigate} text={status} />}
-          {loadFailed ? <Button disabled={loading} onClick={() => setReloadKey((key) => key + 1)} type="button" variant="secondary">Retry</Button> : null}
-        </p>
+        {status || lineupLocked || loadFailed ? (
+          <p className="squad-page__status" role="status" aria-live="polite">
+            {lineupLocked ? `Lineup locked. ${teamSelection?.fixtureLock.reason ?? 'The gameweek deadline has passed.'}` : <StatusMessage onNavigate={onNavigate} text={status} />}
+            {loadFailed ? <Button disabled={loading} onClick={() => setReloadKey((key) => key + 1)} type="button" variant="secondary">Retry</Button> : null}
+          </p>
+        ) : null}
       </section>
 
       {proposedTradeCount > 0 ? (
@@ -973,22 +940,9 @@ export function SquadPage({
           />
         ) : (
           <SquadList
-            filtersOpen={filtersOpen}
-            onFiltersOpenChange={setFiltersOpen}
-            onPositionChange={setPositionFilter}
-            onQueryChange={setQuery}
             onSelect={openPlayer}
             onSubstitutionTarget={chooseSubstitutionTargetView}
-            onSortChange={setSortKey}
-            players={listPlayers}
-            positionCounts={positionCounts}
-            positionFilter={positionFilter}
-            query={query}
-            sortKey={sortKey}
-            availabilityFilter={availabilityFilter}
-            fixtureFilter={fixtureFilter}
-            onAvailabilityFilterChange={setAvailabilityFilter}
-            onFixtureFilterChange={setFixtureFilter}
+            players={visibleSquadPlayers}
             substitutionCandidateIds={substitutionCandidateIds}
             substitutionMode={Boolean(substitutionSource)}
             substitutionSourceId={substitutionSource?.id ?? null}
@@ -1201,14 +1155,6 @@ function SquadLoadingState({ view }: { view: SquadView }) {
 
   return (
     <div aria-label="Loading squad list" className="squad-page__list squad-page__list--loading" role="status">
-      <div aria-hidden="true" className="squad-page__list-controls">
-        <span className="squad-page__loading-control squad-page__loading-control--search" />
-        <span className="squad-page__loading-control squad-page__loading-control--icon" />
-        <span className="squad-page__loading-control squad-page__loading-control--icon" />
-      </div>
-      <div aria-hidden="true" className="squad-page__position-tabs squad-page__position-tabs--loading">
-        {positionOptions.map((option) => <span key={option.value}>{option.shortLabel}<i /></span>)}
-      </div>
       <div aria-hidden="true" className="squad-page__loading-list-space">
         <span /><span /><span />
       </div>
@@ -1384,7 +1330,6 @@ function ChipToggle({ chip, disabled, onToggle }: { chip: TeamSelectionChip; dis
     >
       <span className="squad-page__chip-content">
         <ChipGlyph chip={chip} />
-        <span className="squad-page__chip-label">{chip.name}</span>
       </span>
       {active ? <span aria-hidden="true" className="squad-page__chip-dot" /> : null}
       {used ? <CircleCheck aria-hidden="true" className="squad-page__chip-used" size={12} /> : null}
@@ -1413,58 +1358,23 @@ function SoccerPitchIcon() {
 }
 
 function SquadList({
-  availabilityFilter,
-  fixtureFilter,
-  filtersOpen,
-  onAvailabilityFilterChange,
-  onFiltersOpenChange,
-  onFixtureFilterChange,
-  onPositionChange,
-  onQueryChange,
   onSelect,
   onSubstitutionTarget,
-  onSortChange,
   players,
-  positionCounts,
-  positionFilter,
-  query,
-  sortKey,
   substitutionCandidateIds,
   substitutionMode,
   substitutionSourceId,
   substitutionTargetId,
 }: {
-  availabilityFilter: 'all' | 'risk';
-  fixtureFilter: 'all' | 'easy';
-  filtersOpen: boolean;
-  onAvailabilityFilterChange: (filter: 'all' | 'risk') => void;
-  onFiltersOpenChange: (open: boolean) => void;
-  onFixtureFilterChange: (filter: 'all' | 'easy') => void;
-  onPositionChange: (position: PositionFilter) => void;
-  onQueryChange: (query: string) => void;
   onSelect: (player: PlayerView) => void;
   onSubstitutionTarget: (player: PlayerView) => void;
-  onSortChange: (sort: SortKey) => void;
   players: PlayerView[];
-  positionCounts: Record<PositionFilter, number>;
-  positionFilter: PositionFilter;
-  query: string;
-  sortKey: SortKey;
   substitutionCandidateIds: ReadonlySet<string>;
   substitutionMode: boolean;
   substitutionSourceId: string | null;
   substitutionTargetId: string | null;
 }) {
   const groups = lineupGroups(players);
-  const [listSortColumn, setListSortColumn] = useState<string | null>(null);
-  const [listSortDirection, setListSortDirection] = useState<'asc' | 'desc'>('asc');
-  const sortList = (column: string) => {
-    if (listSortColumn === column) setListSortDirection((current) => current === 'asc' ? 'desc' : 'asc');
-    else {
-      setListSortColumn(column);
-      setListSortDirection('asc');
-    }
-  };
   function selectPlayer(player: PlayerView) {
     if (substitutionMode) {
       if (substitutionCandidateIds.has(player.id)) onSubstitutionTarget(player);
@@ -1474,37 +1384,6 @@ function SquadList({
   }
   return (
     <div className="squad-page__list">
-      <div className="squad-page__list-controls">
-        <label className="squad-page__search"><Search size={18} /><span className="sr-only">Search squad players</span><input aria-label="Search squad players" onChange={(event) => onQueryChange(event.target.value)} placeholder="Search players..." value={query} /></label>
-        <button aria-expanded={filtersOpen} aria-label="Advanced squad filters" className="squad-page__filter-button" onClick={() => onFiltersOpenChange(!filtersOpen)} type="button"><Filter size={18} /></button>
-        <button
-          aria-label={`Sort squad by ${sortLabel(sortKey)}`}
-          className="squad-page__sort-button"
-          onClick={() => onSortChange(nextSortKey(sortKey))}
-          title={`Sort by ${sortLabel(sortKey)}. Press to change.`}
-          type="button"
-        >
-          <ArrowDownUp aria-hidden="true" size={17} />
-          <span className="sr-only">Sort by {sortLabel(sortKey)}</span>
-        </button>
-      </div>
-
-      {filtersOpen ? (
-        <div className="squad-page__filter-controls">
-          <SlidersHorizontal size={17} />
-          <label><span>Availability</span><select aria-label="Filter by availability" onChange={(event) => onAvailabilityFilterChange(event.target.value as 'all' | 'risk')} value={availabilityFilter}><option value="all">All players</option><option value="risk">Reduced chance</option></select></label>
-          <label><span>Next fixture</span><select aria-label="Filter by next fixture difficulty" onChange={(event) => onFixtureFilterChange(event.target.value as 'all' | 'easy')} value={fixtureFilter}><option value="all">Any difficulty</option><option value="easy">Easy or balanced</option></select></label>
-        </div>
-      ) : null}
-
-      <div aria-label="Squad positions" className="squad-page__position-tabs" role="tablist">
-        {positionOptions.map((option) => (
-          <button aria-selected={positionFilter === option.value} key={option.value} onClick={() => onPositionChange(option.value)} role="tab" type="button">
-            {option.shortLabel}<span>{positionCounts[option.value]}</span>
-          </button>
-        ))}
-      </div>
-
       <div className="squad-page__lineup-tables">
         {groups.map((group) => (
           <section aria-label={`${group.label} players`} className="squad-page__list-section" key={group.slot}>
@@ -1521,13 +1400,13 @@ function SquadList({
                   <col className="availability" />
                 </colgroup>
                 <TableHeader><TableRow>
-                  <TableHead><SortableTableHead column="player" direction={listSortDirection} onSort={sortList} sortColumn={listSortColumn}>Player</SortableTableHead></TableHead>
-                  <TableHead><SortableTableHead column="points" direction={listSortDirection} onSort={sortList} sortColumn={listSortColumn}>Pts</SortableTableHead></TableHead>
-                  <TableHead><SortableTableHead column="expected" direction={listSortDirection} onSort={sortList} sortColumn={listSortColumn}>xG / xA</SortableTableHead></TableHead>
-                  <TableHead><SortableTableHead column="availability" direction={listSortDirection} onSort={sortList} sortColumn={listSortColumn}><span className="sr-only">Availability</span><CircleCheck aria-hidden="true" size={13} /></SortableTableHead></TableHead>
+                  <TableHead>Player</TableHead>
+                  <TableHead>Pts</TableHead>
+                  <TableHead>xG / xA</TableHead>
+                  <TableHead><span className="sr-only">Availability</span><CircleCheck aria-hidden="true" size={13} /></TableHead>
                 </TableRow></TableHeader>
                 <TableBody>
-                  {[...group.players].sort((left, right) => compareSquadListValues(left, right, listSortColumn, listSortDirection)).map((player, index, sortedPlayers) => {
+                  {group.players.map((player, index, sortedPlayers) => {
                     const startsNewPosition = group.slot === 'starter'
                       && index > 0
                       && sortedPlayers[index - 1]?.position !== player.position;
@@ -1801,58 +1680,6 @@ function matchesQuery(player: PlayerView, query: string): boolean {
   return player.displayName.toLowerCase().includes(normalized)
     || player.team.toLowerCase().includes(normalized)
     || player.position.toLowerCase().includes(normalized);
-}
-
-function compareSortMetric(left: PlayerView, right: PlayerView, key: SortKey): number {
-  const leftValue = key === 'points' ? left.points : key === 'form' ? left.form : key === 'xg' ? left.xg : left.xa;
-  const rightValue = key === 'points' ? right.points : key === 'form' ? right.form : key === 'xg' ? right.xg : right.xa;
-  if (leftValue === null && rightValue === null) return left.displayName.localeCompare(right.displayName);
-  if (leftValue === null) return 1;
-  if (rightValue === null) return -1;
-  return rightValue - leftValue || left.displayName.localeCompare(right.displayName);
-}
-
-function compareSquadListValues(left: PlayerView, right: PlayerView, column: string | null, direction: 'asc' | 'desc'): number {
-  if (!column) return 0;
-  const comparison = column === 'player'
-    ? left.displayName.localeCompare(right.displayName, undefined, { sensitivity: 'base' })
-    : column === 'points'
-      ? compareNullableNumbers(left.points, right.points)
-      : column === 'expected'
-        ? compareNullableNumbers(left.xg, right.xg) || compareNullableNumbers(left.xa, right.xa)
-        : compareNullableNumbers(left.chanceOfPlaying, right.chanceOfPlaying);
-  return (comparison || left.displayName.localeCompare(right.displayName, undefined, { sensitivity: 'base' })) * (direction === 'asc' ? 1 : -1);
-}
-
-function compareNullableNumbers(left: number | null | undefined, right: number | null | undefined): number {
-  if (left == null && right == null) return 0;
-  if (left == null) return 1;
-  if (right == null) return -1;
-  return left - right;
-}
-
-function compareListPlayers(left: PlayerView, right: PlayerView, key: SortKey): number {
-  const slotOrder: Record<TeamSelectionSlot, number> = { starter: 0, bench: 1, reserve: 2 };
-  const leftSlot = left.slot ?? 'reserve';
-  const rightSlot = right.slot ?? 'reserve';
-  const slotDifference = slotOrder[leftSlot] - slotOrder[rightSlot];
-  if (slotDifference !== 0) return slotDifference;
-  if (leftSlot === 'bench') return sortBySlot(left, right);
-  const positionDifference = pitchPositionOrder.indexOf(left.position) - pitchPositionOrder.indexOf(right.position);
-  if (positionDifference !== 0) return positionDifference;
-  return compareSortMetric(left, right, key);
-}
-
-function sortLabel(key: SortKey): string {
-  if (key === 'points') return 'points';
-  if (key === 'form') return 'form';
-  if (key === 'xg') return 'xG';
-  return 'xA';
-}
-
-function nextSortKey(key: SortKey): SortKey {
-  const keys: SortKey[] = ['points', 'form', 'xg', 'xa'];
-  return keys[(keys.indexOf(key) + 1) % keys.length];
 }
 
 function lineupGroups(players: PlayerView[]) {
@@ -2175,13 +2002,6 @@ export function fixtureOpponentClassName(value: number | null | undefined): stri
 export function fixtureDifficultyTitle(value: number | null | undefined): string | undefined {
   const rating = normalizedFixtureDifficulty(value);
   return rating === null ? undefined : `${fixtureDifficultyLabels[rating - 1]} fixture`;
-}
-
-function isAvailabilityRisk(player: PlayerView): boolean {
-  return hasAvailabilityIssue({
-    availability: player.availability,
-    chance_of_playing_next_round: player.chanceOfPlaying,
-  });
 }
 
 export { formBand, shortPlayerName } from './components/player/PlayerCard';

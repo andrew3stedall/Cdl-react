@@ -279,7 +279,6 @@ test('primary headers and essential player values remain legible at 200% text sc
       await expect(page.locator('[data-page-hero="shared"]:visible h1')).toHaveText(title);
     }
 
-    const header = await readHeaderBounds(page);
 
     const hero = activeHero(page);
     const heroBox = await bounds(hero);

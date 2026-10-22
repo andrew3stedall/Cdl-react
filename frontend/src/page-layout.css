@@ -63,26 +63,26 @@
 
 
 @media (max-width: 520px) {
-  /* Keep page controls beside the title while allowing the header to grow
-     only when large text needs an extra row. */
+  /* Keep the title and controls in two compact, predictable rows on phones.
+     This gives all routes the same header height and leaves room for large text. */
   .cdl-page-hero {
-    align-items: center;
-    block-size: auto;
-    min-height: 4.2rem;
+    align-items: stretch;
+    block-size: 5.5rem;
+    flex-direction: column;
+    gap: 0.35rem;
+    justify-content: center;
+    min-height: 5.5rem;
   }
 
   .cdl-page-hero__brand-lockup {
     flex: 0 1 auto;
-    max-width: calc(100% - 9.5rem);
     min-width: 0;
   }
 
   .cdl-page-hero__actions {
-    align-items: center;
-    display: flex;
     flex: 0 1 auto;
+    justify-content: flex-end;
     margin: 0;
-    max-width: 9.5rem;
     min-width: 0;
   }
 
@@ -90,7 +90,6 @@
     flex: 0 1 auto;
     flex-wrap: wrap;
     justify-content: flex-end;
-    max-width: 100%;
     min-width: 0;
   }
 
@@ -99,6 +98,7 @@
     min-width: 0;
   }
 }
+
 
 @media (max-width: 360px) {
   .cdl-page-hero__brand-lockup {

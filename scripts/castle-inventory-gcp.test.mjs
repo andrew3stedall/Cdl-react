@@ -1,9 +1,19 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { authenticate, validateCredential } from './castle-inventory-gcp.mjs';
+import { authenticate, validateCredential, safeFailure } from './castle-inventory-gcp.mjs';
 import { API } from './castle-inventory.mjs';
 const credential = { email: 'test@example.test', password: 'fake-test-value', apikey: 'sb_publishable_example' };
 const user = { id: 'fake-id', email: credential.email, aud: 'authenticated', is_anonymous: false };
+
+test('safe diagnostics preserve known failures and suppress arbitrary exception text', () => {
+  for (const message of ['An authenticated personal account is required',
+    'Session expired or rejected. Sign in again.',
+    'Could not establish league membership; no league reads attempted.']) {
+    assert.equal(safeFailure(new Error(message)), message);
+  }
+  assert.equal(safeFailure(new Error('Castle unexpected secret=fake-value')), 'Castle collector stopped; no credentials logged.');
+  assert.equal(safeFailure(new Error('Castle authentication rejected (HTTP 400)')), 'Castle authentication rejected (HTTP 400)');
+});
 
 test('accepts public keys and rejects service-role keys', () => {
   assert.equal(validateCredential(credential), credential);

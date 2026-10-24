@@ -6,10 +6,14 @@ into CDL React or change either app's database or authentication configuration.
 
 ## Run through GitHub Actions and GCP (phone-compatible)
 
-The manual **Castle Read Inventory** workflow uses the repo's existing staging
+The **Castle Read Inventory** workflow uses the repo's existing staging
 Workload Identity Federation and `github-deploy` service account. It runs only on
 trusted `main`, reads a secret and calls source read endpoints. No local computer
 or browser is required. It has no schedule and does not deploy the application.
+It also runs after trusted main changes to its collector scripts or workflow, so
+merged collector fixes are validated automatically. PR code never receives secrets.
+Stage and endpoint-status messages identify failures without printing credentials,
+raw rows or arbitrary exception text.
 
 One-time setup remains required before the workflow can succeed:
 

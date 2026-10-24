@@ -2,6 +2,11 @@ name: Castle Read Inventory
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/castle-inventory*.mjs'
+      - '.github/workflows/castle-read-inventory.yml'
 
 permissions:
   contents: read

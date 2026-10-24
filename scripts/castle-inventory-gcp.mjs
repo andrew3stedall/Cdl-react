@@ -4,6 +4,21 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { API, CastleReader, inventory } from './castle-inventory.mjs';
 
+export function safeFailure(error) {
+  const allowed = new Set([
+    'Castle authentication network failure', 'Invalid authentication response',
+    'Castle did not return the expected personal account',
+    'An authenticated personal account is required',
+    'Cannot read a valid Castle credential from the staging secret',
+    'Run only from the trusted main workflow in the staging project',
+    'Session expired or rejected. Sign in again.',
+    'Could not establish league membership; no league reads attempted.',
+  ]);
+  const message = error?.message;
+  if (allowed.has(message) || /^Castle authentication rejected \(HTTP [1-5][0-9]{2}\)$/.test(message ?? '')) return message;
+  return 'Castle collector stopped; no credentials logged.';
+}
+
 export function validateCredential(credential) {
   for (const field of ['email', 'password', 'apikey']) {
     if (typeof credential[field] !== 'string' || !credential[field].trim()) {
@@ -49,14 +64,18 @@ async function main() {
     throw new Error('Run only from the trusted main workflow in the staging project');
   }
   let credential;
+  console.log('Stage: read credential from Secret Manager');
   try {
     const text = execFileSync('gcloud', ['secrets', 'versions', 'access', 'latest',
       '--secret=castle-personal-read-credential', '--project=cdl-react-staging-ast', '--quiet'],
     { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 64 * 1024 });
     credential = validateCredential(JSON.parse(text));
   } catch { throw new Error('Cannot read a valid Castle credential from the staging secret'); }
+  console.log('Stage: authenticate personal Castle account');
   const session = await authenticate(credential);
-  const report = await inventory(new CastleReader(credential.apikey, session.access_token), session.user.id);
+  console.log('Stage: inventory permitted source reads');
+  const report = await inventory(new CastleReader(credential.apikey, session.access_token), session.user.id, console.log);
+  console.log('Stage: write sanitized inventory report');
   await writeFile(join(process.env.RUNNER_TEMP, 'castle-inventory.json'),
     `${JSON.stringify(report, null, 2)}\n`, { mode: 0o600 });
   console.log(`Castle inventory complete: ${report.league_count} league scopes; report contains no row values.`);
@@ -65,8 +84,7 @@ async function main() {
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   main().catch((error) => {
     // All messages above are locally defined; never print upstream bodies or credentials.
-    console.error(error.message.startsWith('Castle') || error.message.startsWith('Cannot read') ||
-      error.message.startsWith('Run only') ? error.message : 'Castle collector stopped; no credentials logged.');
+    console.error(safeFailure(error));
     process.exitCode = 1;
   });
 }

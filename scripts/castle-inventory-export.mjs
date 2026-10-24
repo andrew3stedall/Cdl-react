@@ -124,8 +124,12 @@ export async function exportData(reader, userId, progress = () => {}) {
         await functionRead(`fpl/live/${event.id}.json`, 'fpl-gw-live', { gameweek: event.id });
       }
     }
-    for (const player of bootstrap.elements ?? []) {
+    let processed = 0;
+    const players = bootstrap.elements ?? [];
+    for (const player of players) {
       await functionRead(`fpl/player-history/${player.id}.json`, 'fpl-player-history', { playerId: player.id });
+      processed++;
+      if (processed % 25 === 0 || processed === players.length) progress(`FPL histories: ${processed}/${players.length}`);
       await new Promise(resolve => setTimeout(resolve, 100));
     }
   }

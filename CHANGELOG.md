@@ -1,5 +1,7 @@
 ## Unreleased
 
+- Add complete paginated personal Castle exports with historical draw outcomes, visible trades/bulletins and FPL payloads, encrypted temporary Actions artifacts, count/hash manifests and regression tests. No app import is performed.
+
 - Fix Castle collector path validation rejecting the documented `top8_votes` table; verified GCP credential access, personal Castle authentication and preceding league reads in live Actions.
 
 - Preserve safe Castle collector failure reasons and stage/endpoint progress; validate collector changes automatically on trusted main pushes.

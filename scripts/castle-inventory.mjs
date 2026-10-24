@@ -29,7 +29,7 @@ export class CastleReader {
 
   async request(path, body) {
     // Only source-documented reads are accepted; no RPC or write endpoint escape hatch.
-    if (!/^\/rest\/v1\/[a-z_]+\?/.test(path) &&
+    if (!/^\/rest\/v1\/[a-z][a-z0-9_]*\?/.test(path) &&
         !/^\/functions\/v1\/fpl-(bootstrap|fixtures|gw-live|player-history)$/.test(path)) {
       throw new Error('Read endpoint is not allowlisted');
     }

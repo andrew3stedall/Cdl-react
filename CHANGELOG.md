@@ -1,5 +1,7 @@
 ## Unreleased
 
+- Added a local Castle authenticated read inventory collector with personal Google sign-in, membership-scoped reads, secret-free reports and transport regression tests. Live source validation remains pending.
+
 - Hid the notification control in page headers and reduced the phone header from 8.5rem to a compact, stable 5.5rem two-row layout.
 
 - Show the latest five completed gameweeks in the Manager's Desk fixture comparison, including the most recently completed week before an upcoming fixture.

@@ -1,0 +1,53 @@
+name: Castle Temporary Data Export
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/castle-inventory-export*.mjs'
+      - '.github/workflows/castle-data-export.yml'
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: castle-personal-data-reads
+  cancel-in-progress: false
+
+jobs:
+  export:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: staging
+    env:
+      PROJECT_ID: ${{ vars.GCP_STAGING_PROJECT_ID }}
+      CASTLE_EXPORT_DATA: 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify read collector and encrypted export
+        run: node --test scripts/castle-inventory*.test.mjs
+      - name: Validate staging project
+        run: test "$PROJECT_ID" = "cdl-react-staging-ast"
+      - uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ vars.GCP_STAGING_PROJECT_ID }}
+          workload_identity_provider: ${{ vars.GCP_STAGING_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_STAGING_DEPLOY_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Export permitted data with credentials kept in memory
+        run: node scripts/castle-inventory-gcp.mjs
+      - name: Save encrypted temporary files and count summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: castle-temporary-export-${{ github.run_id }}
+          path: ${{ runner.temp }}/castle-export/
+          if-no-files-found: error
+          retention-days: 3

@@ -1,8 +1,9 @@
 import { execFileSync } from 'node:child_process';
-import { writeFile } from 'node:fs/promises';
+import { writeFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { API, CastleReader, inventory } from './castle-inventory.mjs';
+import { exportData, sealExport } from './castle-inventory-export.mjs';
 
 export function safeFailure(error) {
   const allowed = new Set([
@@ -73,6 +74,22 @@ async function main() {
   } catch { throw new Error('Cannot read a valid Castle credential from the staging secret'); }
   console.log('Stage: authenticate personal Castle account');
   const session = await authenticate(credential);
+  if (process.env.CASTLE_EXPORT_DATA === 'true') {
+    console.log('Stage: export all permitted source records');
+    const bundle = await exportData(new CastleReader(credential.apikey, session.access_token), session.user.id, console.log);
+    const directory = join(process.env.RUNNER_TEMP, 'castle-export');
+    await mkdir(directory, { recursive: true, mode: 0o700 });
+    await writeFile(join(directory, 'castle-data.enc.json'), JSON.stringify(sealExport(bundle, credential.password)), { mode: 0o600 });
+    const hideScope = path => path.replace(/leagues\/[^/]+\//, 'leagues/league/');
+    const summary = { exported_at: bundle.manifest.exported_at, complete: bundle.manifest.complete,
+      league_count: bundle.manifest.league_count, file_count: Object.keys(bundle.files).length,
+      collections: bundle.manifest.collections.map(c => ({ ...c, file: hideScope(c.file) })),
+      draw_coverage: bundle.manifest.draw_coverage,
+      failures: bundle.manifest.failures.map(f => ({ ...f, file: hideScope(f.file) })) };
+    await writeFile(join(directory, 'summary.json'), JSON.stringify(summary, null, 2), { mode: 0o600 });
+    console.log(`Export saved encrypted: ${summary.file_count} files, ${summary.failures.length} failed reads.`);
+    return;
+  }
   console.log('Stage: inventory permitted source reads');
   const report = await inventory(new CastleReader(credential.apikey, session.access_token), session.user.id, console.log);
   console.log('Stage: write sanitized inventory report');

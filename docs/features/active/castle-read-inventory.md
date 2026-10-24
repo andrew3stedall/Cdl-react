@@ -27,3 +27,12 @@ Next: Complete the phone-compatible credential setup, run the workflow, compare 
 missing datasets and map import identities/pagination. Durable personal session
 rotation and actual synchronization remain follow-up work after access is
 demonstrated. No application deployment is needed for this tool.
+
+## Temporary export extension
+
+User approved exporting all established personal-account reads into temporary files.
+The Castle Temporary Data Export workflow paginates source tables, derives historical
+draw outcomes and exports FPL reference/live/history payloads. Data is encrypted
+before three-day artifact retention in this public repo; credentials never enter
+export files. See [export operations](../../wiki/castle-temporary-export.md).
+Actual application mapping and database import remain separate follow-up work.

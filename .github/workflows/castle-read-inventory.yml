@@ -1,0 +1,48 @@
+name: Castle Read Inventory
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: castle-read-inventory
+  cancel-in-progress: false
+
+jobs:
+  inventory:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: staging
+    env:
+      PROJECT_ID: ${{ vars.GCP_STAGING_PROJECT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify collector tests
+        run: node --test scripts/castle-inventory.test.mjs scripts/castle-inventory-gcp.test.mjs
+      - name: Validate staging project
+        run: test "$PROJECT_ID" = "cdl-react-staging-ast"
+      - name: Authenticate to GCP with existing staging federation
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ vars.GCP_STAGING_PROJECT_ID }}
+          workload_identity_provider: ${{ vars.GCP_STAGING_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_STAGING_DEPLOY_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Read source inventory using personal Castle credential
+        run: node scripts/castle-inventory-gcp.mjs
+      - name: Upload field and count report
+        uses: actions/upload-artifact@v4
+        with:
+          name: castle-read-inventory-${{ github.run_id }}
+          path: ${{ runner.temp }}/castle-inventory.json
+          if-no-files-found: error
+          retention-days: 3

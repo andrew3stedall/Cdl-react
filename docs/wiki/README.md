@@ -4,6 +4,8 @@ This wiki is the general knowledge base for the CDL React rebuild. It is intende
 
 ## Wiki pages
 
+- [Castle source data inventory](castle-data-inventory.md)
+
 - `product-overview.md`
 - `domain-glossary.md`
 - `season-lifecycle.md`

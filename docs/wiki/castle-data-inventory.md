@@ -4,7 +4,50 @@ This local diagnostic establishes what Andrew's personal Castle/Lovable user can
 read before implementing synchronization into CDL React. It does not import data
 into CDL React or change either app's database or authentication configuration.
 
-## Run on a computer
+## Run through GitHub Actions and GCP (phone-compatible)
+
+The manual **Castle Read Inventory** workflow uses the repo's existing staging
+Workload Identity Federation and `github-deploy` service account. It runs only on
+trusted `main`, reads a secret and calls source read endpoints. No local computer
+or browser is required. It has no schedule and does not deploy the application.
+
+One-time setup remains required before the workflow can succeed:
+
+1. With Andrew's explicit agreement, add a **Castle-only** password to the existing
+   personal account. Supabase supports adding password auth to an OAuth-created
+   user. Castle's existing `/reset-password` screen calls `auth.updateUser`, and
+   its sign-in page supports requesting the recovery email. Complete this on the
+   phone. This changes the Castle credential, not the Google password. Google
+   sign-in remains available. Hosted provider settings and recovery delivery must
+   still be verified; do not create a second account if this is rejected.
+2. In the GCP Console for `cdl-react-staging-ast`, create the Secret Manager secret
+   `castle-personal-read-credential` containing JSON with `email`, `password` and
+   `apikey`. The key is Castle's public frontend Supabase publishable/anon key,
+   never a service-role key. Enter the credential directly in Secret Manager,
+   not in chat, GitHub inputs, repository variables or commits.
+3. Verify the staging deploy account can access that specific secret. If needed,
+   grant `roles/secretmanager.secretAccessor` on this secret only. Existing
+   project roles are not proof of effective access. This PR does not change IAM.
+4. After the PR is merged, run **Castle Read Inventory** from Actions using main.
+   The report is attached as an artifact retained for three days. No live run has
+   been performed and no credential has been provisioned by this PR.
+
+The Node runner reads the secret through `gcloud` into memory, exchanges the
+Castle email/password for a user session, verifies the returned email and user
+audience, and runs the same scoped inventory. It never submits the Google password.
+No refresh token is persisted or rotated in Secret Manager. Each manual run logs
+in again; a source CAPTCHA/MFA or rejected login is a blocker, not bypassed.
+The report does not contain credentials or raw rows. The personal app password
+grants the account's normal permissions; the collector constrains its own calls
+to reads but does not turn the credential into a server-enforced read-only token.
+
+Validate both runners with:
+
+```bash
+node --test scripts/castle-inventory.test.mjs scripts/castle-inventory-gcp.test.mjs
+```
+
+## Optional local runner
 
 Use Node.js 22+ and an installed Google Chrome. From the repository root:
 

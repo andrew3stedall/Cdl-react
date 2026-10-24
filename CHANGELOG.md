@@ -1,5 +1,7 @@
 ## Unreleased
 
+- Fix Castle collector path validation rejecting the documented `top8_votes` table; verified GCP credential access, personal Castle authentication and preceding league reads in live Actions.
+
 - Preserve safe Castle collector failure reasons and stage/endpoint progress; validate collector changes automatically on trusted main pushes.
 
 - Added Castle read inventory collectors for GitHub Actions/GCP and optional local Google sign-in, with membership-scoped reads, secret-free reports and nine regression tests. The Actions path uses a dedicated Secret Manager personal Castle credential and existing staging federation; credential bootstrap and live validation remain pending.

@@ -24,6 +24,19 @@ test('transport rejects mutation and RPC endpoints before sending requests', asy
   await assert.rejects(reader.request('/functions/v1/score-gameweek', {}), /allowlisted/);
 });
 
+test('documented top8_votes read permits digits without permitting a write', async () => {
+  let calls = 0;
+  const reader = new CastleReader('public', 'fake', async (url, options) => {
+    calls++;
+    assert.equal(new URL(url).pathname, '/rest/v1/top8_votes');
+    assert.equal(options.method, 'GET');
+    return Response.json([]);
+  });
+  assert.equal((await reader.table('top8_votes', { user_id: 'eq.self', league_id: 'eq.league' })).status, 'ok');
+  await assert.rejects(reader.request('/rest/v1/top8_votes?select=*', {}), /writes/);
+  assert.equal(calls, 1);
+});
+
 test('transport binds requests to source and stops on expired authentication', async () => {
   const reader = new CastleReader('public', 'fake', async (url, options) => {
     assert.equal(new URL(url).origin, API);

@@ -118,3 +118,11 @@ Source references: [Castle source contracts](https://github.com/andrew3stedall/c
 [source types](https://github.com/andrew3stedall/castle-draft-league/blob/main/src/integrations/supabase/types.ts),
 [Supabase REST](https://supabase.com/docs/guides/api),
 [Playwright authentication](https://playwright.dev/docs/auth).
+
+## Live validation findings
+
+The 2026-10-25 Melbourne retry confirmed Secret Manager access, personal Castle
+login and successful REST reads through predictions. The collector then rejected
+`top8_votes` locally because its table-path pattern excluded digits. The corrected
+pattern accepts digits after the first letter; mutation rejection remains tested.
+Full inventory completion and field/count assessment still require the next run.

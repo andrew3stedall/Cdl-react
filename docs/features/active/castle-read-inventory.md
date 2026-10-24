@@ -1,6 +1,7 @@
 # Castle source read inventory
 
-Status: Local collector implemented; authenticated live validation pending.
+Status: Local and GitHub Actions/GCP collectors implemented; credential bootstrap
+and authenticated live validation pending.
 
 Purpose: Determine which documented source fields and records Andrew's personal
 Castle identity can read for a later CDL React synchronization adapter.
@@ -17,7 +18,12 @@ Dependencies: Node 22+, installed Chrome, frontend Playwright dependency and sou
 endpoint reachability. Google may reject automated Chrome; a successful local login
 is not yet verified. CI tests cover mock transport only.
 
-Next: Run the collector locally, compare returned fields with frontend use, identify
+The manual Actions runner reads a Castle-only personal email/password credential
+from a dedicated GCP staging secret using the existing WIF identity. Adding the
+password, provisioning the secret and any secret-level IAM grant require setup;
+none has been performed. No Google password is collected. Nine Node tests pass.
+
+Next: Complete the phone-compatible credential setup, run the workflow, compare returned fields with frontend use, identify
 missing datasets and map import identities/pagination. Durable personal session
-storage, GCP Secret Manager, GitHub Actions and actual synchronization are separate
-follow-up work after access is demonstrated. No deployment is needed for this tool.
+rotation and actual synchronization remain follow-up work after access is
+demonstrated. No application deployment is needed for this tool.

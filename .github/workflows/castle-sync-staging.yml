@@ -1,6 +1,13 @@
 name: Castle Sync Staging
 
 on:
+  # A merge of the diagnostic fix starts a read-only plan automatically.
+  # Push runs have no inputs, so operation/projection below default to plan/archive.
+  push:
+    branches: [main]
+    paths:
+      - 'src/cdl_api/castle_sync.py'
+      - '.github/workflows/castle-sync-staging.yml'
   workflow_dispatch:
     inputs:
       operation:
@@ -65,8 +72,8 @@ jobs:
       CASTLE_TRADE_GAMEWEEKS: ${{ inputs.trade_gameweeks }}
       CASTLE_ADOPT_EXISTING: ${{ inputs.adopt_existing }}
       CASTLE_ALLOW_GAPS: ${{ inputs.allow_gaps }}
-      SYNC_OPERATION: ${{ inputs.operation }}
-      SYNC_PROJECTION: ${{ inputs.projection }}
+      SYNC_OPERATION: ${{ inputs.operation || 'plan' }}
+      SYNC_PROJECTION: ${{ inputs.projection || 'archive' }}
     steps:
       - uses: actions/checkout@v4
         with:

@@ -340,10 +340,13 @@ def test_rebinding_existing_source_team_is_blocked(factory: sessionmaker[Session
         repository.run(_bundle(), rebound, apply=True, expected_plan=plan["plan_digest"])
 
 
-def test_workflow_is_manual_and_retains_no_plaintext_artifact() -> None:
+def test_workflow_push_runs_are_read_only_and_retain_no_plaintext_artifact() -> None:
     workflow = (Path(__file__).parents[1] / ".github/workflows/castle-sync-staging.yml").read_text()
     assert "workflow_dispatch:" in workflow
-    assert "\n  push:" not in workflow
+    assert "push:" in workflow
+    assert "'src/cdl_api/castle_sync.py'" in workflow
+    assert "SYNC_OPERATION: ${{ inputs.operation || 'plan' }}" in workflow
+    assert "SYNC_PROJECTION: ${{ inputs.projection || 'archive' }}" in workflow
     assert "github.ref == 'refs/heads/main'" in workflow
     assert "IMPORT CASTLE STAGING" in workflow
     assert workflow.index("Check boundary and apply confirmation") < workflow.index(

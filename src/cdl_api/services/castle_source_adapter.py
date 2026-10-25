@@ -450,49 +450,12 @@ class CastleSourceAdapter:
                 self.already_represented["unscored_fixture_matches_staging_seed"] += 1
                 self.mappings[f"fixture:{row['id']}"] = fid
                 continue
-            evidence_reasons = []
+            # Castle is authoritative for fixture totals. Keep the existing scoring
+            # snapshot rows intact; detailed point reconciliation will be imported later
+            # from Castle's gameweek team selections. Multiple target result rows remain
+            # ambiguous and are never overwritten automatically.
             if len(existing_results) > 1:
-                evidence_reasons.append("multiple_target_results")
-            if snapshots:
-                evidence_reasons.append("target_scoring_snapshots")
-            if any(r["payload_json"].get("finalised") for r in existing_results):
-                evidence_reasons.append("finalised_target_result")
-            if evidence_reasons:
-                self.gaps["fixture_has_existing_scoring_evidence"] += 1
-                target_fixture = candidates[0] if candidates else None
-                self.fixture_evidence_review.append(
-                    {
-                        "source_fixture_id": row.get("id"),
-                        "gameweek": gw,
-                        "stage": row.get("stage"),
-                        "source_home_team": source_team_names.get(row.get("home_team_id")),
-                        "source_away_team": source_team_names.get(row.get("away_team_id")),
-                        "source_home_score": row.get("home_score"),
-                        "source_away_score": row.get("away_score"),
-                        "target_fixture_id": target_fixture.get("id") if target_fixture else fid,
-                        "target_status": (
-                            target_fixture.get("payload_json", {}).get("status")
-                            if target_fixture
-                            else None
-                        ),
-                        "target_results": [
-                            {
-                                "id": result.get("id"),
-                                "home_score": result.get("payload_json", {}).get("home_score"),
-                                "away_score": result.get("payload_json", {}).get("away_score"),
-                                "finalised": result.get("payload_json", {}).get("finalised"),
-                                "synthetic": result.get("payload_json", {}).get("synthetic"),
-                            }
-                            for result in existing_results
-                        ],
-                        "target_scoring_snapshot_count": len(snapshots),
-                        "target_scoring_snapshots_synthetic": [
-                            snapshot.get("payload_json", {}).get("synthetic")
-                            for snapshot in snapshots
-                        ],
-                        "reasons": evidence_reasons,
-                    }
-                )
+                self.gaps["fixture_multiple_target_results_require_review"] += 1
                 continue
             self.mappings[f"fixture:{row['id']}"] = fid
             scored = row.get("home_score") is not None and row.get("away_score") is not None
@@ -553,6 +516,7 @@ class CastleSourceAdapter:
                             "home_score": row["home_score"],
                             "away_score": row["away_score"],
                             "outcome": outcome,
+                            "finalised": status == "complete",
                             "synthetic": False,
                         }
                     },

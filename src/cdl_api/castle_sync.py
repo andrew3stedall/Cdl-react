@@ -105,8 +105,13 @@ def main() -> None:
             )
         finally:
             engine.dispose()
+        team_review = report.pop("team_match_review", [])
+        (temporary / "castle-sync-team-review.json").write_text(
+            json.dumps(team_review, indent=2),
+            mode=0o600,
+        )
         encoded = json.dumps(report, indent=2)
-        (temporary / "castle-sync-report.json").write_text(encoded)
+        (temporary / "castle-sync-report.json").write_text(encoded, mode=0o600)
         print(encoded)
         summary = os.environ.get("GITHUB_STEP_SUMMARY")
         if summary:

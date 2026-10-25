@@ -1,5 +1,7 @@
 ## Unreleased
 
+- Add manual staging Castle sync with read-only plans, reviewed transactional applies, versioned non-FPL archives, conservative fixture/lineup/completed-trade projection, conflict protection, schema-gap documentation and a repeatable phone-compatible runbook. Live loading and Actions database permissions remain unverified.
+
 - Add complete paginated personal Castle exports with historical draw outcomes, visible trades/bulletins and FPL payloads, encrypted temporary Actions artifacts, count/hash manifests and regression tests. No app import is performed.
 
 - Fix Castle collector path validation rejecting the documented `top8_votes` table; verified GCP credential access, personal Castle authentication and preceding league reads in live Actions.

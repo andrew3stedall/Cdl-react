@@ -1,0 +1,135 @@
+name: Castle Sync Staging
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        type: choice
+        options: [plan, apply]
+        default: plan
+        description: Plan never writes; apply requires the reviewed plan digest
+      projection:
+        type: choice
+        options: [archive, native]
+        default: archive
+        description: Archive all source data; native also projects compatible app rows
+      expected_plan:
+        description: Copy plan_digest from the matching plan run (required for apply)
+        default: ''
+      confirmation:
+        description: Type IMPORT CASTLE STAGING for apply
+        default: ''
+      source_league:
+        description: Source league ID; leave empty only when exactly one is available
+        default: ''
+      team_aliases:
+        description: JSON source team name to existing target team ID, only for reviewed aliases
+        default: '{}'
+      player_ids:
+        description: JSON source element ID to existing target player ID, only for reviewed mappings
+        default: '{}'
+      trade_gameweeks:
+        description: JSON source trade ID to known gameweek; never infer missing gameweeks
+        default: '{}'
+      adopt_existing:
+        type: boolean
+        default: false
+        description: Allow first adoption of differing target fixture/lineup rows, backed up before change
+      allow_gaps:
+        type: boolean
+        default: false
+        description: Accept that reported unsupported data stays archived rather than native-projected
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: castle-staging-source-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: staging
+    env:
+      PROJECT_ID: ${{ vars.GCP_STAGING_PROJECT_ID }}
+      CASTLE_EXPORT_DATA: 'true'
+      CASTLE_SYNC_INPUT_PATH: ${{ runner.temp }}/castle-sync-input.json
+      CASTLE_EXPECTED_PLAN: ${{ inputs.expected_plan }}
+      CASTLE_CONFIRM_APPLY: ${{ inputs.confirmation }}
+      CASTLE_SOURCE_LEAGUE: ${{ inputs.source_league }}
+      CASTLE_TEAM_ALIASES: ${{ inputs.team_aliases }}
+      CASTLE_PLAYER_IDS: ${{ inputs.player_ids }}
+      CASTLE_TRADE_GAMEWEEKS: ${{ inputs.trade_gameweeks }}
+      CASTLE_ADOPT_EXISTING: ${{ inputs.adopt_existing }}
+      CASTLE_ALLOW_GAPS: ${{ inputs.allow_gaps }}
+      SYNC_OPERATION: ${{ inputs.operation }}
+      SYNC_PROJECTION: ${{ inputs.projection }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: astral-sh/setup-uv@v4
+      - run: uv sync --locked
+      - name: Check boundary and apply confirmation before source access
+        run: |
+          test "$PROJECT_ID" = 'cdl-react-staging-ast'
+          if [ "$SYNC_OPERATION" = apply ]; then
+            test "$CASTLE_CONFIRM_APPLY" = 'IMPORT CASTLE STAGING'
+            test -n "$CASTLE_EXPECTED_PLAN"
+          fi
+      - name: Validate collectors
+        run: node --test scripts/castle-inventory*.test.mjs
+      - uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ vars.GCP_STAGING_PROJECT_ID }}
+          workload_identity_provider: ${{ vars.GCP_STAGING_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_STAGING_DEPLOY_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v3
+      - name: Fetch fresh Castle source snapshot without FPL
+        run: node scripts/castle-inventory-gcp.mjs
+      - name: Install verified Cloud SQL Auth Proxy
+        run: |
+          curl --fail --silent --show-error --location \
+            https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.22.0/cloud-sql-proxy.linux.amd64 \
+            --output "$RUNNER_TEMP/cloud-sql-proxy"
+          echo "42e73a8775bc3300b6514816cc4893f01b109a50f65aa779a451d3e4ff4c3ead  $RUNNER_TEMP/cloud-sql-proxy" | sha256sum --check
+          chmod 700 "$RUNNER_TEMP/cloud-sql-proxy"
+      - name: Plan or apply transaction through staging proxy
+        run: |
+          set -euo pipefail
+          "$RUNNER_TEMP/cloud-sql-proxy" --address=127.0.0.1 --port=5433 \
+            cdl-react-staging-ast:australia-southeast1:cdl-react-staging-postgres \
+            >"$RUNNER_TEMP/castle-proxy.log" 2>&1 &
+          proxy_pid=$!
+          trap 'kill "$proxy_pid" 2>/dev/null || true' EXIT
+          uv run python -c 'import socket,time
+          for attempt in range(30):
+              try:
+                  socket.create_connection(("127.0.0.1",5433),timeout=1).close()
+                  break
+              except OSError:
+                  time.sleep(1)
+          else:
+              raise SystemExit("Staging proxy did not become ready")'
+          uv run python -m cdl_api.castle_sync --operation "$SYNC_OPERATION" --projection "$SYNC_PROJECTION"
+      - name: Remove plaintext snapshot even on failure
+        if: always()
+        run: |
+          python3 -c 'import os,pathlib; (pathlib.Path(os.environ["RUNNER_TEMP"])/"castle-sync-input.json").unlink(missing_ok=True)'
+      - name: Retain report and encrypted evidence for three days
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: castle-sync-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/castle-sync-report.json
+            ${{ runner.temp }}/castle-export/
+          if-no-files-found: warn
+          retention-days: 3

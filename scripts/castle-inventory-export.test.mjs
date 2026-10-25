@@ -43,7 +43,7 @@ test('export scopes private records and excludes future snapshots; keeps visible
     if (table === 'draws') data = [{ id: 'd', status: 'pending', interests_snapshot: { other: [{ fpl_player_id: 9 }] } }];
     if (table === 'trades') data = [{ id: 't', status: 'rejected' }];
     return { status: 'ok', data, range: `0-0/${data.length}` };
-  }, async request() { return { status: 'ok', data: { events: [], elements: [] } }; } };
+  }, async request() { throw new Error('FPL must not be requested by default'); } };
   const bundle = await exportData(reader, 'self');
   assert.equal(bundle.files['leagues/l/draws.json'][0].interests_snapshot, null);
   assert.equal(bundle.files['leagues/l/completed-trades.json'][0].status, 'rejected');
@@ -51,4 +51,5 @@ test('export scopes private records and excludes future snapshots; keeps visible
     assert.equal(calls.find(c => c.table === table).filters.user_id, 'eq.self');
   }
   assert.equal(bundle.manifest.complete, true);
+  assert.ok(Object.keys(bundle.files).every(path => !path.startsWith('fpl/')));
 });

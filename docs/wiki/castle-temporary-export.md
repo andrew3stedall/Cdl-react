@@ -21,10 +21,9 @@ flags. Missing snapshots are recorded. Raw visible trades and a terminal-status
 subset are included. Trade broadcast notifications are retained as supporting
 evidence and are not fabricated into complete structured trade records.
 
-FPL files include bootstrap, fixtures, live payloads for current/completed events and
-history for every player in the bootstrap. Requests run sequentially, with a short
-pause between player histories. Failed individual reads remain listed in the
-manifest; retry before relying on a complete FPL collection.
+FPL requests are now excluded by default, including in the manual export workflow.
+Older packages may contain FPL files; the sync importer ignores them. League
+records retain player references needed to understand squads, trades and draws.
 
 ## Temporary files and encryption
 
@@ -52,8 +51,9 @@ const bundle = openExport(envelope, credential.password);
 ```
 
 No importer is executed by this workflow. Do not commit decrypted files or print
-them in Actions logs. The export is intended as temporary input for a later CDL
-React mapping/import task. Source access restrictions still apply to trade history.
+them in Actions logs. For the proposed repeatable database load and schema mapping,
+see the [Castle source sync runbook](../runbooks/castle-source-sync.md). The separate
+export workflow still performs no import. Source trade access restrictions remain.
 
 Validation: `node --test scripts/castle-inventory*.test.mjs` covers pagination,
 source count drift, historical outcomes, scope and encryption integrity.

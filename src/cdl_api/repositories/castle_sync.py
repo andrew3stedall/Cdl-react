@@ -208,6 +208,7 @@ class CastleSyncRepository:
                 "native_changes": dict(changes_by_table),
                 "native_conflicts": len(native_conflicts),
                 "gaps": dict(adapter.gaps),
+                "team_match_review": adapter.team_match_review,
                 "applied": False,
             }
             if not apply:

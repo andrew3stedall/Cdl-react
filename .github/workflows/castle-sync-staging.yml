@@ -99,7 +99,7 @@ jobs:
           service_account: ${{ vars.GCP_STAGING_DEPLOY_SERVICE_ACCOUNT }}
       - uses: google-github-actions/setup-gcloud@v3
       - name: Fetch fresh Castle source snapshot without FPL
-        run: node scripts/castle-inventory-gcp.mjs
+        run: CASTLE_SYNC_INPUT_PATH="$RUNNER_TEMP/castle-sync-input.json" node scripts/castle-inventory-gcp.mjs
       - name: Install verified Cloud SQL Auth Proxy
         run: |
           curl --fail --silent --show-error --location \

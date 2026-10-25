@@ -110,6 +110,7 @@ class CastleSourceAdapter:
         self.team_fuzzy_matches: list[dict[str, Any]] = []
         self.fixture_team_review: list[dict[str, Any]] = []
         self.fixture_evidence_review: list[dict[str, Any]] = []
+        self.lineup_review: list[dict[str, Any]] = []
         self.mappings: dict[str, str] = {}
         self.projections: list[dict[str, Any]] = []
         self.teams: dict[str, dict] = {}
@@ -305,16 +306,66 @@ class CastleSourceAdapter:
                 self.gaps["ownership_requires_timeline_reconciliation"] += 1
 
     def _lineups(self) -> None:
+        source_team_by_user = {
+            team.get("owner_user_id"): team
+            for team in self.rows("castle_teams")
+            if team.get("owner_user_id")
+        }
+        source_player_details: dict[int, dict[str, Any]] = {}
+        source_player_rows = list(self.rows("draft_picks")) + list(self.rows("draw_results"))
+        for trade in self.rows("trades"):
+            source_player_rows.extend(
+                player
+                for key in ("proposer_players", "receiver_players")
+                for player in trade.get(key, [])
+            )
+        for player_row in source_player_rows:
+            pid = player_row.get("fpl_player_id")
+            if isinstance(pid, int) and pid not in source_player_details:
+                source_player_details[pid] = {
+                    "player_web_name": player_row.get("player_web_name"),
+                    "fpl_player_code": player_row.get("fpl_player_code"),
+                    "element_type": player_row.get("element_type"),
+                }
         for row in self.rows("lineups"):
             team = self.managers.get(row["user_id"])
+            source_team = source_team_by_user.get(row.get("user_id"), {})
             starters, bench = row.get("starter_ids") or [], row.get("bench_ids") or []
-            if (
-                not team
-                or len(starters) != 11
-                or len(set(starters + bench)) != len(starters + bench)
-                or any(p not in self.players for p in starters + bench)
-            ):
+            all_players = starters + bench
+            invalid_reasons = []
+            if not team:
+                invalid_reasons.append("manager_team_unmapped")
+            if len(starters) != 11:
+                invalid_reasons.append("starter_count_not_11")
+            if len(set(all_players)) != len(all_players):
+                invalid_reasons.append("duplicate_player_ids")
+            missing_players = [pid for pid in all_players if pid not in self.players]
+            if missing_players:
+                invalid_reasons.append("player_identity_unresolved")
+            if invalid_reasons:
                 self.gaps["lineup_invalid_or_identity_unresolved"] += 1
+                self.lineup_review.append(
+                    {
+                        "source_lineup_id": row.get("id"),
+                        "gameweek": row.get("gameweek"),
+                        "source_team_name": source_team.get("name"),
+                        "source_team_id": source_team.get("id"),
+                        "starter_count": len(starters),
+                        "bench_count": len(bench),
+                        "reasons": invalid_reasons,
+                        "unmapped_players": [
+                            {
+                                "fpl_player_id": pid,
+                                **source_player_details.get(pid, {}),
+                            }
+                            for pid in missing_players
+                        ],
+                        "captain_id": row.get("captain_id"),
+                        "captain_is_starter": row.get("captain_id") in starters,
+                        "vice_captain_id": row.get("vice_captain_id"),
+                        "vice_captain_is_starter": row.get("vice_captain_id") in starters,
+                    }
+                )
                 continue
             gw = row["gameweek"]
             explicit_players = {self.players[p] for p in starters + bench}
@@ -325,16 +376,44 @@ class CastleSourceAdapter:
                 and s["draft_team_id"] == team["id"]
                 and s["gameweek"] == gw
             ]
-            if (
-                len({s["player_id"] for s in existing_slots}) != len(existing_slots)
-                or any(
-                    s["player_id"] not in explicit_players and s["slot"] != "reserve"
-                    for s in existing_slots
-                )
-                or row.get("captain_id") not in starters
-                or row.get("vice_captain_id") not in starters
+            stale_reasons = []
+            if len({slot["player_id"] for slot in existing_slots}) != len(existing_slots):
+                stale_reasons.append("duplicate_target_player_slots")
+            if any(
+                slot["player_id"] not in explicit_players and slot["slot"] != "reserve"
+                for slot in existing_slots
             ):
+                stale_reasons.append("target_starter_or_bench_not_in_castle_lineup")
+            if row.get("captain_id") not in starters:
+                stale_reasons.append("castle_captain_not_in_starters")
+            if row.get("vice_captain_id") not in starters:
+                stale_reasons.append("castle_vice_captain_not_in_starters")
+            if stale_reasons:
                 self.gaps["lineup_stale_slots_or_armbands_require_review"] += 1
+                self.lineup_review.append(
+                    {
+                        "source_lineup_id": row.get("id"),
+                        "gameweek": gw,
+                        "source_team_name": source_team.get("name"),
+                        "source_team_id": source_team.get("id"),
+                        "reasons": stale_reasons,
+                        "starter_count": len(starters),
+                        "bench_count": len(bench),
+                        "captain_id": row.get("captain_id"),
+                        "vice_captain_id": row.get("vice_captain_id"),
+                        "staging_slots": [
+                            {
+                                "id": slot.get("id"),
+                                "player_id": slot.get("player_id"),
+                                "slot": slot.get("slot"),
+                                "slot_order": slot.get("slot_order"),
+                                "is_captain": slot.get("is_captain"),
+                                "is_vice_captain": slot.get("is_vice_captain"),
+                            }
+                            for slot in existing_slots
+                        ],
+                    }
+                )
                 continue
             try:
                 updated = timestamp(row["updated_at"])

@@ -6,7 +6,7 @@ from collections import Counter
 from collections.abc import Callable
 from typing import Any
 
-from sqlalchemy import MetaData, Table, insert, select, text, update
+from sqlalchemy import MetaData, Table, delete, insert, select, text, update
 from sqlalchemy.orm import Session
 
 from cdl_api.contracts.castle_sync import CastleSyncConfig
@@ -91,7 +91,11 @@ class CastleSyncRepository:
             }
             source_digest = digest(adapter.files)
             native_intent = (
-                [[p["table"], p["id"], digest(p["values"])] for p in adapter.projections]
+                [["upsert", p["table"], p["id"], digest(p["values"])] for p in adapter.projections]
+                + [
+                    ["delete", deletion["table"], deletion["id"]]
+                    for deletion in adapter.lineup_deletions
+                ]
                 if config.projection == "native"
                 else []
             )
@@ -153,7 +157,7 @@ class CastleSyncRepository:
                             },
                         )
                     )
-            native_changes, native_states = [], []
+            native_changes, native_deletions, native_states = [], [], []
             native_conflicts = []
             seen = set()
             for projection in adapter.projections:
@@ -178,6 +182,26 @@ class CastleSyncRepository:
                     native_conflicts.append(state_key)
                     continue
                 native_changes.append((projection, before, state_key, prior))
+            seen_deletions = set()
+            for deletion in adapter.lineup_deletions:
+                name, row_id = deletion["table"], deletion["id"]
+                if name != "team_selection_lineup_slots" or row_id in seen_deletions:
+                    raise ValueError("Unsupported or duplicate native deletion")
+                seen_deletions.add(row_id)
+                current = next((r for r in catalog[name] if r["id"] == row_id), None)
+                if current is None:
+                    continue
+                before = dict(current)
+                state_key = sync_id(adapter.scope, "projection-delete", name, row_id)
+                prior = mappings.get(state_key)
+                before_hash = digest(before)
+                native_states.append([state_key, before_hash])
+                protected = prior and prior.get("last_digest") != before_hash
+                unadopted = current and not prior and not config.adopt_existing
+                if protected or unadopted:
+                    native_conflicts.append(state_key)
+                    continue
+                native_deletions.append((deletion, before, state_key, prior))
             plan = digest(
                 {
                     "source": source_digest,
@@ -192,9 +216,12 @@ class CastleSyncRepository:
                 }
             )
             changes_by_table: Counter[str] = Counter()
+            deletions_by_table: Counter[str] = Counter()
             for projection, before, _, _ in native_changes:
                 if digest(before) != digest(projection["values"]):
                     changes_by_table[projection["table"]] += 1
+            for deletion, _, _, _ in native_deletions:
+                deletions_by_table[deletion["table"]] += 1
             report = {
                 "contract": "castle-sync/v1",
                 "plan_digest": plan,
@@ -206,6 +233,7 @@ class CastleSyncRepository:
                 "identity_mappings": len(adapter.mappings),
                 "mapping_conflicts": len(mapping_conflicts),
                 "native_changes": dict(changes_by_table),
+                "native_deletions": dict(deletions_by_table),
                 "native_conflicts": len(native_conflicts),
                 "gaps": dict(adapter.gaps),
                 "archive_only": dict(adapter.archive_only),
@@ -247,6 +275,45 @@ class CastleSyncRepository:
             for mid, payload in identity_changes:
                 self._put(session, tables["import_source_mappings"], mid, payload, False)
             if config.projection == "native":
+                for deletion, before, state_key, prior in native_deletions:
+                    table, row_id = tables[deletion["table"]], deletion["id"]
+                    backup_key = sync_id(
+                        adapter.scope,
+                        "target-before",
+                        table.name,
+                        row_id,
+                        digest(before),
+                    )
+                    if backup_key not in saved:
+                        session.execute(
+                            insert(tables["import_source_payloads"]).values(
+                                id=backup_key,
+                                payload_json={
+                                    "source_scope": adapter.scope,
+                                    "entity_type": "castle_target_backup",
+                                    "batch_id": batch_id,
+                                    "table": table.name,
+                                    "target_id": row_id,
+                                    "payload": json.loads(canonical(before)),
+                                    "archived": True,
+                                },
+                            )
+                        )
+                    session.execute(delete(table).where(table.c.id == row_id))
+                    self._put(
+                        session,
+                        tables["import_source_mappings"],
+                        state_key,
+                        {
+                            "source_scope": adapter.scope,
+                            "source_key": f"projection-delete:{table.name}:{row_id}",
+                            "target_id": row_id,
+                            "last_digest": digest({"deleted": True}),
+                            "synthetic": False,
+                            "deleted": True,
+                        },
+                        prior is not None,
+                    )
                 for projection, before, state_key, prior in native_changes:
                     table, row_id, values = (
                         tables[projection["table"]],

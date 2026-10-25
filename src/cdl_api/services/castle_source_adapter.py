@@ -111,6 +111,7 @@ class CastleSourceAdapter:
         self.fixture_team_review: list[dict[str, Any]] = []
         self.fixture_evidence_review: list[dict[str, Any]] = []
         self.lineup_review: list[dict[str, Any]] = []
+        self.lineup_deletions: list[dict[str, str]] = []
         self.mappings: dict[str, str] = {}
         self.projections: list[dict[str, Any]] = []
         self.teams: dict[str, dict] = {}
@@ -220,6 +221,7 @@ class CastleSourceAdapter:
         by_code = {
             p.get("code"): f"fpl-{p['id']}" for p in cache.get("elements", []) if p.get("code")
         }
+        by_fpl_id = {p.get("id"): p for p in cache.get("elements", [])}
         candidates = self.rows("draft_picks") + self.rows("draw_results")
         candidates += [
             p
@@ -239,14 +241,18 @@ class CastleSourceAdapter:
             code = row.get("fpl_player_code")
             target_id = explicit or (by_code.get(code) if code else f"fpl-{pid}")
             target = players.get(target_id)
-            valid = target and (
-                explicit
-                or code
-                or (
-                    normalized(target["web_name"]) == normalized(row.get("player_web_name", ""))
-                    and target["position_id"] == positions.get(row.get("element_type"))
-                )
-            )
+            cached_element = by_fpl_id.get(pid)
+            source_details_match = (
+                normalized(target["web_name"]) == normalized(row.get("player_web_name", ""))
+                and target["position_id"] == positions.get(row.get("element_type"))
+            ) if target else False
+            cached_identity_match = (
+                target_id == f"fpl-{pid}"
+                and cached_element is not None
+                and normalized(target["web_name"]) == normalized(cached_element.get("web_name", ""))
+                and target["position_id"] == positions.get(cached_element.get("element_type"))
+            ) if target else False
+            valid = target and (explicit or code or source_details_match or cached_identity_match)
             if valid:
                 if pid in self.players and self.players[pid] != target_id:
                     raise ValueError("Conflicting source player identities")
@@ -325,6 +331,9 @@ class CastleSourceAdapter:
         bootstrap_elements = {
             element.get("id"): element for element in bootstrap.get("elements", [])
         }
+        target_players_by_id = {
+            player["id"]: player for player in self.target_rows("fpl_players")
+        }
         source_player_details: dict[int, dict[str, Any]] = {}
         source_player_rows = list(self.rows("draft_picks")) + list(self.rows("draw_results"))
         for trade in self.rows("trades"):
@@ -351,6 +360,8 @@ class CastleSourceAdapter:
                 invalid_reasons.append("manager_team_unmapped")
             if len(starters) != 11:
                 invalid_reasons.append("starter_count_not_11")
+            if len(bench) != 5:
+                invalid_reasons.append("bench_count_not_5")
             if len(set(all_players)) != len(all_players):
                 invalid_reasons.append("duplicate_player_ids")
             missing_players = [pid for pid in all_players if pid not in self.players]
@@ -420,11 +431,6 @@ class CastleSourceAdapter:
             stale_reasons = []
             if len({slot["player_id"] for slot in existing_slots}) != len(existing_slots):
                 stale_reasons.append("duplicate_target_player_slots")
-            if any(
-                slot["player_id"] not in explicit_players and slot["slot"] != "reserve"
-                for slot in existing_slots
-            ):
-                stale_reasons.append("target_starter_or_bench_not_in_castle_lineup")
             if row.get("captain_id") not in starters:
                 stale_reasons.append("castle_captain_not_in_starters")
             if row.get("vice_captain_id") not in starters:
@@ -464,8 +470,36 @@ class CastleSourceAdapter:
             except ValueError:
                 self.gaps["lineup_timestamp_missing"] += 1
                 continue
-            for slot, ids in [("starter", starters), ("bench", bench)]:
-                for order, pid in enumerate(ids, 1):
+            lineup_assignments = [("starter", pid, order) for order, pid in enumerate(starters, 1)]
+            bench_goalkeepers = [
+                pid for pid in bench if target_players_by_id.get(self.players[pid], {}).get("position_id") == "GKP"
+            ]
+            bench_outfield = [
+                pid for pid in bench if target_players_by_id.get(self.players[pid], {}).get("position_id") != "GKP"
+            ]
+            if len(bench_goalkeepers) != 1 or len(bench_outfield) != 4:
+                self.gaps["lineup_invalid_or_identity_unresolved"] += 1
+                self.lineup_review.append(
+                    {
+                        "source_lineup_id": row.get("id"),
+                        "gameweek": gw,
+                        "source_team_name": source_team.get("name"),
+                        "reasons": ["bench_positions_do_not_fit_target"],
+                        "bench_player_ids": bench,
+                    }
+                )
+                continue
+            lineup_assignments.extend(
+                [("bench", bench_goalkeepers[0], 0)]
+                + [("bench", pid, order) for order, pid in enumerate(bench_outfield, 1)]
+            )
+            self.lineup_deletions.extend(
+                {"table": "team_selection_lineup_slots", "id": slot["id"]}
+                for slot in existing_slots
+                if slot["slot"] in {"starter", "bench"}
+                and slot["player_id"] not in explicit_players
+            )
+            for slot, pid, order in lineup_assignments:
                     player = self.players[pid]
                     existing = next((s for s in existing_slots if s["player_id"] == player), None)
                     lineup_id = (

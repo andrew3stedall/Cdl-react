@@ -3,11 +3,13 @@
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 from pathlib import Path
 
 from sqlalchemy import create_engine
+from sqlalchemy.exc import DBAPIError, IntegrityError, OperationalError, ProgrammingError
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import sessionmaker
 
@@ -114,10 +116,25 @@ def main() -> None:
 if __name__ == "__main__":
     try:
         main()
-    except Exception:
-        # SQL errors may contain source payloads or connection parameters.
+    except Exception as exc:
+        # Log only a coarse category and a validated SQLSTATE; never exception text.
+        if isinstance(exc, OperationalError):
+            category = "database_connection_or_authentication"
+        elif isinstance(exc, IntegrityError):
+            category = "database_constraint"
+        elif isinstance(exc, ProgrammingError):
+            category = "database_schema_or_query"
+        elif isinstance(exc, DBAPIError):
+            category = "database_driver"
+        else:
+            category = type(exc).__name__
+        original = getattr(exc, "orig", None)
+        sqlstate = getattr(original, "sqlstate", None) or getattr(original, "pgcode", None)
+        sqlstate = str(sqlstate) if sqlstate is not None else ""
+        if not re.fullmatch(r"[0-9A-Z]{5}", sqlstate):
+            sqlstate = "unavailable"
         print(
-            "Castle sync stopped. Check the last successful report, mapping, "
-            "expected plan and staging access. No raw error or credentials logged."
+            f"Castle sync stopped; category={category}; "
+            f"sqlstate={sqlstate}. Raw error and credentials are suppressed."
         )
         raise SystemExit(1) from None

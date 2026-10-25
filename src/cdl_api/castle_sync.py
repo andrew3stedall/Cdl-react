@@ -9,8 +9,13 @@ import subprocess
 from pathlib import Path
 
 from sqlalchemy import create_engine
-from sqlalchemy.exc import DBAPIError, IntegrityError, OperationalError, ProgrammingError
 from sqlalchemy.engine import make_url
+from sqlalchemy.exc import (
+    DBAPIError,
+    IntegrityError,
+    OperationalError,
+    ProgrammingError,
+)
 from sqlalchemy.orm import sessionmaker
 
 from cdl_api.contracts.castle_sync import CastleSyncConfig

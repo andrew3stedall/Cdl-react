@@ -229,6 +229,14 @@ class CastleSourceAdapter:
             for key in ("proposer_players", "receiver_players")
             for p in trade.get(key, [])
         ]
+        # Some Castle lineup selections are not present in the other collections.
+        # Resolve those numeric FPL IDs only through the existing bootstrap cache
+        # validation below; this does not create or infer a target player.
+        candidates += [
+            {"fpl_player_id": player_id}
+            for lineup in self.rows("lineups")
+            for player_id in (lineup.get("starter_ids") or []) + (lineup.get("bench_ids") or [])
+        ]
         for row in self.rows("draws"):
             if row.get("status") == "completed":
                 candidates += [

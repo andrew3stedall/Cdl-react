@@ -57,7 +57,6 @@ jobs:
     env:
       PROJECT_ID: ${{ vars.GCP_STAGING_PROJECT_ID }}
       CASTLE_EXPORT_DATA: 'true'
-      CASTLE_SYNC_INPUT_PATH: ${{ runner.temp }}/castle-sync-input.json
       CASTLE_EXPECTED_PLAN: ${{ inputs.expected_plan }}
       CASTLE_CONFIRM_APPLY: ${{ inputs.confirmation }}
       CASTLE_SOURCE_LEAGUE: ${{ inputs.source_league }}

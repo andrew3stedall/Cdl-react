@@ -104,9 +104,11 @@ class CastleSourceAdapter:
             if path not in self.files or counts.get(path) != len(self.files[path]):
                 raise ValueError("Missing or truncated required source collection")
         self.gaps: Counter[str] = Counter()
+        self.archive_only: Counter[str] = Counter()
         self.team_match_review: list[dict[str, Any]] = []
         self.team_fuzzy_matches: list[dict[str, Any]] = []
         self.fixture_team_review: list[dict[str, Any]] = []
+        self.fixture_evidence_review: list[dict[str, Any]] = []
         self.mappings: dict[str, str] = {}
         self.projections: list[dict[str, Any]] = []
         self.teams: dict[str, dict] = {}
@@ -377,20 +379,31 @@ class CastleSourceAdapter:
                 self.teams.get(row.get("away_team_id")),
             )
             if not home or not away:
-                self.gaps["fixture_unassigned_or_unmapped_team"] += 1
-                self.fixture_team_review.append(
-                    {
-                        "source_fixture_id": row.get("id"),
-                        "gameweek": row.get("gameweek"),
-                        "stage": row.get("stage"),
-                        "home_source_team_id": row.get("home_team_id"),
-                        "home_source_team_name": source_team_names.get(row.get("home_team_id")),
-                        "home_target_team_id": home["id"] if home else None,
-                        "away_source_team_id": row.get("away_team_id"),
-                        "away_source_team_name": source_team_names.get(row.get("away_team_id")),
-                        "away_target_team_id": away["id"] if away else None,
-                    }
-                )
+                if (
+                    row.get("stage") in {"semi", "final", "consolation"}
+                    and row.get("home_team_id") is None
+                    and row.get("away_team_id") is None
+                ):
+                    self.archive_only["playoff_fixture_waiting_for_participants"] += 1
+                else:
+                    self.gaps["fixture_unassigned_or_unmapped_team"] += 1
+                    self.fixture_team_review.append(
+                        {
+                            "source_fixture_id": row.get("id"),
+                            "gameweek": row.get("gameweek"),
+                            "stage": row.get("stage"),
+                            "home_source_team_id": row.get("home_team_id"),
+                            "home_source_team_name": source_team_names.get(
+                                row.get("home_team_id")
+                            ),
+                            "home_target_team_id": home["id"] if home else None,
+                            "away_source_team_id": row.get("away_team_id"),
+                            "away_source_team_name": source_team_names.get(
+                                row.get("away_team_id")
+                            ),
+                            "away_target_team_id": away["id"] if away else None,
+                        }
+                    )
                 continue
             gw = row["gameweek"]
             if gw not in events:
@@ -412,15 +425,49 @@ class CastleSourceAdapter:
                 for r in self.target_rows("fixture_results")
                 if r["payload_json"].get("fixture_id") == fid
             ]
-            if (
-                len(existing_results) > 1
-                or any(
-                    s["payload_json"].get("fixture_id") == fid
-                    for s in self.target_rows("fixture_scoring_snapshots")
-                )
-                or any(r["payload_json"].get("finalised") for r in existing_results)
-            ):
+            snapshots = [
+                s
+                for s in self.target_rows("fixture_scoring_snapshots")
+                if s["payload_json"].get("fixture_id") == fid
+            ]
+            evidence_reasons = []
+            if len(existing_results) > 1:
+                evidence_reasons.append("multiple_target_results")
+            if snapshots:
+                evidence_reasons.append("target_scoring_snapshots")
+            if any(r["payload_json"].get("finalised") for r in existing_results):
+                evidence_reasons.append("finalised_target_result")
+            if evidence_reasons:
                 self.gaps["fixture_has_existing_scoring_evidence"] += 1
+                target_fixture = candidates[0] if candidates else None
+                self.fixture_evidence_review.append(
+                    {
+                        "source_fixture_id": row.get("id"),
+                        "gameweek": gw,
+                        "stage": row.get("stage"),
+                        "source_home_team": source_team_names.get(row.get("home_team_id")),
+                        "source_away_team": source_team_names.get(row.get("away_team_id")),
+                        "source_home_score": row.get("home_score"),
+                        "source_away_score": row.get("away_score"),
+                        "target_fixture_id": target_fixture.get("id") if target_fixture else fid,
+                        "target_status": (
+                            target_fixture.get("payload_json", {}).get("status")
+                            if target_fixture
+                            else None
+                        ),
+                        "target_results": [
+                            {
+                                "id": result.get("id"),
+                                "home_score": result.get("payload_json", {}).get("home_score"),
+                                "away_score": result.get("payload_json", {}).get("away_score"),
+                                "finalised": result.get("payload_json", {}).get("finalised"),
+                            }
+                            for result in existing_results
+                        ],
+                        "target_scoring_snapshot_count": len(snapshots),
+                        "reasons": evidence_reasons,
+                    }
+                )
                 continue
             self.mappings[f"fixture:{row['id']}"] = fid
             scored = row.get("home_score") is not None and row.get("away_score") is not None

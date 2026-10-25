@@ -72,7 +72,7 @@ export function openExport(envelope, password) {
   return JSON.parse(gunzipSync(Buffer.concat([decipher.update(Buffer.from(envelope.ciphertext, 'base64')), decipher.final()])));
 }
 
-export async function exportData(reader, userId, progress = () => {}) {
+export async function exportData(reader, userId, progress = () => {}, { includeFpl = false } = {}) {
   const files = {}, collections = [], failures = [];
   const save = (path, data) => { files[path] = data; return data; };
   const collect = async (path, table, filters = {}, columns = '*') => {
@@ -116,8 +116,8 @@ export async function exportData(reader, userId, progress = () => {}) {
       save(path, r.data); return r.data;
     } catch { failures.push({ file: path, status: 'read_failed' }); return null; }
   };
-  const bootstrap = await functionRead('fpl/bootstrap.json', 'fpl-bootstrap', {});
-  await functionRead('fpl/fixtures.json', 'fpl-fixtures', {});
+  const bootstrap = includeFpl ? await functionRead('fpl/bootstrap.json', 'fpl-bootstrap', {}) : null;
+  if (includeFpl) await functionRead('fpl/fixtures.json', 'fpl-fixtures', {});
   if (bootstrap) {
     for (const event of bootstrap.events ?? []) {
       if (event.finished || event.is_current || event.is_previous) {

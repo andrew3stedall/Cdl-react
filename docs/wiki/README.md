@@ -4,6 +4,8 @@ This wiki is the general knowledge base for the CDL React rebuild. It is intende
 
 ## Wiki pages
 
+- [Repeatable Castle source sync](../runbooks/castle-source-sync.md)
+
 - [Castle temporary data export](castle-temporary-export.md)
 
 - [Castle source data inventory](castle-data-inventory.md)

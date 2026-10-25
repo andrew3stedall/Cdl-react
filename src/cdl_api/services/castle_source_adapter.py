@@ -441,7 +441,10 @@ class CastleSourceAdapter:
                     for result in existing_results
                 )
                 and snapshots
-                and all(snapshot.get("payload_json", {}).get("synthetic") is True for snapshot in snapshots)
+                and all(
+                    snapshot.get("payload_json", {}).get("synthetic") is True
+                    for snapshot in snapshots
+                )
             )
             if source_unscored and target_has_only_empty_synthetic_evidence:
                 self.already_represented["unscored_fixture_matches_staging_seed"] += 1

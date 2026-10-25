@@ -6,6 +6,7 @@ import os
 import re
 import shutil
 import subprocess
+import traceback
 from pathlib import Path
 
 from sqlalchemy import create_engine
@@ -138,8 +139,22 @@ if __name__ == "__main__":
         sqlstate = str(sqlstate) if sqlstate is not None else ""
         if not re.fullmatch(r"[0-9A-Z]{5}", sqlstate):
             sqlstate = "unavailable"
+        frames = traceback.extract_tb(exc.__traceback__)
+        location = next(
+            (
+                f"{Path(frame.filename).name}:{frame.lineno}:{frame.name}"
+                for frame in reversed(frames)
+                if "/cdl_api/" in frame.filename
+            ),
+            "unknown",
+        )
+        detail = (
+            f"; json_line={exc.lineno}; json_column={exc.colno}"
+            if isinstance(exc, json.JSONDecodeError)
+            else ""
+        )
         print(
-            f"Castle sync stopped; category={category}; "
-            f"sqlstate={sqlstate}. Raw error and credentials are suppressed."
+            f"Castle sync stopped; category={category}; sqlstate={sqlstate}; "
+            f"location={location}{detail}. Raw error and credentials are suppressed."
         )
         raise SystemExit(1) from None

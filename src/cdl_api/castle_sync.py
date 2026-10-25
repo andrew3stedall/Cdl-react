@@ -66,9 +66,9 @@ def main() -> None:
             source_league_id=os.environ.get("CASTLE_SOURCE_LEAGUE", ""),
             projection=args.projection,
             adopt_existing=os.environ.get("CASTLE_ADOPT_EXISTING") == "true",
-            team_aliases=json.loads(os.environ.get("CASTLE_TEAM_ALIASES", "{}")),
-            player_ids=json.loads(os.environ.get("CASTLE_PLAYER_IDS", "{}")),
-            trade_gameweeks=json.loads(os.environ.get("CASTLE_TRADE_GAMEWEEKS", "{}")),
+            team_aliases=json.loads(os.environ.get("CASTLE_TEAM_ALIASES") or "{}"),
+            player_ids=json.loads(os.environ.get("CASTLE_PLAYER_IDS") or "{}"),
+            trade_gameweeks=json.loads(os.environ.get("CASTLE_TRADE_GAMEWEEKS") or "{}"),
         )
         bundle = json.loads(source.read_text())
         gcloud = shutil.which("gcloud")

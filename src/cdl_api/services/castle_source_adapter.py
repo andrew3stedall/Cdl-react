@@ -105,6 +105,7 @@ class CastleSourceAdapter:
                 raise ValueError("Missing or truncated required source collection")
         self.gaps: Counter[str] = Counter()
         self.archive_only: Counter[str] = Counter()
+        self.already_represented: Counter[str] = Counter()
         self.team_match_review: list[dict[str, Any]] = []
         self.team_fuzzy_matches: list[dict[str, Any]] = []
         self.fixture_team_review: list[dict[str, Any]] = []
@@ -430,6 +431,22 @@ class CastleSourceAdapter:
                 for s in self.target_rows("fixture_scoring_snapshots")
                 if s["payload_json"].get("fixture_id") == fid
             ]
+            source_unscored = row.get("home_score") is None and row.get("away_score") is None
+            target_has_only_empty_synthetic_evidence = (
+                existing_results
+                and all(
+                    result.get("payload_json", {}).get("synthetic") is True
+                    and result.get("payload_json", {}).get("home_score") is None
+                    and result.get("payload_json", {}).get("away_score") is None
+                    for result in existing_results
+                )
+                and snapshots
+                and all(snapshot.get("payload_json", {}).get("synthetic") is True for snapshot in snapshots)
+            )
+            if source_unscored and target_has_only_empty_synthetic_evidence:
+                self.already_represented["unscored_fixture_matches_staging_seed"] += 1
+                self.mappings[f"fixture:{row['id']}"] = fid
+                continue
             evidence_reasons = []
             if len(existing_results) > 1:
                 evidence_reasons.append("multiple_target_results")

@@ -364,8 +364,8 @@ class CastleSourceAdapter:
                 invalid_reasons.append("manager_team_unmapped")
             if len(starters) != 11:
                 invalid_reasons.append("starter_count_not_11")
-            if len(bench) != 5:
-                invalid_reasons.append("bench_count_not_5")
+            if len(bench) > 5:
+                invalid_reasons.append("bench_count_exceeds_5")
             if len(set(all_players)) != len(all_players):
                 invalid_reasons.append("duplicate_player_ids")
             missing_players = [pid for pid in all_players if pid not in self.players]
@@ -423,6 +423,21 @@ class CastleSourceAdapter:
                     }
                 )
                 continue
+            if len(bench) < 5:
+                self.gaps["lineup_partial_bench_imported"] += 1
+                self.lineup_review.append(
+                    {
+                        "source_lineup_id": row.get("id"),
+                        "gameweek": row.get("gameweek"),
+                        "source_team_name": source_team.get("name"),
+                        "source_team_id": source_team.get("id"),
+                        "starter_count": len(starters),
+                        "bench_count": len(bench),
+                        "reasons": ["partial_bench_imported"],
+                        "castle_starter_ids": starters,
+                        "castle_bench_ids": bench,
+                    }
+                )
             gw = row["gameweek"]
             explicit_players = {self.players[p] for p in starters + bench}
             existing_slots = [
@@ -481,7 +496,13 @@ class CastleSourceAdapter:
             bench_outfield = [
                 pid for pid in bench if target_players_by_id.get(self.players[pid], {}).get("position_id") != "GKP"
             ]
-            if len(bench_goalkeepers) != 1 or len(bench_outfield) != 4:
+            full_bench_invalid = len(bench) == 5 and (
+                len(bench_goalkeepers) != 1 or len(bench_outfield) != 4
+            )
+            partial_bench_invalid = len(bench) < 5 and (
+                len(bench_goalkeepers) > 1 or len(bench_outfield) > 4
+            )
+            if full_bench_invalid or partial_bench_invalid:
                 self.gaps["lineup_invalid_or_identity_unresolved"] += 1
                 self.lineup_review.append(
                     {

@@ -214,6 +214,7 @@ class CastleSyncRepository:
                 "team_fuzzy_matches": adapter.team_fuzzy_matches,
                 "fixture_team_review": adapter.fixture_team_review,
                 "fixture_evidence_review": adapter.fixture_evidence_review,
+                "lineup_review": adapter.lineup_review,
                 "applied": False,
             }
             if not apply:

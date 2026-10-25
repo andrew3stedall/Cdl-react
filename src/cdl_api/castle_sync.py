@@ -109,6 +109,7 @@ def main() -> None:
             "fuzzy_matches": report.pop("team_fuzzy_matches", []),
             "unresolved": report.pop("team_match_review", []),
             "unresolved_fixture_teams": report.pop("fixture_team_review", []),
+            "fixture_scoring_evidence": report.pop("fixture_evidence_review", []),
         }
         review_path = temporary / "castle-sync-team-review.json"
         review_path.write_text(json.dumps(team_review, indent=2))

@@ -106,6 +106,7 @@ class CastleSourceAdapter:
         self.gaps: Counter[str] = Counter()
         self.team_match_review: list[dict[str, Any]] = []
         self.team_fuzzy_matches: list[dict[str, Any]] = []
+        self.fixture_team_review: list[dict[str, Any]] = []
         self.mappings: dict[str, str] = {}
         self.projections: list[dict[str, Any]] = []
         self.teams: dict[str, dict] = {}
@@ -369,6 +370,7 @@ class CastleSourceAdapter:
 
     def _fixtures(self) -> None:
         events = {int(e["id"]): e for e in self.target_rows("fpl_gameweeks")}
+        source_team_names = {team["id"]: team["name"] for team in self.rows("castle_teams")}
         for row in self.rows("castle_fixtures"):
             home, away = (
                 self.teams.get(row.get("home_team_id")),
@@ -376,6 +378,19 @@ class CastleSourceAdapter:
             )
             if not home or not away:
                 self.gaps["fixture_unassigned_or_unmapped_team"] += 1
+                self.fixture_team_review.append(
+                    {
+                        "source_fixture_id": row.get("id"),
+                        "gameweek": row.get("gameweek"),
+                        "stage": row.get("stage"),
+                        "home_source_team_id": row.get("home_team_id"),
+                        "home_source_team_name": source_team_names.get(row.get("home_team_id")),
+                        "home_target_team_id": home["id"] if home else None,
+                        "away_source_team_id": row.get("away_team_id"),
+                        "away_source_team_name": source_team_names.get(row.get("away_team_id")),
+                        "away_target_team_id": away["id"] if away else None,
+                    }
+                )
                 continue
             gw = row["gameweek"]
             if gw not in events:

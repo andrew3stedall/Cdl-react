@@ -210,6 +210,7 @@ class CastleSyncRepository:
                 "gaps": dict(adapter.gaps),
                 "team_match_review": adapter.team_match_review,
                 "team_fuzzy_matches": adapter.team_fuzzy_matches,
+                "fixture_team_review": adapter.fixture_team_review,
                 "applied": False,
             }
             if not apply:

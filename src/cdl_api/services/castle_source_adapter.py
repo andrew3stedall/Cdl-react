@@ -516,6 +516,7 @@ class CastleSourceAdapter:
                             "home_score": row["home_score"],
                             "away_score": row["away_score"],
                             "outcome": outcome,
+                            "finalised": status == "complete",
                             "synthetic": False,
                         }
                     },

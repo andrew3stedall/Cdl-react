@@ -105,7 +105,10 @@ def main() -> None:
             )
         finally:
             engine.dispose()
-        team_review = report.pop("team_match_review", [])
+        team_review = {
+            "fuzzy_matches": report.pop("team_fuzzy_matches", []),
+            "unresolved": report.pop("team_match_review", []),
+        }
         review_path = temporary / "castle-sync-team-review.json"
         review_path.write_text(json.dumps(team_review, indent=2))
         review_path.chmod(0o600)

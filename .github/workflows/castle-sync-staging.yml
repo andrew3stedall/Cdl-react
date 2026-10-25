@@ -7,6 +7,8 @@ on:
     branches: [main]
     paths:
       - 'src/cdl_api/castle_sync.py'
+      - 'src/cdl_api/repositories/castle_sync.py'
+      - 'src/cdl_api/services/castle_source_adapter.py'
       - '.github/workflows/castle-sync-staging.yml'
   workflow_dispatch:
     inputs:
@@ -136,6 +138,7 @@ jobs:
           name: castle-sync-${{ github.run_id }}
           path: |
             ${{ runner.temp }}/castle-sync-report.json
+            ${{ runner.temp }}/castle-sync-team-review.json
             ${{ runner.temp }}/castle-export/
           if-no-files-found: warn
           retention-days: 3

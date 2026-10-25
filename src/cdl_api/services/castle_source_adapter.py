@@ -7,6 +7,7 @@ JSON payloads intentionally retain unknown fields; this is an import boundary.
 import hashlib
 import json
 from collections import Counter
+from difflib import SequenceMatcher
 from datetime import UTC, datetime
 from typing import Any
 
@@ -90,6 +91,7 @@ class CastleSourceAdapter:
             if path not in self.files or counts.get(path) != len(self.files[path]):
                 raise ValueError("Missing or truncated required source collection")
         self.gaps: Counter[str] = Counter()
+        self.team_match_review: list[dict[str, Any]] = []
         self.mappings: dict[str, str] = {}
         self.projections: list[dict[str, Any]] = []
         self.teams: dict[str, dict] = {}
@@ -136,6 +138,35 @@ class CastleSourceAdapter:
             ]
             if len(matches) != 1 or matches[0]["id"] in used:
                 self.gaps["unmapped_or_ambiguous_team"] += 1
+                ranked = sorted(
+                    (
+                        (
+                            SequenceMatcher(
+                                None,
+                                normalized(team["name"]),
+                                normalized(candidate["name"]),
+                            ).ratio(),
+                            candidate,
+                        )
+                        for candidate in target_teams
+                    ),
+                    key=lambda item: (-item[0], item[1]["id"]),
+                )
+                self.team_match_review.append(
+                    {
+                        "source_team_id": team["id"],
+                        "source_team_name": team["name"],
+                        "reason": "duplicate_target_match" if matches else "no_exact_match",
+                        "target_candidates": [
+                            {
+                                "target_team_id": candidate["id"],
+                                "target_team_name": candidate["name"],
+                                "similarity": round(score, 3),
+                            }
+                            for score, candidate in ranked[:3]
+                        ],
+                    }
+                )
                 continue
             target = matches[0]
             used.add(target["id"])

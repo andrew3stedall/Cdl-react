@@ -239,7 +239,8 @@ class CastleSourceAdapter:
             pid = row["fpl_player_id"]
             explicit = cfg.player_ids.get(str(pid))
             code = row.get("fpl_player_code")
-            target_id = explicit or (by_code.get(code) if code else f"fpl-{pid}")
+            coded_target_id = by_code.get(code) if code else None
+            target_id = explicit or coded_target_id or f"fpl-{pid}"
             target = players.get(target_id)
             cached_element = by_fpl_id.get(pid)
             source_details_match = (
@@ -252,7 +253,10 @@ class CastleSourceAdapter:
                 and normalized(target["web_name"]) == normalized(cached_element.get("web_name", ""))
                 and target["position_id"] == positions.get(cached_element.get("element_type"))
             ) if target else False
-            valid = target and (explicit or code or source_details_match or cached_identity_match)
+            code_identity_match = bool(code and coded_target_id and target_id == coded_target_id)
+            valid = target and (
+                bool(explicit) or code_identity_match or source_details_match or cached_identity_match
+            )
             if valid:
                 if pid in self.players and self.players[pid] != target_id:
                     raise ValueError("Conflicting source player identities")

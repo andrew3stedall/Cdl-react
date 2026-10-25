@@ -311,6 +311,20 @@ class CastleSourceAdapter:
             for team in self.rows("castle_teams")
             if team.get("owner_user_id")
         }
+        target_players_by_id = {
+            player["id"]: player for player in self.target_rows("fpl_players")
+        }
+        bootstrap = next(
+            (
+                cache["payload_json"]
+                for cache in self.target_rows("external_payload_cache")
+                if cache["resource"] == "bootstrap-static"
+            ),
+            {},
+        )
+        bootstrap_elements = {
+            element.get("id"): element for element in bootstrap.get("elements", [])
+        }
         source_player_details: dict[int, dict[str, Any]] = {}
         source_player_rows = list(self.rows("draft_picks")) + list(self.rows("draw_results"))
         for trade in self.rows("trades"):
@@ -357,9 +371,36 @@ class CastleSourceAdapter:
                             {
                                 "fpl_player_id": pid,
                                 **source_player_details.get(pid, {}),
+                                "target_candidate": (
+                                    {
+                                        "id": target_players_by_id[f"fpl-{pid}"]["id"],
+                                        "web_name": target_players_by_id[f"fpl-{pid}"].get(
+                                            "web_name"
+                                        ),
+                                        "position_id": target_players_by_id[f"fpl-{pid}"].get(
+                                            "position_id"
+                                        ),
+                                    }
+                                    if f"fpl-{pid}" in target_players_by_id
+                                    else None
+                                ),
+                                "cached_fpl_element": (
+                                    {
+                                        "id": bootstrap_elements[pid].get("id"),
+                                        "code": bootstrap_elements[pid].get("code"),
+                                        "web_name": bootstrap_elements[pid].get("web_name"),
+                                        "element_type": bootstrap_elements[pid].get(
+                                            "element_type"
+                                        ),
+                                    }
+                                    if pid in bootstrap_elements
+                                    else None
+                                ),
                             }
                             for pid in missing_players
                         ],
+                        "castle_starter_ids": starters,
+                        "castle_bench_ids": bench,
                         "captain_id": row.get("captain_id"),
                         "captain_is_starter": row.get("captain_id") in starters,
                         "vice_captain_id": row.get("vice_captain_id"),
@@ -399,6 +440,8 @@ class CastleSourceAdapter:
                         "reasons": stale_reasons,
                         "starter_count": len(starters),
                         "bench_count": len(bench),
+                        "castle_starter_ids": starters,
+                        "castle_bench_ids": bench,
                         "captain_id": row.get("captain_id"),
                         "vice_captain_id": row.get("vice_captain_id"),
                         "staging_slots": [

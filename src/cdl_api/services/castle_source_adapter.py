@@ -44,6 +44,19 @@ def normalized(value: str) -> str:
     return " ".join(value.casefold().split())
 
 
+def team_similarity(left: str, right: str) -> float:
+    left_normalized, right_normalized = normalized(left), normalized(right)
+    token_sorted = SequenceMatcher(
+        None,
+        " ".join(sorted(left_normalized.split())),
+        " ".join(sorted(right_normalized.split())),
+    ).ratio()
+    compact = SequenceMatcher(
+        None, left_normalized.replace(" ", ""), right_normalized.replace(" ", "")
+    ).ratio()
+    return max(token_sorted, compact)
+
+
 class CastleSourceAdapter:
     """Map existing identities without creating users, permissions or FPL rows."""
 
@@ -92,6 +105,7 @@ class CastleSourceAdapter:
                 raise ValueError("Missing or truncated required source collection")
         self.gaps: Counter[str] = Counter()
         self.team_match_review: list[dict[str, Any]] = []
+        self.team_fuzzy_matches: list[dict[str, Any]] = []
         self.mappings: dict[str, str] = {}
         self.projections: list[dict[str, Any]] = []
         self.teams: dict[str, dict] = {}
@@ -133,35 +147,46 @@ class CastleSourceAdapter:
                 t
                 for t in target_teams
                 if (
-                    t["id"] == alias if alias else normalized(t["name"]) == normalized(team["name"])
+                    t["id"] == alias
+                    if alias
+                    else normalized(t["name"]) == normalized(team["name"])
                 )
             ]
+            ranked = sorted(
+                (
+                    (team_similarity(team["name"], candidate["name"]), candidate)
+                    for candidate in target_teams
+                ),
+                key=lambda item: (-item[0], item[1]["id"]),
+            )
+            available = [(score, candidate) for score, candidate in ranked if candidate["id"] not in used]
+            if not matches and not alias and available:
+                best_score, best_target = available[0]
+                second_score = available[1][0] if len(available) > 1 else 0.0
+                if best_score >= 0.82 and best_score - second_score >= 0.15:
+                    matches = [best_target]
+                    self.team_fuzzy_matches.append(
+                        {
+                            "source_team_id": team["id"],
+                            "source_team_name": team["name"],
+                            "target_team_id": best_target["id"],
+                            "target_team_name": best_target["name"],
+                            "similarity": round(best_score, 3),
+                        }
+                    )
             if len(matches) != 1 or matches[0]["id"] in used:
                 self.gaps["unmapped_or_ambiguous_team"] += 1
-                ranked = sorted(
-                    (
-                        (
-                            SequenceMatcher(
-                                None,
-                                normalized(team["name"]),
-                                normalized(candidate["name"]),
-                            ).ratio(),
-                            candidate,
-                        )
-                        for candidate in target_teams
-                    ),
-                    key=lambda item: (-item[0], item[1]["id"]),
-                )
                 self.team_match_review.append(
                     {
                         "source_team_id": team["id"],
                         "source_team_name": team["name"],
-                        "reason": "duplicate_target_match" if matches else "no_exact_match",
+                        "reason": "duplicate_target_match" if matches else "no_confident_match",
                         "target_candidates": [
                             {
                                 "target_team_id": candidate["id"],
                                 "target_team_name": candidate["name"],
                                 "similarity": round(score, 3),
+                                "already_mapped": candidate["id"] in used,
                             }
                             for score, candidate in ranked[:3]
                         ],

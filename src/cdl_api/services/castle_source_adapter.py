@@ -461,10 +461,15 @@ class CastleSourceAdapter:
                                 "home_score": result.get("payload_json", {}).get("home_score"),
                                 "away_score": result.get("payload_json", {}).get("away_score"),
                                 "finalised": result.get("payload_json", {}).get("finalised"),
+                                "synthetic": result.get("payload_json", {}).get("synthetic"),
                             }
                             for result in existing_results
                         ],
                         "target_scoring_snapshot_count": len(snapshots),
+                        "target_scoring_snapshots_synthetic": [
+                            snapshot.get("payload_json", {}).get("synthetic")
+                            for snapshot in snapshots
+                        ],
                         "reasons": evidence_reasons,
                     }
                 )

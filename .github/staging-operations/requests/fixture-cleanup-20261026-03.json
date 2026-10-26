@@ -1,0 +1,5 @@
+{
+  "operation": "synthetic-fixture-cleanup",
+  "confirm_database_jobs_applied": true,
+  "confirm_synthetic_fixture_cleanup": true
+}

@@ -356,6 +356,7 @@ jobs:
           allowed = {
               "google_cloud_run_v2_job.database_migration[0]": {("update",)},
               "google_cloud_run_v2_job.synthetic_seed[0]": {("update",)},
+              "google_cloud_run_v2_job.synthetic_fixture_cleanup[0]": {("create",), ("update",)},
               "google_cloud_run_v2_job.fpl_refresh[0]": {("create",), ("update",)},
               "google_cloud_run_v2_job_iam_member.fpl_refresh_scheduler_invoker[0]": {
                   ("create",),
@@ -437,6 +438,7 @@ jobs:
           set -euo pipefail
           echo "MIGRATION_JOB=$(terraform output -raw database_migration_job_name)" >> "${GITHUB_ENV}"
           echo "SYNTHETIC_SEED_JOB=$(terraform output -raw synthetic_seed_job_name)" >> "${GITHUB_ENV}"
+          echo "SYNTHETIC_FIXTURE_CLEANUP_JOB=$(terraform output -raw synthetic_fixture_cleanup_job_name)" >> "${GITHUB_ENV}"
           echo "FPL_REFRESH_JOB=$(terraform output -raw fpl_refresh_job_name)" >> "${GITHUB_ENV}"
           echo "FPL_REFRESH_SCHEDULE=$(terraform output -raw fpl_refresh_schedule_name)" >> "${GITHUB_ENV}"
           echo "SERVICE_URL=$(terraform output -raw cloud_run_api_url)" >> "${GITHUB_ENV}"
@@ -444,7 +446,8 @@ jobs:
       - name: Verify immutable job images
         run: |
           set -euo pipefail
-          for job in "${MIGRATION_JOB}" "${SYNTHETIC_SEED_JOB}" "${FPL_REFRESH_JOB}"; do
+          for job in "${MIGRATION_JOB}" "${SYNTHETIC_SEED_JOB}" \
+            "${SYNTHETIC_FIXTURE_CLEANUP_JOB}" "${FPL_REFRESH_JOB}"; do
             image="$(
               gcloud run jobs describe "${job}" \
                 --project "${PROJECT_ID}" \

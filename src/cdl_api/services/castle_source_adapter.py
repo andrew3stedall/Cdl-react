@@ -61,29 +61,40 @@ class CastleSourceAdapter:
     """Map existing identities without creating users, permissions or FPL rows."""
 
     def __init__(
-        self, bundle: dict[str, Any], config: CastleSyncConfig, catalog: dict[str, list[dict]]
+        self,
+        bundle: dict[str, Any],
+        config: CastleSyncConfig,
+        catalog: dict[str, list[dict]],
     ) -> None:
         self.config, self.catalog = config, catalog
         manifest = bundle.get("manifest", {})
         if manifest.get("format") != "castle-data-export-v1":
             raise ValueError("Unsupported source export")
-        if any(not f.get("file", "").startswith("fpl/") for f in manifest.get("failures", [])):
+        if any(
+            not f.get("file", "").startswith("fpl/")
+            for f in manifest.get("failures", [])
+        ):
             raise ValueError("Incomplete non-FPL export")
         all_files = bundle["files"]
-        scopes = sorted({p.split("/")[1] for p in all_files if p.startswith("leagues/")})
+        scopes = sorted(
+            {p.split("/")[1] for p in all_files if p.startswith("leagues/")}
+        )
         selected = config.source_league_id or (scopes[0] if len(scopes) == 1 else "")
         if selected not in scopes:
             raise ValueError("Select exactly one available source league")
         self.source_league_id = selected
         if not any(
-            m.get("league_id") == selected for m in all_files.get("self/memberships.json", [])
+            m.get("league_id") == selected
+            for m in all_files.get("self/memberships.json", [])
         ):
             raise ValueError("Selected source league is outside exported membership")
         self.root = f"leagues/{selected}/"
         self.files = {
             p: value
             for p, value in all_files.items()
-            if p.startswith(self.root) or p.startswith("global/") or p == "self/memberships.json"
+            if p.startswith(self.root)
+            or p.startswith("global/")
+            or p == "self/memberships.json"
         }
         # Required tables are checked against the exporter count manifest, including empty reads.
         counts = {c["file"]: c["rows"] for c in manifest.get("collections", [])}
@@ -117,7 +128,10 @@ class CastleSourceAdapter:
         self.teams: dict[str, dict] = {}
         self.managers: dict[str, dict] = {}
         self.players: dict[int, str] = {}
-        if len(self.rows("leagues")) != 1 or self.rows("leagues")[0].get("id") != selected:
+        if (
+            len(self.rows("leagues")) != 1
+            or self.rows("leagues")[0].get("id") != selected
+        ):
             raise ValueError("Source league binding is inconsistent")
         self.league = self.rows("leagues")[0]
         if not isinstance(self.league.get("season_number"), int):
@@ -134,7 +148,8 @@ class CastleSourceAdapter:
     def _bind(self) -> None:
         cfg = self.config
         season = next(
-            (s for s in self.target_rows("seasons") if s["id"] == cfg.target_season_id), None
+            (s for s in self.target_rows("seasons") if s["id"] == cfg.target_season_id),
+            None,
         )
         if not season or season["league_id"] != cfg.target_league_id:
             raise ValueError("Target season does not belong to target league")
@@ -143,7 +158,9 @@ class CastleSourceAdapter:
         self.mappings["league"] = cfg.target_league_id
         self.mappings["season"] = cfg.target_season_id
         target_teams = [
-            t for t in self.target_rows("draft_teams") if t["league_id"] == cfg.target_league_id
+            t
+            for t in self.target_rows("draft_teams")
+            if t["league_id"] == cfg.target_league_id
         ]
         manager_by_id = {m["id"]: m for m in self.target_rows("managers")}
         used: set[str] = set()
@@ -190,7 +207,9 @@ class CastleSourceAdapter:
                     {
                         "source_team_id": team["id"],
                         "source_team_name": team["name"],
-                        "reason": "duplicate_target_match" if matches else "no_confident_match",
+                        "reason": "duplicate_target_match"
+                        if matches
+                        else "no_confident_match",
                         "target_candidates": [
                             {
                                 "target_team_id": candidate["id"],
@@ -223,7 +242,9 @@ class CastleSourceAdapter:
             {},
         )
         by_code = {
-            p.get("code"): f"fpl-{p['id']}" for p in cache.get("elements", []) if p.get("code")
+            p.get("code"): f"fpl-{p['id']}"
+            for p in cache.get("elements", [])
+            if p.get("code")
         }
         by_fpl_id = {p.get("id"): p for p in cache.get("elements", [])}
         candidates = self.rows("draft_picks") + self.rows("draw_results")
@@ -239,12 +260,15 @@ class CastleSourceAdapter:
         candidates += [
             {"fpl_player_id": player_id}
             for lineup in self.rows("lineups")
-            for player_id in (lineup.get("starter_ids") or []) + (lineup.get("bench_ids") or [])
+            for player_id in (lineup.get("starter_ids") or [])
+            + (lineup.get("bench_ids") or [])
         ]
         for row in self.rows("draws"):
             if row.get("status") == "completed":
                 candidates += [
-                    p for entries in (row.get("interests_snapshot") or {}).values() for p in entries
+                    p
+                    for entries in (row.get("interests_snapshot") or {}).values()
+                    for p in entries
                 ]
         positions = {1: "GKP", 2: "DEF", 3: "MID", 4: "FWD"}
         for row in candidates:
@@ -256,16 +280,29 @@ class CastleSourceAdapter:
             target = players.get(target_id)
             cached_element = by_fpl_id.get(pid)
             source_details_match = (
-                normalized(target["web_name"]) == normalized(row.get("player_web_name", ""))
-                and target["position_id"] == positions.get(row.get("element_type"))
-            ) if target else False
+                (
+                    normalized(target["web_name"])
+                    == normalized(row.get("player_web_name", ""))
+                    and target["position_id"] == positions.get(row.get("element_type"))
+                )
+                if target
+                else False
+            )
             cached_identity_match = (
-                target_id == f"fpl-{pid}"
-                and cached_element is not None
-                and normalized(target["web_name"]) == normalized(cached_element.get("web_name", ""))
-                and target["position_id"] == positions.get(cached_element.get("element_type"))
-            ) if target else False
-            code_identity_match = bool(code and coded_target_id and target_id == coded_target_id)
+                (
+                    target_id == f"fpl-{pid}"
+                    and cached_element is not None
+                    and normalized(target["web_name"])
+                    == normalized(cached_element.get("web_name", ""))
+                    and target["position_id"]
+                    == positions.get(cached_element.get("element_type"))
+                )
+                if target
+                else False
+            )
+            code_identity_match = bool(
+                code and coded_target_id and target_id == coded_target_id
+            )
             valid = target and (
                 bool(explicit)
                 or code_identity_match
@@ -354,7 +391,9 @@ class CastleSourceAdapter:
             player["id"]: player for player in self.target_rows("fpl_players")
         }
         source_player_details: dict[int, dict[str, Any]] = {}
-        source_player_rows = list(self.rows("draft_picks")) + list(self.rows("draw_results"))
+        source_player_rows = list(self.rows("draft_picks")) + list(
+            self.rows("draw_results")
+        )
         for trade in self.rows("trades"):
             source_player_rows.extend(
                 player
@@ -404,12 +443,12 @@ class CastleSourceAdapter:
                                 "target_candidate": (
                                     {
                                         "id": target_players_by_id[f"fpl-{pid}"]["id"],
-                                        "web_name": target_players_by_id[f"fpl-{pid}"].get(
-                                            "web_name"
-                                        ),
-                                        "position_id": target_players_by_id[f"fpl-{pid}"].get(
-                                            "position_id"
-                                        ),
+                                        "web_name": target_players_by_id[
+                                            f"fpl-{pid}"
+                                        ].get("web_name"),
+                                        "position_id": target_players_by_id[
+                                            f"fpl-{pid}"
+                                        ].get("position_id"),
                                     }
                                     if f"fpl-{pid}" in target_players_by_id
                                     else None
@@ -418,7 +457,9 @@ class CastleSourceAdapter:
                                     {
                                         "id": bootstrap_elements[pid].get("id"),
                                         "code": bootstrap_elements[pid].get("code"),
-                                        "web_name": bootstrap_elements[pid].get("web_name"),
+                                        "web_name": bootstrap_elements[pid].get(
+                                            "web_name"
+                                        ),
                                         "element_type": bootstrap_elements[pid].get(
                                             "element_type"
                                         ),
@@ -434,7 +475,8 @@ class CastleSourceAdapter:
                         "captain_id": row.get("captain_id"),
                         "captain_is_starter": row.get("captain_id") in starters,
                         "vice_captain_id": row.get("vice_captain_id"),
-                        "vice_captain_is_starter": row.get("vice_captain_id") in starters,
+                        "vice_captain_is_starter": row.get("vice_captain_id")
+                        in starters,
                     }
                 )
                 continue
@@ -463,7 +505,9 @@ class CastleSourceAdapter:
                 and s["gameweek"] == gw
             ]
             stale_reasons = []
-            if len({slot["player_id"] for slot in existing_slots}) != len(existing_slots):
+            if len({slot["player_id"] for slot in existing_slots}) != len(
+                existing_slots
+            ):
                 stale_reasons.append("duplicate_target_player_slots")
             if row.get("captain_id") not in starters:
                 stale_reasons.append("castle_captain_not_in_starters")
@@ -504,16 +548,20 @@ class CastleSourceAdapter:
             except ValueError:
                 self.gaps["lineup_timestamp_missing"] += 1
                 continue
-            lineup_assignments = [("starter", pid, order) for order, pid in enumerate(starters, 1)]
+            lineup_assignments = [
+                ("starter", pid, order) for order, pid in enumerate(starters, 1)
+            ]
             bench_goalkeepers = [
                 pid
                 for pid in bench
-                if target_players_by_id.get(self.players[pid], {}).get("position_id") == "GKP"
+                if target_players_by_id.get(self.players[pid], {}).get("position_id")
+                == "GKP"
             ]
             bench_outfield = [
                 pid
                 for pid in bench
-                if target_players_by_id.get(self.players[pid], {}).get("position_id") != "GKP"
+                if target_players_by_id.get(self.players[pid], {}).get("position_id")
+                != "GKP"
             ]
             full_bench_invalid = len(bench) == 5 and (
                 len(bench_goalkeepers) != 1 or len(bench_outfield) != 4
@@ -544,36 +592,42 @@ class CastleSourceAdapter:
                 and slot["player_id"] not in explicit_players
             )
             for slot, pid, order in lineup_assignments:
-                    player = self.players[pid]
-                    existing = next((s for s in existing_slots if s["player_id"] == player), None)
-                    lineup_id = (
-                        existing["id"]
-                        if existing
-                        else sync_id(self.scope, "lineup", row["id"], player)
-                    )
-                    self.mappings[f"lineup:{row['id']}:{player}"] = lineup_id
-                    self.project(
-                        "team_selection_lineup_slots",
-                        lineup_id,
-                        {
-                            "season_id": self.config.target_season_id,
-                            "draft_team_id": team["id"],
-                            "player_id": player,
-                            "gameweek": gw,
-                            "slot": slot,
-                            "slot_order": order,
-                            "is_captain": pid == row.get("captain_id"),
-                            "is_vice_captain": pid == row.get("vice_captain_id"),
-                            "locked_at": locked,
-                            "updated_at": updated,
-                        },
-                    )
+                player = self.players[pid]
+                existing = next(
+                    (s for s in existing_slots if s["player_id"] == player), None
+                )
+                lineup_id = (
+                    existing["id"]
+                    if existing
+                    else sync_id(self.scope, "lineup", row["id"], player)
+                )
+                self.mappings[f"lineup:{row['id']}:{player}"] = lineup_id
+                self.project(
+                    "team_selection_lineup_slots",
+                    lineup_id,
+                    {
+                        "season_id": self.config.target_season_id,
+                        "draft_team_id": team["id"],
+                        "player_id": player,
+                        "gameweek": gw,
+                        "slot": slot,
+                        "slot_order": order,
+                        "is_captain": pid == row.get("captain_id"),
+                        "is_vice_captain": pid == row.get("vice_captain_id"),
+                        "locked_at": locked,
+                        "updated_at": updated,
+                    },
+                )
             if row.get("chips"):
-                self.gaps["chips_require_season_usage_reconciliation"] += len(row["chips"])
+                self.gaps["chips_require_season_usage_reconciliation"] += len(
+                    row["chips"]
+                )
 
     def _fixtures(self) -> None:
         events = {int(e["id"]): e for e in self.target_rows("fpl_gameweeks")}
-        source_team_names = {team["id"]: team["name"] for team in self.rows("castle_teams")}
+        source_team_names = {
+            team["id"]: team["name"] for team in self.rows("castle_teams")
+        }
         for row in self.rows("castle_fixtures"):
             home, away = (
                 self.teams.get(row.get("home_team_id")),
@@ -620,7 +674,11 @@ class CastleSourceAdapter:
             if len(candidates) > 1:
                 self.gaps["fixture_identity_ambiguous"] += 1
                 continue
-            fid = candidates[0]["id"] if candidates else sync_id(self.scope, "fixture", row["id"])
+            fid = (
+                candidates[0]["id"]
+                if candidates
+                else sync_id(self.scope, "fixture", row["id"])
+            )
             existing_results = [
                 r
                 for r in self.target_rows("fixture_results")
@@ -631,7 +689,9 @@ class CastleSourceAdapter:
                 for s in self.target_rows("fixture_scoring_snapshots")
                 if s["payload_json"].get("fixture_id") == fid
             ]
-            source_unscored = row.get("home_score") is None and row.get("away_score") is None
+            source_unscored = (
+                row.get("home_score") is None and row.get("away_score") is None
+            )
             target_has_only_empty_synthetic_evidence = (
                 existing_results
                 and all(
@@ -658,7 +718,9 @@ class CastleSourceAdapter:
                 self.gaps["fixture_multiple_target_results_require_review"] += 1
                 continue
             self.mappings[f"fixture:{row['id']}"] = fid
-            scored = row.get("home_score") is not None and row.get("away_score") is not None
+            scored = (
+                row.get("home_score") is not None and row.get("away_score") is not None
+            )
             finished = bool(events.get(gw, {}).get("finished"))
             status = (
                 "complete"
@@ -737,7 +799,9 @@ class CastleSourceAdapter:
             )
             gw = self.config.trade_gameweeks.get(row["id"], row.get("executed_gw"))
             players = [
-                p for key in ("proposer_players", "receiver_players") for p in row.get(key, [])
+                p
+                for key in ("proposer_players", "receiver_players")
+                for p in row.get(key, [])
             ]
             if (
                 row.get("is_loan")

@@ -11,12 +11,18 @@ on:
           - migrate
           - synthetic-seed
           - fpl-refresh
+          - synthetic-fixture-cleanup
       confirm_database_jobs_applied:
         description: Confirm the reviewed database-jobs Terraform stage has been applied
         required: true
         type: boolean
       confirm_synthetic_data:
         description: Confirm synthetic data is intended; required for synthetic-seed
+        required: true
+        default: false
+        type: boolean
+      confirm_synthetic_fixture_cleanup:
+        description: Confirm all rows marked synthetic in the staging fixture table should be removed
         required: true
         default: false
         type: boolean
@@ -65,6 +71,13 @@ jobs:
               ;;
             fpl-refresh)
               job_name="cdl-react-staging-fpl-refresh"
+              ;;
+            synthetic-fixture-cleanup)
+              if [ "${{ inputs.confirm_synthetic_fixture_cleanup }}" != "true" ]; then
+                echo "Synthetic fixture cleanup requires explicit confirmation." >&2
+                exit 1
+              fi
+              job_name="cdl-react-staging-synthetic-fixture-cleanup"
               ;;
             *)
               echo "Unsupported database operation." >&2

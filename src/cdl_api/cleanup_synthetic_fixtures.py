@@ -91,7 +91,9 @@ def cleanup_synthetic_fixture_rows(
     )
 
 
-def remove_synthetic_staging_fixtures(settings: Settings | None = None) -> SyntheticFixtureCleanupResult:
+def remove_synthetic_staging_fixtures(
+    settings: Settings | None = None,
+) -> SyntheticFixtureCleanupResult:
     """Run the guarded PostgreSQL cleanup against the staging environment only."""
     resolved = settings or Settings()
 

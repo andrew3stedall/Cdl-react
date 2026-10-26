@@ -7,8 +7,8 @@ JSON payloads intentionally retain unknown fields; this is an import boundary.
 import hashlib
 import json
 from collections import Counter
-from difflib import SequenceMatcher
 from datetime import UTC, datetime
+from difflib import SequenceMatcher
 from typing import Any
 
 from cdl_api.contracts.castle_sync import CastleSyncConfig
@@ -165,7 +165,11 @@ class CastleSourceAdapter:
                 ),
                 key=lambda item: (-item[0], item[1]["id"]),
             )
-            available = [(score, candidate) for score, candidate in ranked if candidate["id"] not in used]
+            available = [
+                (score, candidate)
+                for score, candidate in ranked
+                if candidate["id"] not in used
+            ]
             if not matches and not alias and available:
                 best_score, best_target = available[0]
                 second_score = available[1][0] if len(available) > 1 else 0.0
@@ -263,7 +267,10 @@ class CastleSourceAdapter:
             ) if target else False
             code_identity_match = bool(code and coded_target_id and target_id == coded_target_id)
             valid = target and (
-                bool(explicit) or code_identity_match or source_details_match or cached_identity_match
+                bool(explicit)
+                or code_identity_match
+                or source_details_match
+                or cached_identity_match
             )
             if valid:
                 if pid in self.players and self.players[pid] != target_id:
@@ -499,10 +506,14 @@ class CastleSourceAdapter:
                 continue
             lineup_assignments = [("starter", pid, order) for order, pid in enumerate(starters, 1)]
             bench_goalkeepers = [
-                pid for pid in bench if target_players_by_id.get(self.players[pid], {}).get("position_id") == "GKP"
+                pid
+                for pid in bench
+                if target_players_by_id.get(self.players[pid], {}).get("position_id") == "GKP"
             ]
             bench_outfield = [
-                pid for pid in bench if target_players_by_id.get(self.players[pid], {}).get("position_id") != "GKP"
+                pid
+                for pid in bench
+                if target_players_by_id.get(self.players[pid], {}).get("position_id") != "GKP"
             ]
             full_bench_invalid = len(bench) == 5 and (
                 len(bench_goalkeepers) != 1 or len(bench_outfield) != 4

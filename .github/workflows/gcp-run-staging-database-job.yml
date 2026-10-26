@@ -57,6 +57,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       - name: Validate operation and environment
         env:
@@ -72,8 +74,7 @@ jobs:
 
           if [[ "${GITHUB_EVENT_NAME}" == "push" ]]; then
             mapfile -t request_files < <(
-              jq -r '.commits[]? | (.added[]?, .modified[]?)' "${GITHUB_EVENT_PATH}" |
-                sort -u |
+              git diff-tree --no-commit-id --name-only --diff-filter=AM -r "${GITHUB_SHA}" |
                 grep -E '^[.]github/staging-operations/requests/[A-Za-z0-9._-]+[.]json$' || true
             )
             if [[ "${#request_files[@]}" -ne 1 ]]; then

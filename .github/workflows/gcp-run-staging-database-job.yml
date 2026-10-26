@@ -1,6 +1,11 @@
 name: GCP Run Staging Database Job
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/staging-operations/requests/*.json"
   workflow_dispatch:
     inputs:
       operation:
@@ -40,7 +45,7 @@ jobs:
     name: Execute controlled staging database operation
     if: >-
       github.ref == 'refs/heads/main' &&
-      inputs.confirm_database_jobs_applied == true
+      (github.event_name == 'push' || inputs.confirm_database_jobs_applied == true)
     runs-on: ubuntu-latest
     environment: staging
 
@@ -51,19 +56,54 @@ jobs:
       DEPLOY_SERVICE_ACCOUNT: ${{ vars.GCP_STAGING_DEPLOY_SERVICE_ACCOUNT }}
 
     steps:
+      - uses: actions/checkout@v4
+
       - name: Validate operation and environment
+        env:
+          INPUT_OPERATION: ${{ inputs.operation }}
+          INPUT_CONFIRM_DATABASE_JOBS_APPLIED: ${{ inputs.confirm_database_jobs_applied }}
+          INPUT_CONFIRM_SYNTHETIC_DATA: ${{ inputs.confirm_synthetic_data }}
+          INPUT_CONFIRM_SYNTHETIC_FIXTURE_CLEANUP: ${{ inputs.confirm_synthetic_fixture_cleanup }}
         run: |
           set -euo pipefail
           test -n "${PROJECT_ID}"
           test -n "${WORKLOAD_IDENTITY_PROVIDER}"
           test -n "${DEPLOY_SERVICE_ACCOUNT}"
 
-          case "${{ inputs.operation }}" in
+          if [[ "${GITHUB_EVENT_NAME}" == "push" ]]; then
+            mapfile -t request_files < <(
+              git diff-tree --no-commit-id --name-only --diff-filter=AM -r "${GITHUB_SHA}" |
+                grep -E '^\.github/staging-operations/requests/[A-Za-z0-9._-]+\.json$' || true
+            )
+            if [[ "${#request_files[@]}" -ne 1 ]]; then
+              echo "A staging-operation push must change exactly one request JSON file." >&2
+              exit 1
+            fi
+
+            request_file="${request_files[0]}"
+            operation="$(jq -er '.operation | select(type == "string")' "${request_file}")"
+            confirm_database_jobs_applied="$(jq -r 'if .confirm_database_jobs_applied == true then "true" else "false" end' "${request_file}")"
+            confirm_synthetic_data="$(jq -r 'if .confirm_synthetic_data == true then "true" else "false" end' "${request_file}")"
+            confirm_synthetic_fixture_cleanup="$(jq -r 'if .confirm_synthetic_fixture_cleanup == true then "true" else "false" end' "${request_file}")"
+            echo "Processing staging operation request ${request_file}."
+          else
+            operation="${INPUT_OPERATION}"
+            confirm_database_jobs_applied="${INPUT_CONFIRM_DATABASE_JOBS_APPLIED}"
+            confirm_synthetic_data="${INPUT_CONFIRM_SYNTHETIC_DATA}"
+            confirm_synthetic_fixture_cleanup="${INPUT_CONFIRM_SYNTHETIC_FIXTURE_CLEANUP}"
+          fi
+
+          if [[ "${confirm_database_jobs_applied}" != "true" ]]; then
+            echo "The database-jobs Terraform stage must be applied before execution." >&2
+            exit 1
+          fi
+
+          case "${operation}" in
             migrate)
               job_name="cdl-react-staging-db-migrate"
               ;;
             synthetic-seed)
-              if [ "${{ inputs.confirm_synthetic_data }}" != "true" ]; then
+              if [[ "${confirm_synthetic_data}" != "true" ]]; then
                 echo "Synthetic seed execution requires explicit synthetic-data confirmation." >&2
                 exit 1
               fi
@@ -73,7 +113,7 @@ jobs:
               job_name="cdl-react-staging-fpl-refresh"
               ;;
             synthetic-fixture-cleanup)
-              if [ "${{ inputs.confirm_synthetic_fixture_cleanup }}" != "true" ]; then
+              if [[ "${confirm_synthetic_fixture_cleanup}" != "true" ]]; then
                 echo "Synthetic fixture cleanup requires explicit confirmation." >&2
                 exit 1
               fi

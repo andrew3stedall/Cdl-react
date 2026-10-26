@@ -7,8 +7,8 @@ JSON payloads intentionally retain unknown fields; this is an import boundary.
 import hashlib
 import json
 from collections import Counter
-from difflib import SequenceMatcher
 from datetime import UTC, datetime
+from difflib import SequenceMatcher
 from typing import Any
 
 from cdl_api.contracts.castle_sync import CastleSyncConfig
@@ -61,7 +61,10 @@ class CastleSourceAdapter:
     """Map existing identities without creating users, permissions or FPL rows."""
 
     def __init__(
-        self, bundle: dict[str, Any], config: CastleSyncConfig, catalog: dict[str, list[dict]]
+        self,
+        bundle: dict[str, Any],
+        config: CastleSyncConfig,
+        catalog: dict[str, list[dict]],
     ) -> None:
         self.config, self.catalog = config, catalog
         manifest = bundle.get("manifest", {})
@@ -134,7 +137,8 @@ class CastleSourceAdapter:
     def _bind(self) -> None:
         cfg = self.config
         season = next(
-            (s for s in self.target_rows("seasons") if s["id"] == cfg.target_season_id), None
+            (s for s in self.target_rows("seasons") if s["id"] == cfg.target_season_id),
+            None,
         )
         if not season or season["league_id"] != cfg.target_league_id:
             raise ValueError("Target season does not belong to target league")
@@ -153,9 +157,7 @@ class CastleSourceAdapter:
                 t
                 for t in target_teams
                 if (
-                    t["id"] == alias
-                    if alias
-                    else normalized(t["name"]) == normalized(team["name"])
+                    t["id"] == alias if alias else normalized(t["name"]) == normalized(team["name"])
                 )
             ]
             ranked = sorted(
@@ -165,7 +167,9 @@ class CastleSourceAdapter:
                 ),
                 key=lambda item: (-item[0], item[1]["id"]),
             )
-            available = [(score, candidate) for score, candidate in ranked if candidate["id"] not in used]
+            available = [
+                (score, candidate) for score, candidate in ranked if candidate["id"] not in used
+            ]
             if not matches and not alias and available:
                 best_score, best_target = available[0]
                 second_score = available[1][0] if len(available) > 1 else 0.0
@@ -252,18 +256,30 @@ class CastleSourceAdapter:
             target = players.get(target_id)
             cached_element = by_fpl_id.get(pid)
             source_details_match = (
-                normalized(target["web_name"]) == normalized(row.get("player_web_name", ""))
-                and target["position_id"] == positions.get(row.get("element_type"))
-            ) if target else False
+                (
+                    normalized(target["web_name"]) == normalized(row.get("player_web_name", ""))
+                    and target["position_id"] == positions.get(row.get("element_type"))
+                )
+                if target
+                else False
+            )
             cached_identity_match = (
-                target_id == f"fpl-{pid}"
-                and cached_element is not None
-                and normalized(target["web_name"]) == normalized(cached_element.get("web_name", ""))
-                and target["position_id"] == positions.get(cached_element.get("element_type"))
-            ) if target else False
+                (
+                    target_id == f"fpl-{pid}"
+                    and cached_element is not None
+                    and normalized(target["web_name"])
+                    == normalized(cached_element.get("web_name", ""))
+                    and target["position_id"] == positions.get(cached_element.get("element_type"))
+                )
+                if target
+                else False
+            )
             code_identity_match = bool(code and coded_target_id and target_id == coded_target_id)
             valid = target and (
-                bool(explicit) or code_identity_match or source_details_match or cached_identity_match
+                bool(explicit)
+                or code_identity_match
+                or source_details_match
+                or cached_identity_match
             )
             if valid:
                 if pid in self.players and self.players[pid] != target_id:
@@ -329,9 +345,7 @@ class CastleSourceAdapter:
             for team in self.rows("castle_teams")
             if team.get("owner_user_id")
         }
-        target_players_by_id = {
-            player["id"]: player for player in self.target_rows("fpl_players")
-        }
+        target_players_by_id = {player["id"]: player for player in self.target_rows("fpl_players")}
         bootstrap = next(
             (
                 cache["payload_json"]
@@ -343,9 +357,7 @@ class CastleSourceAdapter:
         bootstrap_elements = {
             element.get("id"): element for element in bootstrap.get("elements", [])
         }
-        target_players_by_id = {
-            player["id"]: player for player in self.target_rows("fpl_players")
-        }
+        target_players_by_id = {player["id"]: player for player in self.target_rows("fpl_players")}
         source_player_details: dict[int, dict[str, Any]] = {}
         source_player_rows = list(self.rows("draft_picks")) + list(self.rows("draw_results"))
         for trade in self.rows("trades"):
@@ -412,9 +424,7 @@ class CastleSourceAdapter:
                                         "id": bootstrap_elements[pid].get("id"),
                                         "code": bootstrap_elements[pid].get("code"),
                                         "web_name": bootstrap_elements[pid].get("web_name"),
-                                        "element_type": bootstrap_elements[pid].get(
-                                            "element_type"
-                                        ),
+                                        "element_type": bootstrap_elements[pid].get("element_type"),
                                     }
                                     if pid in bootstrap_elements
                                     else None
@@ -499,10 +509,14 @@ class CastleSourceAdapter:
                 continue
             lineup_assignments = [("starter", pid, order) for order, pid in enumerate(starters, 1)]
             bench_goalkeepers = [
-                pid for pid in bench if target_players_by_id.get(self.players[pid], {}).get("position_id") == "GKP"
+                pid
+                for pid in bench
+                if target_players_by_id.get(self.players[pid], {}).get("position_id") == "GKP"
             ]
             bench_outfield = [
-                pid for pid in bench if target_players_by_id.get(self.players[pid], {}).get("position_id") != "GKP"
+                pid
+                for pid in bench
+                if target_players_by_id.get(self.players[pid], {}).get("position_id") != "GKP"
             ]
             full_bench_invalid = len(bench) == 5 and (
                 len(bench_goalkeepers) != 1 or len(bench_outfield) != 4
@@ -533,30 +547,28 @@ class CastleSourceAdapter:
                 and slot["player_id"] not in explicit_players
             )
             for slot, pid, order in lineup_assignments:
-                    player = self.players[pid]
-                    existing = next((s for s in existing_slots if s["player_id"] == player), None)
-                    lineup_id = (
-                        existing["id"]
-                        if existing
-                        else sync_id(self.scope, "lineup", row["id"], player)
-                    )
-                    self.mappings[f"lineup:{row['id']}:{player}"] = lineup_id
-                    self.project(
-                        "team_selection_lineup_slots",
-                        lineup_id,
-                        {
-                            "season_id": self.config.target_season_id,
-                            "draft_team_id": team["id"],
-                            "player_id": player,
-                            "gameweek": gw,
-                            "slot": slot,
-                            "slot_order": order,
-                            "is_captain": pid == row.get("captain_id"),
-                            "is_vice_captain": pid == row.get("vice_captain_id"),
-                            "locked_at": locked,
-                            "updated_at": updated,
-                        },
-                    )
+                player = self.players[pid]
+                existing = next((s for s in existing_slots if s["player_id"] == player), None)
+                lineup_id = (
+                    existing["id"] if existing else sync_id(self.scope, "lineup", row["id"], player)
+                )
+                self.mappings[f"lineup:{row['id']}:{player}"] = lineup_id
+                self.project(
+                    "team_selection_lineup_slots",
+                    lineup_id,
+                    {
+                        "season_id": self.config.target_season_id,
+                        "draft_team_id": team["id"],
+                        "player_id": player,
+                        "gameweek": gw,
+                        "slot": slot,
+                        "slot_order": order,
+                        "is_captain": pid == row.get("captain_id"),
+                        "is_vice_captain": pid == row.get("vice_captain_id"),
+                        "locked_at": locked,
+                        "updated_at": updated,
+                    },
+                )
             if row.get("chips"):
                 self.gaps["chips_require_season_usage_reconciliation"] += len(row["chips"])
 
@@ -583,14 +595,10 @@ class CastleSourceAdapter:
                             "gameweek": row.get("gameweek"),
                             "stage": row.get("stage"),
                             "home_source_team_id": row.get("home_team_id"),
-                            "home_source_team_name": source_team_names.get(
-                                row.get("home_team_id")
-                            ),
+                            "home_source_team_name": source_team_names.get(row.get("home_team_id")),
                             "home_target_team_id": home["id"] if home else None,
                             "away_source_team_id": row.get("away_team_id"),
-                            "away_source_team_name": source_team_names.get(
-                                row.get("away_team_id")
-                            ),
+                            "away_source_team_name": source_team_names.get(row.get("away_team_id")),
                             "away_target_team_id": away["id"] if away else None,
                         }
                     )

@@ -43,6 +43,11 @@ output "synthetic_seed_job_name" {
   value       = try(google_cloud_run_v2_job.synthetic_seed[0].name, null)
 }
 
+output "synthetic_fixture_cleanup_job_name" {
+  description = "Cloud Run synthetic fixture cleanup job name when database jobs are enabled."
+  value       = try(google_cloud_run_v2_job.synthetic_fixture_cleanup[0].name, null)
+}
+
 output "fpl_refresh_job_name" {
   description = "Cloud Run official FPL refresh job name when database jobs are enabled."
   value       = try(google_cloud_run_v2_job.fpl_refresh[0].name, null)

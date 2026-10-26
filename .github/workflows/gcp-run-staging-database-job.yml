@@ -74,7 +74,7 @@ jobs:
             mapfile -t request_files < <(
               jq -r '.commits[]? | (.added[]?, .modified[]?)' "${GITHUB_EVENT_PATH}" |
                 sort -u |
-                grep -E '^\\.github/staging-operations/requests/[A-Za-z0-9._-]+\\.json$' || true
+                grep -E '^[.]github/staging-operations/requests/[A-Za-z0-9._-]+[.]json$' || true
             )
             if [[ "${#request_files[@]}" -ne 1 ]]; then
               echo "A staging-operation push must change exactly one request JSON file." >&2

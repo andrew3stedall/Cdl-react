@@ -160,10 +160,17 @@ jobs:
       - name: Execute and wait for completion
         run: |
           set -euo pipefail
+          filter="resource.type=\\\"cloud_run_job\\\" AND resource.labels.job_name=\\\"${JOB_NAME}\\\""
           if gcloud run jobs execute "${JOB_NAME}" \
             --project "${PROJECT_ID}" \
             --region "${REGION}" \
             --wait; then
+            echo "Recent Cloud Run job output:"
+            gcloud logging read "${filter}" \
+              --project "${PROJECT_ID}" \
+              --freshness=15m \
+              --limit=50 \
+              --format='value(timestamp,severity,textPayload,jsonPayload.message)' || true
             exit 0
           fi
 

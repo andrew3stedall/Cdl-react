@@ -45,6 +45,15 @@ from cdl_api.staging_draft_seed import LEAGUE_ID, SEASON_ID
 AUTOMATIC_SUBSTITUTION_VERSION = 1
 
 
+def _scoring_record_id(kind: str, fixture_id: str) -> str:
+    """Build a stable <=64-character ID while preserving legacy IDs when possible."""
+    legacy_id = f"{kind}-{fixture_id}"
+    if len(legacy_id) <= 64:
+        return legacy_id
+    digest = hashlib.sha256(fixture_id.encode()).hexdigest()[:48]
+    return f"{kind}-sha256-{digest}"
+
+
 @dataclass(frozen=True)
 class FplSettlementResult:
     """Counts emitted by the idempotent scheduled maintenance pass."""
@@ -499,7 +508,7 @@ class FplSettlementService:
                     if snapshot_row is None:
                         session.execute(
                             insert(fixture_scoring_snapshots_table).values(
-                                id=f"snapshot-{fixture_id}",
+                                id=_scoring_record_id("snapshot", fixture_id),
                                 payload_json={"fixture_id": fixture_id, **updated_snapshot},
                             )
                         )
@@ -683,8 +692,8 @@ class FplSettlementService:
                 "bonus_calculated_at": now.isoformat(),
                 "bonus_basis": {"home_score": home_score, "away_score": away_score},
             }
-            result_id = f"result-{fixture_id}"
-            snapshot_id = f"snapshot-{fixture_id}"
+            result_id = _scoring_record_id("result", fixture_id)
+            snapshot_id = _scoring_record_id("snapshot", fixture_id)
             if result_row is not None:
                 session.execute(
                     update(fixture_results_table)
@@ -774,7 +783,7 @@ class FplSettlementService:
         else:
             session.execute(
                 insert(fixture_results_table).values(
-                    id=f"result-{fixture_id}",
+                    id=_scoring_record_id("result", fixture_id),
                     payload_json=payload,
                 )
             )
@@ -1008,7 +1017,7 @@ class FplSettlementService:
     ) -> None:
         """Reconcile final scoring substitutions as an idempotent audit trail."""
 
-        snapshot_id = f"snapshot-{fixture_id}"
+        snapshot_id = _scoring_record_id("snapshot", fixture_id)
         existing_rows = list(
             session.execute(
                 select(

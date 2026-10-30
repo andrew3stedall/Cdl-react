@@ -160,7 +160,18 @@ jobs:
       - name: Execute and wait for completion
         run: |
           set -euo pipefail
-          gcloud run jobs execute "${JOB_NAME}" \
+          if gcloud run jobs execute "${JOB_NAME}" \
             --project "${PROJECT_ID}" \
             --region "${REGION}" \
-            --wait
+            --wait; then
+            exit 0
+          fi
+
+          echo "Execution failed; requesting recent Cloud Run job error logs."
+          filter="resource.type=\"cloud_run_job\" AND resource.labels.job_name=\"${JOB_NAME}\" AND severity>=ERROR"
+          gcloud logging read "${filter}" \
+            --project "${PROJECT_ID}" \
+            --freshness=15m \
+            --limit=30 \
+            --format='value(timestamp,severity,textPayload,jsonPayload.message)' || true
+          exit 1

@@ -104,8 +104,7 @@ class CastleSyncRepository:
                         projection
                         for projection in adapter.projections
                         if not any(
-                            row["id"] == projection["id"]
-                            for row in catalog[projection["table"]]
+                            row["id"] == projection["id"] for row in catalog[projection["table"]]
                         )
                     ]
                 adapter.lineup_deletions = [

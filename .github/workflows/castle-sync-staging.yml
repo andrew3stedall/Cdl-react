@@ -63,7 +63,7 @@ on:
       replace_current_gameweek_synthetic:
         type: boolean
         default: false
-        description: Replace only unlocked generated lineup slots in the selected current gameweek
+        description: Replace lineup rows in the selected current gameweek after confirming their staging data is synthetic; backups are retained
 
 permissions:
   contents: read

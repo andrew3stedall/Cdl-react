@@ -566,7 +566,7 @@ export function MarketPage({ currentPath, onNavigate, preset, session }: MarketP
       <PageHero
         actions={(
           <PageHeroControls>
-                        <PageHeroViewToggle
+            <PageHeroViewToggle
               ariaLabel="Market workspace sections"
               onChange={(nextMode) => selectMode(nextMode as MarketMode)}
               options={[

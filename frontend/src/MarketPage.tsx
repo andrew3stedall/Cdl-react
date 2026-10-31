@@ -736,6 +736,8 @@ function DiscoveryPanel({
   const { direction, onSort, sortColumn, sortedRows } = useSortedRows(filteredPlayers, (player, column) => {
     if (column === 'player') return player.displayName;
     if (column === 'points') return player.points;
+    if (column === 'form') return player.form;
+    if (column === 'value') return player.value;
     return (player.xg ?? -1) * 1_000_000 + (player.xa ?? -1);
   });
   return (
@@ -776,6 +778,8 @@ function DiscoveryPanel({
               <TableRow>
                 <TableHead><SortableTableHead column="player" direction={direction} onSort={onSort} sortColumn={sortColumn}>Player</SortableTableHead></TableHead>
                 <TableHead><SortableTableHead column="points" direction={direction} onSort={onSort} sortColumn={sortColumn}>Pts</SortableTableHead></TableHead>
+                <TableHead><SortableTableHead column="form" direction={direction} onSort={onSort} sortColumn={sortColumn}>Form</SortableTableHead></TableHead>
+                <TableHead><SortableTableHead column="value" direction={direction} onSort={onSort} sortColumn={sortColumn}>Value</SortableTableHead></TableHead>
                 <TableHead><SortableTableHead column="expected" direction={direction} onSort={onSort} sortColumn={sortColumn}>xG / xA</SortableTableHead></TableHead>
               </TableRow>
             </TableHeader>
@@ -804,6 +808,8 @@ function MarketLoadingTable() {
           <TableRow>
             <TableHead scope="col">Player</TableHead>
             <TableHead scope="col">Pts</TableHead>
+            <TableHead scope="col">Form</TableHead>
+            <TableHead scope="col">Value</TableHead>
             <TableHead scope="col">xG / xA</TableHead>
           </TableRow>
         </TableHeader>
@@ -811,6 +817,8 @@ function MarketLoadingTable() {
           {Array.from({ length: 7 }, (_, index) => (
             <TableRow className="market-page__loading-row" key={index}>
               <TableCell><span className="market-page__loading-block market-page__loading-block--player" /></TableCell>
+              <TableCell><span className="market-page__loading-block market-page__loading-block--number" /></TableCell>
+              <TableCell><span className="market-page__loading-block market-page__loading-block--number" /></TableCell>
               <TableCell><span className="market-page__loading-block market-page__loading-block--number" /></TableCell>
               <TableCell><span className="market-page__loading-block" /></TableCell>
             </TableRow>
@@ -843,6 +851,8 @@ function MarketPlayerRow({ managerTeam, onOpen, player }: { managerTeam: SquadAp
         </div>
       </TableCell>
       <TableCell><strong className="market-page__list-points">{formatInteger(player.points)}</strong></TableCell>
+      <TableCell><strong className="market-page__list-points">{formatMetric(player.form)}</strong></TableCell>
+      <TableCell><strong className="market-page__list-points">{formatMetric(player.value)}</strong></TableCell>
       <TableCell><span className="market-page__expected"><span>{formatMetric(player.xg)}</span><span>{formatMetric(player.xa)}</span></span></TableCell>
     </TableRow>
   );

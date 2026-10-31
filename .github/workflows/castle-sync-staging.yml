@@ -60,6 +60,10 @@ on:
         type: number
         default: 0
         description: Restrict native lineup projection to this current gameweek; zero keeps existing behavior
+      replace_current_gameweek_synthetic:
+        type: boolean
+        default: false
+        description: Replace only unlocked generated lineup slots in the selected current gameweek
 
 permissions:
   contents: read
@@ -89,6 +93,7 @@ jobs:
       CASTLE_NATIVE_ENTITIES: ${{ inputs.native_entities || '[]' }}
       CASTLE_RESTORE_MISSING: ${{ inputs.restore_missing }}
       CASTLE_LINEUP_GAMEWEEK: ${{ inputs.lineup_gameweek }}
+      CASTLE_REPLACE_CURRENT_GAMEWEEK_SYNTHETIC: ${{ inputs.replace_current_gameweek_synthetic }}
       SYNC_OPERATION: ${{ inputs.operation || 'plan' }}
       SYNC_PROJECTION: ${{ inputs.projection || 'archive' }}
     steps:
@@ -127,6 +132,7 @@ jobs:
           echo "CASTLE_NATIVE_ENTITIES=$(jq -cer '.native_entities // [] | select(type == "array")' "$request_file")" >> "$GITHUB_ENV"
           echo "CASTLE_RESTORE_MISSING=$(jq -er '.restore_missing // false | select(type == "boolean")' "$request_file")" >> "$GITHUB_ENV"
           echo "CASTLE_LINEUP_GAMEWEEK=$(jq -er '.lineup_gameweek // 0 | select(type == "number")' "$request_file")" >> "$GITHUB_ENV"
+          echo "CASTLE_REPLACE_CURRENT_GAMEWEEK_SYNTHETIC=$(jq -er '.replace_current_gameweek_synthetic // false | select(type == "boolean")' "$request_file")" >> "$GITHUB_ENV"
           echo 'SYNC_PROJECTION=native' >> "$GITHUB_ENV"
           echo 'CASTLE_TEAM_ALIASES={}' >> "$GITHUB_ENV"
           echo 'CASTLE_PLAYER_IDS={}' >> "$GITHUB_ENV"

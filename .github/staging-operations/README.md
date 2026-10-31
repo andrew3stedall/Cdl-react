@@ -59,6 +59,7 @@ configured staging database.
 
 For a fixture-only backfill, set `native_entities` to
 `["cdl_fixtures", "fixture_results"]` and `restore_missing` to `true`.
-This reuses each fixture's saved Castle mapping and recreates selected rows that
-are absent from staging. Other native entities remain untouched. Keep these
-inputs identical in the matching apply request.
+This reuses each fixture's saved Castle mapping and projects only selected rows
+that are absent from staging. Existing fixture rows are left untouched, including
+rows with a newer or conflicting projection. Other native entities remain
+untouched. Keep these inputs identical in the matching apply request.

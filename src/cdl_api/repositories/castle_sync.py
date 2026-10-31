@@ -99,6 +99,15 @@ class CastleSyncRepository:
                     for projection in adapter.projections
                     if projection["table"] in selected_entities
                 ]
+                if config.restore_missing:
+                    adapter.projections = [
+                        projection
+                        for projection in adapter.projections
+                        if not any(
+                            row["id"] == projection["id"]
+                            for row in catalog[projection["table"]]
+                        )
+                    ]
                 adapter.lineup_deletions = [
                     deletion
                     for deletion in adapter.lineup_deletions

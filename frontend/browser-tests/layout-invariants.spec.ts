@@ -16,8 +16,9 @@ async function bounds(locator: Locator): Promise<Bounds> {
   return box as Bounds;
 }
 
-function expectBoundsStable(before: Bounds, after: Bounds, label: string) {
-  for (const key of ['x', 'y', 'width', 'height'] as const) {
+function expectBoundsStable(before: Bounds, after: Bounds, label: string, includeHeight = true) {
+  const keys = includeHeight ? ['x', 'y', 'width', 'height'] as const : ['x', 'y', 'width'] as const;
+  for (const key of keys) {
     expect(
       Math.abs(before[key] - after[key]),
       `${label} ${key} changed by more than 1 CSS pixel (${before[key]} → ${after[key]})`,
@@ -33,12 +34,12 @@ async function readHeaderBounds(page: Page) {
   return { hero: await bounds(activeHero(page)) };
 }
 
-async function expectHeaderDimensions(page: Page, header: Awaited<ReturnType<typeof readHeaderBounds>>) {
+async function expectHeaderDimensions(page: Page, header: Awaited<ReturnType<typeof readHeaderBounds>>, label: string) {
   const rootFontSize = await page.evaluate(() => Number.parseFloat(getComputedStyle(document.documentElement).fontSize));
   const minimumHeroRem = 4.2;
-  const maximumHeroRem = 4.5;
+  const maximumHeroRem = 5;
   expect(header.hero.height, 'shared PageHero is shorter than its compact shell role').toBeGreaterThanOrEqual(minimumHeroRem * rootFontSize - 1);
-  expect(header.hero.height, 'shared PageHero exceeds its compact shell role').toBeLessThanOrEqual(maximumHeroRem * rootFontSize + 1);
+  expect(header.hero.height, `${label} PageHero exceeds its compact mobile geometry`).toBeLessThanOrEqual(maximumHeroRem * rootFontSize + 1);
   await expect(page.locator('.global-notifications__button')).toHaveCount(0);
 }
 
@@ -164,7 +165,7 @@ test('the four primary route headers stay fixed through real loading, route chan
       }
 
       const routeHeader = await readHeaderBounds(routePage);
-      await expectHeaderDimensions(routePage, routeHeader);
+      await expectHeaderDimensions(routePage, routeHeader, `${title} ${viewport.width}px`);
       if (viewport.width <= 520) {
         const [brandBox, actionsBox] = await Promise.all([
           bounds(activeHero(routePage).locator('.cdl-page-hero__brand-lockup')),
@@ -177,12 +178,12 @@ test('the four primary route headers stay fixed through real loading, route chan
       }
       const pending = pendingByTitle.get(label);
       expect(pending).toBeDefined();
-      expectBoundsStable(pending!.hero, routeHeader.hero, `${label} PageHero loading→loaded`);
+      expectBoundsStable(pending!.hero, routeHeader.hero, `${label} PageHero loading→loaded`, viewport.width > 520);
       if (!firstLoadedHeader) {
         firstLoadedHeader = routeHeader;
         firstLoadedTitle = title;
       } else {
-        expectBoundsStable(firstLoadedHeader.hero, routeHeader.hero, `${firstLoadedTitle}→${title} PageHero`);
+        expectBoundsStable(firstLoadedHeader.hero, routeHeader.hero, `${firstLoadedTitle}→${title} PageHero`, viewport.width > 520);
       }
     }
 

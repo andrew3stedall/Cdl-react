@@ -1,0 +1,11 @@
+{
+  "operation": "apply",
+  "projection": "native",
+  "source_league": "",
+  "expected_plan": "2e2bdff5fa34c03f16bac82129464b702f4803b637c40ccb8f2cab7c84e2624f",
+  "confirmation": "IMPORT CASTLE STAGING",
+  "native_entities": [
+    "cdl_fixtures"
+  ],
+  "restore_missing": true
+}

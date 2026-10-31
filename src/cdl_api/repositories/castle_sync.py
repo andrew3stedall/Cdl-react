@@ -208,10 +208,7 @@ class CastleSyncRepository:
                     and name == "team_selection_lineup_slots"
                     and config.lineup_gameweek is not None
                     and (
-                        (
-                            current is None
-                            and int(values["gameweek"]) == config.lineup_gameweek
-                        )
+                        (current is None and int(values["gameweek"]) == config.lineup_gameweek)
                         or (
                             current is not None
                             and int(current["gameweek"]) == config.lineup_gameweek

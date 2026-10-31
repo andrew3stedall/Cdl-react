@@ -30,6 +30,7 @@
 }
 
 .cdl-page-hero {
+  align-self: start;
   block-size: var(--cdl-page-hero-height);
   box-sizing: border-box;
   gap: 1rem;

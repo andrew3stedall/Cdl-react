@@ -14,3 +14,14 @@ class CastleSyncConfig(BaseModel):
     team_aliases: dict[str, str] = Field(default_factory=dict)
     player_ids: dict[str, str] = Field(default_factory=dict)
     trade_gameweeks: dict[str, int] = Field(default_factory=dict)
+    native_entities: list[
+        Literal[
+            "team_selection_lineup_slots",
+            "cdl_fixtures",
+            "fixture_results",
+            "trade_proposals",
+            "trade_assets",
+            "squad_rejection_reasons",
+        ]
+    ] = Field(default_factory=list)
+    restore_missing: bool = False

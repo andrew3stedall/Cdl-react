@@ -1,5 +1,5 @@
 {
-  "operation": "apply",
+  "operation": "plan",
   "projection": "native",
   "source_league": "",
   "native_entities": [
@@ -8,6 +8,6 @@
   "restore_missing": false,
   "lineup_gameweek": 9,
   "replace_current_gameweek_synthetic": true,
-  "expected_plan": "7a093f1c4070b0244e67e4de25eadbe00c914c05a2929a4bdc4164f083efe871",
-  "confirmation": "IMPORT CASTLE STAGING"
+  "expected_plan": "",
+  "confirmation": ""
 }

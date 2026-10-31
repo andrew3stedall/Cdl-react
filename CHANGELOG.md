@@ -1,6 +1,6 @@
 ## Unreleased
 
-- Removed repeated fixture list group headings and counts to align both team columns, retained accessible group labels, and colour-coded open, active, and closed fixture status badges from the selected theme. Kept archived partial bench projections valid when no goalkeeper is present.
+- Removed repeated fixture list group headings and counts, kept both team tables aligned when roster sizes differ, retained accessible group labels, and colour-coded open, active, and closed fixture status badges from the selected theme. Kept archived partial bench projections valid when no goalkeeper is present.
 
 - Add a confirmation-gated, staging-only database job to remove fixture rows explicitly marked synthetic and their linked results/scoring snapshots. The job uses an immutable image and reports deleted row counts.
 

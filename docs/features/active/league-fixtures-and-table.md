@@ -102,6 +102,7 @@ requirements.
 - Upcoming squad preview, live fixture detail, and finished fixture detail.
 - Pitch/list toggle inside fixture squad review using the Squad toggle treatment.
 - Two-column fixture list view with accessible Starting XI, Substitutes, and Reserves groups, without visible group headings or counts.
+- Keep both team table headers top-aligned when the teams have different roster sizes.
 - Current and past fixture player selections route to gameweek scoring detail; future fixture player selections route to a read-only player profile.
 - League standings.
 - Fixture detail drawer.

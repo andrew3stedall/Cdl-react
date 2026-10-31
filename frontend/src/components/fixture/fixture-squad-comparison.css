@@ -70,6 +70,7 @@
 }
 
 .fixture-squad-list__team {
+  align-content: start;
   background: color-mix(in srgb, var(--secondary) 72%, transparent);
   border: 1px solid var(--border);
   border-radius: 0.85rem;

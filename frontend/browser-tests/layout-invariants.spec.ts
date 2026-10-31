@@ -325,7 +325,7 @@ test('primary headers and essential player values remain legible at 200% text sc
       const playerRow = page.getByRole('button', { name: 'View Fixture Available Midfielder details' });
       await expect(playerRow).toBeVisible();
       const playerName = playerRow.locator('.player-card__name');
-      const points = playerRow.locator('.market-page__list-points');
+      const points = playerRow.locator('.market-page__list-points').first();
       await expect(playerName).toBeVisible();
       await expect(points).toBeVisible();
       const [nameSize, pointsSize] = await Promise.all([

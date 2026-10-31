@@ -165,21 +165,6 @@ test('the four primary route headers stay fixed through real loading, route chan
       }
 
       const routeHeader = await readHeaderBounds(routePage);
-      const headerParts = await activeHero(routePage).evaluate((hero) => Array.from(hero.children).map((element) => {
-        const rect = element.getBoundingClientRect();
-        return {
-          className: element.className,
-          height: rect.height,
-          width: rect.width,
-          children: Array.from(element.children).map((child) => ({
-            className: child.className,
-            height: child.getBoundingClientRect().height,
-            width: child.getBoundingClientRect().width,
-            scrollHeight: child.scrollHeight,
-          })),
-        };
-      }));
-      console.log(`PageHero ${title} at ${viewport.width}px: ${JSON.stringify(headerParts)}`);
       await expectHeaderDimensions(routePage, routeHeader, `${title} ${viewport.width}px`);
       if (viewport.width <= 520) {
         const [brandBox, actionsBox] = await Promise.all([

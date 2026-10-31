@@ -1,0 +1,11 @@
+{
+  "operation": "plan",
+  "projection": "native",
+  "source_league": "",
+  "expected_plan": "",
+  "confirmation": "",
+  "native_entities": [
+    "cdl_fixtures"
+  ],
+  "restore_missing": true
+}

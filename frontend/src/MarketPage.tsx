@@ -833,6 +833,37 @@ function ScoutingPanel({ failed, loading, managerTeam, onOpenPlayer, players }: 
     if (api.selectedScrollSnap() >= teams.length) api.scrollTo(Math.max(teams.length - 1, 0));
   }, [api, teams.length]);
 
+  useEffect(() => {
+    if (!api) return undefined;
+    const updateTeamSlideEmphasis = () => {
+      const snapList = api.scrollSnapList();
+      const progress = api.scrollProgress();
+      const cards = api.slideNodes()
+        .map((slide) => slide.querySelector<HTMLElement>('.market-page__scouting-team'))
+        .filter((card): card is HTMLElement => card !== null);
+
+      cards.forEach((card, index) => {
+        const snap = snapList[index];
+        if (snap === undefined || snapList.length === 0) return;
+        const directDistance = Math.abs(snap - progress) % 1;
+        const wrappedDistance = Math.min(directDistance, 1 - directDistance);
+        const cardDistance = wrappedDistance * snapList.length;
+        const scale = Math.max(0.8, 1 - cardDistance * 0.14);
+        const opacity = Math.max(0.34, 1 - cardDistance * 0.45);
+        card.style.transform = `scale(${scale})`;
+        card.style.opacity = `${opacity}`;
+      });
+    };
+
+    updateTeamSlideEmphasis();
+    api.on('reInit', updateTeamSlideEmphasis);
+    api.on('scroll', updateTeamSlideEmphasis);
+    return () => {
+      api.off('reInit', updateTeamSlideEmphasis);
+      api.off('scroll', updateTeamSlideEmphasis);
+    };
+  }, [api]);
+
   if (loading && players.length === 0) return <div aria-label="Loading scouting players" className="market-page__scouting-loading" role="status">Loading Premier League players…</div>;
   if (failed && players.length === 0) return <div className="market-page__empty" role="alert"><CircleAlert aria-hidden="true" size={22} /><strong>Scouting data is unavailable</strong></div>;
   if (teams.length === 0) return <div className="market-page__empty"><Binoculars aria-hidden="true" size={22} /><strong>No Premier League players are available</strong></div>;
@@ -845,7 +876,18 @@ function ScoutingPanel({ failed, loading, managerTeam, onOpenPlayer, players }: 
           <p className="eyebrow">Premier League teams</p>
           <h2>{activeTeam.name}</h2>
         </div>
-        <span>{Math.min(selectedIndex, teams.length - 1) + 1} of {teams.length}</span>
+        <nav aria-label="Premier League team navigation" className="market-page__scouting-team-dots">
+          {teams.map((team, index) => (
+            <button
+              aria-current={index === selectedIndex ? 'true' : undefined}
+              aria-label={`Go to ${team.name}`}
+              className={`market-page__scouting-team-dot${index === selectedIndex ? ' is-selected' : ''}`}
+              key={team.id}
+              onClick={() => api?.scrollTo(index)}
+              type="button"
+            />
+          ))}
+        </nav>
       </header>
       {failed ? <p className="market-page__status" role="status">Some scouting data could not be refreshed. Showing the available players.</p> : null}
       <Carousel aria-label="Premier League teams" className="market-page__scouting-carousel" opts={{ align: "center", loop: teams.length > 1 }} setApi={setApi}>

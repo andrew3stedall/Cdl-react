@@ -67,25 +67,28 @@
   .cdl-page-hero {
     align-items: center;
     block-size: auto;
+    box-sizing: border-box;
     flex-direction: row;
     gap: 0.35rem;
     justify-content: space-between;
     max-width: 100%;
     min-height: 4.2rem;
     min-width: 0;
+    padding: 0;
+    width: 100%;
   }
 
   .cdl-page-hero__brand-lockup {
-    flex: 1 1 50%;
-    max-width: 50%;
+    flex: 0 1 42%;
+    max-width: 42%;
     min-width: 0;
   }
 
   .cdl-page-hero__actions {
-    flex: 0 1 48%;
+    flex: 0 1 58%;
     justify-content: flex-end;
     margin: 0;
-    max-width: 48%;
+    max-width: 58%;
     min-width: 0;
   }
 
@@ -111,15 +114,15 @@
   }
 
   .cdl-page-hero__view-toggle {
-    grid-auto-columns: minmax(1.8rem, 1fr);
+    grid-auto-columns: minmax(0, 1fr);
     max-width: 100%;
     min-width: 0;
   }
 
   .cdl-page-hero__view-toggle button {
-    min-width: 1.8rem;
+    min-width: 0;
     padding: 0;
-    width: 1.8rem;
+    width: 100%;
   }
 
   .cdl-page-hero__context {

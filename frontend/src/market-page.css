@@ -338,11 +338,15 @@
 }
 
 .market-page__player-table th:first-child,
-.market-page__player-table td:first-child { width: 63%; }
+.market-page__player-table td:first-child { width: 50%; }
 .market-page__player-table th:nth-child(2),
-.market-page__player-table td:nth-child(2) { width: 15%; }
+.market-page__player-table td:nth-child(2) { width: 10%; }
 .market-page__player-table th:nth-child(3),
-.market-page__player-table td:nth-child(3) { width: 22%; }
+.market-page__player-table td:nth-child(3) { width: 11%; }
+.market-page__player-table th:nth-child(4),
+.market-page__player-table td:nth-child(4) { width: 12%; }
+.market-page__player-table th:nth-child(5),
+.market-page__player-table td:nth-child(5) { width: 17%; }
 
 .market-page__player-table th:not(:first-child),
 .market-page__player-table td:not(:first-child) {
@@ -945,11 +949,15 @@
   .market-page__player-row > td { padding-block: 0.24rem; }
   .market-page__player-identity { gap: 0.25rem; }
   .market-page__player-table th:first-child,
-  .market-page__player-table td:first-child { width: 63%; }
+  .market-page__player-table td:first-child { width: 50%; }
   .market-page__player-table th:nth-child(2),
-  .market-page__player-table td:nth-child(2) { width: 15%; }
+  .market-page__player-table td:nth-child(2) { width: 10%; }
   .market-page__player-table th:nth-child(3),
-  .market-page__player-table td:nth-child(3) { width: 22%; }
+  .market-page__player-table td:nth-child(3) { width: 11%; }
+  .market-page__player-table th:nth-child(4),
+  .market-page__player-table td:nth-child(4) { width: 12%; }
+  .market-page__player-table th:nth-child(5),
+  .market-page__player-table td:nth-child(5) { width: 17%; }
   .market-page__activity-row { align-items: flex-start; flex-wrap: wrap; }
   .market-page__activity-row .market-page__player-identity { flex-basis: 100%; }
   .market-page__activity-row .market-page__status-badge { margin-left: 0.3rem; }

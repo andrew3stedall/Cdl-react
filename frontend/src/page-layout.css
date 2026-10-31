@@ -96,6 +96,11 @@
     min-width: 0;
   }
 
+  .shell-main .cdl-page-hero h1 {
+    font-size: 1.35rem;
+    line-height: 1;
+  }
+
   .cdl-page-hero__brand-name,
   .cdl-page-hero h1 {
     overflow-wrap: anywhere;

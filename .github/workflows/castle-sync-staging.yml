@@ -97,7 +97,7 @@ jobs:
       - uses: astral-sh/setup-uv@v4
       - run: uv sync --locked
       - name: Load committed sync request
-        if: github.event_name == 'push' && contains(join(github.event.head_commit.added, ','), '.github/staging-operations/castle-sync-requests/')
+        if: github.event_name == 'push'
         shell: bash
         run: |
           set -euo pipefail
@@ -105,6 +105,10 @@ jobs:
             git diff-tree --no-commit-id --name-only --diff-filter=AM -r "$GITHUB_SHA" |
               grep -F '.github/staging-operations/castle-sync-requests/' || true
           )
+          if [[ "${#request_files[@]}" -eq 0 ]]; then
+            echo "No Castle sync request in this push; keeping the read-only archive defaults."
+            exit 0
+          fi
           if [[ "${#request_files[@]}" -ne 1 ]]; then
             echo "A Castle sync push must change exactly one request JSON file." >&2
             exit 1

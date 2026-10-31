@@ -39,8 +39,10 @@ Fixture squad review supports both pitch and list presentations through the
 same compact pitch/list toggle treatment used on Squad. Pitch remains the
 default presentation, while the selected fixture-review view is retained
 locally between fixture openings. List view keeps both teams visible side by
-side and groups each roster into Starting XI, Substitutes, and Reserves. Past
-and started-player rows show gameweek points; future rows show form; current
+side, removes repeated roster group headings and counts, and preserves
+accessible group names and separators. Fixture status badges distinguish open,
+active, and closed states using the manager's selected theme colours. Past and
+started-player rows show gameweek points; future rows show form; current
 players whose kick-off has not passed remain unscored.
 
 Selecting a player from a current or previous gameweek opens that player's
@@ -99,7 +101,7 @@ requirements.
 - Current and upcoming gameweek fixture sections.
 - Upcoming squad preview, live fixture detail, and finished fixture detail.
 - Pitch/list toggle inside fixture squad review using the Squad toggle treatment.
-- Two-column fixture list view with Starting XI, Substitutes, and Reserves for both teams.
+- Two-column fixture list view with accessible Starting XI, Substitutes, and Reserves groups, without visible group headings or counts.
 - Current and past fixture player selections route to gameweek scoring detail; future fixture player selections route to a read-only player profile.
 - League standings.
 - Fixture detail drawer.

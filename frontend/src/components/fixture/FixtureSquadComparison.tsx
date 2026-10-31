@@ -248,11 +248,7 @@ function FixtureListTeam({
         <span>{squad.players.length} players</span>
       </header>
       {groups.map((group) => (
-        <section className="fixture-squad-list__group" key={group.key}>
-          <header className="fixture-squad-list__group-header">
-            <h3>{group.label}</h3>
-            <span>{group.players.length}</span>
-          </header>
+        <section aria-label={group.label} className="fixture-squad-list__group" key={group.key}>
           <div aria-label={`${group.label} players table`} className="fixture-squad-list__table-scroll" role="region" tabIndex={0}>
             <Table className="fixture-squad-list__table">
               <colgroup><col className="player" /><col className="points" /></colgroup>

@@ -113,33 +113,6 @@
   padding-top: 0.5rem;
 }
 
-.fixture-squad-list__group-header {
-  align-items: center;
-  color: var(--muted-foreground);
-  display: flex;
-  justify-content: space-between;
-  padding: 0 0.1rem;
-}
-
-.fixture-squad-list__group-header h3 {
-  font-size: 0.68rem;
-  letter-spacing: 0.02em;
-  margin: 0;
-}
-
-.fixture-squad-list__group-header > span {
-  align-items: center;
-  background: var(--secondary);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  display: inline-flex;
-  font-size: 0.56rem;
-  height: 1.2rem;
-  justify-content: center;
-  min-width: 1.2rem;
-  padding: 0 0.22rem;
-}
-
 .fixture-squad-list__table-scroll {
   background: color-mix(in srgb, var(--background) 72%, transparent);
   border: 1px solid var(--border);
@@ -644,10 +617,6 @@
   .fixture-squad-list__team {
     gap: 0.45rem;
     padding: 0.35rem;
-  }
-
-  .fixture-squad-list__group-header h3 {
-    font-size: 0.62rem;
   }
 
   .fixture-squad-list__table th,

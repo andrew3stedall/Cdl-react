@@ -132,7 +132,7 @@ describe('FixtureSquadComparison', () => {
     await act(async () => root.unmount());
   });
 
-  test('switches to a two-team list with starters, substitutes, reserves, and points', async () => {
+  test('switches to an aligned two-team list without roster group headings or counts', async () => {
     const { container, root } = await renderComparison();
 
     const listButton = container.querySelector<HTMLButtonElement>('button[aria-label="View as list"]');
@@ -141,9 +141,13 @@ describe('FixtureSquadComparison', () => {
     expect(listButton?.getAttribute('aria-pressed')).toBe('true');
     expect(container.querySelector('.fixture-squad-pitch__field')).toBeNull();
     expect(container.querySelectorAll('.fixture-squad-list__team')).toHaveLength(2);
-    expect(container.textContent).toContain('Starting XI');
-    expect(container.textContent).toContain('Substitutes');
-    expect(container.textContent).toContain('Reserves');
+    expect(container.querySelectorAll('.fixture-squad-list__group-header')).toHaveLength(0);
+    expect(container.querySelectorAll('.fixture-squad-list__group')).toHaveLength(6);
+    expect(container.querySelectorAll('.fixture-squad-list__team-header span')).toHaveLength(2);
+    expect(container.textContent).not.toContain('Starting XI');
+    expect(container.textContent).not.toContain('Substitutes');
+    expect(container.textContent).not.toContain('Reserves');
+    expect(container.querySelectorAll('.fixture-squad-list__group[aria-label="Starting XI"]')).toHaveLength(2);
     expect(container.textContent).toContain('Alpha Keeper');
     expect(container.textContent).toContain('Beta Forward');
     expect(container.querySelector('[data-player-id="alpha-gk"] [data-fixture-list-metric="points"]')?.textContent).toContain('8');

@@ -1,5 +1,7 @@
 ## Unreleased
 
+- Removed repeated fixture list group headings and counts to align both team columns, retained accessible group labels, and colour-coded open, active, and closed fixture status badges from the selected theme. Kept archived partial bench projections valid when no goalkeeper is present.
+
 - Add a confirmation-gated, staging-only database job to remove fixture rows explicitly marked synthetic and their linked results/scoring snapshots. The job uses an immutable image and reports deleted row counts.
 
 - Add manual staging Castle sync with read-only plans, reviewed transactional applies, versioned non-FPL archives, conservative fixture/lineup/completed-trade projection, conflict protection, schema-gap documentation and a repeatable phone-compatible runbook. Live loading and Actions database permissions remain unverified.

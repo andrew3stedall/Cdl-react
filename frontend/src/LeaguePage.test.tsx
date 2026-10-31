@@ -529,6 +529,7 @@ describe('LeaguePage', () => {
     expect(client.squadRequests).toEqual(['fixture-1201', 'fixture-1201']);
     expect(container.querySelector('[role="dialog"]')?.textContent).toContain('Gameweek underway');
     expect(container.querySelector('[role="dialog"]')?.textContent).toContain('Live scoring');
+    expect(container.querySelector('[role="dialog"] .league-status-badge')?.classList).toContain('league-status-badge--started');
     expect(container.querySelector('[role="dialog"]')?.textContent).toContain('Scoring detail is available.');
     expect(container.querySelectorAll('[aria-label="Squad comparison"] [data-fixture-metric="points"]')).toHaveLength(1);
     expect(container.querySelectorAll('[aria-label="Squad comparison"] [data-points-visible="true"]')).toHaveLength(1);
@@ -548,6 +549,7 @@ describe('LeaguePage', () => {
     expect(client.squadRequests).toEqual(['fixture-1201', 'fixture-1202']);
     expect(container.querySelector('[role="dialog"]')?.textContent).toContain('Finished fixture');
     expect(container.querySelector('[role="dialog"]')?.textContent).toContain('Final result');
+    expect(container.querySelector('[role="dialog"] .league-status-badge')?.classList).toContain('league-status-badge--complete');
     act(() => root.unmount());
   });
 

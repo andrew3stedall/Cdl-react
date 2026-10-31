@@ -1071,7 +1071,18 @@
   white-space: nowrap;
 }
 
+.league-status-badge--pending {
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
+  border-color: color-mix(in srgb, var(--primary) 42%, var(--border));
+  color: var(--theme-primary-text, var(--primary));
+}
+
+.league-status-badge--pending > span {
+  background: var(--theme-primary-text, var(--primary));
+}
+
 .league-status-badge--started {
+  background: color-mix(in srgb, var(--primary) 16%, transparent);
   border-color: var(--primary);
   color: var(--theme-primary-text, var(--primary));
 }
@@ -1082,6 +1093,11 @@
 
 .league-status-badge--complete > span {
   background: var(--muted-foreground);
+}
+
+.league-status-badge--complete {
+  background: color-mix(in srgb, var(--muted-foreground) 8%, transparent);
+  border-color: color-mix(in srgb, var(--muted-foreground) 45%, var(--border));
 }
 
 @keyframes league-pulse {

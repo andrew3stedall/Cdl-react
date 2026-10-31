@@ -79,8 +79,6 @@ class CastleSyncRepository:
                 name: [dict(row) for row in session.execute(select(tables[name])).mappings()]
                 for name in CATALOG_TABLES
             }
-            adapter = CastleSourceAdapter(bundle, config, catalog)
-            adapter.build_projections()
             saved = {
                 row["id"]: row["payload_json"]
                 for row in session.execute(select(tables["import_source_payloads"])).mappings()
@@ -89,6 +87,23 @@ class CastleSyncRepository:
                 row["id"]: row["payload_json"]
                 for row in session.execute(select(tables["import_source_mappings"])).mappings()
             }
+            adapter = CastleSourceAdapter(bundle, config, catalog, existing_mappings=mappings)
+            adapter.build_projections()
+            if config.native_entities:
+                selected_entities = set(config.native_entities)
+                unsupported_entities = selected_entities - WRITABLE_NATIVE
+                if unsupported_entities:
+                    raise ValueError("Unsupported native projection entity")
+                adapter.projections = [
+                    projection
+                    for projection in adapter.projections
+                    if projection["table"] in selected_entities
+                ]
+                adapter.lineup_deletions = [
+                    deletion
+                    for deletion in adapter.lineup_deletions
+                    if deletion["table"] in selected_entities
+                ]
             source_digest = digest(adapter.files)
             native_intent = (
                 [["upsert", p["table"], p["id"], digest(p["values"])] for p in adapter.projections]
@@ -171,7 +186,11 @@ class CastleSyncRepository:
                 prior = mappings.get(state_key)
                 before_hash = digest(before)
                 native_states.append([state_key, before_hash])
-                protected = prior and prior.get("last_digest") != before_hash
+                protected = prior and prior.get("last_digest") != before_hash and not (
+                    config.restore_missing
+                    and current is None
+                    and (not config.native_entities or name in config.native_entities)
+                )
                 unadopted = (
                     current
                     and not prior

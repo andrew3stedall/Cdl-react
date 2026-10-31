@@ -94,7 +94,26 @@ jobs:
           set -euo pipefail
           mapfile -t request_files < <(
             git diff-tree --no-commit-id --name-only --diff-filter=AM -r "$GITHUB_SHA" |
-              grep -E '^[.]github/staging-operations/castle-sync-requests/[A-Za-z0-9._-]+[.]json
+              grep -F '.github/staging-operations/castle-sync-requests/' || true
+          )
+          if [[ "${#request_files[@]}" -ne 1 ]]; then
+            echo "A Castle sync push must change exactly one request JSON file." >&2
+            exit 1
+          fi
+          request_file="${request_files[0]}"
+          jq -e '(.operation == "plan" or .operation == "apply") and .projection == "native"' "$request_file" >/dev/null
+          echo "SYNC_OPERATION=$(jq -er '.operation' "$request_file")" >> "$GITHUB_ENV"
+          echo "CASTLE_EXPECTED_PLAN=$(jq -er '.expected_plan // ""' "$request_file")" >> "$GITHUB_ENV"
+          echo "CASTLE_CONFIRM_APPLY=$(jq -er '.confirmation // ""' "$request_file")" >> "$GITHUB_ENV"
+          echo "CASTLE_SOURCE_LEAGUE=$(jq -er '.source_league // ""' "$request_file")" >> "$GITHUB_ENV"
+          echo 'SYNC_PROJECTION=native' >> "$GITHUB_ENV"
+          echo 'CASTLE_TEAM_ALIASES={}' >> "$GITHUB_ENV"
+          echo 'CASTLE_PLAYER_IDS={}' >> "$GITHUB_ENV"
+          echo 'CASTLE_TRADE_GAMEWEEKS={}' >> "$GITHUB_ENV"
+          echo 'CASTLE_ADOPT_EXISTING=true' >> "$GITHUB_ENV"
+          echo 'CASTLE_ALLOW_GAPS=true' >> "$GITHUB_ENV"
+          echo "Loaded Castle sync request $request_file."
+      - name: Check boundary and apply confirmation before source access
         run: |
           test "$PROJECT_ID" = 'cdl-react-staging-ast'
           case "$SYNC_OPERATION" in plan|apply) ;; *) exit 1 ;; esac
@@ -102,97 +121,6 @@ jobs:
           if [ "$SYNC_OPERATION" = apply ]; then
             test "$CASTLE_CONFIRM_APPLY" = 'IMPORT CASTLE STAGING'
             [[ "$CASTLE_EXPECTED_PLAN" =~ ^[a-f0-9]{64}$ ]]
-          fi
-      - name: Validate collectors
-        run: node --test scripts/castle-inventory*.test.mjs
-      - uses: google-github-actions/auth@v3
-        with:
-          project_id: ${{ vars.GCP_STAGING_PROJECT_ID }}
-          workload_identity_provider: ${{ vars.GCP_STAGING_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ vars.GCP_STAGING_DEPLOY_SERVICE_ACCOUNT }}
-      - uses: google-github-actions/setup-gcloud@v3
-      - name: Fetch fresh Castle source snapshot without FPL
-        run: CASTLE_SYNC_INPUT_PATH="$RUNNER_TEMP/castle-sync-input.json" node scripts/castle-inventory-gcp.mjs
-      - name: Install verified Cloud SQL Auth Proxy
-        run: |
-          curl --fail --silent --show-error --location \
-            https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.22.0/cloud-sql-proxy.linux.amd64 \
-            --output "$RUNNER_TEMP/cloud-sql-proxy"
-          echo "42e73a8775bc3300b6514816cc4893f01b109a50f65aa779a451d3e4ff4c3ead  $RUNNER_TEMP/cloud-sql-proxy" | sha256sum --check
-          chmod 700 "$RUNNER_TEMP/cloud-sql-proxy"
-      - name: Plan or apply transaction through staging proxy
-        run: |
-          set -euo pipefail
-          "$RUNNER_TEMP/cloud-sql-proxy" --address=127.0.0.1 --port=5433 \
-            cdl-react-staging-ast:australia-southeast1:cdl-react-staging-postgres \
-            >"$RUNNER_TEMP/castle-proxy.log" 2>&1 &
-          proxy_pid=$!
-          trap 'kill "$proxy_pid" 2>/dev/null || true' EXIT
-          uv run python -c 'import socket,time
-          for attempt in range(30):
-              try:
-                  socket.create_connection(("127.0.0.1",5433),timeout=1).close()
-                  break
-              except OSError:
-                  time.sleep(1)
-          else:
-              raise SystemExit("Staging proxy did not become ready")'
-          uv run python -m cdl_api.castle_sync --operation "$SYNC_OPERATION" --projection "$SYNC_PROJECTION"
-      - name: Remove plaintext snapshot even on failure
-        if: always()
-        run: |
-          python3 -c 'import os,pathlib; (pathlib.Path(os.environ["RUNNER_TEMP"])/"castle-sync-input.json").unlink(missing_ok=True)'
-      - name: Retain report and encrypted evidence for three days
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: castle-sync-${{ github.run_id }}
-          path: |
-            ${{ runner.temp }}/castle-sync-report.json
-            ${{ runner.temp }}/castle-sync-team-review.json
-            ${{ runner.temp }}/castle-export/
-          if-no-files-found: warn
-          retention-days: 3
- || true
-          )
-          if [[ "${#request_files[@]}" -ne 1 ]]; then
-            echo "A Castle sync push must change exactly one request JSON file." >&2
-            exit 1
-          fi
-
-          request_file="${request_files[0]}"
-          operation="$(jq -er '.operation | select(. == "plan" or . == "apply")' "$request_file")"
-          projection="$(jq -er '.projection | select(. == "archive" or . == "native")' "$request_file")"
-          expected_plan="$(jq -er '.expected_plan // "" | select(type == "string")' "$request_file")"
-          confirmation="$(jq -er '.confirmation // "" | select(type == "string")' "$request_file")"
-          source_league="$(jq -er '.source_league // "" | select(type == "string")' "$request_file")"
-          team_aliases="$(jq -cer '.team_aliases // {} | select(type == "object")' "$request_file")"
-          player_ids="$(jq -cer '.player_ids // {} | select(type == "object")' "$request_file")"
-          trade_gameweeks="$(jq -cer '.trade_gameweeks // {} | select(type == "object")' "$request_file")"
-          adopt_existing="$(jq -er '.adopt_existing // false | select(type == "boolean")' "$request_file")"
-          allow_gaps="$(jq -er '.allow_gaps // false | select(type == "boolean")' "$request_file")"
-
-          [[ "$source_league" =~ ^[A-Za-z0-9_-]*$ ]]
-          [[ -z "$expected_plan" || "$expected_plan" =~ ^[a-f0-9]{64}$ ]]
-          {
-            echo "SYNC_OPERATION=$operation"
-            echo "SYNC_PROJECTION=$projection"
-            echo "CASTLE_EXPECTED_PLAN=$expected_plan"
-            echo "CASTLE_CONFIRM_APPLY=$confirmation"
-            echo "CASTLE_SOURCE_LEAGUE=$source_league"
-            echo "CASTLE_TEAM_ALIASES=$team_aliases"
-            echo "CASTLE_PLAYER_IDS=$player_ids"
-            echo "CASTLE_TRADE_GAMEWEEKS=$trade_gameweeks"
-            echo "CASTLE_ADOPT_EXISTING=$adopt_existing"
-            echo "CASTLE_ALLOW_GAPS=$allow_gaps"
-          } >> "$GITHUB_ENV"
-          echo "Loaded Castle sync request $request_file."
-      - name: Check boundary and apply confirmation before source access
-        run: |
-          test "$PROJECT_ID" = 'cdl-react-staging-ast'
-          if [ "$SYNC_OPERATION" = apply ]; then
-            test "$CASTLE_CONFIRM_APPLY" = 'IMPORT CASTLE STAGING'
-            test -n "$CASTLE_EXPECTED_PLAN"
           fi
       - name: Validate collectors
         run: node --test scripts/castle-inventory*.test.mjs

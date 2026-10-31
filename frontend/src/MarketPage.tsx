@@ -3,6 +3,7 @@ import { type MutableRefObject, type ReactNode, lazy, Suspense, useEffect, useMe
 import {
   ArrowRight,
   ArrowRightLeft,
+  Binoculars,
   Bookmark,
   CircleAlert,
   Filter,
@@ -44,7 +45,7 @@ const LoansPanel = lazy(() => import('./LoansPanel').then((module) => ({ default
 const marketSquadClient = new HttpSquadClient();
 const marketLoansClient = new HttpLoansClient();
 
-type MarketMode = 'discover' | 'interests' | 'trades' | 'draws' | 'loans';
+type MarketMode = 'discover' | 'scouting' | 'interests' | 'trades' | 'draws' | 'loans';
 type PositionFilter = 'all' | 'GKP' | 'DEF' | 'MID' | 'FWD';
 type FixtureFilter = 'all' | 'easy';
 type SortKey = 'points' | 'form' | 'xg' | 'xa' | 'value';
@@ -571,6 +572,7 @@ export function MarketPage({ currentPath, onNavigate, preset, session }: MarketP
               onChange={(nextMode) => selectMode(nextMode as MarketMode)}
               options={[
                 { value: 'discover', label: 'Discovery', icon: <Search aria-hidden="true" size={17} /> },
+                { value: 'scouting', label: 'Scouting', icon: <Binoculars aria-hidden="true" size={17} /> },
                 { value: 'interests', label: 'Interests', icon: <Bookmark aria-hidden="true" size={17} /> },
                 { value: 'trades', label: 'Trades', icon: <ArrowRightLeft aria-hidden="true" size={17} /> },
                 { value: 'draws', label: 'Free agency', icon: <ListOrdered aria-hidden="true" size={17} /> },
@@ -585,14 +587,14 @@ export function MarketPage({ currentPath, onNavigate, preset, session }: MarketP
         titleId="market-page-title"
       />
 
-      {error ? (
+      {mode !== 'scouting' && error ? (
         <div className="market-page__error" role="alert">
           <CircleAlert aria-hidden="true" size={18} />
           <span>{error}</span>
           <Button disabled={loading} onClick={() => setRefreshKey((key) => key + 1)} type="button" variant="secondary">{loading ? 'Retrying…' : 'Retry'}</Button>
         </div>
       ) : null}
-      {notice && !error ? <p className="market-page__status" role="status">{notice}</p> : null}
+      {mode !== 'scouting' && notice && !error ? <p className="market-page__status" role="status">{notice}</p> : null}
 
       <section className="market-page__workspace">
         {mode === 'trades' || mode === 'loans' ? <nav aria-label="Trade workflows" className="market-page__workflow-links">
@@ -1311,6 +1313,7 @@ function ownershipToneFor(player: MarketPlayer, managerTeam: SquadApiTeam): Play
 }
 
 function modeFromPath(path: string): MarketMode {
+  if (path.startsWith('/scouting/scouting')) return 'scouting';
   if (path.startsWith('/scouting/interests')) return 'interests';
   if (path.startsWith('/scouting/trades')) return 'trades';
   if (path.startsWith('/scouting/loans')) return 'loans';

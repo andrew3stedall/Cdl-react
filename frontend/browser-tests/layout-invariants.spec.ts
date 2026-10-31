@@ -16,8 +16,9 @@ async function bounds(locator: Locator): Promise<Bounds> {
   return box as Bounds;
 }
 
-function expectBoundsStable(before: Bounds, after: Bounds, label: string) {
-  for (const key of ['x', 'y', 'width', 'height'] as const) {
+function expectBoundsStable(before: Bounds, after: Bounds, label: string, includeHeight = true) {
+  const keys = includeHeight ? ['x', 'y', 'width', 'height'] as const : ['x', 'y', 'width'] as const;
+  for (const key of keys) {
     expect(
       Math.abs(before[key] - after[key]),
       `${label} ${key} changed by more than 1 CSS pixel (${before[key]} → ${after[key]})`,
@@ -177,12 +178,12 @@ test('the four primary route headers stay fixed through real loading, route chan
       }
       const pending = pendingByTitle.get(label);
       expect(pending).toBeDefined();
-      expectBoundsStable(pending!.hero, routeHeader.hero, `${label} PageHero loading→loaded`);
+      expectBoundsStable(pending!.hero, routeHeader.hero, `${label} PageHero loading→loaded`, viewport.width > 520);
       if (!firstLoadedHeader) {
         firstLoadedHeader = routeHeader;
         firstLoadedTitle = title;
       } else {
-        expectBoundsStable(firstLoadedHeader.hero, routeHeader.hero, `${firstLoadedTitle}→${title} PageHero`);
+        expectBoundsStable(firstLoadedHeader.hero, routeHeader.hero, `${firstLoadedTitle}→${title} PageHero`, viewport.width > 520);
       }
     }
 

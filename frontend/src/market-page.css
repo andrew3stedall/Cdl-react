@@ -529,7 +529,8 @@
   white-space: nowrap;
 }
 
-.market-page__list-points {
+.market-page__list-points,
+.market-page__list-metric {
   font-size: inherit;
   white-space: nowrap;
 }

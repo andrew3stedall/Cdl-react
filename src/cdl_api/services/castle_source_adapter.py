@@ -345,15 +345,11 @@ class CastleSourceAdapter:
         lineups = self.rows("lineups")
         if self.config.lineup_gameweek is not None:
             target_current = {
-                int(row["id"])
-                for row in self.target_rows("fpl_gameweeks")
-                if row.get("is_current")
+                int(row["id"]) for row in self.target_rows("fpl_gameweeks") if row.get("is_current")
             }
             if target_current != {self.config.lineup_gameweek}:
                 raise ValueError("Requested lineup gameweek is not the current staging gameweek")
-            lineups = [
-                row for row in lineups if row.get("gameweek") == self.config.lineup_gameweek
-            ]
+            lineups = [row for row in lineups if row.get("gameweek") == self.config.lineup_gameweek]
             if not lineups:
                 raise ValueError("Castle has no saved lineups for the selected current gameweek")
         source_team_by_user = {

@@ -974,7 +974,6 @@ function ScoutingTeamCard({ managerTeam, maxRowsByPosition, onOpenPlayer, onPosi
           orientation="vertical"
           opts={{ loop: false }}
           setApi={setPositionApi}
-          style={{ height: `${positionCarouselHeight}rem` }}
         >
           <CarouselContent className="market-page__scouting-position-track">
             {scoutingPositionGroups.map(({ label, value }) => {

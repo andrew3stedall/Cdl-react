@@ -166,6 +166,16 @@ test('the four primary route headers stay fixed through real loading, route chan
 
       const routeHeader = await readHeaderBounds(routePage);
       await expectHeaderDimensions(routePage, routeHeader);
+      if (viewport.width <= 520) {
+        const [brandBox, actionsBox] = await Promise.all([
+          bounds(activeHero(routePage).locator('.cdl-page-hero__brand-lockup')),
+          bounds(activeHero(routePage).locator('.cdl-page-hero__actions')),
+        ]);
+        expect(
+          Math.abs((brandBox.y + brandBox.height / 2) - (actionsBox.y + actionsBox.height / 2)),
+          `${label} title and page controls should share a mobile header line`,
+        ).toBeLessThanOrEqual(4);
+      }
       const pending = pendingByTitle.get(label);
       expect(pending).toBeDefined();
       expectBoundsStable(pending!.hero, routeHeader.hero, `${label} PageHero loading→loaded`);

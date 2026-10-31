@@ -223,7 +223,7 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
       <PageHero
         actions={(
           <PageHeroControls>
-                        <PageHeroViewToggle
+            <PageHeroViewToggle
               ariaLabel="League view"
               onChange={(nextView) => {
                 const next = nextView as LeagueView;

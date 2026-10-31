@@ -76,6 +76,9 @@ def main() -> None:
                 if os.environ.get("CASTLE_LINEUP_GAMEWEEK")
                 else None
             ),
+            replace_current_gameweek_synthetic=(
+                os.environ.get("CASTLE_REPLACE_CURRENT_GAMEWEEK_SYNTHETIC") == "true"
+            ),
         )
         bundle = json.loads(source.read_text())
         gcloud = shutil.which("gcloud")

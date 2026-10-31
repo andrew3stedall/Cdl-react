@@ -87,6 +87,14 @@ class CastleSyncRepository:
                 row["id"]: row["payload_json"]
                 for row in session.execute(select(tables["import_source_mappings"])).mappings()
             }
+            if config.replace_current_gameweek_synthetic and (
+                config.projection != "native"
+                or config.lineup_gameweek is None
+                or "team_selection_lineup_slots" not in config.native_entities
+            ):
+                raise ValueError(
+                    "Synthetic replacement requires a current-week native lineup-only plan"
+                )
             adapter = CastleSourceAdapter(bundle, config, catalog, existing_mappings=mappings)
             adapter.build_projections()
             if config.native_entities:
@@ -182,6 +190,7 @@ class CastleSyncRepository:
                     )
             native_changes, native_deletions, native_states = [], [], []
             native_conflicts = []
+            synthetic_current_gameweek_overwrites = 0
             seen = set()
             for projection in adapter.projections:
                 name, row_id, values = projection["table"], projection["id"], projection["values"]
@@ -194,15 +203,24 @@ class CastleSyncRepository:
                 prior = mappings.get(state_key)
                 before_hash = digest(before)
                 native_states.append([state_key, before_hash])
+                replace_synthetic_current = (
+                    config.replace_current_gameweek_synthetic
+                    and name == "team_selection_lineup_slots"
+                    and config.lineup_gameweek is not None
+                    and current is not None
+                    and int(current["gameweek"]) == config.lineup_gameweek
+                    and str(current["id"]).startswith("lineup-")
+                    and current["locked_at"] is None
+                )
                 protected = (
                     prior
                     and prior.get("last_digest") != before_hash
                     and not (
-                        config.restore_missing
-                        and current is None
-                        and (not config.native_entities or name in config.native_entities)
+                        (config.restore_missing and current is None) or replace_synthetic_current
                     )
                 )
+                if prior and prior.get("last_digest") != before_hash and replace_synthetic_current:
+                    synthetic_current_gameweek_overwrites += 1
                 unadopted = (
                     current
                     and not prior
@@ -227,7 +245,20 @@ class CastleSyncRepository:
                 prior = mappings.get(state_key)
                 before_hash = digest(before)
                 native_states.append([state_key, before_hash])
-                protected = prior and prior.get("last_digest") != before_hash
+                replace_synthetic_current = (
+                    config.replace_current_gameweek_synthetic
+                    and config.lineup_gameweek is not None
+                    and int(current["gameweek"]) == config.lineup_gameweek
+                    and str(current["id"]).startswith("lineup-")
+                    and current["locked_at"] is None
+                )
+                protected = (
+                    prior
+                    and prior.get("last_digest") != before_hash
+                    and not replace_synthetic_current
+                )
+                if prior and prior.get("last_digest") != before_hash and replace_synthetic_current:
+                    synthetic_current_gameweek_overwrites += 1
                 unadopted = current and not prior and not config.adopt_existing
                 if protected or unadopted:
                     native_conflicts.append(state_key)
@@ -266,6 +297,7 @@ class CastleSyncRepository:
                 "native_changes": dict(changes_by_table),
                 "native_deletions": dict(deletions_by_table),
                 "native_conflicts": len(native_conflicts),
+                "synthetic_current_gameweek_overwrites": synthetic_current_gameweek_overwrites,
                 "gaps": dict(adapter.gaps),
                 "archive_only": dict(adapter.archive_only),
                 "already_represented": dict(adapter.already_represented),

@@ -10,6 +10,7 @@ on:
       - 'src/cdl_api/repositories/castle_sync.py'
       - 'src/cdl_api/services/castle_source_adapter.py'
       - '.github/workflows/castle-sync-staging.yml'
+      - '.github/staging-operations/castle-sync-requests/*.json'
   workflow_dispatch:
     inputs:
       operation:
@@ -79,18 +80,47 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          fetch-depth: 2
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
       - uses: astral-sh/setup-uv@v4
       - run: uv sync --locked
+      - name: Load committed sync request
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t request_files < <(
+            git diff-tree --no-commit-id --name-only --diff-filter=AM -r "$GITHUB_SHA" |
+              grep -F '.github/staging-operations/castle-sync-requests/' || true
+          )
+          if [[ "${#request_files[@]}" -ne 1 ]]; then
+            echo "A Castle sync push must change exactly one request JSON file." >&2
+            exit 1
+          fi
+          request_file="${request_files[0]}"
+          jq -e '(.operation == "plan" or .operation == "apply") and .projection == "native"' "$request_file" >/dev/null
+          echo "SYNC_OPERATION=$(jq -er '.operation' "$request_file")" >> "$GITHUB_ENV"
+          echo "CASTLE_EXPECTED_PLAN=$(jq -er '.expected_plan // ""' "$request_file")" >> "$GITHUB_ENV"
+          echo "CASTLE_CONFIRM_APPLY=$(jq -er '.confirmation // ""' "$request_file")" >> "$GITHUB_ENV"
+          echo "CASTLE_SOURCE_LEAGUE=$(jq -er '.source_league // ""' "$request_file")" >> "$GITHUB_ENV"
+          echo 'SYNC_PROJECTION=native' >> "$GITHUB_ENV"
+          echo 'CASTLE_TEAM_ALIASES={}' >> "$GITHUB_ENV"
+          echo 'CASTLE_PLAYER_IDS={}' >> "$GITHUB_ENV"
+          echo 'CASTLE_TRADE_GAMEWEEKS={}' >> "$GITHUB_ENV"
+          echo 'CASTLE_ADOPT_EXISTING=true' >> "$GITHUB_ENV"
+          echo 'CASTLE_ALLOW_GAPS=true' >> "$GITHUB_ENV"
+          echo "Loaded Castle sync request $request_file."
       - name: Check boundary and apply confirmation before source access
         run: |
           test "$PROJECT_ID" = 'cdl-react-staging-ast'
+          case "$SYNC_OPERATION" in plan|apply) ;; *) exit 1 ;; esac
+          case "$SYNC_PROJECTION" in archive|native) ;; *) exit 1 ;; esac
           if [ "$SYNC_OPERATION" = apply ]; then
             test "$CASTLE_CONFIRM_APPLY" = 'IMPORT CASTLE STAGING'
-            test -n "$CASTLE_EXPECTED_PLAN"
+            [[ "$CASTLE_EXPECTED_PLAN" =~ ^[a-f0-9]{64}$ ]]
           fi
       - name: Validate collectors
         run: node --test scripts/castle-inventory*.test.mjs

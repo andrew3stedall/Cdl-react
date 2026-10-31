@@ -92,7 +92,9 @@ class CastleSyncRepository:
                 or config.lineup_gameweek is None
                 or "team_selection_lineup_slots" not in config.native_entities
             ):
-                raise ValueError("Synthetic replacement requires a current-week native lineup-only plan")
+                raise ValueError(
+                    "Synthetic replacement requires a current-week native lineup-only plan"
+                )
             adapter = CastleSourceAdapter(bundle, config, catalog, existing_mappings=mappings)
             adapter.build_projections()
             if config.native_entities:
@@ -218,7 +220,11 @@ class CastleSyncRepository:
                         or replace_synthetic_current
                     )
                 )
-                if prior and prior.get("last_digest") != before_hash and replace_synthetic_current:
+                if (
+                    prior
+                    and prior.get("last_digest") != before_hash
+                    and replace_synthetic_current
+                ):
                     synthetic_current_gameweek_overwrites += 1
                 unadopted = (
                     current
@@ -251,7 +257,11 @@ class CastleSyncRepository:
                     and str(current["id"]).startswith("lineup-")
                     and current["locked_at"] is None
                 )
-                protected = prior and prior.get("last_digest") != before_hash and not replace_synthetic_current
+                protected = (
+                    prior
+                    and prior.get("last_digest") != before_hash
+                    and not replace_synthetic_current
+                )
                 if prior and prior.get("last_digest") != before_hash and replace_synthetic_current:
                     synthetic_current_gameweek_overwrites += 1
                 unadopted = current and not prior and not config.adopt_existing

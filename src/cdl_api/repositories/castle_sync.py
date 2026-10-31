@@ -186,10 +186,14 @@ class CastleSyncRepository:
                 prior = mappings.get(state_key)
                 before_hash = digest(before)
                 native_states.append([state_key, before_hash])
-                protected = prior and prior.get("last_digest") != before_hash and not (
-                    config.restore_missing
-                    and current is None
-                    and (not config.native_entities or name in config.native_entities)
+                protected = (
+                    prior
+                    and prior.get("last_digest") != before_hash
+                    and not (
+                        config.restore_missing
+                        and current is None
+                        and (not config.native_entities or name in config.native_entities)
+                    )
                 )
                 unadopted = (
                     current

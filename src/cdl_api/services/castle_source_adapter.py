@@ -65,8 +65,10 @@ class CastleSourceAdapter:
         bundle: dict[str, Any],
         config: CastleSyncConfig,
         catalog: dict[str, list[dict]],
+        existing_mappings: dict[str, dict[str, Any]] | None = None,
     ) -> None:
         self.config, self.catalog = config, catalog
+        self.existing_mappings = existing_mappings or {}
         manifest = bundle.get("manifest", {})
         if manifest.get("format") != "castle-data-export-v1":
             raise ValueError("Unsupported source export")
@@ -617,7 +619,16 @@ class CastleSourceAdapter:
             if len(candidates) > 1:
                 self.gaps["fixture_identity_ambiguous"] += 1
                 continue
-            fid = candidates[0]["id"] if candidates else sync_id(self.scope, "fixture", row["id"])
+            source_key = f"fixture:{row['id']}"
+            previous_mapping = self.existing_mappings.get(
+                sync_id(self.scope, "mapping", source_key), {}
+            )
+            previous_fixture_id = previous_mapping.get("target_id")
+            fid = (
+                candidates[0]["id"]
+                if candidates
+                else previous_fixture_id or sync_id(self.scope, "fixture", row["id"])
+            )
             existing_results = [
                 r
                 for r in self.target_rows("fixture_results")
@@ -645,7 +656,7 @@ class CastleSourceAdapter:
             )
             if source_unscored and target_has_only_empty_synthetic_evidence:
                 self.already_represented["unscored_fixture_matches_staging_seed"] += 1
-                self.mappings[f"fixture:{row['id']}"] = fid
+                self.mappings[source_key] = fid
                 continue
             # Castle is authoritative for fixture totals. Keep the existing scoring
             # snapshot rows intact; detailed point reconciliation will be imported later
@@ -654,7 +665,7 @@ class CastleSourceAdapter:
             if len(existing_results) > 1:
                 self.gaps["fixture_multiple_target_results_require_review"] += 1
                 continue
-            self.mappings[f"fixture:{row['id']}"] = fid
+            self.mappings[source_key] = fid
             scored = row.get("home_score") is not None and row.get("away_score") is not None
             finished = bool(events.get(gw, {}).get("finished"))
             status = (

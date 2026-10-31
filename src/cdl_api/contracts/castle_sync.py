@@ -25,3 +25,4 @@ class CastleSyncConfig(BaseModel):
         ]
     ] = Field(default_factory=list)
     restore_missing: bool = False
+    lineup_gameweek: int | None = Field(default=None, ge=1)

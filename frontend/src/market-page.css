@@ -1157,13 +1157,11 @@
   border: 1px solid var(--border);
   border-radius: 0.8rem;
   display: block;
-  min-height: 18rem;
-  padding: 0.55rem 2.35rem;
+  padding: 0.55rem 2.35rem 0.8rem;
   will-change: transform, opacity;
 }
 
 .market-page__scouting-position-carousel {
-  height: min(34rem, max(22rem, 60dvh));
   min-height: 0;
 }
 
@@ -1182,7 +1180,7 @@
 .market-page__scouting-position-slide {
   height: 100%;
   min-height: 100%;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .market-page__scouting-position {
@@ -1190,8 +1188,8 @@
   grid-template-rows: auto minmax(0, 1fr);
   height: 100%;
   min-width: 0;
-  overflow: hidden;
-  padding: 0.45rem 0;
+  overflow: visible;
+  padding: 0.45rem 1.75rem 0.45rem 0;
 }
 
 .market-page__scouting-position-header {
@@ -1206,43 +1204,52 @@
 }
 
 .market-page__scouting-player-grid {
+  align-content: start;
   display: grid;
-  gap: 0.38rem;
-  grid-auto-rows: min-content;
-  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem 0.2rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  overflow: visible;
   padding-bottom: 0.2rem;
-  scrollbar-width: thin;
 }
 
 .market-page__scouting-player {
   align-items: center;
-  background: var(--background);
-  border: 1px solid var(--border);
-  border-radius: 0.58rem;
+  aspect-ratio: 1;
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
   color: var(--foreground);
   cursor: pointer;
   display: flex;
-  gap: 0.5rem;
-  justify-content: space-between;
-  min-height: 3.2rem;
+  justify-content: center;
+  min-height: 0;
   min-width: 0;
-  padding: 0.35rem 0.5rem;
-  text-align: left;
-  transition: border-color 120ms ease, background-color 120ms ease;
+  overflow: visible;
+  padding: 0;
+  position: relative;
+  text-align: center;
+  transition: filter 120ms ease;
+  width: 100%;
 }
 
 .market-page__scouting-player:hover,
 .market-page__scouting-player:focus-visible {
-  background: color-mix(in srgb, var(--secondary) 32%, var(--background));
-  border-color: var(--primary);
+  filter: brightness(1.12);
   outline: none;
 }
 
+.market-page__scouting-player:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 0.2rem;
+}
+
+.market-page__scouting-player .player-card__shirt.large {
+  height: 2.65rem;
+  width: 3rem;
+}
+
 .market-page__scouting-player > .player-card {
-  flex: 1 1 auto;
   min-width: 0;
 }
 

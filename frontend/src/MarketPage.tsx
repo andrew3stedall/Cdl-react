@@ -815,6 +815,20 @@ function ScoutingPanel({ failed, loading, managerTeam, onOpenPlayer, players }: 
   const teams = useMemo(() => Array.from(new Map(players.map((player) => [player.clubId, { id: player.clubId, name: player.clubName }])).values()).sort((left, right) => left.name.localeCompare(right.name)), [players]);
   const [api, setApi] = useState<CarouselApi>();
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [selectedPositionIndex, setSelectedPositionIndex] = useState(0);
+  const maxRowsByPosition = useMemo<Record<string, number>>(() => {
+    const countsByTeam = new Map<string, Map<string, number>>();
+    for (const player of players) {
+      const counts = countsByTeam.get(player.clubId) ?? new Map<string, number>();
+      counts.set(player.position, (counts.get(player.position) ?? 0) + 1);
+      countsByTeam.set(player.clubId, counts);
+    }
+
+    return Object.fromEntries(scoutingPositionGroups.map(({ value }) => {
+      const maxCount = Math.max(0, ...Array.from(countsByTeam.values(), (counts) => counts.get(value) ?? 0));
+      return [value, Math.max(1, Math.ceil(maxCount / SCOUTING_PLAYER_COLUMNS))];
+    }));
+  }, [players]);
 
   useEffect(() => {
     if (!api) return undefined;
@@ -896,8 +910,11 @@ function ScoutingPanel({ failed, loading, managerTeam, onOpenPlayer, players }: 
             <ScoutingTeamCard
               key={team.id}
               managerTeam={managerTeam}
+              maxRowsByPosition={maxRowsByPosition}
               onOpenPlayer={onOpenPlayer}
+              onPositionChange={setSelectedPositionIndex}
               players={players.filter((player) => player.clubId === team.id)}
+              selectedPositionIndex={selectedPositionIndex}
               teamName={team.name}
             />
           ))}
@@ -911,22 +928,30 @@ function ScoutingPanel({ failed, loading, managerTeam, onOpenPlayer, players }: 
 }
 
 
-function ScoutingTeamCard({ managerTeam, onOpenPlayer, players, teamName }: { managerTeam: SquadApiTeam; onOpenPlayer: (player: MarketPlayer) => void; players: MarketPlayer[]; teamName: string }) {
+const SCOUTING_PLAYER_COLUMNS = 4;
+const SCOUTING_POSITION_CHROME_REM = 2.35;
+const SCOUTING_PLAYER_ROW_REM = 4.8;
+
+function ScoutingTeamCard({ managerTeam, maxRowsByPosition, onOpenPlayer, onPositionChange, players, selectedPositionIndex, teamName }: { managerTeam: SquadApiTeam; maxRowsByPosition: Record<string, number>; onOpenPlayer: (player: MarketPlayer) => void; onPositionChange: (index: number) => void; players: MarketPlayer[]; selectedPositionIndex: number; teamName: string }) {
   const [positionApi, setPositionApi] = useState<CarouselApi>();
-  const [selectedPositionIndex, setSelectedPositionIndex] = useState(0);
+  const activePosition = scoutingPositionGroups[selectedPositionIndex]?.value ?? scoutingPositionGroups[0].value;
+  const positionRows = maxRowsByPosition[activePosition] ?? 1;
+  const positionCarouselHeight = SCOUTING_POSITION_CHROME_REM + positionRows * SCOUTING_PLAYER_ROW_REM;
 
   useEffect(() => {
     if (!positionApi) return undefined;
-    const syncSelectedPosition = () => setSelectedPositionIndex(positionApi.selectedScrollSnap());
-    syncSelectedPosition();
+    const syncSelectedPosition = () => onPositionChange(positionApi.selectedScrollSnap());
     positionApi.on('select', syncSelectedPosition);
-    positionApi.on('reInit', syncSelectedPosition);
     return () => {
       positionApi.off('select', syncSelectedPosition);
-      positionApi.off('reInit', syncSelectedPosition);
     };
-  }, [positionApi]);
+  }, [onPositionChange, positionApi]);
 
+  useEffect(() => {
+    if (positionApi && positionApi.selectedScrollSnap() !== selectedPositionIndex) {
+      positionApi.scrollTo(selectedPositionIndex, true);
+    }
+  }, [positionApi, selectedPositionIndex]);
   return (
     <CarouselItem aria-label={teamName} className="market-page__scouting-slide">
       <div className="market-page__scouting-team">
@@ -936,6 +961,7 @@ function ScoutingTeamCard({ managerTeam, onOpenPlayer, players, teamName }: { ma
           orientation="vertical"
           opts={{ loop: false }}
           setApi={setPositionApi}
+          style={{ height: `${positionCarouselHeight}rem` }}
         >
           <CarouselContent className="market-page__scouting-position-track">
             {scoutingPositionGroups.map(({ label, value }) => {
@@ -950,11 +976,16 @@ function ScoutingTeamCard({ managerTeam, onOpenPlayer, players, teamName }: { ma
                       <span>{positionPlayers.length}</span>
                     </header>
                     {positionPlayers.length > 0 ? (
-                      <div className="market-page__scouting-player-grid">
+                      <div aria-label={`${label} player cards`} className="market-page__scouting-player-grid">
                         {positionPlayers.map((player) => (
-                          <button aria-label={`View ${player.displayName} details`} className="market-page__scouting-player" key={player.id} onClick={() => onOpenPlayer(player)} type="button">
-                            <PlayerCard formPosition="beside" layout="list" player={toPlayerCardPlayer(player, ownershipToneFor(player, managerTeam))} showPositionMarker={false} size="sm" />
-                            <span className="market-page__scouting-points"><strong>{formatInteger(player.points)}</strong><small>pts</small></span>
+                          <button
+                            aria-label={`View ${player.displayName} details, ${formatInteger(player.points)} points, ${player.ownerName ? `owned by ${player.ownerName}` : 'free agent'}`}
+                            className="market-page__scouting-player"
+                            key={player.id}
+                            onClick={() => onOpenPlayer(player)}
+                            type="button"
+                          >
+                            <PlayerCard formPosition="below" layout="pitch" player={toPlayerCardPlayer(player, ownershipToneFor(player, managerTeam))} points={player.points ?? 0} showPositionMarker={false} size="sm" />
                           </button>
                         ))}
                       </div>

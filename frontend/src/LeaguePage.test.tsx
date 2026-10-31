@@ -276,16 +276,13 @@ describe('LeaguePage', () => {
     act(() => root.unmount());
   });
 
-  test('offers a compact Live draft link outside the shared hero controls', async () => {
+  test('does not expose a Live draft link on the league page', async () => {
     const destinations: string[] = [];
     const { container, root } = await renderPage('/league', new MemoryLeagueClient(), 'up', commissionerSession, (href) => destinations.push(href));
 
-    const shortcuts = container.querySelector('nav[aria-label="League workspaces"]');
-    expect(shortcuts?.textContent).toContain('Live draft');
-    expect(shortcuts?.closest('[data-page-hero="shared"]')).toBeNull();
-    const draftButton = [...(shortcuts?.querySelectorAll('button') ?? [])].find((button) => button.textContent?.trim() === 'Live draft');
-    act(() => draftButton?.dispatchEvent(new MouseEvent('click', { bubbles: true })));
-    expect(destinations).toEqual(['/league/draft']);
+    expect(container.querySelector('nav[aria-label="League workspaces"]')).toBeNull();
+    expect(container.textContent).not.toContain('Live draft');
+    expect(destinations).toEqual([]);
     act(() => root.unmount());
   });
 

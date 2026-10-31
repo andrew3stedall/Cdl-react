@@ -800,6 +800,7 @@ function fixturesForGameweek(
 function RoundCarousel({ allFixtures, leagueClient, managerTeamId, onOpenFixture, rounds }: { allFixtures: LeagueFixture[]; leagueClient: LeagueClient; managerTeamId: string | null; onOpenFixture: (fixture: LeagueFixture) => void; rounds: FixtureRoundGroup[] }) {
   const defaultSelection = useMemo(() => defaultCarouselSelection(rounds), [rounds]);
   const initialRoundIndex = defaultSelection.roundIndex;
+  const initialRoundKey = rounds[initialRoundIndex]?.key;
   const initialGameweekIndex = defaultSelection.gameweekIndex;
   const [selectedRoundIndex, setSelectedRoundIndex] = useState(initialRoundIndex);
   const [selectedGameweekIndex, setSelectedGameweekIndex] = useState(initialGameweekIndex);
@@ -837,10 +838,10 @@ function RoundCarousel({ allFixtures, leagueClient, managerTeamId, onOpenFixture
   useEffect(() => {
     if (!roundApi) return;
     const selectedRound = rounds[roundApi.selectedScrollSnap()];
-    if (selectedRound?.key !== rounds[initialRoundIndex]?.key) {
+    if (selectedRound?.key !== initialRoundKey) {
       roundApi.scrollTo(initialRoundIndex, true);
     }
-  }, [initialRoundIndex, roundApi, rounds]);
+  }, [initialRoundIndex, initialRoundKey, roundApi]);
 
   useEffect(() => {
     const maximumIndex = Math.max(...rounds.map((round) => round.gameweeks.length), 1) - 1;

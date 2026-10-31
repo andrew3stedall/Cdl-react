@@ -1,7 +1,6 @@
 import { type CSSProperties, type ReactNode, type RefObject, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   CalendarDays,
-  ChartNoAxesCombined,
   CircleAlert,
   Clock3,
   RefreshCw,
@@ -224,8 +223,7 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
       <PageHero
         actions={(
           <PageHeroControls>
-            <Button aria-label="Open analytics" onClick={() => onNavigate('/analytics')} type="button" variant="secondary"><ChartNoAxesCombined aria-hidden="true" size={16} />Analytics</Button>
-            <PageHeroViewToggle
+                        <PageHeroViewToggle
               ariaLabel="League view"
               onChange={(nextView) => {
                 const next = nextView as LeagueView;

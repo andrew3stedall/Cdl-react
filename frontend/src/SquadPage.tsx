@@ -940,6 +940,7 @@ export function SquadPage({
           />
         ) : (
           <SquadList
+            attackDirection={attackDirection}
             onSelect={openPlayer}
             onSubstitutionTarget={chooseSubstitutionTargetView}
             players={visibleSquadPlayers}
@@ -1358,6 +1359,7 @@ function SoccerPitchIcon() {
 }
 
 function SquadList({
+  attackDirection,
   onSelect,
   onSubstitutionTarget,
   players,
@@ -1366,6 +1368,7 @@ function SquadList({
   substitutionSourceId,
   substitutionTargetId,
 }: {
+  attackDirection: AttackDirection;
   onSelect: (player: PlayerView) => void;
   onSubstitutionTarget: (player: PlayerView) => void;
   players: PlayerView[];
@@ -1374,7 +1377,7 @@ function SquadList({
   substitutionSourceId: string | null;
   substitutionTargetId: string | null;
 }) {
-  const groups = lineupGroups(players);
+  const groups = lineupGroups(players, attackDirection);
   function selectPlayer(player: PlayerView) {
     if (substitutionMode) {
       if (substitutionCandidateIds.has(player.id)) onSubstitutionTarget(player);
@@ -1682,7 +1685,7 @@ function matchesQuery(player: PlayerView, query: string): boolean {
     || player.position.toLowerCase().includes(normalized);
 }
 
-function lineupGroups(players: PlayerView[]) {
+function lineupGroups(players: PlayerView[], attackDirection: AttackDirection) {
   const definitions: Array<{ slot: TeamSelectionSlot; label: string; description: string }> = [
     { slot: 'starter', label: 'Starting XI', description: 'Legal matchday formation' },
     { slot: 'bench', label: 'Bench', description: '1 goalkeeper + outfield substitutes 1–4' },
@@ -1691,7 +1694,16 @@ function lineupGroups(players: PlayerView[]) {
   return definitions
     .map((definition) => ({
       ...definition,
-      players: players.filter((player) => (player.slot ?? 'reserve') === definition.slot),
+      players: players
+        .filter((player) => (player.slot ?? 'reserve') === definition.slot)
+        .sort((left, right) => {
+          if (definition.slot === 'bench') return sortBySlot(left, right);
+          const positionOrder = attackDirection === 'down'
+            ? ['GKP', 'DEF', 'MID', 'FWD']
+            : ['FWD', 'MID', 'DEF', 'GKP'];
+          return positionOrder.indexOf(normalizePosition(left.position)) - positionOrder.indexOf(normalizePosition(right.position))
+            || sortBySlot(left, right);
+        }),
     }))
     .filter((group) => group.players.length > 0);
 }

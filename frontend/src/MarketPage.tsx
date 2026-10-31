@@ -55,6 +55,8 @@ interface MarketPlayer {
   displayName: string;
   position: string;
   club: string;
+  clubId: string;
+  clubName: string;
   status: SquadApiPlayer['status'] | 'owned_by_other';
   draftTeamId: string | null;
   draftTeamName: string | null;
@@ -810,7 +812,7 @@ function DiscoveryPanel({
 }
 
 function ScoutingPanel({ failed, loading, managerTeam, onOpenPlayer, players }: { failed: boolean; loading: boolean; managerTeam: SquadApiTeam; onOpenPlayer: (player: MarketPlayer) => void; players: MarketPlayer[] }) {
-  const teams = useMemo(() => Array.from(new Set(players.map((player) => player.club))).filter(Boolean).sort((left, right) => left.localeCompare(right)), [players]);
+  const teams = useMemo(() => Array.from(new Map(players.map((player) => [player.clubId, { id: player.clubId, name: player.clubName }])).values()).sort((left, right) => left.name.localeCompare(right.name)), [players]);
   const [api, setApi] = useState<CarouselApi>();
   const [selectedIndex, setSelectedIndex] = useState(0);
 
@@ -841,7 +843,7 @@ function ScoutingPanel({ failed, loading, managerTeam, onOpenPlayer, players }: 
       <header className="market-page__scouting-header">
         <div>
           <p className="eyebrow">Premier League teams</p>
-          <h2>{activeTeam}</h2>
+          <h2>{activeTeam.name}</h2>
         </div>
         <span>{Math.min(selectedIndex, teams.length - 1) + 1} of {teams.length}</span>
       </header>
@@ -849,16 +851,16 @@ function ScoutingPanel({ failed, loading, managerTeam, onOpenPlayer, players }: 
       <Carousel aria-label="Premier League teams" className="market-page__scouting-carousel" opts={{ loop: teams.length > 1 }} setApi={setApi}>
         <CarouselContent className="market-page__scouting-track">
           {teams.map((team) => {
-            const teamPlayers = players.filter((player) => player.club === team);
+            const teamPlayers = players.filter((player) => player.clubId === team.id);
             return (
-              <CarouselItem aria-label={team} className="market-page__scouting-slide" key={team}>
+              <CarouselItem aria-label={team.name} className="market-page__scouting-slide" key={team.id}>
                 <div className="market-page__scouting-team">
                   {scoutingPositionGroups.map(({ label, value }) => {
                     const positionPlayers = teamPlayers
                       .filter((player) => player.position === value)
                       .sort((left, right) => comparePlayers(left, right, 'points'));
                     return (
-                      <section aria-label={`${label} at ${team}`} className="market-page__scouting-position" key={value}>
+                      <section aria-label={`${label} at ${team.name}`} className="market-page__scouting-position" key={value}>
                         <header className="market-page__scouting-position-header">
                           <h3>{label}</h3>
                           <span>{positionPlayers.length}</span>
@@ -881,8 +883,8 @@ function ScoutingPanel({ failed, loading, managerTeam, onOpenPlayer, players }: 
             );
           })}
         </CarouselContent>
-        <CarouselPrevious aria-label={`Previous team from ${activeTeam}`} />
-        <CarouselNext aria-label={`Next team from ${activeTeam}`} />
+        <CarouselPrevious aria-label={`Previous team from ${activeTeam.name}`} />
+        <CarouselNext aria-label={`Next team from ${activeTeam.name}`} />
       </Carousel>
       <p className="market-page__scouting-hint">Swipe horizontally to browse teams. Select a player to open their profile.</p>
     </section>
@@ -1434,6 +1436,8 @@ function mapPlayer(player: SquadApiPlayer): MarketPlayer {
     displayName: player.display_name,
     position: normalizePosition(player.position),
     club: player.epl_team.short_name ?? player.epl_team.name,
+    clubId: player.epl_team.id,
+    clubName: player.epl_team.name,
     status: player.status,
     draftTeamId: player.draft_team?.id ?? null,
     draftTeamName: player.draft_team?.name ?? null,

@@ -24,3 +24,35 @@ Example cleanup request:
 ```
 
 After committing, follow the resulting Actions run until it completes, inspect the job logs, then verify the staging API or database state. If it fails, diagnose the failure, repair the workflow or staging configuration as needed, and submit a fresh request file after the fix.
+
+## Castle sync plan and apply
+
+Create one new JSON file in `.github/staging-operations/castle-sync-requests/`
+to run the Castle sync through GitHub Actions without opening the Actions page.
+A plan request is read-only. Review its report and `plan_digest` before creating
+a separate apply request. Apply requires the exact digest from the reviewed plan,
+`confirmation: "IMPORT CASTLE STAGING"`, and the same projection and mapping
+inputs. A stale plan is rejected without partial writes.
+
+Example native plan request:
+
+```json
+{
+  "operation": "plan",
+  "projection": "native",
+  "source_league": "",
+  "team_aliases": {},
+  "player_ids": {},
+  "trade_gameweeks": {},
+  "adopt_existing": false,
+  "allow_gaps": true,
+  "expected_plan": "",
+  "confirmation": ""
+}
+```
+
+For apply, copy the reviewed inputs unchanged, set `operation` to `apply`,
+copy `plan_digest` into `expected_plan`, and set the confirmation phrase.
+Each request must be a new JSON file so the plan and apply remain separate audit
+events. The workflow still fetches a fresh Castle snapshot and only writes to the
+configured staging database.

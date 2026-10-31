@@ -23,6 +23,7 @@ export interface FixtureSquadComparisonProps {
   view?: FixtureSquadView;
   onViewChange?: (view: FixtureSquadView) => void;
   showViewToggle?: boolean;
+  sortableList?: boolean;
 }
 
 export type FixtureGameweekStatus = 'past' | 'current' | 'future';
@@ -60,7 +61,7 @@ export function getStoredFixtureReviewView(): FixtureSquadView {
  * bench, and reserve views so the same fixture presentation can be embedded
  * outside League.
  */
-export function FixtureSquadComparison({ attackDirection, gameweekStatus, now: nowOverride, onPlayerClick, onViewChange, playerInteraction = 'points', selectedPlayerIds, pitchFixtureDisplay, showViewToggle = true, squads, view: controlledView }: FixtureSquadComparisonProps) {
+export function FixtureSquadComparison({ attackDirection, gameweekStatus, now: nowOverride, onPlayerClick, onViewChange, playerInteraction = 'points', selectedPlayerIds, pitchFixtureDisplay, showViewToggle = true, sortableList = false, squads, view: controlledView }: FixtureSquadComparisonProps) {
   const [clockNow, setClockNow] = useState(() => Date.now());
   const [storedView, setStoredView] = useState<FixtureSquadView>(getStoredFixtureReviewView);
   const view = controlledView ?? storedView;
@@ -131,11 +132,13 @@ export function FixtureSquadComparison({ attackDirection, gameweekStatus, now: n
         </>
       ) : (
         <FixtureListView
+          attackDirection={attackDirection}
           gameweekStatus={gameweekStatus}
           now={now}
           onPlayerClick={onPlayerClick}
           playerInteraction={playerInteraction}
-            selectedPlayerIds={selectedPlayerIds}
+          selectedPlayerIds={selectedPlayerIds}
+          sortable={sortableList}
           squads={[topSquad, bottomSquad]}
         />
       )}
@@ -167,30 +170,36 @@ function SoccerPitchIcon() {
 }
 
 export function FixtureListView({
+  attackDirection,
   gameweekStatus,
   now,
   onPlayerClick,
   playerInteraction = 'points',
   selectedPlayerIds,
+  sortable,
   squads,
 }: {
+  attackDirection: AttackDirection;
   gameweekStatus: FixtureGameweekStatus;
   now?: number;
   onPlayerClick?: (player: FixtureSquadPlayer) => void;
   playerInteraction?: FixturePlayerInteraction;
   selectedPlayerIds?: ReadonlySet<string>;
+  sortable: boolean;
   squads: FixtureSquad[];
 }) {
   return (
     <div aria-label="Fixture squad list" className="fixture-squad-list">
       {squads.map((squad) => (
         <FixtureListTeam
+          attackDirection={attackDirection}
           gameweekStatus={gameweekStatus}
           key={squad.team.id}
           now={now}
           onPlayerClick={onPlayerClick}
           playerInteraction={playerInteraction}
           selectedPlayerIds={selectedPlayerIds}
+          sortable={sortable}
           squad={squad}
         />
       ))}
@@ -199,18 +208,22 @@ export function FixtureListView({
 }
 
 function FixtureListTeam({
+  attackDirection,
   gameweekStatus,
   now,
   onPlayerClick,
   playerInteraction,
   selectedPlayerIds,
+  sortable,
   squad,
 }: {
+  attackDirection: AttackDirection;
   gameweekStatus: FixtureGameweekStatus;
   now?: number;
   onPlayerClick?: (player: FixtureSquadPlayer) => void;
   playerInteraction: FixturePlayerInteraction;
   selectedPlayerIds?: ReadonlySet<string>;
+  sortable: boolean;
   squad: FixtureSquad;
 }) {
   const [sortColumn, setSortColumn] = useState<string | null>(null);
@@ -223,9 +236,9 @@ function FixtureListTeam({
     }
   };
   const groups = [
-    { key: 'starters', label: 'Starting XI', players: sortFixtureListPlayers(squad.starters) },
+    { key: 'starters', label: 'Starting XI', players: sortFixtureListPlayers(squad.starters, attackDirection) },
     { key: 'bench', label: 'Substitutes', players: sortFixtureBench(squad.bench) },
-    { key: 'reserves', label: 'Reserves', players: sortFixtureListPlayers(squad.reserves) },
+    { key: 'reserves', label: 'Reserves', players: sortFixtureListPlayers(squad.reserves, attackDirection) },
   ] as const;
 
   return (
@@ -244,11 +257,11 @@ function FixtureListTeam({
             <Table className="fixture-squad-list__table">
               <colgroup><col className="player" /><col className="points" /></colgroup>
               <TableHeader><TableRow>
-                <TableHead><SortableTableHead column="player" direction={sortDirection} onSort={sortList} sortColumn={sortColumn}>Player</SortableTableHead></TableHead>
-                <TableHead><SortableTableHead column="points" direction={sortDirection} onSort={sortList} sortColumn={sortColumn}>Pts</SortableTableHead></TableHead>
+                <TableHead>{sortable ? <SortableTableHead column="player" direction={sortDirection} onSort={sortList} sortColumn={sortColumn}>Player</SortableTableHead> : 'Player'}</TableHead>
+                <TableHead>{sortable ? <SortableTableHead column="points" direction={sortDirection} onSort={sortList} sortColumn={sortColumn}>Pts</SortableTableHead> : 'Pts'}</TableHead>
               </TableRow></TableHeader>
               <TableBody>
-                {[...group.players].sort((left, right) => compareFixtureListPlayers(left, right, sortColumn, sortDirection)).map((player, index, sortedPlayers) => (
+                {(sortable ? [...group.players].sort((left, right) => compareFixtureListPlayers(left, right, sortColumn, sortDirection)) : group.players).map((player, index, sortedPlayers) => (
                   <FixtureListPlayer
                     gameweekStatus={gameweekStatus}
                     key={player.id}
@@ -355,12 +368,13 @@ function FixtureListPlayer({
   );
 }
 
-export function sortFixtureListPlayers(players: FixtureSquadPlayer[]): FixtureSquadPlayer[] {
+export function sortFixtureListPlayers(players: FixtureSquadPlayer[], attackDirection: AttackDirection = 'down'): FixtureSquadPlayer[] {
+  const positionOrder = attackDirection === 'down' ? fixtureListPositionOrder : [...fixtureListPositionOrder].reverse();
   return players
     .map((player, index) => ({ index, player }))
     .sort((left, right) => {
-      const leftPosition = fixtureListPositionOrder.indexOf(fixturePosition(left.player.position) as (typeof fixtureListPositionOrder)[number]);
-      const rightPosition = fixtureListPositionOrder.indexOf(fixturePosition(right.player.position) as (typeof fixtureListPositionOrder)[number]);
+      const leftPosition = positionOrder.indexOf(fixturePosition(left.player.position) as (typeof fixtureListPositionOrder)[number]);
+      const rightPosition = positionOrder.indexOf(fixturePosition(right.player.position) as (typeof fixtureListPositionOrder)[number]);
       const leftRank = leftPosition === -1 ? fixtureListPositionOrder.length : leftPosition;
       const rightRank = rightPosition === -1 ? fixtureListPositionOrder.length : rightPosition;
       return leftRank === rightRank ? left.index - right.index : leftRank - rightRank;

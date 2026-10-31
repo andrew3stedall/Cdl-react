@@ -63,20 +63,18 @@
 
 
 @media (max-width: 520px) {
-  /* Keep title and controls in two compact, stable rows on phones. The header
-     can grow when text is enlarged, while loading and loaded routes share a
-     consistent baseline height. */
+  /* Keep the page title and its view controls on one compact header line. */
   .cdl-page-hero {
-    align-items: stretch;
-    block-size: 5.5rem;
-    flex-direction: column;
-    gap: 0.35rem;
-    justify-content: flex-start;
-    min-height: 5.5rem;
+    align-items: center;
+    block-size: auto;
+    flex-direction: row;
+    gap: 0.5rem;
+    justify-content: space-between;
+    min-height: 4.2rem;
   }
 
   .cdl-page-hero__brand-lockup {
-    flex: 0 1 auto;
+    flex: 1 1 0;
     min-width: 0;
   }
 
@@ -84,7 +82,7 @@
     flex: 0 1 auto;
     justify-content: flex-end;
     margin: 0;
-    max-width: 100%;
+    max-width: 52%;
     min-width: 0;
   }
 

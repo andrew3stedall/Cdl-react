@@ -36,8 +36,8 @@ async function readHeaderBounds(page: Page) {
 async function expectHeaderDimensions(page: Page, header: Awaited<ReturnType<typeof readHeaderBounds>>) {
   const rootFontSize = await page.evaluate(() => Number.parseFloat(getComputedStyle(document.documentElement).fontSize));
   const viewportWidth = page.viewportSize()?.width ?? 1280;
-  const minimumHeroRem = viewportWidth <= 520 ? 5.5 : 4.2;
-  const maximumHeroRem = viewportWidth <= 520 ? 5.7 : 4.5;
+  const minimumHeroRem = 4.2;
+  const maximumHeroRem = 4.5;
   expect(header.hero.height, 'shared PageHero is shorter than its compact shell role').toBeGreaterThanOrEqual(minimumHeroRem * rootFontSize - 1);
   expect(header.hero.height, 'shared PageHero exceeds its compact shell role').toBeLessThanOrEqual(maximumHeroRem * rootFontSize + 1);
   await expect(page.locator('.global-notifications__button')).toHaveCount(0);
@@ -166,6 +166,16 @@ test('the four primary route headers stay fixed through real loading, route chan
 
       const routeHeader = await readHeaderBounds(routePage);
       await expectHeaderDimensions(routePage, routeHeader);
+      if (viewport.width <= 520) {
+        const [brandBox, actionsBox] = await Promise.all([
+          bounds(activeHero(routePage).locator('.cdl-page-hero__brand-lockup')),
+          bounds(activeHero(routePage).locator('.cdl-page-hero__actions')),
+        ]);
+        expect(
+          Math.abs((brandBox.y + brandBox.height / 2) - (actionsBox.y + actionsBox.height / 2)),
+          `${label} title and page controls should share a mobile header line`,
+        ).toBeLessThanOrEqual(4);
+      }
       const pending = pendingByTitle.get(label);
       expect(pending).toBeDefined();
       expectBoundsStable(pending!.hero, routeHeader.hero, `${label} PageHero loading→loaded`);

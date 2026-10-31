@@ -5,5 +5,6 @@
   "native_entities": [
     "team_selection_lineup_slots"
   ],
-  "restore_missing": false
+  "restore_missing": false,
+  "lineup_gameweek": 9
 }

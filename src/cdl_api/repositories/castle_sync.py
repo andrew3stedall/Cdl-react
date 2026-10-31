@@ -209,8 +209,6 @@ class CastleSyncRepository:
                     and config.lineup_gameweek is not None
                     and current is not None
                     and int(current["gameweek"]) == config.lineup_gameweek
-                    and str(current["id"]).startswith("lineup-")
-                    and current["locked_at"] is None
                 )
                 protected = (
                     prior
@@ -249,8 +247,6 @@ class CastleSyncRepository:
                     config.replace_current_gameweek_synthetic
                     and config.lineup_gameweek is not None
                     and int(current["gameweek"]) == config.lineup_gameweek
-                    and str(current["id"]).startswith("lineup-")
-                    and current["locked_at"] is None
                 )
                 protected = (
                     prior

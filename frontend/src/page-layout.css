@@ -79,16 +79,16 @@
   }
 
   .cdl-page-hero__brand-lockup {
-    flex: 0 1 38%;
-    max-width: 38%;
+    flex: 0 1 50%;
+    max-width: 50%;
     min-width: 0;
   }
 
   .cdl-page-hero__actions {
-    flex: 0 1 58%;
+    flex: 0 1 46%;
     justify-content: flex-end;
     margin: 0;
-    max-width: 58%;
+    max-width: 46%;
     min-width: 0;
   }
 

@@ -546,3 +546,21 @@
 
 @media (max-width: 520px) {
 }
+
+/* Keep the page-level navigation toggles comfortable for touch across devices. */
+.cdl-page-hero__view-toggle {
+  grid-auto-columns: 3rem;
+}
+
+.cdl-page-hero__view-toggle button {
+  aspect-ratio: 1;
+  height: 3rem;
+  min-height: 3rem;
+  min-width: 3rem;
+  padding: 0;
+  width: 3rem;
+}
+
+.cdl-page-hero__view-toggle button span {
+  display: none;
+}

@@ -848,7 +848,7 @@ function ScoutingPanel({ failed, loading, managerTeam, onOpenPlayer, players }: 
       {failed ? <p className="market-page__status" role="status">Some scouting data could not be refreshed. Showing the available players.</p> : null}
       <Carousel aria-label="Premier League teams" className="market-page__scouting-carousel" opts={{ loop: teams.length > 1 }} setApi={setApi}>
         <CarouselContent className="market-page__scouting-track">
-          {teams.map((team, teamIndex) => {
+          {teams.map((team) => {
             const teamPlayers = players.filter((player) => player.club === team);
             return (
               <CarouselItem aria-label={team} className="market-page__scouting-slide" key={team}>

@@ -851,8 +851,8 @@ function MarketPlayerRow({ managerTeam, onOpen, player }: { managerTeam: SquadAp
         </div>
       </TableCell>
       <TableCell><strong className="market-page__list-points">{formatInteger(player.points)}</strong></TableCell>
-      <TableCell><strong className="market-page__list-points">{formatMetric(player.form)}</strong></TableCell>
-      <TableCell><strong className="market-page__list-points">{formatMetric(player.value)}</strong></TableCell>
+      <TableCell><strong className="market-page__list-metric">{formatMetric(player.form)}</strong></TableCell>
+      <TableCell><strong className="market-page__list-metric">{formatMetric(player.value)}</strong></TableCell>
       <TableCell><span className="market-page__expected"><span>{formatMetric(player.xg)}</span><span>{formatMetric(player.xa)}</span></span></TableCell>
     </TableRow>
   );

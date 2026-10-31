@@ -1,0 +1,9 @@
+{
+  "operation": "plan",
+  "projection": "native",
+  "source_league": "",
+  "native_entities": [
+    "team_selection_lineup_slots"
+  ],
+  "restore_missing": false
+}

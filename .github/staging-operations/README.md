@@ -56,3 +56,9 @@ copy `plan_digest` into `expected_plan`, and set the confirmation phrase.
 Each request must be a new JSON file so the plan and apply remain separate audit
 events. The workflow still fetches a fresh Castle snapshot and only writes to the
 configured staging database.
+
+For a fixture-only backfill, set `native_entities` to
+`["cdl_fixtures", "fixture_results"]` and `restore_missing` to `true`.
+This reuses each fixture's saved Castle mapping and recreates selected rows that
+are absent from staging. Other native entities remain untouched. Keep these
+inputs identical in the matching apply request.

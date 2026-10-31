@@ -68,22 +68,30 @@
     align-items: center;
     block-size: auto;
     flex-direction: row;
-    gap: 0.5rem;
+    gap: 0.35rem;
     justify-content: space-between;
+    max-width: 100%;
     min-height: 4.2rem;
+    min-width: 0;
   }
 
   .cdl-page-hero__brand-lockup {
-    flex: 1 1 0;
+    flex: 1 1 50%;
+    max-width: 50%;
     min-width: 0;
   }
 
   .cdl-page-hero__actions {
-    flex: 0 1 auto;
+    flex: 0 1 48%;
     justify-content: flex-end;
     margin: 0;
-    max-width: 52%;
+    max-width: 48%;
     min-width: 0;
+  }
+
+  .cdl-page-hero__brand-name,
+  .cdl-page-hero h1 {
+    overflow-wrap: anywhere;
   }
 
   .cdl-page-hero__controls {
@@ -112,5 +120,9 @@
     min-width: 1.8rem;
     padding: 0;
     width: 1.8rem;
+  }
+
+  .cdl-page-hero__context {
+    display: none;
   }
 }

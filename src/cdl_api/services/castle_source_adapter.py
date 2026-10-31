@@ -342,6 +342,20 @@ class CastleSourceAdapter:
                 self.gaps["ownership_requires_timeline_reconciliation"] += 1
 
     def _lineups(self) -> None:
+        lineups = self.rows("lineups")
+        if self.config.lineup_gameweek is not None:
+            target_current = {
+                int(row["id"])
+                for row in self.target_rows("fpl_gameweeks")
+                if row.get("is_current")
+            }
+            if target_current != {self.config.lineup_gameweek}:
+                raise ValueError("Requested lineup gameweek is not the current staging gameweek")
+            lineups = [
+                row for row in lineups if row.get("gameweek") == self.config.lineup_gameweek
+            ]
+            if not lineups:
+                raise ValueError("Castle has no saved lineups for the selected current gameweek")
         source_team_by_user = {
             team.get("owner_user_id"): team
             for team in self.rows("castle_teams")
@@ -376,7 +390,7 @@ class CastleSourceAdapter:
                     "fpl_player_code": player_row.get("fpl_player_code"),
                     "element_type": player_row.get("element_type"),
                 }
-        for row in self.rows("lineups"):
+        for row in lineups:
             team = self.managers.get(row["user_id"])
             source_team = source_team_by_user.get(row.get("user_id"), {})
             starters, bench = row.get("starter_ids") or [], row.get("bench_ids") or []

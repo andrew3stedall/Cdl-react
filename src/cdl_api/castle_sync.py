@@ -69,6 +69,8 @@ def main() -> None:
             team_aliases=json.loads(os.environ.get("CASTLE_TEAM_ALIASES") or "{}"),
             player_ids=json.loads(os.environ.get("CASTLE_PLAYER_IDS") or "{}"),
             trade_gameweeks=json.loads(os.environ.get("CASTLE_TRADE_GAMEWEEKS") or "{}"),
+            native_entities=json.loads(os.environ.get("CASTLE_NATIVE_ENTITIES") or "[]"),
+            restore_missing=os.environ.get("CASTLE_RESTORE_MISSING") == "true",
         )
         bundle = json.loads(source.read_text())
         gcloud = shutil.which("gcloud")

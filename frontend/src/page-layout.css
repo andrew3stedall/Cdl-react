@@ -123,12 +123,14 @@
   }
 
   .cdl-page-hero__view-toggle {
+    display: flex;
     grid-auto-columns: minmax(0, 1fr);
     max-width: 100%;
     min-width: 0;
   }
 
   .cdl-page-hero__view-toggle button {
+    flex: 1 1 0;
     min-width: 0;
     padding: 0;
     width: 100%;

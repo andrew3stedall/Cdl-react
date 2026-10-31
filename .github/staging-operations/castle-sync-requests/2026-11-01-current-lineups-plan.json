@@ -6,5 +6,6 @@
     "team_selection_lineup_slots"
   ],
   "restore_missing": false,
-  "lineup_gameweek": 9
+  "lineup_gameweek": 9,
+  "replace_current_gameweek_synthetic": true
 }

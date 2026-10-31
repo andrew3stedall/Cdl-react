@@ -631,6 +631,15 @@ export function MarketPage({ currentPath, onNavigate, preset, session }: MarketP
             sortKey={sortKey}
           />
         ) : null}
+        {mode === 'scouting' ? (
+          <ScoutingPanel
+            failed={failedSections.has('player pool')}
+            loading={loading}
+            managerTeam={managerTeam}
+            onOpenPlayer={openPlayer}
+            players={players}
+          />
+        ) : null}
         {mode === 'interests' ? (
           <InterestsPanel failed={failedSections.has('Interests')} interests={interests} loading={loading} managerTeam={managerTeam} onBrowse={() => selectMode('discover')} onOpenPlayer={openPlayer} onRemove={removeInterest} onRetry={() => setRefreshKey((key) => key + 1)} pendingAction={pendingAction} />
         ) : null}
@@ -799,6 +808,93 @@ function DiscoveryPanel({
     </div>
   );
 }
+
+function ScoutingPanel({ failed, loading, managerTeam, onOpenPlayer, players }: { failed: boolean; loading: boolean; managerTeam: SquadApiTeam; onOpenPlayer: (player: MarketPlayer) => void; players: MarketPlayer[] }) {
+  const teams = useMemo(() => Array.from(new Set(players.map((player) => player.club))).filter(Boolean).sort((left, right) => left.localeCompare(right)), [players]);
+  const [api, setApi] = useState<CarouselApi>();
+  const [selectedIndex, setSelectedIndex] = useState(0);
+
+  useEffect(() => {
+    if (!api) return undefined;
+    const syncSelectedTeam = () => setSelectedIndex(api.selectedScrollSnap());
+    syncSelectedTeam();
+    api.on('select', syncSelectedTeam);
+    api.on('reInit', syncSelectedTeam);
+    return () => {
+      api.off('select', syncSelectedTeam);
+      api.off('reInit', syncSelectedTeam);
+    };
+  }, [api]);
+
+  useEffect(() => {
+    if (!api) return;
+    if (api.selectedScrollSnap() >= teams.length) api.scrollTo(Math.max(teams.length - 1, 0));
+  }, [api, teams.length]);
+
+  if (loading && players.length === 0) return <div aria-label="Loading scouting players" className="market-page__scouting-loading" role="status">Loading Premier League players…</div>;
+  if (failed && players.length === 0) return <div className="market-page__empty" role="alert"><CircleAlert aria-hidden="true" size={22} /><strong>Scouting data is unavailable</strong></div>;
+  if (teams.length === 0) return <div className="market-page__empty"><Binoculars aria-hidden="true" size={22} /><strong>No Premier League players are available</strong></div>;
+
+  const activeTeam = teams[Math.min(selectedIndex, teams.length - 1)] ?? teams[0];
+  return (
+    <section aria-label="Scouting by Premier League team" className="market-page__scouting">
+      <header className="market-page__scouting-header">
+        <div>
+          <p className="eyebrow">Premier League teams</p>
+          <h2>{activeTeam}</h2>
+        </div>
+        <span>{Math.min(selectedIndex, teams.length - 1) + 1} of {teams.length}</span>
+      </header>
+      {failed ? <p className="market-page__status" role="status">Some scouting data could not be refreshed. Showing the available players.</p> : null}
+      <Carousel aria-label="Premier League teams" className="market-page__scouting-carousel" opts={{ loop: teams.length > 1 }} setApi={setApi}>
+        <CarouselContent className="market-page__scouting-track">
+          {teams.map((team, teamIndex) => {
+            const teamPlayers = players.filter((player) => player.club === team);
+            return (
+              <CarouselItem aria-label={team} className="market-page__scouting-slide" key={team}>
+                <div className="market-page__scouting-team">
+                  {scoutingPositionGroups.map(({ label, value }) => {
+                    const positionPlayers = teamPlayers
+                      .filter((player) => player.position === value)
+                      .sort((left, right) => comparePlayers(left, right, 'points'));
+                    return (
+                      <section aria-label={`${label} at ${team}`} className="market-page__scouting-position" key={value}>
+                        <header className="market-page__scouting-position-header">
+                          <h3>{label}</h3>
+                          <span>{positionPlayers.length}</span>
+                        </header>
+                        {positionPlayers.length > 0 ? (
+                          <div className="market-page__scouting-player-grid">
+                            {positionPlayers.map((player) => (
+                              <button aria-label={`View ${player.displayName} details`} className="market-page__scouting-player" key={player.id} onClick={() => onOpenPlayer(player)} type="button">
+                                <PlayerCard formPosition="beside" layout="list" player={toPlayerCardPlayer(player, ownershipToneFor(player, managerTeam))} showPositionMarker={false} size="sm" />
+                                <span className="market-page__scouting-points"><strong>{formatInteger(player.points)}</strong><small>pts</small></span>
+                              </button>
+                            ))}
+                          </div>
+                        ) : <p className="market-page__scouting-empty">No {label.toLowerCase()}s</p>}
+                      </section>
+                    );
+                  })}
+                </div>
+              </CarouselItem>
+            );
+          })}
+        </CarouselContent>
+        <CarouselPrevious aria-label={`Previous team from ${activeTeam}`} />
+        <CarouselNext aria-label={`Next team from ${activeTeam}`} />
+      </Carousel>
+      <p className="market-page__scouting-hint">Swipe horizontally to browse teams. Select a player to open their profile.</p>
+    </section>
+  );
+}
+
+const scoutingPositionGroups: Array<{ label: string; value: string }> = [
+  { label: 'Goalkeepers', value: 'GKP' },
+  { label: 'Defenders', value: 'DEF' },
+  { label: 'Midfielders', value: 'MID' },
+  { label: 'Forwards', value: 'FWD' },
+];
 
 function MarketLoadingTable() {
   return (

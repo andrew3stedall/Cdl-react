@@ -4,7 +4,6 @@ import {
   ArrowRight,
   ArrowRightLeft,
   Bookmark,
-  ChartNoAxesCombined,
   CircleAlert,
   Filter,
   ListOrdered,
@@ -567,7 +566,6 @@ export function MarketPage({ currentPath, onNavigate, preset, session }: MarketP
       <PageHero
         actions={(
           <PageHeroControls>
-            <Button aria-label="Open fixture difficulty" onClick={() => onNavigate('/fdr')} type="button" variant="secondary"><ChartNoAxesCombined aria-hidden="true" size={16} />FDR</Button>
             <PageHeroViewToggle
               ariaLabel="Market workspace sections"
               onChange={(nextMode) => selectMode(nextMode as MarketMode)}

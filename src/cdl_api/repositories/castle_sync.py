@@ -216,15 +216,10 @@ class CastleSyncRepository:
                     prior
                     and prior.get("last_digest") != before_hash
                     and not (
-                        (config.restore_missing and current is None)
-                        or replace_synthetic_current
+                        (config.restore_missing and current is None) or replace_synthetic_current
                     )
                 )
-                if (
-                    prior
-                    and prior.get("last_digest") != before_hash
-                    and replace_synthetic_current
-                ):
+                if prior and prior.get("last_digest") != before_hash and replace_synthetic_current:
                     synthetic_current_gameweek_overwrites += 1
                 unadopted = (
                     current

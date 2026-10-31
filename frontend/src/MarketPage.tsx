@@ -886,22 +886,7 @@ function ScoutingPanel({ failed, loading, managerTeam, onOpenPlayer, players }: 
   return (
     <section aria-label="Scouting by Premier League team" className="market-page__scouting">
       <header className="market-page__scouting-header">
-        <div>
-          <p className="eyebrow">Premier League teams</p>
-          <h2>{activeTeam.name}</h2>
-        </div>
-        <nav aria-label="Premier League team navigation" className="market-page__scouting-team-dots">
-          {teams.map((team, index) => (
-            <button
-              aria-current={index === selectedIndex ? 'true' : undefined}
-              aria-label={`Go to ${team.name}`}
-              className={`market-page__scouting-team-dot${index === selectedIndex ? ' is-selected' : ''}`}
-              key={team.id}
-              onClick={() => api?.scrollTo(index)}
-              type="button"
-            />
-          ))}
-        </nav>
+        <p className="eyebrow">Premier League teams</p>
       </header>
       {failed ? <p className="market-page__status" role="status">Some scouting data could not be refreshed. Showing the available players.</p> : null}
       <Carousel aria-label="Premier League teams" className="market-page__scouting-carousel" opts={{ align: "center", loop: teams.length > 1 }} setApi={setApi}>
@@ -922,6 +907,18 @@ function ScoutingPanel({ failed, loading, managerTeam, onOpenPlayer, players }: 
         <CarouselPrevious aria-label={`Previous team from ${activeTeam.name}`} />
         <CarouselNext aria-label={`Next team from ${activeTeam.name}`} />
       </Carousel>
+      <nav aria-label="Premier League team navigation" className="market-page__scouting-team-dots">
+        {teams.map((team, index) => (
+          <button
+            aria-current={index === selectedIndex ? 'true' : undefined}
+            aria-label={`Go to ${team.name}`}
+            className={`market-page__scouting-team-dot${index === selectedIndex ? ' is-selected' : ''}`}
+            key={team.id}
+            onClick={() => api?.scrollTo(index)}
+            type="button"
+          />
+        ))}
+      </nav>
       <p className="market-page__scouting-hint">Swipe horizontally to browse teams. Select a player to open their profile.</p>
     </section>
   );
@@ -937,6 +934,7 @@ function ScoutingTeamCard({ managerTeam, maxRowsByPosition, onOpenPlayer, onPosi
   const activePosition = scoutingPositionGroups[selectedPositionIndex]?.value ?? scoutingPositionGroups[0].value;
   const positionRows = maxRowsByPosition[activePosition] ?? 1;
   const positionCarouselHeight = SCOUTING_POSITION_CHROME_REM + positionRows * SCOUTING_PLAYER_ROW_REM;
+  const teamContainerHeight = positionCarouselHeight + 3.4;
 
   useEffect(() => {
     if (!positionApi) return undefined;
@@ -954,7 +952,22 @@ function ScoutingTeamCard({ managerTeam, maxRowsByPosition, onOpenPlayer, onPosi
   }, [positionApi, selectedPositionIndex]);
   return (
     <CarouselItem aria-label={teamName} className="market-page__scouting-slide">
-      <div className="market-page__scouting-team">
+      <div className="market-page__scouting-team" style={{ height: `${teamContainerHeight}rem` }}>
+        <header className="market-page__scouting-team-header">
+          <h2>{teamName}</h2>
+          <nav aria-label={`${teamName} position navigation`} className="market-page__scouting-position-dots">
+            {scoutingPositionGroups.map(({ label }, index) => (
+              <button
+                aria-current={index === selectedPositionIndex ? 'true' : undefined}
+                aria-label={`Go to ${label} at ${teamName}`}
+                className={`market-page__scouting-position-dot${index === selectedPositionIndex ? ' is-selected' : ''}`}
+                key={label}
+                onClick={() => positionApi?.scrollTo(index)}
+                type="button"
+              />
+            ))}
+          </nav>
+        </header>
         <Carousel
           aria-label={`${teamName} player positions`}
           className="market-page__scouting-position-carousel"
@@ -995,21 +1008,7 @@ function ScoutingTeamCard({ managerTeam, maxRowsByPosition, onOpenPlayer, onPosi
               );
             })}
           </CarouselContent>
-          <CarouselPrevious aria-label={`Previous position at ${teamName}`} />
-          <CarouselNext aria-label={`Next position at ${teamName}`} />
         </Carousel>
-        <nav aria-label={`${teamName} position navigation`} className="market-page__scouting-position-dots">
-          {scoutingPositionGroups.map(({ label }, index) => (
-            <button
-              aria-current={index === selectedPositionIndex ? 'true' : undefined}
-              aria-label={`Go to ${label} at ${teamName}`}
-              className={`market-page__scouting-position-dot${index === selectedPositionIndex ? ' is-selected' : ''}`}
-              key={label}
-              onClick={() => positionApi?.scrollTo(index)}
-              type="button"
-            />
-          ))}
-        </nav>
       </div>
     </CarouselItem>
   );

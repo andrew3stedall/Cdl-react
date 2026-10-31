@@ -1117,10 +1117,6 @@
   margin: 0;
 }
 
-.market-page__scouting-header .eyebrow {
-  margin: 0 0 0.2rem;
-}
-
 .market-page__scouting-header h2 {
   font-size: clamp(1.15rem, 3vw, 1.55rem);
   letter-spacing: -0.035em;

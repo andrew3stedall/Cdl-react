@@ -538,10 +538,15 @@ class CastleSourceAdapter:
                     }
                 )
                 continue
-            lineup_assignments.extend(
-                [("bench", bench_goalkeepers[0], 0)]
-                + [("bench", pid, order) for order, pid in enumerate(bench_outfield, 1)]
-            )
+            if bench_goalkeepers:
+                lineup_assignments.extend(
+                    [("bench", bench_goalkeepers[0], 0)]
+                    + [("bench", pid, order) for order, pid in enumerate(bench_outfield, 1)]
+                )
+            else:
+                lineup_assignments.extend(
+                    [("bench", pid, order) for order, pid in enumerate(bench_outfield, 1)]
+                )
             self.lineup_deletions.extend(
                 {"table": "team_selection_lineup_slots", "id": slot["id"]}
                 for slot in existing_slots

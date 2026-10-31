@@ -342,13 +342,17 @@ describe('MarketPage', () => {
     act(() => { commissioner.root.unmount(); manager.root.unmount(); });
   });
 
-  test('presents discovery players in the Squad-style three-column list', async () => {
+  test('presents discovery players in the Squad-style list with form and value', async () => {
     const { container } = await renderPage();
     const table = container.querySelector('table[aria-label="Market player results"]');
 
-    expect(table?.querySelectorAll('thead th')).toHaveLength(3);
+    expect(Array.from(table?.querySelectorAll('thead th') ?? []).map((header) => header.textContent?.trim())).toEqual(['Player', 'Pts', 'Form', 'Value', 'xG / xA']);
     expect(table?.querySelectorAll('tbody tr')).toHaveLength(1);
-    expect(table?.querySelector('tbody tr td')?.textContent).toContain('Casey Midfielder');
+    const cells = table?.querySelectorAll('tbody tr td');
+    expect(cells?.[0]?.textContent).toContain('Casey Midfielder');
+    expect(cells?.[1]?.textContent).toBe('61');
+    expect(cells?.[2]?.textContent).toBe('6.8');
+    expect(cells?.[3]?.textContent).toBe('7.5');
     expect(container.querySelector('.market-page__player-row article')).toBeNull();
     expect(container.querySelector('.player-card__position-marker')).toBeNull();
     const playerCard = table?.querySelector('.market-page__list-player-card');

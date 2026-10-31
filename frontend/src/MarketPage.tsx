@@ -18,7 +18,7 @@ import {
 import { Button } from './components/ui/button';
 import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from './components/ui/table';
 import { SortableTableHead, useSortedRows } from './components/ui/sortable-table';
-import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, useCarousel } from './components/ui/carousel';
+import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious, useCarousel, type CarouselApi } from './components/ui/carousel';
 import { PlayerCard, type PlayerCardFixtureTone, type PlayerCardPlayer } from './components/player/PlayerCard';
 import { PageHero, PageHeroControls, PageHeroViewToggle } from './components/ui/page-hero';
 import { PlayerFormMinutesGroupComparison, PlayerProfilePage } from './PlayerProfilePage';

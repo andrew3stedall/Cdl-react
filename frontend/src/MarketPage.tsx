@@ -1131,7 +1131,7 @@ function TradeProposalDrawer({ drawerRef, onClose, onSubmit, otherPlayers, owned
                 onViewChange={(nextView) => { setView(nextView); window.localStorage.setItem('cdl:squad-view', nextView); }}
                 playerInteraction="select" pitchFixtureDisplay="home-club"
                 selectedPlayerIds={new Set(proposalType === 'trade' ? [...offeredPlayerIds, ...requestedPlayerIds] : offeredPlayerIds)}
-                showViewToggle squads={tradeSquads} view={view}
+                showViewToggle sortableList squads={tradeSquads} view={view}
               />
             </div> : null}
           </section>

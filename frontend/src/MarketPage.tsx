@@ -872,7 +872,7 @@ function ScoutingPanel({ failed, loading, managerTeam, onOpenPlayer, players }: 
                               </button>
                             ))}
                           </div>
-                        ) : <p className="market-page__scouting-empty">No {label.toLowerCase()}s</p>}
+                        ) : <p className="market-page__scouting-empty">No players in this position</p>}
                       </section>
                     );
                   })}

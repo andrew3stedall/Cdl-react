@@ -848,40 +848,17 @@ function ScoutingPanel({ failed, loading, managerTeam, onOpenPlayer, players }: 
         <span>{Math.min(selectedIndex, teams.length - 1) + 1} of {teams.length}</span>
       </header>
       {failed ? <p className="market-page__status" role="status">Some scouting data could not be refreshed. Showing the available players.</p> : null}
-      <Carousel aria-label="Premier League teams" className="market-page__scouting-carousel" opts={{ loop: teams.length > 1 }} setApi={setApi}>
+      <Carousel aria-label="Premier League teams" className="market-page__scouting-carousel" opts={{ align: "center", loop: teams.length > 1 }} setApi={setApi}>
         <CarouselContent className="market-page__scouting-track">
-          {teams.map((team) => {
-            const teamPlayers = players.filter((player) => player.clubId === team.id);
-            return (
-              <CarouselItem aria-label={team.name} className="market-page__scouting-slide" key={team.id}>
-                <div className="market-page__scouting-team">
-                  {scoutingPositionGroups.map(({ label, value }) => {
-                    const positionPlayers = teamPlayers
-                      .filter((player) => player.position === value)
-                      .sort((left, right) => comparePlayers(left, right, 'points'));
-                    return (
-                      <section aria-label={`${label} at ${team.name}`} className="market-page__scouting-position" key={value}>
-                        <header className="market-page__scouting-position-header">
-                          <h3>{label}</h3>
-                          <span>{positionPlayers.length}</span>
-                        </header>
-                        {positionPlayers.length > 0 ? (
-                          <div className="market-page__scouting-player-grid">
-                            {positionPlayers.map((player) => (
-                              <button aria-label={`View ${player.displayName} details`} className="market-page__scouting-player" key={player.id} onClick={() => onOpenPlayer(player)} type="button">
-                                <PlayerCard formPosition="beside" layout="list" player={toPlayerCardPlayer(player, ownershipToneFor(player, managerTeam))} showPositionMarker={false} size="sm" />
-                                <span className="market-page__scouting-points"><strong>{formatInteger(player.points)}</strong><small>pts</small></span>
-                              </button>
-                            ))}
-                          </div>
-                        ) : <p className="market-page__scouting-empty">No players in this position</p>}
-                      </section>
-                    );
-                  })}
-                </div>
-              </CarouselItem>
-            );
-          })}
+          {teams.map((team) => (
+            <ScoutingTeamCard
+              key={team.id}
+              managerTeam={managerTeam}
+              onOpenPlayer={onOpenPlayer}
+              players={players.filter((player) => player.clubId === team.id)}
+              teamName={team.name}
+            />
+          ))}
         </CarouselContent>
         <CarouselPrevious aria-label={`Previous team from ${activeTeam.name}`} />
         <CarouselNext aria-label={`Next team from ${activeTeam.name}`} />
@@ -891,6 +868,79 @@ function ScoutingPanel({ failed, loading, managerTeam, onOpenPlayer, players }: 
   );
 }
 
+
+function ScoutingTeamCard({ managerTeam, onOpenPlayer, players, teamName }: { managerTeam: SquadApiTeam; onOpenPlayer: (player: MarketPlayer) => void; players: MarketPlayer[]; teamName: string }) {
+  const [positionApi, setPositionApi] = useState<CarouselApi>();
+  const [selectedPositionIndex, setSelectedPositionIndex] = useState(0);
+
+  useEffect(() => {
+    if (!positionApi) return undefined;
+    const syncSelectedPosition = () => setSelectedPositionIndex(positionApi.selectedScrollSnap());
+    syncSelectedPosition();
+    positionApi.on('select', syncSelectedPosition);
+    positionApi.on('reInit', syncSelectedPosition);
+    return () => {
+      positionApi.off('select', syncSelectedPosition);
+      positionApi.off('reInit', syncSelectedPosition);
+    };
+  }, [positionApi]);
+
+  return (
+    <CarouselItem aria-label={teamName} className="market-page__scouting-slide">
+      <div className="market-page__scouting-team">
+        <Carousel
+          aria-label={`${teamName} player positions`}
+          className="market-page__scouting-position-carousel"
+          orientation="vertical"
+          opts={{ loop: false }}
+          setApi={setPositionApi}
+        >
+          <CarouselContent className="market-page__scouting-position-track">
+            {scoutingPositionGroups.map(({ label, value }) => {
+              const positionPlayers = players
+                .filter((player) => player.position === value)
+                .sort((left, right) => comparePlayers(left, right, 'points'));
+              return (
+                <CarouselItem aria-label={`${label} at ${teamName}`} className="market-page__scouting-position-slide" key={value}>
+                  <section className="market-page__scouting-position">
+                    <header className="market-page__scouting-position-header">
+                      <h3>{label}</h3>
+                      <span>{positionPlayers.length}</span>
+                    </header>
+                    {positionPlayers.length > 0 ? (
+                      <div className="market-page__scouting-player-grid">
+                        {positionPlayers.map((player) => (
+                          <button aria-label={`View ${player.displayName} details`} className="market-page__scouting-player" key={player.id} onClick={() => onOpenPlayer(player)} type="button">
+                            <PlayerCard formPosition="beside" layout="list" player={toPlayerCardPlayer(player, ownershipToneFor(player, managerTeam))} showPositionMarker={false} size="sm" />
+                            <span className="market-page__scouting-points"><strong>{formatInteger(player.points)}</strong><small>pts</small></span>
+                          </button>
+                        ))}
+                      </div>
+                    ) : <p className="market-page__scouting-empty">No players in this position</p>}
+                  </section>
+                </CarouselItem>
+              );
+            })}
+          </CarouselContent>
+          <CarouselPrevious aria-label={`Previous position at ${teamName}`} />
+          <CarouselNext aria-label={`Next position at ${teamName}`} />
+        </Carousel>
+        <nav aria-label={`${teamName} position navigation`} className="market-page__scouting-position-dots">
+          {scoutingPositionGroups.map(({ label }, index) => (
+            <button
+              aria-current={index === selectedPositionIndex ? 'true' : undefined}
+              aria-label={`Go to ${label} at ${teamName}`}
+              className={`market-page__scouting-position-dot${index === selectedPositionIndex ? ' is-selected' : ''}`}
+              key={label}
+              onClick={() => positionApi?.scrollTo(index)}
+              type="button"
+            />
+          ))}
+        </nav>
+      </div>
+    </CarouselItem>
+  );
+}
 const scoutingPositionGroups: Array<{ label: string; value: string }> = [
   { label: 'Goalkeepers', value: 'GKP' },
   { label: 'Defenders', value: 'DEF' },

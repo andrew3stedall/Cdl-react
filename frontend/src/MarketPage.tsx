@@ -927,7 +927,7 @@ function ScoutingPanel({ failed, loading, managerTeam, onOpenPlayer, players }: 
 
 const SCOUTING_PLAYER_COLUMNS = 4;
 const SCOUTING_POSITION_CHROME_REM = 2.35;
-const SCOUTING_PLAYER_ROW_REM = 4.8;
+const SCOUTING_PLAYER_ROW_REM = 6;
 
 function ScoutingTeamCard({ managerTeam, maxRowsByPosition, onOpenPlayer, onPositionChange, players, selectedPositionIndex, teamName }: { managerTeam: SquadApiTeam; maxRowsByPosition: Record<string, number>; onOpenPlayer: (player: MarketPlayer) => void; onPositionChange: (index: number) => void; players: MarketPlayer[]; selectedPositionIndex: number; teamName: string }) {
   const [positionApi, setPositionApi] = useState<CarouselApi>();

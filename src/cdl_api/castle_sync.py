@@ -71,6 +71,11 @@ def main() -> None:
             trade_gameweeks=json.loads(os.environ.get("CASTLE_TRADE_GAMEWEEKS") or "{}"),
             native_entities=json.loads(os.environ.get("CASTLE_NATIVE_ENTITIES") or "[]"),
             restore_missing=os.environ.get("CASTLE_RESTORE_MISSING") == "true",
+            lineup_gameweek=(
+                int(os.environ["CASTLE_LINEUP_GAMEWEEK"])
+                if os.environ.get("CASTLE_LINEUP_GAMEWEEK")
+                else None
+            ),
         )
         bundle = json.loads(source.read_text())
         gcloud = shutil.which("gcloud")

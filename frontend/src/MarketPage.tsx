@@ -816,6 +816,19 @@ function ScoutingPanel({ failed, loading, managerTeam, onOpenPlayer, players }: 
   const [api, setApi] = useState<CarouselApi>();
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [selectedPositionIndex, setSelectedPositionIndex] = useState(0);
+  const maxRowsByPosition = useMemo<Record<string, number>>(() => {
+    const countsByTeam = new Map<string, Map<string, number>>();
+    for (const player of players) {
+      const counts = countsByTeam.get(player.clubId) ?? new Map<string, number>();
+      counts.set(player.position, (counts.get(player.position) ?? 0) + 1);
+      countsByTeam.set(player.clubId, counts);
+    }
+
+    return Object.fromEntries(scoutingPositionGroups.map(({ value }) => {
+      const maxCount = Math.max(0, ...Array.from(countsByTeam.values(), (counts) => counts.get(value) ?? 0));
+      return [value, Math.max(1, Math.ceil(maxCount / SCOUTING_PLAYER_COLUMNS))];
+    }));
+  }, [players]);
   useEffect(() => {
     if (!api) return undefined;
     const syncSelectedTeam = () => setSelectedIndex(api.selectedScrollSnap());
@@ -881,6 +894,7 @@ function ScoutingPanel({ failed, loading, managerTeam, onOpenPlayer, players }: 
             <ScoutingTeamCard
               key={team.id}
               managerTeam={managerTeam}
+              maxRowsByPosition={maxRowsByPosition}
               onOpenPlayer={onOpenPlayer}
               onPositionChange={setSelectedPositionIndex}
               players={players.filter((player) => player.clubId === team.id)}
@@ -910,24 +924,41 @@ function ScoutingPanel({ failed, loading, managerTeam, onOpenPlayer, players }: 
 }
 
 
+const SCOUTING_PLAYER_COLUMNS = 4;
 const SCOUTING_TEAM_CONTAINER_REM = 30;
+const SCOUTING_POSITION_CHROME_REM = 2.35;
+const SCOUTING_PLAYER_ROW_REM = 4.7;
 
-function ScoutingTeamCard({ managerTeam, onOpenPlayer, onPositionChange, players, selectedPositionIndex, teamName }: { managerTeam: SquadApiTeam; onOpenPlayer: (player: MarketPlayer) => void; onPositionChange: (index: number) => void; players: MarketPlayer[]; selectedPositionIndex: number; teamName: string }) {
-  const [positionApi, setPositionApi] = useState<CarouselApi>();
-  useEffect(() => {
-    if (!positionApi) return undefined;
-    const syncSelectedPosition = () => onPositionChange(positionApi.selectedScrollSnap());
-    positionApi.on('select', syncSelectedPosition);
-    return () => {
-      positionApi.off('select', syncSelectedPosition);
-    };
-  }, [onPositionChange, positionApi]);
+function ScoutingTeamCard({ managerTeam, maxRowsByPosition, onOpenPlayer, onPositionChange, players, selectedPositionIndex, teamName }: { managerTeam: SquadApiTeam; maxRowsByPosition: Record<string, number>; onOpenPlayer: (player: MarketPlayer) => void; onPositionChange: (index: number) => void; players: MarketPlayer[]; selectedPositionIndex: number; teamName: string }) {
+  const positionViewportRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (positionApi && positionApi.selectedScrollSnap() !== selectedPositionIndex) {
-      positionApi.scrollTo(selectedPositionIndex, true);
-    }
-  }, [positionApi, selectedPositionIndex]);
+    const viewport = positionViewportRef.current;
+    const group = scoutingPositionGroups[selectedPositionIndex];
+    if (!viewport || !group) return;
+    scrollScoutingPositionIntoView(viewport, group.value, 'smooth');
+  }, [selectedPositionIndex]);
+
+  const handlePositionScroll = () => {
+    const viewport = positionViewportRef.current;
+    if (!viewport) return;
+    const viewportTop = viewport.getBoundingClientRect().top;
+    let visiblePositionIndex = 0;
+    scoutingPositionGroups.forEach(({ value }, index) => {
+      const section = viewport.querySelector<HTMLElement>(`[data-scouting-position="${value}"]`);
+      if (section && section.getBoundingClientRect().top <= viewportTop + 16) visiblePositionIndex = index;
+    });
+    onPositionChange(visiblePositionIndex);
+  };
+
+  const navigateToPosition = (index: number) => {
+    const group = scoutingPositionGroups[index];
+    const viewport = positionViewportRef.current;
+    if (!group || !viewport) return;
+    onPositionChange(index);
+    scrollScoutingPositionIntoView(viewport, group.value, 'smooth');
+  };
+
   return (
     <CarouselItem aria-label={teamName} className="market-page__scouting-slide">
       <div className="market-page__scouting-team" style={{ height: `${SCOUTING_TEAM_CONTAINER_REM}rem` }}>
@@ -940,56 +971,71 @@ function ScoutingTeamCard({ managerTeam, onOpenPlayer, onPositionChange, players
                 aria-label={`Go to ${label} at ${teamName}`}
                 className={`market-page__scouting-position-dot${index === selectedPositionIndex ? ' is-selected' : ''}`}
                 key={label}
-                onClick={() => positionApi?.scrollTo(index)}
+                onClick={() => navigateToPosition(index)}
                 type="button"
               />
             ))}
           </nav>
         </header>
-        <Carousel
-          aria-label={`${teamName} player positions`}
-          className="market-page__scouting-position-carousel"
-          orientation="vertical"
-          opts={{ loop: false }}
-          setApi={setPositionApi}
+        <div
+          aria-label={`${teamName} players by position`}
+          className="market-page__scouting-position-viewport"
+          onScroll={handlePositionScroll}
+          ref={positionViewportRef}
+          role="region"
+          tabIndex={0}
         >
-          <CarouselContent className="market-page__scouting-position-track">
+          <div className="market-page__scouting-position-stack">
             {scoutingPositionGroups.map(({ label, value }) => {
               const positionPlayers = players
                 .filter((player) => player.position === value)
                 .sort((left, right) => comparePlayers(left, right, 'points'));
+              const positionHeight = SCOUTING_POSITION_CHROME_REM + (maxRowsByPosition[value] ?? 1) * SCOUTING_PLAYER_ROW_REM;
               return (
-                <CarouselItem aria-label={`${label} at ${teamName}`} className="market-page__scouting-position-slide" key={value}>
-                  <section className="market-page__scouting-position">
-                    <header className="market-page__scouting-position-header">
-                      <h3>{label}</h3>
-                      <span>{positionPlayers.length}</span>
-                    </header>
-                    {positionPlayers.length > 0 ? (
-                      <div aria-label={`${label} player cards`} className="market-page__scouting-player-grid">
-                        {positionPlayers.map((player) => (
-                          <button
-                            aria-label={`View ${player.displayName} details, ${formatInteger(player.points)} points, ${player.ownerName ? `owned by ${player.ownerName}` : 'free agent'}`}
-                            className="market-page__scouting-player"
-                            key={player.id}
-                            onClick={() => onOpenPlayer(player)}
-                            type="button"
-                          >
-                            <PlayerCard formPosition="below" layout="pitch" player={toPlayerCardPlayer(player, ownershipToneFor(player, managerTeam))} points={player.points ?? 0} showPositionMarker={false} size="sm" />
-                          </button>
-                        ))}
-                      </div>
-                    ) : <p className="market-page__scouting-empty">No players in this position</p>}
-                  </section>
-                </CarouselItem>
+                <section
+                  aria-label={`${label} at ${teamName}`}
+                  className="market-page__scouting-position"
+                  data-scouting-position={value}
+                  key={value}
+                  style={{ height: `${positionHeight}rem` }}
+                >
+                  <header className="market-page__scouting-position-header">
+                    <h3>{label}</h3>
+                    <span>{positionPlayers.length}</span>
+                  </header>
+                  {positionPlayers.length > 0 ? (
+                    <div aria-label={`${label} player cards`} className="market-page__scouting-player-grid">
+                      {positionPlayers.map((player) => (
+                        <button
+                          aria-label={`View ${player.displayName} details, ${formatInteger(player.points)} points, ${player.ownerName ? `owned by ${player.ownerName}` : 'free agent'}`}
+                          className="market-page__scouting-player"
+                          key={player.id}
+                          onClick={() => onOpenPlayer(player)}
+                          type="button"
+                        >
+                          <PlayerCard formPosition="below" layout="pitch" player={toPlayerCardPlayer(player, ownershipToneFor(player, managerTeam))} points={player.points ?? 0} showPositionMarker={false} size="sm" />
+                        </button>
+                      ))}
+                    </div>
+                  ) : <p className="market-page__scouting-empty">No players in this position</p>}
+                </section>
               );
             })}
-          </CarouselContent>
-        </Carousel>
+          </div>
+        </div>
       </div>
     </CarouselItem>
   );
 }
+
+function scrollScoutingPositionIntoView(viewport: HTMLElement, position: string, behavior: ScrollBehavior) {
+  const section = viewport.querySelector<HTMLElement>(`[data-scouting-position="${position}"]`);
+  if (!section) return;
+  const viewportTop = viewport.getBoundingClientRect().top;
+  const sectionTop = section.getBoundingClientRect().top;
+  viewport.scrollTo({ top: viewport.scrollTop + sectionTop - viewportTop, behavior });
+}
+
 const scoutingPositionGroups: Array<{ label: string; value: string }> = [
   { label: 'Goalkeepers', value: 'GKP' },
   { label: 'Defenders', value: 'DEF' },

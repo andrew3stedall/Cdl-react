@@ -102,7 +102,7 @@ export function PlayerCard({
         showOpponent={showOpponent}
         showPositionMarker={showPositionMarker}
       />
-      {formPosition !== 'hidden' && !hasPointsPlaceholder ? <PlayerFormDots className="player-card__form" history={player.formHistory} /> : null}
+      {formPosition !== 'hidden' && !hasPointsPlaceholder ? <FormDots className="player-card__form" history={player.formHistory} /> : null}
     </span>
   );
 }
@@ -202,7 +202,7 @@ export function TeamShirt({ className = '', large = false, team }: { className?:
   );
 }
 
-export function PlayerFormDots({ className = '', history }: { className?: string; history?: readonly PlayerCardFormGameweek[]; value?: number | null }) {
+export function FormDots({ className = '', history }: { className?: string; history?: readonly PlayerCardFormGameweek[]; value?: number | null }) {
   const slots = formSlots(history);
   const accessibleHistory = slots.map((slot) => {
     if (slot.gameweek === null) return 'No recorded fixture';
@@ -238,6 +238,8 @@ export function PlayerFormDots({ className = '', history }: { className?: string
     </span>
   );
 }
+
+export const PlayerFormDots = FormDots;
 
 export function PositionMarker({ position }: { position: string }) {
   return <span aria-hidden="true" className={`player-card__position-marker position-${normalizePosition(position).toLowerCase()}`} title={`${positionLabel(position)} player`} />;

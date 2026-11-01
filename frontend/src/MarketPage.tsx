@@ -831,6 +831,8 @@ function ScoutingPanel({ failed, loading, managerTeam, onOpenPlayer, players }: 
       return [value, Math.max(1, Math.ceil(maxCount / SCOUTING_PLAYER_COLUMNS))];
     }));
   }, [players]);
+  const maxPositionHeightRem = Math.max(...scoutingPositionGroups.map(({ value }) => SCOUTING_POSITION_CHROME_REM + (maxRowsByPosition[value] ?? 1) * SCOUTING_PLAYER_ROW_REM));
+  const teamContainerHeightRem = Math.max(SCOUTING_TEAM_CONTAINER_REM, Math.ceil((maxPositionHeightRem + SCOUTING_TEAM_CHROME_REM) * 2) / 2);
   useEffect(() => {
     if (!api) return undefined;
     const syncSelectedTeam = () => setSelectedIndex(api.selectedScrollSnap());
@@ -899,6 +901,7 @@ function ScoutingPanel({ failed, loading, managerTeam, onOpenPlayer, players }: 
               managerTeam={managerTeam}
               maxRowsByPosition={maxRowsByPosition}
               onOpenPlayer={onOpenPlayer}
+              teamContainerHeightRem={teamContainerHeightRem}
               onPositionChange={setSelectedPositionIndex}
               players={players.filter((player) => player.clubId === team.id)}
               selectedPositionIndex={selectedPositionIndex}
@@ -921,7 +924,6 @@ function ScoutingPanel({ failed, loading, managerTeam, onOpenPlayer, players }: 
           />
         ))}
       </nav>
-      <p className="market-page__scouting-hint">Swipe horizontally to browse teams. Select a player to open their profile.</p>
     </section>
   );
 }
@@ -929,10 +931,11 @@ function ScoutingPanel({ failed, loading, managerTeam, onOpenPlayer, players }: 
 
 const SCOUTING_PLAYER_COLUMNS = 4;
 const SCOUTING_TEAM_CONTAINER_REM = 30;
+const SCOUTING_TEAM_CHROME_REM = 4;
 const SCOUTING_POSITION_CHROME_REM = 2.5;
 const SCOUTING_PLAYER_ROW_REM = 5.15;
 
-function ScoutingTeamCard({ isActive, managerTeam, maxRowsByPosition, onOpenPlayer, onPositionChange, players, selectedPositionIndex, teamName }: { isActive: boolean; managerTeam: SquadApiTeam; maxRowsByPosition: Record<string, number>; onOpenPlayer: (player: MarketPlayer) => void; onPositionChange: (index: number) => void; players: MarketPlayer[]; selectedPositionIndex: number; teamName: string }) {
+function ScoutingTeamCard({ isActive, managerTeam, maxRowsByPosition, onOpenPlayer, onPositionChange, players, selectedPositionIndex, teamContainerHeightRem, teamName }: { isActive: boolean; managerTeam: SquadApiTeam; maxRowsByPosition: Record<string, number>; onOpenPlayer: (player: MarketPlayer) => void; onPositionChange: (index: number) => void; players: MarketPlayer[]; selectedPositionIndex: number; teamContainerHeightRem: number; teamName: string }) {
   const positionViewportRef = useRef<HTMLDivElement | null>(null);
   const selectedPositionIndexRef = useRef(selectedPositionIndex);
   selectedPositionIndexRef.current = selectedPositionIndex;
@@ -968,7 +971,7 @@ function ScoutingTeamCard({ isActive, managerTeam, maxRowsByPosition, onOpenPlay
 
   return (
     <CarouselItem aria-label={teamName} className="market-page__scouting-slide">
-      <div className="market-page__scouting-team" style={{ height: `${SCOUTING_TEAM_CONTAINER_REM}rem` }}>
+      <div className="market-page__scouting-team" style={{ height: `${teamContainerHeightRem}rem` }}>
         <header className="market-page__scouting-team-header">
           <h2>{teamName}</h2>
           <nav aria-label={`${teamName} position navigation`} className="market-page__scouting-position-dots">

@@ -1208,12 +1208,31 @@
 }
 
 .market-page__scouting-position {
+  background: color-mix(in srgb, var(--market-position-accent) 3%, transparent);
+  border: 1px solid color-mix(in srgb, var(--market-position-accent) 38%, var(--border));
+  border-radius: 0.65rem;
   box-sizing: border-box;
   display: grid;
   grid-template-rows: 1.25rem minmax(0, 1fr);
   min-width: 0;
   overflow: visible;
   padding: 0.4rem;
+}
+
+.market-page__scouting-position--gkp {
+  --market-position-accent: var(--cdl-position-gkp, var(--squad-position-gkp, #8b9bb4));
+}
+
+.market-page__scouting-position--def {
+  --market-position-accent: var(--cdl-position-def, var(--squad-position-def, #67a890));
+}
+
+.market-page__scouting-position--mid {
+  --market-position-accent: var(--cdl-position-mid, var(--squad-position-mid, #c7a969));
+}
+
+.market-page__scouting-position--fwd {
+  --market-position-accent: var(--cdl-position-fwd, var(--squad-position-fwd, #be7d8a));
 }
 
 .market-page__scouting-position-header {

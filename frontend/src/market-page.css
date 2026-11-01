@@ -1377,8 +1377,7 @@
 }
 
 .market-page__scouting-points small,
-.market-page__scouting-empty,
-.market-page__scouting-hint {
+.market-page__scouting-empty {
   color: var(--market-muted);
   font-size: 0.65rem;
 }

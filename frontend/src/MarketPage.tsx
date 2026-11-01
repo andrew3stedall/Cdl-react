@@ -816,20 +816,6 @@ function ScoutingPanel({ failed, loading, managerTeam, onOpenPlayer, players }: 
   const [api, setApi] = useState<CarouselApi>();
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [selectedPositionIndex, setSelectedPositionIndex] = useState(0);
-  const maxRowsByPosition = useMemo<Record<string, number>>(() => {
-    const countsByTeam = new Map<string, Map<string, number>>();
-    for (const player of players) {
-      const counts = countsByTeam.get(player.clubId) ?? new Map<string, number>();
-      counts.set(player.position, (counts.get(player.position) ?? 0) + 1);
-      countsByTeam.set(player.clubId, counts);
-    }
-
-    return Object.fromEntries(scoutingPositionGroups.map(({ value }) => {
-      const maxCount = Math.max(0, ...Array.from(countsByTeam.values(), (counts) => counts.get(value) ?? 0));
-      return [value, Math.max(1, Math.ceil(maxCount / SCOUTING_PLAYER_COLUMNS))];
-    }));
-  }, [players]);
-
   useEffect(() => {
     if (!api) return undefined;
     const syncSelectedTeam = () => setSelectedIndex(api.selectedScrollSnap());
@@ -895,7 +881,6 @@ function ScoutingPanel({ failed, loading, managerTeam, onOpenPlayer, players }: 
             <ScoutingTeamCard
               key={team.id}
               managerTeam={managerTeam}
-              maxRowsByPosition={maxRowsByPosition}
               onOpenPlayer={onOpenPlayer}
               onPositionChange={setSelectedPositionIndex}
               players={players.filter((player) => player.clubId === team.id)}
@@ -925,17 +910,10 @@ function ScoutingPanel({ failed, loading, managerTeam, onOpenPlayer, players }: 
 }
 
 
-const SCOUTING_PLAYER_COLUMNS = 4;
-const SCOUTING_POSITION_CHROME_REM = 2.35;
-const SCOUTING_PLAYER_ROW_REM = 6;
+const SCOUTING_TEAM_CONTAINER_REM = 30;
 
-function ScoutingTeamCard({ managerTeam, maxRowsByPosition, onOpenPlayer, onPositionChange, players, selectedPositionIndex, teamName }: { managerTeam: SquadApiTeam; maxRowsByPosition: Record<string, number>; onOpenPlayer: (player: MarketPlayer) => void; onPositionChange: (index: number) => void; players: MarketPlayer[]; selectedPositionIndex: number; teamName: string }) {
+function ScoutingTeamCard({ managerTeam, onOpenPlayer, onPositionChange, players, selectedPositionIndex, teamName }: { managerTeam: SquadApiTeam; onOpenPlayer: (player: MarketPlayer) => void; onPositionChange: (index: number) => void; players: MarketPlayer[]; selectedPositionIndex: number; teamName: string }) {
   const [positionApi, setPositionApi] = useState<CarouselApi>();
-  const activePosition = scoutingPositionGroups[selectedPositionIndex]?.value ?? scoutingPositionGroups[0].value;
-  const positionRows = maxRowsByPosition[activePosition] ?? 1;
-  const positionCarouselHeight = SCOUTING_POSITION_CHROME_REM + positionRows * SCOUTING_PLAYER_ROW_REM;
-  const teamContainerHeight = positionCarouselHeight + 3.4;
-
   useEffect(() => {
     if (!positionApi) return undefined;
     const syncSelectedPosition = () => onPositionChange(positionApi.selectedScrollSnap());
@@ -952,7 +930,7 @@ function ScoutingTeamCard({ managerTeam, maxRowsByPosition, onOpenPlayer, onPosi
   }, [positionApi, selectedPositionIndex]);
   return (
     <CarouselItem aria-label={teamName} className="market-page__scouting-slide">
-      <div className="market-page__scouting-team" style={{ height: `${teamContainerHeight}rem` }}>
+      <div className="market-page__scouting-team" style={{ height: `${SCOUTING_TEAM_CONTAINER_REM}rem` }}>
         <header className="market-page__scouting-team-header">
           <h2>{teamName}</h2>
           <nav aria-label={`${teamName} position navigation`} className="market-page__scouting-position-dots">

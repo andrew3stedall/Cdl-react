@@ -1186,47 +1186,39 @@
   white-space: nowrap;
 }
 
-.market-page__scouting-position-carousel {
-  height: 100%;
-  min-height: 0;
-}
-
-.market-page__scouting-position-carousel .ui-carousel__viewport {
-  height: 100%;
-  min-height: 0;
-}
-
 .market-page__scouting-carousel .ui-carousel__viewport {
   touch-action: pan-y pinch-zoom;
 }
 
-.market-page__scouting-position-carousel .ui-carousel__viewport {
-  touch-action: pan-x pinch-zoom;
+.market-page__scouting-position-viewport {
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+  touch-action: pan-y pinch-zoom;
 }
 
-.market-page__scouting-position-track {
-  align-items: stretch;
+.market-page__scouting-position-viewport::-webkit-scrollbar {
+  display: none;
 }
 
-.market-page__scouting-position-slide {
-  height: 100%;
-  min-height: 100%;
-  overflow: hidden;
+.market-page__scouting-position-stack {
+  min-width: 0;
 }
 
 .market-page__scouting-position {
   box-sizing: border-box;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
-  height: 100%;
+  grid-template-rows: 1.25rem minmax(0, 1fr);
   min-width: 0;
-  overflow: hidden;
-  padding: 0.45rem 1.75rem 0.45rem 0;
+  overflow: visible;
+  padding: 0.4rem;
 }
 
 .market-page__scouting-position-header {
   gap: 0.6rem;
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.3rem;
 }
 
 .market-page__scouting-position-header h3 {
@@ -1237,10 +1229,10 @@
 
 .market-page__scouting-player-grid {
   align-content: start;
-  display: grid;
-  gap: 0.15rem 0.2rem;
-  grid-auto-rows: 4rem;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+  justify-content: center;
   min-height: 0;
   overflow: visible;
 }
@@ -1254,17 +1246,16 @@
   color: var(--foreground);
   cursor: pointer;
   display: flex;
+  flex: 0 0 calc((100% - 0.6rem) / 4);
   height: auto;
   justify-content: center;
-  justify-self: center;
-  max-width: 4rem;
+  max-width: 4.45rem;
   min-height: 0;
   min-width: 0;
   overflow: visible;
   padding: 0;
   position: relative;
   text-align: center;
-  align-self: start;
   transition: filter 120ms ease;
   width: 100%;
 }
@@ -1286,27 +1277,33 @@
 }
 
 .market-page__scouting-player > .player-card {
-  --player-card-opponent-height: 0.55rem;
-  --player-card-opponent-top: 70%;
+  --player-card-opponent-height: 0.68rem;
+  --player-card-opponent-top: 73%;
   min-width: 0;
 }
 
 .market-page__scouting-player .player-card__shirt-crop {
-  height: 34%;
-  top: 0.1rem;
+  height: 32%;
+  top: 0.08rem;
   width: 88%;
 }
 
-.market-page__scouting-player .player-card__name {
-  font-size: 0.56rem;
+.market-page__scouting-player .player-card__points {
+  font-size: 0.7rem;
+  top: 46%;
 }
 
-.market-page__scouting-player .player-card__points {
-  font-size: 0.58rem;
+.market-page__scouting-player .player-card__name {
+  font-size: 0.7rem;
+  top: 61%;
 }
 
 .market-page__scouting-player .player-card__opponents {
-  font-size: 0.5rem;
+  font-size: 0.62rem;
+}
+
+.market-page__scouting-player .player-card__form {
+  top: calc(var(--player-card-opponent-top) + var(--player-card-opponent-height));
 }
 
 .market-page__scouting-points {

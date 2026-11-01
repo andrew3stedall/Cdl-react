@@ -892,6 +892,7 @@ function ScoutingPanel({ failed, loading, managerTeam, onOpenPlayer, players }: 
         <CarouselContent className="market-page__scouting-track">
           {teams.map((team) => (
             <ScoutingTeamCard
+              isActive={team.id === activeTeam.id}
               key={team.id}
               managerTeam={managerTeam}
               maxRowsByPosition={maxRowsByPosition}
@@ -926,29 +927,31 @@ function ScoutingPanel({ failed, loading, managerTeam, onOpenPlayer, players }: 
 
 const SCOUTING_PLAYER_COLUMNS = 4;
 const SCOUTING_TEAM_CONTAINER_REM = 30;
-const SCOUTING_POSITION_CHROME_REM = 2.35;
+const SCOUTING_POSITION_CHROME_REM = 2.5;
 const SCOUTING_PLAYER_ROW_REM = 4.7;
 
-function ScoutingTeamCard({ managerTeam, maxRowsByPosition, onOpenPlayer, onPositionChange, players, selectedPositionIndex, teamName }: { managerTeam: SquadApiTeam; maxRowsByPosition: Record<string, number>; onOpenPlayer: (player: MarketPlayer) => void; onPositionChange: (index: number) => void; players: MarketPlayer[]; selectedPositionIndex: number; teamName: string }) {
+function ScoutingTeamCard({ isActive, managerTeam, maxRowsByPosition, onOpenPlayer, onPositionChange, players, selectedPositionIndex, teamName }: { isActive: boolean; managerTeam: SquadApiTeam; maxRowsByPosition: Record<string, number>; onOpenPlayer: (player: MarketPlayer) => void; onPositionChange: (index: number) => void; players: MarketPlayer[]; selectedPositionIndex: number; teamName: string }) {
   const positionViewportRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
+    if (!isActive) return;
     const viewport = positionViewportRef.current;
     const group = scoutingPositionGroups[selectedPositionIndex];
     if (!viewport || !group) return;
-    scrollScoutingPositionIntoView(viewport, group.value, 'smooth');
-  }, [selectedPositionIndex]);
+    scrollScoutingPositionIntoView(viewport, group.value, 'auto');
+  }, [isActive]);
 
   const handlePositionScroll = () => {
     const viewport = positionViewportRef.current;
     if (!viewport) return;
     const viewportTop = viewport.getBoundingClientRect().top;
+    const activationLine = viewportTop + Math.min(72, viewport.clientHeight * 0.2);
     let visiblePositionIndex = 0;
     scoutingPositionGroups.forEach(({ value }, index) => {
       const section = viewport.querySelector<HTMLElement>(`[data-scouting-position="${value}"]`);
-      if (section && section.getBoundingClientRect().top <= viewportTop + 16) visiblePositionIndex = index;
+      if (section && section.getBoundingClientRect().top <= activationLine) visiblePositionIndex = index;
     });
-    onPositionChange(visiblePositionIndex);
+    if (visiblePositionIndex !== selectedPositionIndex) onPositionChange(visiblePositionIndex);
   };
 
   const navigateToPosition = (index: number) => {
@@ -994,7 +997,7 @@ function ScoutingTeamCard({ managerTeam, maxRowsByPosition, onOpenPlayer, onPosi
               return (
                 <section
                   aria-label={`${label} at ${teamName}`}
-                  className="market-page__scouting-position"
+                  className={`market-page__scouting-position market-page__scouting-position--${value.toLowerCase()}`}
                   data-scouting-position={value}
                   key={value}
                   style={{ height: `${positionHeight}rem` }}

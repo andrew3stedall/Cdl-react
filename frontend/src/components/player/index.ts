@@ -1,5 +1,6 @@
 export {
   FormDots,
+  PlayerFormDots,
   PlayerCard,
   PositionMarker,
   TeamShirt,

@@ -1,4 +1,5 @@
 .market-page {
+  align-content: start;
   --market-surface: var(--card);
   --market-subtle: var(--secondary);
   --market-muted: var(--muted-foreground);

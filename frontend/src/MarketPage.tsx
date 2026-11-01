@@ -6,6 +6,7 @@ import {
   Binoculars,
   Bookmark,
   CircleAlert,
+  CircleX,
   Filter,
   ListOrdered,
   MoveDown,
@@ -27,6 +28,7 @@ import type { FixturePlayerFixture, FixtureSquad, FixtureSquadPlayer } from './l
 import { useModalLifecycle } from './components/ui/sheet';
 import type { SessionState, ThemePreset } from './contracts';
 import { managerNicknameForTeam } from './manager-nicknames';
+import { availabilityChance, getAvailabilityIssue } from './player-availability';
 import { invalidateData, subscribeDataFreshness } from './data-freshness';
 import { invalidateQueryCache } from './query-cache';
 import { HttpSquadClient, type SquadApiFormGameweek, type SquadApiPlayer, type SquadApiTeam } from './squad-api';
@@ -1019,6 +1021,7 @@ function ScoutingTeamCard({ isActive, managerTeam, maxRowsByPosition, onOpenPlay
                           type="button"
                         >
                           <PlayerCard formPosition="below" layout="pitch" player={toPlayerCardPlayer(player, ownershipToneFor(player, managerTeam))} points={player.points ?? 0} showPositionMarker={false} size="sm" />
+                          <ScoutingAvailabilityFlag player={player} />
                         </button>
                       ))}
                     </div>
@@ -1031,6 +1034,17 @@ function ScoutingTeamCard({ isActive, managerTeam, maxRowsByPosition, onOpenPlay
       </div>
     </CarouselItem>
   );
+}
+
+function ScoutingAvailabilityFlag({ player }: { player: MarketPlayer }) {
+  const issue = getAvailabilityIssue({
+    availability: player.availabilityStatus,
+    chance_of_playing_next_round: player.chanceOfPlaying,
+  });
+  if (!issue) return null;
+  const Icon = issue.severity === 'critical' ? CircleX : CircleAlert;
+  const chance = availabilityChance(player.chanceOfPlaying);
+  return <span aria-label={`Availability: ${issue.label}`} className={`market-page__scouting-availability-flag ${issue.severity}`} title={`Availability: ${issue.label}`}>{chance !== null ? <span aria-hidden="true" className="market-page__scouting-availability-chance">{chance}</span> : <Icon aria-hidden="true" size={13} />}</span>;
 }
 
 function scrollScoutingPositionIntoView(viewport: HTMLElement, position: string, behavior: ScrollBehavior) {

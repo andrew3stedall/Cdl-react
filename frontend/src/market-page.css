@@ -1195,6 +1195,8 @@
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
+  scroll-padding-block: 0.25rem;
+  scroll-snap-type: y proximity;
   scrollbar-width: none;
   touch-action: pan-y pinch-zoom;
 }
@@ -1204,10 +1206,14 @@
 }
 
 .market-page__scouting-position-stack {
+  display: grid;
+  gap: 0.45rem;
   min-width: 0;
 }
 
 .market-page__scouting-position {
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
   background: color-mix(in srgb, var(--market-position-accent) 3%, transparent);
   border: 1px solid color-mix(in srgb, var(--market-position-accent) 38%, var(--border));
   border-radius: 0.65rem;
@@ -1277,6 +1283,35 @@
   text-align: center;
   transition: filter 120ms ease;
   width: 100%;
+}
+
+.market-page__scouting-availability-flag {
+  align-items: center;
+  background: var(--secondary);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  display: inline-flex;
+  height: 0.95rem;
+  justify-content: center;
+  left: 0.05rem;
+  position: absolute;
+  top: 0.05rem;
+  width: 0.95rem;
+  z-index: 1;
+}
+
+.market-page__scouting-availability-flag.warning {
+  color: var(--squad-warning, #eab308);
+}
+
+.market-page__scouting-availability-flag.critical {
+  color: var(--squad-danger, #ef4444);
+}
+
+.market-page__scouting-availability-chance {
+  font-size: 0.48rem;
+  font-weight: 900;
+  line-height: 1;
 }
 
 .market-page__scouting-player:hover,

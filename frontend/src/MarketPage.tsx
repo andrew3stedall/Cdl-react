@@ -932,11 +932,13 @@ const SCOUTING_PLAYER_ROW_REM = 4.7;
 
 function ScoutingTeamCard({ isActive, managerTeam, maxRowsByPosition, onOpenPlayer, onPositionChange, players, selectedPositionIndex, teamName }: { isActive: boolean; managerTeam: SquadApiTeam; maxRowsByPosition: Record<string, number>; onOpenPlayer: (player: MarketPlayer) => void; onPositionChange: (index: number) => void; players: MarketPlayer[]; selectedPositionIndex: number; teamName: string }) {
   const positionViewportRef = useRef<HTMLDivElement | null>(null);
+  const selectedPositionIndexRef = useRef(selectedPositionIndex);
+  selectedPositionIndexRef.current = selectedPositionIndex;
 
   useEffect(() => {
     if (!isActive) return;
     const viewport = positionViewportRef.current;
-    const group = scoutingPositionGroups[selectedPositionIndex];
+    const group = scoutingPositionGroups[selectedPositionIndexRef.current];
     if (!viewport || !group) return;
     scrollScoutingPositionIntoView(viewport, group.value, 'auto');
   }, [isActive]);

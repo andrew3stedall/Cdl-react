@@ -410,6 +410,9 @@ export class HttpLeagueClient implements LeagueClient {
           this.get<ApiFixturesResponse>('/league/fixtures'),
         ])
       : [];
+    const tableHistoryRead = view === 'table'
+      ? await Promise.allSettled([this.get<ApiFixturesResponse>('/league/fixtures')])
+      : [];
     const tableRead = view === 'table' || view === 'all'
       ? await Promise.allSettled([this.get<ApiTableResponse>('/league/table')])
       : [];
@@ -447,10 +450,16 @@ export class HttpLeagueClient implements LeagueClient {
       if (result?.status === 'fulfilled') headToHead = result.value;
       else failedReads.push('head-to-head');
     }
+    let allFixtures = fixtureValue(2, 'fixture history');
+    if (view === 'table') {
+      const result = tableHistoryRead[0];
+      if (result?.status === 'fulfilled') allFixtures = mapFixturesResponse(result.value);
+      else if (result?.status === 'rejected') failedReads.push('fixture history');
+    }
     return {
       currentFixtures: fixtureValue(0, 'current fixtures'),
       nextFixtures: fixtureValue(1, 'upcoming fixtures'),
-      allFixtures: fixtureValue(2, 'fixture history'),
+      allFixtures,
       table,
       knockout,
       headToHead,

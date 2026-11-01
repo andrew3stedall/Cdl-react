@@ -27,7 +27,6 @@ import { LeagueTeamShowcase } from './components/team/LeagueTeamShowcase';
 import { PageHero, PageHeroControls, PageHeroViewToggle } from './components/ui/page-hero';
 import { useModalLifecycle } from './components/ui/sheet';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow as UiTableRow } from './components/ui/table';
-import { SortableTableHead, useSortedRows } from './components/ui/sortable-table';
 import type { AttackDirection } from './contracts';
 import type { SessionState } from './contracts';
 import {

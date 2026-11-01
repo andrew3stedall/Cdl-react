@@ -202,7 +202,7 @@ export function TeamShirt({ className = '', large = false, team }: { className?:
   );
 }
 
-export export function PlayerFormDots({ className = '', history }: { className?: string; history?: readonly PlayerCardFormGameweek[]; value?: number | null }) {
+export function PlayerFormDots({ className = '', history }: { className?: string; history?: readonly PlayerCardFormGameweek[]; value?: number | null }) {
   const slots = formSlots(history);
   const accessibleHistory = slots.map((slot) => {
     if (slot.gameweek === null) return 'No recorded fixture';

@@ -20,12 +20,13 @@ import { managerNicknameForTeam } from './manager-nicknames';
 import { invalidateData, subscribeDataFreshness } from './data-freshness';
 import { invalidateQueryCache } from './query-cache';
 import { PlayerChartDetailDialog } from './components/player/PlayerChartDetailDialog';
+import { PlayerFormDots, type PlayerCardFormGameweek } from './components/player/PlayerCard';
+import { playerFormColour } from './player-form-colours';
 import { TeamCrest } from './components/team/TeamCrest';
 import { LeagueTeamShowcase } from './components/team/LeagueTeamShowcase';
 import { PageHero, PageHeroControls, PageHeroViewToggle } from './components/ui/page-hero';
 import { useModalLifecycle } from './components/ui/sheet';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow as UiTableRow } from './components/ui/table';
-import { SortableTableHead, useSortedRows } from './components/ui/sortable-table';
 import type { AttackDirection } from './contracts';
 import type { SessionState } from './contracts';
 import {
@@ -1444,16 +1445,10 @@ function fixtureActionLabel(fixture: LeagueFixture): string {
 }
 
 function TableView({ onReload, snapshot }: { onReload: () => void; snapshot: LeagueSnapshot }) {
-  const { direction, onSort, sortColumn, sortedRows } = useSortedRows(snapshot.table.rows, (row, column) => {
-    if (column === 'position') return row.position;
-    if (column === 'team') return row.team.name;
-    if (column === 'played') return row.played;
-    if (column === 'record') return `${row.wins}-${row.draws}-${row.losses}`;
-    if (column === 'for') return row.pointsFor;
-    if (column === 'against') return row.pointsAgainst;
-    if (column === 'difference') return row.pointsDifference;
-    return row.leaguePoints;
-  });
+  const orderedRows = [...snapshot.table.rows].sort((left, right) => left.position - right.position);
+  const regularSeasonFixtures = completedRegularSeasonFixtures(snapshot.allFixtures.fixtures);
+  const recentGameweeks = standingsFormGameweeks(regularSeasonFixtures);
+
   if (snapshot.failedReads?.includes('table')) {
     return <Card className="league-state-card league-state-card--error" role="alert"><CircleAlert aria-hidden="true" size={18} /><div><strong>Standings are unavailable</strong><p>Fixture and commissioner data can still load independently.</p></div><Button onClick={onReload} type="button" variant="secondary"><RefreshCw aria-hidden="true" size={16} />Retry table</Button></Card>;
   }
@@ -1465,12 +1460,12 @@ function TableView({ onReload, snapshot }: { onReload: () => void; snapshot: Lea
           <div className="league-panel__actions"><span className="league-source-badge"><Table2 aria-hidden="true" size={14} /> {tableSourceLabel(snapshot.table.source)}</span><Button onClick={onReload} type="button" variant="secondary"><RefreshCw aria-hidden="true" size={15} /> Refresh</Button></div>
         </div>
         <div aria-label="League standings table" className="league-table-scroll" role="region" tabIndex={0}>
-          <Table className="league-table">
+          <Table className="league-table league-table--standings">
             <TableHeader>
-              <UiTableRow><TableHead><SortableTableHead column="position" direction={direction} onSort={onSort} sortColumn={sortColumn}>Pos</SortableTableHead></TableHead><TableHead><SortableTableHead column="team" direction={direction} onSort={onSort} sortColumn={sortColumn}>Team</SortableTableHead></TableHead><TableHead><SortableTableHead column="played" direction={direction} onSort={onSort} sortColumn={sortColumn}>P</SortableTableHead></TableHead><TableHead><SortableTableHead column="record" direction={direction} onSort={onSort} sortColumn={sortColumn}>W-D-L</SortableTableHead></TableHead><TableHead><SortableTableHead column="for" direction={direction} onSort={onSort} sortColumn={sortColumn}>For</SortableTableHead></TableHead><TableHead><SortableTableHead column="against" direction={direction} onSort={onSort} sortColumn={sortColumn}>Against</SortableTableHead></TableHead><TableHead><SortableTableHead column="difference" direction={direction} onSort={onSort} sortColumn={sortColumn}>Diff</SortableTableHead></TableHead><TableHead><SortableTableHead column="points" direction={direction} onSort={onSort} sortColumn={sortColumn}>Pts</SortableTableHead></TableHead></UiTableRow>
+              <UiTableRow><TableHead>Team</TableHead><TableHead>Form</TableHead><TableHead>W-D-L</TableHead><TableHead>For–Aga</TableHead><TableHead>Pts</TableHead><TableHead>DP</TableHead></UiTableRow>
             </TableHeader>
             <TableBody>
-              {sortedRows.map((row) => <TableRow key={row.team.id} row={row} />)}
+              {orderedRows.map((row) => <TableRow key={row.team.id} row={row} fixtures={regularSeasonFixtures} gameweeks={recentGameweeks} />)}
             </TableBody>
           </Table>
         </div>
@@ -1480,8 +1475,57 @@ function TableView({ onReload, snapshot }: { onReload: () => void; snapshot: Lea
   );
 }
 
-function TableRow({ row }: { row: LeagueTableRow }) {
-  return <UiTableRow><TableHead scope="row"><span className={`league-rank league-rank--${row.position <= 3 ? row.position : 'other'}`}>{row.position}</span></TableHead><TableHead scope="row" className="league-table__team">{row.team.name}</TableHead><TableCell>{row.played}</TableCell><TableCell>{row.wins}-{row.draws}-{row.losses}</TableCell><TableCell>{row.pointsFor}</TableCell><TableCell>{row.pointsAgainst}</TableCell><TableCell>{row.pointsDifference > 0 ? '+' : ''}{row.pointsDifference}</TableCell><TableCell><strong>{row.leaguePoints}</strong></TableCell></UiTableRow>;
+function TableRow({ row, fixtures, gameweeks }: { row: LeagueTableRow; fixtures: LeagueFixture[]; gameweeks: number[] }) {
+  const bonusPoints = fixtures.reduce((total, fixture) => total + bonusPointsForTeam(fixture, row.team), 0);
+  return <UiTableRow className={row.position === 5 ? 'league-table__break-before' : undefined}>
+    <TableHead scope="row" className="league-table__team"><span className="league-table__team-identity"><TeamCrest className="league-table__team-crest" team={row.team} /><strong>{managerNicknameForTeam(row.team)}</strong></span></TableHead>
+    <TableCell><PlayerFormDots className="league-table__form" history={leagueFormHistory(row.team.id, fixtures, gameweeks)} /></TableCell>
+    <TableCell className="league-table__numeric">{row.wins}-{row.draws}-{row.losses}</TableCell>
+    <TableCell className="league-table__numeric league-table__for-against">{row.pointsFor}–{row.pointsAgainst}</TableCell>
+    <TableCell className="league-table__numeric league-table__points"><strong>{row.leaguePoints}</strong></TableCell>
+    <TableCell className="league-table__numeric league-table__bonus">{bonusPoints}</TableCell>
+  </UiTableRow>;
+}
+
+function completedRegularSeasonFixtures(fixtures: LeagueFixture[]): LeagueFixture[] {
+  const seen = new Set<string>();
+  return fixtures.filter((fixture) => {
+    if (fixture.status !== 'complete' || fixture.score.outcome === 'pending' || fixture.roundLabel.trim().toLocaleLowerCase() !== 'regular season' || seen.has(fixture.id)) return false;
+    seen.add(fixture.id);
+    return true;
+  });
+}
+
+function standingsFormGameweeks(fixtures: LeagueFixture[]): number[] {
+  return [...new Set(fixtures.map((fixture) => fixture.gameweek.number))]
+    .sort((left, right) => left - right)
+    .slice(-5);
+}
+
+function leagueFormHistory(teamId: string, fixtures: LeagueFixture[], gameweeks: number[]): PlayerCardFormGameweek[] {
+  return gameweeks.map((gameweek) => ({
+    gameweek,
+    fixtures: fixtures
+      .filter((fixture) => fixture.gameweek.number === gameweek && (fixture.homeTeam.id === teamId || fixture.awayTeam.id === teamId))
+      .map((fixture) => {
+        const result = resultForFixture(fixture, teamId);
+        const bonusPoints = bonusPointsForTeam(fixture, fixture.homeTeam.id === teamId ? fixture.homeTeam : fixture.awayTeam);
+        const formScore = result === 'L' ? 0 : result === 'D' ? 2 + Math.min(2, bonusPoints) : 5 + Math.min(2, bonusPoints);
+        const formColour = playerFormColour(formScore, 1);
+        return {
+          fixtureId: fixture.id,
+          points: null,
+          minutes: null,
+          formColour,
+          accessibleLabel: `${result}; ${bonusPoints} bonus point${bonusPoints === 1 ? '' : 's'}`,
+        };
+      }),
+  }));
+}
+
+function bonusPointsForTeam(fixture: LeagueFixture, team: LeagueTeam): number {
+  const matchingEntry = Object.entries(fixture.score.bonusPoints).find(([key]) => key === team.id || key.trim().toLocaleLowerCase() === team.name.trim().toLocaleLowerCase());
+  return matchingEntry?.[1] ?? 0;
 }
 
 function FixtureDetailDrawer({ attackDirection, detail, detailStatus, detailReadError, drawerRef, fixture, gameweekState, gameweekStatus, isOpen, onClose, onPlayerClick, onRetry, squadReadError, squads }: { attackDirection: AttackDirection; detail: FixtureDetailResponse | null; detailStatus: 'idle' | 'loading' | 'loaded' | 'error'; detailReadError: boolean; drawerRef: RefObject<HTMLElement | null>; fixture: LeagueFixture; gameweekState: GameweekState; gameweekStatus: FixtureGameweekStatus; isOpen: boolean; onClose: () => void; onPlayerClick: (player: FixtureSquadPlayer) => void; onRetry: () => void; squadReadError: boolean; squads: FixtureSquad[] }) {

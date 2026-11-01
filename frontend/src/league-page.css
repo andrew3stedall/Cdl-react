@@ -2639,3 +2639,130 @@
     font-size: 1rem;
   }
 }
+
+
+/* Compact standings layout for phone-sized viewports. */
+.league-table--standings {
+  min-width: 0;
+  table-layout: fixed;
+  width: 100%;
+}
+
+.league-table--standings th,
+.league-table--standings td {
+  padding: 0.42rem 0.16rem;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.league-table--standings th:first-child,
+.league-table--standings td:first-child {
+  width: 17%;
+}
+
+.league-table--standings th:nth-child(2),
+.league-table--standings td:nth-child(2) {
+  width: 21%;
+}
+
+.league-table--standings th:nth-child(3),
+.league-table--standings td:nth-child(3) {
+  width: 14%;
+}
+
+.league-table--standings th:nth-child(4),
+.league-table--standings td:nth-child(4) {
+  width: 23%;
+}
+
+.league-table--standings th:nth-child(5),
+.league-table--standings td:nth-child(5) {
+  width: 13%;
+}
+
+.league-table--standings th:nth-child(6),
+.league-table--standings td:nth-child(6) {
+  width: 12%;
+}
+
+.league-table--standings thead th {
+  font-size: 0.59rem;
+  font-weight: 700;
+  letter-spacing: 0.015em;
+  padding-block: 0.5rem;
+  text-transform: none;
+}
+
+.league-table--standings tbody tr:nth-child(even) {
+  background: color-mix(in srgb, var(--muted) 28%, var(--card));
+}
+
+.league-table--standings tbody tr:hover {
+  background: color-mix(in srgb, var(--primary) 8%, var(--card));
+}
+
+.league-table--standings tbody tr > th,
+.league-table--standings tbody tr > td {
+  font-size: 0.68rem;
+}
+
+.league-table--standings .league-table__team {
+  min-width: 0;
+  padding-inline: 0.08rem;
+}
+
+.league-table__team-identity {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  justify-content: center;
+  line-height: 1.05;
+  min-width: 0;
+  white-space: normal;
+}
+
+.league-table__team-crest {
+  height: 1.3rem;
+  width: 1.3rem;
+}
+
+.league-table__team-identity strong {
+  font-size: 0.62rem;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+.league-table__form {
+  justify-content: center;
+}
+
+.league-table--standings .league-table__numeric {
+  font-variant-numeric: tabular-nums;
+}
+
+.league-table--standings .league-table__points {
+  font-weight: 700;
+}
+
+.league-table__break-before > th,
+.league-table__break-before > td {
+  border-top: 2px solid var(--border);
+}
+
+@media (max-width: 360px) {
+  .league-table--standings th,
+  .league-table--standings td {
+    padding-inline: 0.08rem;
+  }
+
+  .league-table--standings th:nth-child(2),
+  .league-table--standings td:nth-child(2) {
+    width: 20%;
+  }
+
+  .league-table--standings th:nth-child(4),
+  .league-table--standings td:nth-child(4) {
+    width: 24%;
+  }
+}

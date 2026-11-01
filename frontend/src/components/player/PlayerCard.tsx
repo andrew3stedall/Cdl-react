@@ -1,7 +1,7 @@
 import { type CSSProperties, type HTMLAttributes } from 'react';
 
 import { officialFplShirtUrl } from '../../fpl-shirt-assets';
-import { playerFormColour } from '../../player-form-colours';
+import { playerFormColour, type PlayerFormColour } from '../../player-form-colours';
 import './player-card.css';
 import './player-card-presentation.css';
 import './player-card-point-placeholder.css';
@@ -19,6 +19,8 @@ export interface PlayerCardFormFixture {
   fixtureId?: string | number;
   points: number | null;
   minutes: number | null;
+  formColour?: PlayerFormColour;
+  accessibleLabel?: string;
 }
 
 export interface PlayerCardFormGameweek {
@@ -207,7 +209,7 @@ export function FormDots({ className = '', history }: { className?: string; hist
     const fixtures = slot.fixtures.map((fixture) => {
       const points = fixture.points === null ? 'points unavailable' : `${fixture.points} ${fixture.points === 1 ? 'point' : 'points'}`;
       const minutes = fixture.minutes === null ? 'minutes unavailable' : fixture.minutes === 0 ? 'did not play' : `${fixture.minutes} minutes`;
-      return `${points}, ${minutes}`;
+      return fixture.accessibleLabel ?? `${points}, ${minutes}`;
     });
     return `Gameweek ${slot.gameweek}: ${fixtures.length ? fixtures.join('; ') : 'no fixture'}`;
   });
@@ -215,7 +217,7 @@ export function FormDots({ className = '', history }: { className?: string; hist
     <span aria-label={`Recent form. ${accessibleHistory.join('. ')}`} className={`player-card__form-dots ${className}`.trim()} data-form-slot-count={slots.length} role="img">
       {slots.map((slot, index) => {
         const fixtures = slot.fixtures.length > 1 ? slot.fixtures.slice(0, 2) : slot.fixtures;
-        const colours = fixtures.length > 0 ? fixtures.map((fixture) => playerFormColour(fixture.points, fixture.minutes)) : ['empty' as const];
+        const colours = fixtures.length > 0 ? fixtures.map((fixture) => fixture.formColour ?? playerFormColour(fixture.points, fixture.minutes)) : ['empty' as const];
         const split = colours.length > 1;
         const style = split
           ? {
@@ -236,6 +238,8 @@ export function FormDots({ className = '', history }: { className?: string; hist
     </span>
   );
 }
+
+export const PlayerFormDots = FormDots;
 
 export function PositionMarker({ position }: { position: string }) {
   return <span aria-hidden="true" className={`player-card__position-marker position-${normalizePosition(position).toLowerCase()}`} title={`${positionLabel(position)} player`} />;

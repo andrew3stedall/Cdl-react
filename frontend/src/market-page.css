@@ -1238,29 +1238,33 @@
 .market-page__scouting-player-grid {
   align-content: start;
   display: grid;
-  gap: 0 0.2rem;
-  grid-auto-rows: 6rem;
+  gap: 0.15rem 0.2rem;
+  grid-auto-rows: 4rem;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   min-height: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .market-page__scouting-player {
   align-items: center;
+  aspect-ratio: 1;
   background: transparent;
   border: 0;
   border-radius: 50%;
   color: var(--foreground);
   cursor: pointer;
   display: flex;
+  height: auto;
   justify-content: center;
+  justify-self: center;
+  max-width: 4rem;
   min-height: 0;
   min-width: 0;
   overflow: visible;
   padding: 0;
   position: relative;
   text-align: center;
-  height: 6rem;
+  align-self: start;
   transition: filter 120ms ease;
   width: 100%;
 }
@@ -1282,7 +1286,27 @@
 }
 
 .market-page__scouting-player > .player-card {
+  --player-card-opponent-height: 0.55rem;
+  --player-card-opponent-top: 70%;
   min-width: 0;
+}
+
+.market-page__scouting-player .player-card__shirt-crop {
+  height: 34%;
+  top: 0.1rem;
+  width: 88%;
+}
+
+.market-page__scouting-player .player-card__name {
+  font-size: 0.56rem;
+}
+
+.market-page__scouting-player .player-card__points {
+  font-size: 0.58rem;
+}
+
+.market-page__scouting-player .player-card__opponents {
+  font-size: 0.5rem;
 }
 
 .market-page__scouting-points {

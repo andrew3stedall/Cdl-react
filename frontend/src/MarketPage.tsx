@@ -930,7 +930,7 @@ function ScoutingPanel({ failed, loading, managerTeam, onOpenPlayer, players }: 
 const SCOUTING_PLAYER_COLUMNS = 4;
 const SCOUTING_TEAM_CONTAINER_REM = 30;
 const SCOUTING_POSITION_CHROME_REM = 2.5;
-const SCOUTING_PLAYER_ROW_REM = 4.7;
+const SCOUTING_PLAYER_ROW_REM = 5.15;
 
 function ScoutingTeamCard({ isActive, managerTeam, maxRowsByPosition, onOpenPlayer, onPositionChange, players, selectedPositionIndex, teamName }: { isActive: boolean; managerTeam: SquadApiTeam; maxRowsByPosition: Record<string, number>; onOpenPlayer: (player: MarketPlayer) => void; onPositionChange: (index: number) => void; players: MarketPlayer[]; selectedPositionIndex: number; teamName: string }) {
   const positionViewportRef = useRef<HTMLDivElement | null>(null);

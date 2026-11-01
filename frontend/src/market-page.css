@@ -1096,6 +1096,7 @@
 /* Team and position browsing for the Scouting workspace. */
 .market-page__scouting {
   --market-scouting-slide-width: 82%;
+  align-content: start;
   display: grid;
   gap: 0.7rem;
   min-width: 0;
@@ -1254,12 +1255,13 @@
 
 .market-page__scouting-player-grid {
   align-content: start;
+  column-gap: 0.2rem;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.2rem;
   justify-content: center;
   min-height: 0;
   overflow: visible;
+  row-gap: 0.65rem;
 }
 
 .market-page__scouting-player {

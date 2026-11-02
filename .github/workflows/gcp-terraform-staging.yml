@@ -164,7 +164,7 @@ jobs:
           fi
 
           echo "ENABLE_DATABASE_JOBS=${enable_database_jobs}" >> "${GITHUB_ENV}"
-          echo "ENABLE_SCHEDULED_FPL_REFRESH=${enable_database_jobs}" >> "${GITHUB_ENV}"
+          echo "ENABLE_SCHEDULED_FPL_REFRESH=false" >> "${GITHUB_ENV}"
           echo "ENABLE_CLOUD_RUN=${enable_cloud_run}" >> "${GITHUB_ENV}"
           echo "ALLOW_PUBLIC_INVOKER=${allow_public_invoker}" >> "${GITHUB_ENV}"
 

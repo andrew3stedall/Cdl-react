@@ -1,4 +1,5 @@
 ## Unreleased
+- Remove the AI connections section from the Profile settings page.
 - Remove stat icons from player and comparison points-against charts; show attacking and defensive points as colour-coded stacked bars with their values on each segment.
 - Restore each page's last selected view when returning through the main navigation; explicit tab choices within the current page still take effect.
 

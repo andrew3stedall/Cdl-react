@@ -672,7 +672,7 @@ function FixturesView({ leagueClient, managerTeamId, onOpenFixture, snapshot }: 
     return <section aria-label="League fixtures" className="league-gameweek-list"><EmptyState message="No league fixtures are available yet." /></section>;
   }
 
-  return <section aria-label="League fixtures" className="league-fixtures-view"><RoundCarousel allFixtures={allFixtures} leagueClient={leagueClient} managerTeamId={managerTeamId} onOpenFixture={onOpenFixture} rounds={rounds} /></section>;
+  return <section aria-label="League fixtures" className="league-fixtures-view"><RoundCarousel allFixtures={allFixtures} leagueClient={leagueClient} managerTeamId={managerTeamId} onOpenFixture={onOpenFixture} rounds={rounds} teams={snapshot.table.rows.map((row) => row.team)} /></section>;
 }
 
 interface GameweekGroup {
@@ -805,7 +805,7 @@ function fixturesForGameweek(
   return matchingFixtures.length ? matchingFixtures : uniqueFixtures(fallback);
 }
 
-function RoundCarousel({ allFixtures, leagueClient, managerTeamId, onOpenFixture, rounds }: { allFixtures: LeagueFixture[]; leagueClient: LeagueClient; managerTeamId: string | null; onOpenFixture: (fixture: LeagueFixture) => void; rounds: FixtureRoundGroup[] }) {
+function RoundCarousel({ allFixtures, leagueClient, managerTeamId, onOpenFixture, rounds, teams }: { allFixtures: LeagueFixture[]; leagueClient: LeagueClient; managerTeamId: string | null; onOpenFixture: (fixture: LeagueFixture) => void; rounds: FixtureRoundGroup[]; teams: LeagueTeam[] }) {
   const defaultSelection = useMemo(() => defaultCarouselSelection(rounds), [rounds]);
   const initialRoundIndex = defaultSelection.roundIndex;
   const initialRoundKey = rounds[initialRoundIndex]?.key;
@@ -928,6 +928,7 @@ function RoundCarousel({ allFixtures, leagueClient, managerTeamId, onOpenFixture
           );
         })}
       </nav>
+      <RoundResultsTable round={rounds[selectedRoundIndex]} teams={teams} />
     </section>
   );
 }
@@ -1479,6 +1480,79 @@ function TableView({ onReload, snapshot }: { onReload: () => void; snapshot: Lea
         {!snapshot.table.rows.length ? <EmptyState message="The league table is empty until results are available." /> : null}
       </Card>
     </div>
+  );
+}
+
+function RoundResultsTable({ round, teams }: { round?: FixtureRoundGroup; teams: LeagueTeam[] }) {
+  if (!round) return null;
+
+  const fixtures = completedRegularSeasonFixtures(round.gameweeks.flatMap((gameweek) => gameweek.fixtures));
+  const totals = new Map(teams.map((team, index) => [team.id, {
+    position: index + 1,
+    team,
+    played: 0,
+    wins: 0,
+    draws: 0,
+    losses: 0,
+    pointsFor: 0,
+    pointsAgainst: 0,
+    pointsDifference: 0,
+    leaguePoints: 0,
+  } satisfies LeagueTableRow]));
+
+  for (const fixture of fixtures) {
+    const home = totals.get(fixture.homeTeam.id);
+    const away = totals.get(fixture.awayTeam.id);
+    const homeScore = fixture.score.homeScore;
+    const awayScore = fixture.score.awayScore;
+    if (!home || !away || homeScore === null || awayScore === null) continue;
+
+    home.played += 1;
+    away.played += 1;
+    home.pointsFor += homeScore;
+    home.pointsAgainst += awayScore;
+    away.pointsFor += awayScore;
+    away.pointsAgainst += homeScore;
+
+    const homeResult = resultForFixture(fixture, fixture.homeTeam.id);
+    const awayResult = resultForFixture(fixture, fixture.awayTeam.id);
+    if (homeResult === 'W') home.wins += 1;
+    else if (homeResult === 'D') home.draws += 1;
+    else home.losses += 1;
+    if (awayResult === 'W') away.wins += 1;
+    else if (awayResult === 'D') away.draws += 1;
+    else away.losses += 1;
+
+    home.leaguePoints += (homeResult === 'W' ? 3 : homeResult === 'D' ? 1 : 0) + bonusPointsForTeam(fixture, fixture.homeTeam);
+    away.leaguePoints += (awayResult === 'W' ? 3 : awayResult === 'D' ? 1 : 0) + bonusPointsForTeam(fixture, fixture.awayTeam);
+  }
+
+  const orderedRows = [...totals.values()]
+    .map((row) => ({ ...row, pointsDifference: row.pointsFor - row.pointsAgainst }))
+    .sort((left, right) => right.leaguePoints - left.leaguePoints
+      || right.pointsDifference - left.pointsDifference
+      || right.pointsFor - left.pointsFor
+      || left.position - right.position)
+    .map((row, index) => ({ ...row, position: index + 1 }));
+  const gameweeks = [...new Set(fixtures.map((fixture) => fixture.gameweek.number))].sort((left, right) => left - right).slice(-5);
+
+  return (
+    <Card className="league-panel league-round-results">
+      <div className="league-panel__header">
+        <SectionHeading eyebrow={`${round.label} results`} id="league-round-results-title" title="League table" />
+      </div>
+      <div aria-label={`${round.label} league standings`} className="league-table-scroll" role="region" tabIndex={0}>
+        <Table className="league-table league-table--standings">
+          <TableHeader>
+            <UiTableRow><TableHead>Team</TableHead><TableHead>Form</TableHead><TableHead>W-D-L</TableHead><TableHead>For–Aga</TableHead><TableHead>Pts</TableHead><TableHead>DP</TableHead></UiTableRow>
+          </TableHeader>
+          <TableBody>
+            {orderedRows.map((row) => <TableRow key={row.team.id} row={row} fixtures={fixtures} gameweeks={gameweeks} />)}
+          </TableBody>
+        </Table>
+      </div>
+      {!fixtures.length ? <EmptyState message="No completed results in this round yet." /> : null}
+    </Card>
   );
 }
 

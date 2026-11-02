@@ -171,7 +171,7 @@ export function App({
       if (lockManager) {
         try {
           await lockManager.request('cdl-official-fpl-active-sync', { ifAvailable: true }, async (lock) => {
-            if (lock) await syncWhileActive(true);
+            if (lock) await syncWhileActive();
           });
         } catch {
           // Fall back to this tab if browser lock coordination is unavailable.

@@ -34,6 +34,10 @@ second gameweek in the next round. Adjacent slides fade with an opacity
 transition while the selected slide remains fully opaque. Round slides are
 widened to keep adjacent rounds partly visible, and filled-or-hollow
 navigation dots below the carousel show and select the active round.
+Below the round navigation, a round-specific league table follows the selected
+round. It reuses the main table's team identity, form, and columns, while
+calculating W-D-L, points for/against, league points, and bonus points from only
+that round's completed regular-season fixtures.
 
 Fixture squad review supports both pitch and list presentations through the
 same compact pitch/list toggle treatment used on Squad. Pitch remains the
@@ -108,6 +112,8 @@ requirements.
 - Fixture detail drawer.
 - Non-looping horizontal round carousel and non-looping vertical gameweek carousel.
 - One active/inactive navigation dot per round below the round carousel.
+- A round-specific standings table below the navigation dots that updates with
+  the selected round and uses only completed results from that round.
 - Each round slide contains its own vertical gameweek carousel and preserves
   the relative gameweek index when the horizontal round changes.
 - Independent round, gameweek, and fixture components with a complete fixture
@@ -139,6 +145,8 @@ requirements.
 
 - Users can view current, next, and all CDL fixtures.
 - Users can view league standings.
+- Users can view a selected-round league table whose form and totals include
+  only that round's completed regular-season fixtures.
 - Users can open fixture details for started fixtures.
 - Users can switch a fixture squad review between pitch and list views, with both teams remaining visible in list mode.
 - Selecting a player from the current or any prior gameweek opens that gameweek's points breakdown rather than the full profile from either fixture view.

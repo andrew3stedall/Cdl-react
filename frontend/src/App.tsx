@@ -83,6 +83,7 @@ export function App({
 }: AppProps) {
   const [currentPath, setCurrentPath] = useState(() => new URL(initialPath, window.location.origin).pathname);
   const [currentHash, setCurrentHash] = useState(() => new URL(initialPath, window.location.origin).hash);
+  const lastPagePaths = useRef<Record<string, string>>({ [getPageRouteKey(new URL(initialPath, window.location.origin).pathname)]: new URL(initialPath, window.location.origin).pathname });
   const [loginReturnPath, setLoginReturnPath] = useState<string | null>(() => initialPath.startsWith('/join/') ? initialPath : storedLoginReturnPath());
   const [activeSession, setActiveSession] = useState<SessionState | null>(session ?? null);
   const [sessionCheckError, setSessionCheckError] = useState<string | null>(null);
@@ -283,7 +284,9 @@ export function App({
 
   useEffect(() => {
     const handlePopState = () => {
-      setCurrentPath(window.location.pathname);
+      const path = window.location.pathname;
+      lastPagePaths.current[getPageRouteKey(path)] = path;
+      setCurrentPath(path);
       setCurrentHash(window.location.hash);
     };
 
@@ -304,6 +307,7 @@ export function App({
       // Browser history can be unavailable in isolated DOM tests.
     }
     const normalizedPath = new URL(href, window.location.origin).pathname;
+    lastPagePaths.current[getPageRouteKey(normalizedPath)] = normalizedPath;
     setCurrentPath(normalizedPath);
     setCurrentHash(new URL(href, window.location.origin).hash);
   }, []);
@@ -424,7 +428,19 @@ export function App({
   };
 
   const handleNavigate = (href: string) => {
-    setBrowserPath(href);
+    const destination = new URL(href, window.location.origin);
+    const destinationRouteKey = getPageRouteKey(destination.pathname);
+    const currentRouteKey = getPageRouteKey(currentPath);
+    const pageRootPaths = new Set(['/', '/dashboard', '/team', '/squad', '/scouting', '/league']);
+    const rememberedPath = lastPagePaths.current[destinationRouteKey];
+    const shouldRestorePagePath = currentRouteKey !== destinationRouteKey
+      && pageRootPaths.has(destination.pathname)
+      && rememberedPath !== undefined
+      && getPageRouteKey(rememberedPath) === destinationRouteKey
+      && !destination.search
+      && !destination.hash;
+
+    setBrowserPath(shouldRestorePagePath ? rememberedPath : href);
   };
 
   if (activeSession === null) {

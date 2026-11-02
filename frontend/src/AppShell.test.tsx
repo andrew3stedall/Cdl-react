@@ -228,7 +228,7 @@ describe('AppShell integration', () => {
   });
 
   test('renders the global feature hierarchy consistently around rules content', async () => {
-    const { container } = renderApp({ initialPath: '/rules' });
+    const { container } = renderApp({ initialPath: '/league/rules' });
 
     await act(async () => {
       await Promise.resolve();
@@ -237,9 +237,8 @@ describe('AppShell integration', () => {
 
     const primaryNavigation = container.querySelector('nav[aria-label="Primary navigation"]');
     const mobileNavigation = container.querySelector('nav[aria-label="Global mobile navigation"]');
-    const supportNavigation = container.querySelector('nav[aria-label="Support navigation"]');
 
-    expect(container.querySelector('[aria-current="page"]')?.textContent).toContain('Rules');
+    expect(container.querySelector('#league-title')?.textContent).toBe('League');
     expect(container.querySelector('#rules-title')?.textContent).toBe('Rules');
     expect(primaryNavigation?.textContent).toContain('Desk');
     expect(primaryNavigation?.textContent).toContain('Squad');
@@ -250,9 +249,9 @@ describe('AppShell integration', () => {
     expect(mobileNavigation?.textContent).toContain(primaryNavigation?.textContent ?? '');
     expect(mobileNavigation?.textContent).not.toContain('Notifications');
     expect(mobileNavigation?.querySelectorAll('a')).toHaveLength(4);
-    expect(container.querySelector('.global-mobile-rules-link')?.textContent).toContain('Rules');
-    expect(container.querySelector('.global-mobile-rules-link')?.getAttribute('aria-current')).toBe('page');
-    expect(supportNavigation?.textContent).toContain('Rules');
+    expect(container.querySelector('.global-mobile-rules-link')).toBeNull();
+    expect(container.querySelector('nav[aria-label="Support navigation"]')).toBeNull();
+    expect(container.querySelector('button[aria-label="View rules"]')).not.toBeNull();
     expect(container.querySelector('[aria-label="Account menu for Test Manager"]')).not.toBeNull();
     expect(container.querySelector('#mobile-navigation')).toBeNull();
     expect(container.querySelector('button[aria-label="Menu"]')).toBeNull();

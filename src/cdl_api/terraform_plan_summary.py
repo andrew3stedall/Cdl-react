@@ -335,9 +335,7 @@ def summarize_plan(
         item
         for item in changed
         if item["action"] == "delete"
-        and APPROVED_STAGING_FPL_SCHEDULER_DECOMMISSION.get(
-            _as_string(item["address"])
-        )
+        and APPROVED_STAGING_FPL_SCHEDULER_DECOMMISSION.get(_as_string(item["address"]))
         == item["type"]
     ]
     destructive = [

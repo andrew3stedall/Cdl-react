@@ -55,7 +55,7 @@
 # Changelog
 
 ## Unreleased
-- Keep fixture round tables moving continuously with their round during horizontal swipes, including matching slide scale and opacity.
+- Allow horizontal swipes on round tables to navigate the shared fixture round carousel.
 - Standardize app data tables on shared shadcn-style primitives and make every displayed data column sortable from its header, including standings, head-to-head, knockout, FDR, analytics, squad, market, fixture comparison, and checkpoint tables.
 - Added a League → Teams showcase with individual WebGL crest scenes for all league teams. The animation uses one low-power canvas, respects reduced-motion settings, and falls back to the existing SVG crest when WebGL is unavailable.
 - Keep multi-player trade carousels scrollable while showing two selected players at once.

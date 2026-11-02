@@ -1,4 +1,4 @@
-import { type CSSProperties, type ReactNode, type RefObject, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   BookOpen,
   CalendarDays,
@@ -820,6 +820,8 @@ function RoundCarousel({ allFixtures, leagueClient, managerTeamId, onOpenFixture
   const initialGameweekIndex = defaultSelection.gameweekIndex;
   const [selectedRoundIndex, setSelectedRoundIndex] = useState(initialRoundIndex);
   const [selectedGameweekIndex, setSelectedGameweekIndex] = useState(initialGameweekIndex);
+  const resultsSwipeStartRef = useRef<{ captured: boolean; x: number; y: number } | null>(null);
+  const resultsSwipeHandledRef = useRef(false);
   const roundOptions = useMemo(() => ({
     align: 'center' as const,
     containScroll: false as const,
@@ -838,6 +840,50 @@ function RoundCarousel({ allFixtures, leagueClient, managerTeamId, onOpenFixture
     roundApi?.scrollTo(roundIndex);
     setSelectedRoundIndex(roundIndex);
   }, [roundApi]);
+
+  const handleResultsPointerDown = useCallback((event: ReactPointerEvent<HTMLDivElement>): void => {
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    resultsSwipeHandledRef.current = false;
+    resultsSwipeStartRef.current = { captured: false, x: event.clientX, y: event.clientY };
+  }, []);
+
+  const handleResultsPointerMove = useCallback((event: ReactPointerEvent<HTMLDivElement>): void => {
+    const start = resultsSwipeStartRef.current;
+    if (!start || start.captured) return;
+    const deltaX = event.clientX - start.x;
+    const deltaY = event.clientY - start.y;
+    if (Math.abs(deltaX) < 8 || Math.abs(deltaX) <= Math.abs(deltaY) * 1.15) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    event.preventDefault();
+    start.captured = true;
+  }, []);
+
+  const handleResultsPointerUp = useCallback((event: ReactPointerEvent<HTMLDivElement>): void => {
+    const start = resultsSwipeStartRef.current;
+    resultsSwipeStartRef.current = null;
+    if (!start?.captured) return;
+
+    const deltaX = event.clientX - start.x;
+    const deltaY = event.clientY - start.y;
+    if (Math.abs(deltaX) < 42 || Math.abs(deltaX) <= Math.abs(deltaY) * 1.15) return;
+
+    const destination = (roundApi?.selectedScrollSnap() ?? selectedRoundIndex) + (deltaX < 0 ? 1 : -1);
+    if (destination < 0 || destination >= rounds.length) return;
+
+    resultsSwipeHandledRef.current = true;
+    roundApi?.scrollTo(destination);
+  }, [roundApi, rounds.length, selectedRoundIndex]);
+
+  const handleResultsPointerCancel = useCallback((): void => {
+    resultsSwipeStartRef.current = null;
+  }, []);
+
+  const handleResultsClickCapture = useCallback((event: ReactMouseEvent<HTMLDivElement>): void => {
+    if (!resultsSwipeHandledRef.current) return;
+    resultsSwipeHandledRef.current = false;
+    event.preventDefault();
+    event.stopPropagation();
+  }, []);
 
   useScaleOpacityTween(roundApi, '.league-round-slide__content');
   useRoundResultsCarousel(roundApi, resultsViewportRef, resultsTrackRef);
@@ -940,7 +986,17 @@ function RoundCarousel({ allFixtures, leagueClient, managerTeamId, onOpenFixture
         })}
       </nav>
       <div aria-label="Round result tables" className="league-round-results-carousel" role="region">
-        <div aria-label="Round result table slides" className="league-round-carousel__viewport league-round-results__viewport" ref={resultsViewportRef}>
+        <div
+          aria-label="Round result table slides"
+          className="league-round-carousel__viewport league-round-results__viewport"
+          onClickCapture={handleResultsClickCapture}
+          onLostPointerCapture={handleResultsPointerCancel}
+          onPointerCancel={handleResultsPointerCancel}
+          onPointerDown={handleResultsPointerDown}
+          onPointerMove={handleResultsPointerMove}
+          onPointerUp={handleResultsPointerUp}
+          ref={resultsViewportRef}
+        >
           <div className="league-round-carousel__track league-round-results__track" ref={resultsTrackRef}>
             {rounds.map((round, roundIndex) => {
               const isSelected = roundIndex === selectedRoundIndex;

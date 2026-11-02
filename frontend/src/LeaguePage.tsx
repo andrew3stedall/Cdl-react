@@ -1224,14 +1224,15 @@ function useRoundResultsCarousel(emblaApi: EmblaCarouselType | undefined, viewpo
       });
     };
 
+    const handleResize = (): void => syncRoundResults(emblaApi);
     syncRoundResults(emblaApi);
     emblaApi.on('scroll', syncRoundResults);
     emblaApi.on('reInit', syncRoundResults);
-    window.addEventListener('resize', () => syncRoundResults(emblaApi));
+    window.addEventListener('resize', handleResize);
     return () => {
       emblaApi.off('scroll', syncRoundResults);
       emblaApi.off('reInit', syncRoundResults);
-      window.removeEventListener('resize', () => syncRoundResults(emblaApi));
+      window.removeEventListener('resize', handleResize);
     };
   }, [emblaApi, trackRef, viewportRef]);
 }

@@ -15,16 +15,18 @@ interface RulesPageProps {
   category?: RuleCategory | 'all';
   onNavigate?: (href: string) => void;
   preset: ThemePreset;
+  embedded?: boolean;
 }
 
-export function RulesPage({ sections, categories, query = '', category = 'all', onNavigate, preset }: RulesPageProps) {
+export function RulesPage({ sections, categories, query = '', category = 'all', onNavigate, preset, embedded = false }: RulesPageProps) {
+  const Root = embedded ? 'section' : 'main';
   const [search, setSearch] = useState(query);
   const [selectedCategory, setSelectedCategory] = useState<RuleCategory | 'all'>(category);
   const filteredSections = filterRules(sections, search, selectedCategory);
 
   return (
-    <main aria-labelledby="rules-title" className="feature-screen rules-page" data-density={preset.tokens.density} data-preset={preset.name}>
-      <PageHero actions={null} actionsLabel="Rules actions" onNavigate={onNavigate} title="Rules" titleId="rules-title" />
+    <Root aria-labelledby="rules-title" className="feature-screen rules-page" data-density={preset.tokens.density} data-preset={preset.name}>
+      {embedded ? <h2 id="rules-title">Rules</h2> : <PageHero actions={null} actionsLabel="Rules actions" onNavigate={onNavigate} title="Rules" titleId="rules-title" />}
       <Card className="rules-page__filters">
         <label htmlFor="rules-search">Search rules
           <input id="rules-search" name="q" onChange={(event) => setSearch(event.target.value)} placeholder="Search rules" type="search" value={search} />
@@ -36,7 +38,8 @@ export function RulesPage({ sections, categories, query = '', category = 'all', 
       {filteredSections.length === 0 ? <Card>No rules match these filters.</Card> : null}
       <nav aria-label="Rules table of contents" className="rules-page__contents">
         {filteredSections.map((section) => {
-          const href = buildRuleHref(section.id);
+          const ruleHref = buildRuleHref(section.id);
+          const href = embedded ? ruleHref.replace(/^\/rules/, '/league/rules') : ruleHref;
           return (
             <a
               href={href}
@@ -64,6 +67,6 @@ export function RulesPage({ sections, categories, query = '', category = 'all', 
           </Card>
         ))}
       </section>
-    </main>
+    </Root>
   );
 }

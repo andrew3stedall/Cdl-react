@@ -25,11 +25,9 @@ import {
   getNavigationItemByPath,
   getPageRouteKey,
   isPrimaryNavigationItemActive,
-  isRouteActive,
   primaryNavigationItems,
   type NavigationItem,
   type NavigationSection,
-  utilityNavigationItems,
 } from './navigation';
 import { useThemePreset } from './theme-preset-provider';
 import { managerNicknameForName } from './manager-nicknames';
@@ -92,7 +90,6 @@ export function AppShell({
         <ShellBrand compact={false} />
         <PrimaryNavigation currentPath={currentPath} onNavigate={navigate} />
         <div className="sidebar-footer">
-          <UtilityNavigation currentPath={currentPath} onNavigate={navigate} />
           <div className="sidebar-session">
             <span className="account-avatar" aria-hidden="true">{initials}</span>
             <div>
@@ -117,19 +114,6 @@ export function AppShell({
             className="shell-actions"
             role="group"
           >
-            <a
-              aria-label="Open rules"
-              className="shell-icon-link desktop-shell-action"
-              href="/rules"
-              onClick={(event) => {
-                event.preventDefault();
-                onNavigate('/rules');
-              }}
-              title="Rules"
-            >
-              <BookOpen aria-hidden="true" size={18} />
-            </a>
-
             {!isDeskLandingPage ? (
               <details className="account-menu">
                 <summary aria-label={`Account menu for ${displayName}`}>
@@ -201,27 +185,6 @@ function PrimaryNavigation({
       {primaryNavigationItems.map((item) => (
         <NavigationLink
           isActive={isPrimaryNavigationItemActive(currentPath, item)}
-          item={item}
-          key={item.href}
-          onNavigate={onNavigate}
-        />
-      ))}
-    </nav>
-  );
-}
-
-function UtilityNavigation({
-  currentPath,
-  onNavigate,
-}: {
-  currentPath: string;
-  onNavigate: (item: NavigationItem) => void;
-}) {
-  return (
-    <nav aria-label="Support navigation" className="navigation-list utility-navigation">
-      {utilityNavigationItems.map((item) => (
-        <NavigationLink
-          isActive={isRouteActive(currentPath, item.href)}
           item={item}
           key={item.href}
           onNavigate={onNavigate}

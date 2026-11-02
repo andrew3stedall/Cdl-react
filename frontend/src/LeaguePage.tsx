@@ -1,4 +1,4 @@
-import { type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   BookOpen,
   CalendarDays,
@@ -877,7 +877,7 @@ function RoundCarousel({ allFixtures, leagueClient, managerTeamId, onOpenFixture
     resultsSwipeStartRef.current = null;
   }, []);
 
-  const handleResultsClickCapture = useCallback((event: React.MouseEvent<HTMLDivElement>): void => {
+  const handleResultsClickCapture = useCallback((event: ReactMouseEvent<HTMLDivElement>): void => {
     if (!resultsSwipeHandledRef.current) return;
     resultsSwipeHandledRef.current = false;
     event.preventDefault();

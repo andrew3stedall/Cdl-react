@@ -827,8 +827,8 @@ function RoundCarousel({ allFixtures, leagueClient, managerTeamId, onOpenFixture
     startIndex: initialRoundIndex,
   }), [initialRoundIndex]);
   const [roundViewportRef, roundApi] = useEmblaCarousel(roundOptions);
-  const resultsOptions = useMemo(() => ({ ...roundOptions, watchDrag: false }), [roundOptions]);
-  const [resultsViewportRef, resultsApi] = useEmblaCarousel(resultsOptions);
+  const resultsViewportRef = useRef<HTMLDivElement>(null);
+  const resultsTrackRef = useRef<HTMLDivElement>(null);
 
   const handleRoundSelect = useCallback((api: EmblaCarouselType) => {
     setSelectedRoundIndex(api.selectedScrollSnap());
@@ -840,7 +840,7 @@ function RoundCarousel({ allFixtures, leagueClient, managerTeamId, onOpenFixture
   }, [roundApi]);
 
   useScaleOpacityTween(roundApi, '.league-round-slide__content');
-  useScaleOpacityTween(resultsApi, '.league-round-results__content');
+  useRoundResultsCarousel(roundApi, resultsViewportRef, resultsTrackRef);
 
   useEffect(() => {
     if (!roundApi) return undefined;
@@ -861,12 +861,6 @@ function RoundCarousel({ allFixtures, leagueClient, managerTeamId, onOpenFixture
       roundApi.scrollTo(initialRoundIndex, true);
     }
   }, [initialRoundIndex, initialRoundKey, roundApi]);
-
-  useEffect(() => {
-    if (resultsApi && resultsApi.selectedScrollSnap() !== selectedRoundIndex) {
-      resultsApi.scrollTo(selectedRoundIndex, true);
-    }
-  }, [resultsApi, selectedRoundIndex]);
 
   useEffect(() => {
     const maximumIndex = Math.max(...rounds.map((round) => round.gameweeks.length), 1) - 1;
@@ -947,7 +941,7 @@ function RoundCarousel({ allFixtures, leagueClient, managerTeamId, onOpenFixture
       </nav>
       <div aria-label="Round result tables" className="league-round-results-carousel" role="region">
         <div aria-label="Round result table slides" className="league-round-carousel__viewport league-round-results__viewport" ref={resultsViewportRef}>
-          <div className="league-round-carousel__track">
+          <div className="league-round-carousel__track league-round-results__track" ref={resultsTrackRef}>
             {rounds.map((round, roundIndex) => {
               const isSelected = roundIndex === selectedRoundIndex;
               return (
@@ -1189,6 +1183,57 @@ const ROUND_MIN_OPACITY = 0.34;
 
 function numberWithinRange(number: number, min: number, max: number): number {
   return Math.min(Math.max(number, min), max);
+}
+
+function useRoundResultsCarousel(emblaApi: EmblaCarouselType | undefined, viewportRef: RefObject<HTMLDivElement | null>, trackRef: RefObject<HTMLDivElement | null>): void {
+  useEffect(() => {
+    if (!emblaApi) return undefined;
+
+    const syncRoundResults = (api: EmblaCarouselType): void => {
+      const viewport = viewportRef.current;
+      const track = trackRef.current;
+      if (!viewport || !track) return;
+
+      const snapList = api.scrollSnapList();
+      const slides = Array.from(track.children).filter((node): node is HTMLElement => node instanceof HTMLElement);
+      if (slides.length !== snapList.length || slides.length === 0) return;
+
+      const progress = numberWithinRange(api.scrollProgress(), snapList[0] ?? 0, snapList[snapList.length - 1] ?? 0);
+      let lowerIndex = 0;
+      while (lowerIndex < snapList.length - 1 && progress > (snapList[lowerIndex + 1] ?? 0)) lowerIndex += 1;
+      const upperIndex = Math.min(lowerIndex + 1, snapList.length - 1);
+      const lowerSnap = snapList[lowerIndex] ?? 0;
+      const upperSnap = snapList[upperIndex] ?? lowerSnap;
+      const fraction = upperSnap === lowerSnap ? 0 : (progress - lowerSnap) / (upperSnap - lowerSnap);
+      const lowerCenter = (slides[lowerIndex]?.offsetLeft ?? 0) + (slides[lowerIndex]?.offsetWidth ?? 0) / 2;
+      const upperCenter = (slides[upperIndex]?.offsetLeft ?? lowerCenter) + (slides[upperIndex]?.offsetWidth ?? 0) / 2;
+      const center = lowerCenter + (upperCenter - lowerCenter) * fraction;
+      track.style.transform = `translate3d(${viewport.clientWidth / 2 - center}px, 0, 0)`;
+
+      const scaleFactor = ROUND_TWEEN_FACTOR_BASE * snapList.length;
+      const opacityFactor = ROUND_OPACITY_TWEEN_FACTOR_BASE * snapList.length;
+      slides.forEach((slide, index) => {
+        const content = slide.querySelector<HTMLElement>('.league-round-results__content');
+        const snap = snapList[index];
+        if (!content || snap === undefined) return;
+        const distanceFromFocus = Math.abs(snap - progress);
+        const scale = numberWithinRange(1 - distanceFromFocus * scaleFactor, ROUND_MIN_SCALE, 1);
+        const opacity = numberWithinRange(1 - distanceFromFocus * opacityFactor, ROUND_MIN_OPACITY, 1);
+        content.style.transform = `scale(${scale})`;
+        content.style.opacity = `${opacity}`;
+      });
+    };
+
+    syncRoundResults(emblaApi);
+    emblaApi.on('scroll', syncRoundResults);
+    emblaApi.on('reInit', syncRoundResults);
+    window.addEventListener('resize', () => syncRoundResults(emblaApi));
+    return () => {
+      emblaApi.off('scroll', syncRoundResults);
+      emblaApi.off('reInit', syncRoundResults);
+      window.removeEventListener('resize', () => syncRoundResults(emblaApi));
+    };
+  }, [emblaApi, trackRef, viewportRef]);
 }
 
 function useScaleOpacityTween(emblaApi: EmblaCarouselType | undefined, contentSelector: string): void {

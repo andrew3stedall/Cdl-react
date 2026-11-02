@@ -38,7 +38,8 @@ export function RulesPage({ sections, categories, query = '', category = 'all', 
       {filteredSections.length === 0 ? <Card>No rules match these filters.</Card> : null}
       <nav aria-label="Rules table of contents" className="rules-page__contents">
         {filteredSections.map((section) => {
-          const href = buildRuleHref(section.id);
+          const ruleHref = buildRuleHref(section.id);
+          const href = embedded ? ruleHref.replace(/^\/rules/, '/league/rules') : ruleHref;
           return (
             <a
               href={href}

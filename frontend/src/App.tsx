@@ -22,7 +22,7 @@ import { ManagerDeskPage } from './ManagerDeskPage';
 import type { ManagerDeskClient } from './manager-desk-api';
 import { PlayerProfilePage } from './PlayerProfilePage';
 import { getPageRouteKey, isSquadRoute, isSupportedRoute } from './navigation';
-import { activateDataRoute } from './data-freshness';
+import { activateDataRoute, invalidateData } from './data-freshness';
 import { LocalStoragePreferenceClient, type PreferenceClient } from './preferences-api';
 import { loginWithPasskey } from './passkeys';
 import { SessionSplash } from './SessionSplash';
@@ -105,6 +105,95 @@ export function App({
     if (!activeSession?.isAuthenticated) return undefined;
     return registerCdlWebMcp();
   }, [activeSession?.isAuthenticated]);
+
+  useEffect(() => {
+    if (!activeSession?.isAuthenticated || session !== undefined) return undefined;
+    if (!activeSession.user?.roles.some((role) => ['manager', 'commissioner', 'admin'].includes(role))) return undefined;
+
+    const intervalMs = 5 * 60 * 1000;
+    const lastSyncKey = 'cdl.official-fpl-active-sync';
+    let cancelled = false;
+    let inFlight = false;
+    let lastSuccessfulSync = 0;
+
+    const readLastSync = (): number => {
+      try {
+        return Number(window.localStorage.getItem(lastSyncKey)) || lastSuccessfulSync;
+      } catch {
+        return lastSuccessfulSync;
+      }
+    };
+
+    const syncWhileActive = async (lockHeld = false): Promise<void> => {
+      if (
+        cancelled ||
+        inFlight ||
+        document.visibilityState !== 'visible' ||
+        !navigator.onLine ||
+        Date.now() - readLastSync() < intervalMs
+      ) return;
+
+      inFlight = true;
+      try {
+        const response = await window.fetch('/api/fpl/refresh', {
+          method: 'POST',
+          credentials: 'include',
+          cache: 'no-store',
+          headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+          body: JSON.stringify({ resources: ['bootstrap-static', 'fixtures'] }),
+        });
+        if (!response.ok || cancelled) return;
+
+        lastSuccessfulSync = Date.now();
+        try {
+          window.localStorage.setItem(lastSyncKey, String(lastSuccessfulSync));
+        } catch {
+          // The in-memory timestamp still prevents repeat requests in this tab.
+        }
+        invalidateData(['global']);
+      } catch {
+        // The next active poll retries after a transient network or FPL failure.
+      } finally {
+        inFlight = false;
+      }
+    };
+
+    const poll = async () => {
+      const lockManager = (navigator as Navigator & {
+        locks?: {
+          request: (
+            name: string,
+            options: { ifAvailable: true },
+            callback: (lock: unknown | null) => Promise<void>,
+          ) => Promise<void>;
+        };
+      }).locks;
+      if (lockManager) {
+        try {
+          await lockManager.request('cdl-official-fpl-active-sync', { ifAvailable: true }, async (lock) => {
+            if (lock) await syncWhileActive(true);
+          });
+        } catch {
+          // Fall back to this tab if browser lock coordination is unavailable.
+          await syncWhileActive();
+        }
+      } else {
+        await syncWhileActive();
+      }
+    };
+
+    void poll();
+    const timer = window.setInterval(() => void poll(), 30_000);
+    const resume = () => { if (document.visibilityState === 'visible') void poll(); };
+    document.addEventListener('visibilitychange', resume);
+    window.addEventListener('online', resume);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', resume);
+      window.removeEventListener('online', resume);
+    };
+  }, [activeSession?.isAuthenticated, activeSession?.user?.id, session]);
 
   useEffect(() => {
     let cancelled = false;

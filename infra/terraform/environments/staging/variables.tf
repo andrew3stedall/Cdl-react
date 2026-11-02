@@ -28,7 +28,7 @@ variable "enable_database_jobs" {
 }
 
 variable "enable_scheduled_fpl_refresh" {
-  description = "Run the official FPL refresh and settlement job automatically."
+  description = "Create a permanent FPL refresh schedule. Keep false; active app sessions poll the refresh API."
   type        = bool
   default     = false
 }

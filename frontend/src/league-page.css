@@ -284,8 +284,25 @@
   transform: scale(1.15);
 }
 
+.league-round-results-carousel {
+  min-width: 0;
+  width: 100%;
+}
+
+.league-round-results__content {
+  min-width: 0;
+  transform-origin: center center;
+  width: 100%;
+  will-change: transform, opacity;
+}
+
 .league-round-results {
   margin-top: 0.55rem;
+  width: 100%;
+}
+
+.league-round-results__slide.is-selected .league-round-results {
+  border-color: var(--primary);
 }
 
 .league-fixture-round__header {

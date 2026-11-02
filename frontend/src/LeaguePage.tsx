@@ -668,11 +668,19 @@ function CommissionerManagementView({ leagueClient }: { leagueClient: LeagueClie
 function FixturesView({ leagueClient, managerTeamId, onOpenFixture, snapshot }: { leagueClient: LeagueClient; managerTeamId: string | null; onOpenFixture: (fixture: LeagueFixture) => void; snapshot: LeagueSnapshot }) {
   const rounds = useMemo(() => groupFixturesByRound(snapshot), [snapshot]);
   const allFixtures = useMemo(() => fixturesFromSnapshot(snapshot), [snapshot]);
+  const teams = useMemo(() => {
+    const teamById = new Map(snapshot.table.rows.map((row) => [row.team.id, row.team]));
+    allFixtures.forEach((fixture) => {
+      teamById.set(fixture.homeTeam.id, fixture.homeTeam);
+      teamById.set(fixture.awayTeam.id, fixture.awayTeam);
+    });
+    return [...teamById.values()];
+  }, [allFixtures, snapshot.table.rows]);
   if (rounds.length === 0) {
     return <section aria-label="League fixtures" className="league-gameweek-list"><EmptyState message="No league fixtures are available yet." /></section>;
   }
 
-  return <section aria-label="League fixtures" className="league-fixtures-view"><RoundCarousel allFixtures={allFixtures} leagueClient={leagueClient} managerTeamId={managerTeamId} onOpenFixture={onOpenFixture} rounds={rounds} teams={snapshot.table.rows.map((row) => row.team)} /></section>;
+  return <section aria-label="League fixtures" className="league-fixtures-view"><RoundCarousel allFixtures={allFixtures} leagueClient={leagueClient} managerTeamId={managerTeamId} onOpenFixture={onOpenFixture} rounds={rounds} teams={teams} /></section>;
 }
 
 interface GameweekGroup {
@@ -819,6 +827,8 @@ function RoundCarousel({ allFixtures, leagueClient, managerTeamId, onOpenFixture
     startIndex: initialRoundIndex,
   }), [initialRoundIndex]);
   const [roundViewportRef, roundApi] = useEmblaCarousel(roundOptions);
+  const resultsOptions = useMemo(() => ({ ...roundOptions, watchDrag: false }), [roundOptions]);
+  const [resultsViewportRef, resultsApi] = useEmblaCarousel(resultsOptions);
 
   const handleRoundSelect = useCallback((api: EmblaCarouselType) => {
     setSelectedRoundIndex(api.selectedScrollSnap());
@@ -830,6 +840,7 @@ function RoundCarousel({ allFixtures, leagueClient, managerTeamId, onOpenFixture
   }, [roundApi]);
 
   useScaleOpacityTween(roundApi, '.league-round-slide__content');
+  useScaleOpacityTween(resultsApi, '.league-round-results__content');
 
   useEffect(() => {
     if (!roundApi) return undefined;
@@ -850,6 +861,12 @@ function RoundCarousel({ allFixtures, leagueClient, managerTeamId, onOpenFixture
       roundApi.scrollTo(initialRoundIndex, true);
     }
   }, [initialRoundIndex, initialRoundKey, roundApi]);
+
+  useEffect(() => {
+    if (resultsApi && resultsApi.selectedScrollSnap() !== selectedRoundIndex) {
+      resultsApi.scrollTo(selectedRoundIndex, true);
+    }
+  }, [resultsApi, selectedRoundIndex]);
 
   useEffect(() => {
     const maximumIndex = Math.max(...rounds.map((round) => round.gameweeks.length), 1) - 1;
@@ -928,7 +945,31 @@ function RoundCarousel({ allFixtures, leagueClient, managerTeamId, onOpenFixture
           );
         })}
       </nav>
-      <RoundResultsTable round={rounds[selectedRoundIndex]} teams={teams} />
+      <div aria-label="Round result tables" className="league-round-results-carousel" role="region">
+        <div aria-label="Round result table slides" className="league-round-carousel__viewport league-round-results__viewport" ref={resultsViewportRef}>
+          <div className="league-round-carousel__track">
+            {rounds.map((round, roundIndex) => {
+              const isSelected = roundIndex === selectedRoundIndex;
+              return (
+                <div
+                  aria-current={isSelected ? 'true' : undefined}
+                  aria-hidden={!isSelected}
+                  aria-label={`${round.label} results table`}
+                  aria-roledescription="slide"
+                  className={`league-round-carousel__slide league-round-results__slide${isSelected ? ' is-selected' : ''}`}
+                  data-round-index={roundIndex}
+                  key={round.key}
+                  role="group"
+                >
+                  <div className="league-round-results__content">
+                    <RoundResultsTable round={round} teams={teams} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
     </section>
   );
 }
@@ -1539,7 +1580,7 @@ function RoundResultsTable({ round, teams }: { round?: FixtureRoundGroup; teams:
   return (
     <Card className="league-panel league-round-results">
       <div className="league-panel__header">
-        <SectionHeading eyebrow={`${round.label} results`} id="league-round-results-title" title="League table" />
+        <SectionHeading eyebrow={`${round.label} results`} id={`league-${round.key}-results-title`} title="League table" />
       </div>
       <div aria-label={`${round.label} league standings`} className="league-table-scroll" role="region" tabIndex={0}>
         <Table className="league-table league-table--standings">

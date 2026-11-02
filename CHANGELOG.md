@@ -54,7 +54,7 @@
 # Changelog
 
 ## Unreleased
-- Add a league table below the fixtures round navigation. The table follows the selected round and calculates each team's form, W-D-L, points for/against, league points, and bonus points from that round's completed results.
+- Add a synchronized table carousel below the fixtures round navigation. It matches the round slides' width, scale, and opacity, builds its team list from fixtures when the table endpoint is not loaded, and calculates totals from the selected round's completed results.
 - Standardize app data tables on shared shadcn-style primitives and make every displayed data column sortable from its header, including standings, head-to-head, knockout, FDR, analytics, squad, market, fixture comparison, and checkpoint tables.
 - Added a League → Teams showcase with individual WebGL crest scenes for all league teams. The animation uses one low-power canvas, respects reduced-motion settings, and falls back to the existing SVG crest when WebGL is unavailable.
 - Keep multi-player trade carousels scrollable while showing two selected players at once.

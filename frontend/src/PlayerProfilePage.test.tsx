@@ -528,13 +528,13 @@ describe('PlayerProfilePage', () => {
     expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__chart-column')).toHaveLength(8);
     expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__grouped-bar--attack')).toHaveLength(8);
     expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__grouped-bar--defence')).toHaveLength(8);
-    expect([...container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__grouped-bar-point-label')].map((node) => node.textContent)).toEqual(
+    expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__stacked-bar')).toHaveLength(8);
+    expect([...container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__grouped-bar')].map((node) => node.textContent)).toEqual(
       Array.from({ length: 8 }, (_, index) => [String(index + 4), '2']).flat(),
     );
-    expect(container.querySelector('[data-chart-kind="opponent-defence"] .player-profile__grouped-bar-point-label--attack')).toBeTruthy();
-    expect(container.querySelector('[data-chart-kind="opponent-defence"] .player-profile__grouped-bar-point-label--defence')).toBeTruthy();
+    expect(container.querySelector('[data-chart-kind="opponent-defence"] button[data-attacking-points="4"][data-defensive-points="2"]')).toBeTruthy();
     expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__grouped-bar-value')).toHaveLength(0);
-    expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__grouped-stat-icons .player-profile__stat-icon')).toHaveLength(3);
+    expect(container.querySelectorAll('[data-chart-kind="opponent-defence"] .player-profile__stat-icon')).toHaveLength(0);
     expect(container.querySelector('[data-chart-kind="opponent-defence"]')?.getAttribute('data-y-axis-min')).toBe('0');
     expect(container.querySelector('[data-chart-kind="opponent-defence"]')?.getAttribute('data-y-axis-max')).toBe('80');
     expect(container.querySelector('[data-chart-kind="opponent-defence"]')?.getAttribute('data-y-axis-tick-step')).toBe('10');

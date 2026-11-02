@@ -17,7 +17,7 @@ import {
   type PlayerChartDetailSection,
   type PlayerChartDetailSummaryItem,
 } from './components/player/PlayerChartDetailDialog';
-import { earnedDefensiveContributionPoints, PlayerStatIcons, type PlayerStatSummary } from './components/player/PlayerStatIcons';
+import { earnedDefensiveContributionPoints, type PlayerStatSummary } from './components/player/PlayerStatIcons';
 import {
   chartFixtureSlots,
   fdrStyleFor,
@@ -967,13 +967,14 @@ function DefensiveColumn({ fixture, fdrDisplayMode, index = 0, maxValue, onClick
   const hasPoints = fixture !== null && fixture.total_points_conceded !== null && fixture.total_points_conceded !== undefined;
   const attackHeight = groupedAssetBarHeight(attack, maxValue, hasPoints);
   const defenceHeight = groupedAssetBarHeight(defence, maxValue, hasPoints);
-  return <div className="player-profile__chart-column" style={style}><span className={`player-profile__chart-value${hasPoints ? '' : ' is-empty'}`}>{formatNullableNumber(fixture?.total_points_conceded)}</span>{fixture ? <button aria-label={`View ${formatOpponentLabel(fixture.opponent_short_name ?? null, fixture.is_home)} points-against details`} className="player-profile__bar-track player-profile__bar-track--grouped player-profile__grouped-bar-button" onClick={() => onClick?.(fixture, index)} type="button"><span className="player-profile__grouped-bar-wrap player-profile__grouped-bar-wrap--attack"><span aria-hidden="true" className="player-profile__grouped-bar-point-label player-profile__grouped-bar-point-label--attack">{attack}</span><span aria-label={`Attacking assets: ${attack} points`} className="player-profile__grouped-bar player-profile__grouped-bar--attack" style={{ '--bar-height': `${attackHeight}%` } as CSSProperties} /></span><span className="player-profile__grouped-stat-icons"><PlayerStatIcons className="player-profile__stat-icons--compact" position={null} stats={opponentStatSummary(fixture)} /></span><span className="player-profile__grouped-bar-wrap player-profile__grouped-bar-wrap--defence"><span aria-hidden="true" className="player-profile__grouped-bar-point-label player-profile__grouped-bar-point-label--defence">{defence}</span><span aria-label={`Defensive assets: ${defence} points`} className="player-profile__grouped-bar player-profile__grouped-bar--defence" style={{ '--bar-height': `${defenceHeight}%` } as CSSProperties} /></span></button> : <div aria-hidden="true" className="player-profile__bar-track player-profile__bar-track--grouped player-profile__grouped-bar-empty" /> }<span className="player-profile__opponent-label" style={fdrStyleFor(fixture?.difficulty ?? null, fdrDisplayMode)}>{fixture ? formatOpponentLabel(fixture.opponent_short_name ?? null, fixture.is_home) : ''}</span></div>;
+  const opponent = formatOpponentLabel(fixture?.opponent_short_name ?? null, fixture?.is_home ?? false);
+  return <div className="player-profile__chart-column" style={style}><span className={`player-profile__chart-value${hasPoints ? '' : ' is-empty'}`}>{formatNullableNumber(fixture?.total_points_conceded)}</span>{fixture ? <button aria-label={`View ${opponent} points-against details; ${formatNullableNumber(fixture.total_points_conceded)} total, ${attack} attacking and ${defence} defensive points`} className="player-profile__bar-track player-profile__bar-track--grouped player-profile__grouped-bar-button" data-attacking-points={attack} data-defensive-points={defence} onClick={() => onClick?.(fixture, index)} type="button"><span aria-hidden="true" className="player-profile__stacked-bar"><span className="player-profile__grouped-bar player-profile__grouped-bar--attack" data-points={attack} style={{ '--bar-height': `${attackHeight}%` } as CSSProperties}>{attack}</span><span className="player-profile__grouped-bar player-profile__grouped-bar--defence" data-points={defence} style={{ '--bar-height': `${defenceHeight}%` } as CSSProperties}>{defence}</span></span></button> : <div aria-hidden="true" className="player-profile__bar-track player-profile__bar-track--grouped player-profile__grouped-bar-empty" /> }<span className="player-profile__opponent-label" style={fdrStyleFor(fixture?.difficulty ?? null, fdrDisplayMode)}>{fixture ? opponent : ''}</span></div>;
 }
 
 function groupedAssetBarHeight(points: number, maxValue: number, hasPoints: boolean): number {
   if (!hasPoints) return 0;
-  if (points <= 0) return 8;
-  return Math.max(8, (points / maxValue) * 100);
+  if (points <= 0) return 0;
+  return Math.min(100, (points / maxValue) * 100);
 }
 
 function opponentStatSummary(fixture: SquadApiOpponentDefensiveHistory): PlayerStatSummary {

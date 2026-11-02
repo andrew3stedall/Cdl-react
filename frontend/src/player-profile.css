@@ -501,6 +501,9 @@
   background: var(--profile-chart-track);
   cursor: pointer;
   font: inherit;
+  overflow: hidden;
+  padding: 0;
+  position: relative;
   width: 100%;
 }
 
@@ -515,79 +518,40 @@
   z-index: 3;
 }
 
-.player-profile__grouped-bar-wrap {
-  align-self: stretch;
-  display: block;
-  flex: 0 0 clamp(0.14rem, 0.5vw, 0.21rem);
-  height: 100%;
-  min-width: 0;
-  position: relative;
-  z-index: 3;
-}
-
-.player-profile__grouped-bar-wrap--attack,
-.player-profile__grouped-bar-wrap--defence {
-  bottom: 0;
-  position: absolute;
-  top: 0;
-  width: clamp(0.14rem, 0.5vw, 0.21rem);
-}
-
-.player-profile__grouped-bar-wrap--attack { left: 0; }
-.player-profile__grouped-bar-wrap--defence { right: 0; }
-
-.player-profile__grouped-stat-icons {
+.player-profile__stacked-bar {
   align-items: stretch;
-  align-self: stretch;
+  bottom: 0;
   display: flex;
-  flex: 1 1 auto;
+  flex-direction: column-reverse;
+  left: 0;
+  position: absolute;
+  right: 0;
+  top: 0;
+}
+
+.player-profile__grouped-bar {
+  align-items: center;
+  border-radius: 0.12rem;
+  box-sizing: border-box;
+  color: var(--background);
+  display: flex;
+  flex: 0 0 auto;
+  font-size: clamp(0.48rem, 1.6vw, 0.62rem);
+  font-variant-numeric: tabular-nums;
+  font-weight: 900;
+  height: var(--bar-height);
   justify-content: center;
-  min-width: 0;
-  padding-inline: clamp(0.32rem, 1vw, 0.5rem);
+  line-height: 1;
+  min-height: 0.68rem;
+  overflow: hidden;
   position: relative;
+  text-shadow: 0 1px 1px color-mix(in srgb, var(--foreground) 35%, transparent);
   width: 100%;
   z-index: 3;
 }
 
-.player-profile__grouped-stat-icons .player-profile__stat-icons {
-  max-width: calc(100% - 0.15rem);
-}
-
-.player-profile__grouped-bar {
-  border-radius: 0.18rem;
-  bottom: 0;
-  display: block;
-  height: var(--bar-height);
-  left: 0;
-  min-height: 0;
-  opacity: 1;
-  position: absolute;
-  right: 0;
-}
-
-.player-profile__grouped-bar-point-label {
-  display: block;
-  font-size: clamp(0.5rem, 1.7vw, 0.65rem);
-  font-variant-numeric: tabular-nums;
-  font-weight: 900;
-  line-height: 1;
-  pointer-events: none;
-  position: absolute;
-  text-transform: uppercase;
-  top: 0.18rem;
-  transform: rotate(180deg);
-  writing-mode: vertical-rl;
-  z-index: 5;
-}
-
-.player-profile__grouped-bar-point-label--attack {
-  color: var(--cdl-position-mid, var(--squad-position-mid, #c7a969));
-  left: calc(100% + 0.16rem);
-}
-
-.player-profile__grouped-bar-point-label--defence {
-  color: var(--cdl-position-def, var(--squad-position-def, #67a890));
-  right: calc(100% + 0.16rem);
+.player-profile__grouped-bar[data-points='0'] {
+  display: none;
 }
 
 .player-profile__grouped-bar--attack {

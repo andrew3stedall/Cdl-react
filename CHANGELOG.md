@@ -1,4 +1,5 @@
 ## Unreleased
+- Remove stat icons from player and comparison points-against charts; show attacking and defensive points as colour-coded stacked bars with their values on each segment.
 - Restore each page's last selected view when returning through the main navigation; explicit tab choices within the current page still take effect.
 
 - Removed repeated fixture list group headings and counts, kept both team tables aligned when roster sizes differ, retained accessible group labels, and colour-coded open, active, and closed fixture status badges from the selected theme. Kept archived partial bench projections valid when no goalkeeper is present.

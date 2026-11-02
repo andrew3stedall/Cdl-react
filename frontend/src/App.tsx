@@ -124,7 +124,7 @@ export function App({
       }
     };
 
-    const syncWhileActive = async (lockHeld = false): Promise<void> => {
+    const syncWhileActive = async (): Promise<void> => {
       if (
         cancelled ||
         inFlight ||

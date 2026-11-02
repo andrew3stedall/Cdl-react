@@ -67,6 +67,6 @@ export function RulesPage({ sections, categories, query = '', category = 'all', 
           </Card>
         ))}
       </section>
-    </main>
+    </Root>
   );
 }

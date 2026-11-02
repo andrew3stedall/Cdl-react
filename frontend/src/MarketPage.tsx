@@ -937,8 +937,26 @@ const SCOUTING_PLAYER_ROW_REM = 5.15;
 
 function ScoutingTeamCard({ isActive, managerTeam, maxRowsByPosition, onOpenPlayer, onPositionChange, players, selectedPositionIndex, teamContainerHeightRem, teamName }: { isActive: boolean; managerTeam: SquadApiTeam; maxRowsByPosition: Record<string, number>; onOpenPlayer: (player: MarketPlayer) => void; onPositionChange: (index: number) => void; players: MarketPlayer[]; selectedPositionIndex: number; teamContainerHeightRem: number; teamName: string }) {
   const positionViewportRef = useRef<HTMLDivElement | null>(null);
+  const scrollEndRef = useRef<HTMLDivElement | null>(null);
   const selectedPositionIndexRef = useRef(selectedPositionIndex);
   selectedPositionIndexRef.current = selectedPositionIndex;
+
+  useEffect(() => {
+    const viewport = positionViewportRef.current;
+    const scrollEnd = scrollEndRef.current;
+    const forwards = viewport?.querySelector<HTMLElement>('[data-scouting-position="FWD"]');
+    if (!viewport || !scrollEnd || !forwards) return undefined;
+
+    const updateScrollEndSpace = () => {
+      scrollEnd.style.height = `${Math.max(0, viewport.clientHeight - forwards.getBoundingClientRect().height)}px`;
+    };
+
+    updateScrollEndSpace();
+    const observer = new ResizeObserver(updateScrollEndSpace);
+    observer.observe(viewport);
+    observer.observe(forwards);
+    return () => observer.disconnect();
+  }, [teamContainerHeightRem]);
 
   useEffect(() => {
     if (!isActive) return;
@@ -1032,6 +1050,7 @@ function ScoutingTeamCard({ isActive, managerTeam, maxRowsByPosition, onOpenPlay
                 </section>
               );
             })}
+            <div aria-hidden="true" className="market-page__scouting-scroll-end" ref={scrollEndRef} />
           </div>
         </div>
       </div>

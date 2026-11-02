@@ -25,8 +25,8 @@ export function RulesPage({ sections, categories, query = '', category = 'all', 
   const filteredSections = filterRules(sections, search, selectedCategory);
 
   return (
-    <main aria-labelledby="rules-title" className="feature-screen rules-page" data-density={preset.tokens.density} data-preset={preset.name}>
-      <PageHero actions={null} actionsLabel="Rules actions" onNavigate={onNavigate} title="Rules" titleId="rules-title" />
+    <Root aria-labelledby="rules-title" className="feature-screen rules-page" data-density={preset.tokens.density} data-preset={preset.name}>
+      {embedded ? <h2 id="rules-title">Rules</h2> : <PageHero actions={null} actionsLabel="Rules actions" onNavigate={onNavigate} title="Rules" titleId="rules-title" />}
       <Card className="rules-page__filters">
         <label htmlFor="rules-search">Search rules
           <input id="rules-search" name="q" onChange={(event) => setSearch(event.target.value)} placeholder="Search rules" type="search" value={search} />

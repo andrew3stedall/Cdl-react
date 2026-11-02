@@ -854,6 +854,7 @@ function RoundCarousel({ allFixtures, leagueClient, managerTeamId, onOpenFixture
     const deltaY = event.clientY - start.y;
     if (Math.abs(deltaX) < 8 || Math.abs(deltaX) <= Math.abs(deltaY) * 1.15) return;
     event.currentTarget.setPointerCapture(event.pointerId);
+    event.preventDefault();
     start.captured = true;
   }, []);
 

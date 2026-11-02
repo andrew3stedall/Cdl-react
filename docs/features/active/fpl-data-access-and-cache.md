@@ -14,7 +14,7 @@ Implemented:
 
 - timeout-bound HTTP access to the official FPL API;
 - automatic staging refresh after migrations during the main-branch rollout;
-- automatic five-minute staging refresh and settlement schedule, independent of app usage;
+- authenticated app-driven refresh while the app is visible, with a five-minute interval;
 - authenticated manager refresh through `POST /api/fpl/refresh`;
 - authenticated cache evidence through `GET /api/fpl/status`;
 - raw response retention with a canonical SHA-256 digest;
@@ -67,7 +67,7 @@ Still required:
 - FPL entry endpoints are not used for normal CDL gameplay.
 - Store raw payloads plus normalized FPL tables.
 - TTL means how long cached data is considered fresh.
-- Live scoring fetches `event-live` on demand per gameweek.
+- While an authenticated manager uses the app, the client refreshes `bootstrap-static` and `fixtures` every five minutes; started, unfinished events fetch `event/{gameweek}/live` and recalculate provisional fixture scores.
 - Final CDL score snapshots are frozen and do not depend on future FPL refetches.
 - A failed final event-live refresh leaves the score provisional and exposes a per-event
   fetch failure through `/api/fpl/status` until a successful retry replaces it.
@@ -138,12 +138,7 @@ fixtures during active GW: 15-60 minutes
 element-summary: 6 hours
 ```
 
-Bulk bootstrap/fixture refresh is performed by the staging rollout and can also be
-requested explicitly by an authenticated manager-level user. Element-summary is loaded
-requested explicitly by an authenticated manager-level user. The staging Cloud Scheduler
-invokes the refresh job every five minutes; that job also locks all team selections and
-chips whose FPL deadline has passed and settles completed CDL results. Element-summary is
-loaded on demand and reused while fresh.
+The staging rollout performs one refresh after deployment. While an authenticated manager has the app open and visible, the client requests an official refresh on entry when the last successful sync is at least five minutes old, then checks every 30 seconds and refreshes at five-minute intervals. Hidden tabs pause refreshes; returning to the app resumes them. A browser lock coordinates tabs on the same device. Each refresh reads `bootstrap-static` and `fixtures`, updates current/next gameweek markers, fetches active `event-live` scores, and recalculates provisional CDL fixture scores. No permanent Cloud Scheduler runs FPL refreshes. Element-summary remains on demand and cached for six hours.
 
 ## Data Access Requirements
 
@@ -170,8 +165,7 @@ Completed for the current player-data slice:
   gameweek 38 price;
 - element-summary history is fetched lazily, normalized, hashed and cached;
 - repeat player detail reads reuse fresh PostgreSQL history cache.
-- every due team has a persisted deadline lock and active chips are finalised for that
-  gameweek even when the manager never opens the app;
+- active app refreshes persist due team locks, finalise active chips, settle completed CDL results, and roll lineups forward; FPL deadline timestamps remain the editability boundary;
 - finalised CDL fixture results retain their event-live response hash and do not drift
   after later FPL refreshes.
 

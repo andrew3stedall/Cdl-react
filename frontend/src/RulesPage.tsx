@@ -15,9 +15,11 @@ interface RulesPageProps {
   category?: RuleCategory | 'all';
   onNavigate?: (href: string) => void;
   preset: ThemePreset;
+  embedded?: boolean;
 }
 
-export function RulesPage({ sections, categories, query = '', category = 'all', onNavigate, preset }: RulesPageProps) {
+export function RulesPage({ sections, categories, query = '', category = 'all', onNavigate, preset, embedded = false }: RulesPageProps) {
+  const Root = embedded ? 'section' : 'main';
   const [search, setSearch] = useState(query);
   const [selectedCategory, setSelectedCategory] = useState<RuleCategory | 'all'>(category);
   const filteredSections = filterRules(sections, search, selectedCategory);

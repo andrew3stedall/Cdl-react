@@ -7,7 +7,7 @@ import type { RulesIndexResponse, ThemePreset } from './contracts';
 import { fetchRules } from './rules';
 import { RulesPage } from './RulesPage';
 
-export function RulesWorkspacePage({ onNavigate, preset, anchor = window.location.hash, loadRules = fetchRules }: {
+export function RulesWorkspacePage({ onNavigate, preset, anchor = window.location.hash, loadRules = fetchRules, embedded = false }: {
   onNavigate?: (href: string) => void;
   preset: ThemePreset;
   anchor?: string;
@@ -40,8 +40,8 @@ export function RulesWorkspacePage({ onNavigate, preset, anchor = window.locatio
 
   if (rules) return <RulesPage categories={rules.categories} embedded={embedded} onNavigate={onNavigate} preset={preset} sections={rules.sections} />;
 
-  return <main aria-labelledby="rules-title" className="feature-screen rules-page" data-density={preset.tokens.density} data-preset={preset.name}>
-    <PageHero actions={null} actionsLabel="Rules actions" onNavigate={onNavigate} title="Rules" titleId="rules-title" />
+  return <Root aria-labelledby="rules-title" className="feature-screen rules-page" data-density={preset.tokens.density} data-preset={preset.name}>
+    {embedded ? <h2 id="rules-title">Rules</h2> : <PageHero actions={null} actionsLabel="Rules actions" onNavigate={onNavigate} title="Rules" titleId="rules-title" />}
     <Card>
       {failed ? <><p role="alert">Rules could not be loaded.</p><Button onClick={() => { setFailed(false); setAttempt((value) => value + 1); }} type="button">Retry</Button></> : <p role="status">Loading rules…</p>}
     </Card>

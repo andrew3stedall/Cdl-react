@@ -1213,6 +1213,11 @@
   min-width: 0;
 }
 
+.market-page__scouting-scroll-end {
+  min-height: 0;
+  pointer-events: none;
+}
+
 .market-page__scouting-position {
   scroll-snap-align: start;
   scroll-snap-stop: always;

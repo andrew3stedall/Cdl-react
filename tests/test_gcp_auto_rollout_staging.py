@@ -223,8 +223,9 @@ def test_optional_fpl_refresh_schedule_output_is_not_enabled_or_verified_after_r
 
     assert 'output "fpl_refresh_schedule_name"' in outputs
     assert "google_cloud_scheduler_job.fpl_refresh[0].name" in outputs
-    assert "Verify deadline settlement schedule" in workflow
-    assert 'value(schedule)\')" = "*/5 * * * *"' in workflow
+    assert "Verify deadline settlement schedule" not in workflow
+    assert "Verify permanent FPL scheduler is absent" in workflow
+    assert "enable_scheduled_fpl_refresh=false" in workflow
 
 
 def test_manual_database_job_workflow_can_refresh_official_fpl_data() -> None:

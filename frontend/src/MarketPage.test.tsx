@@ -253,6 +253,22 @@ describe('MarketPage', () => {
     act(() => root.unmount());
   });
 
+  test('scouts players by CDL team below the Premier League team carousel', async () => {
+    marketPlayers = [ownedPlayer, otherOwnedPlayer];
+    const { container, root } = await renderPage('/scouting');
+
+    const premierLeagueSection = container.querySelector('section[aria-label="Scouting by Premier League team"]');
+    const cdlSection = container.querySelector('section[aria-label="Scouting by CDL team"]');
+    expect(premierLeagueSection?.querySelector('[aria-label="Premier League teams"]')).not.toBeNull();
+    expect(cdlSection?.querySelector('[aria-label="CDL teams"]')).not.toBeNull();
+    expect(cdlSection?.querySelector('button[aria-label="Go to Exeter Gently"]')).not.toBeNull();
+    expect(cdlSection?.querySelector('button[aria-label="Go to Bayer Nerverlusen"]')).not.toBeNull();
+    expect(cdlSection?.querySelector('button[aria-label^="View Owned Defender details"]')).not.toBeNull();
+    expect(cdlSection?.querySelector('button[aria-label^="View Other Owned Midfielder details"]')).not.toBeNull();
+
+    act(() => root.unmount());
+  });
+
   test('keeps discovery focused on the player list', async () => {
     const { container } = await renderPage();
 

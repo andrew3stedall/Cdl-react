@@ -814,25 +814,93 @@ function DiscoveryPanel({
 }
 
 function ScoutingPanel({ failed, loading, managerTeam, onOpenPlayer, players }: { failed: boolean; loading: boolean; managerTeam: SquadApiTeam; onOpenPlayer: (player: MarketPlayer) => void; players: MarketPlayer[] }) {
-  const teams = useMemo(() => Array.from(new Map(players.map((player) => [player.clubId, { id: player.clubId, name: player.clubName }])).values()).sort((left, right) => left.name.localeCompare(right.name)), [players]);
+  const premierLeagueTeams = useMemo(
+    () => Array.from(new Map(players.map((player) => [player.clubId, { id: player.clubId, name: player.clubName }])).values())
+      .sort((left, right) => left.name.localeCompare(right.name))
+      .map((team) => ({ ...team, players: players.filter((player) => player.clubId === team.id) })),
+    [players],
+  );
+  const cdlTeams = useMemo(() => {
+    const groups = new Map<string, { id: string; name: string; players: MarketPlayer[] }>();
+    for (const player of players) {
+      if (!player.draftTeamId) continue;
+      const group = groups.get(player.draftTeamId) ?? {
+        id: player.draftTeamId,
+        name: player.draftTeamName ?? player.draftTeamId,
+        players: [],
+      };
+      group.players.push(player);
+      groups.set(group.id, group);
+    }
+    return Array.from(groups.values()).sort((left, right) => left.name.localeCompare(right.name));
+  }, [players]);
+
+  return (
+    <>
+      <ScoutingCarousel
+        failed={failed}
+        groups={premierLeagueTeams}
+        loading={loading}
+        managerTeam={managerTeam}
+        navigationLabel="Premier League team navigation"
+        onOpenPlayer={onOpenPlayer}
+        playerPoolLabel="Premier League players"
+        sectionLabel="Scouting by Premier League team"
+        teamsLabel="Premier League teams"
+      />
+      <ScoutingCarousel
+        failed={failed}
+        groups={cdlTeams}
+        loading={loading}
+        managerTeam={managerTeam}
+        navigationLabel="CDL team navigation"
+        onOpenPlayer={onOpenPlayer}
+        playerPoolLabel="CDL team players"
+        sectionLabel="Scouting by CDL team"
+        teamsLabel="CDL teams"
+      />
+    </>
+  );
+}
+
+interface ScoutingGroup {
+  id: string;
+  name: string;
+  players: MarketPlayer[];
+}
+
+function ScoutingCarousel({ failed, groups, loading, managerTeam, navigationLabel, onOpenPlayer, playerPoolLabel, sectionLabel, teamsLabel }: {
+  failed: boolean;
+  groups: ScoutingGroup[];
+  loading: boolean;
+  managerTeam: SquadApiTeam;
+  navigationLabel: string;
+  onOpenPlayer: (player: MarketPlayer) => void;
+  playerPoolLabel: string;
+  sectionLabel: string;
+  teamsLabel: string;
+}) {
   const [api, setApi] = useState<CarouselApi>();
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [selectedPositionIndex, setSelectedPositionIndex] = useState(0);
   const maxRowsByPosition = useMemo<Record<string, number>>(() => {
     const countsByTeam = new Map<string, Map<string, number>>();
-    for (const player of players) {
-      const counts = countsByTeam.get(player.clubId) ?? new Map<string, number>();
-      counts.set(player.position, (counts.get(player.position) ?? 0) + 1);
-      countsByTeam.set(player.clubId, counts);
+    for (const team of groups) {
+      const counts = countsByTeam.get(team.id) ?? new Map<string, number>();
+      for (const player of team.players) {
+        counts.set(player.position, (counts.get(player.position) ?? 0) + 1);
+      }
+      countsByTeam.set(team.id, counts);
     }
 
     return Object.fromEntries(scoutingPositionGroups.map(({ value }) => {
       const maxCount = Math.max(0, ...Array.from(countsByTeam.values(), (counts) => counts.get(value) ?? 0));
       return [value, Math.max(1, Math.ceil(maxCount / SCOUTING_PLAYER_COLUMNS))];
     }));
-  }, [players]);
+  }, [groups]);
   const maxPositionHeightRem = Math.max(...scoutingPositionGroups.map(({ value }) => SCOUTING_POSITION_CHROME_REM + (maxRowsByPosition[value] ?? 1) * SCOUTING_PLAYER_ROW_REM));
   const teamContainerHeightRem = Math.max(SCOUTING_TEAM_CONTAINER_REM, Math.ceil((maxPositionHeightRem + SCOUTING_TEAM_CHROME_REM) * 2) / 2);
+
   useEffect(() => {
     if (!api) return undefined;
     const syncSelectedTeam = () => setSelectedIndex(api.selectedScrollSnap());
@@ -847,8 +915,8 @@ function ScoutingPanel({ failed, loading, managerTeam, onOpenPlayer, players }: 
 
   useEffect(() => {
     if (!api) return;
-    if (api.selectedScrollSnap() >= teams.length) api.scrollTo(Math.max(teams.length - 1, 0));
-  }, [api, teams.length]);
+    if (api.selectedScrollSnap() >= groups.length) api.scrollTo(Math.max(groups.length - 1, 0));
+  }, [api, groups.length]);
 
   useEffect(() => {
     if (!api) return undefined;
@@ -881,20 +949,20 @@ function ScoutingPanel({ failed, loading, managerTeam, onOpenPlayer, players }: 
     };
   }, [api]);
 
-  if (loading && players.length === 0) return <div aria-label="Loading scouting players" className="market-page__scouting-loading" role="status">Loading Premier League players…</div>;
-  if (failed && players.length === 0) return <div className="market-page__empty" role="alert"><CircleAlert aria-hidden="true" size={22} /><strong>Scouting data is unavailable</strong></div>;
-  if (teams.length === 0) return <div className="market-page__empty"><Binoculars aria-hidden="true" size={22} /><strong>No Premier League players are available</strong></div>;
+  if (loading && groups.length === 0) return <div aria-label={`Loading ${playerPoolLabel.toLowerCase()}`} className="market-page__scouting-loading" role="status">Loading {playerPoolLabel.toLowerCase()}…</div>;
+  if (failed && groups.length === 0) return <div className="market-page__empty" role="alert"><CircleAlert aria-hidden="true" size={22} /><strong>Scouting data is unavailable</strong></div>;
+  if (groups.length === 0) return <div className="market-page__empty"><Binoculars aria-hidden="true" size={22} /><strong>No {playerPoolLabel.toLowerCase()} are available</strong></div>;
 
-  const activeTeam = teams[Math.min(selectedIndex, teams.length - 1)] ?? teams[0];
+  const activeTeam = groups[Math.min(selectedIndex, groups.length - 1)] ?? groups[0];
   return (
-    <section aria-label="Scouting by Premier League team" className="market-page__scouting">
+    <section aria-label={sectionLabel} className="market-page__scouting">
       <header className="market-page__scouting-header">
-        <p className="eyebrow">Premier League teams</p>
+        <p className="eyebrow">{teamsLabel}</p>
       </header>
       {failed ? <p className="market-page__status" role="status">Some scouting data could not be refreshed. Showing the available players.</p> : null}
-      <Carousel aria-label="Premier League teams" className="market-page__scouting-carousel" opts={{ align: "center", loop: teams.length > 1 }} setApi={setApi}>
+      <Carousel aria-label={teamsLabel} className="market-page__scouting-carousel" opts={{ align: "center", loop: groups.length > 1 }} setApi={setApi}>
         <CarouselContent className="market-page__scouting-track">
-          {teams.map((team) => (
+          {groups.map((team) => (
             <ScoutingTeamCard
               isActive={team.id === activeTeam.id}
               key={team.id}
@@ -903,7 +971,7 @@ function ScoutingPanel({ failed, loading, managerTeam, onOpenPlayer, players }: 
               onOpenPlayer={onOpenPlayer}
               teamContainerHeightRem={teamContainerHeightRem}
               onPositionChange={setSelectedPositionIndex}
-              players={players.filter((player) => player.clubId === team.id)}
+              players={team.players}
               selectedPositionIndex={selectedPositionIndex}
               teamName={team.name}
             />
@@ -912,8 +980,8 @@ function ScoutingPanel({ failed, loading, managerTeam, onOpenPlayer, players }: 
         <CarouselPrevious aria-label={`Previous team from ${activeTeam.name}`} />
         <CarouselNext aria-label={`Next team from ${activeTeam.name}`} />
       </Carousel>
-      <nav aria-label="Premier League team navigation" className="market-page__scouting-team-dots">
-        {teams.map((team, index) => (
+      <nav aria-label={navigationLabel} className="market-page__scouting-team-dots">
+        {groups.map((team, index) => (
           <button
             aria-current={index === selectedIndex ? 'true' : undefined}
             aria-label={`Go to ${team.name}`}

@@ -54,7 +54,7 @@ output "fpl_refresh_job_name" {
 }
 
 output "fpl_refresh_schedule_name" {
-  description = "Cloud Scheduler job that refreshes FPL data and settles deadlines."
+  description = "Optional permanent FPL refresh schedule; null when active app polling is used."
   value       = try(google_cloud_scheduler_job.fpl_refresh[0].name, null)
 }
 

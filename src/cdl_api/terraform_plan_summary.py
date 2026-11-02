@@ -12,6 +12,12 @@ from pathlib import Path
 type JsonValue = None | bool | int | float | str | list[JsonValue] | dict[str, JsonValue]
 
 PUBLIC_PRINCIPALS = {"allUsers", "allAuthenticatedUsers"}
+APPROVED_STAGING_FPL_SCHEDULER_DECOMMISSION = {
+    "google_cloud_run_v2_job_iam_member.fpl_refresh_scheduler_invoker[0]": (
+        "google_cloud_run_v2_job_iam_member"
+    ),
+    "google_cloud_scheduler_job.fpl_refresh[0]": "google_cloud_scheduler_job",
+}
 STAGING_PUBLIC_INVOKER_ADDRESS = (
     "module.cloud_run_api[0].google_cloud_run_v2_service_iam_member.public_invoker[0]"
 )
@@ -325,7 +331,18 @@ def summarize_plan(
         actionable_drift = drift
         refresh_only_drift = []
     action_counts = Counter(_as_string(item["action"]) for item in changed)
-    destructive = [item for item in changed if item["destructive"] is True]
+    approved_fpl_scheduler_decommission = [
+        item
+        for item in changed
+        if item["action"] == "delete"
+        and APPROVED_STAGING_FPL_SCHEDULER_DECOMMISSION.get(_as_string(item["address"]))
+        == item["type"]
+    ]
+    destructive = [
+        item
+        for item in changed
+        if item["destructive"] is True and item not in approved_fpl_scheduler_decommission
+    ]
     public = [item for item in changed if item["public"] is True]
     allowed_public_invoker = [
         item
@@ -396,6 +413,12 @@ def summarize_plan(
             "explicitly allowed for the application-login access model"
             if allow_staging_public_invoker
             else "disabled"
+        ),
+        "- Permanent FPL scheduler decommission: "
+        + (
+            "exact scheduler and invoker deletions are explicitly allowed"
+            if approved_fpl_scheduler_decommission
+            else "not in this plan"
         ),
         "- Binary plan and machine-readable JSON: not retained or uploaded",
         "",

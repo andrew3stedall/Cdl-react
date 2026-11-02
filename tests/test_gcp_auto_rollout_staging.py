@@ -28,7 +28,8 @@ def test_auto_rollout_is_staging_only_and_failure_closed() -> None:
         '"google_cloud_run_v2_job_iam_member.fpl_refresh_scheduler_invoker[0]"',
         '"google_cloud_scheduler_job.fpl_refresh[0]"',
         '"google_project_iam_member.github_deploy_scheduler_admin"',
-        "enable_scheduled_fpl_refresh=true",
+        "enable_scheduled_fpl_refresh=false",
+        "every five minutes while an authenticated app tab is visible",
         '"module.cloud_run_api[0].google_cloud_run_v2_service.this"',
         '"google_secret_manager_secret_iam_member.migration_google_allowed_emails_access"',
         "module.runtime_secrets.google_secret_manager_secret.this",
@@ -197,19 +198,16 @@ def test_official_fpl_refresh_job_uses_the_migration_identity_and_database_only(
     assert "CDL_ALLOW_SYNTHETIC_STAGING_SEED" not in section
 
 
-def test_official_fpl_refresh_has_a_deadline_independent_scheduler() -> None:
+def test_fpl_scheduler_remains_optional_and_is_disabled_for_active_use() -> None:
     content = DATABASE_JOBS.read_text(encoding="utf-8")
     section = content.split('resource "google_cloud_scheduler_job" "fpl_refresh"', maxsplit=1)[1]
+    workflow = WORKFLOW.read_text(encoding="utf-8")
 
-    for phrase in (
-        "var.enable_database_jobs && var.enable_scheduled_fpl_refresh",
-        'schedule         = "*/5 * * * *"',
-        'time_zone        = "Etc/UTC"',
-        "google_cloud_run_v2_job.fpl_refresh[0].name",
-        "google_service_account.migration.email",
-        'http_method = "POST"',
-    ):
-        assert phrase in section
+    assert "var.enable_database_jobs && var.enable_scheduled_fpl_refresh" in section
+    assert 'schedule         = "*/5 * * * *"' in section
+    assert "enable_scheduled_fpl_refresh=false" in workflow
+    assert "every five minutes while an authenticated app tab is visible" in workflow
+    assert "Verify permanent FPL scheduler is absent" in workflow
 
 
 def test_official_fpl_refresh_job_is_exposed_as_a_terraform_output() -> None:
@@ -219,14 +217,15 @@ def test_official_fpl_refresh_job_is_exposed_as_a_terraform_output() -> None:
     assert "google_cloud_run_v2_job.fpl_refresh[0].name" in content
 
 
-def test_official_fpl_refresh_schedule_is_output_and_verified_after_rollout() -> None:
+def test_optional_fpl_refresh_schedule_output_is_not_enabled_or_verified_after_rollout() -> None:
     outputs = OUTPUTS.read_text(encoding="utf-8")
     workflow = WORKFLOW.read_text(encoding="utf-8")
 
     assert 'output "fpl_refresh_schedule_name"' in outputs
     assert "google_cloud_scheduler_job.fpl_refresh[0].name" in outputs
-    assert "Verify deadline settlement schedule" in workflow
-    assert 'value(schedule)\')" = "*/5 * * * *"' in workflow
+    assert "Verify deadline settlement schedule" not in workflow
+    assert "Verify permanent FPL scheduler is absent" in workflow
+    assert "enable_scheduled_fpl_refresh=false" in workflow
 
 
 def test_manual_database_job_workflow_can_refresh_official_fpl_data() -> None:

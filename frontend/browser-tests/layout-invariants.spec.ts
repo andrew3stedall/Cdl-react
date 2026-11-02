@@ -157,7 +157,7 @@ test('the four primary route headers stay fixed through real loading, route chan
       } else if (title === 'League') {
         const leagueFixtures = routePage.locator('.league-fixtures-view');
         await expect(leagueFixtures).toBeVisible();
-        await expect(leagueFixtures.getByText('River Rangers', { exact: true })).toBeVisible();
+        await expect(leagueFixtures.locator('.league-gameweek-fixture').getByText('River Rangers', { exact: true }).first()).toBeVisible();
       } else {
         await expect(routePage.locator('.manager-desk__fixture-focus--pre_deadline')).toBeVisible();
         await expect(routePage.locator('.manager-desk__fixture-matchup--featured'))

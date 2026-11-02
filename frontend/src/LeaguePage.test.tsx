@@ -298,11 +298,12 @@ describe('LeaguePage', () => {
     expect(container.textContent).not.toContain('Gameweeks 8–14');
     expect(container.textContent).not.toContain('7 gameweeks');
     expect(container.textContent).not.toContain('available');
-    expect(container.querySelectorAll('.league-round-carousel__slide')).toHaveLength(2);
-    expect(container.querySelector('.league-round-carousel__slide[aria-current="true"]')?.textContent).toContain('Round 2');
-    expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-round-active-led')).not.toBeNull();
-    expect(container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-fixture-round__header')?.textContent?.trim()).toBe('Round 2');
-    const selectedGameweekHeader = container.querySelector('.league-round-carousel__slide[aria-current="true"] .league-gameweek-carousel__slide[aria-current="true"] .league-gameweek-section__header');
+    const fixtureRoundSlides = container.querySelectorAll('.league-round-carousel__slide:not(.league-round-results__slide)');
+    expect(fixtureRoundSlides).toHaveLength(2);
+    expect(container.querySelector('.league-round-carousel__slide:not(.league-round-results__slide)[aria-current="true"]')?.textContent).toContain('Round 2');
+    expect(container.querySelector('.league-round-carousel__slide:not(.league-round-results__slide)[aria-current="true"] .league-round-active-led')).not.toBeNull();
+    expect(container.querySelector('.league-round-carousel__slide:not(.league-round-results__slide)[aria-current="true"] .league-fixture-round__header')?.textContent?.trim()).toBe('Round 2');
+    const selectedGameweekHeader = container.querySelector('.league-round-carousel__slide:not(.league-round-results__slide)[aria-current="true"] .league-gameweek-carousel__slide[aria-current="true"] .league-gameweek-section__header');
     expect(selectedGameweekHeader?.textContent).toContain('Gameweek 12');
     expect(selectedGameweekHeader?.textContent).not.toContain('Current gameweek');
     expect(selectedGameweekHeader?.textContent).not.toContain('Live');

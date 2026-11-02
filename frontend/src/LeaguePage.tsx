@@ -1,5 +1,6 @@
 import { type CSSProperties, type ReactNode, type RefObject, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
+  BookOpen,
   CalendarDays,
   CircleAlert,
   Clock3,
@@ -15,6 +16,7 @@ import { Card } from './components/ui/card';
 import { FIXTURE_REVIEW_VIEW_STORAGE_KEY, FixtureSquadComparison, FixtureSquadViewToggle, getStoredFixtureReviewView } from './components/fixture/FixtureSquadComparison';
 import type { FixtureGameweekStatus, FixtureSquadView } from './components/fixture/FixtureSquadComparison';
 import { LeagueManagementIcon } from './components/league/LeagueManagementIcon';
+import { RulesWorkspacePage } from './RulesWorkspacePage';
 import { HeadToHeadView, KnockoutView } from './LeagueCompetitionViews';
 import { managerNicknameForTeam } from './manager-nicknames';
 import { invalidateData, subscribeDataFreshness } from './data-freshness';
@@ -57,6 +59,7 @@ import {
   type SquadClient,
 } from './squad-api';
 import { HttpTeamSelectionClient, type TeamSelectionClient } from './team-selection-api';
+import { useThemePreset } from './theme-preset-provider';
 import './league-page.css';
 
 const GAMEWEEK_HEIGHT_SCALE = 1.1;
@@ -65,7 +68,7 @@ const defaultLeagueClient = new HttpLeagueClient();
 const defaultSquadClient = new HttpSquadClient();
 const defaultTeamSelectionClient = new HttpTeamSelectionClient();
 
-type LeagueView = 'fixtures' | 'table' | 'teams' | 'manage' | 'knockout' | 'head-to-head';
+type LeagueView = 'fixtures' | 'table' | 'teams' | 'manage' | 'knockout' | 'head-to-head' | 'rules';
 type GameweekState = 'not-started' | 'underway' | 'finished';
 
 interface LeaguePageProps {
@@ -79,6 +82,7 @@ interface LeaguePageProps {
 }
 
 export function LeaguePage({ attackDirection = 'up', currentPath = window.location.pathname, leagueClient = defaultLeagueClient, onNavigate, session, squadClient = defaultSquadClient, teamSelectionClient = defaultTeamSelectionClient }: LeaguePageProps) {
+  const { preset } = useThemePreset();
   const [snapshot, setSnapshot] = useState<LeagueSnapshot | null>(null);
   const loadedSnapshotViewRef = useRef<LeagueSnapshotView | null>(null);
   const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>('loading');
@@ -108,7 +112,7 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
   useEffect(() => {
     let isActive = true;
 
-    if (view === 'manage') {
+    if (view === 'manage' || view === 'rules') {
       setSnapshot(null);
       setStatus('loaded');
       return () => { isActive = false; };
@@ -234,6 +238,7 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
               options={[
                 { ariaLabel: 'View fixtures', value: 'fixtures', label: 'Fixtures', icon: <CalendarDays aria-hidden="true" size={18} /> },
                 { ariaLabel: 'View table', value: 'table', label: 'Table', icon: <Table2 aria-hidden="true" size={18} /> },
+                { ariaLabel: 'View rules', value: 'rules', label: 'Rules', icon: <BookOpen aria-hidden="true" size={18} /> },
                 ...(isCommissioner
                   ? [{ ariaLabel: 'View commissioner management', value: 'manage', label: 'Manage', icon: <LeagueManagementIcon size={18} /> }]
                   : []),
@@ -270,8 +275,9 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
         </Card>
       ) : null}
 
+      {view === 'rules' ? <RulesWorkspacePage embedded onNavigate={onNavigate} preset={preset} /> : null}
       {view === 'manage' && isCommissioner ? <CommissionerManagementView leagueClient={leagueClient} /> : null}
-      {snapshot && view !== 'manage' ? (
+      {snapshot && view !== 'manage' && view !== 'rules' ? (
         <LeagueContent
           leagueClient={leagueClient}
           managerTeamId={managerTeamId}
@@ -1631,6 +1637,7 @@ function leagueViewFromPath(pathname: string): LeagueView {
   if (pathname === '/league/manage') return 'manage';
   if (pathname === '/league/knockout') return 'knockout';
   if (pathname === '/league/head-to-head') return 'head-to-head';
+  if (pathname === '/league/rules') return 'rules';
   return 'fixtures';
 }
 

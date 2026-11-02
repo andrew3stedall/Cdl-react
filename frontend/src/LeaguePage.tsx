@@ -59,7 +59,8 @@ import {
   type SquadClient,
 } from './squad-api';
 import { HttpTeamSelectionClient, type TeamSelectionClient } from './team-selection-api';
-import { useThemePreset } from './theme-preset-provider';
+import { themePresets } from './theme-presets';
+import { useOptionalThemePreset } from './theme-preset-provider';
 import './league-page.css';
 
 const GAMEWEEK_HEIGHT_SCALE = 1.1;
@@ -82,7 +83,7 @@ interface LeaguePageProps {
 }
 
 export function LeaguePage({ attackDirection = 'up', currentPath = window.location.pathname, leagueClient = defaultLeagueClient, onNavigate, session, squadClient = defaultSquadClient, teamSelectionClient = defaultTeamSelectionClient }: LeaguePageProps) {
-  const { preset } = useThemePreset();
+  const preset = useOptionalThemePreset()?.preset ?? themePresets.find((candidate) => candidate.isDefault)!;
   const [snapshot, setSnapshot] = useState<LeagueSnapshot | null>(null);
   const loadedSnapshotViewRef = useRef<LeagueSnapshotView | null>(null);
   const [status, setStatus] = useState<'loading' | 'loaded' | 'error'>('loading');

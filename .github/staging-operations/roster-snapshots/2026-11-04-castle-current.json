@@ -19,17 +19,20 @@
       {
         "name": "De Cuyper",
         "position": "DEF",
-        "club": "BHA"
+        "club": "BHA",
+        "points": 69
       },
       {
         "name": "Bogle",
         "position": "DEF",
-        "club": "LEE"
+        "club": "LEE",
+        "points": 51
       },
       {
         "name": "Branthwaite",
         "position": "DEF",
-        "club": "EVE"
+        "club": "EVE",
+        "points": 40
       },
       {
         "name": "Mitchell",
@@ -84,7 +87,8 @@
       {
         "name": "Garnacho",
         "position": "MID",
-        "club": "AVL"
+        "club": "AVL",
+        "points": 4
       },
       {
         "name": "N.Jackson",
@@ -103,7 +107,8 @@
       {
         "name": "Osula",
         "position": "FWD",
-        "club": "NEW"
+        "club": "NEW",
+        "points": 16
       },
       {
         "name": "Šeško",
@@ -190,12 +195,14 @@
         "aliases": [
           "Mamadou Sangare",
           "Mamadou Sangaré"
-        ]
+        ],
+        "points": 31
       },
       {
         "name": "Schlager",
         "position": "MID",
-        "club": "NFO"
+        "club": "NFO",
+        "points": 24
       },
       {
         "name": "Yalcouyé",
@@ -247,7 +254,8 @@
       {
         "name": "White",
         "position": "DEF",
-        "club": "ARS"
+        "club": "ARS",
+        "points": 42
       },
       {
         "name": "Jacquet",
@@ -301,7 +309,8 @@
       {
         "name": "Rashford",
         "position": "MID",
-        "club": "MUN"
+        "club": "MUN",
+        "points": 11
       },
       {
         "name": "Kroupi.Jr",
@@ -347,17 +356,20 @@
       {
         "name": "Justin",
         "position": "DEF",
-        "club": "LEE"
+        "club": "LEE",
+        "points": 42
       },
       {
         "name": "Ajer",
         "position": "DEF",
-        "club": "BRE"
+        "club": "BRE",
+        "points": 40
       },
       {
         "name": "Murillo",
         "position": "DEF",
-        "club": "NFO"
+        "club": "NFO",
+        "points": 31
       },
       {
         "name": "Mukiele",
@@ -392,7 +404,8 @@
       {
         "name": "Lewis-Potter",
         "position": "MID",
-        "club": "BRE"
+        "club": "BRE",
+        "points": 38
       },
       {
         "name": "Ndiaye",
@@ -402,17 +415,20 @@
       {
         "name": "Kamada",
         "position": "MID",
-        "club": "CRY"
+        "club": "CRY",
+        "points": 34
       },
       {
         "name": "Wharton",
         "position": "MID",
-        "club": "CRY"
+        "club": "CRY",
+        "points": 27
       },
       {
         "name": "Okafor",
         "position": "MID",
-        "club": "LEE"
+        "club": "LEE",
+        "points": 23
       },
       {
         "name": "Isak",
@@ -422,7 +438,8 @@
       {
         "name": "Kostoulas",
         "position": "FWD",
-        "club": "BHA"
+        "club": "BHA",
+        "points": 45
       },
       {
         "name": "Thiago",
@@ -459,7 +476,8 @@
       {
         "name": "Ajayi",
         "position": "DEF",
-        "club": "HUL"
+        "club": "HUL",
+        "points": 36
       },
       {
         "name": "Rúben",
@@ -485,7 +503,8 @@
       {
         "name": "Belloumi",
         "position": "MID",
-        "club": "HUL"
+        "club": "HUL",
+        "points": 48
       },
       {
         "name": "Manzambi",
@@ -525,7 +544,8 @@
       {
         "name": "Barry",
         "position": "FWD",
-        "club": "EVE"
+        "club": "EVE",
+        "points": 39
       },
       {
         "name": "Calvert-Lewin",
@@ -572,7 +592,8 @@
       {
         "name": "Davis",
         "position": "DEF",
-        "club": "IPS"
+        "club": "IPS",
+        "points": 29
       },
       {
         "name": "Aina",
@@ -607,7 +628,8 @@
       {
         "name": "Janelt",
         "position": "MID",
-        "club": "BRE"
+        "club": "BRE",
+        "points": 35
       },
       {
         "name": "Wirtz",
@@ -632,7 +654,8 @@
       {
         "name": "Caicedo",
         "position": "MID",
-        "club": "CHE"
+        "club": "CHE",
+        "points": 11
       },
       {
         "name": "Marmoush",
@@ -719,12 +742,14 @@
       {
         "name": "Anthony",
         "position": "MID",
-        "club": "BRE"
+        "club": "BRE",
+        "points": 27
       },
       {
         "name": "Hinshelwood",
         "position": "MID",
-        "club": "BHA"
+        "club": "BHA",
+        "points": 24
       },
       {
         "name": "Fernandes",
@@ -765,7 +790,8 @@
       {
         "name": "Tzolakis",
         "position": "GKP",
-        "club": "HUL"
+        "club": "HUL",
+        "points": 43
       },
       {
         "name": "Martinez",
@@ -785,7 +811,8 @@
       {
         "name": "Mykolenko",
         "position": "DEF",
-        "club": "EVE"
+        "club": "EVE",
+        "points": 34
       },
       {
         "name": "Dedić",
@@ -820,7 +847,8 @@
       {
         "name": "King",
         "position": "MID",
-        "club": "FUL"
+        "club": "FUL",
+        "points": 36
       },
       {
         "name": "Buendía",

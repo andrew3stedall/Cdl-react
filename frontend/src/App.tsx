@@ -116,6 +116,7 @@ export function App({
     let cancelled = false;
     let inFlight = false;
     let lastSuccessfulSync = 0;
+    let entryRefreshPending = true;
 
     const readLastSync = (): number => {
       try {
@@ -131,7 +132,7 @@ export function App({
         inFlight ||
         document.visibilityState !== 'visible' ||
         !navigator.onLine ||
-        Date.now() - readLastSync() < intervalMs
+        (!entryRefreshPending && Date.now() - readLastSync() < intervalMs)
       ) return;
 
       inFlight = true;
@@ -146,6 +147,7 @@ export function App({
         if (!response.ok || cancelled) return;
 
         lastSuccessfulSync = Date.now();
+        entryRefreshPending = false;
         try {
           window.localStorage.setItem(lastSyncKey, String(lastSuccessfulSync));
         } catch {

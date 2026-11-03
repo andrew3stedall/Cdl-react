@@ -18,9 +18,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 EXPECTED_REPOSITORY = "andrew3stedall/Cdl-react"
 EXPECTED_PROJECT = "cdl-react-staging-ast"
-EXPECTED_INSTANCE = (
-    "cdl-react-staging-ast:australia-southeast1:cdl-react-staging-postgres"
-)
+EXPECTED_INSTANCE = "cdl-react-staging-ast:australia-southeast1:cdl-react-staging-postgres"
 EXPECTED_LEAGUE = "league-cdl-2026-27"
 EXPECTED_SEASON = "season-cdl-2026-27"
 CONFIRMATION = "APPLY CASTLE ROSTER SNAPSHOT TO STAGING"
@@ -112,20 +110,17 @@ def resolve_players(session: Session, metadata: MetaData, teams: dict) -> dict[s
     epl_teams_table = Table("epl_teams", metadata, autoload_with=session.connection())
     # Load position and club alongside the name fields so every match is exact
     # to the screenshot's position and Premier League team.
-    statement = (
-        select(
-            players_table.c.id,
-            players_table.c.web_name,
-            players_table.c.first_name,
-            players_table.c.second_name,
-            players_table.c.position_id,
-            epl_teams_table.c.short_name,
-        )
-        .select_from(
-            players_table.join(
-                epl_teams_table,
-                players_table.c.team_id == epl_teams_table.c.id,
-            )
+    statement = select(
+        players_table.c.id,
+        players_table.c.web_name,
+        players_table.c.first_name,
+        players_table.c.second_name,
+        players_table.c.position_id,
+        epl_teams_table.c.short_name,
+    ).select_from(
+        players_table.join(
+            epl_teams_table,
+            players_table.c.team_id == epl_teams_table.c.id,
         )
     )
     available = session.execute(statement).mappings().all()
@@ -138,10 +133,7 @@ def resolve_players(session: Session, metadata: MetaData, teams: dict) -> dict[s
             target_names.update(normalize(alias) for alias in item.get("aliases", []))
             candidates = []
             for row in available:
-                if (
-                    row["position_id"] != item["position"]
-                    or row["short_name"] != item["club"]
-                ):
+                if row["position_id"] != item["position"] or row["short_name"] != item["club"]:
                     continue
                 names = {
                     normalize(str(row.get("web_name") or "")),
@@ -184,9 +176,13 @@ def reconcile(session: Session, snapshot: Path) -> dict:
     slots = Table("squad_roster_slots", metadata, autoload_with=session.connection())
     audit = Table("squad_audit_events", metadata, autoload_with=session.connection())
 
-    season = session.execute(
-        select(seasons.c.id, seasons.c.league_id).where(seasons.c.id == EXPECTED_SEASON)
-    ).mappings().one_or_none()
+    season = (
+        session.execute(
+            select(seasons.c.id, seasons.c.league_id).where(seasons.c.id == EXPECTED_SEASON)
+        )
+        .mappings()
+        .one_or_none()
+    )
     if season is None or season["league_id"] != EXPECTED_LEAGUE:
         raise ValueError("Expected staging season is missing or bound to another league")
     existing_teams = set(
@@ -197,11 +193,15 @@ def reconcile(session: Session, snapshot: Path) -> dict:
     if existing_teams != TEAM_IDS:
         raise ValueError("Staging team set differs from the reviewed snapshot")
 
-    slot_rows = session.execute(
-        select(slots.c.id, slots.c.draft_team_id, slots.c.sort_order)
-        .where(slots.c.season_id == EXPECTED_SEASON)
-        .order_by(slots.c.draft_team_id, slots.c.sort_order)
-    ).mappings().all()
+    slot_rows = (
+        session.execute(
+            select(slots.c.id, slots.c.draft_team_id, slots.c.sort_order)
+            .where(slots.c.season_id == EXPECTED_SEASON)
+            .order_by(slots.c.draft_team_id, slots.c.sort_order)
+        )
+        .mappings()
+        .all()
+    )
     slot_ids: dict[str, list[str]] = defaultdict(list)
     for row in slot_rows:
         slot_ids[row["draft_team_id"]].append(row["id"])
@@ -214,19 +214,22 @@ def reconcile(session: Session, snapshot: Path) -> dict:
         for team_id, roster in resolved.items()
         for order, item in enumerate(roster, start=1)
     }
-    current_rows = session.execute(
-        select(
-            ownerships.c.id,
-            ownerships.c.player_id,
-            ownerships.c.draft_team_id,
-            ownerships.c.roster_slot_id,
-            ownerships.c.started_at,
+    current_rows = (
+        session.execute(
+            select(
+                ownerships.c.id,
+                ownerships.c.player_id,
+                ownerships.c.draft_team_id,
+                ownerships.c.roster_slot_id,
+                ownerships.c.started_at,
+            ).where(
+                ownerships.c.season_id == EXPECTED_SEASON,
+                ownerships.c.ended_at.is_(None),
+            )
         )
-        .where(
-            ownerships.c.season_id == EXPECTED_SEASON,
-            ownerships.c.ended_at.is_(None),
-        )
-    ).mappings().all()
+        .mappings()
+        .all()
+    )
     current_by_player: dict[str, list[dict]] = defaultdict(list)
     for row in current_rows:
         current_by_player[row["player_id"]].append(dict(row))
@@ -284,9 +287,12 @@ def reconcile(session: Session, snapshot: Path) -> dict:
                     }
                 )
         else:
-            row_id = "snapshot-" + hashlib.sha256(
-                f"{EXPECTED_SEASON}:{player_id}:{as_of.date().isoformat()}".encode()
-            ).hexdigest()[:40]
+            row_id = (
+                "snapshot-"
+                + hashlib.sha256(
+                    f"{EXPECTED_SEASON}:{player_id}:{as_of.date().isoformat()}".encode()
+                ).hexdigest()[:40]
+            )
             session.execute(
                 insert(ownerships).values(
                     id=row_id,
@@ -308,13 +314,16 @@ def reconcile(session: Session, snapshot: Path) -> dict:
             )
             added += 1
 
-    verification_rows = session.execute(
-        select(ownerships.c.player_id, ownerships.c.draft_team_id)
-        .where(
-            ownerships.c.season_id == EXPECTED_SEASON,
-            ownerships.c.ended_at.is_(None),
+    verification_rows = (
+        session.execute(
+            select(ownerships.c.player_id, ownerships.c.draft_team_id).where(
+                ownerships.c.season_id == EXPECTED_SEASON,
+                ownerships.c.ended_at.is_(None),
+            )
         )
-    ).mappings().all()
+        .mappings()
+        .all()
+    )
     actual: dict[str, set[str]] = defaultdict(set)
     for row in verification_rows:
         actual[row["draft_team_id"]].add(row["player_id"])
@@ -356,9 +365,7 @@ def reconcile(session: Session, snapshot: Path) -> dict:
         team_report[team_id] = {
             "players": actual_counts[team_id],
             "changes": sum(
-                1
-                for item in changed
-                if item["from_team"] == team_id or item["to_team"] == team_id
+                1 for item in changed if item["from_team"] == team_id or item["to_team"] == team_id
             ),
         }
     return {
@@ -399,15 +406,11 @@ def main() -> None:
     if summary_path:
         with Path(summary_path).open("a", encoding="utf-8") as summary:
             summary.write("\n### Castle roster snapshot reconciliation\n\n")
-            summary.write(
-                f"- Current players verified: {report['total_current_players']}\n"
-            )
+            summary.write(f"- Current players verified: {report['total_current_players']}\n")
             summary.write(f"- Allocations changed: {report['allocations_changed']}\n\n")
             summary.write("| Team | Players | Affected |\n|---|---:|---:|\n")
             for team_id, details in report["rosters"].items():
-                summary.write(
-                    f"| {team_id} | {details['players']} | {details['changes']} |\n"
-                )
+                summary.write(f"| {team_id} | {details['players']} | {details['changes']} |\n")
 
 
 if __name__ == "__main__":

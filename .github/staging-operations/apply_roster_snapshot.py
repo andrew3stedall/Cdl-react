@@ -121,7 +121,12 @@ def resolve_players(session: Session, metadata: MetaData, teams: dict) -> dict[s
             players_table.c.position_id,
             epl_teams_table.c.short_name,
         )
-        .select_from(players_table.join(epl_teams_table, players_table.c.team_id == epl_teams_table.c.id))
+        .select_from(
+            players_table.join(
+                epl_teams_table,
+                players_table.c.team_id == epl_teams_table.c.id,
+            )
+        )
     )
     available = session.execute(statement).mappings().all()
     resolved: dict[str, list[dict]] = {}
@@ -227,10 +232,14 @@ def reconcile(session: Session, snapshot: Path) -> dict:
         current_by_player[row["player_id"]].append(dict(row))
     duplicates = [player_id for player_id, rows in current_by_player.items() if len(rows) > 1]
     if duplicates:
-        raise ValueError(f"Staging has {len(duplicates)} players with multiple current ownership rows")
+        raise ValueError(
+            f"Staging has {len(duplicates)} players with multiple current ownership rows"
+        )
 
-    for player_id, row in ((pid, rows[0]) for pid, rows in current_by_player.items()):
-        if row["started_at"] and row["started_at"].replace(tzinfo=row["started_at"].tzinfo or UTC) > as_of:
+    for rows in current_by_player.values():
+        row = rows[0]
+        started_at = row["started_at"]
+        if started_at and started_at.replace(tzinfo=started_at.tzinfo or UTC) > as_of:
             raise ValueError("A current ownership begins after the screenshot snapshot date")
 
     now = datetime.now(UTC)
@@ -255,7 +264,7 @@ def reconcile(session: Session, snapshot: Path) -> dict:
             )
             ended += 1
 
-    for player_id, (team_id, order, item) in expected_by_id.items():
+    for player_id, (team_id, order, _item) in expected_by_id.items():
         slot_id = slot_ids[team_id][order - 1]
         rows = current_by_player.get(player_id, [])
         if rows:
@@ -390,11 +399,17 @@ def main() -> None:
     if summary_path:
         with Path(summary_path).open("a", encoding="utf-8") as summary:
             summary.write("\n### Castle roster snapshot reconciliation\n\n")
-            summary.write(f"`{report['total_current_players']}` current player allocations verified. ")
-            summary.write(f"`{report['allocations_changed']}` allocations changed.\n\n")
+            summary.write(
+                summary.write(f"`{report['total_current_players']}` current player allocations verified. ")
+            )
+            summary.write(
+                summary.write(f"`{report['allocations_changed']}` allocations changed.\n\n")
+            )
             summary.write("Team totals:\n\n")
             for team_id, details in report["rosters"].items():
-                summary.write(f"- `{team_id}`: {details['players']} players, {details['changes']} affected\n")
+                summary.write(
+                    summary.write(f"- `{team_id}`: {details['players']} players, {details['changes']} affected\n")
+                )
 
 
 if __name__ == "__main__":

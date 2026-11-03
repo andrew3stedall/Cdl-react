@@ -400,15 +400,13 @@ def main() -> None:
         with Path(summary_path).open("a", encoding="utf-8") as summary:
             summary.write("\n### Castle roster snapshot reconciliation\n\n")
             summary.write(
-                summary.write(f"`{report['total_current_players']}` current player allocations verified. ")
+                f"- Current players verified: {report['total_current_players']}\n"
             )
-            summary.write(
-                summary.write(f"`{report['allocations_changed']}` allocations changed.\n\n")
-            )
-            summary.write("Team totals:\n\n")
+            summary.write(f"- Allocations changed: {report['allocations_changed']}\n\n")
+            summary.write("| Team | Players | Affected |\n|---|---:|---:|\n")
             for team_id, details in report["rosters"].items():
                 summary.write(
-                    summary.write(f"- `{team_id}`: {details['players']} players, {details['changes']} affected\n")
+                    f"| {team_id} | {details['players']} | {details['changes']} |\n"
                 )
 
 

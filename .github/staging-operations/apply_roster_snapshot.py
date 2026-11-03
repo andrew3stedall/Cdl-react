@@ -124,6 +124,15 @@ def resolve_players(session: Session, metadata: MetaData, teams: dict) -> dict[s
         )
     )
     available = session.execute(statement).mappings().all()
+    ownerships_table = Table("squad_ownerships", metadata, autoload_with=session.connection())
+    active_player_ids = set(
+        session.execute(
+            select(ownerships_table.c.player_id).where(
+                ownerships_table.c.season_id == EXPECTED_SEASON,
+                ownerships_table.c.ended_at.is_(None),
+            )
+        ).scalars()
+    )
     resolved: dict[str, list[dict]] = {}
     failures: list[str] = []
     for team_id, roster in teams.items():
@@ -152,6 +161,12 @@ def resolve_players(session: Session, metadata: MetaData, teams: dict) -> dict[s
                 names.discard("")
                 if target_names.intersection(names):
                     candidates.append(row)
+            if len(candidates) > 1:
+                active_candidates = [
+                    candidate for candidate in candidates if candidate["id"] in active_player_ids
+                ]
+                if len(active_candidates) == 1:
+                    candidates = active_candidates
             if len(candidates) != 1:
                 failures.append(
                     f"{team_id}:{item['position']}:{item['club']}:{item['name']} "

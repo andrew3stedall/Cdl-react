@@ -138,7 +138,7 @@ fixtures during active GW: 15-60 minutes
 element-summary: 6 hours
 ```
 
-The staging rollout performs one refresh after deployment. While an authenticated manager has the app open and visible, the client requests an official refresh on entry when the last successful sync is at least five minutes old, then checks every 30 seconds and refreshes at five-minute intervals. Hidden tabs pause refreshes; returning to the app resumes them. A browser lock coordinates tabs on the same device. Each refresh reads `bootstrap-static` and `fixtures`, updates current/next gameweek markers, fetches active `event-live` scores, and recalculates provisional CDL fixture scores. No permanent Cloud Scheduler runs FPL refreshes. Element-summary remains on demand and cached for six hours.
+After each app entry by an authenticated manager, the client immediately requests an official refresh even when another refresh succeeded within the previous five minutes. While the app stays open and visible, it checks every 30 seconds and refreshes again once five minutes have elapsed since the last success. Hidden tabs pause refreshes; returning to the app resumes them. A browser lock coordinates concurrent tabs on the same device. Each refresh reads `bootstrap-static` and `fixtures`, fetches active `event-live` scores, then runs the idempotent settlement pass. Settlement locks due lineups, applies automatic substitutions when completed scores are ready, freezes checked gameweek results with FPL bonus points and CDL bonus awards, and refreshes the knockout schedule; league standings then reflect the settled fixture results. No permanent Cloud Scheduler runs FPL refreshes. Element-summary remains on demand and cached for six hours.
 
 ## Data Access Requirements
 

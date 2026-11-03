@@ -12,10 +12,9 @@ from collections import Counter, defaultdict
 from datetime import UTC, datetime
 from pathlib import Path
 
-from sqlalchemy import MetaData, Table, insert, select, update
+from sqlalchemy import MetaData, Table, create_engine, insert, select, update
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session, sessionmaker
-from sqlalchemy import create_engine
 
 EXPECTED_REPOSITORY = "andrew3stedall/Cdl-react"
 EXPECTED_PROJECT = "cdl-react-staging-ast"
@@ -111,24 +110,6 @@ def load_snapshot(path: Path) -> tuple[dict, datetime]:
 def resolve_players(session: Session, metadata: MetaData, teams: dict) -> dict[str, list[dict]]:
     players_table = Table("fpl_players", metadata, autoload_with=session.connection())
     epl_teams_table = Table("epl_teams", metadata, autoload_with=session.connection())
-    statement = (
-        select(
-            players_table.c.id,
-            players_table.c.web_name,
-            players_table.c.first_name,
-            players_table.c.second_name,
-        )
-        .select_from(players_table.join(epl_teams_table, players_table.c.team_id == epl_teams_table.c.id))
-    )
-    available = session.execute(statement).mappings().all()
-    by_identity = defaultdict(list)
-    for row in available:
-        for expected_team, roster in teams.items():
-            for player in roster:
-                if row["id"] in by_identity:
-                    continue
-                if row.get("position_id") is not None:
-                    pass
     # Load position and club alongside the name fields so every match is exact
     # to the screenshot's position and Premier League team.
     statement = (

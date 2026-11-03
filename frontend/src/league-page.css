@@ -211,6 +211,7 @@
   align-items: stretch;
   display: flex;
   min-width: 0;
+  position: relative;
 }
 
 .league-round-carousel__slide {
@@ -1618,6 +1619,10 @@
   max-width: 100%;
   overflow-x: auto;
   overscroll-behavior-inline: contain;
+}
+
+.league-round-results .league-table-scroll {
+  touch-action: pan-y pinch-zoom;
 }
 
 .league-table-scroll:focus-visible {

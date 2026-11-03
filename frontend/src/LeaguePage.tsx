@@ -1,4 +1,4 @@
-import { type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject, type TouchEvent as ReactTouchEvent, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   BookOpen,
   CalendarDays,
@@ -821,6 +821,7 @@ function RoundCarousel({ allFixtures, leagueClient, managerTeamId, onOpenFixture
   const [selectedRoundIndex, setSelectedRoundIndex] = useState(initialRoundIndex);
   const [selectedGameweekIndex, setSelectedGameweekIndex] = useState(initialGameweekIndex);
   const resultsSwipeStartRef = useRef<{ captured: boolean; x: number; y: number } | null>(null);
+  const resultsTouchStartRef = useRef<{ identifier: number; x: number; y: number } | null>(null);
   const resultsSwipeHandledRef = useRef(false);
   const roundOptions = useMemo(() => ({
     align: 'center' as const,
@@ -841,8 +842,16 @@ function RoundCarousel({ allFixtures, leagueClient, managerTeamId, onOpenFixture
     setSelectedRoundIndex(roundIndex);
   }, [roundApi]);
 
+  const handleResultsSwipe = useCallback((deltaX: number, deltaY: number): void => {
+    if (Math.abs(deltaX) < 42 || Math.abs(deltaX) <= Math.abs(deltaY) * 1.15) return;
+
+    resultsSwipeHandledRef.current = true;
+    const destination = (roundApi?.selectedScrollSnap() ?? selectedRoundIndex) + (deltaX < 0 ? 1 : -1);
+    if (destination >= 0 && destination < rounds.length) roundApi?.scrollTo(destination);
+  }, [roundApi, rounds.length, selectedRoundIndex]);
+
   const handleResultsPointerDown = useCallback((event: ReactPointerEvent<HTMLDivElement>): void => {
-    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    if (event.pointerType !== 'mouse' || event.button !== 0) return;
     resultsSwipeHandledRef.current = false;
     resultsSwipeStartRef.current = { captured: false, x: event.clientX, y: event.clientY };
   }, []);
@@ -861,18 +870,31 @@ function RoundCarousel({ allFixtures, leagueClient, managerTeamId, onOpenFixture
   const handleResultsPointerUp = useCallback((event: ReactPointerEvent<HTMLDivElement>): void => {
     const start = resultsSwipeStartRef.current;
     resultsSwipeStartRef.current = null;
-    if (!start?.captured) return;
+    if (start?.captured) handleResultsSwipe(event.clientX - start.x, event.clientY - start.y);
+  }, [handleResultsSwipe]);
 
-    const deltaX = event.clientX - start.x;
-    const deltaY = event.clientY - start.y;
-    if (Math.abs(deltaX) < 42 || Math.abs(deltaX) <= Math.abs(deltaY) * 1.15) return;
+  const handleResultsTouchStart = useCallback((event: ReactTouchEvent<HTMLDivElement>): void => {
+    if (event.touches.length !== 1) {
+      resultsTouchStartRef.current = null;
+      return;
+    }
+    const touch = event.touches[0];
+    if (!touch) return;
+    resultsSwipeHandledRef.current = false;
+    resultsTouchStartRef.current = { identifier: touch.identifier, x: touch.clientX, y: touch.clientY };
+  }, []);
 
-    const destination = (roundApi?.selectedScrollSnap() ?? selectedRoundIndex) + (deltaX < 0 ? 1 : -1);
-    if (destination < 0 || destination >= rounds.length) return;
+  const handleResultsTouchEnd = useCallback((event: ReactTouchEvent<HTMLDivElement>): void => {
+    const start = resultsTouchStartRef.current;
+    resultsTouchStartRef.current = null;
+    if (!start) return;
+    const touch = Array.from(event.changedTouches).find((candidate) => candidate.identifier === start.identifier);
+    if (touch) handleResultsSwipe(touch.clientX - start.x, touch.clientY - start.y);
+  }, [handleResultsSwipe]);
 
-    resultsSwipeHandledRef.current = true;
-    roundApi?.scrollTo(destination);
-  }, [roundApi, rounds.length, selectedRoundIndex]);
+  const handleResultsTouchCancel = useCallback((): void => {
+    resultsTouchStartRef.current = null;
+  }, []);
 
   const handleResultsPointerCancel = useCallback((): void => {
     resultsSwipeStartRef.current = null;
@@ -995,6 +1017,9 @@ function RoundCarousel({ allFixtures, leagueClient, managerTeamId, onOpenFixture
           onPointerDown={handleResultsPointerDown}
           onPointerMove={handleResultsPointerMove}
           onPointerUp={handleResultsPointerUp}
+          onTouchCancel={handleResultsTouchCancel}
+          onTouchEnd={handleResultsTouchEnd}
+          onTouchStart={handleResultsTouchStart}
           ref={resultsViewportRef}
         >
           <div className="league-round-carousel__track league-round-results__track" ref={resultsTrackRef}>

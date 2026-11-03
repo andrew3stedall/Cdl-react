@@ -1,0 +1,867 @@
+{
+  "version": 1,
+  "source": "Castle app screenshots supplied by the league commissioner",
+  "as_of": "2026-11-04",
+  "league_id": "league-cdl-2026-27",
+  "season_id": "season-cdl-2026-27",
+  "teams": {
+    "team-bayer-neverlusen": [
+      {
+        "name": "Raya",
+        "position": "GKP",
+        "club": "ARS"
+      },
+      {
+        "name": "Kelleher",
+        "position": "GKP",
+        "club": "BRE"
+      },
+      {
+        "name": "De Cuyper",
+        "position": "DEF",
+        "club": "BHA"
+      },
+      {
+        "name": "Bogle",
+        "position": "DEF",
+        "club": "LEE"
+      },
+      {
+        "name": "Branthwaite",
+        "position": "DEF",
+        "club": "EVE"
+      },
+      {
+        "name": "Mitchell",
+        "position": "DEF",
+        "club": "CRY"
+      },
+      {
+        "name": "Van de Ven",
+        "position": "DEF",
+        "club": "TOT"
+      },
+      {
+        "name": "Muñoz",
+        "position": "DEF",
+        "club": "NFO"
+      },
+      {
+        "name": "O'Reilly",
+        "position": "DEF",
+        "club": "MCI"
+      },
+      {
+        "name": "Senesi",
+        "position": "DEF",
+        "club": "TOT"
+      },
+      {
+        "name": "Dewsbury-Hall",
+        "position": "MID",
+        "club": "EVE"
+      },
+      {
+        "name": "Saka",
+        "position": "MID",
+        "club": "ARS"
+      },
+      {
+        "name": "Mainoo",
+        "position": "MID",
+        "club": "MUN"
+      },
+      {
+        "name": "Tielemans",
+        "position": "MID",
+        "club": "MUN"
+      },
+      {
+        "name": "Enzo",
+        "position": "MID",
+        "club": "MCI"
+      },
+      {
+        "name": "Garnacho",
+        "position": "MID",
+        "club": "AVL"
+      },
+      {
+        "name": "N.Jackson",
+        "position": "FWD",
+        "club": "AVL",
+        "aliases": [
+          "Nicholas Jackson",
+          "Nicolas Jackson"
+        ]
+      },
+      {
+        "name": "Emersonn",
+        "position": "FWD",
+        "club": "IPS"
+      },
+      {
+        "name": "Osula",
+        "position": "FWD",
+        "club": "NEW"
+      },
+      {
+        "name": "Šeško",
+        "position": "FWD",
+        "club": "MUN"
+      }
+    ],
+    "team-dicks-dribbling-xi": [
+      {
+        "name": "Pickford",
+        "position": "GKP",
+        "club": "EVE"
+      },
+      {
+        "name": "Suzuki",
+        "position": "GKP",
+        "club": "AVL"
+      },
+      {
+        "name": "Tarkowski",
+        "position": "DEF",
+        "club": "EVE"
+      },
+      {
+        "name": "Hill",
+        "position": "DEF",
+        "club": "BOU"
+      },
+      {
+        "name": "N.Williams",
+        "position": "DEF",
+        "club": "NFO",
+        "aliases": [
+          "Neco Williams"
+        ]
+      },
+      {
+        "name": "Mendy",
+        "position": "DEF",
+        "club": "HUL"
+      },
+      {
+        "name": "Botman",
+        "position": "DEF",
+        "club": "NEW"
+      },
+      {
+        "name": "Ballard",
+        "position": "DEF",
+        "club": "SUN"
+      },
+      {
+        "name": "Pedro Porro",
+        "position": "DEF",
+        "club": "TOT"
+      },
+      {
+        "name": "Cherki",
+        "position": "MID",
+        "club": "MCI"
+      },
+      {
+        "name": "Cunha",
+        "position": "MID",
+        "club": "MUN"
+      },
+      {
+        "name": "Enciso",
+        "position": "MID",
+        "club": "IPS"
+      },
+      {
+        "name": "B.Fernandes",
+        "position": "MID",
+        "club": "MUN",
+        "aliases": [
+          "Bruno Fernandes"
+        ]
+      },
+      {
+        "name": "M.Sangaré",
+        "position": "MID",
+        "club": "BRE",
+        "aliases": [
+          "Mamadou Sangare",
+          "Mamadou Sangaré"
+        ]
+      },
+      {
+        "name": "Schlager",
+        "position": "MID",
+        "club": "NFO"
+      },
+      {
+        "name": "Yalcouyé",
+        "position": "MID",
+        "club": "BHA"
+      },
+      {
+        "name": "McBurnie",
+        "position": "FWD",
+        "club": "HUL"
+      },
+      {
+        "name": "Solanke",
+        "position": "FWD",
+        "club": "TOT"
+      },
+      {
+        "name": "Cherif",
+        "position": "FWD",
+        "club": "COV"
+      },
+      {
+        "name": "Ekitiké",
+        "position": "FWD",
+        "club": "LIV"
+      }
+    ],
+    "team-exeter-gently": [
+      {
+        "name": "Donnarumma",
+        "position": "GKP",
+        "club": "MCI"
+      },
+      {
+        "name": "Lammens",
+        "position": "GKP",
+        "club": "MUN"
+      },
+      {
+        "name": "Gabriel",
+        "position": "DEF",
+        "club": "ARS"
+      },
+      {
+        "name": "Muharemović",
+        "position": "DEF",
+        "club": "LEE"
+      },
+      {
+        "name": "White",
+        "position": "DEF",
+        "club": "ARS"
+      },
+      {
+        "name": "Jacquet",
+        "position": "DEF",
+        "club": "LIV"
+      },
+      {
+        "name": "Guéhi",
+        "position": "DEF",
+        "club": "MCI"
+      },
+      {
+        "name": "Lacroix",
+        "position": "DEF",
+        "club": "CHE"
+      },
+      {
+        "name": "Methalie",
+        "position": "DEF",
+        "club": "SUN"
+      },
+      {
+        "name": "Rice",
+        "position": "MID",
+        "club": "ARS"
+      },
+      {
+        "name": "Neto",
+        "position": "MID",
+        "club": "CHE"
+      },
+      {
+        "name": "E.Le Fée",
+        "position": "MID",
+        "club": "SUN",
+        "aliases": [
+          "Enzo Le Fee",
+          "Enzo Le Fée"
+        ]
+      },
+      {
+        "name": "George",
+        "position": "MID",
+        "club": "EVE"
+      },
+      {
+        "name": "Wilson",
+        "position": "MID",
+        "club": "LEE"
+      },
+      {
+        "name": "Rashford",
+        "position": "MID",
+        "club": "MUN"
+      },
+      {
+        "name": "Kroupi.Jr",
+        "position": "MID",
+        "club": "BOU",
+        "aliases": [
+          "Eli Junior Kroupi",
+          "Kroupi"
+        ]
+      },
+      {
+        "name": "Fofana",
+        "position": "MID",
+        "club": "SUN"
+      },
+      {
+        "name": "Haaland",
+        "position": "FWD",
+        "club": "MCI"
+      },
+      {
+        "name": "Havertz",
+        "position": "FWD",
+        "club": "ARS"
+      },
+      {
+        "name": "Brobbey",
+        "position": "FWD",
+        "club": "SUN"
+      }
+    ],
+    "team-koden-all-stars": [
+      {
+        "name": "Verbruggen",
+        "position": "GKP",
+        "club": "BHA"
+      },
+      {
+        "name": "Trafford",
+        "position": "GKP",
+        "club": "LEE"
+      },
+      {
+        "name": "Justin",
+        "position": "DEF",
+        "club": "LEE"
+      },
+      {
+        "name": "Ajer",
+        "position": "DEF",
+        "club": "BRE"
+      },
+      {
+        "name": "Murillo",
+        "position": "DEF",
+        "club": "NFO"
+      },
+      {
+        "name": "Mukiele",
+        "position": "DEF",
+        "club": "SUN"
+      },
+      {
+        "name": "Thiaw",
+        "position": "DEF",
+        "club": "NEW"
+      },
+      {
+        "name": "Dalot",
+        "position": "DEF",
+        "club": "MUN"
+      },
+      {
+        "name": "Shaw",
+        "position": "DEF",
+        "club": "MUN"
+      },
+      {
+        "name": "James",
+        "position": "DEF",
+        "club": "CHE"
+      },
+      {
+        "name": "Tavernier",
+        "position": "MID",
+        "club": "BOU"
+      },
+      {
+        "name": "Lewis-Potter",
+        "position": "MID",
+        "club": "BRE"
+      },
+      {
+        "name": "Ndiaye",
+        "position": "MID",
+        "club": "MCI"
+      },
+      {
+        "name": "Kamada",
+        "position": "MID",
+        "club": "CRY"
+      },
+      {
+        "name": "Wharton",
+        "position": "MID",
+        "club": "CRY"
+      },
+      {
+        "name": "Okafor",
+        "position": "MID",
+        "club": "LEE"
+      },
+      {
+        "name": "Isak",
+        "position": "FWD",
+        "club": "LIV"
+      },
+      {
+        "name": "Kostoulas",
+        "position": "FWD",
+        "club": "BHA"
+      },
+      {
+        "name": "Thiago",
+        "position": "FWD",
+        "club": "BRE"
+      },
+      {
+        "name": "Strand Larsen",
+        "position": "FWD",
+        "club": "CRY"
+      }
+    ],
+    "team-sporting-lesbians": [
+      {
+        "name": "Roefs",
+        "position": "GKP",
+        "club": "SUN"
+      },
+      {
+        "name": "Sels",
+        "position": "GKP",
+        "club": "NFO"
+      },
+      {
+        "name": "Van Hecke",
+        "position": "DEF",
+        "club": "TOT"
+      },
+      {
+        "name": "Konsa",
+        "position": "DEF",
+        "club": "ARS"
+      },
+      {
+        "name": "Ajayi",
+        "position": "DEF",
+        "club": "HUL"
+      },
+      {
+        "name": "Rúben",
+        "position": "DEF",
+        "club": "MCI",
+        "aliases": [
+          "Ruben Dias"
+        ]
+      },
+      {
+        "name": "Matheus N.",
+        "position": "DEF",
+        "club": "MCI",
+        "aliases": [
+          "Matheus Nunes"
+        ]
+      },
+      {
+        "name": "Saliba",
+        "position": "DEF",
+        "club": "ARS"
+      },
+      {
+        "name": "Belloumi",
+        "position": "MID",
+        "club": "HUL"
+      },
+      {
+        "name": "Manzambi",
+        "position": "MID",
+        "club": "AVL"
+      },
+      {
+        "name": "Semenyo",
+        "position": "MID",
+        "club": "MCI"
+      },
+      {
+        "name": "Scott",
+        "position": "MID",
+        "club": "BOU"
+      },
+      {
+        "name": "Muñoz",
+        "position": "MID",
+        "club": "LIV"
+      },
+      {
+        "name": "Garner",
+        "position": "MID",
+        "club": "EVE"
+      },
+      {
+        "name": "Szoboszlai",
+        "position": "MID",
+        "club": "LIV"
+      },
+      {
+        "name": "Tzolis",
+        "position": "MID",
+        "club": "ARS"
+      },
+      {
+        "name": "Barry",
+        "position": "FWD",
+        "club": "EVE"
+      },
+      {
+        "name": "Calvert-Lewin",
+        "position": "FWD",
+        "club": "LEE"
+      },
+      {
+        "name": "Wissa",
+        "position": "FWD",
+        "club": "NEW"
+      },
+      {
+        "name": "Madjo",
+        "position": "FWD",
+        "club": "AVL"
+      }
+    ],
+    "team-stan-still-sells-tik": [
+      {
+        "name": "Horníček",
+        "position": "GKP",
+        "club": "NEW"
+      },
+      {
+        "name": "Henderson",
+        "position": "GKP",
+        "club": "CRY"
+      },
+      {
+        "name": "Calafiori",
+        "position": "DEF",
+        "club": "ARS"
+      },
+      {
+        "name": "Hall",
+        "position": "DEF",
+        "club": "NEW"
+      },
+      {
+        "name": "Araujo",
+        "position": "DEF",
+        "club": "LIV"
+      },
+      {
+        "name": "Davis",
+        "position": "DEF",
+        "club": "IPS"
+      },
+      {
+        "name": "Aina",
+        "position": "DEF",
+        "club": "NFO"
+      },
+      {
+        "name": "Frimpong",
+        "position": "DEF",
+        "club": "LIV"
+      },
+      {
+        "name": "Schade",
+        "position": "MID",
+        "club": "BRE"
+      },
+      {
+        "name": "Barnes",
+        "position": "MID",
+        "club": "NEW"
+      },
+      {
+        "name": "Ødegaard",
+        "position": "MID",
+        "club": "ARS"
+      },
+      {
+        "name": "Gakpo",
+        "position": "MID",
+        "club": "LIV"
+      },
+      {
+        "name": "Janelt",
+        "position": "MID",
+        "club": "BRE"
+      },
+      {
+        "name": "Wirtz",
+        "position": "MID",
+        "club": "LIV"
+      },
+      {
+        "name": "Kluivert",
+        "position": "MID",
+        "club": "BOU"
+      },
+      {
+        "name": "Foden",
+        "position": "MID",
+        "club": "MCI"
+      },
+      {
+        "name": "Barcola",
+        "position": "MID",
+        "club": "LIV"
+      },
+      {
+        "name": "Caicedo",
+        "position": "MID",
+        "club": "CHE"
+      },
+      {
+        "name": "Marmoush",
+        "position": "FWD",
+        "club": "TOT"
+      },
+      {
+        "name": "Gyökeres",
+        "position": "FWD",
+        "club": "ARS"
+      }
+    ],
+    "team-class-of-84": [
+      {
+        "name": "A.Becker",
+        "position": "GKP",
+        "club": "LIV",
+        "aliases": [
+          "Alisson Becker"
+        ]
+      },
+      {
+        "name": "Petrović",
+        "position": "GKP",
+        "club": "BOU"
+      },
+      {
+        "name": "Virgil",
+        "position": "DEF",
+        "club": "LIV"
+      },
+      {
+        "name": "Robertson",
+        "position": "DEF",
+        "club": "TOT"
+      },
+      {
+        "name": "Truffert",
+        "position": "DEF",
+        "club": "BOU"
+      },
+      {
+        "name": "F.Kadıoğlu",
+        "position": "DEF",
+        "club": "BHA",
+        "aliases": [
+          "Ferdi Kadioglu",
+          "Ferdi Kadıoğlu"
+        ]
+      },
+      {
+        "name": "J.Timber",
+        "position": "DEF",
+        "club": "ARS",
+        "aliases": [
+          "Jurrien Timber"
+        ]
+      },
+      {
+        "name": "Palestra",
+        "position": "DEF",
+        "club": "CHE"
+      },
+      {
+        "name": "Rogers",
+        "position": "MID",
+        "club": "CHE"
+      },
+      {
+        "name": "Mbeumo",
+        "position": "MID",
+        "club": "MUN"
+      },
+      {
+        "name": "Gibbs-White",
+        "position": "MID",
+        "club": "NFO"
+      },
+      {
+        "name": "Stach",
+        "position": "MID",
+        "club": "LEE"
+      },
+      {
+        "name": "Anthony",
+        "position": "MID",
+        "club": "BRE"
+      },
+      {
+        "name": "Hinshelwood",
+        "position": "MID",
+        "club": "BHA"
+      },
+      {
+        "name": "Fernandes",
+        "position": "MID",
+        "club": "TOT"
+      },
+      {
+        "name": "Sávio",
+        "position": "MID",
+        "club": "TOT"
+      },
+      {
+        "name": "Grealish",
+        "position": "MID",
+        "club": "EVE"
+      },
+      {
+        "name": "Evanilson",
+        "position": "FWD",
+        "club": "BOU"
+      },
+      {
+        "name": "Delap",
+        "position": "FWD",
+        "club": "NFO"
+      },
+      {
+        "name": "Fernandez-Pardo",
+        "position": "FWD",
+        "club": "NEW",
+        "aliases": [
+          "Rodrigo Fernandez-Pardo",
+          "Rodrigo Fernandez Pardo"
+        ]
+      }
+    ],
+    "team-wilde-boars": [
+      {
+        "name": "Tzolakis",
+        "position": "GKP",
+        "club": "HUL"
+      },
+      {
+        "name": "Martinez",
+        "position": "GKP",
+        "club": "CHE"
+      },
+      {
+        "name": "Vuskovic",
+        "position": "DEF",
+        "club": "BHA"
+      },
+      {
+        "name": "Gvardiol",
+        "position": "DEF",
+        "club": "MCI"
+      },
+      {
+        "name": "Mykolenko",
+        "position": "DEF",
+        "club": "EVE"
+      },
+      {
+        "name": "Dedić",
+        "position": "DEF",
+        "club": "NEW"
+      },
+      {
+        "name": "Kerkez",
+        "position": "DEF",
+        "club": "LIV"
+      },
+      {
+        "name": "Colwill",
+        "position": "DEF",
+        "club": "CHE"
+      },
+      {
+        "name": "Mosquera",
+        "position": "DEF",
+        "club": "ARS"
+      },
+      {
+        "name": "Groß",
+        "position": "MID",
+        "club": "BHA"
+      },
+      {
+        "name": "Palmer",
+        "position": "MID",
+        "club": "CHE"
+      },
+      {
+        "name": "King",
+        "position": "MID",
+        "club": "FUL"
+      },
+      {
+        "name": "Buendía",
+        "position": "MID",
+        "club": "AVL"
+      },
+      {
+        "name": "Rayan",
+        "position": "MID",
+        "club": "BOU"
+      },
+      {
+        "name": "Anderson",
+        "position": "MID",
+        "club": "MCI"
+      },
+      {
+        "name": "Bruno G.",
+        "position": "MID",
+        "club": "ARS"
+      },
+      {
+        "name": "João Pedro",
+        "position": "FWD",
+        "club": "CHE"
+      },
+      {
+        "name": "Gonzalo",
+        "position": "FWD",
+        "club": "FUL"
+      },
+      {
+        "name": "Awoniyi",
+        "position": "FWD",
+        "club": "COV"
+      },
+      {
+        "name": "Welbeck",
+        "position": "FWD",
+        "club": "CHE"
+      }
+    ]
+  }
+}

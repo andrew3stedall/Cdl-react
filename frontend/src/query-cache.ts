@@ -175,6 +175,11 @@ export function invalidateQueryCache(): void {
 }
 
 function shouldCacheRequest(url: URL, method: string, cacheMode?: RequestCache): boolean {
+  // User preferences must always reflect the latest successful write. The
+  // persistent query cache intentionally serves stale API data while it
+  // revalidates in the background, which can briefly restore an old theme or
+  // palette when the app remounts after a navigation or reload.
+  if (url.pathname === '/api/me/preferences' || url.pathname.startsWith('/api/me/preferences/')) return false;
   if (method !== 'GET' || !cacheUserId || cacheMode === 'no-store') return false;
   if (url.pathname.startsWith('/api/auth/') || url.pathname.startsWith('/api/passkeys/')) return false;
   if (url.pathname.startsWith('/api/live-draft/') || url.pathname.startsWith('/webmcp/')) return false;

@@ -1,4 +1,4 @@
-import { type CSSProperties, type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject, type TouchEvent as ReactTouchEvent, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { type CSSProperties, type ReactNode, type RefObject, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import {
   BookOpen,
   CalendarDays,
@@ -820,9 +820,6 @@ function RoundCarousel({ allFixtures, leagueClient, managerTeamId, onOpenFixture
   const initialGameweekIndex = defaultSelection.gameweekIndex;
   const [selectedRoundIndex, setSelectedRoundIndex] = useState(initialRoundIndex);
   const [selectedGameweekIndex, setSelectedGameweekIndex] = useState(initialGameweekIndex);
-  const resultsSwipeStartRef = useRef<{ captured: boolean; x: number; y: number } | null>(null);
-  const resultsTouchStartRef = useRef<{ identifier: number; x: number; y: number } | null>(null);
-  const resultsSwipeHandledRef = useRef(false);
   const roundOptions = useMemo(() => ({
     align: 'center' as const,
     containScroll: false as const,
@@ -830,8 +827,19 @@ function RoundCarousel({ allFixtures, leagueClient, managerTeamId, onOpenFixture
     startIndex: initialRoundIndex,
   }), [initialRoundIndex]);
   const [roundViewportRef, roundApi] = useEmblaCarousel(roundOptions);
-  const resultsViewportRef = useRef<HTMLDivElement>(null);
+  const [resultsViewportRef, resultsApi] = useEmblaCarousel(roundOptions);
+  const roundViewportElementRef = useRef<HTMLDivElement>(null);
+  const resultsViewportElementRef = useRef<HTMLDivElement>(null);
+  const roundTrackRef = useRef<HTMLDivElement>(null);
   const resultsTrackRef = useRef<HTMLDivElement>(null);
+  const setRoundViewportRef = useCallback((node: HTMLDivElement | null): void => {
+    roundViewportRef(node);
+    roundViewportElementRef.current = node;
+  }, [roundViewportRef]);
+  const setResultsViewportRef = useCallback((node: HTMLDivElement | null): void => {
+    resultsViewportRef(node);
+    resultsViewportElementRef.current = node;
+  }, [resultsViewportRef]);
 
   const handleRoundSelect = useCallback((api: EmblaCarouselType) => {
     setSelectedRoundIndex(api.selectedScrollSnap());
@@ -842,85 +850,48 @@ function RoundCarousel({ allFixtures, leagueClient, managerTeamId, onOpenFixture
     setSelectedRoundIndex(roundIndex);
   }, [roundApi]);
 
-  const handleResultsSwipe = useCallback((deltaX: number, deltaY: number): void => {
-    if (Math.abs(deltaX) < 42 || Math.abs(deltaX) <= Math.abs(deltaY) * 1.15) return;
-
-    resultsSwipeHandledRef.current = true;
-    const destination = (roundApi?.selectedScrollSnap() ?? selectedRoundIndex) + (deltaX < 0 ? 1 : -1);
-    if (destination >= 0 && destination < rounds.length) roundApi?.scrollTo(destination);
-  }, [roundApi, rounds.length, selectedRoundIndex]);
-
-  const handleResultsPointerDown = useCallback((event: ReactPointerEvent<HTMLDivElement>): void => {
-    if (event.pointerType !== 'mouse' || event.button !== 0) return;
-    resultsSwipeHandledRef.current = false;
-    resultsSwipeStartRef.current = { captured: false, x: event.clientX, y: event.clientY };
-  }, []);
-
-  const handleResultsPointerMove = useCallback((event: ReactPointerEvent<HTMLDivElement>): void => {
-    const start = resultsSwipeStartRef.current;
-    if (!start || start.captured) return;
-    const deltaX = event.clientX - start.x;
-    const deltaY = event.clientY - start.y;
-    if (Math.abs(deltaX) < 8 || Math.abs(deltaX) <= Math.abs(deltaY) * 1.15) return;
-    event.currentTarget.setPointerCapture(event.pointerId);
-    event.preventDefault();
-    start.captured = true;
-  }, []);
-
-  const handleResultsPointerUp = useCallback((event: ReactPointerEvent<HTMLDivElement>): void => {
-    const start = resultsSwipeStartRef.current;
-    resultsSwipeStartRef.current = null;
-    if (start?.captured) handleResultsSwipe(event.clientX - start.x, event.clientY - start.y);
-  }, [handleResultsSwipe]);
-
-  const handleResultsTouchStart = useCallback((event: ReactTouchEvent<HTMLDivElement>): void => {
-    if (event.touches.length !== 1) {
-      resultsTouchStartRef.current = null;
-      return;
-    }
-    const touch = event.touches[0];
-    if (!touch) return;
-    resultsSwipeHandledRef.current = false;
-    resultsTouchStartRef.current = { identifier: touch.identifier, x: touch.clientX, y: touch.clientY };
-  }, []);
-
-  const handleResultsTouchEnd = useCallback((event: ReactTouchEvent<HTMLDivElement>): void => {
-    const start = resultsTouchStartRef.current;
-    resultsTouchStartRef.current = null;
-    if (!start) return;
-    const touch = Array.from(event.changedTouches).find((candidate) => candidate.identifier === start.identifier);
-    if (touch) handleResultsSwipe(touch.clientX - start.x, touch.clientY - start.y);
-  }, [handleResultsSwipe]);
-
-  const handleResultsTouchCancel = useCallback((): void => {
-    resultsTouchStartRef.current = null;
-  }, []);
-
-  const handleResultsPointerCancel = useCallback((): void => {
-    resultsSwipeStartRef.current = null;
-  }, []);
-
-  const handleResultsClickCapture = useCallback((event: ReactMouseEvent<HTMLDivElement>): void => {
-    if (!resultsSwipeHandledRef.current) return;
-    resultsSwipeHandledRef.current = false;
-    event.preventDefault();
-    event.stopPropagation();
-  }, []);
-
   useScaleOpacityTween(roundApi, '.league-round-slide__content');
-  useRoundResultsCarousel(roundApi, resultsViewportRef, resultsTrackRef);
+  useScaleOpacityTween(resultsApi, '.league-round-results__content');
+  useCarouselTrackMirror(roundApi, resultsViewportElementRef, resultsTrackRef, '.league-round-results__content');
+  useCarouselTrackMirror(resultsApi, roundViewportElementRef, roundTrackRef, '.league-round-slide__content');
 
   useEffect(() => {
-    if (!roundApi) return undefined;
-
-    handleRoundSelect(roundApi);
-    roundApi.on('select', handleRoundSelect);
-    roundApi.on('reInit', handleRoundSelect);
+    if (!roundApi && !resultsApi) return undefined;
+    const apis = [roundApi, resultsApi].filter((api): api is EmblaCarouselType => Boolean(api));
+    apis.forEach((api) => {
+      handleRoundSelect(api);
+      api.on('select', handleRoundSelect);
+      api.on('reInit', handleRoundSelect);
+    });
     return () => {
-      roundApi.off('select', handleRoundSelect);
-      roundApi.off('reInit', handleRoundSelect);
+      apis.forEach((api) => {
+        api.off('select', handleRoundSelect);
+        api.off('reInit', handleRoundSelect);
+      });
     };
-  }, [handleRoundSelect, roundApi]);
+  }, [handleRoundSelect, resultsApi, roundApi]);
+
+  useEffect(() => {
+    if (!roundApi || !resultsApi) return undefined;
+
+    const alignResultsToRound = (): void => {
+      const index = roundApi.selectedScrollSnap();
+      if (resultsApi.selectedScrollSnap() !== index) resultsApi.scrollTo(index, true);
+    };
+    const alignRoundsToResults = (): void => {
+      const index = resultsApi.selectedScrollSnap();
+      if (roundApi.selectedScrollSnap() !== index) roundApi.scrollTo(index, true);
+    };
+
+    alignResultsToRound();
+    alignRoundsToResults();
+    roundApi.on('settle', alignResultsToRound);
+    resultsApi.on('settle', alignRoundsToResults);
+    return () => {
+      roundApi.off('settle', alignResultsToRound);
+      resultsApi.off('settle', alignRoundsToResults);
+    };
+  }, [resultsApi, roundApi]);
 
   useEffect(() => {
     if (!roundApi) return;
@@ -941,8 +912,8 @@ function RoundCarousel({ allFixtures, leagueClient, managerTeamId, onOpenFixture
 
   return (
     <section aria-label="Fixture rounds" aria-roledescription="carousel" className="league-round-carousel" role="region">
-      <div aria-label="Fixture round slides" className="league-round-carousel__viewport" ref={roundViewportRef}>
-        <div className="league-round-carousel__track">
+      <div aria-label="Fixture round slides" className="league-round-carousel__viewport" ref={setRoundViewportRef}>
+        <div className="league-round-carousel__track" ref={roundTrackRef}>
           {rounds.map((round, roundIndex) => {
             const isSelected = roundIndex === selectedRoundIndex;
             const gameweekIndex = gameweekIndexForRound(round, selectedGameweekIndex);
@@ -1011,16 +982,7 @@ function RoundCarousel({ allFixtures, leagueClient, managerTeamId, onOpenFixture
         <div
           aria-label="Round result table slides"
           className="league-round-carousel__viewport league-round-results__viewport"
-          onClickCapture={handleResultsClickCapture}
-          onLostPointerCapture={handleResultsPointerCancel}
-          onPointerCancel={handleResultsPointerCancel}
-          onPointerDown={handleResultsPointerDown}
-          onPointerMove={handleResultsPointerMove}
-          onPointerUp={handleResultsPointerUp}
-          onTouchCancel={handleResultsTouchCancel}
-          onTouchEnd={handleResultsTouchEnd}
-          onTouchStart={handleResultsTouchStart}
-          ref={resultsViewportRef}
+          ref={setResultsViewportRef}
         >
           <div className="league-round-carousel__track league-round-results__track" ref={resultsTrackRef}>
             {rounds.map((round, roundIndex) => {
@@ -1266,11 +1228,11 @@ function numberWithinRange(number: number, min: number, max: number): number {
   return Math.min(Math.max(number, min), max);
 }
 
-function useRoundResultsCarousel(emblaApi: EmblaCarouselType | undefined, viewportRef: RefObject<HTMLDivElement | null>, trackRef: RefObject<HTMLDivElement | null>): void {
+function useCarouselTrackMirror(sourceApi: EmblaCarouselType | undefined, viewportRef: RefObject<HTMLDivElement | null>, trackRef: RefObject<HTMLDivElement | null>, contentSelector: string): void {
   useEffect(() => {
-    if (!emblaApi) return undefined;
+    if (!sourceApi) return undefined;
 
-    const syncRoundResults = (api: EmblaCarouselType): void => {
+    const syncTrack = (api: EmblaCarouselType): void => {
       const viewport = viewportRef.current;
       const track = trackRef.current;
       if (!viewport || !track) return;
@@ -1294,7 +1256,7 @@ function useRoundResultsCarousel(emblaApi: EmblaCarouselType | undefined, viewpo
       const scaleFactor = ROUND_TWEEN_FACTOR_BASE * snapList.length;
       const opacityFactor = ROUND_OPACITY_TWEEN_FACTOR_BASE * snapList.length;
       slides.forEach((slide, index) => {
-        const content = slide.querySelector<HTMLElement>('.league-round-results__content');
+        const content = slide.querySelector<HTMLElement>(contentSelector);
         const snap = snapList[index];
         if (!content || snap === undefined) return;
         const distanceFromFocus = Math.abs(snap - progress);
@@ -1305,17 +1267,17 @@ function useRoundResultsCarousel(emblaApi: EmblaCarouselType | undefined, viewpo
       });
     };
 
-    const handleResize = (): void => syncRoundResults(emblaApi);
-    syncRoundResults(emblaApi);
-    emblaApi.on('scroll', syncRoundResults);
-    emblaApi.on('reInit', syncRoundResults);
+    const handleResize = (): void => syncTrack(sourceApi);
+    syncTrack(sourceApi);
+    sourceApi.on('scroll', syncTrack);
+    sourceApi.on('reInit', syncTrack);
     window.addEventListener('resize', handleResize);
     return () => {
-      emblaApi.off('scroll', syncRoundResults);
-      emblaApi.off('reInit', syncRoundResults);
+      sourceApi.off('scroll', syncTrack);
+      sourceApi.off('reInit', syncTrack);
       window.removeEventListener('resize', handleResize);
     };
-  }, [emblaApi, trackRef, viewportRef]);
+  }, [contentSelector, sourceApi, trackRef, viewportRef]);
 }
 
 function useScaleOpacityTween(emblaApi: EmblaCarouselType | undefined, contentSelector: string): void {

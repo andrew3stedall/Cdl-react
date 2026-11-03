@@ -35,9 +35,10 @@ transition while the selected slide remains fully opaque. Round slides are
 widened to keep adjacent rounds partly visible, and filled-or-hollow
 navigation dots below the carousel show and select the active round.
 Below the round navigation, a synchronized round-specific table carousel follows
-the selected round continuously during horizontal dragging and swiping. Swiping on
-the table also advances or reverses the shared round carousel. Its slide width, scale,
-and opacity track the fixture round throughout movement. It reuses
+the selected round continuously during horizontal dragging and swiping.
+Dragging either carousel moves the other in lockstep before the gesture ends, including
+the table slide's scale and opacity. The table also supports horizontal touch swipes on
+its contents. It reuses
 the main table's team identity, form, and columns, while
 calculating W-D-L, points for/against, league points, and bonus points from only
 that round's completed regular-season fixtures. The team list comes from the

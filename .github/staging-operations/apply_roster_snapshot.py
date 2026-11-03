@@ -108,6 +108,9 @@ def load_snapshot(path: Path) -> tuple[dict, datetime]:
 def resolve_players(session: Session, metadata: MetaData, teams: dict) -> dict[str, list[dict]]:
     players_table = Table("fpl_players", metadata, autoload_with=session.connection())
     epl_teams_table = Table("epl_teams", metadata, autoload_with=session.connection())
+    metrics_table = Table(
+        "fpl_player_current_metrics", metadata, autoload_with=session.connection()
+    )
     # Load position and club alongside the name fields so every match is exact
     # to the screenshot's position and Premier League team.
     statement = select(
@@ -117,11 +120,12 @@ def resolve_players(session: Session, metadata: MetaData, teams: dict) -> dict[s
         players_table.c.second_name,
         players_table.c.position_id,
         epl_teams_table.c.short_name,
+        metrics_table.c.total_points,
     ).select_from(
         players_table.join(
             epl_teams_table,
             players_table.c.team_id == epl_teams_table.c.id,
-        )
+        ).outerjoin(metrics_table, metrics_table.c.player_id == players_table.c.id)
     )
     available = session.execute(statement).mappings().all()
     ownerships_table = Table("squad_ownerships", metadata, autoload_with=session.connection())
@@ -161,6 +165,14 @@ def resolve_players(session: Session, metadata: MetaData, teams: dict) -> dict[s
                 names.discard("")
                 if target_names.intersection(names):
                     candidates.append(row)
+            if len(candidates) > 1 and item.get("points") is not None:
+                points_candidates = [
+                    candidate
+                    for candidate in candidates
+                    if candidate["total_points"] == item["points"]
+                ]
+                if len(points_candidates) == 1:
+                    candidates = points_candidates
             if len(candidates) > 1:
                 active_candidates = [
                     candidate for candidate in candidates if candidate["id"] in active_player_ids
@@ -168,9 +180,10 @@ def resolve_players(session: Session, metadata: MetaData, teams: dict) -> dict[s
                 if len(active_candidates) == 1:
                     candidates = active_candidates
             if len(candidates) != 1:
+                points = [candidate["total_points"] for candidate in candidates]
                 failures.append(
                     f"{team_id}:{item['position']}:{item['club']}:{item['name']} "
-                    f"matched {len(candidates)} cached players"
+                    f"matched {len(candidates)} cached players at points {points}"
                 )
                 continue
             resolved[team_id].append({**item, "player_id": candidates[0]["id"]})

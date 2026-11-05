@@ -931,7 +931,8 @@
       "direction": "OUT",
       "player": "van Ewijk",
       "date": "2026-10-10",
-      "club": "COV"
+      "club": "COV",
+      "position": "DEF"
     },
     {
       "team_id": "team-wilde-boars",
@@ -943,7 +944,9 @@
       "team_id": "team-wilde-boars",
       "direction": "IN",
       "player": "van Ewijk",
-      "date": "2026-09-19"
+      "date": "2026-09-19",
+      "club": "COV",
+      "position": "DEF"
     },
     {
       "team_id": "team-wilde-boars",

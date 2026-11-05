@@ -984,7 +984,12 @@
       "team_id": "team-wilde-boars",
       "direction": "IN",
       "player": "Nketiah",
-      "date": "2026-09-12"
+      "date": "2026-09-12",
+      "club": "CRY",
+      "position": "FWD",
+      "aliases": [
+        "Eddie Nketiah"
+      ]
     },
     {
       "team_id": "team-wilde-boars",
@@ -996,7 +1001,12 @@
       "team_id": "team-wilde-boars",
       "direction": "IN",
       "player": "Elanga",
-      "date": "2026-09-12"
+      "date": "2026-09-12",
+      "club": "NEW",
+      "position": "FWD",
+      "aliases": [
+        "Anthony Elanga"
+      ]
     },
     {
       "team_id": "team-wilde-boars",
@@ -1097,7 +1107,12 @@
       "team_id": "team-stan-still-sells-tik",
       "direction": "IN",
       "player": "Khusanov",
-      "date": "2026-09-12"
+      "date": "2026-09-12",
+      "club": "MCI",
+      "position": "DEF",
+      "aliases": [
+        "Abdukodir Khusanov"
+      ]
     },
     {
       "team_id": "team-stan-still-sells-tik",
@@ -1159,7 +1174,11 @@
       "direction": "OUT",
       "player": "Lewis-Skelly",
       "date": "2026-10-10",
-      "club": "ARS"
+      "club": "ARS",
+      "position": "MID",
+      "aliases": [
+        "Myles Lewis-Skelly"
+      ]
     },
     {
       "team_id": "team-koden-all-stars",
@@ -1194,7 +1213,12 @@
       "team_id": "team-koden-all-stars",
       "direction": "IN",
       "player": "Lewis-Skelly",
-      "date": "2026-09-19"
+      "date": "2026-09-19",
+      "club": "ARS",
+      "position": "MID",
+      "aliases": [
+        "Myles Lewis-Skelly"
+      ]
     },
     {
       "team_id": "team-koden-all-stars",
@@ -1218,13 +1242,23 @@
       "team_id": "team-koden-all-stars",
       "direction": "IN",
       "player": "Kayode",
-      "date": "2026-09-12"
+      "date": "2026-09-12",
+      "club": "BRE",
+      "position": "DEF",
+      "aliases": [
+        "Michael Kayode"
+      ]
     },
     {
       "team_id": "team-koden-all-stars",
       "direction": "IN",
       "player": "Bijol",
-      "date": "2026-09-12"
+      "date": "2026-09-12",
+      "club": "LEE",
+      "position": "DEF",
+      "aliases": [
+        "Jaka Bijol"
+      ]
     },
     {
       "team_id": "team-koden-all-stars",
@@ -1236,7 +1270,13 @@
       "team_id": "team-koden-all-stars",
       "direction": "IN",
       "player": "Lavia",
-      "date": "2026-09-12"
+      "date": "2026-09-12",
+      "club": "CHE",
+      "position": "MID",
+      "aliases": [
+        "Romeo Lavia",
+        "Roméo Lavia"
+      ]
     },
     {
       "team_id": "team-koden-all-stars",

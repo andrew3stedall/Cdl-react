@@ -262,8 +262,14 @@ def apply_movement_history(
             candidate_ids = {
                 player_id for player_id in candidate_ids
                 if player_id in metadata_by_id
-                and (not event.get("club") or metadata_by_id[player_id]["short_name"] == event["club"])
-                and (not event.get("position") or metadata_by_id[player_id]["position_id"] == event["position"])
+                and (
+                    not event.get("club")
+                    or metadata_by_id[player_id]["short_name"] == event["club"]
+                )
+                and (
+                    not event.get("position")
+                    or metadata_by_id[player_id]["position_id"] == event["position"]
+                )
             }
         if not candidate_ids:
             wanted = {normalize(name), *(normalize(alias) for alias in event.get("aliases", []))}
@@ -335,7 +341,9 @@ def apply_movement_history(
             )
         ).mappings().all()
         if not rows:
-            unmatched.append(f"{team_id} {direction} {name} {date.date().isoformat()}: no ownership period")
+            unmatched.append(
+                f"{team_id} {direction} {name} {date.date().isoformat()}: no ownership period"
+            )
             continue
 
         if direction == "IN":
@@ -357,7 +365,9 @@ def apply_movement_history(
                     ) >= date)
                 ]
             if len(eligible) != 1:
-                unmatched.append(f"{team_id} IN {name} {date.date().isoformat()}: period not uniquely matched")
+                unmatched.append(
+                    f"{team_id} IN {name} {date.date().isoformat()}: period not uniquely matched"
+                )
                 continue
             row = eligible[0]
             if row["started_at"].replace(tzinfo=row["started_at"].tzinfo or UTC) != date:
@@ -377,7 +387,9 @@ def apply_movement_history(
                 ) >= date)
             ]
             if len(eligible) != 1:
-                unmatched.append(f"{team_id} OUT {name} {date.date().isoformat()}: period not uniquely matched")
+                unmatched.append(
+                    f"{team_id} OUT {name} {date.date().isoformat()}: period not uniquely matched"
+                )
                 continue
             row = eligible[0]
             end = row["ended_at"]

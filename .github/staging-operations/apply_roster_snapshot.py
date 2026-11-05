@@ -224,10 +224,13 @@ def apply_movement_history(
     ).mappings().all()
 
     roster_by_name: dict[str, set[str]] = defaultdict(set)
-    for roster in resolved.values():
+    roster_by_team_name: dict[tuple[str, str], set[str]] = defaultdict(set)
+    for team_id, roster in resolved.items():
         for item in roster:
             for name in [item["name"], *item.get("aliases", [])]:
-                roster_by_name[normalize(name)].add(item["player_id"])
+                key = normalize(name)
+                roster_by_name[key].add(item["player_id"])
+                roster_by_team_name[(team_id, key)].add(item["player_id"])
 
     corrections: list[dict] = []
     unmatched: list[str] = []
@@ -242,12 +245,25 @@ def apply_movement_history(
             raise ValueError(f"Duplicate screenshot movement: {key}")
         event_keys.add(key)
 
-        candidate_ids = set(roster_by_name.get(normalize(name), set()))
-        candidate_ids.update(
+        name_keys = [normalize(name), *(normalize(alias) for alias in event.get("aliases", []))]
+        team_candidates = {
             player_id
-            for alias in event.get("aliases", [])
-            for player_id in roster_by_name.get(normalize(alias), set())
-        )
+            for name_key in name_keys
+            for player_id in roster_by_team_name.get((team_id, name_key), set())
+        }
+        candidate_ids = team_candidates or {
+            player_id
+            for name_key in name_keys
+            for player_id in roster_by_name.get(name_key, set())
+        }
+        if candidate_ids and (event.get("club") or event.get("position")):
+            metadata_by_id = {row["id"]: row for row in available}
+            candidate_ids = {
+                player_id for player_id in candidate_ids
+                if player_id in metadata_by_id
+                and (not event.get("club") or metadata_by_id[player_id]["short_name"] == event["club"])
+                and (not event.get("position") or metadata_by_id[player_id]["position_id"] == event["position"])
+            }
         if not candidate_ids:
             wanted = {normalize(name), *(normalize(alias) for alias in event.get("aliases", []))}
             candidates = []

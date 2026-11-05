@@ -195,6 +195,180 @@ def resolve_players(session: Session, metadata: MetaData, teams: dict) -> dict[s
     return resolved
 
 
+
+def apply_movement_history(
+    session: Session,
+    metadata: MetaData,
+    snapshot: Path,
+    resolved: dict[str, list[dict]],
+) -> dict:
+    data = json.loads(snapshot.read_text(encoding="utf-8"))
+    movements = data.get("movements", [])
+    if not movements:
+        return {"events": 0, "updated": 0, "unmatched": []}
+
+    ownerships = Table("squad_ownerships", metadata, autoload_with=session.connection())
+    players = Table("fpl_players", metadata, autoload_with=session.connection())
+    epl_teams = Table("epl_teams", metadata, autoload_with=session.connection())
+    available = session.execute(
+        select(
+            players.c.id,
+            players.c.web_name,
+            players.c.first_name,
+            players.c.second_name,
+            players.c.position_id,
+            epl_teams.c.short_name,
+        ).select_from(
+            players.join(epl_teams, players.c.team_id == epl_teams.c.id)
+        )
+    ).mappings().all()
+
+    roster_by_name: dict[str, set[str]] = defaultdict(set)
+    for roster in resolved.values():
+        for item in roster:
+            for name in [item["name"], *item.get("aliases", [])]:
+                roster_by_name[normalize(name)].add(item["player_id"])
+
+    corrections: list[dict] = []
+    unmatched: list[str] = []
+    event_keys: set[tuple[str, str, str, str]] = set()
+    for event in movements:
+        team_id = event["team_id"]
+        direction = event["direction"]
+        name = event["player"]
+        date = datetime.fromisoformat(event["date"]).replace(tzinfo=UTC)
+        key = (team_id, direction, normalize(name), date.date().isoformat())
+        if key in event_keys:
+            raise ValueError(f"Duplicate screenshot movement: {key}")
+        event_keys.add(key)
+
+        candidate_ids = set(roster_by_name.get(normalize(name), set()))
+        candidate_ids.update(
+            player_id
+            for alias in event.get("aliases", [])
+            for player_id in roster_by_name.get(normalize(alias), set())
+        )
+        if not candidate_ids:
+            wanted = {normalize(name), *(normalize(alias) for alias in event.get("aliases", []))}
+            candidates = []
+            for row in available:
+                names = {
+                    normalize(str(row["web_name"] or "")),
+                    normalize(str(row["second_name"] or "")),
+                    normalize(" ".join(part for part in (
+                        str(row["first_name"] or ""), str(row["second_name"] or "")
+                    ) if part)),
+                }
+                names.discard("")
+                if not wanted.intersection(names):
+                    continue
+                if event.get("club") and row["short_name"] != event["club"]:
+                    continue
+                if event.get("position") and row["position_id"] != event["position"]:
+                    continue
+                candidates.append(row["id"])
+            candidate_ids.update(candidates)
+        if len(candidate_ids) != 1:
+            raise ValueError(
+                f"Screenshot player identity is ambiguous: {team_id} {direction} {name} "
+                f"({len(candidate_ids)} candidates)"
+            )
+        player_id = next(iter(candidate_ids))
+        rows = session.execute(
+            select(
+                ownerships.c.id,
+                ownerships.c.started_at,
+                ownerships.c.ended_at,
+                ownerships.c.roster_slot_id,
+            ).where(
+                ownerships.c.season_id == EXPECTED_SEASON,
+                ownerships.c.draft_team_id == team_id,
+                ownerships.c.player_id == player_id,
+            )
+        ).mappings().all()
+        if not rows:
+            unmatched.append(f"{team_id} {direction} {name} {date.date().isoformat()}: no ownership period")
+            continue
+
+        if direction == "IN":
+            eligible = [
+                row for row in rows
+                if row["started_at"] is not None
+                and row["started_at"].replace(tzinfo=row["started_at"].tzinfo or UTC) >= date
+                and (row["ended_at"] is None or row["ended_at"].replace(
+                    tzinfo=row["ended_at"].tzinfo or UTC
+                ) >= date)
+            ]
+            if len(eligible) != 1:
+                eligible = [
+                    row for row in rows
+                    if row["started_at"] is not None
+                    and row["started_at"].replace(tzinfo=row["started_at"].tzinfo or UTC) <= date
+                    and (row["ended_at"] is None or row["ended_at"].replace(
+                        tzinfo=row["ended_at"].tzinfo or UTC
+                    ) >= date)
+                ]
+            if len(eligible) != 1:
+                unmatched.append(f"{team_id} IN {name} {date.date().isoformat()}: period not uniquely matched")
+                continue
+            row = eligible[0]
+            if row["started_at"].replace(tzinfo=row["started_at"].tzinfo or UTC) != date:
+                session.execute(
+                    update(ownerships).where(ownerships.c.id == row["id"]).values(started_at=date)
+                )
+                corrections.append({"ownership_id": row["id"], "player_id": player_id,
+                                    "team_id": team_id, "direction": direction,
+                                    "effective_at": date.isoformat()})
+        elif direction == "OUT":
+            eligible = [
+                row for row in rows
+                if row["started_at"] is not None
+                and row["started_at"].replace(tzinfo=row["started_at"].tzinfo or UTC) <= date
+                and (row["ended_at"] is None or row["ended_at"].replace(
+                    tzinfo=row["ended_at"].tzinfo or UTC
+                ) >= date)
+            ]
+            if len(eligible) != 1:
+                unmatched.append(f"{team_id} OUT {name} {date.date().isoformat()}: period not uniquely matched")
+                continue
+            row = eligible[0]
+            end = row["ended_at"]
+            if end is None or end.replace(tzinfo=end.tzinfo or UTC) != date:
+                session.execute(
+                    update(ownerships).where(ownerships.c.id == row["id"]).values(
+                        ended_at=date, roster_slot_id=None
+                    )
+                )
+                corrections.append({"ownership_id": row["id"], "player_id": player_id,
+                                    "team_id": team_id, "direction": direction,
+                                    "effective_at": date.isoformat()})
+        else:
+            raise ValueError(f"Unsupported screenshot movement direction: {direction}")
+
+    if corrections:
+        digest = hashlib.sha256(
+            json.dumps(corrections, sort_keys=True, ensure_ascii=False).encode()
+        ).hexdigest()
+        audit = Table("squad_audit_events", metadata, autoload_with=session.connection())
+        session.execute(insert(audit).values(
+            id="squad-history-20261105-" + digest[:16],
+            subject_type="season",
+            subject_id=EXPECTED_SEASON,
+            action="screenshot_ownership_periods_backfilled",
+            actor_manager_id=None,
+            created_at=datetime.now(UTC),
+            metadata_json={
+                "source": "castle_scout_report_screenshots",
+                "league_id": EXPECTED_LEAGUE,
+                "season_id": EXPECTED_SEASON,
+                "updated_periods": len(corrections),
+                "corrections": corrections,
+                "unmatched": unmatched,
+            },
+        ))
+    return {"events": len(movements), "updated": len(corrections), "unmatched": unmatched}
+
+
 def reconcile(session: Session, snapshot: Path) -> dict:
     metadata = MetaData()
     teams, as_of = load_snapshot(snapshot)
@@ -237,6 +411,7 @@ def reconcile(session: Session, snapshot: Path) -> dict:
         raise ValueError("Each staging team must have 20 existing roster slots")
 
     resolved = resolve_players(session, metadata, teams)
+    movement_report = apply_movement_history(session, metadata, snapshot, resolved)
     expected_by_id = {
         item["player_id"]: (team_id, order, item)
         for team_id, roster in resolved.items()
@@ -406,6 +581,7 @@ def reconcile(session: Session, snapshot: Path) -> dict:
         "added": added,
         "ended": ended,
         "verified": True,
+        "movement_history": movement_report,
     }
 
 

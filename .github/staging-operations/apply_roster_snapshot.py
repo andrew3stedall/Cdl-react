@@ -285,6 +285,26 @@ def apply_movement_history(
                     continue
                 candidates.append(row["id"])
             candidate_ids.update(candidates)
+        if event.get("aliases"):
+            alias_names = {normalize(alias) for alias in event["aliases"]}
+            alias_matches = set()
+            for row in available:
+                names = {
+                    normalize(str(row["web_name"] or "")),
+                    normalize(str(row["second_name"] or "")),
+                    normalize(" ".join(part for part in (
+                        str(row["first_name"] or ""), str(row["second_name"] or "")
+                    ) if part)),
+                }
+                if not alias_names.intersection(names):
+                    continue
+                if event.get("club") and row["short_name"] != event["club"]:
+                    continue
+                if event.get("position") and row["position_id"] != event["position"]:
+                    continue
+                alias_matches.add(row["id"])
+            if len(alias_matches) == 1:
+                candidate_ids = alias_matches
         if len(candidate_ids) > 1:
             owned_matches = set(session.execute(
                 select(ownerships.c.player_id).where(

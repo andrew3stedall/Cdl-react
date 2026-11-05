@@ -932,7 +932,11 @@
       "player": "van Ewijk",
       "date": "2026-10-10",
       "club": "COV",
-      "position": "DEF"
+      "position": "DEF",
+      "aliases": [
+        "Milan van Ewijk",
+        "Milan Fabrizio van Ewijk"
+      ]
     },
     {
       "team_id": "team-wilde-boars",
@@ -946,7 +950,11 @@
       "player": "van Ewijk",
       "date": "2026-09-19",
       "club": "COV",
-      "position": "DEF"
+      "position": "DEF",
+      "aliases": [
+        "Milan van Ewijk",
+        "Milan Fabrizio van Ewijk"
+      ]
     },
     {
       "team_id": "team-wilde-boars",

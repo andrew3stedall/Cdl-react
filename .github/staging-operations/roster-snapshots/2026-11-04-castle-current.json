@@ -891,5 +891,468 @@
         "club": "CHE"
       }
     ]
-  }
+  },
+  "movements": [
+    {
+      "team_id": "team-wilde-boars",
+      "direction": "IN",
+      "player": "Awoniyi",
+      "date": "2026-10-10"
+    },
+    {
+      "team_id": "team-wilde-boars",
+      "direction": "IN",
+      "player": "Buendia",
+      "date": "2026-10-10"
+    },
+    {
+      "team_id": "team-wilde-boars",
+      "direction": "IN",
+      "player": "Mykolenko",
+      "date": "2026-10-10"
+    },
+    {
+      "team_id": "team-wilde-boars",
+      "direction": "OUT",
+      "player": "David",
+      "date": "2026-10-10",
+      "club": "BHA"
+    },
+    {
+      "team_id": "team-wilde-boars",
+      "direction": "OUT",
+      "player": "Kinsky",
+      "date": "2026-10-10",
+      "club": "TOT"
+    },
+    {
+      "team_id": "team-wilde-boars",
+      "direction": "OUT",
+      "player": "van Ewijk",
+      "date": "2026-10-10",
+      "club": "COV"
+    },
+    {
+      "team_id": "team-wilde-boars",
+      "direction": "IN",
+      "player": "Solanke",
+      "date": "2026-09-19"
+    },
+    {
+      "team_id": "team-wilde-boars",
+      "direction": "IN",
+      "player": "van Ewijk",
+      "date": "2026-09-19"
+    },
+    {
+      "team_id": "team-wilde-boars",
+      "direction": "IN",
+      "player": "Bruno G.",
+      "date": "2026-09-18"
+    },
+    {
+      "team_id": "team-wilde-boars",
+      "direction": "IN",
+      "player": "Welbeck",
+      "date": "2026-09-18"
+    },
+    {
+      "team_id": "team-wilde-boars",
+      "direction": "IN",
+      "player": "King",
+      "date": "2026-09-12"
+    },
+    {
+      "team_id": "team-wilde-boars",
+      "direction": "IN",
+      "player": "Tzolakis",
+      "date": "2026-09-12"
+    },
+    {
+      "team_id": "team-wilde-boars",
+      "direction": "IN",
+      "player": "Nketiah",
+      "date": "2026-09-12"
+    },
+    {
+      "team_id": "team-wilde-boars",
+      "direction": "IN",
+      "player": "Dedić",
+      "date": "2026-09-12"
+    },
+    {
+      "team_id": "team-wilde-boars",
+      "direction": "IN",
+      "player": "Elanga",
+      "date": "2026-09-12"
+    },
+    {
+      "team_id": "team-wilde-boars",
+      "direction": "IN",
+      "player": "Yalcouyé",
+      "date": "2026-09-12"
+    },
+    {
+      "team_id": "team-class-of-84",
+      "direction": "IN",
+      "player": "Hinshelwood",
+      "date": "2026-10-10"
+    },
+    {
+      "team_id": "team-class-of-84",
+      "direction": "OUT",
+      "player": "Mbaye",
+      "date": "2026-10-10",
+      "club": "AVL"
+    },
+    {
+      "team_id": "team-class-of-84",
+      "direction": "IN",
+      "player": "Anthony",
+      "date": "2026-09-12"
+    },
+    {
+      "team_id": "team-class-of-84",
+      "direction": "IN",
+      "player": "Mbaye",
+      "date": "2026-09-12"
+    },
+    {
+      "team_id": "team-class-of-84",
+      "direction": "IN",
+      "player": "Grealish",
+      "date": "2026-09-12"
+    },
+    {
+      "team_id": "team-class-of-84",
+      "direction": "IN",
+      "player": "Diouf",
+      "date": "2026-09-12"
+    },
+    {
+      "team_id": "team-class-of-84",
+      "direction": "IN",
+      "player": "Delap",
+      "date": "2026-09-12"
+    },
+    {
+      "team_id": "team-class-of-84",
+      "direction": "IN",
+      "player": "Fernandez-Pardo",
+      "date": "2026-09-12"
+    },
+    {
+      "team_id": "team-stan-still-sells-tik",
+      "direction": "IN",
+      "player": "Barnes",
+      "date": "2026-10-10"
+    },
+    {
+      "team_id": "team-stan-still-sells-tik",
+      "direction": "OUT",
+      "player": "Damsgaard",
+      "date": "2026-10-10",
+      "club": "BRE"
+    },
+    {
+      "team_id": "team-stan-still-sells-tik",
+      "direction": "IN",
+      "player": "Schade",
+      "date": "2026-09-19"
+    },
+    {
+      "team_id": "team-stan-still-sells-tik",
+      "direction": "IN",
+      "player": "Davis",
+      "date": "2026-09-19"
+    },
+    {
+      "team_id": "team-stan-still-sells-tik",
+      "direction": "IN",
+      "player": "Caicedo",
+      "date": "2026-09-12"
+    },
+    {
+      "team_id": "team-stan-still-sells-tik",
+      "direction": "IN",
+      "player": "Janlet",
+      "date": "2026-09-12",
+      "aliases": [
+        "Janelt"
+      ]
+    },
+    {
+      "team_id": "team-stan-still-sells-tik",
+      "direction": "IN",
+      "player": "Khusanov",
+      "date": "2026-09-12"
+    },
+    {
+      "team_id": "team-stan-still-sells-tik",
+      "direction": "IN",
+      "player": "Araujo",
+      "date": "2026-09-12"
+    },
+    {
+      "team_id": "team-sporting-lesbians",
+      "direction": "IN",
+      "player": "Belloumi",
+      "date": "2026-09-19"
+    },
+    {
+      "team_id": "team-sporting-lesbians",
+      "direction": "IN",
+      "player": "Ajayi",
+      "date": "2026-09-12"
+    },
+    {
+      "team_id": "team-sporting-lesbians",
+      "direction": "IN",
+      "player": "Barry",
+      "date": "2026-09-12"
+    },
+    {
+      "team_id": "team-sporting-lesbians",
+      "direction": "IN",
+      "player": "Madjo",
+      "date": "2026-09-12"
+    },
+    {
+      "team_id": "team-koden-all-stars",
+      "direction": "IN",
+      "player": "Shaw",
+      "date": "2026-10-10"
+    },
+    {
+      "team_id": "team-koden-all-stars",
+      "direction": "OUT",
+      "player": "Wieffer",
+      "date": "2026-10-10",
+      "club": "BHA"
+    },
+    {
+      "team_id": "team-koden-all-stars",
+      "direction": "IN",
+      "player": "Wharton",
+      "date": "2026-10-10"
+    },
+    {
+      "team_id": "team-koden-all-stars",
+      "direction": "IN",
+      "player": "Wieffer",
+      "date": "2026-10-10"
+    },
+    {
+      "team_id": "team-koden-all-stars",
+      "direction": "OUT",
+      "player": "Lewis-Skelly",
+      "date": "2026-10-10",
+      "club": "ARS"
+    },
+    {
+      "team_id": "team-koden-all-stars",
+      "direction": "OUT",
+      "player": "O.Dango",
+      "date": "2026-10-10",
+      "club": "BRE",
+      "aliases": [
+        "Dango Ouattara",
+        "Ouattara"
+      ]
+    },
+    {
+      "team_id": "team-koden-all-stars",
+      "direction": "IN",
+      "player": "Okafor",
+      "date": "2026-09-19"
+    },
+    {
+      "team_id": "team-koden-all-stars",
+      "direction": "IN",
+      "player": "Strand Larsen",
+      "date": "2026-09-19"
+    },
+    {
+      "team_id": "team-koden-all-stars",
+      "direction": "IN",
+      "player": "Justin",
+      "date": "2026-09-19"
+    },
+    {
+      "team_id": "team-koden-all-stars",
+      "direction": "IN",
+      "player": "Lewis-Skelly",
+      "date": "2026-09-19"
+    },
+    {
+      "team_id": "team-koden-all-stars",
+      "direction": "IN",
+      "player": "Murillo",
+      "date": "2026-09-15"
+    },
+    {
+      "team_id": "team-koden-all-stars",
+      "direction": "IN",
+      "player": "Ajer",
+      "date": "2026-09-15"
+    },
+    {
+      "team_id": "team-koden-all-stars",
+      "direction": "IN",
+      "player": "Kamada",
+      "date": "2026-09-12"
+    },
+    {
+      "team_id": "team-koden-all-stars",
+      "direction": "IN",
+      "player": "Kayode",
+      "date": "2026-09-12"
+    },
+    {
+      "team_id": "team-koden-all-stars",
+      "direction": "IN",
+      "player": "Bijol",
+      "date": "2026-09-12"
+    },
+    {
+      "team_id": "team-koden-all-stars",
+      "direction": "IN",
+      "player": "Kostoulas",
+      "date": "2026-09-12"
+    },
+    {
+      "team_id": "team-koden-all-stars",
+      "direction": "IN",
+      "player": "Lavia",
+      "date": "2026-09-12"
+    },
+    {
+      "team_id": "team-koden-all-stars",
+      "direction": "IN",
+      "player": "Lewis-Potter",
+      "date": "2026-09-12"
+    },
+    {
+      "team_id": "team-exeter-gently",
+      "direction": "IN",
+      "player": "Fofana",
+      "date": "2026-09-12"
+    },
+    {
+      "team_id": "team-exeter-gently",
+      "direction": "IN",
+      "player": "Rashford",
+      "date": "2026-09-12"
+    },
+    {
+      "team_id": "team-exeter-gently",
+      "direction": "IN",
+      "player": "Methalie",
+      "date": "2026-09-12"
+    },
+    {
+      "team_id": "team-exeter-gently",
+      "direction": "IN",
+      "player": "White",
+      "date": "2026-09-12"
+    },
+    {
+      "team_id": "team-dicks-dribbling-xi",
+      "direction": "IN",
+      "player": "Schlager",
+      "date": "2026-10-10"
+    },
+    {
+      "team_id": "team-dicks-dribbling-xi",
+      "direction": "OUT",
+      "player": "Doku",
+      "date": "2026-10-10",
+      "club": "MCI"
+    },
+    {
+      "team_id": "team-dicks-dribbling-xi",
+      "direction": "IN",
+      "player": "Enciso",
+      "date": "2026-09-12"
+    },
+    {
+      "team_id": "team-dicks-dribbling-xi",
+      "direction": "IN",
+      "player": "Mendy",
+      "date": "2026-09-12"
+    },
+    {
+      "team_id": "team-dicks-dribbling-xi",
+      "direction": "IN",
+      "player": "M.Sangaré",
+      "date": "2026-09-12"
+    },
+    {
+      "team_id": "team-dicks-dribbling-xi",
+      "direction": "IN",
+      "player": "Suzuki",
+      "date": "2026-09-12"
+    },
+    {
+      "team_id": "team-dicks-dribbling-xi",
+      "direction": "IN",
+      "player": "Cherif",
+      "date": "2026-09-12"
+    },
+    {
+      "team_id": "team-dicks-dribbling-xi",
+      "direction": "IN",
+      "player": "David",
+      "date": "2026-09-12"
+    },
+    {
+      "team_id": "team-bayer-neverlusen",
+      "direction": "IN",
+      "player": "Bogle",
+      "date": "2026-10-10"
+    },
+    {
+      "team_id": "team-bayer-neverlusen",
+      "direction": "OUT",
+      "player": "Mudryk",
+      "date": "2026-10-10",
+      "club": "CHE"
+    },
+    {
+      "team_id": "team-bayer-neverlusen",
+      "direction": "IN",
+      "player": "De Cuyper",
+      "date": "2026-09-12"
+    },
+    {
+      "team_id": "team-bayer-neverlusen",
+      "direction": "IN",
+      "player": "Mudryk",
+      "date": "2026-09-12"
+    },
+    {
+      "team_id": "team-bayer-neverlusen",
+      "direction": "IN",
+      "player": "Osula",
+      "date": "2026-09-12"
+    },
+    {
+      "team_id": "team-bayer-neverlusen",
+      "direction": "IN",
+      "player": "Branthwaite",
+      "date": "2026-09-12"
+    },
+    {
+      "team_id": "team-bayer-neverlusen",
+      "direction": "IN",
+      "player": "Garnacho",
+      "date": "2026-09-12"
+    },
+    {
+      "team_id": "team-bayer-neverlusen",
+      "direction": "IN",
+      "player": "N.Jackson",
+      "date": "2026-09-12"
+    }
+  ]
 }

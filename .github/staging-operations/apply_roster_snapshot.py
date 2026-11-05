@@ -323,9 +323,16 @@ def apply_movement_history(
                 names = {
                     normalize(str(row["web_name"] or "")),
                     normalize(str(row["second_name"] or "")),
-                    normalize(" ".join(part for part in (
-                        str(row["first_name"] or ""), str(row["second_name"] or "")
-                    ) if part)),
+                    normalize(
+                        " ".join(
+                            part
+                            for part in (
+                                str(row["first_name"] or ""),
+                                str(row["second_name"] or ""),
+                            )
+                            if part
+                        )
+                    ),
                 }
                 if not alias_names.intersection(names):
                     continue
@@ -385,9 +392,12 @@ def apply_movement_history(
                 ]
                 if exits:
                     end_date = min(exits)
-                    ownership_id = "history-" + hashlib.sha256(
-                        f"{EXPECTED_SEASON}:{team_id}:{player_id}:{date.isoformat()}:{end_date.isoformat()}".encode()
-                    ).hexdigest()[:40]
+                    ownership_id = (
+                        "history-"
+                        + hashlib.sha256(
+                            f"{EXPECTED_SEASON}:{team_id}:{player_id}:{date.isoformat()}:{end_date.isoformat()}".encode()
+                        ).hexdigest()[:40]
+                    )
                     session.execute(
                         insert(ownerships).values(
                             id=ownership_id,
@@ -458,12 +468,14 @@ def apply_movement_history(
                 )
         elif direction == "OUT":
             eligible = [
-                row for row in rows
+                row
+                for row in rows
                 if row["started_at"] is not None
                 and row["started_at"].replace(tzinfo=row["started_at"].tzinfo or UTC) <= date
-                and (row["ended_at"] is None or row["ended_at"].replace(
-                    tzinfo=row["ended_at"].tzinfo or UTC
-                ) >= date)
+                and (
+                    row["ended_at"] is None
+                    or row["ended_at"].replace(tzinfo=row["ended_at"].tzinfo or UTC) >= date
+                )
             ]
             if len(eligible) != 1:
                 unmatched.append(

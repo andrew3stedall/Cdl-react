@@ -316,10 +316,11 @@ def apply_movement_history(
             if len(owned_matches) == 1:
                 candidate_ids = owned_matches
         if len(candidate_ids) != 1:
-            raise ValueError(
-                f"Screenshot player identity is ambiguous: {team_id} {direction} {name} "
-                f"({len(candidate_ids)} candidates)"
+            unmatched.append(
+                f"{team_id} {direction} {name} {date.date().isoformat()}: "
+                f"identity matched {len(candidate_ids)} players"
             )
+            continue
         player_id = next(iter(candidate_ids))
         rows = session.execute(
             select(

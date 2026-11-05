@@ -237,7 +237,12 @@ def apply_movement_history(
     corrections: list[dict] = []
     unmatched: list[str] = []
     event_keys: set[tuple[str, str, str, str]] = set()
-    for event in movements:
+    resolved_by_team_name: dict[tuple[str, str], str] = {}
+    ordered_movements = sorted(
+        movements,
+        key=lambda event: (event["date"], event["direction"] == "OUT"),
+    )
+    for event in ordered_movements:
         team_id = event["team_id"]
         direction = event["direction"]
         name = event["player"]
@@ -253,9 +258,22 @@ def apply_movement_history(
             for name_key in name_keys
             for player_id in roster_by_team_name.get((team_id, name_key), set())
         }
-        candidate_ids = team_candidates or {
-            player_id for name_key in name_keys for player_id in roster_by_name.get(name_key, set())
-        }
+        paired_key = (team_id, normalize(name))
+        known_player_id = resolved_by_team_name.get(paired_key)
+        has_opposite_movement = any(
+            other["team_id"] == team_id
+            and other["direction"] != direction
+            and normalize(other["player"]) == normalize(name)
+            for other in movements
+        )
+        if known_player_id and has_opposite_movement:
+            candidate_ids = {known_player_id}
+        else:
+            candidate_ids = team_candidates or {
+                player_id
+                for name_key in name_keys
+                for player_id in roster_by_name.get(name_key, set())
+            }
         if candidate_ids and (event.get("club") or event.get("position")):
             metadata_by_id = {row["id"]: row for row in available}
             candidate_ids = {
@@ -337,6 +355,8 @@ def apply_movement_history(
             )
             continue
         player_id = next(iter(candidate_ids))
+        if has_opposite_movement:
+            resolved_by_team_name[paired_key] = player_id
         rows = (
             session.execute(
                 select(
@@ -354,6 +374,42 @@ def apply_movement_history(
             .all()
         )
         if not rows:
+            if direction == "IN":
+                exits = [
+                    datetime.fromisoformat(other["date"]).replace(tzinfo=UTC)
+                    for other in movements
+                    if other["team_id"] == team_id
+                    and other["direction"] == "OUT"
+                    and normalize(other["player"]) == normalize(name)
+                    and datetime.fromisoformat(other["date"]).replace(tzinfo=UTC) >= date
+                ]
+                if exits:
+                    end_date = min(exits)
+                    ownership_id = "history-" + hashlib.sha256(
+                        f"{EXPECTED_SEASON}:{team_id}:{player_id}:{date.isoformat()}:{end_date.isoformat()}".encode()
+                    ).hexdigest()[:40]
+                    session.execute(
+                        insert(ownerships).values(
+                            id=ownership_id,
+                            season_id=EXPECTED_SEASON,
+                            draft_team_id=team_id,
+                            player_id=player_id,
+                            roster_slot_id=None,
+                            started_at=date,
+                            ended_at=end_date,
+                        )
+                    )
+                    corrections.append(
+                        {
+                            "ownership_id": ownership_id,
+                            "player_id": player_id,
+                            "team_id": team_id,
+                            "direction": "IN/OUT",
+                            "effective_at": date.isoformat(),
+                            "ended_at": end_date.isoformat(),
+                        }
+                    )
+                    continue
             unmatched.append(
                 f"{team_id} {direction} {name} {date.date().isoformat()}: no ownership period"
             )

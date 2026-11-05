@@ -274,7 +274,11 @@ def apply_movement_history(
                 for name_key in name_keys
                 for player_id in roster_by_name.get(name_key, set())
             }
-        if candidate_ids and (event.get("club") or event.get("position")):
+        if (
+            candidate_ids
+            and (event.get("club") or event.get("position"))
+            and not (known_player_id and has_opposite_movement)
+        ):
             metadata_by_id = {row["id"]: row for row in available}
             candidate_ids = {
                 player_id

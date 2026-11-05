@@ -360,9 +360,15 @@ def apply_movement_history(
             if len(owned_matches) == 1:
                 candidate_ids = owned_matches
         if len(candidate_ids) != 1:
+            candidate_details = [
+                f"{row['id']}:{row['first_name']} {row['second_name']} "
+                f"({row['short_name']}/{row['position_id']})"
+                for row in available
+                if str(row["id"]) in {str(value) for value in candidate_ids}
+            ]
             unmatched.append(
                 f"{team_id} {direction} {name} {date.date().isoformat()}: "
-                f"identity matched {len(candidate_ids)} players"
+                f"identity matched {len(candidate_ids)} players {candidate_details}"
             )
             continue
         player_id = next(iter(candidate_ids))

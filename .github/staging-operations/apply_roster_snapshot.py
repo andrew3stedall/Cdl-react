@@ -195,7 +195,6 @@ def resolve_players(session: Session, metadata: MetaData, teams: dict) -> dict[s
     return resolved
 
 
-
 def apply_movement_history(
     session: Session,
     metadata: MetaData,
@@ -210,18 +209,20 @@ def apply_movement_history(
     ownerships = Table("squad_ownerships", metadata, autoload_with=session.connection())
     players = Table("fpl_players", metadata, autoload_with=session.connection())
     epl_teams = Table("epl_teams", metadata, autoload_with=session.connection())
-    available = session.execute(
-        select(
-            players.c.id,
-            players.c.web_name,
-            players.c.first_name,
-            players.c.second_name,
-            players.c.position_id,
-            epl_teams.c.short_name,
-        ).select_from(
-            players.join(epl_teams, players.c.team_id == epl_teams.c.id)
+    available = (
+        session.execute(
+            select(
+                players.c.id,
+                players.c.web_name,
+                players.c.first_name,
+                players.c.second_name,
+                players.c.position_id,
+                epl_teams.c.short_name,
+            ).select_from(players.join(epl_teams, players.c.team_id == epl_teams.c.id))
         )
-    ).mappings().all()
+        .mappings()
+        .all()
+    )
 
     roster_by_name: dict[str, set[str]] = defaultdict(set)
     roster_by_team_name: dict[tuple[str, str], set[str]] = defaultdict(set)
@@ -253,14 +254,13 @@ def apply_movement_history(
             for player_id in roster_by_team_name.get((team_id, name_key), set())
         }
         candidate_ids = team_candidates or {
-            player_id
-            for name_key in name_keys
-            for player_id in roster_by_name.get(name_key, set())
+            player_id for name_key in name_keys for player_id in roster_by_name.get(name_key, set())
         }
         if candidate_ids and (event.get("club") or event.get("position")):
             metadata_by_id = {row["id"]: row for row in available}
             candidate_ids = {
-                player_id for player_id in candidate_ids
+                player_id
+                for player_id in candidate_ids
                 if player_id in metadata_by_id
                 and (
                     not event.get("club")
@@ -278,9 +278,16 @@ def apply_movement_history(
                 names = {
                     normalize(str(row["web_name"] or "")),
                     normalize(str(row["second_name"] or "")),
-                    normalize(" ".join(part for part in (
-                        str(row["first_name"] or ""), str(row["second_name"] or "")
-                    ) if part)),
+                    normalize(
+                        " ".join(
+                            part
+                            for part in (
+                                str(row["first_name"] or ""),
+                                str(row["second_name"] or ""),
+                            )
+                            if part
+                        )
+                    ),
                 }
                 names.discard("")
                 if not wanted.intersection(names):
@@ -312,13 +319,15 @@ def apply_movement_history(
             if len(alias_matches) == 1:
                 candidate_ids = alias_matches
         if len(candidate_ids) > 1:
-            owned_matches = set(session.execute(
-                select(ownerships.c.player_id).where(
-                    ownerships.c.season_id == EXPECTED_SEASON,
-                    ownerships.c.draft_team_id == team_id,
-                    ownerships.c.player_id.in_(candidate_ids),
-                )
-            ).scalars())
+            owned_matches = set(
+                session.execute(
+                    select(ownerships.c.player_id).where(
+                        ownerships.c.season_id == EXPECTED_SEASON,
+                        ownerships.c.draft_team_id == team_id,
+                        ownerships.c.player_id.in_(candidate_ids),
+                    )
+                ).scalars()
+            )
             if len(owned_matches) == 1:
                 candidate_ids = owned_matches
         if len(candidate_ids) != 1:
@@ -328,18 +337,22 @@ def apply_movement_history(
             )
             continue
         player_id = next(iter(candidate_ids))
-        rows = session.execute(
-            select(
-                ownerships.c.id,
-                ownerships.c.started_at,
-                ownerships.c.ended_at,
-                ownerships.c.roster_slot_id,
-            ).where(
-                ownerships.c.season_id == EXPECTED_SEASON,
-                ownerships.c.draft_team_id == team_id,
-                ownerships.c.player_id == player_id,
+        rows = (
+            session.execute(
+                select(
+                    ownerships.c.id,
+                    ownerships.c.started_at,
+                    ownerships.c.ended_at,
+                    ownerships.c.roster_slot_id,
+                ).where(
+                    ownerships.c.season_id == EXPECTED_SEASON,
+                    ownerships.c.draft_team_id == team_id,
+                    ownerships.c.player_id == player_id,
+                )
             )
-        ).mappings().all()
+            .mappings()
+            .all()
+        )
         if not rows:
             unmatched.append(
                 f"{team_id} {direction} {name} {date.date().isoformat()}: no ownership period"
@@ -348,21 +361,25 @@ def apply_movement_history(
 
         if direction == "IN":
             eligible = [
-                row for row in rows
+                row
+                for row in rows
                 if row["started_at"] is not None
                 and row["started_at"].replace(tzinfo=row["started_at"].tzinfo or UTC) >= date
-                and (row["ended_at"] is None or row["ended_at"].replace(
-                    tzinfo=row["ended_at"].tzinfo or UTC
-                ) >= date)
+                and (
+                    row["ended_at"] is None
+                    or row["ended_at"].replace(tzinfo=row["ended_at"].tzinfo or UTC) >= date
+                )
             ]
             if len(eligible) != 1:
                 eligible = [
-                    row for row in rows
+                    row
+                    for row in rows
                     if row["started_at"] is not None
                     and row["started_at"].replace(tzinfo=row["started_at"].tzinfo or UTC) <= date
-                    and (row["ended_at"] is None or row["ended_at"].replace(
-                        tzinfo=row["ended_at"].tzinfo or UTC
-                    ) >= date)
+                    and (
+                        row["ended_at"] is None
+                        or row["ended_at"].replace(tzinfo=row["ended_at"].tzinfo or UTC) >= date
+                    )
                 ]
             if len(eligible) != 1:
                 unmatched.append(
@@ -374,9 +391,15 @@ def apply_movement_history(
                 session.execute(
                     update(ownerships).where(ownerships.c.id == row["id"]).values(started_at=date)
                 )
-                corrections.append({"ownership_id": row["id"], "player_id": player_id,
-                                    "team_id": team_id, "direction": direction,
-                                    "effective_at": date.isoformat()})
+                corrections.append(
+                    {
+                        "ownership_id": row["id"],
+                        "player_id": player_id,
+                        "team_id": team_id,
+                        "direction": direction,
+                        "effective_at": date.isoformat(),
+                    }
+                )
         elif direction == "OUT":
             eligible = [
                 row for row in rows
@@ -395,13 +418,19 @@ def apply_movement_history(
             end = row["ended_at"]
             if end is None or end.replace(tzinfo=end.tzinfo or UTC) != date:
                 session.execute(
-                    update(ownerships).where(ownerships.c.id == row["id"]).values(
-                        ended_at=date, roster_slot_id=None
-                    )
+                    update(ownerships)
+                    .where(ownerships.c.id == row["id"])
+                    .values(ended_at=date, roster_slot_id=None)
                 )
-                corrections.append({"ownership_id": row["id"], "player_id": player_id,
-                                    "team_id": team_id, "direction": direction,
-                                    "effective_at": date.isoformat()})
+                corrections.append(
+                    {
+                        "ownership_id": row["id"],
+                        "player_id": player_id,
+                        "team_id": team_id,
+                        "direction": direction,
+                        "effective_at": date.isoformat(),
+                    }
+                )
         else:
             raise ValueError(f"Unsupported screenshot movement direction: {direction}")
 
@@ -410,22 +439,24 @@ def apply_movement_history(
             json.dumps(corrections, sort_keys=True, ensure_ascii=False).encode()
         ).hexdigest()
         audit = Table("squad_audit_events", metadata, autoload_with=session.connection())
-        session.execute(insert(audit).values(
-            id="squad-history-20261105-" + digest[:16],
-            subject_type="season",
-            subject_id=EXPECTED_SEASON,
-            action="screenshot_ownership_periods_backfilled",
-            actor_manager_id=None,
-            created_at=datetime.now(UTC),
-            metadata_json={
-                "source": "castle_scout_report_screenshots",
-                "league_id": EXPECTED_LEAGUE,
-                "season_id": EXPECTED_SEASON,
-                "updated_periods": len(corrections),
-                "corrections": corrections,
-                "unmatched": unmatched,
-            },
-        ))
+        session.execute(
+            insert(audit).values(
+                id="squad-history-20261105-" + digest[:16],
+                subject_type="season",
+                subject_id=EXPECTED_SEASON,
+                action="screenshot_ownership_periods_backfilled",
+                actor_manager_id=None,
+                created_at=datetime.now(UTC),
+                metadata_json={
+                    "source": "castle_scout_report_screenshots",
+                    "league_id": EXPECTED_LEAGUE,
+                    "season_id": EXPECTED_SEASON,
+                    "updated_periods": len(corrections),
+                    "corrections": corrections,
+                    "unmatched": unmatched,
+                },
+            )
+        )
     return {"events": len(movements), "updated": len(corrections), "unmatched": unmatched}
 
 

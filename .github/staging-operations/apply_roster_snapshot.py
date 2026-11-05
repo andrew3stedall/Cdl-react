@@ -232,6 +232,7 @@ def apply_movement_history(
                 roster_by_name[key].add(item["player_id"])
                 roster_by_team_name[(team_id, key)].add(item["player_id"])
 
+    ownerships = Table("squad_ownerships", metadata, autoload_with=session.connection())
     corrections: list[dict] = []
     unmatched: list[str] = []
     event_keys: set[tuple[str, str, str, str]] = set()
@@ -284,6 +285,16 @@ def apply_movement_history(
                     continue
                 candidates.append(row["id"])
             candidate_ids.update(candidates)
+        if len(candidate_ids) > 1:
+            owned_matches = set(session.execute(
+                select(ownerships.c.player_id).where(
+                    ownerships.c.season_id == EXPECTED_SEASON,
+                    ownerships.c.draft_team_id == team_id,
+                    ownerships.c.player_id.in_(candidate_ids),
+                )
+            ).scalars())
+            if len(owned_matches) == 1:
+                candidate_ids = owned_matches
         if len(candidate_ids) != 1:
             raise ValueError(
                 f"Screenshot player identity is ambiguous: {team_id} {direction} {name} "

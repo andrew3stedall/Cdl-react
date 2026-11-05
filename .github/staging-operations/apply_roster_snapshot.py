@@ -411,7 +411,6 @@ def reconcile(session: Session, snapshot: Path) -> dict:
         raise ValueError("Each staging team must have 20 existing roster slots")
 
     resolved = resolve_players(session, metadata, teams)
-    movement_report = apply_movement_history(session, metadata, snapshot, resolved)
     expected_by_id = {
         item["player_id"]: (team_id, order, item)
         for team_id, roster in resolved.items()
@@ -516,6 +515,8 @@ def reconcile(session: Session, snapshot: Path) -> dict:
                 }
             )
             added += 1
+
+    movement_report = apply_movement_history(session, metadata, snapshot, resolved)
 
     verification_rows = (
         session.execute(

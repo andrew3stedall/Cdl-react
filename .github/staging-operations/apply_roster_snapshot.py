@@ -549,7 +549,27 @@ def apply_movement_history(
     return {"events": len(movements), "updated": len(corrections), "unmatched": unmatched}
 
 
+def inspect_history(session: Session) -> dict:
+    metadata = MetaData()
+    table = Table("import_source_payloads", metadata, autoload_with=session.connection())
+    evidence = []
+    for payload in session.execute(select(table.c.payload_json)).scalars():
+        entity = payload.get("entity_type", "")
+        if any(word in entity for word in ("snapshot", "ownership", "draw_result", "trade", "draft_pick", "castle_team")):
+            value = payload.get("payload", {})
+            rows = value.get("data", []) if isinstance(value, dict) else []
+            evidence.append({"entity": entity, "file": value.get("file"), "rows": len(rows) if isinstance(rows, list) else 0, "sample": rows[:2] if isinstance(rows, list) else rows})
+    owners = Table("squad_ownerships", metadata, autoload_with=session.connection())
+    rows = [dict(row) for row in session.execute(select(owners).where(owners.c.season_id == EXPECTED_SEASON)).mappings()]
+    current = [row for row in rows if row["ended_at"] is None]
+    return {"total_current_players": len(current), "allocations_changed": 0, "rosters": {team: {"players": sum(row["draft_team_id"] == team for row in current), "changes": 0} for team in sorted(TEAM_IDS)}, "history_evidence": evidence, "ownership_periods": rows}
+
+
 def reconcile(session: Session, snapshot: Path) -> dict:
+    return inspect_history(session)
+
+
+def reconcile_current_snapshot(session: Session, snapshot: Path) -> dict:
     metadata = MetaData()
     teams, as_of = load_snapshot(snapshot)
     seasons = Table("seasons", metadata, autoload_with=session.connection())
@@ -785,7 +805,7 @@ def main() -> None:
             report = reconcile(session, args.snapshot)
     finally:
         engine.dispose()
-    output = json.dumps(report, indent=2)
+    output = json.dumps(report, indent=2, default=str)
     print(output)
     summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary_path:

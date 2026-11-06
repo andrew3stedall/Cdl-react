@@ -659,6 +659,9 @@ def inspect_history(session: Session, snapshot: Path) -> dict:
         ]
         exact = [row for row in matches if row in awards]
         matches = exact or matches
+        primary = [row for row in matches if normalize(event["player"]) in names(row)]
+        if len({str(row["fpl_player_id"]) for row in primary}) == 1:
+            matches = primary
         external_ids = {str(row["fpl_player_id"]) for row in matches}
         if len(external_ids) != 1:
             cached = [row for row in cache if wanted & names(row)]
@@ -818,6 +821,19 @@ def inspect_history(session: Session, snapshot: Path) -> dict:
         }
 
     snapshots = [checkpoint(anchor.isoformat())]
+    lineup_evidence = []
+    for lineup in source.get("lineups", []):
+        team = team_map.get(lineup.get("user_id"))
+        if team:
+            ids = lineup.get("starter_ids", []) + lineup.get("bench_ids", [])
+            lineup_evidence.append(
+                {
+                    "team_id": team,
+                    "gameweek": lineup.get("gameweek"),
+                    "player_ids": sorted({player_id(str(pid)) for pid in ids}),
+                    "scope": "recorded_selection_only",
+                }
+            )
     grouped: dict[str, list] = defaultdict(list)
     for event in ledger:
         moment = datetime.fromisoformat(event["effective_at"]).astimezone(local)
@@ -849,6 +865,17 @@ def inspect_history(session: Session, snapshot: Path) -> dict:
             else:
                 members.add(pid)
         snapshots.append(checkpoint(day + " before movements (Australia/Melbourne)"))
+    for gap in gaps:
+        gap["observed_gameweeks"] = sorted(
+            {
+                row["gameweek"]
+                for row in lineup_evidence
+                if row["team_id"] == gap["team_id"] and gap["player_id"] in row["player_ids"]
+            }
+        )
+    for index, snap in enumerate(snapshots):
+        snap["squad_counts"] = {team: len(ids) for team, ids in snap["teams"].items()}
+        snap["completeness"] = "current_verified" if index == 0 else "known_continuity_only"
     for snap in snapshots:
         flattened = [pid for ids in snap["teams"].values() for pid in ids]
         if len(flattened) != len(set(flattened)):
@@ -871,6 +898,7 @@ def inspect_history(session: Session, snapshot: Path) -> dict:
         "anchor_at": anchor.isoformat(),
         "ledger": ledger,
         "snapshots": snapshots,
+        "archived_selection_evidence": lineup_evidence,
         "gaps": gaps + unresolved,
         "ownership_changes": changes,
         "completeness": "partial" if gaps or unresolved else "complete",
@@ -910,6 +938,7 @@ def inspect_history(session: Session, snapshot: Path) -> dict:
         "history_reconstruction": {
             "events": len(ledger),
             "snapshots": len(snapshots),
+            "archived_selection_records": len(lineup_evidence),
             "ownership_periods_changed": len(changes),
             "identity_gaps": len(unresolved),
             "unresolved_identities": unresolved,

@@ -787,7 +787,6 @@ def inspect_history(session: Session, snapshot: Path) -> dict:
                         season_id=EXPECTED_SEASON,
                         draft_team_id=team,
                         player_id=pid,
-                        roster_slot_id=None,
                         **values,
                     )
                 )
@@ -900,8 +899,6 @@ def inspect_history(session: Session, snapshot: Path) -> dict:
                 metadata_json=report,
             )
         )
-    else:
-        session.execute(update(audit).where(audit.c.id == audit_id).values(metadata_json=report))
     return {
         "total_current_players": len(current),
         "allocations_changed": 0,
@@ -920,7 +917,9 @@ def inspect_history(session: Session, snapshot: Path) -> dict:
 
 
 def reconcile(session: Session, snapshot: Path) -> dict:
-    return inspect_history(session, snapshot)
+    if json.loads(snapshot.read_text(encoding="utf-8")).get("reconstruct_history"):
+        return inspect_history(session, snapshot)
+    return reconcile_current_snapshot(session, snapshot)
 
 
 def reconcile_current_snapshot(session: Session, snapshot: Path) -> dict:

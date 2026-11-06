@@ -351,14 +351,10 @@ def apply_movement_history(
             # Legacy cache rows can coexist with canonical FPL identities such
             # as "224" and "fpl-224". Collapse only exact prefixed/unprefixed
             # duplicates; the documented canonical identity is fpl-<element id>.
-            canonical_ids = {
-                str(player_id).removeprefix("fpl-") for player_id in candidate_ids
-            }
+            canonical_ids = {str(player_id).removeprefix("fpl-") for player_id in candidate_ids}
             if len(canonical_ids) == 1:
                 prefixed_ids = {
-                    player_id
-                    for player_id in candidate_ids
-                    if str(player_id).startswith("fpl-")
+                    player_id for player_id in candidate_ids if str(player_id).startswith("fpl-")
                 }
                 if len(prefixed_ids) == 1:
                     candidate_ids = prefixed_ids

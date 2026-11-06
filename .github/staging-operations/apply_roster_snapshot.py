@@ -555,10 +555,10 @@ def inspect_history(session: Session) -> dict:
     evidence = []
     for payload in session.execute(select(table.c.payload_json)).scalars():
         entity = payload.get("entity_type", "")
-        if any(word in entity for word in ("snapshot", "ownership", "draw_result", "trade", "draft_pick", "castle_team")):
+        if any(word in entity for word in ("snapshot", "ownership", "draw", "trade", "draft_pick", "castle_team")):
             value = payload.get("payload", {})
             rows = value.get("data", []) if isinstance(value, dict) else []
-            evidence.append({"entity": entity, "file": value.get("file"), "rows": len(rows) if isinstance(rows, list) else 0, "sample": rows[:2] if isinstance(rows, list) else rows})
+            evidence.append({"entity": entity, "file": value.get("file"), "rows": len(rows) if isinstance(rows, list) else 0, "sample": rows})
     owners = Table("squad_ownerships", metadata, autoload_with=session.connection())
     rows = [dict(row) for row in session.execute(select(owners).where(owners.c.season_id == EXPECTED_SEASON)).mappings()]
     current = [row for row in rows if row["ended_at"] is None]

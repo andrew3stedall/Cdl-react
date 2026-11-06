@@ -645,6 +645,10 @@ def inspect_history(session: Session, snapshot: Path) -> dict:
         if row.get("confirmed") and not row.get("forfeited")
     ]
     candidates = source.get("draft_picks", []) + awards
+    # Interest entries provide identity aliases only, never acquisition evidence.
+    for draw in source.get("draws", []):
+        for entries in (draw.get("interests_snapshot") or {}).values():
+            candidates.extend(entries)
     for event in data["movements"]:
         wanted = {normalize(name) for name in [event["player"], *event.get("aliases", [])]}
         matches = [
@@ -908,6 +912,7 @@ def inspect_history(session: Session, snapshot: Path) -> dict:
             "snapshots": len(snapshots),
             "ownership_periods_changed": len(changes),
             "identity_gaps": len(unresolved),
+            "unresolved_identities": unresolved,
             "unknown_exits": gaps,
             "audit_id": audit_id,
             "current_rosters_verified": True,

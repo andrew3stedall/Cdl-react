@@ -252,7 +252,10 @@ def apply_movement_history(
             raise ValueError(f"Duplicate screenshot movement: {key}")
         event_keys.add(key)
 
-        name_keys = [normalize(name), *(normalize(alias) for alias in event.get("aliases", []))]
+        name_keys = [
+            normalize(name),
+            *(normalize(alias) for alias in event.get("aliases", [])),
+        ]
         team_candidates = {
             player_id
             for name_key in name_keys
@@ -294,7 +297,10 @@ def apply_movement_history(
                 )
             }
         if not candidate_ids:
-            wanted = {normalize(name), *(normalize(alias) for alias in event.get("aliases", []))}
+            wanted = {
+                normalize(name),
+                *(normalize(alias) for alias in event.get("aliases", [])),
+            }
             candidates = []
             for row in available:
                 names = {
@@ -546,27 +552,375 @@ def apply_movement_history(
                 },
             )
         )
-    return {"events": len(movements), "updated": len(corrections), "unmatched": unmatched}
+    return {
+        "events": len(movements),
+        "updated": len(corrections),
+        "unmatched": unmatched,
+    }
 
 
-def inspect_history(session: Session) -> dict:
+def inspect_history(session: Session, snapshot: Path) -> dict:
+    """Reconstruct dated checkpoints backwards from the actual current squads."""
+    from datetime import timedelta
+    from zoneinfo import ZoneInfo
+
     metadata = MetaData()
-    table = Table("import_source_payloads", metadata, autoload_with=session.connection())
-    evidence = []
-    for payload in session.execute(select(table.c.payload_json)).scalars():
-        entity = payload.get("entity_type", "")
-        if any(word in entity for word in ("snapshot", "ownership", "draw", "trade", "draft_pick", "castle_team")):
-            value = payload.get("payload", {})
-            rows = value.get("data", []) if isinstance(value, dict) else []
-            evidence.append({"entity": entity, "file": value.get("file"), "rows": len(rows) if isinstance(rows, list) else 0, "sample": rows})
+    payloads = Table("import_source_payloads", metadata, autoload_with=session.connection())
     owners = Table("squad_ownerships", metadata, autoload_with=session.connection())
-    rows = [dict(row) for row in session.execute(select(owners).where(owners.c.season_id == EXPECTED_SEASON)).mappings()]
-    current = [row for row in rows if row["ended_at"] is None]
-    return {"total_current_players": len(current), "allocations_changed": 0, "rosters": {team: {"players": sum(row["draft_team_id"] == team for row in current), "changes": 0} for team in sorted(TEAM_IDS)}, "history_evidence": evidence, "ownership_periods": rows}
+    players = Table("fpl_players", metadata, autoload_with=session.connection())
+    audit = Table("squad_audit_events", metadata, autoload_with=session.connection())
+    source: dict[str, list] = {}
+    root = "leagues/e0bbe341-1aff-4acc-98f0-7c76911aa915/"
+    for payload in session.execute(select(payloads.c.payload_json)).scalars():
+        value = payload.get("payload", {})
+        if payload.get("archived") or not isinstance(value, dict):
+            continue
+        path = value.get("file", "")
+        if path.startswith(root):
+            source[path.removeprefix(root).removesuffix(".json")] = value.get("data", [])
+    if len(source.get("castle_teams", [])) != 8:
+        raise ValueError("Expected Castle league archive missing")
+    source_teams = source["castle_teams"]
+    # Source owner IDs remain internal mapping keys and never enter the report.
+    aliases = {
+        "The Class of 84": "team-class-of-84",
+        "Wilde Boars FC": "team-wilde-boars",
+        "Stan Still Sells Tik": "team-stan-still-sells-tik",
+        "Sporting Lesbians": "team-sporting-lesbians",
+        "Koden All Stars": "team-koden-all-stars",
+        "Exeter Gently": "team-exeter-gently",
+        "Dribbling Dicks": "team-dicks-dribbling-xi",
+        "BayerNeverlusen": "team-bayer-neverlusen",
+    }
+    team_map = {}
+    for team in source_teams:
+        match = next(
+            (
+                target
+                for name, target in aliases.items()
+                if normalize(name) == normalize(team["name"])
+            ),
+            None,
+        )
+        if match is None:
+            raise ValueError("Unrecognized archived team")
+        team_map[team["owner_user_id"]] = match
+    cache = [dict(row) for row in session.execute(select(players)).mappings()]
+    by_id = {str(row["id"]): row for row in cache}
+    all_rows = [
+        dict(row)
+        for row in session.execute(
+            select(owners).where(owners.c.season_id == EXPECTED_SEASON)
+        ).mappings()
+    ]
+    current = [row for row in all_rows if row["ended_at"] is None]
+    if len(current) != 160 or {row["draft_team_id"] for row in current} != TEAM_IDS:
+        raise ValueError("Current squads must contain 160 players across eight teams")
+    if any(sum(row["draft_team_id"] == team for row in current) != 20 for team in TEAM_IDS):
+        raise ValueError("Current team count differs from twenty")
+    canonical = {}
+    for row in current:
+        canonical[str(row["player_id"]).removeprefix("fpl-")] = str(row["player_id"])
+
+    def player_id(external: str) -> str:
+        key = str(external).removeprefix("fpl-")
+        result = canonical.get(key, "fpl-" + key if "fpl-" + key in by_id else key)
+        if result not in by_id:
+            raise ValueError("Archived player is absent from the cache")
+        return result
+
+    def names(row: dict) -> set[str]:
+        return {
+            normalize(str(row.get(key) or ""))
+            for key in ("player_web_name", "web_name", "second_name")
+        }
+
+    data = json.loads(snapshot.read_text(encoding="utf-8"))
+    ledger = []
+    unresolved = []
+    local = ZoneInfo("Australia/Melbourne")
+    awards = [
+        row
+        for row in source.get("draw_results", [])
+        if row.get("confirmed") and not row.get("forfeited")
+    ]
+    candidates = source.get("draft_picks", []) + awards
+    for event in data["movements"]:
+        wanted = {normalize(name) for name in [event["player"], *event.get("aliases", [])]}
+        matches = [
+            row
+            for row in candidates
+            if wanted & names(row)
+            and (not row.get("user_id") or team_map.get(row["user_id"]) == event["team_id"])
+        ]
+        exact = [row for row in matches if row in awards]
+        matches = exact or matches
+        external_ids = {str(row["fpl_player_id"]) for row in matches}
+        if len(external_ids) != 1:
+            cached = [row for row in cache if wanted & names(row)]
+            external_ids = {str(row["id"]).removeprefix("fpl-") for row in cached}
+        if len(external_ids) != 1:
+            unresolved.append({**event, "reason": "identity_ambiguous"})
+            continue
+        pid = player_id(next(iter(external_ids)))
+        day = datetime.fromisoformat(event["date"]).replace(tzinfo=local)
+        when = (day + timedelta(days=1)).astimezone(UTC)
+        precision = "local_day_end"
+        if event["direction"] == "IN":
+            confirmed = [
+                row
+                for row in matches
+                if row.get("confirmed_at")
+                and datetime.fromisoformat(row["confirmed_at"]).astimezone(local).date()
+                == day.date()
+            ]
+            if len(confirmed) == 1:
+                when = datetime.fromisoformat(confirmed[0]["confirmed_at"])
+                precision = "source_confirmation"
+            else:
+                when = day.astimezone(UTC)
+                precision = "local_day_start"
+        ledger.append(
+            {
+                "team_id": event["team_id"],
+                "player_id": pid,
+                "player": event["player"],
+                "direction": event["direction"],
+                "effective_at": when.isoformat(),
+                "precision": precision,
+                "source": "commissioner_screenshot",
+            }
+        )
+    bulletin = next(
+        (
+            row
+            for row in source.get("trade-bulletins", [])
+            if (row.get("metadata") or {}).get("trade_id") == "40e50fdc-d583-4ef2-84fb-25889ab700e2"
+        ),
+        None,
+    )
+    expected_body = "DJ sends Yalcouyé, Solanke to Richard in exchange for Martinez, David."
+    if bulletin is None or bulletin.get("body") != expected_body:
+        raise ValueError("Reviewed four-player trade bulletin missing or changed")
+    trade_time = datetime.fromisoformat(bulletin["created_at"])
+    trade = [
+        ("605", "Yalcouyé", "team-wilde-boars", "team-dicks-dribbling-xi"),
+        ("526", "Solanke", "team-wilde-boars", "team-dicks-dribbling-xi"),
+        ("28", "Martinez", "team-dicks-dribbling-xi", "team-wilde-boars"),
+        ("594", "David", "team-dicks-dribbling-xi", "team-wilde-boars"),
+    ]
+    changes = []
+    for external, name, before, after in trade:
+        pid = player_id(external)
+        for team, direction in ((before, "OUT"), (after, "IN")):
+            ledger.append(
+                {
+                    "team_id": team,
+                    "player_id": pid,
+                    "player": name,
+                    "direction": direction,
+                    "effective_at": trade_time.isoformat(),
+                    "precision": "source_bulletin",
+                    "source": "castle_trade_bulletin",
+                    "trade_id": bulletin["metadata"]["trade_id"],
+                }
+            )
+        acquisitions = [
+            datetime.fromisoformat(e["effective_at"])
+            for e in ledger
+            if e["player_id"] == pid
+            and e["team_id"] == before
+            and e["direction"] == "IN"
+            and datetime.fromisoformat(e["effective_at"]) < trade_time
+        ]
+        if not acquisitions:
+            picks = [
+                row
+                for row in source.get("draft_picks", [])
+                if str(row["fpl_player_id"]) == external and row.get("picked_at")
+            ]
+            acquisitions = [datetime.fromisoformat(row["picked_at"]) for row in picks]
+        if not acquisitions:
+            raise ValueError("Trade origin has no acquisition evidence")
+        start = min(acquisitions)
+        exits = [
+            datetime.fromisoformat(e["effective_at"])
+            for e in ledger
+            if e["player_id"] == pid
+            and e["team_id"] == after
+            and e["direction"] == "OUT"
+            and datetime.fromisoformat(e["effective_at"]) >= trade_time
+        ]
+        end = min(exits) if exits else None
+        for team, began, ended in (
+            (before, start, trade_time),
+            (after, trade_time, end),
+        ):
+            rows = [
+                row for row in all_rows if row["player_id"] == pid and row["draft_team_id"] == team
+            ]
+            if len(rows) > 1:
+                raise ValueError("Multiple ownership periods require explicit matching")
+            values = {"started_at": began, "ended_at": ended}
+            if ended is not None:
+                values["roster_slot_id"] = None
+            if rows:
+                row = rows[0]
+                if row["started_at"] == began and row["ended_at"] == ended:
+                    continue
+                session.execute(update(owners).where(owners.c.id == row["id"]).values(**values))
+                changes.append(
+                    {
+                        "ownership_id": row["id"],
+                        "before": {key: str(row[key]) for key in ("started_at", "ended_at")},
+                        "after": {key: str(value) for key, value in values.items()},
+                    }
+                )
+            else:
+                oid = (
+                    "history-trade-"
+                    + hashlib.sha256(f"{team}:{pid}:{began}".encode()).hexdigest()[:36]
+                )
+                session.execute(
+                    insert(owners).values(
+                        id=oid,
+                        season_id=EXPECTED_SEASON,
+                        draft_team_id=team,
+                        player_id=pid,
+                        roster_slot_id=None,
+                        **values,
+                    )
+                )
+                changes.append(
+                    {
+                        "ownership_id": oid,
+                        "created": True,
+                        "player_id": pid,
+                        "team_id": team,
+                        "started_at": began.isoformat(),
+                        "ended_at": ended.isoformat() if ended else None,
+                    }
+                )
+    # Reverse complete local-day groups so same-day trades and releases remain atomic.
+    anchor = datetime.now(UTC)
+    state = {
+        team: {row["player_id"] for row in current if row["draft_team_id"] == team}
+        for team in TEAM_IDS
+    }
+
+    def checkpoint(at: str) -> dict:
+        return {
+            "as_of": at,
+            "teams": {team: sorted(ids) for team, ids in sorted(state.items())},
+        }
+
+    snapshots = [checkpoint(anchor.isoformat())]
+    grouped: dict[str, list] = defaultdict(list)
+    for event in ledger:
+        moment = datetime.fromisoformat(event["effective_at"]).astimezone(local)
+        if event["precision"] == "local_day_end":
+            moment -= timedelta(microseconds=1)
+        grouped[moment.date().isoformat()].append(event)
+    gaps = []
+    for day, events in sorted(grouped.items(), reverse=True):
+        for event in sorted(
+            events,
+            key=lambda e: (e["effective_at"], e["direction"] == "IN"),
+            reverse=True,
+        ):
+            members = state[event["team_id"]]
+            pid = event["player_id"]
+            if event["direction"] == "IN":
+                if pid not in members:
+                    gaps.append(
+                        {
+                            "team_id": event["team_id"],
+                            "player_id": pid,
+                            "player": event["player"],
+                            "reason": "unrecorded_exit_after_acquisition",
+                            "acquired_at": event["effective_at"],
+                            "absent_by": anchor.isoformat(),
+                        }
+                    )
+                members.discard(pid)
+            else:
+                members.add(pid)
+        snapshots.append(checkpoint(day + " before movements (Australia/Melbourne)"))
+    for snap in snapshots:
+        flattened = [pid for ids in snap["teams"].values() for pid in ids]
+        if len(flattened) != len(set(flattened)):
+            raise ValueError("Backwards snapshot assigns a player to multiple teams")
+    verified = [
+        dict(row)
+        for row in session.execute(
+            select(owners).where(owners.c.season_id == EXPECTED_SEASON, owners.c.ended_at.is_(None))
+        ).mappings()
+    ]
+    if {(r["player_id"], r["draft_team_id"], r["roster_slot_id"]) for r in verified} != {
+        (r["player_id"], r["draft_team_id"], r["roster_slot_id"]) for r in current
+    }:
+        raise ValueError("History reconstruction changed current allocations")
+    # Store the complete event ledger and checkpoints using existing audit storage.
+    report = {
+        "version": 1,
+        "source": "castle_archive_and_commissioner_screenshots",
+        "season_id": EXPECTED_SEASON,
+        "anchor_at": anchor.isoformat(),
+        "ledger": ledger,
+        "snapshots": snapshots,
+        "gaps": gaps + unresolved,
+        "ownership_changes": changes,
+        "completeness": "partial" if gaps or unresolved else "complete",
+        "gap_semantics": (
+            "Snapshots represent known continuity; players with an unrecorded exit are uncertain "
+            "between acquisition and the current anchor. Day-only releases use the exclusive "
+            "end of the Melbourne calendar day."
+        ),
+    }
+    audit_id = (
+        "history-reconstruction-"
+        + hashlib.sha256(
+            json.dumps(
+                {"ledger": ledger, "current": snapshots[0]["teams"]}, sort_keys=True
+            ).encode()
+        ).hexdigest()[:32]
+    )
+    if (
+        session.execute(select(audit.c.id).where(audit.c.id == audit_id)).scalar_one_or_none()
+        is None
+    ):
+        session.execute(
+            insert(audit).values(
+                id=audit_id,
+                subject_type="season",
+                subject_id=EXPECTED_SEASON,
+                action="squad_history_reconstructed",
+                actor_manager_id=None,
+                created_at=anchor,
+                metadata_json=report,
+            )
+        )
+    else:
+        session.execute(update(audit).where(audit.c.id == audit_id).values(metadata_json=report))
+    return {
+        "total_current_players": len(current),
+        "allocations_changed": 0,
+        "rosters": {team: {"players": 20, "changes": 0} for team in sorted(TEAM_IDS)},
+        "history_reconstruction": {
+            "events": len(ledger),
+            "snapshots": len(snapshots),
+            "ownership_periods_changed": len(changes),
+            "identity_gaps": len(unresolved),
+            "unknown_exits": gaps,
+            "audit_id": audit_id,
+            "current_rosters_verified": True,
+            "completeness": report["completeness"],
+        },
+    }
 
 
 def reconcile(session: Session, snapshot: Path) -> dict:
-    return inspect_history(session)
+    return inspect_history(session, snapshot)
 
 
 def reconcile_current_snapshot(session: Session, snapshot: Path) -> dict:

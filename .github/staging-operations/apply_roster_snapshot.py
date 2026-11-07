@@ -721,6 +721,136 @@ def recover_weekly_squads(session: Session, source: dict, ledger: list, current:
     }
 
 
+def backfill_weekly_reserves(session: Session, recovery: dict) -> dict:
+    """Restore only reserves for complete, selection-consistent historical squads."""
+    metadata = MetaData()
+    slots = Table("team_selection_lineup_slots", metadata, autoload_with=session.connection())
+    audit = Table("squad_audit_events", metadata, autoload_with=session.connection())
+    weeks = Table("fpl_gameweeks", metadata, autoload_with=session.connection())
+    current_week = session.execute(
+        select(weeks.c.id).where(weeks.c.is_current.is_(True))
+    ).scalar_one()
+    updated = []
+    skipped = []
+    verified = 0
+    for planned in recovery["plan"]:
+        gw, team = planned["gameweek"], planned["team_id"]
+        if gw >= int(current_week):
+            continue
+        roster, reserves = set(planned["player_ids"]), planned["reserve_ids"]
+        if len(roster) != 20 or len(reserves) != 4:
+            skipped.append(
+                {"gameweek": gw, "team_id": team, "reason": "squad_not_uniquely_complete"}
+            )
+            continue
+        rows = [
+            dict(row)
+            for row in session.execute(
+                select(slots).where(
+                    slots.c.season_id == EXPECTED_SEASON,
+                    slots.c.gameweek == gw,
+                    slots.c.draft_team_id == team,
+                )
+            ).mappings()
+        ]
+        selection = [row for row in rows if row["slot"] != "reserve"]
+        if len(selection) != 16 or {row["player_id"] for row in selection} != roster - set(
+            reserves
+        ):
+            skipped.append(
+                {
+                    "gameweek": gw,
+                    "team_id": team,
+                    "reason": "saved_selection_conflicts_with_archive",
+                }
+            )
+            continue
+        existing = sorted(
+            (row for row in rows if row["slot"] == "reserve"),
+            key=lambda r: (r["slot_order"], r["id"]),
+        )
+        if len(existing) > 4:
+            skipped.append(
+                {"gameweek": gw, "team_id": team, "reason": "existing_reserve_count_exceeds_four"}
+            )
+            continue
+        if {row["player_id"] for row in existing} != set(reserves):
+            before = json.loads(json.dumps(existing, default=str))
+            for index, pid in enumerate(reserves):
+                values = {
+                    "player_id": pid,
+                    "slot": "reserve",
+                    "slot_order": index + 1,
+                    "is_captain": False,
+                    "is_vice_captain": False,
+                    "updated_at": datetime.now(UTC),
+                }
+                if index < len(existing):
+                    session.execute(
+                        update(slots).where(slots.c.id == existing[index]["id"]).values(**values)
+                    )
+                else:
+                    rid = (
+                        "history-reserve-"
+                        + hashlib.sha256(f"{team}:{gw}:{pid}".encode()).hexdigest()[:40]
+                    )
+                    session.execute(
+                        insert(slots).values(
+                            id=rid,
+                            season_id=EXPECTED_SEASON,
+                            draft_team_id=team,
+                            gameweek=gw,
+                            locked_at=selection[0]["locked_at"],
+                            rule_version_id=selection[0].get("rule_version_id"),
+                            **values,
+                        )
+                    )
+            updated.append(
+                {
+                    "gameweek": gw,
+                    "team_id": team,
+                    "before": before,
+                    "reserve_ids": reserves,
+                    "method": planned["method"],
+                }
+            )
+        actual = list(
+            session.execute(
+                select(slots.c.player_id).where(
+                    slots.c.season_id == EXPECTED_SEASON,
+                    slots.c.gameweek == gw,
+                    slots.c.draft_team_id == team,
+                )
+            ).scalars()
+        )
+        if len(actual) != 20 or set(actual) != roster:
+            raise ValueError("Historical squad does not contain the twenty reconstructed players")
+        verified += 1
+    if updated:
+        digest = hashlib.sha256(json.dumps(updated, sort_keys=True).encode()).hexdigest()
+        session.execute(
+            insert(audit).values(
+                id="historical-reserves-" + digest[:32],
+                subject_type="season",
+                subject_id=EXPECTED_SEASON,
+                action="historical_reserves_restored",
+                actor_manager_id=None,
+                created_at=datetime.now(UTC),
+                metadata_json={
+                    "source": "captured_draft_archive_and_recorded_movements",
+                    "current_gameweek_excluded": int(current_week),
+                    "changes": updated,
+                },
+            )
+        )
+    return {
+        "updated_team_gameweeks": len(updated),
+        "verified_twenty_player_squads": verified,
+        "skipped": skipped,
+        "current_gameweek_excluded": int(current_week),
+    }
+
+
 def inspect_history(session: Session, snapshot: Path) -> dict:
     """Reconstruct dated checkpoints backwards from the actual current squads."""
     from datetime import timedelta
@@ -1093,6 +1223,8 @@ def inspect_history(session: Session, snapshot: Path) -> dict:
                 metadata_json=report,
             )
         )
+    weekly_recovery = recover_weekly_squads(session, source, ledger, current)
+    reserve_report = backfill_weekly_reserves(session, weekly_recovery)
     return {
         "total_current_players": len(current),
         "allocations_changed": 0,
@@ -1118,7 +1250,8 @@ def inspect_history(session: Session, snapshot: Path) -> dict:
             "unknown_exits": gaps,
             "audit_id": audit_id,
             "current_rosters_verified": True,
-            "weekly_squad_recovery": recover_weekly_squads(session, source, ledger, current),
+            "weekly_squad_recovery": weekly_recovery,
+            "historical_reserve_backfill": reserve_report,
             "completeness": report["completeness"],
         },
     }

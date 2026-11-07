@@ -478,8 +478,10 @@ class CastleSourceAdapter:
                 and s["gameweek"] == gw
             ]
             stale_reasons = []
+            fatal_stale_reasons = []
             if len({slot["player_id"] for slot in existing_slots}) != len(existing_slots):
                 stale_reasons.append("duplicate_target_player_slots")
+                fatal_stale_reasons.append("duplicate_target_player_slots")
             if row.get("captain_id") not in starters:
                 stale_reasons.append("castle_captain_not_in_starters")
             if row.get("vice_captain_id") not in starters:
@@ -512,6 +514,7 @@ class CastleSourceAdapter:
                         ],
                     }
                 )
+            if fatal_stale_reasons:
                 continue
             try:
                 updated = timestamp(row["updated_at"])

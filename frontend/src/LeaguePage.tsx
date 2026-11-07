@@ -215,7 +215,7 @@ export function LeaguePage({ attackDirection = 'up', currentPath = window.locati
     return () => {
       isActive = false;
     };
-  }, [detailRetryKey, leagueClient, selectedFixture]);
+  }, [detailRetryKey, leagueClient, reloadKey, selectedFixture]);
 
   const selectedFixturePlayerGameweekStatus = selectedFixturePlayer
     ? fixtureGameweekStatusForFixture(selectedFixturePlayer.fixture, snapshot)

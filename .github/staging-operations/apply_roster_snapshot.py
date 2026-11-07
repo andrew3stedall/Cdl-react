@@ -561,8 +561,19 @@ def apply_movement_history(
 
 def recover_weekly_squads(session: Session, source: dict, ledger: list, current: list) -> dict:
     """Plan full matchday squads from captured draft, saved selections and movements."""
+    from datetime import timedelta
+    from zoneinfo import ZoneInfo
+
     from cdl_api.staging_draft_seed import TEAM_IDS as SEED_TEAMS
     from cdl_api.staging_draft_seed import constrained_snake_allocation
+
+    weeks = Table("fpl_gameweeks", MetaData(), autoload_with=session.connection())
+    deadlines = {
+        int(row["id"]): row["deadline_time"]
+        for row in session.execute(select(weeks)).mappings()
+        if str(row["id"]).isdigit() and row["deadline_time"]
+    }
+    local = ZoneInfo("Australia/Melbourne")
 
     initial = {team: set() for team in TEAM_IDS}
     for allocation in constrained_snake_allocation():
@@ -599,14 +610,27 @@ def recover_weekly_squads(session: Session, source: dict, ledger: list, current:
     conflicts = []
     for (gw, team), row in sorted(selections.items()):
         selected = all_selected[(gw, team)]
-        moment = datetime.fromisoformat(row["locked_at"] or row["updated_at"])
+        moment = deadlines.get(gw) or datetime.fromisoformat(row["locked_at"] or row["updated_at"])
         if moment.tzinfo is None:
             moment = moment.replace(tzinfo=UTC)
         roster = set(present[team])
         for event in sorted(
             ledger, key=lambda e: (e["effective_at"], e["direction"] == "IN"), reverse=True
         ):
-            if event["team_id"] != team or datetime.fromisoformat(event["effective_at"]) <= moment:
+            event_time = datetime.fromisoformat(event["effective_at"])
+            if event["precision"] == "local_day_end":
+                event_day = (event_time.astimezone(local) - timedelta(days=1)).date()
+                claims = [
+                    datetime.fromisoformat(e["effective_at"])
+                    for e in ledger
+                    if e["team_id"] == event["team_id"]
+                    and e["direction"] == "IN"
+                    and datetime.fromisoformat(e["effective_at"]).astimezone(local).date()
+                    == event_day
+                ]
+                if claims:
+                    event_time = max(claims)
+            if event["team_id"] != team or event_time <= moment:
                 continue
             if event["direction"] == "IN":
                 roster.discard(event["player_id"])
@@ -673,6 +697,7 @@ def recover_weekly_squads(session: Session, source: dict, ledger: list, current:
                     "known_squad": len(roster),
                     "missing_places": 20 - len(roster),
                     "candidate_ids": alternatives,
+                    "selected_outside_initial": sorted(selected - initial[team]),
                 }
             )
         reserves = sorted(roster - selected)

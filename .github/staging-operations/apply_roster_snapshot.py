@@ -939,6 +939,8 @@ def inspect_history(session: Session, snapshot: Path) -> dict:
             "events": len(ledger),
             "snapshots": len(snapshots),
             "archived_selection_records": len(lineup_evidence),
+            "source_lineup_fields": sorted({key for row in source.get("lineups", []) for key in row}),
+            "source_lineup_sample": [{key: value for key, value in row.items() if key not in {"user_id", "league_id", "id"}} for row in source.get("lineups", [])[:2]],
             "ownership_periods_changed": len(changes),
             "identity_gaps": len(unresolved),
             "unresolved_identities": unresolved,

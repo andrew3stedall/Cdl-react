@@ -559,6 +559,143 @@ def apply_movement_history(
     }
 
 
+def recover_weekly_squads(session: Session, source: dict, ledger: list, current: list) -> dict:
+    """Plan full matchday squads from captured draft, saved selections and movements."""
+    from cdl_api.staging_draft_seed import TEAM_IDS as SEED_TEAMS
+    from cdl_api.staging_draft_seed import constrained_snake_allocation
+
+    initial = {team: set() for team in TEAM_IDS}
+    for allocation in constrained_snake_allocation():
+        initial[SEED_TEAMS[allocation.team_index]].add(f"fpl-{allocation.player.fpl_id}")
+    source_teams = source["castle_teams"]
+    name_to_id = {
+        "theclassof84": "team-class-of-84",
+        "wildeboarsfc": "team-wilde-boars",
+        "stanstillsellstik": "team-stan-still-sells-tik",
+        "sportinglesbians": "team-sporting-lesbians",
+        "kodenallstars": "team-koden-all-stars",
+        "exetergently": "team-exeter-gently",
+        "dribblingdicks": "team-dicks-dribbling-xi",
+        "bayerneverlusen": "team-bayer-neverlusen",
+    }
+    users = {row["owner_user_id"]: name_to_id[normalize(row["name"])] for row in source_teams}
+    selections = {}
+    for row in source.get("lineups", []):
+        team = users.get(row["user_id"])
+        if team is None:
+            continue
+        selections[(row["gameweek"], team)] = row
+    present = {
+        team: {row["player_id"] for row in current if row["draft_team_id"] == team}
+        for team in TEAM_IDS
+    }
+    all_selected = {
+        (gw, team): {
+            f"fpl-{pid}" for pid in (row.get("starter_ids") or []) + (row.get("bench_ids") or [])
+        }
+        for (gw, team), row in selections.items()
+    }
+    plan = []
+    conflicts = []
+    for (gw, team), row in sorted(selections.items()):
+        selected = all_selected[(gw, team)]
+        moment = datetime.fromisoformat(row["locked_at"] or row["updated_at"])
+        if moment.tzinfo is None:
+            moment = moment.replace(tzinfo=UTC)
+        roster = set(present[team])
+        for event in sorted(
+            ledger, key=lambda e: (e["effective_at"], e["direction"] == "IN"), reverse=True
+        ):
+            if event["team_id"] != team or datetime.fromisoformat(event["effective_at"]) <= moment:
+                continue
+            if event["direction"] == "IN":
+                roster.discard(event["player_id"])
+            else:
+                roster.add(event["player_id"])
+        if gw <= 3:
+            roster = set(initial[team])
+            method = "captured_draft"
+        else:
+            method = "reverse_recorded_movements"
+        # A saved selection is stronger membership evidence than a missing exit record.
+        roster |= selected
+        other_selected = set().union(
+            *(ids for (week, other), ids in all_selected.items() if week == gw and other != team)
+        )
+        roster -= other_selected
+        missing = 20 - len(roster)
+        inferred = []
+        alternatives = []
+        if missing > 0:
+            pool = set(initial[team])
+            for event in ledger:
+                if (
+                    event["team_id"] == team
+                    and event["direction"] == "IN"
+                    and datetime.fromisoformat(event["effective_at"]) <= moment
+                ):
+                    pool.add(event["player_id"])
+            # Explicit exits before this deadline rule out ownership until a later return.
+            for pid in list(pool):
+                events = [
+                    e
+                    for e in ledger
+                    if e["player_id"] == pid and datetime.fromisoformat(e["effective_at"]) <= moment
+                ]
+                if events:
+                    latest = max(events, key=lambda e: (e["effective_at"], e["direction"] == "IN"))
+                    if latest["team_id"] != team or latest["direction"] == "OUT":
+                        pool.discard(pid)
+            pool -= roster | other_selected
+
+            def continuity_score(pid: str, team: str = team, gw: int = gw) -> tuple:
+                observed = [
+                    week
+                    for (week, owner), ids in all_selected.items()
+                    if owner == team and pid in ids
+                ]
+                nearest = min((abs(week - gw) for week in observed), default=99)
+                return (nearest, 0 if pid in present[team] else 1, pid)
+
+            choices = sorted(pool, key=continuity_score)
+            if len(choices) == missing:
+                inferred = choices
+                roster.update(choices)
+                method += "_unique_reserve_completion"
+            else:
+                alternatives = choices
+        if len(selected) != 16 or len(roster) != 20:
+            conflicts.append(
+                {
+                    "gameweek": gw,
+                    "team_id": team,
+                    "selected": len(selected),
+                    "known_squad": len(roster),
+                    "missing_places": 20 - len(roster),
+                    "candidate_ids": alternatives,
+                }
+            )
+        reserves = sorted(roster - selected)
+        plan.append(
+            {
+                "gameweek": gw,
+                "team_id": team,
+                "method": method,
+                "player_ids": sorted(roster),
+                "reserve_ids": reserves,
+                "inferred_ids": inferred,
+            }
+        )
+    return {
+        "selections": len(plan),
+        "complete_squads": sum(
+            len(row["player_ids"]) == 20 and len(row["reserve_ids"]) == 4 for row in plan
+        ),
+        "conflicts": conflicts,
+        "plan": plan,
+    }
+
+
 def inspect_history(session: Session, snapshot: Path) -> dict:
     """Reconstruct dated checkpoints backwards from the actual current squads."""
     from datetime import timedelta
@@ -939,14 +1076,24 @@ def inspect_history(session: Session, snapshot: Path) -> dict:
             "events": len(ledger),
             "snapshots": len(snapshots),
             "archived_selection_records": len(lineup_evidence),
-            "source_lineup_fields": sorted({key for row in source.get("lineups", []) for key in row}),
-            "source_lineup_sample": [{key: value for key, value in row.items() if key not in {"user_id", "league_id", "id"}} for row in source.get("lineups", [])[:2]],
+            "source_lineup_fields": sorted(
+                {key for row in source.get("lineups", []) for key in row}
+            ),
+            "source_lineup_sample": [
+                {
+                    key: value
+                    for key, value in row.items()
+                    if key not in {"user_id", "league_id", "id"}
+                }
+                for row in source.get("lineups", [])[:2]
+            ],
             "ownership_periods_changed": len(changes),
             "identity_gaps": len(unresolved),
             "unresolved_identities": unresolved,
             "unknown_exits": gaps,
             "audit_id": audit_id,
             "current_rosters_verified": True,
+            "weekly_squad_recovery": recover_weekly_squads(session, source, ledger, current),
             "completeness": report["completeness"],
         },
     }

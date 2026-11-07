@@ -11,3 +11,11 @@ The existing squad_audit_events table stores a squad_history_reconstructed event
 A successful execution is not proof of complete source history. An acquisition missing from later squads without a recorded exit produces an explicit uncertainty interval. Such departures are not assigned invented dates or native ownership periods. The snapshot completeness field remains partial until every missing transition has dated evidence. Historical checkpoints describe known continuity and must be read together with these gaps.
 
 Staging changes are transactional. Workflow failures roll back ownership changes. The operation uses the existing repository, season, league, project and database guards.
+
+## Historical reserves
+
+Castle's lineup export contains eleven starters and five bench IDs, without reserve IDs. The operation now compares the captured 160-pick draft, saved weekly selections and backwards movement continuity at the official FPL deadline. Day-only releases are aligned with the last same-day confirmed incoming claim for matchday reconstruction; this is an inference about the replacement window, not an exact release timestamp.
+
+Completed historical team/gameweeks are backfilled only when the recovered roster contains exactly twenty unique players and four reserves, with the native sixteen selected players matching the archived selection. Only reserve rows are inserted or corrected; selected players, captaincy, frozen scoring and the current gameweek are not changed. Every correction retains its reserve before-image in a historical_reserves_restored audit event. A subsequent run verifies twenty unique persisted rows and makes no further changes.
+
+Incomplete rosters, duplicate source selections and contradictions between draft and saved selections are reported as conflicts. The twenty-player expectation alone does not identify which reserve fills an ambiguous place. Missing players are never padded from unrelated/current squads to satisfy a count.

@@ -709,6 +709,7 @@ def recover_weekly_squads(session: Session, source: dict, ledger: list, current:
                 "player_ids": sorted(roster),
                 "reserve_ids": reserves,
                 "inferred_ids": inferred,
+                "draft_absent_ids": sorted(initial[team] - selected),
             }
         )
     return {

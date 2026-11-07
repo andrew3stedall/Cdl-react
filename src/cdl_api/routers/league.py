@@ -328,7 +328,7 @@ def fixture_squads(
         None,
     )
     fixture_contexts = _fixture_contexts_for_gameweek(squad_repository, fixture.gameweek.number)
-    if fixture.status != "pending" and historical_squad_loader is not None:
+    if historical_squad_loader is not None:
         historical_squads = historical_squad_loader(fixture)
         if historical_squads:
             history_by_player = _form_history_for_players(
@@ -339,9 +339,10 @@ def fixture_squads(
                 _attach_form_history(historical_squads, history_by_player),
                 fixture_contexts,
             )
-        # Once a gameweek has started, never fall back to today's mutable squad
-        # or season totals. Missing locked data should be explicit rather than wrong.
-        return []
+        if fixture.status != "pending":
+            # Once a gameweek has started, never fall back to today's mutable squad
+            # or season totals. Missing saved data should be explicit rather than wrong.
+            return []
 
     players = squad_repository.list_squad_players()
     manager_team = getattr(squad_repository, "manager_team", None)

@@ -616,6 +616,10 @@ class CastleSourceAdapter:
                 lineup_assignments.extend(
                     [("bench", pid, order) for order, pid in enumerate(bench_outfield, 1)]
                 )
+            # The submitted starters and bench were already verified and synced.
+            # A current-gameweek reserve repair must leave those rows untouched.
+            if self.config.lineup_gameweek == gw:
+                lineup_assignments = []
             self.lineup_deletions.extend(
                 {"table": "team_selection_lineup_slots", "id": slot["id"]}
                 for slot in existing_slots

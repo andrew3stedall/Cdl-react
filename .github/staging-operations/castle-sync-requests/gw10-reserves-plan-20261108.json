@@ -1,0 +1,10 @@
+{
+  "operation": "plan",
+  "projection": "native",
+  "native_entities": [
+    "team_selection_lineup_slots"
+  ],
+  "restore_missing": false,
+  "lineup_gameweek": 10,
+  "replace_current_gameweek_synthetic": true
+}

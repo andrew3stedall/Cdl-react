@@ -1,12 +1,10 @@
 {
-  "operation": "apply",
+  "operation": "plan",
   "projection": "native",
   "native_entities": [
     "team_selection_lineup_slots"
   ],
   "restore_missing": false,
   "lineup_gameweek": 10,
-  "replace_current_gameweek_synthetic": true,
-  "expected_plan": "163843c9ff5c6a63612d777d128bcf1b993966cbe0fa5781d61b9474dedd1e1e",
-  "confirmation": "IMPORT CASTLE STAGING"
+  "replace_current_gameweek_synthetic": true
 }

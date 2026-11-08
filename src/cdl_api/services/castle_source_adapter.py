@@ -535,6 +535,7 @@ class CastleSourceAdapter:
                 continue
             lineup_assignments = [("starter", pid, order) for order, pid in enumerate(starters, 1)]
             reserve_players: list[str] = []
+            reserves_resolved = False
             if self.config.lineup_gameweek == gw:
                 team_ownerships = sorted(
                     (
@@ -576,6 +577,8 @@ class CastleSourceAdapter:
                     if len(reserve_players) != 4:
                         self.gaps["lineup_reserves_require_20_player_squad_match"] += 1
                         reserve_players = []
+                    else:
+                        reserves_resolved = True
             bench_goalkeepers = [
                 pid
                 for pid in bench
@@ -616,7 +619,10 @@ class CastleSourceAdapter:
             self.lineup_deletions.extend(
                 {"table": "team_selection_lineup_slots", "id": slot["id"]}
                 for slot in existing_slots
-                if slot["slot"] in {"starter", "bench", "reserve"}
+                if (
+                    slot["slot"] in {"starter", "bench"}
+                    or (slot["slot"] == "reserve" and reserves_resolved)
+                )
                 and slot["player_id"] not in explicit_players
                 and slot["player_id"] not in reserve_players
             )

@@ -370,6 +370,17 @@ class CastleSourceAdapter:
             element.get("id"): element for element in bootstrap.get("elements", [])
         }
         target_players_by_id = {player["id"]: player for player in self.target_rows("fpl_players")}
+        active_ownerships = [
+            ownership
+            for ownership in self.target_rows("squad_ownerships")
+            if ownership["season_id"] == self.config.target_season_id
+            and ownership["ended_at"] is None
+        ]
+        roster_slots = {
+            slot["id"]: slot
+            for slot in self.target_rows("squad_roster_slots")
+            if slot["season_id"] == self.config.target_season_id
+        }
         source_player_details: dict[int, dict[str, Any]] = {}
         source_player_rows = list(self.rows("draft_picks")) + list(self.rows("draw_results"))
         for trade in self.rows("trades"):
@@ -523,6 +534,51 @@ class CastleSourceAdapter:
                 self.gaps["lineup_timestamp_missing"] += 1
                 continue
             lineup_assignments = [("starter", pid, order) for order, pid in enumerate(starters, 1)]
+            reserve_players: list[str] = []
+            reserves_resolved = False
+            if self.config.lineup_gameweek == gw:
+                team_ownerships = sorted(
+                    (
+                        ownership
+                        for ownership in active_ownerships
+                        if ownership["draft_team_id"] == team["id"]
+                    ),
+                    key=lambda ownership: (
+                        roster_slots.get(ownership.get("roster_slot_id"), {}).get(
+                            "sort_order", 10**9
+                        ),
+                        ownership["player_id"],
+                    ),
+                )
+                squad_player_ids = [ownership["player_id"] for ownership in team_ownerships]
+                if (
+                    len(squad_player_ids) != 20
+                    or len(set(squad_player_ids)) != 20
+                    or not explicit_players.issubset(set(squad_player_ids))
+                ):
+                    self.gaps["lineup_reserves_require_20_player_squad_match"] += 1
+                    self.lineup_review.append(
+                        {
+                            "source_lineup_id": row.get("id"),
+                            "gameweek": gw,
+                            "source_team_name": source_team.get("name"),
+                            "source_team_id": source_team.get("id"),
+                            "reasons": ["current_squad_not_exactly_20_or_selection_mismatch"],
+                            "current_squad_count": len(squad_player_ids),
+                            "submitted_selection_count": len(explicit_players),
+                        }
+                    )
+                else:
+                    reserve_players = [
+                        player_id
+                        for player_id in squad_player_ids
+                        if player_id not in explicit_players
+                    ]
+                    if len(reserve_players) != 4:
+                        self.gaps["lineup_reserves_require_20_player_squad_match"] += 1
+                        reserve_players = []
+                    else:
+                        reserves_resolved = True
             bench_goalkeepers = [
                 pid
                 for pid in bench
@@ -563,8 +619,12 @@ class CastleSourceAdapter:
             self.lineup_deletions.extend(
                 {"table": "team_selection_lineup_slots", "id": slot["id"]}
                 for slot in existing_slots
-                if slot["slot"] in {"starter", "bench"}
+                if (
+                    slot["slot"] in {"starter", "bench"}
+                    or (slot["slot"] == "reserve" and reserves_resolved)
+                )
                 and slot["player_id"] not in explicit_players
+                and slot["player_id"] not in reserve_players
             )
             for slot, pid, order in lineup_assignments:
                 player = self.players[pid]
@@ -585,6 +645,33 @@ class CastleSourceAdapter:
                         "slot_order": order,
                         "is_captain": pid == row.get("captain_id"),
                         "is_vice_captain": pid == row.get("vice_captain_id"),
+                        "locked_at": locked,
+                        "updated_at": updated,
+                    },
+                )
+            for order, player_id in enumerate(reserve_players, 1):
+                existing = next(
+                    (slot for slot in existing_slots if slot["player_id"] == player_id),
+                    None,
+                )
+                lineup_id = (
+                    existing["id"]
+                    if existing
+                    else sync_id(self.scope, "lineup-reserve", row["id"], player_id)
+                )
+                self.mappings[f"lineup-reserve:{row['id']}:{player_id}"] = lineup_id
+                self.project(
+                    "team_selection_lineup_slots",
+                    lineup_id,
+                    {
+                        "season_id": self.config.target_season_id,
+                        "draft_team_id": team["id"],
+                        "player_id": player_id,
+                        "gameweek": gw,
+                        "slot": "reserve",
+                        "slot_order": order,
+                        "is_captain": False,
+                        "is_vice_captain": False,
                         "locked_at": locked,
                         "updated_at": updated,
                     },

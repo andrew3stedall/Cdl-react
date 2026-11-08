@@ -21,6 +21,7 @@ CATALOG_TABLES = (
     "external_payload_cache",
     "fpl_gameweeks",
     "squad_ownerships",
+    "squad_roster_slots",
     "team_selection_lineup_slots",
     "cdl_fixtures",
     "fixture_results",

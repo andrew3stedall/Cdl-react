@@ -42,3 +42,7 @@ docs/architecture/
 | Wiki | Human-readable product/domain knowledge. |
 | Feature docs | Buildable implementation specifications. |
 | Architecture docs | Durable domain and technical decisions. |
+
+## Planning decisions
+
+[Autonomous Wayfinder resolution](../delivery/2026-11-12-wayfinder-resolution.md) indexes AI onboarding, scoring/knockouts and release-readiness contracts; delivery acceptance remains separate.

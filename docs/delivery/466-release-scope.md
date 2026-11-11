@@ -1,5 +1,7 @@
 # Staging candidate capability and follow-up register
 
+> Planning update: [resolved Wayfinder contract](https://github.com/andrew3stedall/Cdl-react/issues/726) supersedes conflicting unresolved-decision wording below. This is policy, not evidence of implementation or release acceptance.
+
 This delivery hardens the app's existing manager journeys for an already drafted league. It does not convert engineering checkpoints into a claim of completed production services. Production deployment remains separate from this staging delivery, including the documented database restore and live reviewer gates.
 
 The 9 October 2026 [issue-consolidation register](../backlog/2026-10-09-issue-consolidation.md) supersedes the **open-ticket status** of optional future features below. Closing an optional issue as `not planned` does not mean the feature was delivered; its scope, trigger and dependencies remain in that register. #496/#499 and operational release gates remain open.

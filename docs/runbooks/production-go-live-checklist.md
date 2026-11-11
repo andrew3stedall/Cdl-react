@@ -1,5 +1,7 @@
 # Production Go-Live Checklist
 
+> Planning update: [resolved Wayfinder contract](https://github.com/andrew3stedall/Cdl-react/issues/726) supersedes conflicting unresolved-decision wording below. This is policy, not evidence of implementation or release acceptance.
+
 Production must remain blocked until staging has proven the deployment, data, smoke, restore, monitoring, and rollback path.
 
 ## Required gates

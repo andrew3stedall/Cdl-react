@@ -1,5 +1,7 @@
 # Chips and Scoring Modifiers
 
+> Planning update: [resolved Wayfinder contract](https://github.com/andrew3stedall/Cdl-react/issues/725) supersedes conflicting unresolved-decision wording below. This is policy, not evidence of implementation or release acceptance.
+
 ## Purpose
 
 Define chip ownership, activation, locking, scoring effects, and explainable chip impact.

@@ -1,5 +1,7 @@
 # AI agent integration — WebMCP and remote MCP
 
+> Planning update: [resolved Wayfinder contract](https://github.com/andrew3stedall/Cdl-react/issues/724) supersedes conflicting unresolved-decision wording below. This is policy, not evidence of implementation or release acceptance.
+
 Status: Approved design; implementation in progress (2026-10-11).
 Production deployment is NOT approved.
 

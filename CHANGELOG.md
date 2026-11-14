@@ -1,4 +1,5 @@
 ## Unreleased
+- Document resolved AI onboarding, scoring/knockout and release-readiness planning contracts; implementation and external validation remain tracked separately.
 - Reconcile official FPL scores and due gameweek settlement immediately when a manager enters the app, even if the five-minute active refresh interval has not elapsed.
 - Remove the AI connections section from the Profile settings page.
 - Remove stat icons from player and comparison points-against charts; show attacking and defensive points as colour-coded stacked bars with their values on each segment.

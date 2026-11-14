@@ -1,5 +1,7 @@
 # Knockout Brackets and Tiebreakers
 
+> Planning update: [resolved Wayfinder contract](https://github.com/andrew3stedall/Cdl-react/issues/725) supersedes conflicting unresolved-decision wording below. This is policy, not evidence of implementation or release acceptance.
+
 ## Purpose
 
 Define knockout brackets, legs, aggregate scoring, playoff structure, and most-goals tiebreaker.

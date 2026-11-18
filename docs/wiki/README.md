@@ -46,3 +46,5 @@ docs/architecture/
 ## Planning decisions
 
 [Autonomous Wayfinder resolution](../delivery/2026-11-12-wayfinder-resolution.md) indexes AI onboarding, scoring/knockouts and release-readiness contracts; delivery acceptance remains separate.
+
+AI connections show each assistant as **Pending check**, **Verified**, **Check failed**, **Expired** or **Revoked**. Verified means CDL recorded a successful read from that exact connection; consent alone does not count. See [AI agent integration](../features/active/ai-agent-webmcp.md#connection-verification-and-repair-605).

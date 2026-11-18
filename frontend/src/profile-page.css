@@ -1540,6 +1540,7 @@
 .ai-connection-card,
 .ai-approval-note,
 .ai-activity-card,
+.ai-diagnostics,
 .ai-empty-state {
   background: var(--card);
   border: 1px solid var(--border);
@@ -1756,6 +1757,30 @@
 .ai-status-pill--muted {
   background: color-mix(in srgb, var(--muted) 60%, var(--card));
   color: var(--muted-foreground);
+}
+
+.ai-status-pill--warning {
+  background: color-mix(in srgb, var(--destructive, #b91c1c) 16%, var(--card));
+  color: var(--foreground);
+}
+
+.ai-connection-card__top .ai-status-pill {
+  flex: 0 0 auto;
+}
+
+.ai-diagnostics .ai-connection-details {
+  grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
+}
+
+.ai-test-prompt {
+  background: color-mix(in srgb, var(--muted) 48%, var(--card));
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) * 0.7);
+  display: block;
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+  padding: 0.55rem 0.65rem;
+  user-select: all;
 }
 
 .ai-connection-details {

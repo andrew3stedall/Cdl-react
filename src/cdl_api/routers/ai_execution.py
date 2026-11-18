@@ -50,7 +50,7 @@ def _require_owned_connection(
 ) -> None:
     if settings.mcp_browser_enabled and connection_id == f"browser:{user.id}":
         return
-    if connection_id not in {row.id for row in service.list_connections(user.id)}:
+    if connection_id not in {str(row["id"]) for row in service.list_connections(user.id)}:
         raise HTTPException(status_code=404, detail="AI connection not found.")
 
 

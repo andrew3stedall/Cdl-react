@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Activity, Bot, Check, Copy, ExternalLink, Shield, Timer, Unplug } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Activity, Bot, Check, Copy, ExternalLink, RefreshCw, Shield, Stethoscope, Timer, Unplug } from 'lucide-react';
 
 import { Button } from './components/ui/button';
 import { Card } from './components/ui/card';
@@ -9,6 +9,9 @@ import {
   httpAIConnectionsClient,
   type AIActivityEvent,
   type AIConnection,
+  type AIConnectionDiagnostics,
+  type AIConnectionState,
+  type AIConnectionStatus,
   type AIConnectionsClient,
   type AIGrantStatus,
 } from './ai-connections-api';
@@ -22,6 +25,7 @@ interface AIConnectionsPageProps {
 
 interface ConnectionView {
   connection: AIConnection;
+  status: AIConnectionStatus | null;
   grant: AIGrantStatus | null;
 }
 
@@ -50,6 +54,34 @@ function readAISetupProgress(): AISetupProgress | null {
 }
 
 const BROWSER_CLIENT_NAME = 'Browser WebMCP';
+export const AI_TEST_PROMPT = 'Using Castle Draft League, show my team summary.';
+
+const STATE_LABELS: Record<AIConnectionState, string> = {
+  authorized: 'Pending check',
+  verified: 'Verified',
+  check_failed: 'Check failed',
+  expired: 'Expired',
+  revoked: 'Revoked',
+};
+
+const FAILURE_LABELS: Record<NonNullable<AIConnectionStatus['last_failure']>['category'], string> = {
+  permission: 'Permission denied',
+  request: 'Invalid request',
+  service: 'CDL service error',
+  other: 'Read failed',
+};
+
+function isLiveState(state: AIConnectionState): boolean {
+  return state === 'authorized' || state === 'verified' || state === 'check_failed';
+}
+
+function providerFor(clientName: string): AIProvider | null {
+  // Setup guidance only; display names are client-supplied and never used to merge connections.
+  const name = clientName.toLowerCase();
+  if (name.includes('claude')) return 'claude';
+  if (name.includes('chatgpt') || name.includes('openai')) return 'chatgpt';
+  return null;
+}
 
 function formatDate(value: string | null): string {
   if (!value) return 'Never';
@@ -72,29 +104,38 @@ export function AIConnectionsPage({ onNavigate, session, client = httpAIConnecti
   const [message, setMessage] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [setup, setSetup] = useState<AISetupProgress | null>(() => readAISetupProgress());
+  const [diagnostics, setDiagnostics] = useState<AIConnectionDiagnostics | null>(null);
+  const setupRef = useRef<HTMLElement | null>(null);
   const browserConnectionId = session.user?.id ? `browser:${session.user.id}` : null;
-  const mcpUrl = useMemo(() => `${window.location.origin}/mcp`, []);
+  // Use the deployment-configured canonical endpoint; never derive it from the UI origin.
+  const mcpUrl = diagnostics?.endpoint.remote_enabled ? diagnostics.endpoint.url : null;
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     setActivityError(null);
     try {
-      const rows = await client.listConnections();
-      const events = await client.listActivity().catch((cause: unknown) => {
-        setActivityError(cause instanceof Error ? cause.message : 'Activity is currently unavailable.');
-        return [];
-      });
-      const withBrowser = browserConnectionId
-        ? [{ id: browserConnectionId, client_id: 'browser', client_name: BROWSER_CLIENT_NAME, scopes: ['cdl:read', 'cdl:write'], created_at: new Date().toISOString(), last_used_at: null }, ...rows]
+      const result = await client.getDiagnostics();
+      const executionEnabled = result.endpoint.execution_enabled;
+      const events = executionEnabled
+        ? await client.listActivity().catch((cause: unknown) => {
+          setActivityError(cause instanceof Error ? cause.message : 'Activity is currently unavailable.');
+          return [];
+        })
+        : [];
+      const rows: Array<Pick<ConnectionView, 'connection' | 'status'>> = result.connections.map((status) => ({ connection: status, status }));
+      const withBrowser = browserConnectionId && result.endpoint.browser_enabled
+        ? [{ connection: { id: browserConnectionId, client_id: 'browser', client_name: BROWSER_CLIENT_NAME, scopes: ['cdl:read', 'cdl:write'], created_at: new Date().toISOString(), last_used_at: null }, status: null }, ...rows]
         : rows;
-      const views = await Promise.all(withBrowser.map(async (connection) => {
+      const views = await Promise.all(withBrowser.map(async (view) => {
+        if (!executionEnabled || (view.status && !isLiveState(view.status.state))) return { ...view, grant: null };
         try {
-          return { connection, grant: await client.getGrant(connection.id) };
+          return { ...view, grant: await client.getGrant(view.connection.id) };
         } catch {
-          return { connection, grant: null };
+          return { ...view, grant: null };
         }
       }));
+      setDiagnostics(result);
       setConnections(views);
       setActivity(events);
     } catch (cause) {
@@ -115,6 +156,7 @@ export function AIConnectionsPage({ onNavigate, session, client = httpAIConnecti
   }, [setup]);
 
   const copyUrl = async () => {
+    if (!mcpUrl) return;
     try {
       await navigator.clipboard.writeText(mcpUrl);
       setCopied(true);
@@ -122,6 +164,37 @@ export function AIConnectionsPage({ onNavigate, session, client = httpAIConnecti
     } catch {
       setError('Could not copy the MCP URL. Select and copy it manually.');
     }
+  };
+
+  const copyTestPrompt = async () => {
+    try {
+      await navigator.clipboard.writeText(AI_TEST_PROMPT);
+      setMessage('Test prompt copied.');
+    } catch {
+      setMessage('Copy failed. Select the prompt text instead.');
+    }
+  };
+
+  const checkConnection = async (id: string) => {
+    setPending(id);
+    setMessage(null);
+    try {
+      const status = await client.checkConnection(id);
+      setConnections((rows) => rows.map((row) => (row.connection.id === id ? { ...row, connection: status, status } : row)));
+      setMessage(`${status.client_name}: ${STATE_LABELS[status.state]}.`);
+    } catch (cause) {
+      setMessage(cause instanceof Error ? cause.message : 'Could not check this connection.');
+    } finally {
+      setPending(null);
+    }
+  };
+
+  const reconnect = (connection: AIConnection) => {
+    const provider = providerFor(connection.client_name);
+    // Reconnect guidance never broadens access: write is suggested only if this connection already had it.
+    const access: AIAccessMode = connection.scopes.includes('cdl:write') ? 'read-write' : 'read-only';
+    setSetup(provider ? { provider, step: 2, access } : null);
+    setupRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'start' });
   };
 
   const activate = async (id: string) => {
@@ -173,7 +246,7 @@ export function AIConnectionsPage({ onNavigate, session, client = httpAIConnecti
         <h1 id="ai-connections-title">AI connections</h1>
       </GlobalPageHeader>
 
-      <section aria-labelledby="mcp-setup-title" className="profile-settings-group">
+      <section aria-labelledby="mcp-setup-title" className="profile-settings-group" ref={setupRef}>
         <h2 id="mcp-setup-title">Connect an assistant</h2>
         {!setup ? (
           <Card className="profile-settings-card ai-connection-setup">
@@ -238,13 +311,15 @@ export function AIConnectionsPage({ onNavigate, session, client = httpAIConnecti
                     <li>Continue with OAuth and review the connection details.</li>
                   </ol>
                 )}
-                <div className="ai-mcp-url">
-                  <code aria-label="CDL MCP server URL">{mcpUrl}</code>
-                  <Button aria-label="Copy MCP URL" onClick={() => void copyUrl()} type="button" variant="secondary">
-                    {copied ? <Check aria-hidden="true" size={16} /> : <Copy aria-hidden="true" size={16} />}
-                    {copied ? 'Copied' : 'Copy URL'}
-                  </Button>
-                </div>
+                {mcpUrl ? (
+                  <div className="ai-mcp-url">
+                    <code aria-label="CDL MCP server URL">{mcpUrl}</code>
+                    <Button aria-label="Copy MCP URL" onClick={() => void copyUrl()} type="button" variant="secondary">
+                      {copied ? <Check aria-hidden="true" size={16} /> : <Copy aria-hidden="true" size={16} />}
+                      {copied ? 'Copied' : 'Copy URL'}
+                    </Button>
+                  </div>
+                ) : <p className="ai-page-status ai-page-status--error" role="status">{loading ? 'Loading MCP URL…' : 'Remote MCP unavailable.'}</p>}
                 <p>{setup.access === 'read-only' ? 'CDL consent preselects read access. Leave cdl:write unchecked for this connection.' : 'At CDL consent, explicitly select cdl:write as well as cdl:read. Consequential actions still need a 60-minute activation and action approval.'}</p>
                 <p className="ai-connection-setup__note">The URL is staging-only. Do not paste a CDL password or signing secret into the assistant.</p>
               </div>
@@ -256,8 +331,10 @@ export function AIConnectionsPage({ onNavigate, session, client = httpAIConnecti
                   <li>When the assistant opens CDL, sign in to your CDL account in the browser.</li>
                   <li>Review the OAuth consent screen. Grant only the permissions you want this connection to have.</li>
                   <li>Return here and refresh Connected assistants. Confirm the assistant appears with the expected permissions.</li>
+                  <li>Send the test prompt below, then select Check. The connection shows Verified only after CDL records that read.</li>
                 </ol>
-                <p>Start with a read-only request, such as “Show my CDL team summary.” Consequential actions still require a separate 60-minute activation and approval.</p>
+                <code className="ai-test-prompt">{AI_TEST_PROMPT}</code>
+                <p>Consequential actions still require a separate 60-minute activation and approval.</p>
               </div>
             ) : null}
             <div className="ai-onboarding-actions">
@@ -274,13 +351,25 @@ export function AIConnectionsPage({ onNavigate, session, client = httpAIConnecti
           <Button disabled={loading} onClick={() => void load()} type="button" variant="ghost">Refresh</Button>
         </div>
         {loading ? <p aria-live="polite" className="ai-page-status">Loading connections…</p> : null}
+        {diagnostics ? (
+          <Card aria-label="Connection diagnostics" className="ai-diagnostics">
+            <dl className="ai-connection-details">
+              <div><dt>Remote MCP</dt><dd>{diagnostics.endpoint.remote_enabled ? 'Available' : 'Off'}</dd></div>
+              <div><dt>Team</dt><dd>{diagnostics.team_assigned === null ? 'Unknown' : diagnostics.team_assigned ? 'Assigned' : 'No assigned team'}</dd></div>
+              <div><dt>Checked</dt><dd>{formatDate(diagnostics.checked_at)}</dd></div>
+            </dl>
+          </Card>
+        ) : null}
         {error ? <p aria-live="assertive" className="ai-page-status ai-page-status--error" role="alert">{error}</p> : null}
         {!loading && !error && connections.length === 0 ? <Card className="ai-empty-state">No assistants are connected.</Card> : null}
         <div className="ai-connection-list">
-          {connections.map(({ connection, grant }) => {
+          {connections.map(({ connection, grant, status }) => {
             const isBrowser = connection.id === browserConnectionId;
             const isActive = Boolean(grant?.active && grant.grant);
-            const canRevokeConnection = !isBrowser;
+            const isLive = isBrowser || (status ? isLiveState(status.state) : false);
+            const canRevokeConnection = !isBrowser && isLive;
+            const needsRead = status?.state === 'authorized' || status?.state === 'check_failed';
+            const canReconnect = status?.state === 'check_failed' || status?.state === 'expired' || status?.state === 'revoked';
             return (
               <Card className="ai-connection-card" key={connection.id}>
                 <div className="ai-connection-card__top">
@@ -289,13 +378,20 @@ export function AIConnectionsPage({ onNavigate, session, client = httpAIConnecti
                     <h3>{connection.client_name}</h3>
                     <p>{isBrowser ? 'This browser session' : `Connected ${formatDate(connection.created_at)}`}</p>
                   </div>
+                  {isBrowser ? <span className="ai-status-pill ai-status-pill--muted">Browser only</span> : null}
+                  {status ? <span className={`ai-status-pill ai-status-pill--${status.state === 'verified' ? 'active' : status.state === 'authorized' ? 'muted' : 'warning'}`}>{STATE_LABELS[status.state]}</span> : null}
                   {isActive ? <span className="ai-status-pill ai-status-pill--active">Active</span> : null}
                 </div>
                 <dl className="ai-connection-details">
                   <div><dt>Permissions</dt><dd>{connection.scopes.length ? connection.scopes.join(', ') : 'None'}</dd></div>
                   {!isBrowser ? <div><dt>Last used</dt><dd>{formatDate(connection.last_used_at)}</dd></div> : null}
+                  {status ? <div><dt>Verified read</dt><dd>{status.last_verified_read_at ? formatDate(status.last_verified_read_at) : 'Not observed'}</dd></div> : null}
+                  {status?.state === 'check_failed' && status.last_failure ? <div><dt>Last failure</dt><dd>{FAILURE_LABELS[status.last_failure.category]} · {formatDate(status.last_failure.observed_at)}</dd></div> : null}
+                  {status?.state === 'revoked' ? <div><dt>Revoked</dt><dd>{formatDate(status.revoked_at)}</dd></div> : null}
+                  {status && isLiveState(status.state) ? <div><dt>Access ends</dt><dd>{formatDate(status.access_expires_at)}</dd></div> : null}
                   {isActive && grant?.grant ? <div><dt>Window ends</dt><dd>{formatDate(grant.grant.expires_at)}</dd></div> : null}
                 </dl>
+                {needsRead ? <code className="ai-test-prompt">{AI_TEST_PROMPT}</code> : null}
                 {confirmRevoke === connection.id ? (
                   <div aria-label={`Confirm revoke ${connection.client_name}`} className="ai-connection-confirm" role="group">
                     <span>Revoke this assistant’s CDL access?</span>
@@ -304,15 +400,19 @@ export function AIConnectionsPage({ onNavigate, session, client = httpAIConnecti
                   </div>
                 ) : (
                   <div className="ai-connection-card__actions">
-                    {isActive ? (
+                    {isLive && isActive ? (
                       <Button disabled={pending === connection.id} onClick={() => void revokeGrant(connection.id)} type="button" variant="secondary"><Timer aria-hidden="true" size={16} />End window</Button>
-                    ) : (
+                    ) : null}
+                    {isLive && !isActive ? (
                       <Button disabled={pending === connection.id || !grant} onClick={() => void activate(connection.id)} type="button" variant="secondary"><Timer aria-hidden="true" size={16} />{pending === connection.id ? 'Activating…' : 'Activate 60-minute window'}</Button>
-                    )}
+                    ) : null}
+                    {status ? <Button disabled={pending === connection.id} onClick={() => void checkConnection(connection.id)} type="button" variant="secondary"><Stethoscope aria-hidden="true" size={16} />Check</Button> : null}
+                    {needsRead ? <Button onClick={() => void copyTestPrompt()} type="button" variant="ghost"><Copy aria-hidden="true" size={16} />Copy test prompt</Button> : null}
+                    {canReconnect ? <Button onClick={() => reconnect(connection)} type="button" variant="ghost"><RefreshCw aria-hidden="true" size={16} />Reconnect</Button> : null}
                     {canRevokeConnection ? <Button disabled={pending === connection.id} onClick={() => setConfirmRevoke(connection.id)} type="button" variant="ghost"><Unplug aria-hidden="true" size={16} />Revoke</Button> : null}
                   </div>
                 )}
-                {!grant ? <small className="ai-grant-note">Execution controls are currently unavailable.</small> : null}
+                {isLive && !grant ? <small className="ai-grant-note">Execution controls are currently unavailable.</small> : null}
               </Card>
             );
           })}

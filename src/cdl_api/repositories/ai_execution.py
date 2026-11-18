@@ -187,6 +187,23 @@ class InMemoryAIExecutionRepository:
         self.events[:] = [row for row in self.events if row["retention_until"] > now]
         return [dict(row) for row in reversed(self.events) if row["user_id"] == user_id][:limit]
 
+    def read_evidence(
+        self, user_id: str, connection_ids: list[str], now: datetime
+    ) -> dict[str, dict[str, Any]]:
+        """Summarise retained read-tool audit outcomes for each connection."""
+        wanted = set(connection_ids)
+        evidence: dict[str, dict[str, Any]] = {}
+        for row in self.events:
+            if (
+                row["user_id"] != user_id
+                or row["connection_id"] not in wanted
+                or row["risk"] != "read"
+                or row["retention_until"] <= now
+            ):
+                continue
+            _merge_read_evidence(evidence, row)
+        return evidence
+
 
 class PostgreSQLAIExecutionRepository:
     """Persistent, conditional updates for production-like protected environments."""
@@ -395,6 +412,99 @@ class PostgreSQLAIExecutionRepository:
             )
             session.commit()
         return [dict(row) for row in rows]
+
+    def read_evidence(
+        self, user_id: str, connection_ids: list[str], now: datetime
+    ) -> dict[str, dict[str, Any]]:
+        """Summarise retained read-tool audit outcomes for each connection."""
+        if not connection_ids:
+            return {}
+        success = activity_events.c.outcome == "success"
+        filters = (
+            activity_events.c.user_id == user_id,
+            activity_events.c.connection_id.in_(connection_ids),
+            activity_events.c.risk == "read",
+            activity_events.c.retention_until > now,
+        )
+        with self._session_factory() as session:
+            successes = (
+                session.execute(
+                    select(
+                        activity_events.c.connection_id,
+                        sa.func.min(activity_events.c.created_at).label("first_success_at"),
+                        sa.func.max(activity_events.c.created_at).label("last_success_at"),
+                    )
+                    .where(*filters, success)
+                    .group_by(activity_events.c.connection_id)
+                )
+                .mappings()
+                .all()
+            )
+            latest_failure = (
+                select(
+                    activity_events.c.connection_id,
+                    sa.func.max(activity_events.c.created_at).label("created_at"),
+                )
+                .where(*filters, sa.not_(success))
+                .group_by(activity_events.c.connection_id)
+                .subquery()
+            )
+            failures = (
+                session.execute(
+                    select(
+                        activity_events.c.connection_id,
+                        activity_events.c.outcome,
+                        activity_events.c.created_at,
+                    )
+                    .join(
+                        latest_failure,
+                        sa.and_(
+                            latest_failure.c.connection_id == activity_events.c.connection_id,
+                            latest_failure.c.created_at == activity_events.c.created_at,
+                        ),
+                    )
+                    .where(*filters, sa.not_(success))
+                    .order_by(activity_events.c.id)
+                )
+                .mappings()
+                .all()
+            )
+        evidence: dict[str, dict[str, Any]] = {}
+        for row in successes:
+            evidence[row["connection_id"]] = {
+                "first_success_at": row["first_success_at"],
+                "last_success_at": row["last_success_at"],
+                "last_failure_at": None,
+                "last_failure_outcome": None,
+            }
+        for row in failures:
+            entry = evidence.setdefault(row["connection_id"], _empty_read_evidence())
+            if entry["last_failure_at"] is None:
+                entry["last_failure_at"] = row["created_at"]
+                entry["last_failure_outcome"] = row["outcome"]
+        return evidence
+
+
+def _empty_read_evidence() -> dict[str, Any]:
+    return {
+        "first_success_at": None,
+        "last_success_at": None,
+        "last_failure_at": None,
+        "last_failure_outcome": None,
+    }
+
+
+def _merge_read_evidence(evidence: dict[str, dict[str, Any]], row: dict[str, Any]) -> None:
+    entry = evidence.setdefault(row["connection_id"], _empty_read_evidence())
+    created_at = row["created_at"]
+    if row["outcome"] == "success":
+        if entry["first_success_at"] is None or created_at < entry["first_success_at"]:
+            entry["first_success_at"] = created_at
+        if entry["last_success_at"] is None or created_at > entry["last_success_at"]:
+            entry["last_success_at"] = created_at
+    elif entry["last_failure_at"] is None or created_at > entry["last_failure_at"]:
+        entry["last_failure_at"] = created_at
+        entry["last_failure_outcome"] = row["outcome"]
 
 
 _memory_repository = InMemoryAIExecutionRepository()

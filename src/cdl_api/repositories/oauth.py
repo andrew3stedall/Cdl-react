@@ -173,6 +173,35 @@ class InMemoryOAuthRepository:
                 if row["user_id"] == user_id and row["revoked_at"] is None
             ]
 
+    def list_connection_records(
+        self, user_id: str, revoked_since: datetime
+    ) -> list[dict[str, Any]]:
+        """Return active and recently revoked connections with refresh-token expiry."""
+        now = datetime.now(UTC)
+        with self._lock:
+            records = []
+            for row in self._connections.values():
+                if row["user_id"] != user_id:
+                    continue
+                if row["revoked_at"] is not None and row["revoked_at"] < revoked_since:
+                    continue
+                usable = [
+                    entry["expires_at"]
+                    for entry in self._refresh.values()
+                    if entry["connection_id"] == row["id"]
+                    and entry["used_at"] is None
+                    and entry["revoked_at"] is None
+                    and entry["expires_at"] > now
+                ]
+                records.append(
+                    {
+                        **row,
+                        "client_name": self._clients[row["client_id"]]["client_name"],
+                        "refresh_expires_at": max(usable, default=None),
+                    }
+                )
+            return records
+
     def revoke_connection(self, connection_id: str, user_id: str) -> bool:
         now = datetime.now(UTC)
         with self._lock:
@@ -363,6 +392,51 @@ class PostgreSQLOAuthRepository:
                         oauth_connections.c.user_id == user_id,
                         oauth_connections.c.revoked_at.is_(None),
                     )
+                )
+                .mappings()
+                .all()
+            )
+        return [dict(row) for row in rows]
+
+    def list_connection_records(
+        self, user_id: str, revoked_since: datetime
+    ) -> list[dict[str, Any]]:
+        """Return active and recently revoked connections with refresh-token expiry."""
+        now = datetime.now(UTC)
+        usable_refresh = (
+            select(
+                oauth_refresh_tokens.c.connection_id,
+                sa.func.max(oauth_refresh_tokens.c.expires_at).label("refresh_expires_at"),
+            )
+            .where(
+                oauth_refresh_tokens.c.used_at.is_(None),
+                oauth_refresh_tokens.c.revoked_at.is_(None),
+                oauth_refresh_tokens.c.expires_at > now,
+            )
+            .group_by(oauth_refresh_tokens.c.connection_id)
+            .subquery()
+        )
+        with self._session_factory() as session:
+            rows = (
+                session.execute(
+                    select(
+                        oauth_connections,
+                        oauth_clients.c.client_name,
+                        usable_refresh.c.refresh_expires_at,
+                    )
+                    .join(oauth_clients, oauth_clients.c.client_id == oauth_connections.c.client_id)
+                    .outerjoin(
+                        usable_refresh,
+                        usable_refresh.c.connection_id == oauth_connections.c.id,
+                    )
+                    .where(
+                        oauth_connections.c.user_id == user_id,
+                        sa.or_(
+                            oauth_connections.c.revoked_at.is_(None),
+                            oauth_connections.c.revoked_at >= revoked_since,
+                        ),
+                    )
+                    .order_by(oauth_connections.c.created_at.desc())
                 )
                 .mappings()
                 .all()

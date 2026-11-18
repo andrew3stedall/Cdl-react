@@ -3,6 +3,7 @@
 from fastapi import FastAPI
 
 from cdl_api.repositories.factory import build_repositories
+from cdl_api.routers.ai_connections import router as ai_connections_router
 from cdl_api.routers.ai_execution import router as ai_execution_router
 from cdl_api.routers.auth import router as auth_router
 from cdl_api.routers.dashboard import router as dashboard_router
@@ -60,6 +61,7 @@ def create_app() -> FastAPI:
             )
         )
     app.include_router(auth_router, prefix=settings.api_prefix)
+    app.include_router(ai_connections_router, prefix=settings.api_prefix)
     app.include_router(ai_execution_router, prefix=settings.api_prefix)
     app.include_router(oauth_router, prefix="")
     app.include_router(mcp_router, prefix="")

@@ -38,6 +38,33 @@ Profile → AI connections provides a resumable, mobile-first manual setup guide
 
 ChatGPT setup is documented for ChatGPT web only. The guide explains the current account boundaries: Pro can connect with read/fetch access; full MCP is currently available to Business, Enterprise, and Edu; Plus is not currently listed as supporting custom MCP apps. Claude setup uses its current Custom → Web connector flow and links to Claude's connector guide. Both flows advise users to continue from a desktop browser when they start on mobile. Setup progress is stored only in the browser session and contains no credentials.
 
+## Connection verification and repair (#605)
+
+`GET /api/ai/connections` returns the owner's diagnostics with `Cache-Control: no-store`, and the client bypasses the shared query cache. It returns the deployment-configured canonical MCP URL (`{CDL_OAUTH_ISSUER_URL}/mcp`), the OAuth/remote/browser/execution flags, whether the user has an assigned team (`null` when the lookup fails), and one status per OAuth connection ID. Revoked connections stay visible for 14 days so the owner can reconnect. Connections are never merged by display name.
+
+| State | Evidence |
+| --- | --- |
+| `authorized` | OAuth consent completed. No correlated remote read has been observed yet ("Pending check"). |
+| `verified` | The audit log has a successful `read`-risk tool call recorded against this exact OAuth connection ID. |
+| `check_failed` | The latest read-risk call for this connection failed after the last success. Only a sanitized category is exposed: `permission`, `request`, `service` or `other`. |
+| `expired` | The connection has no unused, unrevoked refresh token that is still valid. |
+| `revoked` | The owner revoked the connection, or a refresh-token replay revoked it. |
+
+Consent, completing the wizard, a browser-side API read and browser WebMCP calls never mark a remote provider as verified. Browser WebMCP is shown as "Browser only" with no verification state. Personal-reversible and consequential tool outcomes do not count as verification. Evidence follows the 90-day activity retention, so an old success can fall back to `authorized`.
+
+`POST /api/ai/connections/{id}/check` is a manual, owner-scoped re-check. It returns `404` for another user's connection and records a `connection.check` activity row with risk `diagnostic` and the derived state as its outcome. That row never counts as verification. There is no background polling.
+
+Repair actions in the UI:
+
+- **Check**: manual re-check.
+- **Copy test prompt**: shown for pending and failed connections. The prompt is visible and copyable and contains no team data.
+- **Reconnect**: shown for failed, expired and revoked connections. It reopens provider setup guidance and never broadens access; write is suggested only if the old connection already had `cdl:write`.
+- **Revoke**: unchanged.
+
+Execution-window controls appear only for live connections, and only when execution is enabled. When remote MCP is off, setup shows "Remote MCP unavailable." instead of a URL derived from the page origin. Diagnostics are available whenever `MCP_OAUTH_ENABLED` is on and return `404` otherwise.
+
+Real ChatGPT/Claude account checks of these states are still required (#603/#604/#595). Until they are recorded, each provider remains unverified.
+
 ## Release acceptance
 - Every implemented user-facing capability has an appropriately permissioned, validated tool, or an explicit documented exception.
 - ChatGPT and Claude remote connection flows verified on supported client tiers; WebMCP verified in supported browser agents.

@@ -1,4 +1,5 @@
 ## Unreleased
+- Add per-connection AI verification diagnostics and repair (#605). OAuth consent now shows as "Pending check" until CDL records a successful remote MCP read for that connection. Failed reads show a sanitized category. Expired and recently revoked connections offer Reconnect without broadening access, and a manual Check is audited. Setup uses the configured MCP URL instead of the page origin. Also fixes execution-window activation failing for real OAuth connections.
 - Document resolved AI onboarding, scoring/knockout and release-readiness planning contracts; implementation and external validation remain tracked separately.
 - Reconcile official FPL scores and due gameweek settlement immediately when a manager enters the app, even if the five-minute active refresh interval has not elapsed.
 - Remove the AI connections section from the Profile settings page.

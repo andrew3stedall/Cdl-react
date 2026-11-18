@@ -14,6 +14,8 @@ The gateway rechecks the user's current league role and active grant at invocati
 
 AI activity records include the actor, connection, tool, risk class, time, outcome, and redacted parameters. Routine activity is retained for 90 days. Existing trade, loan, draft, and other business history remains authoritative for consequential outcomes and follows its established retention policy.
 
+Connection verification (#605) reads this table as its only end-to-end evidence. A connection is verified only by a `success` row with risk `read` for that OAuth connection ID. Manual owner checks write rows with risk `diagnostic`, which never count as verification. No schema change is needed.
+
 ## Rollout
 
 `MCP_EXECUTION_ENABLED` gates grants, approvals, activity, and execution. It defaults off. Remote and browser transport feature flags remain separate. Enable the execution flag in staging only after the complete service adapters and integration checks are present. Production MCP access requires separate approval.

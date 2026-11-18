@@ -187,7 +187,6 @@ class InMemoryAIExecutionRepository:
         self.events[:] = [row for row in self.events if row["retention_until"] > now]
         return [dict(row) for row in reversed(self.events) if row["user_id"] == user_id][:limit]
 
-
     def read_evidence(
         self, user_id: str, connection_ids: list[str], now: datetime
     ) -> dict[str, dict[str, Any]]:
@@ -413,7 +412,6 @@ class PostgreSQLAIExecutionRepository:
             )
             session.commit()
         return [dict(row) for row in rows]
-
 
     def read_evidence(
         self, user_id: str, connection_ids: list[str], now: datetime
